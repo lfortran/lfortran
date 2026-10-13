@@ -546,3 +546,93 @@ semantic error: The leftmost part-ref in a data-ref cannot be a function referen
     |
 236 |         print *, mk_13849(1)%a
     |                  ^^^^^^^^^^^^^ 
+
+semantic error: Operator `+` undefined for the types in the expression `cc3_binop_t + integer(4)`
+   --> tests/errors/continue_compilation_3.f90:250:14
+    |
+250 |     print *, x + 1  ! {Error} Operator `+` undefined for the types in the expression `cc3_binop_t + integer(4)`
+    |              ^^^^^ 
+
+semantic error: Operator `-` undefined for the types in the expression `integer(4) - cc3_binop_t`
+   --> tests/errors/continue_compilation_3.f90:251:14
+    |
+251 |     print *, 2 - x  ! {Error} Operator `-` undefined for the types in the expression `integer(4) - cc3_binop_t`
+    |              ^^^^^ 
+
+semantic error: Operator `*` undefined for the types in the expression `cc3_binop_t * cc3_binop_t`
+   --> tests/errors/continue_compilation_3.f90:252:14
+    |
+252 |     print *, x * x  ! {Error} Operator `*` undefined for the types in the expression `cc3_binop_t * cc3_binop_t`
+    |              ^^^^^ 
+
+semantic error: Operator `**` undefined for the types in the expression `real(4) ** cc3_binop_t[:]`
+   --> tests/errors/continue_compilation_3.f90:253:14
+    |
+253 |     print *, 2.0 ** y  ! {Error} Operator `**` undefined for the types in the expression `real(4) ** cc3_binop_t[:]`
+    |              ^^^^^^^^ 
+
+semantic error: Operator `/` undefined for the types in the expression `type(c_ptr) / integer(4)`
+   --> tests/errors/continue_compilation_3.f90:254:14
+    |
+254 |     print *, c / 2  ! {Error} Operator `/` undefined for the types in the expression `type(c_ptr) / integer(4)`
+    |              ^^^^^ 
+
+semantic error: Operator `+` undefined for the types in the expression `logical(4) + logical(4)`
+   --> tests/errors/continue_compilation_3.f90:265:14
+    |
+265 |     print *, a + a  ! {Error} Operator `+` undefined for the types in the expression `logical(4) + logical(4)`
+    |              ^^^^^ 
+
+semantic error: Operator `-` undefined for the types in the expression `logical(4) - logical(4)[:]`
+   --> tests/errors/continue_compilation_3.f90:266:14
+    |
+266 |     print *, a - b  ! {Error} Operator `-` undefined for the types in the expression `logical(4) - logical(4)[:]`
+    |              ^^^^^ 
+
+semantic error: Operator `*` undefined for the types in the expression `logical(4)[:] * logical(4)`
+   --> tests/errors/continue_compilation_3.f90:267:14
+    |
+267 |     print *, b * a  ! {Error} Operator `*` undefined for the types in the expression `logical(4)[:] * logical(4)`
+    |              ^^^^^ 
+
+semantic error: Operator `/` undefined for the types in the expression `logical(4) / logical(8)`
+   --> tests/errors/continue_compilation_3.f90:268:14
+    |
+268 |     print *, a / c  ! {Error} Operator `/` undefined for the types in the expression `logical(4) / logical(8)`
+    |              ^^^^^ 
+
+semantic error: Operator `**` undefined for the types in the expression `logical(8) ** logical(4)`
+   --> tests/errors/continue_compilation_3.f90:269:14
+    |
+269 |     print *, c ** a  ! {Error} Operator `**` undefined for the types in the expression `logical(8) ** logical(4)`
+    |              ^^^^^^ 
+
+semantic error: Operator `+` undefined for the types in the expression `cc3_kind_t + integer(4)`
+   --> tests/errors/continue_compilation_3.f90:299:18
+    |
+299 |         print *, x + 1  ! {Error} Operator `+` undefined for the types in the expression `cc3_kind_t + integer(4)`
+    |                  ^^^^^ 
+
+semantic error: Operands of comparison operator '==' are not comparable: cc3_kind_t == real
+   --> tests/errors/continue_compilation_3.f90:300:18
+    |
+300 |         print *, x == 1.0  ! {Error} Operands of comparison operator '==' are not comparable: cc3_kind_t == real
+    |                  ^^^^^^^^ 
+
+semantic error: Expected logical expression in if statement, but recieved class(*) instead
+   --> tests/errors/continue_compilation_3.f90:307:9
+    |
+307 |     if (d) print *, "x"  ! {Error} Expected logical expression in if statement, but recieved class(*) instead
+    |         ^ class(*) expression, expected logical
+
+semantic error: Operands of comparison operator '==' are not comparable: class(*) == integer
+   --> tests/errors/continue_compilation_3.f90:308:14
+    |
+308 |     print *, d == 1  ! {Error} Operands of comparison operator '==' are not comparable: class(*) == integer
+    |              ^^^^^^ 
+
+semantic error: Expected logical expression in if statement, but recieved type(*) instead
+   --> tests/errors/continue_compilation_3.f90:314:9
+    |
+314 |     if (x) print *, "x"  ! {Error} Expected logical expression in if statement, but recieved type(*) instead
+    |         ^ type(*) expression, expected logical

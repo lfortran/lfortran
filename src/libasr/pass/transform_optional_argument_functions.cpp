@@ -268,20 +268,26 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
             }
         }
 
+        // The procedures declared in a procedure, program or module,
+        // including in its BLOCK constructs
+        void transform_procedures_in_scope_and_constructs(SymbolTable *scope) {
+            ASRUtils::for_each_symbol_in_scope_and_constructs(scope, [&](ASR::symbol_t *sym) {
+                if (is_a<ASR::Function_t>(*sym)) {
+                    ASR::Function_t *s = down_cast<ASR::Function_t>(sym);
+                    if (is_optional_argument_present(s)) {
+                        transform_functions_with_optional_arguments(s);
+                    }
+                }
+            });
+        }
+
         void visit_Program(const ASR::Program_t &x) {
             // FIXME: this is a hack, we need to pass in a non-const `x`,
             // which requires to generate a TransformVisitor.
             ASR::Program_t &xx = const_cast<ASR::Program_t&>(x);
             current_scope = xx.m_symtab;
 
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);
-                    if (is_optional_argument_present(s)) {
-                        transform_functions_with_optional_arguments(s);
-                    }
-                }
-            }
+            transform_procedures_in_scope_and_constructs(x.m_symtab);
 
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::AssociateBlock_t>(*item.second)) {
@@ -305,14 +311,7 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
             ASR::Module_t &xx = const_cast<ASR::Module_t&>(x);
             current_scope = xx.m_symtab;
 
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);
-                    if (is_optional_argument_present(s)) {
-                        transform_functions_with_optional_arguments(s);
-                    }
-                }
-            }
+            transform_procedures_in_scope_and_constructs(x.m_symtab);
 
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::AssociateBlock_t>(*item.second)) {
@@ -333,14 +332,7 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
             ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
             current_scope = xx.m_symtab;
 
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);
-                    if (is_optional_argument_present(s)) {
-                        transform_functions_with_optional_arguments(s);
-                    }
-                }
-            }
+            transform_procedures_in_scope_and_constructs(x.m_symtab);
 
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::AssociateBlock_t>(*item.second)) {

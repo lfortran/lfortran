@@ -2354,3 +2354,151 @@ subroutine intent_in_pointer_assoc_error(w, c, a)
     allocate(c)  ! {Error} pointer dummy argument `c` with intent(in) cannot appear in a pointer association context
     allocate(a(3))  ! {Error} pointer dummy argument `a` with intent(in) cannot appear in a pointer association context
 end subroutine intent_in_pointer_assoc_error
+
+! A function reference through a dummy procedure or a procedure pointer checks
+! its actual arguments against the interface of the procedure.
+module cc1_proc_variable_call_mod
+    implicit none
+    abstract interface
+        real function cc1_proc_variable_iface(a)
+            real, intent(in) :: a
+        end function cc1_proc_variable_iface
+    end interface
+contains
+    real function cc1_proc_variable_call(f, i)
+        procedure(cc1_proc_variable_iface) :: f
+        integer, intent(in) :: i
+        procedure(cc1_proc_variable_iface), pointer :: p
+        p => f
+        cc1_proc_variable_call = f(i)  ! {Error} Type mismatch in argument `a`: expected `real(4)` but got `integer(4)`.
+        cc1_proc_variable_call = p(i)  ! {Error} Type mismatch in argument `a`: expected `real(4)` but got `integer(4)`.
+    end function cc1_proc_variable_call
+end module cc1_proc_variable_call_mod
+
+! A function reference through a dummy procedure checks the number of its
+! actual arguments against the interface of the procedure.
+module cc1_proc_variable_count_mod
+    use cc1_proc_variable_call_mod, only: cc1_proc_variable_iface
+    implicit none
+contains
+    real function cc1_proc_variable_count(f)
+        procedure(cc1_proc_variable_iface) :: f
+        cc1_proc_variable_count = f(1.0, 2.0)  ! {Error} More actual than formal arguments in procedure call
+        cc1_proc_variable_count = f()  ! {Error} Missing actual argument for argument 'a'
+    end function cc1_proc_variable_count
+end module cc1_proc_variable_count_mod
+
+subroutine block_derived_type_bound_procedure()
+    block
+        type :: bdtbp_t
+            integer :: a
+        contains
+            procedure, nopass :: bdtbp_get  ! {Error} type-bound procedures of a derived type defined in a BLOCK construct are not supported yet
+        end type
+    end block
+end subroutine
+
+! A non-logical `mask` of a reduction intrinsic is reported with the name of
+! that intrinsic.
+module cc1_reduction_mask_mod
+    implicit none
+contains
+    subroutine cc1_reduction_mask()
+        integer :: a(3)
+        a = [1, 2, 3]
+        print *, iany(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'iany' intrinsic must be logical
+        print *, iall(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'iall' intrinsic must be logical
+        print *, iparity(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'iparity' intrinsic must be logical
+        print *, product(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'product' intrinsic must be logical
+        print *, maxval(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'maxval' intrinsic must be logical
+    end subroutine cc1_reduction_mask
+end module cc1_reduction_mask_mod
+
+! A procedure pointer or a dummy procedure cannot have an elemental interface,
+! such as the interface of a specific intrinsic function.
+subroutine elemental_procedure_interface_error(f)
+    implicit none
+    intrinsic :: sin
+    procedure(sin) :: f  ! {Error} dummy procedure 'f' cannot have an elemental interface
+    procedure(sin), pointer :: fp  ! {Error} procedure pointer 'fp' cannot have an elemental interface
+end subroutine elemental_procedure_interface_error
+
+! Only specific intrinsic functions listed in Table 16.2 can be used as the
+! interface in a procedure declaration statement.
+subroutine unsupported_intrinsic_procedure_interface_error()
+    implicit none
+    intrinsic :: floor, min0
+    procedure(floor) :: f  ! {Error} intrinsic procedure 'floor' is not allowed in a procedure declaration statement
+    procedure(min0) :: g  ! {Error} intrinsic procedure 'min0' is not allowed in a procedure declaration statement
+end subroutine unsupported_intrinsic_procedure_interface_error
+
+! `procedure(real)`, `procedure(logical)` and `procedure(complex)` name a type
+! as the interface, not the intrinsic function of that name.
+subroutine type_spec_procedure_interface_error()
+    implicit none
+    procedure(real) :: f  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+    procedure(logical) :: g  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+    procedure(complex) :: h  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+end subroutine type_spec_procedure_interface_error
+
+! A procedure pointer component value in a module's specification part may
+! name a module procedure defined later, but the module must define it.
+module cc1_proc_component_undefined_target_mod
+    implicit none
+    abstract interface
+        subroutine cc1_pcut_iface()
+        end subroutine cc1_pcut_iface
+    end interface
+    type :: cc1_pcut_t
+        procedure(cc1_pcut_iface), pointer, nopass :: pf => null()
+    end type
+    type(cc1_pcut_t) :: cc1_pcut_s = cc1_pcut_t(cc1_pcut_nosuch)  ! {Error} Variable 'cc1_pcut_nosuch' is not declared
+contains
+    subroutine cc1_pcut_defined()
+    end subroutine cc1_pcut_defined
+end module cc1_proc_component_undefined_target_mod
+
+! A module procedure defined later and given to a procedure pointer component
+! must match the component's interface, as one defined earlier must.
+module cc1_proc_component_forward_mismatch_mod
+    implicit none
+    abstract interface
+        subroutine cc1_pcfm_iface()
+        end subroutine cc1_pcfm_iface
+    end interface
+    type :: cc1_pcfm_t
+        procedure(cc1_pcfm_iface), pointer, nopass :: pf => null()
+    end type
+    type(cc1_pcfm_t) :: cc1_pcfm_s = cc1_pcfm_t(cc1_pcfm_f)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+contains
+    integer function cc1_pcfm_f()
+        cc1_pcfm_f = 3
+    end function cc1_pcfm_f
+end module cc1_proc_component_forward_mismatch_mod
+
+! An internal procedure named like a specific intrinsic function that its host
+! defines after it is used as the interface is not supported yet.
+subroutine later_internal_procedure_interface_error()
+    implicit none
+contains
+    subroutine use_later_internal(x)
+        real, intent(in) :: x
+        procedure(cos) :: f  ! {Error} using the internal procedure 'cos', which is defined later, as a procedure interface is not supported yet
+    end subroutine use_later_internal
+    integer function cos(x)
+        real, intent(in) :: x
+        cos = 0
+    end function cos
+end subroutine later_internal_procedure_interface_error
+
+integer function later_internal_function_interface_error(x)
+    implicit none
+    real, intent(in) :: x
+    procedure(tan) :: f  ! {Error} using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
+    later_internal_function_interface_error = 0
+contains
+    integer function tan(x)
+        real, intent(in) :: x
+        tan = 0
+    end function tan
+end function later_internal_function_interface_error

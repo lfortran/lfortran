@@ -12,7 +12,10 @@ import pprint
 import shutil
 import subprocess
 import sys
-import tomli
+try:
+    import tomllib as tomli
+except ModuleNotFoundError:
+    import tomli
 from typing import Any, Mapping, List, Union
 
 level = logging.DEBUG
@@ -30,6 +33,9 @@ SRC_DIR = os.path.dirname(LIBASR_DIR)
 if "lpython" in SRC_DIR:
     SRC_DIR = os.path.join(os.path.dirname(os.path.dirname(SRC_DIR)), "src")
 ROOT_DIR = os.path.dirname(SRC_DIR)
+REFERENCE_DIR = os.path.join(ROOT_DIR, "tests", "reference")
+# Relative to the working directory, which is the source root by default.
+OUTPUT_DIR = os.path.join("tests", "output")
 
 no_color = False
 
@@ -138,8 +144,63 @@ def test_for_duplicates(test_data):
         sys.exit(1)
 
 def fixdir(s: bytes) -> bytes:
-    local_dir = os.getcwd()
-    return s.replace(local_dir.encode(), "$DIR".encode())
+    for local_dir in dict.fromkeys([os.getcwd(), ROOT_DIR]):
+        s = s.replace(local_dir.encode(), "$DIR".encode())
+    return s
+
+
+def use_build_dir(build_dir):
+    """
+    Runs the tests from `build_dir` instead of the source root.
+
+    `build_dir` gets symlinks to the test inputs in the source tree, so the
+    compiler sees the same relative paths (and prints the same diagnostics) as
+    when run from the source root, while every file the tests write (outputs,
+    module files, objects, executables and files written by the programs)
+    stays in `build_dir`. Several build directories can run concurrently.
+
+    `build_dir` is emptied first, so that files from an earlier run, such as
+    module files from another compiler version, cannot affect this run. To
+    never delete anything else, a non-empty `build_dir` must have been created
+    by this function, which is recognized by its `tests` link.
+    """
+    global OUTPUT_DIR
+    build_dir = os.path.abspath(build_dir)
+    tests_dir = os.path.join(ROOT_DIR, "tests")
+    tests_link = os.path.join(build_dir, "tests")
+    if os.path.isdir(build_dir) and os.listdir(build_dir):
+        if not (os.path.islink(tests_link) and
+                os.path.realpath(tests_link) == os.path.realpath(tests_dir)):
+            raise SystemExit(f"{build_dir} is not empty and is not a test "
+                             "build directory; not deleting it")
+        shutil.rmtree(build_dir)
+    os.makedirs(build_dir, exist_ok=True)
+    for name in ("tests", "integration_tests"):
+        target = os.path.join(ROOT_DIR, name)
+        if not os.path.isdir(target):
+            continue
+        link = os.path.join(build_dir, name)
+        try:
+            os.symlink(target, link, target_is_directory=True)
+        except OSError as e:
+            raise SystemExit(f"Cannot create the symlink {link}: {e}")
+    os.chdir(build_dir)
+    # Not `output`: the x86 tests write an executable of that name.
+    OUTPUT_DIR = "test_output"
+
+
+def check_llvm_version(compiler, major):
+    """Exits unless `compiler --version` reports LLVM version `major`."""
+    exe = shutil.which(compiler)
+    if exe is None:
+        raise SystemExit(f"{compiler} not found")
+    r = subprocess.run([exe, "--version"], stdout=subprocess.PIPE,
+                       stderr=subprocess.STDOUT, text=True)
+    m = re.search(r"^LLVM:\s*(\S+)", r.stdout, re.MULTILINE)
+    version = m.group(1) if m else "unknown"
+    if version.split(".")[0] != str(major):
+        raise SystemExit(f"{exe} uses LLVM {version}, but these tests "
+                         f"require LLVM {major}")
 
 def fix_datalayout(s: bytes) -> bytes:
     return re.sub(
@@ -261,6 +322,20 @@ def run(basename: str, cmd: Union[pathlib.Path, str],
 def get_error_diff(reference_file, output_file, full_err_str, field="") -> str:
     import tempfile
 
+    def diff_files(reference, output):
+        try:
+            result = subprocess.run(
+                ["diff", "--", reference, output],
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding='utf-8')
+        except OSError as error:
+            return f"(diff failed to execute: {error})\n"
+        if result.returncode == 0:
+            return "(files are identical)\n"
+        if result.returncode == 1:
+            return result.stdout
+        return (f"(diff failed with exit code {result.returncode})\n"
+                f"{result.stdout}{result.stderr}")
+
     ref_exists = os.path.exists(reference_file)
     out_exists = os.path.exists(output_file)
 
@@ -282,16 +357,7 @@ def get_error_diff(reference_file, output_file, full_err_str, field="") -> str:
             temp_out.close()
             out_to_use = temp_out.name
 
-        # Run diff
-        diff_list = subprocess.Popen(
-            f"diff {ref_to_use} {out_to_use}",
-            stdout=subprocess.PIPE,
-            shell=True,
-            encoding='utf-8')
-        diff_str = ""
-        diffs = diff_list.stdout.readlines()
-        for d in diffs:
-            diff_str += d
+        diff_str = diff_files(ref_to_use, out_to_use)
 
         full_err_str += f"\n=== STDERR DIFF ===\n"
         if not ref_exists:
@@ -302,7 +368,7 @@ def get_error_diff(reference_file, output_file, full_err_str, field="") -> str:
             full_err_str += f"Output:    (missing - no stderr produced)\n"
         else:
             full_err_str += f"Output:    {output_file}\n"
-        full_err_str += diff_str if diff_str else "(files are identical)\n"
+        full_err_str += diff_str
 
         # Cleanup temp files
         if temp_ref:
@@ -344,20 +410,12 @@ def get_error_diff(reference_file, output_file, full_err_str, field="") -> str:
         return full_err_str
 
     # Both files exist - show diff
-    diff_list = subprocess.Popen(
-        f"diff {reference_file} {output_file}",
-        stdout=subprocess.PIPE,
-        shell=True,
-        encoding='utf-8')
-    diff_str = ""
-    diffs = diff_list.stdout.readlines()
-    for d in diffs:
-        diff_str += d
+    diff_str = diff_files(reference_file, output_file)
 
     full_err_str += f"\n=== DIFF ===\n"
     full_err_str += f"Reference: {reference_file}\n"
     full_err_str += f"Output:    {output_file}\n"
-    full_err_str += diff_str if diff_str else "(files are identical)\n"
+    full_err_str += diff_str
 
     return full_err_str
 
@@ -423,9 +481,9 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
     s = f"{testname} * {basename}"
     basename = bname(basename, cmd, infile)
     infile = os.path.join("tests", infile)
-    jo = run(basename, cmd, os.path.join("tests", "output"), infile=infile,
+    jo = run(basename, cmd, OUTPUT_DIR, infile=infile,
              extra_args=extra_args)
-    jr = os.path.join("tests", "reference", os.path.basename(jo))
+    jr = os.path.join(REFERENCE_DIR, os.path.basename(jo))
     if not os.path.exists(jo):
         raise FileNotFoundError(
             f"The output json file '{jo}' for {testname} does not exist")
@@ -465,7 +523,7 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
             if not do[hash_field] and dr[hash_field]:
                 full_err_str += f"\n=== MISSING OUTPUT {field.upper()} ===\n"
                 full_err_str += f"Expected {field} to be generated but it was not.\n"
-                reference_file = os.path.join("tests", "reference", dr[field])
+                reference_file = os.path.join(REFERENCE_DIR, dr[field])
                 if os.path.exists(reference_file):
                     if field == "stdout":
                         # For stdout, show only first 10 lines
@@ -481,13 +539,13 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
                             full_err_str += f"(could not read reference file: {e})\n"
                     else:
                         # For stderr and outfile, use get_error_diff which will handle diff
-                        output_file = os.path.join("tests", "output", do[field] if do[field] else "missing")
+                        output_file = os.path.join(OUTPUT_DIR, do[field] if do[field] else "missing")
                         full_err_str = get_error_diff(
                             reference_file, output_file, full_err_str, field)
             elif not dr[hash_field] and do[hash_field]:
                 full_err_str += f"\n=== UNEXPECTED OUTPUT {field.upper()} ===\n"
                 full_err_str += f"Did not expect {field} to be generated but it was.\n"
-                output_file = os.path.join("tests", "output", do[field])
+                output_file = os.path.join(OUTPUT_DIR, do[field])
                 if os.path.exists(output_file):
                     if field == "stdout":
                         # For stdout, show only first 10 lines
@@ -503,12 +561,12 @@ def run_test(testname, basename, cmd, infile, update_reference=False,
                             full_err_str += f"(could not read output file: {e})\n"
                     else:
                         # For stderr and outfile, use get_error_diff
-                        reference_file = os.path.join("tests", "reference", dr[field] if dr[field] else "missing")
+                        reference_file = os.path.join(REFERENCE_DIR, dr[field] if dr[field] else "missing")
                         full_err_str = get_error_diff(
                             reference_file, output_file, full_err_str, field)
             elif do[hash_field] != dr[hash_field]:
-                output_file = os.path.join("tests", "output", do[field])
-                reference_file = os.path.join("tests", "reference", dr[field])
+                output_file = os.path.join(OUTPUT_DIR, do[field])
+                reference_file = os.path.join(REFERENCE_DIR, dr[field])
                 full_err_str = get_error_diff(
                     reference_file, output_file, full_err_str, field)
         raise RunException(
@@ -548,11 +606,23 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
                         help="Skip runtime tests with debugging information enabled")
     parser.add_argument("-s", "--sequential", action="store_true",
                         help="Run all tests sequentially")
+    parser.add_argument("-j", "--jobs", type=int,
+                        help="Maximum number of parallel test workers")
     parser.add_argument("--no-color", action="store_true",
                     help="Turn off colored tests output")
     parser.add_argument("--continue-on-failure", action="store_true",
                     help="Run every test and report all failures")
+    parser.add_argument("--compiler-dir",
+                        help="Use the compiler in this directory instead of src/bin")
+    parser.add_argument("--require-llvm", type=int, metavar="MAJOR",
+                        help="Exit before running or updating any test unless "
+                        "the compiler uses this LLVM major version")
+    parser.add_argument("--build-dir",
+                        help="Run the tests in this directory and write all "
+                        "their files there instead of the source tree")
     args = parser.parse_args()
+    if args.jobs is not None and args.jobs < 1:
+        parser.error("--jobs must be positive")
     update_reference = args.update
     verify_hash = args.verify_hash
     list_tests = args.list
@@ -589,22 +659,28 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
             return exc
         return None
 
+    # So that the tests find the `lcompiler` executable
+    if args.compiler_dir:
+        compiler_dir = os.path.abspath(args.compiler_dir)
+        if shutil.which(compiler.lower(), path=compiler_dir) is None:
+            parser.error(f"{compiler.lower()} not found in {compiler_dir}")
+        os.environ["PATH"] = compiler_dir + os.pathsep + os.environ["PATH"]
+    elif not is_lcompilers_executable_installed:
+        os.environ["PATH"] = os.path.join(SRC_DIR, "bin") \
+            + os.pathsep + os.environ["PATH"]
+
+    if args.require_llvm is not None:
+        check_llvm_version(compiler.lower(), args.require_llvm)
+    if args.build_dir:
+        use_build_dir(args.build_dir)
+
     # While updating references, only wipe the whole reference directory if the
     # user is updating the entire suite (no -t filters). For a targeted update
     # (via -t), deleting everything is unexpected and breaks unrelated tests.
     if update_reference and not specific_tests:
         log.debug("REMOVE: old test references")
-        cmd = "rm -rf ./tests/reference/*"
-        log.debug(f"+ {cmd}")
-        process = subprocess.run(cmd, shell=True)
-        if process.returncode != 0:
-            print("Removing Old test references failed!")
-            exit(1)
-
-    # So that the tests find the `lcompiler` executable
-    if not is_lcompilers_executable_installed:
-        os.environ["PATH"] = os.path.join(SRC_DIR, "bin") \
-            + os.pathsep + os.environ["PATH"]
+        for path in pathlib.Path(REFERENCE_DIR).iterdir():
+            path.unlink()
     with open(os.path.join(ROOT_DIR, "tests", "tests.toml"), "rb") as f:
          test_data = tomli.load(f)
     test_for_duplicates(test_data)
@@ -648,7 +724,7 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
                 if exc:
                     failures.append(exc)
         else:
-            with ThreadPoolExecutor() as ex:
+            with ThreadPoolExecutor(max_workers=args.jobs) as ex:
                 for exc in ex.map(
                         lambda test: run_one(test, skip_run_with_dbg, no_color),
                         filtered_tests):
@@ -677,7 +753,7 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
             no_llvm=no_llvm,
             skip_run_with_dbg=skip_run_with_dbg,
             no_color=no_color)
-        with ThreadPoolExecutor() as ex:
+        with ThreadPoolExecutor(max_workers=args.jobs) as ex:
             futures = ex.map(single_tester_partial_args, filtered_tests)
             for f in futures:
                 if not f:

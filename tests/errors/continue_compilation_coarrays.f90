@@ -1,4 +1,4 @@
-program continue_compilation_coarrays
+program continue_compilation_coarrays; use iso_c_binding, only: c_ptr, c_funptr; use iso_fortran_env, only: team_type
 
     ! Test: coindex notation on non-coarray variable should produce error
     integer :: x
@@ -64,5 +64,9 @@ program continue_compilation_coarrays
     integer, allocatable :: c827b[:,*]
     integer, allocatable :: c827c[:,4,:]
     integer, codimension[2,10,*], allocatable :: c827d
+
+    type(c_ptr) :: cptr_coarr[*]
+    type(c_funptr) :: cfunptr_coarr[*]
+    type(team_type) :: cteam_coarr[*]
 
 end program continue_compilation_coarrays

@@ -545,7 +545,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         return false;
     }
 
-    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+    void create_context_modules(const ASR::TranslationUnit_t &x) {
         current_scope = x.m_symtab;
         SymbolTable* current_scope_copy = current_scope;
 
@@ -700,6 +700,8 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(var_type);
                             var_type = ASRUtils::make_Array_t_util(al, var->base.base.loc,
                                 var_type_, array_t->m_dims, array_t->n_dims);
+                        } else if (is_allocatable) {
+                            var_type = var_type_;
                         } else {
                             auto const pointer_var_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type_));
                             var_type = pointer_var_type_;
@@ -788,7 +790,11 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             func_to_nested_module[it.first] = mod_sym;
         }
         replacer.nested_var_to_ext_var = nested_var_to_ext_var;
+        current_scope = current_scope_copy;
+    }
 
+    void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
+        SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
@@ -1121,6 +1127,21 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
 
 };
 
+// Copies a statement, using context variables in place of the host variables
+class HostToContextVarDuplicator: public ASR::BaseExprStmtDuplicator<HostToContextVarDuplicator> {
+public:
+    // host variable -> its context variable, as seen from the statement
+    std::map<ASR::symbol_t*, ASR::symbol_t*> ctx_vars;
+
+    HostToContextVarDuplicator(Allocator &al): BaseExprStmtDuplicator(al) {}
+
+    ASR::asr_t* duplicate_Var(ASR::Var_t* x) {
+        auto it = ctx_vars.find(ASRUtils::symbol_get_past_external(x->m_v));
+        return ASR::make_Var_t(al, x->base.base.loc,
+            it == ctx_vars.end() ? x->m_v : it->second);
+    }
+};
+
 class AssignNestedVars: public PassUtils::PassVisitor<AssignNestedVars> {
 private : 
 
@@ -1312,6 +1333,7 @@ public:
         body.reserve(al, n_body);
         std::vector<ASR::stmt_t*> assigns_at_end;
         std::vector<ASR::stmt_t*> loop_end_syncs;
+        HostToContextVarDuplicator ctx_duplicator(al);
         for (size_t i=0; i<n_body; i++) {
             calls_present = false;
             calls_in_loop_condition = false;
@@ -1322,6 +1344,7 @@ public:
             }
             assigns_at_end.clear();
             loop_end_syncs.clear();
+            ctx_duplicator.ctx_vars.clear();
             ASR::symbol_t *assigned_target_sym = nullptr;
             if (ASR::is_a<ASR::Assignment_t>(*m_body[i])) {
                 ASR::Assignment_t *assignment = ASR::down_cast<ASR::Assignment_t>(m_body[i]);
@@ -1458,9 +1481,9 @@ public:
                                 ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
                                                             target, val, nullptr, true, true));
                                 body.push_back(al, create_if_allocated_block(val, assignment));
+                                ctx_duplicator.ctx_vars[ASRUtils::symbol_get_past_external(sym)] = ext_sym;
                                 if( ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter &&
-                                        ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In &&
-                                        !skip_sync_back) {
+                                        ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In) {
                                     assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
                                         val, target, nullptr, true, true));
                                     assigns_at_end.push_back(create_if_allocated_block(target, assignment));
@@ -1521,6 +1544,16 @@ public:
                             }
                         }
                     }
+                }
+            }
+
+            // A moved array is unallocated in the host until it is moved back
+            if (!ctx_duplicator.ctx_vars.empty()) {
+                if (ASR::is_a<ASR::If_t>(*m_body[i])) {
+                    ASR::If_t *if_stmt = ASR::down_cast<ASR::If_t>(m_body[i]);
+                    if_stmt->m_test = ctx_duplicator.duplicate_expr(if_stmt->m_test);
+                } else if (!is_do_loop_sync) {
+                    m_body[i] = ctx_duplicator.duplicate_stmt(m_body[i]);
                 }
             }
 
@@ -1904,14 +1937,18 @@ void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
     NestedVarVisitor v(al);
     v.visit_TranslationUnit(unit);
     ReplaceNestedVisitor w(al, v.nesting_map);
-    w.visit_TranslationUnit(unit);
-    AssignNestedVars z(al, w.nested_var_to_ext_var, w.nesting_map,
-        w.assumed_length_ctx_var_len);
-    z.visit_TranslationUnit(unit);
+    w.create_context_modules(unit);
+    // Re-point references to the moved program types before replacing the
+    // captured variables, so that a context variable passed to a contained
+    // procedure has the same type as its dummy argument.
     if (!w.moved_program_structs.empty()) {
         ReplaceMovedProgramStructs r(al, w.moved_program_structs);
         r.visit_TranslationUnit(unit);
     }
+    w.visit_TranslationUnit(unit);
+    AssignNestedVars z(al, w.nested_var_to_ext_var, w.nesting_map,
+        w.assumed_length_ctx_var_len);
+    z.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor x(al);
     x.visit_TranslationUnit(unit);
 }
