@@ -4699,6 +4699,13 @@ RUN(NAME character_32 LABELS gfortran llvm)
 RUN(NAME character_33 LABELS gfortran llvm)
 RUN(NAME character_34 LABELS gfortran llvm)
 RUN(NAME character_35 LABELS gfortran llvm)
+RUN(NAME character_array_return_repeat_01 LABELS gfortran llvm)
+if(TEST "${RUN_NAME}")
+    # Check direct PRINT output as well as the program's value assertions.
+    set_tests_properties("${RUN_NAME}" PROPERTIES
+        PASS_REGULAR_EXPRESSION "BEGIN_REPEAT_CHAR_VEC[ \t\r\n]+ab[ \t\r\n]+cd[ \t\r\n]+ab[ \t\r\n]+cd[ \t\r\n]+END_REPEAT_CHAR_VEC"
+        FAIL_REGULAR_EXPRESSION "ERROR STOP|Error stop")
+endif()
 RUN(NAME character_assignment_01 LABELS gfortran llvm)
 RUN(NAME char_array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
