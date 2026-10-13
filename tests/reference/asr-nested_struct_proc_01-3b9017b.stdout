@@ -214,6 +214,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             map:
                                                 (Variable
@@ -282,6 +283,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             integer_kinds:
                                 (ExternalSymbol
@@ -595,6 +599,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             omap_insert_key_value:
                                 (Function
@@ -1027,6 +1034,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             stored_value:
                                                 (Variable
@@ -1110,6 +1118,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             output_unit:
                                 (ExternalSymbol

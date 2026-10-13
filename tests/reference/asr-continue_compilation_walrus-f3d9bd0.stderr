@@ -9,3 +9,57 @@ semantic error: Variable 'y' is already declared; use `=` for assignment to exis
   |
 6 |     y := 10
   |     ^ already declared
+
+semantic error: Variable 'i' is already declared; use `=` for assignment to existing variables
+  --> tests/errors/continue_compilation_walrus.f90:12:8
+   |
+12 |     do i := 1, 2
+   |        ^ already declared
+
+semantic error: inferred loop control must start with a scalar integer, not real(4)
+  --> tests/errors/continue_compilation_walrus.f90:18:13
+   |
+18 |     do i := 1.0, 2
+   |             ^^^ 
+
+semantic error: inferred loop control must start with a scalar integer, not integer(4)[:]
+  --> tests/errors/continue_compilation_walrus.f90:24:13
+   |
+24 |     do i := [1,2], 2
+   |             ^^^^^ 
+
+semantic error: Step expression (Increment) in DO loop cannot be zero
+  --> tests/errors/continue_compilation_walrus.f90:30:19
+   |
+30 |     do i := 1, 2, 0
+   |                   ^ 
+
+semantic error: Assignment to loop variable `i` is not allowed
+  --> tests/errors/continue_compilation_walrus.f90:37:9
+   |
+37 |         i = 1
+   |         ^ 
+
+semantic error: Variable 'i' is not declared
+  --> tests/errors/continue_compilation_walrus.f90:44:14
+   |
+44 |     print *, i
+   |              ^ 'i' is undeclared
+
+semantic error: inferred loop control must start with a scalar integer, not real(4)
+  --> tests/errors/continue_compilation_walrus.f90:49:22
+   |
+49 |     arr := [(i, i := 1.0, 2)]
+   |                      ^^^ 
+
+semantic error: nested implied do loops cannot use the same index 'i'
+  --> tests/errors/continue_compilation_walrus.f90:54:14
+   |
+54 |     arr := [((i, i := 1, 2), i := 1, 2)]
+   |              ^^^^^^^^^^^^^^ 
+
+semantic error: type inference requires a known array shape; use an explicit declaration
+  --> tests/errors/continue_compilation_walrus.f90:60:12
+   |
+60 |     arr := [(i, i := 1, n)]
+   |            ^^^^^^^^^^^^^^^^ 

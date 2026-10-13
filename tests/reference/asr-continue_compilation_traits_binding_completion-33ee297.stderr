@@ -1,0 +1,159 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_binding_completion.f90:7:5 - 12:1
+   |
+ 7 |        abstract interface :: IConstructable
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+12 |    
+   | ...^ LFortran extension
+
+semantic error: binding procedures to type 'bound' outside the unit that declares it is not implemented yet
+  --> tests/errors/continue_compilation_traits_binding_completion.f90:68:5 - 70:25
+   |
+68 |        implements :: Bound
+   |        ^^^^^^^^^^^^^^^^^^^...
+...
+   |
+70 |        end implements Bound
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: duplicate binding 'output' for type 'twice'
+  --> tests/errors/continue_compilation_traits_binding_completion.f90:89:9
+   |
+89 |         procedure, pass :: output => second_output
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: static bindings in an implements statement without traits are not implemented yet
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:112:20
+    |
+112 |         procedure, static :: create => create_made
+    |                    ^^^^^^ 
+
+semantic error: an implements statement cannot declare deferred bindings
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:136:33
+    |
+136 |         procedure(open_output), deferred, pass :: output
+    |                                 ^^^^^^^^ 
+
+semantic error: ambiguous bindings of initializer required by trait 'iconstructable': procedures 'from_count' and 'from_total' both match
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:155:5 - 156:27
+    |
+155 |        implements IConstructable :: Counted
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+156 |        end implements Counted
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: argument 'n' does not match trait method 'initializer': expected integer(4), got integer(8)
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:176:5 - 180:18
+    |
+176 |        type, sealed, implements(IConstructable) :: Wide
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+180 |        end type Wide
+    | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type 'unconstructed' does not bind an initializer matching the requirement of trait 'iadmissible'
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:208:5 - 211:33
+    |
+208 |        implements IAdmissible :: Unconstructed
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+211 |        end implements Unconstructed
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: result type does not match trait method 'initializer': expected wrapped, got wrapped allocatable
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:273:5 - 274:27
+    |
+273 |        implements IConstructable :: Wrapped
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+274 |        end implements Wrapped
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: result type does not match trait method 'initializer': expected labelled, got payload
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:300:5 - 301:28
+    |
+300 |        implements IConstructable :: Labelled
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+301 |        end implements Labelled
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type 'plain' does not bind an initializer matching the requirement of trait 'iconstructable'
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:318:5 - 319:25
+    |
+318 |        implements IConstructable :: Plain
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+319 |        end implements Plain
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: operator bindings in an implements statement without traits are not implemented yet
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:355:9
+    |
+355 |         procedure, static :: operator(+) => summed_plus
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: an implements statement without traits for an intrinsic type is not implemented yet
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:368:19
+    |
+368 |     implements :: real(8)
+    |                   ^^^^^^^ 
+
+semantic error: an implements statement without traits for a generic type is not implemented yet
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:386:5 - 388:26
+    |
+386 |        implements :: Holder{IPrintable :: T}
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+388 |        end implements Holder
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: an implements block cannot target an abstract type
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:404:5 - 406:25
+    |
+404 |        implements :: Shape
+    |        ^^^^^^^^^^^^^^^^^^^...
+...
+    |
+406 |        end implements Shape
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'iconstructable' for generic type parameter 't'
+  --> tests/errors/continue_compilation_traits_binding_completion.f90:60:9
+   |
+60 |     b = make{Bound}(3)
+   |         ^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'iprintable' for type 'bound'
+  --> tests/errors/continue_compilation_traits_binding_completion.f90:61:30
+   |
+61 |     allocate(printer, source=Bound(4))
+   |                              ^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'iconstructable' for type 'printed'
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:254:31
+    |
+254 |         allocate(pair, source=Printed(1))
+    |                               ^^^^^^^^^^ 
+
+semantic error: method 'initial' is not provided by the declared runtime trait
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:255:9
+    |
+255 |         call obj%initial(3)
+    |         ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'iconstructable' for generic type parameter 't'
+   --> tests/errors/continue_compilation_traits_binding_completion.f90:343:13
+    |
+343 |         u = make{Unacknowledged}(3)
+    |             ^^^^^^^^^^^^^^^^^^^^^^^ 

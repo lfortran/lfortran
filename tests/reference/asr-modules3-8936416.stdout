@@ -133,6 +133,9 @@
                                     ()
                                     15 toml_structure
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             toml_structure:
                                 (Struct
@@ -149,6 +152,7 @@
                                                     Source
                                                     .true.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     toml_structure
@@ -170,6 +174,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     tomlf_structure_base
@@ -579,6 +586,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             list:
                                                 (Variable
@@ -639,6 +647,9 @@
                                     ()
                                     4 toml_value
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             toml_ordered:
                                 (ExternalSymbol
@@ -761,6 +772,7 @@
                                                     Source
                                                     .true.
                                                     .false.
+                                                    ()
                                                 ),
                                             key:
                                                 (Variable
@@ -811,6 +823,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     tomlf_type_value

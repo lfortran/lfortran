@@ -1,0 +1,69 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_06.f90:12:5 - 14:27
+   |
+12 |        abstract interface :: INumeric
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+14 |        end interface INumeric
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ LFortran extension
+
+warning: `:=` is an experimental LFortran extension (subject to change); use `--infer` to suppress this warning
+   --> tests/errors/continue_compilation_traits_06.f90:114:5
+    |
+114 |     m := make_avg()
+    |     ^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: host association of the main program variable 'a', whose type involves the generic type instance 'averager{simplesum}' that the program creates, is not implemented yet
+   --> tests/errors/continue_compilation_traits_06.f90:120:13
+    |
+120 |         r = a%average([1, 2, 3])
+    |             ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: host association of the main program variable 'w', whose type involves the generic type instance 'averager{simplesum}' that the program creates, is not implemented yet
+   --> tests/errors/continue_compilation_traits_06.f90:124:13
+    |
+124 |         r = w%inner%average([1, 2, 3])
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: host association of the main program variable 'h', whose type involves the generic type instance 'holder{simplesum}' that the program creates, is not implemented yet
+   --> tests/errors/continue_compilation_traits_06.f90:129:13
+    |
+129 |         g = h
+    |             ^ 
+
+semantic error: host association of the main program variable 'aa', whose type involves the generic type instance 'averager{simplesum}' that the program creates, is not implemented yet
+   --> tests/errors/continue_compilation_traits_06.f90:134:35
+    |
+134 |         r = merge(1, 0, allocated(aa))
+    |                                   ^^ 
+
+semantic error: host association of the main program variable 'arr', whose type involves the generic type instance 'averager{simplesum}' that the program creates, is not implemented yet
+   --> tests/errors/continue_compilation_traits_06.f90:138:13
+    |
+138 |         r = arr(1)%average([1, 2, 3])
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: host association of the main program variable 'ap', whose type involves the generic type instance 'averager{simplesum}' that the program creates, is not implemented yet
+   --> tests/errors/continue_compilation_traits_06.f90:142:36
+    |
+142 |         r = merge(1, 0, associated(ap))
+    |                                    ^^ 
+
+semantic error: Variable 'undefined_after_program' is not declared
+   --> tests/errors/continue_compilation_traits_06.f90:173:22
+    |
+173 |     r = n + int(q) + undefined_after_program
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^ 'undefined_after_program' is undeclared
+
+semantic error: Variable 'undefined_in_module' is not declared
+   --> tests/errors/continue_compilation_traits_06.f90:182:17
+    |
+182 |         r = n + undefined_in_module
+    |                 ^^^^^^^^^^^^^^^^^^^ 'undefined_in_module' is undeclared
+
+semantic error: Variable 'undefined_in_subroutine' is not declared
+   --> tests/errors/continue_compilation_traits_06.f90:189:14
+    |
+189 |     print *, undefined_in_subroutine
+    |              ^^^^^^^^^^^^^^^^^^^^^^^ 'undefined_in_subroutine' is undeclared

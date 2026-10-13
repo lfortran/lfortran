@@ -1,0 +1,5 @@
+semantic error: Call to impure procedure 'apply' is not allowed inside a PURE procedure
+ --> tests/errors/traits_component_loaded_pure_02.f90:9:9
+  |
+9 |         call apply(overwrite, x, y)
+  |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

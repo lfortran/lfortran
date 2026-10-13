@@ -51,6 +51,10 @@ add_dependencies(lfortran_intrinsic_ieee_arithmetic lfortran_intrinsic_iso_fortr
 
 lfortran_compile_runtime(lfortran_intrinsic_iso_c_binding pure)
 
+# `use, intrinsic :: generics`: predefined traits, an LFortran extension.
+lfortran_compile_runtime(lfortran_intrinsic_generics pure)
+target_compile_options(lfortran_intrinsic_generics PUBLIC "--no-warnings")
+
 lfortran_compile_runtime(omp_lib openmp)
 add_dependencies(omp_lib lfortran_intrinsic_iso_c_binding)
 
@@ -69,6 +73,7 @@ set(LFORTRAN_RUNTIME_MOD_FILES
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_fortran_env.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_ieee_arithmetic.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_c_binding.mod
+  ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_generics.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/omp_lib.mod
   )
 

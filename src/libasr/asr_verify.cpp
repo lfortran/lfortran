@@ -1,6 +1,7 @@
 #include <libasr/containers.h>
 #include <libasr/exception.h>
 #include <libasr/asr_utils.h>
+#include <libasr/asr_side_effect.h>
 #include <libasr/asr_verify.h>
 #include <libasr/utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
@@ -96,6 +97,7 @@ private:
     std::vector<std::string> variable_dependencies;
 
     std::set<std::pair<uint64_t, std::string>> const_assigned;
+    std::map<std::pair<ASR::symbol_t*, std::string>, ASR::symbol_t*> trait_callables;
 
     // checks whether we've visited any `Var`, which isn't a global `Variable`
     bool non_global_symbol_visited;
@@ -110,7 +112,12 @@ private:
     // template whose initializer reads a deferred constant has no compile-time
     // value until the template is instantiated.
     bool _inside_template = false;
+    bool _inside_trait_subroutine = false;
     const ASR::expr_t* current_expr {}; // current expression being visited 
+    // Procedures whose effect flags must retain the trait lifecycle effects
+    // they reach. They are checked once the whole unit has been verified, so
+    // the summary only follows references the verifier has already checked.
+    std::vector<const Function_t*> trait_lifecycle_callers;
 
 public:
     // See ASRVerifyOptions::string_length_arguments.
@@ -131,6 +138,18 @@ public:
     // let the comparison fall back to a structural one.
     ASR::expr_t* type_context(ASR::expr_t *e) {
         return check_external ? e : nullptr;
+    }
+
+    static bool in_loaded_module(const SymbolTable *scope) {
+        for (; scope; scope = scope->parent) {
+            if (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+                auto *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+                if (ASR::is_a<ASR::Module_t>(*owner)) {
+                    return ASR::down_cast<ASR::Module_t>(owner)->m_loaded_from_mod;
+                }
+            }
+        }
+        return false;
     }
 
     // Returns true if the `symtab_ID` (sym->symtab->parent) is the current
@@ -220,7 +239,20 @@ public:
                 this->visit_expr(*down_cast<expr_t>(item));
             }
         }
+        verify_reached_trait_lifecycle_effects(x);
         current_symtab = nullptr;
+    }
+
+    void verify_reached_trait_lifecycle_effects(const TranslationUnit_t &unit) {
+        if (trait_lifecycle_callers.empty()) return;
+        ASR::TraitLifecycleSummary summary(unit.m_symtab);
+        for (const Function_t *caller : trait_lifecycle_callers) {
+            require_with_loc_id(summary.effect(const_cast<Function_t&>(*caller)) !=
+                    ASR::TraitLifecycleSummary::Effect::Lifecycle,
+                "asr.verify.trait_owner.reached_lifecycle_effects",
+                "A procedure must retain the unchecked dynamic trait lifecycle "
+                "effects of the procedures it calls", caller->base.base.loc);
+        }
     }
 
     void visit_Select(const Select_t& x) {
@@ -703,14 +735,102 @@ public:
     // Associating a procedure pointer fixes what every later call through it
     // is compiled against, so the procedure has to have the interface the
     // pointer was declared with.
+    static bool contains_retained_result_storage(ASR::ttype_t *type) {
+        if (!type) return false;
+        class FindStorage : public BaseWalkVisitor<FindStorage> {
+        public:
+            bool found = false;
+            void visit_TraitOwnerList(const TraitOwnerList_t &) { found = true; }
+        } visitor;
+        visitor.visit_ttype(*type);
+        return visitor.found;
+    }
+
+    bool guarded_data_association(const Variable_t &variable, const Cast_t &cast) {
+        auto *scope = variable.m_parent_symtab;
+        auto *parent = scope ? scope->parent : nullptr;
+        auto *owner = parent ? parent->asr_owner : nullptr;
+        if (!owner || !ASR::is_a<symbol_t>(*owner)) return false;
+        stmt_t **body = nullptr;
+        size_t n = 0;
+        auto *symbol = ASR::down_cast<symbol_t>(owner);
+        if (ASR::is_a<Block_t>(*symbol)) {
+            auto *block = ASR::down_cast<Block_t>(symbol);
+            body = block->m_body; n = block->n_body;
+        } else if (ASR::is_a<AssociateBlock_t>(*symbol)) {
+            auto *block = ASR::down_cast<AssociateBlock_t>(symbol);
+            body = block->m_body; n = block->n_body;
+        }
+        if (!cast.m_dest || !ASR::is_a<Var_t>(*cast.m_dest) ||
+                ASR::down_cast<Var_t>(cast.m_dest)->m_v != &variable.base) return false;
+        for (size_t i = 0; i < n; i++) {
+            if (!ASR::is_a<SelectType_t>(*body[i])) continue;
+            auto *selection = ASR::down_cast<SelectType_t>(body[i]);
+            if (!same_variable(selection->m_selector, cast.m_arg)) continue;
+            for (size_t j = 0; j < selection->n_body; j++) {
+                auto *guard = selection->m_body[j];
+                symbol_t *declaration = nullptr;
+                stmt_t **statements = nullptr;
+                size_t count = 0;
+                if (ASR::is_a<TypeStmtName_t>(*guard) &&
+                        cast.m_kind == cast_kindType::ClassToStruct) {
+                    auto *g = ASR::down_cast<TypeStmtName_t>(guard);
+                    declaration = g->m_sym; statements = g->m_body; count = g->n_body;
+                } else if (ASR::is_a<ClassStmt_t>(*guard) &&
+                        cast.m_kind == cast_kindType::ClassToClass) {
+                    auto *g = ASR::down_cast<ClassStmt_t>(guard);
+                    declaration = g->m_sym; statements = g->m_body; count = g->n_body;
+                }
+                if (count == 1 && statements && ASR::is_a<BlockCall_t>(*statements[0]) &&
+                        (asr_t*)ASR::down_cast<BlockCall_t>(statements[0])->m_m == scope->asr_owner &&
+                        ASRUtils::symbol_get_past_external(declaration) ==
+                            ASRUtils::symbol_get_past_external(variable.m_type_declaration)) return true;
+            }
+        }
+        return false;
+    }
+
     void visit_Associate(const Associate_t &x) {
         BaseWalkVisitor<VerifyVisitor>::visit_Associate(x);
         if (!check_external || x.m_target == nullptr || x.m_value == nullptr) {
             return;
         }
+        if (ASR::is_a<Var_t>(*x.m_target) &&
+                ASRUtils::EXPR2VAR(x.m_target)->m_storage == storage_typeType::Association) {
+            auto *variable = ASRUtils::EXPR2VAR(x.m_target);
+            require_id(variable->m_parent_symtab == current_symtab &&
+                    ASRUtils::association_value(*variable) == x.m_value,
+                "asr.verify.association.binding",
+                "A data association must be bound exactly once in its own construct");
+            require_id(ASRUtils::types_equal(variable->m_type,
+                    typed_expr_type(x.m_value), x.m_target, x.m_value),
+                "asr.verify.association.type",
+                "A data association must have the explicit type of its view");
+            if (ASR::is_a<Cast_t>(*x.m_value)) {
+                require_id(guarded_data_association(*variable,
+                        *ASR::down_cast<Cast_t>(x.m_value)),
+                    "asr.verify.association.guarded_type",
+                    "A narrowed data association requires its matching nominal SELECT TYPE guard");
+            } else {
+                require_id(ASR::is_a<TraitProject_t>(*x.m_value) ||
+                        ASR::is_a<TraitInspect_t>(*x.m_value) ||
+                        ASRUtils::association_variable(x.m_value),
+                    "asr.verify.association.source",
+                    "A data association must preserve a captured or explicitly inspected view");
+            }
+            return;
+        }
         ASR::ttype_t *target = typed_expr_type(x.m_target);
         ASR::ttype_t *value = typed_expr_type(x.m_value);
         if (target == nullptr || value == nullptr) return;
+        require_id(!contains_retained_result_storage(target) &&
+                !contains_retained_result_storage(value),
+            "asr.verify.trait_results.no_copy",
+            "Retained-result storage cannot be copied or associated");
+        require_id(!ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(target)) &&
+                !ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(value)),
+            "asr.verify.trait_owner.explicit_protocol",
+            "An association cannot create another owner or an untracked borrowed trait header");
         verify_procedure_interface(value, target,
             "Procedure pointer association", x.base.base.loc);
     }
@@ -721,6 +841,10 @@ public:
     void visit_SelectType(const SelectType_t &x) {
         BaseWalkVisitor<VerifyVisitor>::visit_SelectType(x);
         if (!check_external || x.m_selector == nullptr) return;
+        auto *selector_type = typed_expr_type(x.m_selector);
+        require_id(selector_type && ASRUtils::is_class_type(ASRUtils::extract_type(selector_type)),
+            "asr.verify.select_type.polymorphic",
+            "SELECT TYPE requires an ordinary polymorphic selector; trait inspection must be explicit");
         for (size_t i = 0; i < x.n_body; i++) {
             ASR::symbol_t *guard = nullptr;
             if (ASR::is_a<ASR::TypeStmtName_t>(*x.m_body[i])) {
@@ -729,17 +853,37 @@ public:
                 guard = ASR::down_cast<ASR::ClassStmt_t>(x.m_body[i])->m_sym;
             }
             if (guard == nullptr) continue;
+            auto *concrete = ASRUtils::symbol_get_past_external(guard);
+            require_id(concrete && ASR::is_a<Struct_t>(*concrete),
+                "asr.verify.select_type.concrete_guard",
+                "A type guard names a concrete derived type, not a trait contract");
             require_id(
                 dynamic_type_is_compatible(guard, x.m_selector),
                 "asr.verify.select_type.guard_extends_selector",
                 "The type guard '" +
                 std::string(ASRUtils::symbol_name(guard)) +
                 "' does not extend the declared type of the selector");
+            if (ASR::is_a<ClassStmt_t>(*x.m_body[i])) {
+                for (size_t j = i + 1; j < x.n_body; j++) {
+                    if (!ASR::is_a<ClassStmt_t>(*x.m_body[j])) continue;
+                    auto *later = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ClassStmt_t>(x.m_body[j])->m_sym);
+                    require_id(!later || !ASR::is_a<Struct_t>(*later) ||
+                            !struct_is_or_extends(ASR::down_cast<Struct_t>(later),
+                                ASR::down_cast<Struct_t>(concrete)),
+                        "asr.verify.select_type.specificity",
+                        "More-specific CLASS IS guards must precede matching ancestors");
+                }
+            }
         }
     }
 
     void visit_Assignment(const Assignment_t& x) {
         ASR::expr_t* target = x.m_target;
+        auto *association = ASRUtils::association_variable(target);
+        require_id(!association || association->m_intent != intentType::In,
+            "asr.verify.association.definable",
+            "A read-only construct association cannot appear in a variable definition context");
         if( ASR::is_a<ASR::Var_t>(*target) ) {
             ASR::Var_t* target_Var = ASR::down_cast<ASR::Var_t>(target);
             bool is_target_const = false;
@@ -765,6 +909,34 @@ public:
         // target and value types are unrelated by design.
         ASR::ttype_t *assign_target_type = typed_expr_type(x.m_target);
         ASR::ttype_t *assign_value_type = typed_expr_type(x.m_value);
+        require_id(!contains_retained_result_storage(assign_target_type) &&
+                !contains_retained_result_storage(assign_value_type),
+            "asr.verify.trait_results.no_copy",
+            "Retained-result storage cannot be copied or associated");
+        bool trait_result_capture = false;
+        if (ASRUtils::is_trait_owner(assign_target_type) && x.m_move_allocation &&
+                !x.m_realloc_lhs && !x.m_overloaded &&
+                ASR::is_a<Var_t>(*x.m_target) &&
+                ASR::is_a<FunctionCall_t>(*x.m_value) &&
+                ASRUtils::is_trait_owner(assign_value_type)) {
+            auto *variable = ASRUtils::EXPR2VAR(x.m_target);
+            auto *scope = variable->m_parent_symtab;
+            auto *owner = scope && scope->asr_owner &&
+                ASR::is_a<symbol_t>(*scope->asr_owner)
+                    ? ASR::down_cast<symbol_t>(scope->asr_owner) : nullptr;
+            trait_result_capture = scope == current_symtab &&
+                variable->m_intent == intentType::Local &&
+                variable->m_storage == storage_typeType::Default && owner &&
+                (ASR::is_a<Block_t>(*owner) || ASR::is_a<AssociateBlock_t>(*owner));
+            require_id(!trait_result_capture || (!variable->m_target_attr &&
+                    !ASRUtils::expr_references_symbol(x.m_value, &variable->base)),
+                "asr.verify.trait_result.capture_nonalias",
+                "A result capture slot must not be targetable or referenced by its producing call");
+        }
+        require_id(!assign_target_type || !ASR::is_a<TraitObjectType_t>(
+                *ASRUtils::extract_type(assign_target_type)) || trait_result_capture,
+            "asr.verify.trait_owner.value_copy",
+            "Trait assignment requires value-copy semantics; only scoped function-result capture can move ownership");
         if (!diagnostics.has_error() && x.m_overloaded == nullptr
                 && assign_target_type && assign_value_type
                 && !is_procedure_type(assign_target_type)
@@ -799,7 +971,7 @@ public:
                 "asr.verify.assignment.realloc_lhs_requires_allocatable",
                 "Reallocation of non allocatable variable is not allowed");
         }
-        if (x.m_move_allocation) {
+        if (x.m_move_allocation && !trait_result_capture) {
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
             ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
 
@@ -876,6 +1048,2622 @@ public:
                     std::string(x.m_name) + " procedures.");
         }
         verify_binding_override(x, x_m_proc);
+        if (!check_external) return;
+        require_id(x.m_dispatch_proc ||
+                !ASRUtils::sealed_override_needs_adapter(x, x_m_proc),
+            "asr.verify.struct_method.dispatch_required",
+            "A sealed nonpolymorphic override requires an inherited-slot dispatch adapter");
+        if (x.m_dispatch_proc) {
+            auto *dispatch = ASRUtils::symbol_get_past_external(x.m_dispatch_proc);
+            require_id(dispatch && ASR::is_a<ASR::Function_t>(*dispatch) &&
+                    symtab_in_scope(symtab, x.m_dispatch_proc),
+                "asr.verify.struct_method.dispatch_procedure",
+                "A dispatch adapter must be an in-scope function");
+            auto *adapter = ASR::down_cast<ASR::Function_t>(dispatch);
+            require_id(adapter->m_symtab && adapter->m_symtab->parent == symtab->parent &&
+                    adapter->m_access == ASR::accessType::Private,
+                "asr.verify.struct_method.dispatch_owner",
+                "A dispatch adapter must be private to its type's defining scope");
+            require_conforming(ASRUtils::sealed_dispatch_adapter_mismatch(
+                    x, *x_m_proc, *adapter),
+                "asr.verify.struct_method.dispatch", x.base.base.loc);
+        }
+    }
+
+    void visit_trait_requirement(const trait_requirement_t &x) {
+        auto check = [&](bool condition, const std::string &code,
+                const std::string &message) {
+            ASRUtils::require_impl(condition, code, message, x.loc, diagnostics);
+        };
+        check(x.m_member && x.m_procedure,
+            "asr.verify.trait_requirement.symbols_required",
+            "trait requirement member and procedure must be present");
+        check(x.n_evidence == 0 || x.m_evidence != nullptr,
+            "asr.verify.trait_requirement.symbols_required",
+            "trait requirement evidence must be present");
+        for (size_t i = 0; x.m_evidence && i < x.n_evidence; i++) {
+            check(x.m_evidence[i].m_constraint && x.m_evidence[i].m_implementation,
+                "asr.verify.trait_requirement.symbols_required",
+                "trait requirement evidence constraint and implementation must be present");
+        }
+        if (!check_external) return;
+        ASR::symbol_t *member = check_external
+            ? ASRUtils::symbol_get_past_external(x.m_member) : x.m_member;
+        ASR::symbol_t *procedure = check_external
+            ? ASRUtils::symbol_get_past_external(x.m_procedure) : x.m_procedure;
+        // A generic message is the Template of its Function.
+        ASR::Function_t *message_fn = member ? ASRUtils::trait_method_function(member) : nullptr;
+        ASR::Template_t *message = message_fn ? ASRUtils::trait_method_template(*message_fn)
+            : nullptr;
+        check(member != nullptr && (ASR::is_a<ASR::Function_t>(*member) ||
+                (message && member == &message->base)),
+            "asr.verify.trait_requirement.member_is_function",
+            "A trait requirement member must be a Function, not " +
+                std::string(x.m_member ? ASRUtils::symbol_type_name(*x.m_member) : "<null>"));
+        if (member && message) member = &message_fn->base;
+        if (member && ASR::is_a<ASR::Function_t>(*member)) {
+            ASR::Function_t *member_fn = ASR::down_cast<ASR::Function_t>(member);
+            check(member_fn->m_function_signature != nullptr &&
+                    ASR::is_a<ASR::FunctionType_t>(*member_fn->m_function_signature),
+                "asr.verify.trait_requirement.member_signature_required",
+                "A trait requirement member must have a function signature");
+            check(member_fn->n_body == 0,
+                "asr.verify.trait_requirement.member_is_abstract",
+                "A trait requirement member must be abstract");
+            check(ASRUtils::get_FunctionType(*member_fn)->m_deftype == ASR::deftypeType::Interface,
+                "asr.verify.trait_requirement.member_is_interface",
+                "A trait requirement member must be an interface procedure");
+        }
+        if (message) {
+            // A generic requirement and its specializations are checked
+            // against each other by their constraint.
+            check(procedure != nullptr && (ASR::is_a<ASR::Template_t>(*procedure) ||
+                    ASR::is_a<ASR::Function_t>(*procedure)),
+                "asr.verify.trait_requirement.procedure_is_function",
+                "A generic trait method requirement must be a generic requirement "
+                    "or one of its specializations, not " +
+                    std::string(x.m_procedure ? ASRUtils::symbol_type_name(*x.m_procedure)
+                        : "<null>"));
+            return;
+        }
+        check(procedure != nullptr && ASR::is_a<ASR::Function_t>(*procedure),
+            "asr.verify.trait_requirement.procedure_is_function",
+            "A trait requirement procedure must be a Function, not " +
+                std::string(x.m_procedure ? ASRUtils::symbol_type_name(*x.m_procedure) : "<null>"));
+        if (procedure) {
+            ASR::Function_t *proc_fn = ASR::down_cast<ASR::Function_t>(procedure);
+            check(proc_fn->m_function_signature != nullptr &&
+                    ASR::is_a<ASR::FunctionType_t>(*proc_fn->m_function_signature),
+                "asr.verify.trait_requirement.procedure_signature_required",
+                "A trait requirement procedure must have a function signature");
+            check(proc_fn->n_body == 0,
+                "asr.verify.trait_requirement.procedure_is_abstract",
+                "A trait requirement procedure must be abstract");
+            check(ASRUtils::get_FunctionType(*proc_fn)->m_deftype == ASR::deftypeType::Interface,
+                "asr.verify.trait_requirement.procedure_is_interface",
+                "A trait requirement procedure must be an interface procedure");
+            if (member && ASRUtils::trait_member_operation(member)) {
+                // An initializer or operator requirement has no receiver; the
+                // binder stands for `itself`.
+                ASR::Function_t *member_fn = ASR::down_cast<ASR::Function_t>(member);
+                check(proc_fn->n_args == member_fn->n_args &&
+                        bool(proc_fn->m_return_var) == bool(member_fn->m_return_var),
+                    "asr.verify.trait_requirement.operation_signature",
+                    "An initializer or operator requirement has its member's arguments");
+                check(ASRUtils::get_FunctionType(*proc_fn)->m_is_restriction,
+                    "asr.verify.trait_requirement.procedure_is_restriction",
+                    "A normalized trait requirement must be a restriction procedure");
+                auto same = [&](ASR::expr_t *required, ASR::expr_t *actual) {
+                    ASR::ttype_t *a = ASRUtils::expr_type(required);
+                    ASR::ttype_t *b = ASRUtils::expr_type(actual);
+                    if (!ASRUtils::contains_trait_itself(a)) {
+                        return ASRUtils::trait_types_equal(required, actual);
+                    }
+                    return ASRUtils::extract_n_dims_from_ttype(a) ==
+                            ASRUtils::extract_n_dims_from_ttype(b) &&
+                        ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::extract_type(b));
+                };
+                for (size_t i = 0; i < proc_fn->n_args && i < member_fn->n_args; i++) {
+                    check(same(member_fn->m_args[i], proc_fn->m_args[i]),
+                        "asr.verify.trait_requirement.operation_signature",
+                        "An initializer or operator requirement has its member's argument types");
+                }
+                check(!member_fn->m_return_var || !proc_fn->m_return_var ||
+                        same(member_fn->m_return_var, proc_fn->m_return_var),
+                    "asr.verify.trait_requirement.operation_signature",
+                    "An initializer or operator requirement has its member's result type");
+            } else if (member) {
+                ASR::Function_t *member_fn = ASR::down_cast<ASR::Function_t>(member);
+                check(proc_fn->n_args == member_fn->n_args + 1,
+                    "asr.verify.trait_requirement.normalized_arg_count",
+                    "A trait requirement procedure must have one receiver argument more than its trait member");
+                check(ASRUtils::get_FunctionType(*proc_fn)->m_is_restriction,
+                    "asr.verify.trait_requirement.procedure_is_restriction",
+                    "A normalized trait requirement must be a restriction procedure");
+                auto mismatch = ASRUtils::trait_method_mismatch(*member_fn, *proc_fn, 0, 1);
+                check(mismatch.difference == ASRUtils::TraitMethodDifference::None,
+                    "asr.verify.trait_requirement.signature_matches",
+                    "A normalized trait requirement must preserve its member's signature: "
+                        + mismatch.message);
+            }
+        }
+    }
+
+    void visit_trait_binding(const trait_binding_t &x) {
+        auto check = [&](bool condition, const std::string &code,
+                const std::string &message) {
+            ASRUtils::require_impl(condition, code, message, x.loc, diagnostics);
+        };
+        check(x.m_member && x.m_procedure,
+            "asr.verify.trait_binding.symbols_required",
+            "trait binding member and procedure must be present");
+        if (x.m_is_nopass) {
+            check(x.m_self_argument == nullptr,
+                "asr.verify.trait_binding.nopass_has_no_receiver",
+                "nopass trait bindings must not name a self argument");
+        } else {
+            check(x.m_self_argument != nullptr,
+                "asr.verify.trait_binding.receiver_required",
+                "trait bindings with pass receivers must name a self argument");
+        }
+        if (!check_external) return;
+        ASR::symbol_t *member = check_external
+            ? ASRUtils::symbol_get_past_external(x.m_member) : x.m_member;
+        ASR::symbol_t *procedure = check_external
+            ? ASRUtils::symbol_get_past_external(x.m_procedure) : x.m_procedure;
+        check(ASRUtils::trait_method_function(member) != nullptr,
+            "asr.verify.trait_binding.member_is_function",
+            "A trait binding member must be an ordinary or generic procedure, not " +
+                std::string(x.m_member ? ASRUtils::symbol_type_name(*x.m_member) : "<null>"));
+        check(ASRUtils::trait_method_function(procedure) != nullptr,
+            "asr.verify.trait_binding.procedure_is_function",
+            "A trait binding procedure must be an ordinary or generic procedure, not " +
+                std::string(x.m_procedure ? ASRUtils::symbol_type_name(*x.m_procedure) : "<null>"));
+        if (procedure) {
+            ASR::Function_t *proc = ASRUtils::trait_method_function(procedure);
+            check(proc->m_function_signature != nullptr &&
+                    ASR::is_a<ASR::FunctionType_t>(*proc->m_function_signature),
+                "asr.verify.trait_binding.procedure_signature_required",
+                "A trait binding procedure must have a function signature");
+            check(ASRUtils::get_FunctionType(*proc)->m_deftype != ASR::deftypeType::Interface,
+                "asr.verify.trait_binding.procedure_is_implementation",
+                "A trait binding procedure must be a concrete implementation");
+        }
+        std::map<ASR::symbol_t*, ASR::symbol_t*> parameters;
+        auto mismatch = ASRUtils::trait_generic_correspondence(
+            *ASRUtils::trait_method_function(member),
+            *ASRUtils::trait_method_function(procedure), parameters);
+        check(mismatch.empty(), "asr.verify.trait_binding.generic_contract",
+            "A generic binding must preserve its universally quantified contract: " + mismatch);
+        if (x.m_self_argument) {
+            ASR::Function_t *proc = ASRUtils::trait_method_function(procedure);
+            bool found = false;
+            for (size_t i = 0; i < proc->n_args; i++) {
+                if (!ASR::is_a<ASR::Var_t>(*proc->m_args[i])) continue;
+                ASR::symbol_t *arg = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(proc->m_args[i])->m_v);
+                if (arg && ASR::is_a<ASR::Variable_t>(*arg) &&
+                        std::string(ASRUtils::symbol_name(arg)) == x.m_self_argument) {
+                    found = true;
+                    break;
+                }
+            }
+            check(found, "asr.verify.trait_binding.receiver_is_argument",
+                "Trait binding self argument '" +
+                std::string(x.m_self_argument) + "' is not present in procedure '" +
+                std::string(x.m_procedure ? ASRUtils::symbol_name(x.m_procedure) : "<null>") + "'");
+        }
+    }
+
+    ASRUtils::TraitHierarchy verify_trait_hierarchy(const ASR::Trait_t &trait,
+            const Location &loc) {
+        auto hierarchy = ASRUtils::trait_hierarchy(trait, check_external);
+        ASRUtils::require_impl(hierarchy.error != ASRUtils::TraitHierarchyError::Cycle,
+            "asr.verify.trait.inheritance_cycle",
+            "Trait inheritance must not contain a cycle", loc, diagnostics);
+        ASRUtils::require_impl(hierarchy.error != ASRUtils::TraitHierarchyError::Parent,
+            "asr.verify.trait.parent_is_trait",
+            "Trait parents must be resolved Trait symbols", loc, diagnostics);
+        ASRUtils::require_impl(hierarchy.error != ASRUtils::TraitHierarchyError::Member,
+            "asr.verify.trait.member_provenance",
+            "Trait members must be Functions owned by their defining trait", loc, diagnostics);
+        return hierarchy;
+    }
+
+    static bool constant_length_character(ASR::ttype_t *type) {
+        int64_t length;
+        return ASR::is_a<ASR::String_t>(*type) &&
+            ASRUtils::constant_string_length(type, length) && length >= 0;
+    }
+
+    static bool type_set_concrete_kind(ASR::ttype_t *type) {
+        if (!type || !(ASR::is_a<ASR::Integer_t>(*type) ||
+                ASR::is_a<ASR::Real_t>(*type) ||
+                ASR::is_a<ASR::Complex_t>(*type) ||
+                ASR::is_a<ASR::Logical_t>(*type))) return false;
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(type);
+        // The ordinary type verifier also admits unresolved PDT kinds >= 1000.
+        return kind > 0 && kind < 1000;
+    }
+
+    void visit_Trait(const Trait_t &x) {
+        SymbolTable *parent_symtab = current_symtab;
+        current_symtab = x.m_symtab;
+        require(x.m_name != nullptr,
+            "The Trait::m_name cannot be nullptr");
+        require(x.m_symtab != nullptr,
+            "The Trait::m_symtab cannot be nullptr");
+        require(x.m_symtab->parent == parent_symtab,
+            "The Trait::m_symtab->parent is not the right parent");
+        ASR::symbol_t *trait_scope_owner = nullptr;
+        if (x.m_symtab->parent != nullptr &&
+                x.m_symtab->parent->asr_owner != nullptr &&
+                ASR::is_a<ASR::symbol_t>(*x.m_symtab->parent->asr_owner)) {
+            trait_scope_owner = ASR::down_cast<ASR::symbol_t>(x.m_symtab->parent->asr_owner);
+        }
+        require_id(trait_scope_owner != nullptr &&
+                (ASR::is_a<ASR::Module_t>(*trait_scope_owner) ||
+                 ASR::is_a<ASR::Program_t>(*trait_scope_owner) ||
+                 ASR::is_a<ASR::Template_t>(*trait_scope_owner) ||
+                 (ASR::is_a<ASR::Function_t>(*trait_scope_owner) &&
+                  ASRUtils::trait_runtime_contract(const_cast<symbol_t*>(&x.base)) &&
+                  ASRUtils::trait_runtime_contract(const_cast<symbol_t*>(&x.base))->m_anonymous)),
+            "asr.verify.trait.scope_is_module",
+            "Traits must be declared in a module, program or defining template scope");
+        if (ASR::is_a<ASR::Template_t>(*trait_scope_owner)) {
+            require_id(x.m_kind == ASR::trait_kindType::IntrinsicTypeSet &&
+                    x.m_access == ASR::accessType::Private,
+                "asr.verify.trait.inline_is_private_type_set",
+                "A template-owned trait must be a private intrinsic type set");
+            size_t bindings = 0;
+            for (const auto &entry : parent_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+                auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+                if (constraint->m_trait == &x.base) bindings++;
+            }
+            require_id(bindings == 1,
+                "asr.verify.trait.inline_has_one_binder",
+                "An inline type set must belong to exactly one defining generic binder");
+        }
+        require(id_symtab_map.find(x.m_symtab->counter) == id_symtab_map.end(),
+            "Trait::m_symtab->counter must be unique");
+        require(x.m_symtab->asr_owner == (ASR::asr_t*)&x,
+            "The Trait::m_symtab::asr_owner must point to Trait");
+        require(ASRUtils::symbol_symtab(down_cast<symbol_t>(current_symtab->asr_owner)) == current_symtab,
+            "The asr_owner invariant failed");
+        id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        require_id(x.m_kind == ASR::trait_kindType::UniversalTrait ||
+                x.m_kind == ASR::trait_kindType::IntrinsicTypeSet,
+            "asr.verify.trait.category", "Trait category must be valid");
+        require_id(x.m_kind != ASR::trait_kindType::UniversalTrait ||
+                x.n_member_types == 0,
+            "asr.verify.trait.universal_has_no_members",
+            "A universal trait must not have finite type members");
+        if (x.m_kind == ASR::trait_kindType::IntrinsicTypeSet) {
+            require_id(x.n_member_types > 0 && x.m_member_types &&
+                    x.n_parents == 0 && x.m_symtab->get_scope().empty(),
+                "asr.verify.trait.finite_category",
+                "An intrinsic type set must be nonempty and have no nominal methods or parents");
+            for (size_t i = 0; i < x.n_member_types; i++) {
+                auto *type = x.m_member_types[i];
+                require_id(type && (ASR::is_a<ASR::Integer_t>(*type) ||
+                        ASR::is_a<ASR::Real_t>(*type) ||
+                        ASR::is_a<ASR::Complex_t>(*type)) &&
+                        type_set_concrete_kind(type),
+                    "asr.verify.trait.numeric_member",
+                    "An intrinsic type-set member must be a concrete scalar numeric type");
+                visit_ttype(*type);
+                for (size_t j = 0; j < i; j++) {
+                    require_id(!ASRUtils::types_equal(
+                            type, x.m_member_types[j], nullptr, nullptr),
+                        "asr.verify.trait.unique_member",
+                        "Type-set members must be unique");
+                }
+            }
+        }
+        for (auto &a : x.m_symtab->get_scope()) {
+            if (ASRUtils::is_trait_type_declaration(*a.second)) {
+                // `itself` or an associated type, `type :: Element`.
+                auto *declaration = ASR::down_cast<ASR::Variable_t>(a.second);
+                require_id(x.m_kind == ASR::trait_kindType::UniversalTrait &&
+                        !declaration->m_type_declaration && !declaration->m_symbolic_value &&
+                        !declaration->m_value,
+                    "asr.verify.trait.type_declaration",
+                    "Only a universal trait declares types, as bare type parameters");
+                this->visit_symbol(*a.second);
+                continue;
+            }
+            require_id(ASRUtils::trait_method_function(a.second) != nullptr,
+                "asr.verify.trait.member_is_function",
+                "Trait '" + std::string(x.m_name) + "' members must be abstract procedures");
+            ASR::Function_t *fn = ASRUtils::trait_method_function(a.second);
+            require_id(fn->m_function_signature != nullptr,
+                "asr.verify.trait.member_signature_required",
+                "Trait '" + std::string(x.m_name) +
+                "' members must have a signature");
+            ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(*fn);
+            require_id(ftype->m_deftype == ASR::deftypeType::Interface,
+                "asr.verify.trait.member_is_interface",
+                "Trait '" + std::string(x.m_name) +
+                "' members must be abstract interface procedures");
+            require_id(fn->n_body == 0,
+                "asr.verify.trait.member_has_no_body",
+                "Trait '" + std::string(x.m_name) +
+                "' members must not have a body");
+            this->visit_symbol(*a.second);
+        }
+        require_id(x.n_operations == 0 || (x.m_operations &&
+                x.m_kind == ASR::trait_kindType::UniversalTrait),
+            "asr.verify.trait.operations_universal",
+            "Only a universal trait has initializer and operator requirements");
+        for (size_t i = 0; i < x.n_operations; i++) {
+            const auto &operation = x.m_operations[i];
+            ASR::Function_t *member = operation.m_member &&
+                ASR::is_a<ASR::Function_t>(*operation.m_member)
+                ? ASR::down_cast<ASR::Function_t>(operation.m_member) : nullptr;
+            require_id(member && operation.m_operation &&
+                    x.m_symtab->get_symbol(member->m_name) == operation.m_member,
+                "asr.verify.trait.operation_member",
+                "A trait operation must be a nongeneric member function of that trait");
+            for (size_t j = 0; j < i; j++) {
+                require_id(x.m_operations[j].m_member != operation.m_member,
+                    "asr.verify.trait.operation_unique",
+                    "A trait member has at most one operation");
+            }
+            bool conversion = ASR::is_a<ASR::TypeSetConversion_t>(*operation.m_operation);
+            require_id(member->m_return_var && (!conversion || (
+                    ASRUtils::contains_trait_itself(ASRUtils::expr_type(member->m_return_var)) &&
+                    !ASRUtils::is_array(ASRUtils::expr_type(member->m_return_var)))),
+                "asr.verify.trait.operation_result",
+                "An initializer requirement returns the implementing type and an operator "
+                "requirement is a function");
+            if (!ASR::is_a<ASR::TypeSetConversion_t>(*operation.m_operation)) {
+                bool itself = false;
+                for (size_t j = 0; j < member->n_args; j++) {
+                    itself |= ASRUtils::contains_trait_itself(
+                        ASRUtils::expr_type(member->m_args[j]));
+                }
+                require_id(member->n_args == 2 && itself,
+                    "asr.verify.trait.operator_operands",
+                    "A binary operator requirement has two operands, one of them itself");
+            }
+        }
+        require(x.n_parents == 0 || x.m_parents != nullptr,
+            "Trait parent references must be present");
+        for (size_t i = 0; i < x.n_parents; i++) {
+            require(x.m_parents[i] != nullptr,
+                "Trait parent cannot be nullptr");
+            require_id(symtab_in_scope(x.m_symtab->parent, x.m_parents[i]),
+                "asr.verify.trait.parent_in_scope",
+                "Trait parents must be referenced through visible symbols");
+        }
+        auto hierarchy = verify_trait_hierarchy(x, x.base.base.loc);
+        if (check_external) {
+            for (auto *trait : hierarchy.traits) {
+                require_id(trait == &x ||
+                        trait->m_kind == ASR::trait_kindType::UniversalTrait,
+                    "asr.verify.trait.universal_parent",
+                    "Inheritance from a type-set trait is not supported");
+            }
+            std::map<std::string, ASR::Function_t*> methods;
+            for (ASR::symbol_t *member : hierarchy.members) {
+                if (ASRUtils::trait_member_operation(member)) continue;
+                auto *method = ASRUtils::trait_method_function(member);
+                auto previous = methods.emplace(method->m_name, method);
+                if (!previous.second) {
+                    auto mismatch = ASRUtils::trait_method_mismatch(
+                        *previous.first->second, *method);
+                    require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
+                        "asr.verify.trait.inherited_signature_matches",
+                        "Same-name trait requirements must have equivalent signatures: " +
+                            mismatch.message);
+                }
+            }
+        }
+        current_symtab = parent_symtab;
+    }
+
+    static bool same_variable(ASR::expr_t *left, ASR::expr_t *right) {
+        return left && right && ASR::is_a<ASR::Var_t>(*left) &&
+            ASR::is_a<ASR::Var_t>(*right) &&
+            ASR::down_cast<ASR::Var_t>(left)->m_v ==
+                ASR::down_cast<ASR::Var_t>(right)->m_v;
+    }
+
+    bool type_set_witness_expression(const ASR::type_set_requirement_t &requirement,
+            ASR::Function_t *witness, ASR::ttype_t *member, ASR::expr_t *value) {
+        auto *operation = requirement.m_operation;
+        if (ASR::is_a<ASR::TypeSetBinary_t>(*operation)) {
+            ASR::expr_t *left = nullptr, *right = nullptr, *constant = nullptr;
+            ASR::binopType op = ASR::binopType::Pow;
+            if (ASR::is_a<ASR::IntegerBinOp_t>(*value) && ASR::is_a<ASR::Integer_t>(*member)) {
+                auto *expr = ASR::down_cast<ASR::IntegerBinOp_t>(value);
+                left = expr->m_left; right = expr->m_right; op = expr->m_op; constant = expr->m_value;
+            } else if (ASR::is_a<ASR::RealBinOp_t>(*value) && ASR::is_a<ASR::Real_t>(*member)) {
+                auto *expr = ASR::down_cast<ASR::RealBinOp_t>(value);
+                left = expr->m_left; right = expr->m_right; op = expr->m_op; constant = expr->m_value;
+            } else if (ASR::is_a<ASR::ComplexBinOp_t>(*value) && ASR::is_a<ASR::Complex_t>(*member)) {
+                auto *expr = ASR::down_cast<ASR::ComplexBinOp_t>(value);
+                left = expr->m_left; right = expr->m_right; op = expr->m_op; constant = expr->m_value;
+            }
+            return witness->n_args == 2 && !constant &&
+                op == ASR::down_cast<ASR::TypeSetBinary_t>(operation)->m_op &&
+                (op == ASR::Add || op == ASR::Sub || op == ASR::Mul || op == ASR::Div) &&
+                same_variable(left, witness->m_args[0]) &&
+                same_variable(right, witness->m_args[1]);
+        }
+        if (ASR::is_a<ASR::TypeSetComparison_t>(*operation)) {
+            ASR::expr_t *left = nullptr, *right = nullptr, *constant = nullptr;
+            auto op = ASR::down_cast<ASR::TypeSetComparison_t>(operation)->m_op;
+            if (ASR::is_a<ASR::IntegerCompare_t>(*value) && ASR::is_a<ASR::Integer_t>(*member)) {
+                auto *expr = ASR::down_cast<ASR::IntegerCompare_t>(value);
+                if (expr->m_op != op) return false;
+                left = expr->m_left; right = expr->m_right; constant = expr->m_value;
+            } else if (ASR::is_a<ASR::RealCompare_t>(*value) && ASR::is_a<ASR::Real_t>(*member)) {
+                auto *expr = ASR::down_cast<ASR::RealCompare_t>(value);
+                if (expr->m_op != op) return false;
+                left = expr->m_left; right = expr->m_right; constant = expr->m_value;
+            } else if (ASR::is_a<ASR::ComplexCompare_t>(*value) && ASR::is_a<ASR::Complex_t>(*member)) {
+                auto *expr = ASR::down_cast<ASR::ComplexCompare_t>(value);
+                if (expr->m_op != op || (op != ASR::Eq && op != ASR::NotEq)) return false;
+                left = expr->m_left; right = expr->m_right; constant = expr->m_value;
+            }
+            return witness->n_args == 2 && !constant &&
+                same_variable(left, witness->m_args[0]) &&
+                same_variable(right, witness->m_args[1]);
+        }
+        if (witness->n_args != 1) return false;
+        auto *arg = witness->m_args[0];
+        auto *source = ASRUtils::expr_type(arg);
+        if (!ASR::is_a<ASR::Integer_t>(*source) && !ASR::is_a<ASR::Real_t>(*source) &&
+                !ASR::is_a<ASR::Complex_t>(*source)) return false;
+        if (same_variable(value, arg)) {
+            return ASRUtils::types_equal(source, member, nullptr, nullptr);
+        }
+        if (ASR::is_a<ASR::Cast_t>(*value)) {
+            auto *cast = ASR::down_cast<ASR::Cast_t>(value);
+            if (!same_variable(cast->m_arg, arg) || cast->m_value ||
+                    cast->m_dest) return false;
+            ASR::cast_kindType expected;
+            if (ASR::is_a<ASR::Integer_t>(*member)) {
+                expected = ASR::is_a<ASR::Integer_t>(*source) ? ASR::cast_kindType::IntegerToInteger :
+                    ASR::is_a<ASR::Real_t>(*source) ? ASR::cast_kindType::RealToInteger :
+                    ASR::cast_kindType::ComplexToInteger;
+            } else if (ASR::is_a<ASR::Real_t>(*member)) {
+                expected = ASR::is_a<ASR::Integer_t>(*source) ? ASR::cast_kindType::IntegerToReal :
+                    ASR::is_a<ASR::Real_t>(*source) ? ASR::cast_kindType::RealToReal :
+                    ASR::cast_kindType::ComplexToReal;
+            } else {
+                expected = ASR::is_a<ASR::Integer_t>(*source) ? ASR::cast_kindType::IntegerToComplex :
+                    ASR::is_a<ASR::Real_t>(*source) ? ASR::cast_kindType::RealToComplex :
+                    ASR::cast_kindType::ComplexToComplex;
+            }
+            return cast->m_kind == expected;
+        }
+        if (!ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value)) return false;
+        auto *call = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
+        using Intrinsic = ASRUtils::IntrinsicElementalFunctions;
+        auto expected = ASR::is_a<ASR::Integer_t>(*member) ? Intrinsic::Int :
+            ASR::is_a<ASR::Real_t>(*member) ? Intrinsic::Real : Intrinsic::Cmplx;
+        if (call->m_intrinsic_id != static_cast<int64_t>(expected) ||
+                call->m_value || call->m_overload_id != 0 || !call->n_args ||
+                !same_variable(call->m_args[0], arg)) return false;
+        if (expected != Intrinsic::Cmplx) return call->n_args == 1;
+        if (call->n_args != 3 || !call->m_args[1] || !call->m_args[2] ||
+                !ASR::is_a<ASR::IntegerConstant_t>(*call->m_args[2]) ||
+                ASR::down_cast<ASR::IntegerConstant_t>(call->m_args[2])->m_n !=
+                    ASRUtils::extract_kind_from_ttype_t(member)) return false;
+        return ASR::is_a<ASR::RealConstant_t>(*call->m_args[1]) &&
+            ASR::down_cast<ASR::RealConstant_t>(call->m_args[1])->m_r == 0.0;
+    }
+
+    void verify_type_set_requirements(const TraitConstraint_t &constraint,
+            const Trait_t &trait) {
+        const auto &x = constraint;
+        require_id(ASR::is_a<ASR::Template_t>(
+                *ASRUtils::get_asr_owner(&constraint.base)),
+            "asr.verify.type_set.template_scope",
+            "An intrinsic type-set constraint must belong to a template");
+        auto local_variable = [](ASR::expr_t *expr, ASR::Function_t *function,
+                ASR::intentType intent) {
+            if (!expr || !ASR::is_a<ASR::Var_t>(*expr)) return false;
+            auto *symbol = ASR::down_cast<ASR::Var_t>(expr)->m_v;
+            if (!symbol || !ASR::is_a<ASR::Variable_t>(*symbol)) return false;
+            auto *variable = ASR::down_cast<ASR::Variable_t>(symbol);
+            return variable->m_name && variable->m_type &&
+                variable->m_parent_symtab == function->m_symtab &&
+                function->m_symtab->get_symbol(variable->m_name) == symbol &&
+                variable->m_intent == intent &&
+                variable->m_presence == ASR::presenceType::Required;
+        };
+        require_id(constraint.n_requirements == 0,
+            "asr.verify.type_set.no_nominal_requirements",
+            "An intrinsic type set has no nominal receiver requirements");
+        require_id(constraint.n_intrinsic_requirements == 0 ||
+                constraint.m_intrinsic_requirements,
+            "asr.verify.type_set.requirements_present",
+            "Intrinsic requirements must be present");
+        std::set<ASR::symbol_t*> procedures;
+        const std::string parameter = ASR::down_cast<ASR::TypeParameter_t>(
+            ASRUtils::symbol_type(constraint.m_parameter))->m_param;
+        for (size_t i = 0; i < constraint.n_intrinsic_requirements; i++) {
+            const auto &requirement = constraint.m_intrinsic_requirements[i];
+            require_id(requirement.m_procedure &&
+                    ASR::is_a<ASR::Function_t>(*requirement.m_procedure) &&
+                    ASR::down_cast<ASR::Function_t>(requirement.m_procedure)->m_symtab &&
+                    ASRUtils::symbol_parent_symtab(requirement.m_procedure) ==
+                        constraint.m_parent_symtab &&
+                    procedures.insert(requirement.m_procedure).second &&
+                    requirement.m_operation,
+                "asr.verify.type_set.requirement_scope",
+                "Each intrinsic restriction must be a unique function owned by its constraint scope");
+            auto *procedure = ASR::down_cast<ASR::Function_t>(requirement.m_procedure);
+            require_id(procedure->m_function_signature &&
+                    ASR::is_a<ASR::FunctionType_t>(*procedure->m_function_signature) &&
+                    ASRUtils::get_FunctionType(procedure)->m_is_restriction &&
+                    ASRUtils::get_FunctionType(procedure)->m_deftype == ASR::deftypeType::Interface &&
+                    procedure->n_body == 0 &&
+                    local_variable(procedure->m_return_var, procedure, ASR::intentType::ReturnVar),
+                "asr.verify.type_set.restriction",
+                "An intrinsic requirement must be a bodyless function restriction");
+            const bool conversion = ASR::is_a<ASR::TypeSetConversion_t>(*requirement.m_operation);
+            require_id(procedure->n_args == (conversion ? 1u : 2u) && procedure->m_args,
+                "asr.verify.type_set.arity",
+                "An intrinsic restriction must have the operation's arity");
+            for (size_t j = 0; j < procedure->n_args; j++) {
+                require_id(local_variable(procedure->m_args[j], procedure, ASR::intentType::In),
+                    "asr.verify.type_set.restriction_arguments",
+                    "An intrinsic restriction has required read-only arguments");
+            }
+            for (size_t j = 0; j <= procedure->n_args; j++) {
+                auto *type = ASRUtils::expr_type(j == procedure->n_args ?
+                    procedure->m_return_var : procedure->m_args[j]);
+                bool deferred = ASR::is_a<ASR::TypeParameter_t>(*type);
+                require_id((deferred && parameter ==
+                            ASR::down_cast<ASR::TypeParameter_t>(type)->m_param) ||
+                        (!deferred && type_set_concrete_kind(type) &&
+                            (ASR::is_a<ASR::Integer_t>(*type) ||
+                            ASR::is_a<ASR::Real_t>(*type) || ASR::is_a<ASR::Complex_t>(*type) ||
+                            (j == procedure->n_args && ASR::is_a<ASR::Logical_t>(*type)))),
+                    "asr.verify.type_set.signature",
+                    "An intrinsic restriction must use its own scalar binder or a concrete scalar type");
+                require_id(conversion || j == procedure->n_args || deferred,
+                    "asr.verify.type_set.same_binder",
+                    "Binary intrinsic requirements must have two operands of their binder type");
+            }
+            require_id(requirement.n_witnesses == trait.n_member_types &&
+                    requirement.m_witnesses,
+                "asr.verify.type_set.total_proof",
+                "An intrinsic requirement must prove every admitted member");
+            std::set<size_t> members;
+            for (size_t j = 0; j < requirement.n_witnesses; j++) {
+                const auto &proof = requirement.m_witnesses[j];
+                size_t index = trait.n_member_types;
+                for (size_t k = 0; k < trait.n_member_types; k++) {
+                    if (proof.m_member_type && ASRUtils::types_equal(
+                            proof.m_member_type, trait.m_member_types[k], nullptr, nullptr)) index = k;
+                }
+                require_id(index != trait.n_member_types,
+                    "asr.verify.type_set.member_in_set",
+                    "A capability witness must belong to the declared type set");
+                require_id(members.insert(index).second,
+                    "asr.verify.type_set.unique_witness",
+                    "A capability proof must not repeat a member");
+                require_id(proof.m_procedure && ASR::is_a<ASR::Function_t>(*proof.m_procedure) &&
+                        ASR::down_cast<ASR::Function_t>(proof.m_procedure)->m_symtab &&
+                        ASRUtils::symbol_parent_symtab(proof.m_procedure) ==
+                            constraint.m_parent_symtab,
+                    "asr.verify.type_set.witness_scope",
+                    "A capability witness must be a function owned by its template");
+                auto *witness = ASR::down_cast<ASR::Function_t>(proof.m_procedure);
+                require_id(witness->m_function_signature &&
+                        ASR::is_a<ASR::FunctionType_t>(*witness->m_function_signature) &&
+                        ASRUtils::get_FunctionType(witness)->m_deftype == ASR::deftypeType::Implementation &&
+                        !ASRUtils::get_FunctionType(witness)->m_is_restriction &&
+                        witness->n_args == procedure->n_args && witness->m_args &&
+                        local_variable(witness->m_return_var, witness, ASR::intentType::ReturnVar),
+                    "asr.verify.type_set.witness_signature",
+                    "A capability witness must implement the restriction signature");
+                require_id(witness->m_symtab->get_scope().size() == witness->n_args + 1,
+                    "asr.verify.type_set.witness_locals",
+                    "A one-operation witness has only its arguments and result");
+                for (const auto &entry : witness->m_symtab->get_scope()) {
+                    require_id(ASR::is_a<ASR::Variable_t>(*entry.second),
+                        "asr.verify.type_set.witness_locals",
+                        "Capability witness locals must be concrete variables");
+                    auto *variable = ASR::down_cast<ASR::Variable_t>(entry.second);
+                    require_id(variable->m_type &&
+                            type_set_concrete_kind(variable->m_type) &&
+                            !variable->m_symbolic_value && !variable->m_value &&
+                            variable->m_storage == ASR::storage_typeType::Default &&
+                            variable->m_presence == ASR::presenceType::Required,
+                        "asr.verify.type_set.witness_locals",
+                        "Capability witness variables must be concrete and have no initializers");
+                }
+                std::set<ASR::symbol_t*> arguments;
+                for (size_t k = 0; k < witness->n_args; k++) {
+                    require_id(local_variable(witness->m_args[k], witness, ASR::intentType::In) &&
+                            arguments.insert(ASR::down_cast<ASR::Var_t>(witness->m_args[k])->m_v).second &&
+                            ASRUtils::EXPR2VAR(witness->m_args[k])->m_intent == ASR::intentType::In,
+                        "asr.verify.type_set.witness_arguments",
+                        "Capability witness arguments must be distinct read-only variables");
+                }
+                for (size_t k = 0; k <= procedure->n_args; k++) {
+                    auto *abstract = ASRUtils::expr_type(k == procedure->n_args ?
+                        procedure->m_return_var : procedure->m_args[k]);
+                    auto *concrete = ASRUtils::expr_type(k == witness->n_args ?
+                        witness->m_return_var : witness->m_args[k]);
+                    auto *expected = ASR::is_a<ASR::TypeParameter_t>(*abstract) ?
+                        proof.m_member_type : abstract;
+                    require_id(ASRUtils::types_equal(concrete, expected, nullptr, nullptr),
+                        "asr.verify.type_set.witness_type",
+                        "Witness arguments and result must have the substituted category and kind");
+                }
+                require_id(witness->n_body == 1 && witness->m_body &&
+                        ASR::is_a<ASR::Assignment_t>(*witness->m_body[0]),
+                    "asr.verify.type_set.witness_body",
+                    "A capability witness must contain exactly one operation assignment");
+                auto *assignment = ASR::down_cast<ASR::Assignment_t>(witness->m_body[0]);
+                require_id(same_variable(assignment->m_target, witness->m_return_var) &&
+                        assignment->m_value && !assignment->m_overloaded &&
+                        ASRUtils::types_equal(ASRUtils::expr_type(assignment->m_value),
+                            ASRUtils::expr_type(witness->m_return_var), nullptr, nullptr) &&
+                        type_set_witness_expression(requirement, witness,
+                            proof.m_member_type, assignment->m_value),
+                    "asr.verify.type_set.witness_operation",
+                    "The witness body must be precisely the recorded intrinsic operation");
+                bool comparison = ASR::is_a<ASR::TypeSetComparison_t>(*requirement.m_operation);
+                auto *result_type = ASRUtils::expr_type(witness->m_return_var);
+                require_id(comparison ? ASR::is_a<ASR::Logical_t>(*result_type) :
+                        ASRUtils::types_equal(result_type, proof.m_member_type, nullptr, nullptr),
+                    "asr.verify.type_set.operation_result",
+                    "Comparison results must be logical; arithmetic and conversions must preserve the member kind");
+            }
+        }
+    }
+
+    void visit_TraitConstraint(const TraitConstraint_t &x) {
+        require(x.m_name != nullptr,
+            "The TraitConstraint::m_name cannot be nullptr");
+        require(x.m_parent_symtab != nullptr,
+            "TraitConstraint::m_parent_symtab cannot be nullptr");
+        require(x.m_parent_symtab->get_symbol(std::string(x.m_name)) != nullptr,
+            "TraitConstraint '" + std::string(x.m_name) +
+            "' not found in parent_symtab symbol table");
+        ASR::symbol_t *constraint_scope_owner = nullptr;
+        if (x.m_parent_symtab->asr_owner != nullptr &&
+                ASR::is_a<ASR::symbol_t>(*x.m_parent_symtab->asr_owner)) {
+            constraint_scope_owner =
+                ASR::down_cast<ASR::symbol_t>(x.m_parent_symtab->asr_owner);
+        }
+        require_id(constraint_scope_owner != nullptr &&
+                (ASR::is_a<ASR::Function_t>(*constraint_scope_owner) ||
+                 ASR::is_a<ASR::Template_t>(*constraint_scope_owner)),
+            "asr.verify.trait_constraint.scope_is_generic",
+            "TraitConstraint must be declared in a generic function or template scope");
+        symbol_t *symtab_sym = x.m_parent_symtab->get_symbol(std::string(x.m_name));
+        const symbol_t *current_sym = &x.base;
+        require(symtab_sym == current_sym,
+            "TraitConstraint's parent symbol table does not point to it");
+        require(id_symtab_map.find(x.m_parent_symtab->counter) != id_symtab_map.end(),
+            "TraitConstraint::m_parent_symtab must be present in the ASR ("
+                + std::string(x.m_name) + ")");
+        if (!check_external) return;
+        ASR::symbol_t *parameter = check_external
+            ? ASRUtils::symbol_get_past_external(x.m_parameter) : x.m_parameter;
+        ASR::symbol_t *trait = check_external
+            ? ASRUtils::symbol_get_past_external(x.m_trait) : x.m_trait;
+        require_id(parameter != nullptr && ASR::is_a<ASR::Variable_t>(*parameter),
+            "asr.verify.trait_constraint.parameter_is_variable",
+            "TraitConstraint parameter must be a Variable, not " +
+                std::string(x.m_parameter ? ASRUtils::symbol_type_name(*x.m_parameter) : "<null>"));
+        if (parameter) {
+            ASR::Variable_t *param = ASR::down_cast<ASR::Variable_t>(parameter);
+            require_id(ASRUtils::symbol_parent_symtab(parameter) == x.m_parent_symtab,
+                "asr.verify.trait_constraint.parameter_scope",
+                "TraitConstraint parameter must be declared in its parent symbol table");
+            require_id(param->m_type != nullptr &&
+                    ASR::is_a<ASR::TypeParameter_t>(*param->m_type),
+                "asr.verify.trait_constraint.parameter_is_type_parameter",
+                "TraitConstraint parameter must have a TypeParameter type");
+        }
+        require_id(trait != nullptr && ASR::is_a<ASR::Trait_t>(*trait),
+            "asr.verify.trait_constraint.trait_is_trait",
+            "TraitConstraint trait must be a Trait, not " +
+                std::string(x.m_trait ? ASRUtils::symbol_type_name(*x.m_trait) : "<null>"));
+        require_id(ASR::down_cast<ASR::Trait_t>(trait)->m_kind ==
+                ASR::trait_kindType::IntrinsicTypeSet || x.n_intrinsic_requirements == 0,
+            "asr.verify.trait_constraint.intrinsic_category",
+            "Only a type-set constraint can have intrinsic requirements");
+        require_id(!ASRUtils::trait_has_associated_types(*ASR::down_cast<ASR::Trait_t>(trait)),
+            "asr.verify.trait_constraint.associated_types",
+            "A generic constraint by a trait with associated types is not supported");
+        if (ASR::down_cast<ASR::Trait_t>(trait)->m_kind ==
+                ASR::trait_kindType::IntrinsicTypeSet) {
+            verify_type_set_requirements(x, *ASR::down_cast<ASR::Trait_t>(trait));
+        }
+        auto hierarchy = verify_trait_hierarchy(
+            *ASR::down_cast<ASR::Trait_t>(trait), x.base.base.loc);
+        std::set<ASR::symbol_t*> trait_members(
+            hierarchy.members.begin(), hierarchy.members.end());
+        std::set<ASR::symbol_t*> required_members;
+        for (size_t i = 0; i < x.n_requirements; i++) {
+            visit_trait_requirement(x.m_requirements[i]);
+            ASR::symbol_t *member = check_external
+                ? ASRUtils::symbol_get_past_external(x.m_requirements[i].m_member)
+                : x.m_requirements[i].m_member;
+            // A generic message is the Template of its Function.
+            ASR::Function_t *method = member ? ASRUtils::trait_method_function(member) : nullptr;
+            ASR::Template_t *message = method ? ASRUtils::trait_method_template(*method) : nullptr;
+            require_id(member != nullptr && (ASR::is_a<ASR::Function_t>(*member) ||
+                    (message && member == &message->base)),
+                "asr.verify.trait_constraint.member_is_function",
+                "TraitConstraint requirement member must be a Function");
+            require_id(trait_members.count(member) != 0,
+                "asr.verify.trait_constraint.member_belongs_to_trait",
+                "TraitConstraint requirement member must belong to the trait");
+            ASR::symbol_t *procedure = ASRUtils::symbol_get_past_external(
+                x.m_requirements[i].m_procedure);
+            require_id(procedure && ASRUtils::symbol_parent_symtab(procedure) == x.m_parent_symtab,
+                "asr.verify.trait_constraint.procedure_scope",
+                "A normalized requirement must belong to its generic parameter's scope");
+            bool specialization = message && ASR::is_a<ASR::Function_t>(*procedure);
+            ASR::Function_t *function = nullptr;
+            if (specialization) {
+                // One tuple of type arguments used by the generic body.
+                auto *generic = ASRUtils::trait_requirement_specialization(x, i);
+                function = ASR::down_cast<ASR::Function_t>(procedure);
+                require_id(generic &&
+                        ASRUtils::trait_requirement_specialization_matches(*generic, *function) &&
+                        ASRUtils::get_FunctionType(function)->m_is_restriction &&
+                        ASRUtils::get_FunctionType(function)->m_deftype ==
+                            ASR::deftypeType::Interface &&
+                        function->n_body == 0,
+                    "asr.verify.trait_constraint.generic_specialization",
+                    "A specialization of a generic requirement must be its bodyless "
+                    "function with the type arguments it records");
+                std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> types;
+                bool recorded_types = generic &&
+                    ASRUtils::trait_requirement_type_arguments(*generic, *function, types);
+                if (recorded_types) {
+                    std::string evidence = ASRUtils::trait_requirement_evidence_mismatch(
+                        *generic, types, x.m_requirements[i].m_evidence,
+                        x.m_requirements[i].n_evidence);
+                    require_id(evidence.empty(),
+                        "asr.verify.trait_constraint.generic_evidence",
+                        "A specialization of a generic requirement must record the "
+                        "nominal evidence of its concrete type arguments: " + evidence);
+                }
+                for (size_t j = 0; recorded_types && j < i; j++) {
+                    if (ASRUtils::trait_requirement_specialization(x, j) != generic) continue;
+                    auto *other = ASR::down_cast<ASR::Function_t>(
+                        ASRUtils::symbol_get_past_external(x.m_requirements[j].m_procedure));
+                    std::vector<std::pair<ASR::ttype_t*, ASR::symbol_t*>> recorded;
+                    bool same = ASRUtils::trait_requirement_type_arguments(
+                        *generic, *other, recorded) && recorded.size() == types.size();
+                    for (size_t k = 0; same && k < types.size(); k++) {
+                        same = ASRUtils::trait_type_argument_equal(recorded[k], types[k]);
+                    }
+                    // The same type arguments checked with other conformances
+                    // are a distinct specialization.
+                    same = same && ASRUtils::trait_evidence_equal(
+                        x.m_requirements[i].m_evidence, x.m_requirements[i].n_evidence,
+                        x.m_requirements[j].m_evidence, x.m_requirements[j].n_evidence);
+                    require_id(!same,
+                        "asr.verify.trait_constraint.generic_specialization",
+                        "A generic requirement must not repeat a specialization");
+                }
+            } else {
+                require_id(x.m_requirements[i].n_evidence == 0,
+                    "asr.verify.trait_constraint.generic_evidence",
+                    "Only a specialization of a generic requirement records evidence");
+                require_id(required_members.insert(member).second,
+                    "asr.verify.trait_constraint.member_is_unique",
+                    "TraitConstraint must not repeat an original member");
+            }
+            if (message && !specialization) {
+                require_id(ASR::is_a<ASR::Template_t>(*procedure),
+                    "asr.verify.trait_constraint.generic_requirement",
+                    "The requirement of a generic trait method must be a generic requirement");
+                auto *generic = ASR::down_cast<ASR::Template_t>(procedure);
+                auto mismatch = ASRUtils::trait_generic_requirement_mismatch(*message, *generic);
+                require_id(mismatch.empty(),
+                    "asr.verify.trait_constraint.generic_requirement",
+                    "A generic requirement must copy its generic trait method: " + mismatch);
+                // Fresh binders cannot capture a binder of an enclosing generic.
+                for (size_t j = 0; j < generic->n_args; j++) {
+                    for (SymbolTable *scope = x.m_parent_symtab; scope; scope = scope->parent) {
+                        for (const auto &entry : scope->get_scope()) {
+                            if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+                            auto *binder = ASRUtils::symbol_get_past_external(
+                                ASR::down_cast<ASR::TraitConstraint_t>(entry.second)->m_parameter);
+                            require_id(!binder || std::string(ASRUtils::symbol_name(binder))
+                                    != generic->m_args[j],
+                                "asr.verify.trait_constraint.generic_requirement",
+                                "A generic requirement's type parameters must be fresh");
+                        }
+                    }
+                }
+                function = ASRUtils::trait_method_function(procedure);
+                require_id(function && ASRUtils::get_FunctionType(function)->m_is_restriction &&
+                        ASRUtils::get_FunctionType(function)->m_deftype ==
+                            ASR::deftypeType::Interface &&
+                        function->n_body == 0,
+                    "asr.verify.trait_constraint.generic_requirement",
+                    "A generic requirement's function must be a bodyless restriction");
+            } else if (!message) {
+                function = ASR::down_cast<ASR::Function_t>(procedure);
+            }
+            if (ASRUtils::trait_member_operation(member)) {
+                // No receiver: the constraint's parameter stands for itself.
+                std::string binder = ASR::down_cast<ASR::TypeParameter_t>(
+                    ASRUtils::symbol_type(parameter))->m_param;
+                auto of_binder = [&](ASR::expr_t *value) {
+                    ASR::ttype_t *type = ASRUtils::extract_type(ASRUtils::expr_type(value));
+                    return !ASR::is_a<ASR::TypeParameter_t>(*type) ||
+                        std::string(ASR::down_cast<ASR::TypeParameter_t>(type)->m_param) ==
+                            binder;
+                };
+                bool binds = !function->m_return_var || of_binder(function->m_return_var);
+                for (size_t j = 0; j < function->n_args; j++) {
+                    binds = binds && of_binder(function->m_args[j]);
+                }
+                require_id(binds, "asr.verify.trait_constraint.operation_binder",
+                    "An initializer or operator requirement takes the constraint's "
+                    "parameter for itself");
+                continue;
+            }
+            ASR::expr_t *receiver = function->n_args ? function->m_args[0] : nullptr;
+            require_id(receiver && ASR::is_a<ASR::Var_t>(*receiver) &&
+                    ASR::down_cast<ASR::Var_t>(receiver)->m_v &&
+                    ASR::is_a<ASR::Variable_t>(
+                        *ASR::down_cast<ASR::Var_t>(receiver)->m_v),
+                "asr.verify.trait_constraint.receiver_is_variable",
+                "A normalized requirement must have a receiver variable");
+            auto *self = ASRUtils::EXPR2VAR(receiver);
+            require_id(self->m_type && ASR::is_a<ASR::TypeParameter_t>(*self->m_type) &&
+                    self->m_intent == ASR::intentType::In &&
+                    self->m_presence == ASR::presenceType::Required &&
+                    !self->m_value_attr && !self->m_type_declaration &&
+                    std::string(ASR::down_cast<ASR::TypeParameter_t>(
+                        self->m_type)->m_param) ==
+                        ASR::down_cast<ASR::TypeParameter_t>(
+                            ASRUtils::symbol_type(parameter))->m_param,
+                "asr.verify.trait_constraint.receiver_matches_parameter",
+                "A normalized receiver must be the constraint's read-only type parameter");
+            if (specialization) continue;
+            auto callable = trait_callables.emplace(
+                std::make_pair(parameter, std::string(ASRUtils::symbol_name(member))),
+                procedure);
+            require_id(callable.second || callable.first->second == procedure,
+                "asr.verify.trait_constraint.callable_is_coalesced",
+                "Same-name requirements of one parameter must share a normalized procedure");
+        }
+        require_id(required_members.size() == trait_members.size(),
+            "asr.verify.trait_constraint.requirements_complete",
+            "TraitConstraint requirements must cover every original trait member");
+    }
+
+    void visit_TraitImplementation(const TraitImplementation_t &x) {
+        require(x.m_name != nullptr,
+            "The TraitImplementation::m_name cannot be nullptr");
+        require(x.m_parent_symtab != nullptr,
+            "TraitImplementation::m_parent_symtab cannot be nullptr");
+        require(x.m_parent_symtab->get_symbol(std::string(x.m_name)) != nullptr,
+            "TraitImplementation '" + std::string(x.m_name) +
+            "' not found in parent_symtab symbol table");
+        ASR::symbol_t *impl_scope_owner = nullptr;
+        if (x.m_parent_symtab->asr_owner != nullptr &&
+                ASR::is_a<ASR::symbol_t>(*x.m_parent_symtab->asr_owner)) {
+            impl_scope_owner = ASR::down_cast<ASR::symbol_t>(x.m_parent_symtab->asr_owner);
+        }
+        // A generic derived type's package owns the conformances its
+        // definition adopts.
+        ASR::Template_t *package = impl_scope_owner
+            ? ASRUtils::generic_type_package(impl_scope_owner) : nullptr;
+        require_id(impl_scope_owner != nullptr &&
+                (ASR::is_a<ASR::Module_t>(*impl_scope_owner) ||
+                 ASR::is_a<ASR::Program_t>(*impl_scope_owner) ||
+                 (package && x.m_type_declaration == &ASRUtils::generic_type_definition(
+                    *package)->base)),
+            "asr.verify.trait_implementation.scope_is_module",
+            "TraitImplementation must be declared in a module or program scope, or in "
+            "the package of the generic type it implements");
+        symbol_t *symtab_sym = x.m_parent_symtab->get_symbol(std::string(x.m_name));
+        const symbol_t *current_sym = &x.base;
+        require(symtab_sym == current_sym,
+            "TraitImplementation's parent symbol table does not point to it");
+        require(id_symtab_map.find(x.m_parent_symtab->counter) != id_symtab_map.end(),
+            "TraitImplementation::m_parent_symtab must be present in the ASR ("
+                + std::string(x.m_name) + ")");
+        require(x.m_implementing_type != nullptr,
+            "TraitImplementation::m_implementing_type cannot be nullptr");
+        require_id(!ASR::is_a<ASR::TypeParameter_t>(*x.m_implementing_type),
+            "asr.verify.trait_implementation.type_is_concrete",
+            "TraitImplementation implementing type must be concrete");
+        if (!check_external) {
+            visit_ttype(*x.m_implementing_type);
+            return;
+        }
+        if (ASR::is_a<ASR::StructType_t>(*x.m_implementing_type)) {
+            require_id(x.m_type_declaration != nullptr &&
+                    ASR::is_a<ASR::Struct_t>(
+                        *ASRUtils::symbol_get_past_external(x.m_type_declaration)),
+                "asr.verify.trait_implementation.nominal_type_required",
+                "a derived-type conformance must identify its nominal type");
+        } else {
+            require_id(x.m_type_declaration == nullptr &&
+                    type_set_concrete_kind(x.m_implementing_type),
+                "asr.verify.trait_implementation.intrinsic_type",
+                "An intrinsic conformance requires a scalar numeric or logical type and no nominal declaration");
+        }
+        ASR::symbol_t *trait = check_external
+            ? ASRUtils::symbol_get_past_external(x.m_trait) : x.m_trait;
+        require_id(trait != nullptr && ASR::is_a<ASR::Trait_t>(*trait),
+            "asr.verify.trait_implementation.trait_is_trait",
+            "TraitImplementation trait must be a Trait, not " +
+                std::string(x.m_trait ? ASRUtils::symbol_type_name(*x.m_trait) : "<null>"));
+        require_id(ASR::down_cast<ASR::Trait_t>(trait)->m_kind ==
+                ASR::trait_kindType::UniversalTrait,
+            "asr.verify.trait_implementation.not_type_set",
+            "An intrinsic type set cannot be manually implemented");
+        visit_ttype(*x.m_implementing_type);
+        auto hierarchy = verify_trait_hierarchy(
+            *ASR::down_cast<ASR::Trait_t>(trait), x.base.base.loc);
+        std::set<ASR::symbol_t*> trait_members(
+            hierarchy.members.begin(), hierarchy.members.end());
+        std::set<ASR::symbol_t*> bound_members;
+        std::map<std::string, const ASR::trait_binding_t*> methods;
+        // Initializer and operator requirements are identified by their
+        // operation and signature; distinct overloads of an operator are
+        // different requirements whatever their generated names.
+        std::vector<const ASR::trait_binding_t*> operations;
+        for (size_t i = 0; i < x.n_bindings; i++) {
+            visit_trait_binding(x.m_bindings[i]);
+            ASR::symbol_t *member = check_external
+                ? ASRUtils::symbol_get_past_external(x.m_bindings[i].m_member)
+                : x.m_bindings[i].m_member;
+            require_id(member != nullptr &&
+                    ASRUtils::trait_method_function(member) != nullptr,
+                "asr.verify.trait_implementation.member_is_function",
+                "TraitImplementation binding member must be an ordinary or generic procedure");
+            std::string member_name = ASRUtils::symbol_name(member);
+            require(bound_members.insert(member).second,
+                "TraitImplementation member '" + member_name +
+                "' appears more than once");
+            require_id(trait_members.count(member) > 0,
+                "asr.verify.trait_implementation.member_belongs_to_trait",
+                "TraitImplementation binding member '" + member_name +
+                "' does not belong to the trait");
+            const ASR::trait_binding_t *previous = nullptr;
+            if (auto *operation = ASRUtils::trait_member_operation(member)) {
+                auto *required = ASRUtils::trait_method_function(member);
+                for (auto *other : operations) {
+                    ASR::symbol_t *other_member =
+                        ASRUtils::symbol_get_past_external(other->m_member);
+                    if (ASRUtils::same_trait_operation(
+                                *ASRUtils::trait_member_operation(other_member), *operation) &&
+                            ASRUtils::trait_operation_signatures_equal(
+                                *ASRUtils::trait_method_function(other_member), *required)) {
+                        previous = other;
+                        break;
+                    }
+                }
+                operations.push_back(&x.m_bindings[i]);
+            } else {
+                auto method = methods.emplace(member_name, &x.m_bindings[i]);
+                if (!method.second) previous = method.first->second;
+            }
+            require_id(!previous || ASRUtils::trait_bindings_equal(
+                    *previous, x.m_bindings[i]),
+                "asr.verify.trait_implementation.coalesced_binding_agrees",
+                "Equivalent inherited methods must have the same procedure and receiver binding");
+        }
+        require(bound_members.size() == trait_members.size(),
+            "TraitImplementation bindings must cover each trait member exactly once");
+        // Every binding infers the same type for each associated type.
+        ASRUtils::TraitAssociatedTypes associated;
+        for (size_t i = 0; i < x.n_bindings; i++) {
+            verify_trait_binding(x.m_type_declaration, x.m_bindings[i], false,
+                x.m_implementing_type, &associated);
+        }
+    }
+
+    Function_t *verify_runtime_trait_procedure(symbol_t *reference,
+            const Location &loc, const std::string &code) {
+        auto *procedure = ASRUtils::trait_method_function(reference);
+        require_with_loc_id(procedure != nullptr,
+            code, "A runtime trait procedure reference must name a function", loc);
+        require_with_loc_id(procedure->m_name && procedure->m_symtab &&
+                procedure->m_symtab->parent && procedure->m_function_signature &&
+                ASR::is_a<FunctionType_t>(*procedure->m_function_signature) &&
+                (!procedure->n_args || procedure->m_args),
+            "asr.verify.trait_procedure.signature",
+            "A runtime trait procedure requires a scope, signature and argument declarations", loc);
+        for (size_t i = 0; i < procedure->n_args; i++) {
+            auto *arg = procedure->m_args[i];
+            auto *variable = arg && ASR::is_a<Var_t>(*arg)
+                ? ASRUtils::symbol_get_past_external(ASR::down_cast<Var_t>(arg)->m_v)
+                : nullptr;
+            require_with_loc_id(variable && ASR::is_a<Variable_t>(*variable) &&
+                    ASRUtils::symbol_name(variable) && typed_expr_type(arg),
+                "asr.verify.trait_procedure.argument",
+                "A runtime trait procedure argument must name a typed variable", loc);
+        }
+        require_with_loc_id(!procedure->m_return_var ||
+                typed_expr_type(procedure->m_return_var),
+            "asr.verify.trait_procedure.result",
+            "A runtime trait function requires a typed result", loc);
+        return procedure;
+    }
+
+    Function_t *verify_runtime_trait_slot(const TraitRuntimeContract_t &contract,
+            size_t index, const Location &loc) {
+        require_with_loc_id(index < contract.n_slots && contract.m_slots,
+            "asr.verify.trait_contract.complete",
+            "A runtime contract must declare each referenced slot", loc);
+        auto &slot = contract.m_slots[index];
+        require_with_loc_id(slot.n_origins && slot.m_origins,
+            "asr.verify.trait_contract.origins",
+            "A callable slot must retain its nominal origins", loc);
+        auto *procedure = verify_runtime_trait_procedure(slot.m_procedure, loc,
+            "asr.verify.trait_contract.procedure");
+        require_with_loc_id(procedure->m_symtab->parent == contract.m_symtab,
+            "asr.verify.trait_contract.procedure",
+            "A callable slot must own its normalized interface", loc);
+        require_with_loc_id(procedure->n_args > 0 &&
+                ASR::is_a<TraitObjectType_t>(*typed_expr_type(procedure->m_args[0])) &&
+                ASRUtils::symbol_get_past_external(ASR::down_cast<TraitObjectType_t>(
+                    typed_expr_type(procedure->m_args[0]))->m_contract) == &contract.base &&
+                ASRUtils::EXPR2VAR(procedure->m_args[0])->m_intent == intentType::In &&
+                ASRUtils::get_FunctionType(procedure)->m_deftype == deftypeType::Interface &&
+                !ASRUtils::get_FunctionType(procedure)->m_is_restriction &&
+                procedure->n_body == 0,
+            "asr.verify.trait_contract.receiver",
+            "A callable interface must take its read-only view as its first argument", loc);
+        for (size_t i = 0; i < slot.n_origins; i++) {
+            auto *method = ASRUtils::trait_method_function(slot.m_origins[i]);
+            auto *generic = method ? ASRUtils::trait_method_template(*method) : nullptr;
+            require_with_loc_id(!slot.n_type_arguments ||
+                    (slot.m_type_arguments && generic &&
+                     !ASRUtils::trait_member_tuples(*generic).empty()),
+                "asr.verify.trait_contract.type_arguments",
+                "Only a member slot of a closed generic message has type arguments", loc);
+            if (generic && slot.n_type_arguments) {
+                verify_runtime_trait_procedure(slot.m_origins[i], loc,
+                    "asr.verify.trait_contract.origin");
+                require_with_loc_id(ASRUtils::runtime_trait_method_supported(*method) &&
+                        ASRUtils::trait_member_signature_matches(*method, *procedure,
+                            slot.m_type_arguments, slot.n_type_arguments, 1),
+                    "asr.verify.trait_contract.member_signature",
+                    "A member slot must instantiate its message at exactly its type arguments", loc);
+            } else if (generic) {
+                verify_runtime_trait_procedure(slot.m_origins[i], loc,
+                    "asr.verify.trait_contract.origin");
+                require_with_loc_id(ASRUtils::runtime_trait_method_supported(*method) &&
+                        ASRUtils::trait_erased_signature_matches(*method, *procedure, 1),
+                    "asr.verify.trait_contract.erased_signature",
+                    "A generic slot must preserve its quantified nominal argument domains", loc);
+            }
+        }
+        return procedure;
+    }
+
+    void verify_runtime_trait_adapter_receiver(const Function_t &procedure) {
+        class ReceiverUse : public ASR::BaseWalkVisitor<ReceiverUse> {
+        public:
+            symbol_t *receiver;
+            bool escapes = false;
+            explicit ReceiverUse(symbol_t *receiver) : receiver(receiver) {}
+            void visit_Var(const Var_t &x) {
+                escapes |= ASRUtils::symbol_get_past_external(x.m_v) == receiver;
+            }
+            void visit_TraitReceiver(const TraitReceiver_t &x) {
+                if (x.m_view && ASR::is_a<Var_t>(*x.m_view) &&
+                        ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<Var_t>(x.m_view)->m_v) == receiver) return;
+                ASR::BaseWalkVisitor<ReceiverUse>::visit_TraitReceiver(x);
+            }
+        } uses(&ASRUtils::EXPR2VAR(procedure.m_args[0])->base);
+        for (const auto &entry : procedure.m_symtab->get_scope()) uses.visit_symbol(*entry.second);
+        for (size_t i = 0; i < procedure.n_body; i++) uses.visit_stmt(*procedure.m_body[i]);
+        require_with_loc_id(!uses.escapes,
+            "asr.verify.trait_witness.receiver_prefix",
+            "A transferable adapter may use only the concrete prefix of its erased receiver",
+            procedure.base.base.loc);
+    }
+
+    TraitImplementation_t *verify_runtime_trait_evidence(const TraitWitness_t &witness,
+            const Location &loc) {
+        auto *contract_symbol = ASRUtils::symbol_get_past_external(witness.m_contract);
+        auto *impl_symbol = ASRUtils::symbol_get_past_external(witness.m_implementation);
+        require_with_loc_id(contract_symbol && ASR::is_a<TraitRuntimeContract_t>(*contract_symbol) &&
+                ((impl_symbol && ASR::is_a<TraitImplementation_t>(*impl_symbol) &&
+                  !witness.n_components) || (!impl_symbol && witness.n_components &&
+                  witness.m_components)),
+            "asr.verify.trait_witness.evidence",
+            "A runtime witness requires a contract and nominal implementation", loc);
+        auto *contract = ASR::down_cast<TraitRuntimeContract_t>(contract_symbol);
+        TraitImplementation_t *implementation = nullptr;
+        require_with_loc_id(!contract->n_slots || contract->m_slots,
+            "asr.verify.trait_contract.complete",
+            "A runtime contract must declare its slots", loc);
+        require_with_loc_id(witness.n_procedures == contract->n_slots &&
+                (!witness.n_procedures || (witness.m_procedures && witness.m_dependencies)) &&
+                witness.n_dependencies == witness.n_procedures,
+            "asr.verify.trait_witness.complete",
+            "A runtime witness must implement and retain every slot", loc);
+        auto *lifecycle = ASRUtils::symbol_get_past_external(
+            witness.m_lifecycle.m_type_declaration);
+        require_with_loc_id(lifecycle && ASR::is_a<Struct_t>(*lifecycle),
+            "asr.verify.trait_witness.lifecycle",
+            "A witness must retain its exact concrete nominal lifecycle", loc);
+        if (impl_symbol) {
+            implementation = ASR::down_cast<TraitImplementation_t>(impl_symbol);
+            require_with_loc_id(!implementation->n_bindings || implementation->m_bindings,
+                "asr.verify.trait_witness.evidence",
+                "A runtime implementation must declare its bindings", loc);
+            require_with_loc_id(!contract->m_anonymous &&
+                    lifecycle == ASRUtils::symbol_get_past_external(implementation->m_type_declaration),
+                "asr.verify.trait_witness.lifecycle",
+                "A nominal witness must retain its original implementation and lifecycle", loc);
+        } else {
+            require_with_loc_id(contract->m_anonymous && !witness.n_projections,
+                "asr.verify.trait_witness.combination",
+                "Only an anonymous contract composes independently selected witnesses", loc);
+            auto requirements = ASRUtils::trait_contract_requirements(*contract);
+            require_with_loc_id(witness.n_components == requirements.size(),
+                "asr.verify.trait_witness.components",
+                "A combination must retain evidence for every normalized nominal requirement", loc);
+            for (size_t i = 0; i < witness.n_components; i++) {
+                auto *symbol = ASRUtils::symbol_get_past_external(witness.m_components[i]);
+                require_with_loc_id(symbol && ASR::is_a<TraitWitness_t>(*symbol),
+                    "asr.verify.trait_witness.component_kind",
+                    "Combination evidence must reference nominal witnesses", loc);
+                auto *component = ASR::down_cast<TraitWitness_t>(symbol);
+                require_with_loc_id(component->m_symtab && component->m_symtab->parent &&
+                        component->m_implementation && !component->n_components,
+                    "asr.verify.trait_witness.component_kind",
+                    "Combination components must be original nominal evidence, not recursive compositions", loc);
+                auto *original = verify_runtime_trait_evidence(*component, loc);
+                auto *provided = ASR::down_cast<TraitRuntimeContract_t>(
+                    ASRUtils::symbol_get_past_external(component->m_contract));
+                require_with_loc_id(!provided->m_anonymous &&
+                        ASRUtils::symbol_get_past_external(provided->m_trait) == requirements[i] &&
+                        ASRUtils::symbol_get_past_external(component->m_lifecycle.m_type_declaration) == lifecycle,
+                    "asr.verify.trait_witness.component_origin",
+                    "A component must prove its original nominal requirement for the same concrete payload", loc);
+                if (!implementation) implementation = original;
+            }
+        }
+        return implementation;
+    }
+
+    // An erased dummy or result of `formal` takes, at a call of `function`,
+    // the type its dictionary argument describes: the implementing type of a
+    // selected conformance, the caller's erased type of a forwarded
+    // dictionary dummy, or a still-deferred binder inside a template.
+    bool trait_erased_type_matches(const Function_t &function, ttype_t *formal,
+            ttype_t *actual, call_arg_t *args, size_t n_args) {
+        if (!formal || !actual || ASRUtils::extract_n_dims_from_ttype(formal) !=
+                ASRUtils::extract_n_dims_from_ttype(actual)) return false;
+        const char *parameter = ASRUtils::trait_erased_parameter(formal);
+        auto *element = ASRUtils::extract_type(actual);
+        for (size_t i = 0; parameter && i < function.n_args && i < n_args; i++) {
+            auto *dummy = ASRUtils::expr_to_variable_or_null(function.m_args[i]);
+            if (!dummy || !dummy->m_type || !ASR::is_a<TraitDictionaryType_t>(*dummy->m_type)) continue;
+            auto *dictionary = ASR::down_cast<TraitDictionaryType_t>(dummy->m_type);
+            if (!dictionary->m_parameter || std::string(parameter) != dictionary->m_parameter) continue;
+            auto *value = args[i].m_value;
+            if (!value) return false;
+            if (auto *concrete = ASRUtils::trait_dictionary_value_type(value)) {
+                return ASRUtils::types_equal(element, ASRUtils::extract_type(concrete),
+                    nullptr, nullptr);
+            }
+            if (ASR::is_a<TraitDeferredDictionary_t>(*value)) {
+                auto *constraint = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<TraitDeferredDictionary_t>(value)->m_constraint);
+                return constraint && ASR::is_a<TraitConstraint_t>(*constraint) &&
+                    ASR::is_a<TypeParameter_t>(*element) &&
+                    std::string(ASR::down_cast<TypeParameter_t>(element)->m_param) ==
+                        ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<TraitConstraint_t>(constraint)->m_parameter));
+            }
+            auto *forwarded = typed_expr_type(value);
+            if (!ASR::is_a<Var_t>(*value) || !forwarded ||
+                    !ASR::is_a<TraitDictionaryType_t>(*forwarded) ||
+                    !ASR::down_cast<TraitDictionaryType_t>(forwarded)->m_parameter) return false;
+            return ASR::is_a<TraitErasedType_t>(*element) &&
+                std::string(ASR::down_cast<TraitErasedType_t>(element)->m_parameter) ==
+                    ASR::down_cast<TraitDictionaryType_t>(forwarded)->m_parameter;
+        }
+        return false;
+    }
+
+    // Erased values are bytes only a dictionary describes: no intrinsic,
+    // input/output or typed temporary may take them as an operand.
+    void verify_trait_erased_operands(expr_t **values, size_t n_values, const char *what) {
+        for (size_t i = 0; i < n_values; i++) {
+            if (!values[i]) continue;
+            require_with_loc_id(!ASRUtils::is_trait_erased(typed_expr_type(values[i])),
+                "asr.verify.trait_erased.operand",
+                std::string("An erased value cannot be an operand of ") + what,
+                values[i]->base.loc);
+        }
+    }
+
+    void visit_TraitErasedType(const TraitErasedType_t &x) {
+        if (_inside_template) return;
+        auto *owner = ASRUtils::trait_erased_owner(current_symtab);
+        require_id(x.m_parameter && owner &&
+                ASRUtils::trait_dictionary_dummy(*owner, x.m_parameter),
+            "asr.verify.trait_erased.dictionary",
+            "An erased value requires its procedure's dictionary dummy for its parameter");
+    }
+
+    void visit_TraitDictionaryType(const TraitDictionaryType_t &x) {
+        require_id(x.m_contract && symtab_in_scope(current_symtab, x.m_contract),
+            "asr.verify.trait_dictionary.contract_in_scope",
+            "A dictionary must reference a visible dictionary contract");
+        if (!check_external) return;
+        auto *contract = ASRUtils::symbol_get_past_external(x.m_contract);
+        require_id(contract && ASR::is_a<TraitDictionaryContract_t>(*contract),
+            "asr.verify.trait_dictionary.contract",
+            "A dictionary type must reference a dictionary contract");
+    }
+
+    void visit_TraitDictionaryContract(const TraitDictionaryContract_t &x) {
+        require_id(x.m_name && x.m_symtab && x.m_symtab->parent == current_symtab &&
+                x.m_symtab->asr_owner == (ASR::asr_t*)&x &&
+                current_symtab->get_symbol(x.m_name) == &x.base &&
+                !id_symtab_map.count(x.m_symtab->counter),
+            "asr.verify.trait_dictionary_contract.scope",
+            "A dictionary contract must own a unique, correctly parented symbol table");
+        require_id(x.m_trait && symtab_in_scope(current_symtab, x.m_trait),
+            "asr.verify.trait_dictionary_contract.trait",
+            "A dictionary contract must reference its visible trait");
+        auto *parent = current_symtab;
+        current_symtab = x.m_symtab;
+        id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        if (check_external) {
+            auto *trait = ASRUtils::symbol_get_past_external(x.m_trait);
+            require_id(trait && ASR::is_a<Trait_t>(*trait) &&
+                    ASR::down_cast<Trait_t>(trait)->m_kind == trait_kindType::UniversalTrait &&
+                    ASRUtils::symbol_parent_symtab(trait) == parent &&
+                    ASRUtils::trait_dictionary_contract(trait) == &x,
+                "asr.verify.trait_dictionary_contract.owner",
+                "A dictionary contract is the unique layout of a universal trait, "
+                "in the trait's scope");
+            for (size_t i = 0; i < x.n_slots; i++) {
+                auto *procedure = ASRUtils::symbol_get_past_external(x.m_slots[i].m_procedure);
+                require_id(procedure && ASR::is_a<Function_t>(*procedure) &&
+                        ASRUtils::symbol_parent_symtab(procedure) == x.m_symtab &&
+                        x.m_slots[i].n_origins && x.m_slots[i].m_origins &&
+                        !x.m_slots[i].n_type_arguments,
+                    "asr.verify.trait_dictionary_contract.slot",
+                    "A dictionary slot is an interface of the contract with its origins");
+                auto *function = ASR::down_cast<Function_t>(procedure);
+                auto *first = function->n_args ? ASRUtils::expr_to_variable_or_null(
+                    function->m_args[0]) : nullptr;
+                require_id(first && first->m_type &&
+                        ASR::is_a<TraitDictionaryType_t>(*first->m_type) &&
+                        ASRUtils::symbol_get_past_external(ASR::down_cast<TraitDictionaryType_t>(
+                            first->m_type)->m_contract) == &x.base &&
+                        ASR::down_cast<TraitDictionaryType_t>(first->m_type)->m_parameter,
+                    "asr.verify.trait_dictionary_contract.dictionary",
+                    "A dictionary slot takes its own contract's dictionary first");
+            }
+        }
+        for (auto &entry : current_symtab->get_scope()) visit_symbol(*entry.second);
+        current_symtab = parent;
+    }
+
+    void visit_TraitDictionary(const TraitDictionary_t &x) {
+        require_id(x.m_name && x.m_symtab && x.m_symtab->parent == current_symtab &&
+                x.m_symtab->asr_owner == (ASR::asr_t*)&x &&
+                current_symtab->get_symbol(x.m_name) == &x.base &&
+                !id_symtab_map.count(x.m_symtab->counter),
+            "asr.verify.trait_dictionary.scope",
+            "A conformance dictionary must own a unique, correctly parented symbol table");
+        require_id(x.m_contract && x.m_implementation &&
+                symtab_in_scope(current_symtab, x.m_contract) &&
+                symtab_in_scope(current_symtab, x.m_implementation),
+            "asr.verify.trait_dictionary.fields",
+            "A conformance dictionary references its visible contract and conformance");
+        auto *parent = current_symtab;
+        current_symtab = x.m_symtab;
+        id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        if (check_external) {
+            auto *contract = ASRUtils::symbol_get_past_external(x.m_contract);
+            auto *implementation = ASRUtils::symbol_get_past_external(x.m_implementation);
+            require_id(contract && ASR::is_a<TraitDictionaryContract_t>(*contract) &&
+                    implementation && ASR::is_a<TraitImplementation_t>(*implementation) &&
+                    ASR::down_cast<TraitImplementation_t>(implementation)->m_parent_symtab == parent,
+                "asr.verify.trait_dictionary.owner",
+                "A conformance's dictionary belongs to the conformance's own scope");
+            auto *layout = ASR::down_cast<TraitDictionaryContract_t>(contract);
+            require_id(x.n_procedures == layout->n_slots && (!x.n_procedures || x.m_procedures),
+                "asr.verify.trait_dictionary.complete",
+                "A conformance dictionary has one adapter per contract slot");
+            for (size_t i = 0; i < x.n_procedures; i++) {
+                auto *procedure = ASRUtils::symbol_get_past_external(x.m_procedures[i]);
+                auto *slot = ASRUtils::symbol_get_past_external(layout->m_slots[i].m_procedure);
+                require_id(procedure && ASR::is_a<Function_t>(*procedure) &&
+                        ASRUtils::symbol_parent_symtab(procedure) == x.m_symtab &&
+                        slot && ASR::is_a<Function_t>(*slot) &&
+                        ASR::down_cast<Function_t>(procedure)->n_args ==
+                            ASR::down_cast<Function_t>(slot)->n_args &&
+                        bool(ASR::down_cast<Function_t>(procedure)->m_return_var) ==
+                            bool(ASR::down_cast<Function_t>(slot)->m_return_var),
+                    "asr.verify.trait_dictionary.adapter",
+                    "A dictionary adapter implements its slot's interface");
+            }
+        }
+        for (auto &entry : current_symtab->get_scope()) visit_symbol(*entry.second);
+        current_symtab = parent;
+    }
+
+    void visit_TraitDictionaryValue(const TraitDictionaryValue_t &x) {
+        require_id(x.m_dictionary && symtab_in_scope(current_symtab, x.m_dictionary) &&
+                x.m_type && ASR::is_a<TraitDictionaryType_t>(*x.m_type),
+            "asr.verify.trait_dictionary_value.fields",
+            "A dictionary value references a visible conformance dictionary");
+        visit_ttype(*x.m_type);
+        if (!check_external) return;
+        auto *dictionary = ASRUtils::symbol_get_past_external(x.m_dictionary);
+        require_id(dictionary && ASR::is_a<TraitDictionary_t>(*dictionary) &&
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<TraitDictionary_t>(dictionary)->m_contract) ==
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<TraitDictionaryType_t>(x.m_type)->m_contract),
+            "asr.verify.trait_dictionary_value.contract",
+            "A dictionary value has its dictionary's contract");
+    }
+
+    void visit_TraitDeferredDictionary(const TraitDeferredDictionary_t &x) {
+        require_id(_inside_template,
+            "asr.verify.trait_deferred_dictionary.scope",
+            "A deferred dictionary may exist only within a checked generic definition");
+        require_id(x.m_constraint && x.m_type && ASR::is_a<TraitDictionaryType_t>(*x.m_type),
+            "asr.verify.trait_deferred_dictionary.fields",
+            "A deferred dictionary names its binder's constraint and dictionary contract");
+        visit_ttype(*x.m_type);
+    }
+
+    void visit_TraitRecover(const TraitRecover_t &x) {
+        require_id(x.m_value && x.m_dictionary && x.m_type &&
+                ASR::is_a<TraitErasedType_t>(*typed_expr_type(x.m_value)),
+            "asr.verify.trait_recover.fields",
+            "Recovery reads a concrete value from erased storage");
+        bool adapter = false;
+        for (auto *scope = current_symtab; scope; scope = scope->parent) {
+            if (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
+                    ASR::down_cast<ASR::symbol_t>(scope->asr_owner) ==
+                        ASRUtils::symbol_get_past_external(x.m_dictionary)) adapter = true;
+        }
+        require_id(adapter,
+            "asr.verify.trait_recover.adapter",
+            "Only a dictionary's own adapters may recover its concrete values");
+        BaseWalkVisitor<VerifyVisitor>::visit_TraitRecover(x);
+    }
+
+    void visit_TraitObjectType(const TraitObjectType_t &x) {
+        require_id(x.m_contract && symtab_in_scope(current_symtab, x.m_contract),
+            "asr.verify.trait_view.contract_in_scope",
+            "A trait view must reference a visible runtime contract");
+        if (!check_external) return;
+        auto *symbol = ASRUtils::symbol_get_past_external(x.m_contract);
+        require_id(symbol && ASR::is_a<TraitRuntimeContract_t>(*symbol),
+            "asr.verify.trait_view.contract",
+            "A trait view must reference a runtime contract");
+        auto *trait = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<TraitRuntimeContract_t>(symbol)->m_trait);
+        require_id(trait && ASR::is_a<Trait_t>(*trait) &&
+                ASR::down_cast<Trait_t>(trait)->m_kind == trait_kindType::UniversalTrait,
+            "asr.verify.trait_view.universal",
+            "Only a universal trait may be a runtime view");
+    }
+
+    void visit_TraitOwnerList(const TraitOwnerList_t &x) {
+        require_id(x.m_contract && symtab_in_scope(current_symtab, x.m_contract),
+            "asr.verify.trait_results.contract_in_scope",
+            "Retained trait results must reference a visible runtime contract");
+        if (check_external) {
+            auto *contract = ASRUtils::symbol_get_past_external(x.m_contract);
+            require_id(contract && ASR::is_a<TraitRuntimeContract_t>(*contract),
+                "asr.verify.trait_results.contract",
+                "Retained trait results require a runtime contract");
+        }
+    }
+
+    void visit_TraitRetain(const TraitRetain_t &x) {
+        require_id(x.m_storage && x.m_owner &&
+                ASR::is_a<Var_t>(*x.m_storage) && ASR::is_a<Var_t>(*x.m_owner) &&
+                ASR::down_cast<Var_t>(x.m_storage)->m_v &&
+                ASR::down_cast<Var_t>(x.m_owner)->m_v &&
+                ASR::is_a<Variable_t>(*ASR::down_cast<Var_t>(x.m_storage)->m_v) &&
+                ASR::is_a<Variable_t>(*ASR::down_cast<Var_t>(x.m_owner)->m_v),
+            "asr.verify.trait_results.variables",
+            "Trait retention requires a local store and an owning temporary");
+        auto *storage = ASRUtils::EXPR2VAR(x.m_storage);
+        auto *owner = ASRUtils::EXPR2VAR(x.m_owner);
+        require_id(ASR::is_a<TraitOwnerList_t>(*storage->m_type) &&
+                ASRUtils::is_trait_owner(owner->m_type) &&
+                owner->m_intent == intentType::Local &&
+                owner->m_storage == storage_typeType::Default &&
+                !owner->m_target_attr &&
+                owner->m_parent_symtab == storage->m_parent_symtab,
+            "asr.verify.trait_results.ownership",
+            "Trait retention moves a non-target local owner into its own scope's store");
+        if (check_external) {
+            auto *contract = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<TraitOwnerList_t>(storage->m_type)->m_contract);
+            require_id(ASRUtils::trait_contracts_equal(
+                    contract, &ASRUtils::trait_runtime_contract(owner->m_type)->base),
+                "asr.verify.trait_results.contract_matches",
+                "Retained owners must have the store's declared contract");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_TraitRetain(x);
+    }
+
+    void visit_TraitRuntimeContract(const TraitRuntimeContract_t &x) {
+        require_id(x.m_name && x.m_symtab && x.m_symtab->parent == current_symtab &&
+                x.m_symtab->asr_owner == (ASR::asr_t*)&x &&
+                current_symtab->get_symbol(x.m_name) == &x.base &&
+                !id_symtab_map.count(x.m_symtab->counter),
+            "asr.verify.trait_contract.scope",
+            "A runtime contract must own a unique, correctly parented symbol table");
+        require_id(x.m_trait && symtab_in_scope(current_symtab, x.m_trait),
+            "asr.verify.trait_contract.trait_in_scope",
+            "A runtime contract must reference its visible nominal trait");
+        auto *parent = current_symtab;
+        current_symtab = x.m_symtab;
+        id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        if (check_external) {
+            auto *trait_symbol = ASRUtils::symbol_get_past_external(x.m_trait);
+            require_id(trait_symbol && ASR::is_a<Trait_t>(*trait_symbol) &&
+                    ASR::down_cast<Trait_t>(trait_symbol)->m_kind == trait_kindType::UniversalTrait &&
+                    ASRUtils::symbol_parent_symtab(trait_symbol) == parent,
+                "asr.verify.trait_contract.nominal_owner",
+                "A runtime contract belongs to its universal trait's defining scope");
+            require_id(!ASRUtils::trait_has_associated_types(
+                    *ASR::down_cast<Trait_t>(trait_symbol)),
+                "asr.verify.trait_contract.associated_types",
+                "A trait with associated types is a generic constraint only and has no "
+                "runtime contract");
+            for (const auto &entry : parent->get_scope()) {
+                if (entry.second == &x.base ||
+                        !ASR::is_a<TraitRuntimeContract_t>(*entry.second)) continue;
+                require_id(ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<TraitRuntimeContract_t>(entry.second)->m_trait) != trait_symbol,
+                    "asr.verify.trait_contract.unique",
+                    "A nominal trait has exactly one canonical runtime contract");
+            }
+            auto hierarchy = verify_trait_hierarchy(
+                *ASR::down_cast<Trait_t>(trait_symbol), x.base.base.loc);
+            if (x.m_anonymous) {
+                auto *trait = ASR::down_cast<Trait_t>(trait_symbol);
+                auto requirements = ASRUtils::trait_contract_requirements(x);
+                require_id(trait->m_access == accessType::Private &&
+                        trait->m_symtab->get_scope().empty() && requirements.size() >= 2 &&
+                        ASRUtils::normalized_trait_requirements(requirements) == requirements,
+                    "asr.verify.trait_contract.combination",
+                    "An anonymous contract is a canonical antichain of original nominal traits");
+                for (auto *required : requirements) {
+                    auto *contract = ASRUtils::trait_runtime_contract(required);
+                    require_id(contract && !contract->m_anonymous,
+                        "asr.verify.trait_contract.nominal_requirements",
+                        "Anonymous combinations retain original nominal contracts, not synthetic names");
+                }
+            }
+            std::map<std::string, size_t> indices;
+            std::vector<std::vector<symbol_t*>> expected;
+            require_id(ASRUtils::trait_runtime_view_admissible(*ASR::down_cast<Trait_t>(trait_symbol)),
+                "asr.verify.trait_contract.view_admissible",
+                "A runtime contract belongs to a trait whose requirements without a "
+                "receiver are initializers and whose messages do not use itself");
+            for (auto *member : hierarchy.members) {
+                // An initializer is required for conformance but is not
+                // callable through an object: it has no slot.
+                if (ASRUtils::trait_member_is_initializer(member)) continue;
+                auto inserted = indices.emplace(ASRUtils::symbol_name(member), expected.size());
+                if (inserted.second) expected.emplace_back();
+                expected[inserted.first->second].push_back(member);
+            }
+            // A callable whose generic binders are all closed has one slot per
+            // member tuple; any other callable has exactly one slot.
+            std::vector<std::pair<size_t, std::vector<ttype_t*>>> layout;
+            for (size_t i = 0; i < expected.size(); i++) {
+                auto *method = ASRUtils::trait_method_function(expected[i][0]);
+                auto *generic = method ? ASRUtils::trait_method_template(*method) : nullptr;
+                auto tuples = generic ? ASRUtils::trait_member_tuples(*generic)
+                    : std::vector<std::vector<ttype_t*>>();
+                if (tuples.empty()) layout.push_back({i, {}});
+                for (auto &tuple : tuples) layout.push_back({i, tuple});
+            }
+            require_id(x.n_slots == layout.size() && (!x.n_slots || x.m_slots),
+                "asr.verify.trait_contract.complete",
+                "A runtime contract must have one slot for each canonical callable and closed member tuple");
+            for (size_t i = 0; i < x.n_slots; i++) {
+                auto &slot = x.m_slots[i];
+                auto &origins = expected[layout[i].first];
+                require_id(slot.n_origins == origins.size() && slot.m_origins,
+                    "asr.verify.trait_contract.origins",
+                    "A callable slot must retain every nominal origin exactly once");
+                require_id(ASRUtils::trait_type_arguments_equal(slot.m_type_arguments,
+                        slot.n_type_arguments, layout[i].second.data(), layout[i].second.size()),
+                    "asr.verify.trait_contract.member_slots",
+                    "Member slots must cover each closed member tuple once in binder and declaration order");
+                auto *procedure = verify_runtime_trait_slot(x, i, x.base.base.loc);
+                for (size_t j = 0; j < slot.n_origins; j++) {
+                    auto *origin = ASRUtils::symbol_get_past_external(slot.m_origins[j]);
+                    require_id(origin == origins[j] &&
+                            symtab_in_scope(current_symtab, slot.m_origins[j]),
+                        "asr.verify.trait_contract.origin_order",
+                        "Runtime slot origins must follow the canonical trait hierarchy");
+                    auto *method = ASRUtils::trait_method_function(origin);
+                    if (!ASRUtils::trait_method_template(*method)) {
+                        auto mismatch = ASRUtils::trait_method_mismatch(*method, *procedure, 0, 1);
+                        require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
+                            "asr.verify.trait_contract.signature",
+                            "A runtime slot must preserve its message signature: " + mismatch.message);
+                    }
+                }
+            }
+        }
+        for (auto &entry : current_symtab->get_scope()) visit_symbol(*entry.second);
+        current_symtab = parent;
+    }
+
+    // A closed generic's provider-owned entry: the checked template at exactly
+    // one member tuple, unique per generic and tuple in its provider scope.
+    void verify_trait_member_entry(const TraitErasure_t &x, Template_t &generic,
+            const Function_t &original, const Function_t &entry, SymbolTable &provider) {
+        std::vector<ttype_t*> members;
+        for (size_t i = 0; i < x.n_parameters; i++) {
+            auto &parameter = x.m_parameters[i];
+            auto *binder = generic.m_symtab->get_symbol(generic.m_args[i]);
+            require_id(parameter.m_parameter && parameter.m_member && !parameter.m_contract &&
+                    !parameter.n_operations && symtab_in_scope(current_symtab, parameter.m_parameter) &&
+                    ASRUtils::symbol_get_past_external(parameter.m_parameter) == binder,
+                "asr.verify.trait_erasure.member",
+                "A closed binder is substituted by exactly its member type, without nominal evidence");
+            members.push_back(parameter.m_member);
+        }
+        bool declared = false;
+        for (auto &tuple : ASRUtils::trait_member_tuples(generic)) {
+            declared |= ASRUtils::trait_type_arguments_equal(tuple.data(), tuple.size(),
+                members.data(), members.size());
+        }
+        require_id(declared,
+            "asr.verify.trait_erasure.member",
+            "A member entry must instantiate a declared member of each closed binder");
+        require_id(ASRUtils::symbol_parent_symtab(&entry.base) == current_symtab &&
+                ASRUtils::get_FunctionType(entry)->m_deftype == deftypeType::Implementation &&
+                ASRUtils::trait_member_signature_matches(original, entry,
+                    members.data(), members.size()),
+            "asr.verify.trait_erasure.member_signature",
+            "A member entry must preserve its template's signature at exactly its members");
+        require_id(ASRUtils::trait_erasure(generic, &provider, members.data(), members.size()) == &x,
+            "asr.verify.trait_erasure.unique",
+            "A provider owns at most one entry per generic and member tuple");
+    }
+
+    void visit_TraitErasure(const TraitErasure_t &x) {
+        require_id(x.m_name && x.m_symtab && x.m_symtab->parent == current_symtab &&
+                x.m_symtab->asr_owner == (ASR::asr_t*)&x &&
+                current_symtab->get_symbol(x.m_name) == &x.base &&
+                !id_symtab_map.count(x.m_symtab->counter),
+            "asr.verify.trait_erasure.scope",
+            "A generic erasure must own a unique provider scope");
+        require_id(x.m_generic && symtab_in_scope(current_symtab, x.m_generic) &&
+                x.m_procedure && x.m_parameters,
+            "asr.verify.trait_erasure.fields",
+            "An erasure must retain its checked template, entry and binder substitutions");
+        auto *parent = current_symtab;
+        current_symtab = x.m_symtab;
+        id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        if (check_external) {
+            auto *definition = ASRUtils::symbol_get_past_external(x.m_generic);
+            require_id(definition && ASR::is_a<Template_t>(*definition),
+                "asr.verify.trait_erasure.generic",
+                "An erased entry must originate in a checked template");
+            auto *generic = ASR::down_cast<Template_t>(definition);
+            require_id(!parent->asr_owner || !ASR::is_a<ASR::symbol_t>(*parent->asr_owner) ||
+                    !ASR::is_a<Program_t>(*ASR::down_cast<ASR::symbol_t>(parent->asr_owner)) ||
+                    (ASRUtils::program_generic_instance_method(*generic, parent) &&
+                        !ASRUtils::program_generic_instance_captures(&generic->base, parent)),
+                "asr.verify.trait_witness.program_owner",
+                "A program's generic entry must instantiate a method copy, capturing no "
+                "program variable, of a generic type instance the program owns and binds "
+                "at runtime");
+            auto *original = verify_runtime_trait_procedure(definition, x.base.base.loc,
+                "asr.verify.trait_erasure.original");
+            auto *entry = verify_runtime_trait_procedure(x.m_procedure, x.base.base.loc,
+                "asr.verify.trait_erasure.entry");
+            require_id(x.n_parameters == generic->n_args,
+                "asr.verify.trait_erasure.parameters",
+                "Erasure must retain exactly one substitution per scoped binder");
+            if (!ASRUtils::trait_member_tuples(*generic).empty()) {
+                verify_trait_member_entry(x, *generic, *original, *entry, *parent);
+                for (const auto &item : current_symtab->get_scope()) visit_symbol(*item.second);
+                current_symtab = parent;
+                return;
+            }
+            require_id(ASRUtils::symbol_parent_symtab(&entry->base) == current_symtab &&
+                    ASRUtils::get_FunctionType(entry)->m_deftype == deftypeType::Implementation &&
+                    ASRUtils::trait_erased_signature_matches(*original, *entry),
+                "asr.verify.trait_erasure.signature",
+                "The reusable entry must preserve its template's arguments and erase only checked scalar binders");
+            for (size_t i = 0; i < x.n_parameters; i++) {
+                auto &parameter = x.m_parameters[i];
+                require_id(parameter.m_parameter && parameter.m_contract && !parameter.m_member &&
+                        symtab_in_scope(current_symtab, parameter.m_parameter) &&
+                        symtab_in_scope(current_symtab, parameter.m_contract) &&
+                        (!parameter.n_operations || parameter.m_operations),
+                    "asr.verify.trait_erasure.parameter_fields",
+                    "Erased binders require visible nominal type and operation evidence");
+                auto *binder = generic->m_symtab->get_symbol(generic->m_args[i]);
+                if (auto *dictionary = ASRUtils::trait_parameter_dictionary(binder)) {
+                    // A dictionary binder's requirements are calls through its
+                    // dictionary's slots, not operation wrappers.
+                    require_id(ASRUtils::symbol_get_past_external(parameter.m_parameter) == binder &&
+                            ASRUtils::symbol_get_past_external(parameter.m_contract) ==
+                                &dictionary->base && !parameter.n_operations &&
+                            ASRUtils::trait_dictionary_dummy(*entry, generic->m_args[i]),
+                        "asr.verify.trait_erasure.parameter_identity",
+                        "A dictionary binder keeps its scope, its protocol's dictionary "
+                        "contract and the entry's dictionary dummy");
+                    continue;
+                }
+                auto *contract = ASRUtils::trait_parameter_contract(binder);
+                require_id(binder && contract &&
+                        ASRUtils::symbol_get_past_external(parameter.m_parameter) == binder &&
+                        ASRUtils::symbol_get_past_external(parameter.m_contract) == &contract->base,
+                    "asr.verify.trait_erasure.parameter_identity",
+                    "An erased binder must preserve its original scope and exact nominal domain");
+                std::map<symbol_t*, symbol_t*> required;
+                for (const auto &item : generic->m_symtab->get_scope()) {
+                    if (!ASR::is_a<TraitConstraint_t>(*item.second)) continue;
+                    auto *constraint = ASR::down_cast<TraitConstraint_t>(item.second);
+                    if (ASRUtils::symbol_get_past_external(constraint->m_parameter) != binder) continue;
+                    for (size_t j = 0; j < constraint->n_requirements; j++) {
+                        auto &operation = constraint->m_requirements[j];
+                        required.emplace(ASRUtils::symbol_get_past_external(operation.m_procedure),
+                            ASRUtils::symbol_get_past_external(operation.m_member));
+                    }
+                }
+                require_id(parameter.n_operations == required.size(),
+                    "asr.verify.trait_erasure.operations",
+                    "Erasure must supply every checked operation exactly once");
+                std::set<symbol_t*> seen;
+                for (size_t j = 0; j < parameter.n_operations; j++) {
+                    auto &operation = parameter.m_operations[j];
+                    auto *requirement = ASRUtils::symbol_get_past_external(operation.m_requirement);
+                    require_id(requirement && required.count(requirement) &&
+                            seen.insert(requirement).second &&
+                            symtab_in_scope(current_symtab, operation.m_requirement),
+                        "asr.verify.trait_erasure.operation_identity",
+                        "Erased operations must refer to the binder's checked requirements");
+                    auto *wrapper = verify_runtime_trait_procedure(operation.m_procedure,
+                        operation.loc, "asr.verify.trait_erasure.operation");
+                    size_t slot = contract->n_slots;
+                    for (size_t k = 0; k < contract->n_slots; k++) {
+                        for (size_t m = 0; m < contract->m_slots[k].n_origins; m++) {
+                            if (ASRUtils::symbol_get_past_external(contract->m_slots[k].m_origins[m]) ==
+                                    required.at(requirement)) slot = k;
+                        }
+                    }
+                    require_id(slot < contract->n_slots &&
+                            ASRUtils::symbol_parent_symtab(&wrapper->base) == current_symtab,
+                        "asr.verify.trait_erasure.operation_slot",
+                        "An erased operation wrapper must select its proved nominal slot");
+                    auto comparable = *wrapper;
+                    auto signature = *ASRUtils::get_FunctionType(wrapper);
+                    if (signature.m_abi == abiType::ExternalUndefined) signature.m_abi = abiType::Source;
+                    comparable.m_function_signature = &signature.base;
+                    auto mismatch = ASRUtils::trait_method_mismatch(
+                        *verify_runtime_trait_slot(*contract, slot, operation.loc), comparable);
+                    require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
+                        "asr.verify.trait_erasure.operation_signature",
+                        "An erased operation must preserve its runtime slot signature");
+                    if (ASRUtils::get_FunctionType(wrapper)->m_abi == abiType::ExternalUndefined &&
+                            wrapper->n_body == 0) continue;
+                    require_id(wrapper->n_body == 1 && wrapper->m_body,
+                        "asr.verify.trait_erasure.operation_body",
+                        "An erased operation wrapper must contain one checked indirect call");
+                    TraitFunctionCall_t *function_call = nullptr;
+                    TraitSubroutineCall_t *subroutine_call = nullptr;
+                    if (wrapper->m_return_var && ASR::is_a<Assignment_t>(*wrapper->m_body[0])) {
+                        auto *assignment = ASR::down_cast<Assignment_t>(wrapper->m_body[0]);
+                        require_id(same_variable(assignment->m_target, wrapper->m_return_var) &&
+                                assignment->m_value && ASR::is_a<TraitFunctionCall_t>(*assignment->m_value),
+                            "asr.verify.trait_erasure.operation_body",
+                            "An erased operation must return its selected indirect call");
+                        function_call = ASR::down_cast<TraitFunctionCall_t>(assignment->m_value);
+                    } else if (!wrapper->m_return_var &&
+                            ASR::is_a<TraitSubroutineCall_t>(*wrapper->m_body[0])) {
+                        subroutine_call = ASR::down_cast<TraitSubroutineCall_t>(wrapper->m_body[0]);
+                    }
+                    require_id(function_call || subroutine_call,
+                        "asr.verify.trait_erasure.operation_body",
+                        "Erased operation wrappers must use explicit dynamic dispatch");
+                    auto *args = function_call ? function_call->m_args : subroutine_call->m_args;
+                    size_t nargs = function_call ? function_call->n_args : subroutine_call->n_args;
+                    int64_t index = function_call ? function_call->m_slot : subroutine_call->m_slot;
+                    require_id(index == (int64_t)slot && nargs == wrapper->n_args && args,
+                        "asr.verify.trait_erasure.operation_body",
+                        "An erased operation must forward all of its own arguments in order");
+                    for (size_t k = 0; k < nargs; k++) {
+                        require_id(same_variable(args[k].m_value, wrapper->m_args[k]),
+                            "asr.verify.trait_erasure.operation_body",
+                            "An erased operation must borrow the supplied actual view, not provider storage");
+                    }
+                }
+            }
+        }
+        for (const auto &entry : current_symtab->get_scope()) visit_symbol(*entry.second);
+        current_symtab = parent;
+    }
+
+    void visit_TraitWitness(const TraitWitness_t &x) {
+        require_id(x.m_abi == abiType::Source || x.m_abi == abiType::ExternalUndefined,
+            "asr.verify.trait_witness.linkage",
+            "A runtime witness is either a provider definition or an imported declaration");
+        require_id(x.m_name && x.m_symtab && x.m_symtab->parent == current_symtab &&
+                x.m_symtab->asr_owner == (ASR::asr_t*)&x &&
+                current_symtab->get_symbol(x.m_name) == &x.base &&
+                !id_symtab_map.count(x.m_symtab->counter),
+            "asr.verify.trait_witness.scope",
+            "A runtime witness must own a unique scope in its defining conformance module");
+        require_id(x.m_contract && (x.m_implementation || x.n_components) &&
+                symtab_in_scope(current_symtab, x.m_contract) &&
+                (!x.m_implementation || symtab_in_scope(current_symtab, x.m_implementation)) &&
+                x.m_lifecycle.m_type_declaration &&
+                symtab_in_scope(current_symtab, x.m_lifecycle.m_type_declaration),
+            "asr.verify.trait_witness.evidence_in_scope",
+            "A runtime witness must reference visible contract and implementation evidence");
+        require_id(!x.n_projections || x.m_projections,
+            "asr.verify.trait_witness.projections",
+            "A witness must retain its declared parent projection references");
+        require_id(!x.n_components || x.m_components,
+            "asr.verify.trait_witness.components",
+            "Combination witnesses must retain their original component references");
+        for (size_t i = 0; i < x.n_projections; i++) {
+            auto *reference = x.m_projections[i];
+            require_id(reference && (ASR::is_a<TraitWitness_t>(*reference) ||
+                    ASR::is_a<ExternalSymbol_t>(*reference)),
+                "asr.verify.trait_witness.projection_kind",
+                "A parent projection must name a runtime witness");
+            auto *scope = ASR::is_a<TraitWitness_t>(*reference)
+                ? ASR::down_cast<TraitWitness_t>(reference)->m_symtab
+                : ASR::down_cast<ExternalSymbol_t>(reference)->m_parent_symtab;
+            require_id(scope && (ASR::is_a<ExternalSymbol_t>(*reference) || scope->parent) &&
+                    symtab_in_scope(current_symtab, reference),
+                "asr.verify.trait_witness.projection_in_scope",
+                "A parent witness must be visible from its provider");
+        }
+        id_symtab_map[x.m_symtab->counter] = x.m_symtab;
+        auto visit_adapters = [&]() {
+            auto *parent = current_symtab;
+            current_symtab = x.m_symtab;
+            for (auto &entry : current_symtab->get_scope()) visit_symbol(*entry.second);
+            current_symtab = parent;
+        };
+        if (!check_external) {
+            visit_adapters();
+            return;
+        }
+        auto *implementation = verify_runtime_trait_evidence(x, x.base.base.loc);
+        auto *contract = ASR::down_cast<TraitRuntimeContract_t>(
+            ASRUtils::symbol_get_past_external(x.m_contract));
+        // A program owns the generic entries of a conformance only for a
+        // generic type instance it owns, through the procedure copies it owns,
+        // when every conformance its type arguments use is a module's or,
+        // recursively, such a conformance of the program; the copies capture
+        // no program variable.
+        bool generic_bindings = false, captures = false;
+        for (size_t i = 0; x.m_implementation && implementation && i < contract->n_slots; i++) {
+            auto *binding = contract->m_slots[i].n_origins ? ASRUtils::find_trait_binding(
+                *implementation, contract->m_slots[i].m_origins[0]) : nullptr;
+            auto *procedure = binding
+                ? ASRUtils::trait_method_function(binding->m_procedure) : nullptr;
+            generic_bindings |= procedure && ASRUtils::trait_method_template(*procedure);
+            captures |= procedure && ASRUtils::program_generic_instance_captures(
+                &procedure->base, current_symtab);
+        }
+        require_id(!generic_bindings || !current_symtab->asr_owner ||
+                !ASR::is_a<ASR::symbol_t>(*current_symtab->asr_owner) ||
+                !ASR::is_a<Program_t>(*ASR::down_cast<ASR::symbol_t>(current_symtab->asr_owner)) ||
+                (ASRUtils::program_generic_instance_conformance(*implementation, contract) &&
+                    !captures),
+            "asr.verify.trait_witness.program_owner",
+            "A program's runtime witness of generic bindings must belong to the "
+            "conformance of a generic type instance the program owns, through "
+            "procedure copies it owns that capture no program variable, and every "
+            "conformance its type arguments use must be a module's or such a "
+            "conformance of the program");
+        for (size_t i = 0; i < x.n_components; i++) {
+            require_id(symtab_in_scope(current_symtab, x.m_components[i]),
+                "asr.verify.trait_witness.component_in_scope",
+                "Original combination witnesses must be visible at concrete construction");
+        }
+        auto *origin = ASRUtils::symbol_get_past_external(implementation->m_trait);
+        auto *target = ASRUtils::symbol_get_past_external(contract->m_trait);
+        require_id(origin && target && ASR::is_a<Trait_t>(*origin) &&
+                ASR::is_a<Trait_t>(*target),
+            "asr.verify.trait_witness.conformance_origin",
+            "A runtime witness must retain resolved nominal trait declarations");
+        auto hierarchy = verify_trait_hierarchy(*ASR::down_cast<Trait_t>(origin),
+            x.base.base.loc);
+        bool provided = false;
+        for (auto *trait : hierarchy.traits) provided |= &trait->base == target;
+        require_id(contract->m_anonymous ||
+                (implementation->m_parent_symtab == current_symtab && provided),
+            "asr.verify.trait_witness.conformance_origin",
+            "A runtime witness must preserve its original conformance and a guaranteed contract");
+        auto *trait = ASR::down_cast<Trait_t>(target);
+        require_id(x.n_projections == (contract->m_anonymous ? 0 : trait->n_parents),
+            "asr.verify.trait_witness.projections",
+            "A witness must retain every direct parent view in declaration order");
+        for (size_t i = 0; i < x.n_projections; i++) {
+            auto *reference = ASRUtils::symbol_get_past_external(x.m_projections[i]);
+            require_id(reference && ASR::is_a<TraitWitness_t>(*reference),
+                "asr.verify.trait_witness.projection_kind",
+                "A parent projection must name a runtime witness");
+            auto *parent = ASR::down_cast<TraitWitness_t>(reference);
+            auto *parent_contract = ASRUtils::symbol_get_past_external(parent->m_contract);
+            require_id(parent_contract && ASR::is_a<TraitRuntimeContract_t>(*parent_contract),
+                "asr.verify.trait_witness.projection_contract",
+                "A parent witness requires a runtime contract");
+            require_id(ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<TraitRuntimeContract_t>(parent_contract)->m_trait) ==
+                    ASRUtils::symbol_get_past_external(trait->m_parents[i]) &&
+                    ASRUtils::symbol_get_past_external(parent->m_implementation) ==
+                        &implementation->base &&
+                    parent->m_symtab && parent->m_symtab->parent == current_symtab &&
+                    parent->m_abi == x.m_abi &&
+                    ASRUtils::symbol_get_past_external(parent->m_lifecycle.m_type_declaration) ==
+                        ASRUtils::symbol_get_past_external(x.m_lifecycle.m_type_declaration),
+                "asr.verify.trait_witness.projection_origin",
+                "A projection must retain the parent's contract, selected implementation and lifecycle");
+        }
+        std::set<symbol_t*> procedures;
+        for (size_t i = 0; i < x.n_procedures; i++) {
+            auto *procedure = verify_runtime_trait_procedure(x.m_procedures[i],
+                x.base.base.loc, "asr.verify.trait_witness.unique_procedure");
+            auto *symbol = &procedure->base;
+            require_id(ASRUtils::symbol_parent_symtab(symbol) == x.m_symtab &&
+                    x.m_symtab->get_symbol(ASRUtils::symbol_name(symbol)) == symbol &&
+                    procedures.insert(symbol).second,
+                "asr.verify.trait_witness.unique_procedure",
+                "Every runtime slot requires its own provider-owned typed adapter");
+            require_id(x.m_dependencies[i] &&
+                    std::string(x.m_dependencies[i]) == procedure->m_name &&
+                    ASRUtils::get_FunctionType(procedure)->m_deftype == deftypeType::Implementation,
+                "asr.verify.trait_witness.dependency",
+                "A witness slot must retain its executable adapter dependency");
+            auto signature = *ASRUtils::get_FunctionType(procedure);
+            // Imported definitions keep their ordinary ABI but have unavailable bodies.
+            if (signature.m_abi == abiType::ExternalUndefined) signature.m_abi = abiType::Source;
+            auto comparable = *procedure;
+            comparable.m_function_signature = &signature.base;
+            auto *slot_procedure = verify_runtime_trait_slot(*contract, i, x.base.base.loc);
+            auto mismatch = ASRUtils::trait_method_mismatch(*slot_procedure, comparable);
+            require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
+                "asr.verify.trait_witness.signature",
+                "A runtime witness adapter must match its slot: " + mismatch.message);
+            verify_runtime_trait_adapter_receiver(*procedure);
+            for (size_t j = 0; j < contract->m_slots[i].n_origins; j++) {
+                TraitImplementation_t *selected = nullptr;
+                auto *binding = ASRUtils::runtime_trait_binding(
+                    x, contract->m_slots[i].m_origins[j], selected);
+                require_id(binding != nullptr,
+                    "asr.verify.trait_witness.origin_covered",
+                    "A runtime witness must prove every nominal origin of a slot");
+                verify_runtime_binding(*selected, *binding);
+                if (contract->m_slots[i].n_type_arguments) {
+                    auto *implemented = ASRUtils::trait_method_function(binding->m_procedure);
+                    auto *generic = implemented
+                        ? ASRUtils::trait_method_template(*implemented) : nullptr;
+                    require_id(generic && ASRUtils::trait_erasure(*generic,
+                            selected->m_parent_symtab, contract->m_slots[i].m_type_arguments,
+                            contract->m_slots[i].n_type_arguments),
+                        "asr.verify.trait_witness.member_entry",
+                        "A member slot requires its provider's entry of the bound generic at that member");
+                }
+                TraitImplementation_t *first_implementation = nullptr;
+                auto *first = ASRUtils::runtime_trait_binding(
+                    x, contract->m_slots[i].m_origins[0], first_implementation);
+                require_id(first && ASRUtils::trait_bindings_equal(*first, *binding),
+                    "asr.verify.trait_witness.coalesced_binding",
+                    "All independent origins of a combined callable must agree on procedure and receiver");
+                for (size_t k = 0; k < x.n_components; k++) {
+                    auto *component = ASR::down_cast<TraitWitness_t>(
+                        ASRUtils::symbol_get_past_external(x.m_components[k]));
+                    auto *other = ASRUtils::runtime_trait_binding(
+                        *component, contract->m_slots[i].m_origins[j], selected);
+                    require_id(!other || ASRUtils::trait_bindings_equal(*binding, *other),
+                        "asr.verify.trait_witness.coalesced_binding",
+                        "Overlapping selected combination evidence must agree");
+                }
+            }
+        }
+        visit_adapters();
+    }
+
+    void verify_runtime_binding(const TraitImplementation_t &implementation,
+            const trait_binding_t &binding) {
+        verify_trait_binding(implementation.m_type_declaration, binding, true,
+            implementation.m_implementing_type);
+    }
+
+    void verify_trait_binding(symbol_t *type_declaration,
+            const trait_binding_t &binding, bool runtime, ttype_t *implementing_type = nullptr,
+            ASRUtils::TraitAssociatedTypes *associated = nullptr) {
+        ASRUtils::TraitAssociatedTypes unbound;
+        if (!associated) associated = &unbound;
+        const Location &loc = binding.loc;
+        auto *required = verify_runtime_trait_procedure(binding.m_member, loc,
+            "asr.verify.trait_binding.member_is_function");
+        auto *procedure = verify_runtime_trait_procedure(binding.m_procedure, loc,
+            "asr.verify.trait_binding.procedure_is_function");
+        auto *required_signature = ASRUtils::get_FunctionType(required);
+        auto *actual_signature = ASRUtils::get_FunctionType(procedure);
+        require_with_loc_id(!runtime || (
+                (required_signature->m_abi == abiType::Source ||
+                    required_signature->m_abi == abiType::ExternalUndefined) &&
+                (actual_signature->m_abi == abiType::Source ||
+                    actual_signature->m_abi == abiType::ExternalUndefined)),
+            "asr.verify.trait_witness.binding_abi",
+            "A runtime witness binding requires the ordinary source calling convention", loc);
+        require_with_loc_id(
+                (!required_signature->m_pure || actual_signature->m_pure) &&
+                (!required_signature->m_elemental || actual_signature->m_elemental),
+            "asr.verify.trait_witness.procedure_attributes",
+            "A witness binding must preserve required pure and elemental attributes", loc);
+        // Hidden character lengths follow the explicit arguments; an
+        // associated type bound to a character type gives the binding one
+        // that its message does not have.
+        size_t n_procedure = explicit_argument_count(*procedure);
+        size_t n_required = explicit_argument_count(*required);
+        size_t ordinary = n_required + (binding.m_is_nopass ? 0 : 1);
+        // subroutine_from_function makes an aggregate result of a static
+        // binding's procedure its last explicit argument, while the message
+        // keeps its result, of type `itself` or an associated type.
+        ASR::expr_t *lowered_result = !runtime && required->m_return_var &&
+            !procedure->m_return_var && n_procedure == ordinary + 1
+            ? procedure->m_args[--n_procedure] : nullptr;
+        ASR::expr_t *result = lowered_result ? lowered_result : procedure->m_return_var;
+        size_t receiver = n_procedure;
+        if (!binding.m_is_nopass) {
+            for (size_t i = 0; i < n_procedure; i++) {
+                auto *arg = ASRUtils::EXPR2VAR(procedure->m_args[i]);
+                if (binding.m_self_argument &&
+                        std::string(arg->m_name) == binding.m_self_argument) receiver = i;
+            }
+            require_with_loc_id(receiver < n_procedure,
+                "asr.verify.trait_witness.receiver",
+                "A passed-object witness requires its declared receiver", loc);
+            auto *self = ASRUtils::EXPR2VAR(procedure->m_args[receiver]);
+            // An INTENT(INOUT) receiver serves direct concrete calls only
+            // (PAPER-D07); runtime evidence borrows read-only.
+            require_with_loc_id((self->m_intent == intentType::In ||
+                        (!runtime && self->m_intent == intentType::InOut)) &&
+                    ASRUtils::trait_receiver_type_matches(*self, type_declaration, implementing_type),
+                "asr.verify.trait_witness.receiver_type",
+                "A witness receiver must borrow its nominal implementing type "
+                "or a polymorphic ancestor read-only", loc);
+        }
+        require_with_loc_id(n_procedure == ordinary,
+            "asr.verify.trait_witness.binding_signature",
+            "A witness binding must have the message's ordinary arguments", loc);
+        std::map<symbol_t*, symbol_t*> parameters;
+        auto generic_mismatch = ASRUtils::trait_generic_correspondence(
+            *required, *procedure, parameters);
+        require_with_loc_id(generic_mismatch.empty(),
+            "asr.verify.trait_binding.generic_contract",
+            "A generic binding must preserve its universal contract: " + generic_mismatch, loc);
+        if (n_procedure != ordinary) return;
+        auto required_lengths = hidden_string_lengths(*required);
+        auto procedure_lengths = hidden_string_lengths(*procedure);
+        for (size_t i = 0, j = 0; i < n_procedure; i++) {
+            if (i == receiver) continue;
+            parameters.emplace(
+                &ASRUtils::EXPR2VAR(required->m_args[j])->base,
+                &ASRUtils::EXPR2VAR(procedure->m_args[i])->base);
+            // An assumed length is the corresponding hidden length.
+            auto a = required_lengths.find(j), b = procedure_lengths.find(i);
+            if (a != required_lengths.end() && b != procedure_lengths.end()) {
+                parameters.emplace(a->second, b->second);
+            }
+            j++;
+        }
+        for (size_t i = 0, j = 0; i < n_procedure; i++) {
+            if (i == receiver) continue;
+            auto *actual = ASRUtils::EXPR2VAR(procedure->m_args[i]);
+            auto *formal = ASRUtils::EXPR2VAR(required->m_args[j]);
+            require_with_loc_id(!ASRUtils::trait_associated_type(required->m_args[j]) ||
+                    !ASRUtils::trait_method_binder_type(*procedure, procedure->m_args[i]),
+                "asr.verify.trait_witness.associated_type",
+                "An associated type must be one type for each conformance, not a type "
+                "parameter of its binding's generic procedure", loc);
+            require_with_loc_id(ASRUtils::trait_implemented_types_equal(
+                        required->m_args[j], procedure->m_args[i], type_declaration,
+                        implementing_type, parameters, associated) &&
+                    actual->m_intent == formal->m_intent &&
+                    actual->m_presence == formal->m_presence &&
+                    actual->m_value_attr == formal->m_value_attr,
+                "asr.verify.trait_witness.binding_signature",
+                "A witness binding must preserve ordinary argument types and association attributes", loc);
+            j++;
+        }
+        require_with_loc_id(!required->m_return_var || !result ||
+                !ASRUtils::trait_associated_type(required->m_return_var) ||
+                !ASRUtils::trait_method_binder_type(*procedure, result),
+            "asr.verify.trait_witness.associated_type",
+            "An associated type must be one type for each conformance, not a type "
+            "parameter of its binding's generic procedure", loc);
+        require_with_loc_id(bool(required->m_return_var) == bool(result) &&
+                (!lowered_result || ASRUtils::EXPR2VAR(lowered_result)->m_intent ==
+                    intentType::Out || ASRUtils::EXPR2VAR(lowered_result)->m_intent ==
+                    intentType::InOut) &&
+                (!required->m_return_var || ASRUtils::trait_implemented_types_equal(
+                    required->m_return_var, result, type_declaration,
+                    implementing_type, parameters, associated)),
+            "asr.verify.trait_witness.binding_signature",
+            "A witness binding must preserve its message's result", loc);
+    }
+
+    TraitWitness_t *verify_trait_witness_reference(symbol_t *reference, const Location &loc) {
+        require_with_loc_id(reference && symtab_in_scope(current_symtab, reference),
+            "asr.verify.trait_borrow.witness_in_scope",
+            "A borrowed view must reference visible selected evidence", loc);
+        auto *symbol = ASRUtils::symbol_get_past_external(reference);
+        require_with_loc_id(symbol && ASR::is_a<TraitWitness_t>(*symbol),
+            "asr.verify.trait_borrow.witness",
+            "A borrowed view requires a selected runtime witness", loc);
+        return ASR::down_cast<TraitWitness_t>(symbol);
+    }
+
+    void visit_TraitPack(const TraitPack_t &x) {
+        require_id(x.m_payload && x.m_witness && x.m_type,
+            "asr.verify.trait_pack.required_fields",
+            "A borrowed pack requires payload, selected witness, and view type");
+        visit_expr(*x.m_payload);
+        visit_ttype(*x.m_type);
+        if (!check_external) return;
+        auto *witness = verify_trait_witness_reference(x.m_witness, x.base.base.loc);
+        auto *implementation = verify_runtime_trait_evidence(*witness, x.base.base.loc);
+        auto *type = ASRUtils::expr_type(x.m_payload);
+        auto *scalar = ASRUtils::extract_type(type);
+        require_id(ASR::is_a<TraitObjectType_t>(*x.m_type) &&
+                ASRUtils::trait_contracts_equal(
+                    &ASRUtils::trait_runtime_contract(x.m_type)->base, witness->m_contract) &&
+                ASR::is_a<StructType_t>(*scalar) && !ASRUtils::is_array(type) &&
+                !ASRUtils::is_class_type(scalar),
+            "asr.verify.trait_pack.exact_scalar",
+            "A borrowed pack requires exact, nonpolymorphic concrete storage and its contract");
+        // A value of its statement is materialized by the passes before code
+        // generation; a structure constant is static data that they leave in
+        // place, so it is not one. A designator that stands for a compile-time
+        // value (ASRUtils::is_constant_designator) is not storage either: it is
+        // lowered to its value, which leaves a pack of it no address to borrow.
+        bool statement_value = ASR::is_a<StructConstructor_t>(*x.m_payload) ||
+            (ASR::is_a<FunctionCall_t>(*x.m_payload) &&
+             !ASRUtils::is_allocatable(type) && !ASRUtils::is_pointer(type));
+        require_id(statement_value || ASR::is_a<Var_t>(*x.m_payload) ||
+                ASR::is_a<StructInstanceMember_t>(*x.m_payload) ||
+                ASR::is_a<ArrayItem_t>(*x.m_payload),
+            "asr.verify.trait_pack.borrowed_designator",
+            "A borrowed pack must preserve an existing payload designator or a value of its statement");
+        require_id(statement_value || !ASRUtils::is_constant_designator(x.m_payload),
+            "asr.verify.trait_pack.constant_designator",
+            "A borrowed pack cannot designate a named constant or a value folded from one as storage");
+        require_id(ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(x.m_payload)) ==
+                ASRUtils::symbol_get_past_external(implementation->m_type_declaration),
+            "asr.verify.trait_pack.nominal_type",
+            "A borrowed payload's nominal type must match its selected witness");
+    }
+
+    void visit_TraitDeferredPack(const TraitDeferredPack_t &x) {
+        require_id(x.m_payload && x.m_constraint && x.m_type &&
+                typed_expr_type(x.m_payload) &&
+                ASR::is_a<TypeParameter_t>(*typed_expr_type(x.m_payload)) &&
+                ASR::is_a<TraitObjectType_t>(*x.m_type) &&
+                symtab_in_scope(current_symtab, x.m_constraint),
+            "asr.verify.trait_deferred_pack.fields",
+            "A deferred pack requires a scalar type parameter, visible constraint and borrowed contract");
+        visit_expr(*x.m_payload);
+        visit_ttype(*x.m_type);
+        if (!check_external) return;
+        auto *symbol = ASRUtils::symbol_get_past_external(x.m_constraint);
+        require_id(symbol && ASR::is_a<TraitConstraint_t>(*symbol),
+            "asr.verify.trait_deferred_pack.constraint",
+            "Deferred packing must retain a checked nominal constraint");
+        auto *constraint = ASR::down_cast<TraitConstraint_t>(symbol);
+        auto *parameter = ASRUtils::trait_type_parameter(x.m_payload);
+        require_id(parameter &&
+                parameter == ASRUtils::symbol_get_past_external(constraint->m_parameter),
+            "asr.verify.trait_deferred_pack.parameter",
+            "Deferred evidence must belong to the payload's scoped generic binder");
+        bool in_generic = false;
+        for (auto *scope = current_symtab; scope; scope = scope->parent) {
+            if (scope == constraint->m_parent_symtab) in_generic = true;
+        }
+        require_id(in_generic,
+            "asr.verify.trait_deferred_pack.scope",
+            "A deferred pack may exist only within its checked generic definition");
+        auto *trait = ASRUtils::symbol_get_past_external(constraint->m_trait);
+        require_id(trait && ASR::is_a<Trait_t>(*trait) &&
+                ASR::down_cast<Trait_t>(trait)->m_kind == trait_kindType::UniversalTrait,
+            "asr.verify.trait_deferred_pack.nominal",
+            "A deferred runtime argument requires an open nominal domain, not a finite type set");
+        auto hierarchy = verify_trait_hierarchy(*ASR::down_cast<Trait_t>(trait), x.base.base.loc);
+        auto *target = ASRUtils::symbol_get_past_external(
+            ASRUtils::trait_runtime_contract(x.m_type)->m_trait);
+        bool provided = false;
+        for (auto *origin : hierarchy.traits) provided |= &origin->base == target;
+        require_id(provided,
+            "asr.verify.trait_deferred_pack.implication",
+            "The binder's declared constraints must guarantee the requested runtime operations");
+    }
+
+    ttype_t *verify_trait_owner(expr_t *owner, const Location &loc,
+            bool defining = true) {
+        auto *type = typed_expr_type(owner);
+        require_with_loc_id(owner && (ASR::is_a<Var_t>(*owner) ||
+                ASR::is_a<StructInstanceMember_t>(*owner) ||
+                (!defining && ASR::is_a<FunctionCall_t>(*owner))) &&
+                ASRUtils::is_trait_owner(type),
+            "asr.verify.trait_owner.storage",
+            "An owning operation requires a scalar allocatable trait slot or a borrowed function result", loc);
+        if (ASR::is_a<FunctionCall_t>(*owner)) {
+            visit_expr(*owner);
+            return ASRUtils::extract_type(type);
+        }
+        if (!check_external) {
+            visit_expr(*owner);
+            return ASRUtils::extract_type(type);
+        }
+        auto *variable = ASRUtils::trait_owner_variable(owner);
+        require_with_loc_id(variable != nullptr,
+            "asr.verify.trait_owner.storage",
+            "An owning operation must designate a declared allocatable variable", loc);
+        require_with_loc_id(!defining || ASRUtils::trait_owner_is_definable(owner),
+            "asr.verify.trait_owner.definable",
+            "An owning operation cannot define an intent(in) allocation slot", loc);
+        visit_expr(*owner);
+        auto *saved_scope = current_symtab;
+        current_symtab = variable->m_parent_symtab;
+        visit_ttype(*variable->m_type);
+        current_symtab = saved_scope;
+        return ASRUtils::extract_type(type);
+    }
+
+    void verify_trait_copy_source(expr_t *source, ttype_t *target,
+            symbol_t *selected_witness, const Location &loc) {
+        auto *type = typed_expr_type(source);
+        if (selected_witness) {
+            require_with_loc_id(type && ASR::is_a<StructType_t>(*ASRUtils::extract_type(type)) &&
+                    !ASRUtils::is_array(type) && !ASRUtils::is_class_type(ASRUtils::extract_type(type)),
+                "asr.verify.trait_owner.exact_scalar",
+                "A concrete owning source must be an exact nonpolymorphic scalar value", loc);
+            visit_expr(*source);
+            if (!check_external) return;
+            auto *witness = verify_trait_witness_reference(selected_witness, loc);
+            auto *implementation = verify_runtime_trait_evidence(*witness, loc);
+            require_with_loc_id(!ASR::down_cast<Struct_t>(
+                    ASRUtils::symbol_get_past_external(
+                        witness->m_lifecycle.m_type_declaration))->m_is_abstract,
+                "asr.verify.trait_owner.concrete_type",
+                "An owning copy cannot instantiate an abstract concrete type", loc);
+            require_with_loc_id(ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(source)) ==
+                    ASRUtils::symbol_get_past_external(implementation->m_type_declaration) &&
+                    ASRUtils::trait_contracts_equal(witness->m_contract,
+                        &ASRUtils::trait_runtime_contract(target)->base),
+                "asr.verify.trait_owner.nominal_type",
+                "An owning value must match its selected nominal witness and target contract", loc);
+            return;
+        }
+        require_with_loc_id(type && ASR::is_a<TraitObjectType_t>(*type),
+            "asr.verify.trait_owner.source",
+            "An owning copy must explicitly borrow its source, not copy an ownership slot", loc);
+        visit_expr(*source);
+        visit_ttype(*type);
+        if (!check_external) return;
+        require_with_loc_id(ASRUtils::trait_contracts_equal(type, target),
+            "asr.verify.trait_owner.contract",
+            "An owning copy must retain the source's declared contract and selected witness", loc);
+    }
+
+    void visit_TraitBorrow(const TraitBorrow_t &x) {
+        auto *source_type = typed_expr_type(x.m_owner);
+        auto *owner_type = ASRUtils::is_trait_pointer(source_type)
+            ? verify_trait_pointer(x.m_owner, x.base.base.loc, false)
+            : verify_trait_owner(x.m_owner, x.base.base.loc, false);
+        require_id(x.m_type && ASR::is_a<TraitObjectType_t>(*x.m_type),
+            "asr.verify.trait_borrow.type", "Borrowing cannot transfer ownership");
+        visit_ttype(*x.m_type);
+        if (!check_external) return;
+        require_id(ASRUtils::trait_contracts_equal(owner_type, x.m_type),
+            "asr.verify.trait_borrow.contract",
+            "Borrowing an owner must preserve its declared contract");
+    }
+
+    void visit_TraitInspect(const TraitInspect_t &x) {
+        auto *view_type = typed_expr_type(x.m_view);
+        require_id(view_type && ASR::is_a<TraitObjectType_t>(*view_type) &&
+                x.m_type && ASR::is_a<StructType_t>(*x.m_type) &&
+                ASRUtils::is_unlimited_polymorphic_type(x.m_type) &&
+                !ASR::down_cast<StructType_t>(x.m_type)->m_is_cstruct,
+            "asr.verify.trait_inspect.view",
+            "Concrete inspection requires a borrowed scalar trait and an ordinary class(*) view");
+        visit_expr(*x.m_view);
+        visit_ttype(*x.m_type);
+        require_id(x.m_type_declaration && symtab_in_scope(current_symtab, x.m_type_declaration),
+            "asr.verify.trait_inspect.declaration",
+            "The ordinary inspection view must carry an in-scope type declaration");
+        if (!check_external) return;
+        auto *declaration = ASRUtils::symbol_get_past_external(x.m_type_declaration);
+        require_id(declaration && ASR::is_a<Struct_t>(*declaration) &&
+                ASRUtils::is_unlimited_polymorphic_type(declaration),
+            "asr.verify.trait_inspect.declaration",
+            "Concrete inspection cannot claim an unchecked concrete type");
+    }
+
+    void visit_TraitProject(const TraitProject_t &x) {
+        auto *source = typed_expr_type(x.m_view);
+        require_id(source && x.m_type &&
+                ((ASR::is_a<TraitObjectType_t>(*source) &&
+                  ASR::is_a<TraitObjectType_t>(*x.m_type)) ||
+                 (ASRUtils::is_trait_pointer(source) &&
+                  ASRUtils::is_trait_pointer(x.m_type))),
+            "asr.verify.trait_project.view_kind",
+            "A projection preserves borrowed or nonowning pointer storage");
+        visit_expr(*x.m_view);
+        visit_ttype(*x.m_type);
+        if (!check_external) return;
+        auto *source_contract = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<TraitObjectType_t>(ASRUtils::extract_type(source))->m_contract);
+        auto *target_contract = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<TraitObjectType_t>(ASRUtils::extract_type(x.m_type))->m_contract);
+        require_id(source_contract && target_contract &&
+                ASR::is_a<TraitRuntimeContract_t>(*source_contract) &&
+                ASR::is_a<TraitRuntimeContract_t>(*target_contract),
+            "asr.verify.trait_project.contract",
+            "A projection requires resolved source and result contracts");
+        auto *from = ASR::down_cast<TraitRuntimeContract_t>(source_contract);
+        auto *to = ASR::down_cast<TraitRuntimeContract_t>(target_contract);
+        auto *source_trait = ASRUtils::symbol_get_past_external(from->m_trait);
+        auto *target_trait = ASRUtils::symbol_get_past_external(to->m_trait);
+        require_id(source_trait && target_trait && ASR::is_a<Trait_t>(*source_trait) &&
+                ASR::is_a<Trait_t>(*target_trait),
+            "asr.verify.trait_project.contract", "Projection contracts require resolved traits");
+        verify_trait_hierarchy(*ASR::down_cast<Trait_t>(source_trait), x.base.base.loc);
+        verify_trait_hierarchy(*ASR::down_cast<Trait_t>(target_trait), x.base.base.loc);
+        require_id(ASRUtils::trait_contract_implies(*from, *to),
+            "asr.verify.trait_project.parent",
+            "A projection may select only guaranteed original nominal requirements");
+        std::vector<int64_t> expected;
+        require_id(ASRUtils::trait_projection_slots(*from, *to, expected) &&
+                x.n_slots == expected.size() && (!x.n_slots || x.m_slots),
+            "asr.verify.trait_project.slots",
+            "A projection must explicitly map every target callable from the source view");
+        for (size_t i = 0; i < x.n_slots; i++) {
+            require_id(x.m_slots[i].m_source == expected[i],
+                "asr.verify.trait_project.slot_origin",
+                "A projection slot must preserve every target origin and its selected implementation");
+            auto *source_procedure = verify_runtime_trait_slot(*from, x.m_slots[i].m_source, x.base.base.loc);
+            auto *target_procedure = verify_runtime_trait_slot(*to, i, x.base.base.loc);
+            auto mismatch = ASRUtils::trait_method_mismatch(*source_procedure, *target_procedure, 1, 1);
+            require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
+                "asr.verify.trait_project.signature", "Projection must preserve the ordinary callable signature");
+        }
+    }
+
+    ttype_t *verify_trait_pointer(expr_t *pointer, const Location &loc,
+            bool defining) {
+        auto *type = typed_expr_type(pointer);
+        require_with_loc_id(pointer && ASR::is_a<Var_t>(*pointer) &&
+                ASRUtils::is_trait_pointer(type),
+            "asr.verify.trait_pointer.storage",
+            "A trait pointer operation requires a scalar pointer variable", loc);
+        auto *variable = ASRUtils::get_variable_from_symbol(
+            ASR::down_cast<Var_t>(pointer)->m_v);
+        require_with_loc_id(variable &&
+                (!defining || variable->m_intent != intentType::In),
+            "asr.verify.trait_pointer.definable",
+            "An intent(in) trait pointer cannot change association", loc);
+        visit_expr(*pointer);
+        return ASRUtils::extract_type(type);
+    }
+
+    void verify_trait_pointer_value(expr_t *value, ttype_t *target,
+            const Location &loc) {
+        auto *type = typed_expr_type(value);
+        require_with_loc_id(type &&
+                (ASR::is_a<TraitObjectType_t>(*type) ||
+                 ASRUtils::is_trait_pointer(type)) &&
+                ASRUtils::is_valid_pointer_assignment_target(value),
+            "asr.verify.trait_pointer.target",
+            "A persistent trait view requires an existing target or pointer", loc);
+        visit_expr(*value);
+        if (!check_external) return;
+        require_with_loc_id(ASRUtils::trait_contracts_equal(type, target),
+            "asr.verify.trait_pointer.contract",
+            "Pointer association must preserve the declared trait contract", loc);
+    }
+
+    void visit_TraitAssociate(const TraitAssociate_t &x) {
+        auto *type = verify_trait_pointer(x.m_target, x.base.base.loc, true);
+        if (x.m_value) verify_trait_pointer_value(x.m_value, type, x.base.base.loc);
+    }
+
+    void visit_PointerAssociated(const PointerAssociated_t &x) {
+        require_id(!x.m_ptr || !ASR::is_a<Var_t>(*x.m_ptr) ||
+                !ASRUtils::association_variable(x.m_ptr),
+            "asr.verify.association.pointer_attribute",
+            "A construct association is not a pointer inquiry's POINTER argument");
+        require_id(!check_external || !ASRUtils::association_variable(x.m_tgt) ||
+                ASRUtils::is_valid_pointer_assignment_target(x.m_tgt),
+            "asr.verify.association.target",
+            "An association used as a pointer target must retain TARGET");
+        if (ASRUtils::is_trait_pointer(typed_expr_type(x.m_ptr)) &&
+                !ASR::is_a<PointerNullConstant_t>(*x.m_ptr)) {
+            auto *type = verify_trait_pointer(x.m_ptr, x.base.base.loc, false);
+            if (x.m_tgt) verify_trait_pointer_value(x.m_tgt, type, x.base.base.loc);
+        }
+        BaseWalkVisitor::visit_PointerAssociated(x);
+    }
+
+    void visit_TraitAllocate(const TraitAllocate_t &x) {
+        auto *type = verify_trait_owner(x.m_target, x.base.base.loc);
+        require_id((x.m_source || x.m_witness) &&
+                (!x.m_copy_value || x.m_source) &&
+                (bool(x.m_type_declaration) == !bool(x.m_source)),
+            "asr.verify.trait_allocate.initialization",
+            "Allocation requires a source or typed witness, and only SOURCE copies a value");
+        if (x.m_source) {
+            verify_trait_copy_source(x.m_source, type, x.m_witness, x.base.base.loc);
+        } else if (check_external) {
+            auto *witness = verify_trait_witness_reference(x.m_witness, x.base.base.loc);
+            verify_runtime_trait_evidence(*witness, x.base.base.loc);
+            require_id(symtab_in_scope(current_symtab, x.m_type_declaration) &&
+                    ASRUtils::symbol_get_past_external(x.m_type_declaration) ==
+                    ASRUtils::symbol_get_past_external(witness->m_lifecycle.m_type_declaration),
+                "asr.verify.trait_allocate.nominal_type",
+                "Typed allocation must preserve its explicitly selected nominal type");
+            require_id(!ASR::down_cast<Struct_t>(ASRUtils::symbol_get_past_external(
+                    witness->m_lifecycle.m_type_declaration))->m_is_abstract,
+                "asr.verify.trait_owner.concrete_type",
+                "Typed allocation requires an instantiable concrete type");
+            require_id(ASRUtils::trait_contracts_equal(witness->m_contract,
+                    &ASRUtils::trait_runtime_contract(type)->base),
+                "asr.verify.trait_allocate.contract",
+                "Typed allocation requires a witness of the owner's exact contract");
+        }
+    }
+
+    void visit_TraitAssignment(const TraitAssignment_t &x) {
+        auto *type = verify_trait_owner(x.m_target, x.base.base.loc);
+        verify_trait_copy_source(x.m_value, type, x.m_witness, x.base.base.loc);
+    }
+
+    void reject_implicit_trait_type(ttype_t *type, const Location &loc) {
+        require_with_loc_id(!type || !ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(type)),
+            "asr.verify.trait_owner.explicit_protocol",
+            "Trait storage requires checked allocation, copying and cleanup operations", loc);
+    }
+
+    void reject_implicit_trait_storage(expr_t *value, const Location &loc) {
+        reject_implicit_trait_type(typed_expr_type(value), loc);
+    }
+
+    void visit_ReAlloc(const ReAlloc_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            reject_implicit_trait_storage(x.m_args[i].m_a, x.base.base.loc);
+        }
+        BaseWalkVisitor::visit_ReAlloc(x);
+    }
+
+    void visit_Nullify(const Nullify_t &x) {
+        for (size_t i = 0; i < x.n_vars; i++) {
+            auto *association = ASRUtils::association_variable(x.m_vars[i]);
+            require_id(!association || (!ASR::is_a<Var_t>(*x.m_vars[i]) &&
+                    association->m_intent != intentType::In),
+                "asr.verify.association.pointer_attribute",
+                "A construct association is not a pointer and cannot nullify a read-only subobject");
+            if (ASRUtils::is_trait_pointer(typed_expr_type(x.m_vars[i]))) {
+                verify_trait_pointer(x.m_vars[i], x.base.base.loc, true);
+            } else {
+                reject_implicit_trait_storage(x.m_vars[i], x.base.base.loc);
+            }
+        }
+        BaseWalkVisitor::visit_Nullify(x);
+    }
+
+    void visit_TraitReceiver(const TraitReceiver_t &x) {
+        require_id(x.m_view && x.m_witness && x.m_type_declaration && x.m_type,
+            "asr.verify.trait_receiver.required_fields",
+            "Concrete recovery requires a view, witness, and nominal type");
+        visit_expr(*x.m_view);
+        visit_ttype(*x.m_type);
+        if (!check_external) return;
+        auto *witness = verify_trait_witness_reference(x.m_witness, x.base.base.loc);
+        auto *implementation = verify_runtime_trait_evidence(*witness, x.base.base.loc);
+        auto *view_type = typed_expr_type(x.m_view);
+        require_id(view_type && ASR::is_a<TraitObjectType_t>(*view_type),
+            "asr.verify.trait_receiver.nominal_type",
+            "Concrete recovery requires a scalar trait view");
+        visit_ttype(*view_type);
+        require_id(ASRUtils::trait_contracts_equal(
+                    &ASRUtils::trait_runtime_contract(view_type)->base, witness->m_contract) &&
+                ASR::is_a<StructType_t>(*x.m_type) && !ASRUtils::is_class_type(x.m_type) &&
+                x.m_type_declaration && symtab_in_scope(current_symtab, x.m_type_declaration) &&
+                ASRUtils::symbol_get_past_external(x.m_type_declaration) ==
+                    ASRUtils::symbol_get_past_external(implementation->m_type_declaration),
+            "asr.verify.trait_receiver.nominal_type",
+            "Concrete recovery must preserve the witness's proven nominal payload type");
+        auto *scope = current_symtab;
+        while (scope && scope->asr_owner && ASR::is_a<symbol_t>(*scope->asr_owner) &&
+                !ASR::is_a<Function_t>(*ASR::down_cast<symbol_t>(scope->asr_owner))) {
+            scope = scope->parent;
+        }
+        bool authorized = false;
+        for (size_t i = 0; i < witness->n_procedures; i++) {
+            auto *function = verify_runtime_trait_procedure(witness->m_procedures[i],
+                x.base.base.loc, "asr.verify.trait_witness.unique_procedure");
+            if (scope && scope->parent == witness->m_symtab &&
+                    (ASR::asr_t*)function == scope->asr_owner) {
+                authorized = function->n_args && same_variable(x.m_view, function->m_args[0]);
+            }
+        }
+        require_id(authorized, "asr.verify.trait_receiver.authorized_adapter",
+            "Only a selected witness's adapter may recover its own borrowed receiver");
+    }
+
+    template <typename T>
+    void verify_trait_call(const T &x) {
+        if (ASRUtils::is_trait_dictionary_call(x.m_args, x.n_args)) {
+            visit_ttype(*typed_expr_type(x.m_args[0].m_value));
+            if (!check_external) return;
+            size_t n_slots = 0;
+            auto *slots = ASRUtils::trait_call_slots(x.m_args[0].m_value, n_slots);
+            require_id(slots && x.m_slot >= 0 && (size_t)x.m_slot < n_slots &&
+                    ASRUtils::symbol_get_past_external(x.m_name) ==
+                        ASRUtils::symbol_get_past_external(slots[x.m_slot].m_procedure),
+                "asr.verify.trait_call.slot",
+                "A dictionary call must name the interface at its dictionary's slot");
+            return;
+        }
+        require_id(x.n_args > 0 && x.m_args && x.m_args[0].m_value &&
+                typed_expr_type(x.m_args[0].m_value) &&
+                ASR::is_a<TraitObjectType_t>(*typed_expr_type(x.m_args[0].m_value)),
+            "asr.verify.trait_call.receiver",
+            "A runtime trait call requires a borrowed view as its first argument");
+        for (size_t i = 1; i < x.n_args; i++) {
+            if (x.m_args[i].m_value && ASR::is_a<TraitDeferredPack_t>(*x.m_args[i].m_value)) {
+                visit_TraitDeferredPack(*ASR::down_cast<TraitDeferredPack_t>(x.m_args[i].m_value));
+            }
+        }
+        if (!check_external) return;
+        visit_ttype(*typed_expr_type(x.m_args[0].m_value));
+        auto *contract = ASRUtils::trait_runtime_contract(
+            typed_expr_type(x.m_args[0].m_value));
+        require_id(x.m_slot >= 0 && (size_t)x.m_slot < contract->n_slots,
+            "asr.verify.trait_call.slot",
+            "A runtime call must select a declared slot");
+        auto *procedure = verify_runtime_trait_slot(*contract, x.m_slot, x.base.base.loc);
+        require_id(
+                ASRUtils::symbol_get_past_external(x.m_name) ==
+                    &procedure->base,
+            "asr.verify.trait_call.slot",
+            "A runtime call must name the canonical interface at its view's slot");
+    }
+
+    void visit_TraitFunctionCall(const TraitFunctionCall_t &x) {
+        verify_trait_call(x);
+        FunctionCall_t call{};
+        call.base.base.loc = x.base.base.loc;
+        call.m_name = x.m_name;
+        call.m_args = x.m_args;
+        call.n_args = x.n_args;
+        call.m_type = x.m_type;
+        visit_FunctionCall(call);
+    }
+
+    // The scoped generic binder declared as `name` in an enclosing scope.
+    symbol_t *declared_trait_binder(const std::string &name) {
+        for (SymbolTable *scope = current_symtab; scope; scope = scope->parent) {
+            for (const auto &entry : scope->get_scope()) {
+                if (!ASR::is_a<TraitConstraint_t>(*entry.second)) continue;
+                auto *parameter = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<TraitConstraint_t>(entry.second)->m_parameter);
+                if (parameter && name == ASRUtils::symbol_name(parameter)) return parameter;
+            }
+        }
+        return nullptr;
+    }
+
+    void visit_TraitDeferredCall(const TraitDeferredCall_t &x) {
+        require_id(x.n_args > 0 && x.m_args && x.m_args[0].m_value &&
+                typed_expr_type(x.m_args[0].m_value) &&
+                ASR::is_a<TraitObjectType_t>(*typed_expr_type(x.m_args[0].m_value)) &&
+                x.n_type_arguments && x.m_type_arguments && x.m_type,
+            "asr.verify.trait_deferred_call.fields",
+            "A deferred member call requires a borrowed view, its type arguments and a result type");
+        require_id(_inside_template,
+            "asr.verify.trait_deferred_call.scope",
+            "A deferred member call may exist only within a checked generic definition");
+        BaseWalkVisitor<VerifyVisitor>::visit_TraitDeferredCall(x);
+        if (!check_external) return;
+        auto *contract = ASRUtils::trait_runtime_contract(typed_expr_type(x.m_args[0].m_value));
+        require_id(x.m_family >= 0 && (size_t)x.m_family < contract->n_slots &&
+                contract->m_slots && contract->m_slots[x.m_family].n_type_arguments ==
+                    x.n_type_arguments,
+            "asr.verify.trait_deferred_call.family",
+            "A deferred member call must name a member family of its view's contract");
+        auto &head = contract->m_slots[x.m_family];
+        verify_runtime_trait_slot(*contract, x.m_family, x.base.base.loc);
+        for (int64_t i = 0; i < x.m_family; i++) {
+            require_id(!ASRUtils::trait_slots_same_family(contract->m_slots[i], head),
+                "asr.verify.trait_deferred_call.family",
+                "A deferred member call must name the first slot of its family");
+        }
+        auto *message = ASRUtils::trait_method_function(head.m_origins[0]);
+        auto *method = ASRUtils::trait_method_template(*message);
+        require_id(x.n_type_arguments == method->n_args && x.n_args == message->n_args + 1,
+            "asr.verify.trait_deferred_call.signature",
+            "A deferred member call must supply every binder and message argument");
+        std::map<std::string, std::string> binders;
+        for (size_t i = 0; i < x.n_type_arguments; i++) {
+            auto *type = x.m_type_arguments[i];
+            auto *binder = ASR::is_a<TypeParameter_t>(*type) ? declared_trait_binder(
+                ASR::down_cast<TypeParameter_t>(type)->m_param) : nullptr;
+            auto *set = binder ? ASRUtils::trait_parameter_type_set(binder) : nullptr;
+            require_id(set && set == ASRUtils::trait_parameter_type_set(
+                    method->m_symtab->get_symbol(method->m_args[i])),
+                "asr.verify.trait_deferred_call.type_arguments",
+                "Deferred member types must be scoped binders of the message's exact type-set traits");
+            binders[method->m_args[i]] = ASR::down_cast<TypeParameter_t>(type)->m_param;
+        }
+        auto deferred = [&](ttype_t *formal, ttype_t *actual) {
+            if (!formal || !actual || ASRUtils::extract_n_dims_from_ttype(formal) !=
+                    ASRUtils::extract_n_dims_from_ttype(actual)) return false;
+            formal = ASRUtils::extract_type(formal);
+            actual = ASRUtils::extract_type(actual);
+            if (!ASR::is_a<TypeParameter_t>(*formal)) {
+                return ASRUtils::types_equal(formal, actual, nullptr, nullptr);
+            }
+            auto binder = binders.find(ASR::down_cast<TypeParameter_t>(formal)->m_param);
+            return binder != binders.end() && ASR::is_a<TypeParameter_t>(*actual) &&
+                binder->second == ASR::down_cast<TypeParameter_t>(actual)->m_param;
+        };
+        for (size_t i = 0; i < message->n_args; i++) {
+            require_id(x.m_args[i + 1].m_value && deferred(
+                    typed_expr_type(message->m_args[i]), typed_expr_type(x.m_args[i + 1].m_value)),
+                "asr.verify.trait_deferred_call.signature",
+                "A deferred member argument must have its message type with deferred binders");
+        }
+        require_id(deferred(typed_expr_type(message->m_return_var), x.m_type),
+            "asr.verify.trait_deferred_call.signature",
+            "A deferred member call's result must be its message result with deferred binders");
+    }
+
+    void visit_TraitSubroutineCall(const TraitSubroutineCall_t &x) {
+        verify_trait_call(x);
+        SubroutineCall_t call{};
+        call.base.base.loc = x.base.base.loc;
+        call.m_name = x.m_name;
+        call.m_args = x.m_args;
+        call.n_args = x.n_args;
+        bool saved = _inside_trait_subroutine;
+        _inside_trait_subroutine = true;
+        visit_SubroutineCall(call);
+        _inside_trait_subroutine = saved;
     }
 
     // Raises the mismatch `m` as a verifier error under `prefix`.
@@ -1018,6 +3806,33 @@ public:
         return false;
     }
 
+    // The hidden length dummy of each character dummy of `fn` that has one,
+    // by the character dummy's position, once string_length_arguments has
+    // appended them.
+    std::map<size_t, symbol_t*> hidden_string_lengths(const Function_t &fn) const {
+        std::map<size_t, symbol_t*> lengths;
+        size_t n_explicit = explicit_argument_count(fn);
+        for (size_t i = 0, k = n_explicit; i < n_explicit && n_explicit < fn.n_args; i++) {
+            if (!ASRUtils::is_string_dummy_with_hidden_length(fn, fn.m_args[i])) continue;
+            if (k < fn.n_args && ASR::is_a<ASR::Var_t>(*fn.m_args[k])) {
+                lengths[i] = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(fn.m_args[k])->m_v);
+            }
+            k++;
+        }
+        return lengths;
+    }
+
+    // The arguments of `fn` before its hidden character lengths: all of them
+    // before the string_length_arguments pass has run, after it all but the
+    // one it appends for each character dummy passed with a hidden length
+    // (ASRVerifyOptions::string_length_arguments says which).
+    size_t explicit_argument_count(const Function_t &fn) const {
+        size_t n_hidden = check_string_length_arguments
+            ? count_hidden_string_lengths(fn) : 0;
+        return n_hidden <= fn.n_args ? fn.n_args - n_hidden : fn.n_args;
+    }
+
     static bool is_hidden_string_length_type(ASR::ttype_t *t) {
         return t != nullptr && ASR::is_a<ASR::Integer_t>(*t) &&
             ASR::down_cast<ASR::Integer_t>(t)->m_kind == 8;
@@ -1125,6 +3940,43 @@ public:
         std::string func_name = x.m_name;
         require(x.m_function_signature,
                     "Type signature is required for `" + func_name + "`");
+        if (check_external && ASRUtils::get_FunctionType(x)->m_is_restriction) {
+            bool numeric = false, recorded = false;
+            for (const auto &entry : parent_symtab->get_scope()) {
+                if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+                auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+                auto *trait = ASRUtils::symbol_get_past_external(constraint->m_trait);
+                if (trait && ASR::is_a<ASR::Trait_t>(*trait)) {
+                    numeric |= ASR::down_cast<ASR::Trait_t>(trait)->m_kind ==
+                        ASR::trait_kindType::IntrinsicTypeSet;
+                }
+                for (size_t i = 0; i < constraint->n_requirements; i++) {
+                    recorded |= constraint->m_requirements[i].m_procedure == &x.base;
+                }
+                for (size_t i = 0; i < constraint->n_intrinsic_requirements; i++) {
+                    recorded |= constraint->m_intrinsic_requirements[i].m_procedure == &x.base;
+                }
+            }
+            // The function of a generic requirement is recorded, through its
+            // Template, by the enclosing generic's constraint.
+            auto *owner = parent_symtab->asr_owner;
+            if (!recorded && owner && ASR::is_a<ASR::symbol_t>(*owner) &&
+                    ASR::is_a<ASR::Template_t>(*ASR::down_cast<ASR::symbol_t>(owner)) &&
+                    ASRUtils::trait_method_function(ASR::down_cast<ASR::symbol_t>(owner)) == &x &&
+                    parent_symtab->parent) {
+                for (const auto &entry : parent_symtab->parent->get_scope()) {
+                    if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+                    auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+                    for (size_t i = 0; i < constraint->n_requirements; i++) {
+                        recorded |= ASRUtils::symbol_get_past_external(
+                            constraint->m_requirements[i].m_procedure) ==
+                            ASR::down_cast<ASR::symbol_t>(owner);
+                    }
+                }
+            }
+            require_id(!numeric || recorded, "asr.verify.type_set.restriction_record",
+                "A type-set restriction must have an explicit capability proof");
+        }
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
         for (auto &a : x.m_symtab->get_scope()) {
             LCOMPILERS_ASSERT(a.second);
@@ -1137,9 +3989,28 @@ public:
                 "dummy argument " + std::to_string(i + 1));
             visit_expr(*x.m_args[i]);
         }
+        if (ASRUtils::has_trait_out_cleanup(x) ||
+                ASRUtils::has_trait_component_cleanup(x.m_symtab)) {
+            require_id(!ASRUtils::get_FunctionType(x)->m_pure &&
+                    !x.m_side_effect_free && !x.m_deterministic,
+                "asr.verify.trait_component.cleanup_effects",
+                "Trait ownership cleanup must retain its unchecked dynamic lifecycle effects");
+        }
         for (size_t i=0; i<x.n_body; i++) {
             LCOMPILERS_ASSERT(x.m_body[i]);
             visit_stmt(*x.m_body[i]);
+        }
+        if (check_external && (x.m_side_effect_free || x.m_deterministic)) {
+            bool own_effects = ASR::has_trait_lifecycle_effects(x.m_body, x.n_body);
+            require_id(!own_effects,
+                "asr.verify.trait_owner.lifecycle_effects",
+                "Trait lifecycle operations must retain their unchecked dynamic effects");
+            // A loaded procedure retains what its own compilation could see;
+            // overrides compiled here may add to what it reaches.
+            if (!own_effects && !in_loaded_module(x.m_symtab) &&
+                    ASR::TraitLifecycleSummary::analyzable(x)) {
+                trait_lifecycle_callers.push_back(&x);
+            }
         }
         if (x.m_return_var) {
             require_own_symbol(x.m_return_var, func_name, "result variable");
@@ -1413,11 +4284,433 @@ public:
         }
     }
 
+    void verify_type_trait_obligations(const Struct_t &x) {
+        require_id(!x.n_trait_obligations || x.m_trait_obligations,
+            "asr.verify.struct.trait_obligations",
+            "Type adoption must retain its nominal trait obligations");
+        for (size_t i = 0; i < x.n_trait_obligations; i++) {
+            require_id(x.m_trait_obligations[i] &&
+                    symtab_in_scope(current_symtab, x.m_trait_obligations[i]),
+                "asr.verify.struct.trait_obligation_in_scope",
+                "An adopted trait must be visible in the type's declaring scope");
+        }
+        if (!check_external) return;
+        std::set<symbol_t*> traits;
+        for (size_t i = 0; i < x.n_trait_obligations; i++) {
+            auto *trait = ASRUtils::symbol_get_past_external(x.m_trait_obligations[i]);
+            require_id(trait && ASR::is_a<Trait_t>(*trait) &&
+                    ASR::down_cast<Trait_t>(trait)->m_kind == trait_kindType::UniversalTrait &&
+                    traits.insert(trait).second,
+                "asr.verify.struct.trait_obligations",
+                "Type obligations must identify distinct universal traits");
+        }
+        auto *parent = ASRUtils::symbol_get_past_external(x.m_parent);
+        if (parent && ASR::is_a<Struct_t>(*parent)) {
+            auto *structure = ASR::down_cast<Struct_t>(parent);
+            for (size_t i = 0; i < structure->n_trait_obligations; i++) {
+                require_id(traits.count(ASRUtils::symbol_get_past_external(
+                        structure->m_trait_obligations[i])),
+                    "asr.verify.struct.inherited_trait_obligations",
+                    "A type must retain every nominal obligation of its parent");
+            }
+        }
+        std::map<symbol_t*, TraitImplementation_t*> implementations;
+        if (!traits.empty()) {
+            for (const auto &entry : x.m_symtab->parent->get_scope()) {
+                if (!ASR::is_a<TraitImplementation_t>(*entry.second)) continue;
+                auto *implementation = ASR::down_cast<TraitImplementation_t>(entry.second);
+                if (ASRUtils::symbol_get_past_external(implementation->m_type_declaration) ==
+                        &x.base) {
+                    implementations.emplace(ASRUtils::symbol_get_past_external(
+                        implementation->m_trait), implementation);
+                }
+            }
+        }
+        std::map<std::string, Function_t*> methods;
+        for (auto *trait : traits) {
+            auto hierarchy = verify_trait_hierarchy(
+                *ASR::down_cast<Trait_t>(trait), x.base.base.loc);
+            auto proof = implementations.find(trait);
+            require_id(x.m_is_abstract || proof != implementations.end(),
+                "asr.verify.struct.concrete_trait_obligations",
+                "A concrete type must provide complete evidence for every adopted trait");
+            for (auto *member : hierarchy.members) {
+                // An initializer or operator requirement has no receiver and is
+                // bound by signature, not by a type-bound name; the conformance
+                // that proves the obligation binds each of them.
+                if (ASRUtils::trait_member_operation(member)) continue;
+                auto *required = ASRUtils::trait_method_function(member);
+                auto previous = methods.emplace(required->m_name, required);
+                require_id(previous.second || ASRUtils::trait_method_mismatch(
+                        *previous.first->second, *required).difference ==
+                            ASRUtils::TraitMethodDifference::None,
+                    "asr.verify.struct.compatible_trait_obligations",
+                    "Adopted traits must agree on shared method signatures");
+                symbol_t *method = nullptr;
+                std::set<const Struct_t*> seen;
+                for (const Struct_t *s = &x; s && !method && seen.insert(s).second;) {
+                    method = s->m_symtab->get_symbol(required->m_name);
+                    auto *base = ASRUtils::symbol_get_past_external(s->m_parent);
+                    s = base && ASR::is_a<Struct_t>(*base)
+                        ? ASR::down_cast<Struct_t>(base) : nullptr;
+                }
+                auto *declaration = method && ASR::is_a<StructMethodDeclaration_t>(*method)
+                    ? ASR::down_cast<StructMethodDeclaration_t>(method) : nullptr;
+                if (!declaration || declaration->m_is_deferred) {
+                    require_id(x.m_is_abstract && proof == implementations.end(),
+                        "asr.verify.struct.trait_method_implemented",
+                        "A type adoption must use a concrete ordinary binding for each method");
+                    continue;
+                }
+                auto *procedure = verify_runtime_trait_procedure(declaration->m_proc,
+                    declaration->base.base.loc, "asr.verify.struct.trait_method_procedure");
+                trait_binding_t binding;
+                binding.loc = declaration->base.base.loc;
+                binding.m_member = member;
+                binding.m_procedure = declaration->m_proc;
+                binding.m_is_nopass = declaration->m_is_nopass;
+                size_t self = ASRUtils::passed_object_index(*declaration, procedure);
+                binding.m_self_argument = self < procedure->n_args
+                    ? ASRUtils::EXPR2VAR(procedure->m_args[self])->m_name : nullptr;
+                verify_trait_binding(const_cast<symbol_t*>(&x.base), binding, false);
+                if (proof != implementations.end()) {
+                    auto *bound = ASRUtils::find_trait_binding(*proof->second, member);
+                    require_id(bound && ASRUtils::trait_bindings_equal(*bound, binding),
+                        "asr.verify.struct.trait_method_binding",
+                        "Nominal conformance must use the effective ordinary type-bound procedure");
+                }
+            }
+        }
+    }
+
+    // The definition of a generic derived type is the symbol of its
+    // package's name and records the package's binders in order; the
+    // package belongs to a module.
+    void verify_generic_type_definition(const Struct_t &x,
+            const GenericTypeDefinition_t &definition) {
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(&x.base);
+        auto *package = owner && ASR::is_a<Template_t>(*owner)
+            ? ASR::down_cast<Template_t>(owner) : nullptr;
+        ASR::symbol_t *unit = package ? ASRUtils::get_asr_owner(owner) : nullptr;
+        require_id(package && std::string(package->m_name) == x.m_name &&
+                package->m_symtab->get_symbol(package->m_name) == &x.base &&
+                unit && ASR::is_a<Module_t>(*unit),
+            "asr.verify.generic_type.definition_owner",
+            "A generic type's definition must be the symbol of its package's name "
+            "in a module");
+        if (!package) return;
+        bool binders = definition.n_parameters == package->n_args;
+        for (size_t i = 0; binders && i < definition.n_parameters; i++) {
+            ASR::symbol_t *binder = package->m_symtab->get_symbol(package->m_args[i]);
+            binders = binder && definition.m_parameters[i] == binder &&
+                ASR::is_a<Variable_t>(*binder) &&
+                ASR::is_a<TypeParameter_t>(*ASR::down_cast<Variable_t>(binder)->m_type);
+        }
+        require_id(binders, "asr.verify.generic_type.definition_owner",
+            "A generic type's definition must record its package's binders in order");
+    }
+
+    // The universal-trait constraints of the binder `binder` of a package,
+    // in constraint order.
+    static std::vector<TraitConstraint_t*> universal_constraints(const Template_t &package,
+            ASR::symbol_t *binder) {
+        std::vector<TraitConstraint_t*> constraints;
+        for (const auto &entry : package.m_symtab->get_scope()) {
+            if (!ASR::is_a<TraitConstraint_t>(*entry.second)) continue;
+            auto *constraint = ASR::down_cast<TraitConstraint_t>(entry.second);
+            auto *trait = ASRUtils::symbol_get_past_external(constraint->m_trait);
+            if (ASRUtils::symbol_get_past_external(constraint->m_parameter) == binder &&
+                    trait && ASR::is_a<Trait_t>(*trait) &&
+                    ASR::down_cast<Trait_t>(trait)->m_kind ==
+                        trait_kindType::UniversalTrait) {
+                constraints.push_back(constraint);
+            }
+        }
+        return constraints;
+    }
+
+    // Whether the type `instance` of an instance's component (declared by
+    // `instance_declaration`) is the type `definition` of the definition's
+    // component (declared by `definition_declaration`) with each parameter
+    // replaced by its type argument and the definition by the instance.
+    // Procedure types are compared by kind only.
+    static bool instance_component_type(const Template_t &package,
+            const Struct_t &definition_struct, const GenericTypeInstance_t &metadata,
+            const Struct_t &x, ASR::ttype_t *definition,
+            ASR::symbol_t *definition_declaration, ASR::ttype_t *instance,
+            ASR::symbol_t *instance_declaration) {
+        while (definition && instance && definition->type == instance->type) {
+            if (ASR::is_a<Allocatable_t>(*definition)) {
+                definition = ASR::down_cast<Allocatable_t>(definition)->m_type;
+                instance = ASR::down_cast<Allocatable_t>(instance)->m_type;
+            } else if (ASR::is_a<Pointer_t>(*definition)) {
+                definition = ASR::down_cast<Pointer_t>(definition)->m_type;
+                instance = ASR::down_cast<Pointer_t>(instance)->m_type;
+            } else if (ASR::is_a<Array_t>(*definition)) {
+                if (ASR::down_cast<Array_t>(definition)->n_dims !=
+                        ASR::down_cast<Array_t>(instance)->n_dims) return false;
+                definition = ASR::down_cast<Array_t>(definition)->m_type;
+                instance = ASR::down_cast<Array_t>(instance)->m_type;
+            } else {
+                break;
+            }
+        }
+        if (!definition || !instance) return false;
+        if (ASR::is_a<TypeParameter_t>(*definition)) {
+            std::string parameter = ASR::down_cast<TypeParameter_t>(definition)->m_param;
+            for (size_t i = 0; i < package.n_args && i < metadata.n_arguments; i++) {
+                if (parameter != package.m_args[i]) continue;
+                const auto &argument = metadata.m_arguments[i];
+                if (argument.m_type_declaration) {
+                    return ASR::is_a<StructType_t>(*instance) && !ASRUtils::is_class_type(
+                            instance) && instance_declaration &&
+                        ASRUtils::symbol_get_past_external(instance_declaration) ==
+                            ASRUtils::symbol_get_past_external(argument.m_type_declaration);
+                }
+                return ASRUtils::types_equal(instance, argument.m_type, nullptr, nullptr);
+            }
+            return false;
+        }
+        if (definition->type != instance->type) return false;
+        if (ASR::is_a<StructType_t>(*definition)) {
+            ASR::symbol_t *original = definition_declaration
+                ? ASRUtils::symbol_get_past_external(definition_declaration) : nullptr;
+            ASR::symbol_t *copy = instance_declaration
+                ? ASRUtils::symbol_get_past_external(instance_declaration) : nullptr;
+            return copy && ASRUtils::is_class_type(definition) ==
+                ASRUtils::is_class_type(instance) &&
+                (original == &definition_struct.base ? copy == &x.base : copy == original);
+        }
+        if (ASR::is_a<FunctionType_t>(*definition)) return true;
+        return ASRUtils::types_equal(definition, instance, nullptr, nullptr);
+    }
+
+    // An instance of a generic derived type is an ordinary type of a module
+    // or program. It records the definition it instantiates, for each
+    // parameter a concrete type argument with the conformance selected for
+    // each universal-trait constraint of the parameter, and the copies of the
+    // package's procedures its owner owns for it. Its components are the
+    // definition's with the arguments substituted; once completed, its
+    // obligations, bindings and procedure copies are the definition's. Its
+    // metadata references are visible from its own scope.
+    void verify_generic_type_instance(const Struct_t &x,
+            const GenericTypeInstance_t &instance) {
+        SymbolTable *owner_scope = x.m_symtab->parent;
+        ASR::symbol_t *unit = owner_scope && owner_scope->asr_owner &&
+                ASR::is_a<ASR::symbol_t>(*owner_scope->asr_owner)
+            ? ASR::down_cast<ASR::symbol_t>(owner_scope->asr_owner) : nullptr;
+        require_id(unit && (ASR::is_a<Module_t>(*unit) || ASR::is_a<Program_t>(*unit)),
+            "asr.verify.generic_type.instance_owner",
+            "A generic type's instance must be declared in a module or program");
+        require_id(instance.m_definition &&
+                symtab_in_scope(x.m_symtab, instance.m_definition),
+            "asr.verify.generic_type.instance_definition",
+            "A generic type's instance must reference a visible definition");
+        if (!check_external || !instance.m_definition || !owner_scope) return;
+        ASR::symbol_t *definition_symbol =
+            ASRUtils::symbol_get_past_external(instance.m_definition);
+        auto *definition = definition_symbol && ASR::is_a<Struct_t>(*definition_symbol)
+            ? ASR::down_cast<Struct_t>(definition_symbol) : nullptr;
+        ASR::symbol_t *owner = definition ? ASRUtils::get_asr_owner(definition_symbol) : nullptr;
+        auto *package = owner ? ASRUtils::generic_type_package(owner) : nullptr;
+        require_id(definition && package &&
+                ASRUtils::generic_type_definition(*package) == definition &&
+                instance.n_arguments == package->n_args,
+            "asr.verify.generic_type.instance_definition",
+            "A generic type's instance must instantiate a generic type's definition "
+            "with one type argument per parameter");
+        if (!definition || !package || instance.n_arguments != package->n_args) return;
+        for (size_t i = 0; i < instance.n_arguments; i++) {
+            const auto &argument = instance.m_arguments[i];
+            ASR::ttype_t *type = argument.m_type;
+            bool structure = type && ASR::is_a<StructType_t>(*type);
+            ASR::symbol_t *declaration = argument.m_type_declaration
+                ? ASRUtils::symbol_get_past_external(argument.m_type_declaration) : nullptr;
+            require_id(type && !ASRUtils::is_array(type) && !ASRUtils::is_pointer(type) &&
+                    !ASRUtils::is_allocatable(type) &&
+                    !ASR::is_a<TypeParameter_t>(*type) &&
+                    (structure ? argument.m_type_declaration &&
+                        symtab_in_scope(x.m_symtab, argument.m_type_declaration) &&
+                        declaration && ASR::is_a<Struct_t>(*declaration) &&
+                        !ASRUtils::is_class_type(type)
+                    : !argument.m_type_declaration && (type_set_concrete_kind(type) ||
+                        constant_length_character(type))),
+                "asr.verify.generic_type.instance_arguments",
+                "A generic type argument must be a concrete scalar intrinsic type, "
+                "character of a constant length included, or a visible nonpolymorphic "
+                "derived type");
+            ASR::symbol_t *binder = package->m_symtab->get_symbol(package->m_args[i]);
+            auto constraints = universal_constraints(*package, binder);
+            if (argument.n_evidence == 0 && !constraints.empty()) {
+                // Only an instance its owner has not completed yet has no
+                // conformances to select.
+                auto *pending = declaration && ASR::is_a<Struct_t>(*declaration)
+                    ? ASR::down_cast<Struct_t>(declaration) : nullptr;
+                require_id(pending && ASRUtils::generic_type_instance(*pending) &&
+                        pending->m_symtab->parent == owner_scope &&
+                        pending->n_trait_obligations == 0,
+                    "asr.verify.generic_type.instance_evidence",
+                    "A generic type argument must record the conformance selected for "
+                    "each universal-trait constraint of its parameter");
+                continue;
+            }
+            require_id(argument.n_evidence == constraints.size(),
+                "asr.verify.generic_type.instance_evidence",
+                "A generic type argument must record one conformance per universal-trait "
+                "constraint of its parameter");
+            for (size_t j = 0; j < argument.n_evidence && j < constraints.size(); j++) {
+                ASR::symbol_t *evidence = argument.m_evidence[j]
+                    ? ASRUtils::symbol_get_past_external(argument.m_evidence[j]) : nullptr;
+                auto *implementation = evidence && ASR::is_a<TraitImplementation_t>(*evidence)
+                    ? ASR::down_cast<TraitImplementation_t>(evidence) : nullptr;
+                bool provides = false;
+                auto *trait = implementation
+                    ? ASRUtils::symbol_get_past_external(implementation->m_trait) : nullptr;
+                if (trait && ASR::is_a<Trait_t>(*trait)) {
+                    auto hierarchy = verify_trait_hierarchy(*ASR::down_cast<Trait_t>(trait),
+                        x.base.base.loc);
+                    for (auto *provided : hierarchy.traits) {
+                        provides |= &provided->base == ASRUtils::symbol_get_past_external(
+                            constraints[j]->m_trait);
+                    }
+                }
+                require_id(implementation && provides &&
+                        symtab_in_scope(x.m_symtab, argument.m_evidence[j]) &&
+                        ASRUtils::trait_implementation_matches_type(*implementation,
+                            declaration, type),
+                    "asr.verify.generic_type.instance_evidence",
+                    "A generic type argument's evidence must be a visible conformance of "
+                    "the argument to its constraint's trait");
+                if (!implementation) continue;
+                for (size_t k = 0; k < constraints[j]->n_requirements; k++) {
+                    auto *binding = ASRUtils::find_trait_binding(*implementation,
+                        constraints[j]->m_requirements[k].m_member);
+                    require_id(!binding || !ASRUtils::trait_binding_mutates_receiver(*binding),
+                        "asr.verify.generic_type.readonly_evidence",
+                        "Generic trait calls are read-only: a constraint's evidence cannot "
+                        "bind a message to a procedure with an intent(inout) receiver");
+                }
+            }
+        }
+        bool members = x.n_members == definition->n_members;
+        for (size_t i = 0; members && i < x.n_members; i++) {
+            ASR::symbol_t *copy = x.m_symtab->get_symbol(x.m_members[i]);
+            ASR::symbol_t *original = definition->m_symtab->get_symbol(definition->m_members[i]);
+            members = std::string(x.m_members[i]) == definition->m_members[i] &&
+                copy && ASR::is_a<Variable_t>(*copy) && original &&
+                ASR::is_a<Variable_t>(*original) && instance_component_type(*package,
+                    *definition, instance, x, ASR::down_cast<Variable_t>(original)->m_type,
+                    ASR::down_cast<Variable_t>(original)->m_type_declaration,
+                    ASR::down_cast<Variable_t>(copy)->m_type,
+                    ASR::down_cast<Variable_t>(copy)->m_type_declaration);
+        }
+        bool obligations = x.n_trait_obligations == 0 ||
+            x.n_trait_obligations == definition->n_trait_obligations;
+        for (size_t i = 0; obligations && x.n_trait_obligations && i < x.n_trait_obligations; i++) {
+            obligations = ASRUtils::symbol_get_past_external(x.m_trait_obligations[i]) ==
+                ASRUtils::symbol_get_past_external(definition->m_trait_obligations[i]);
+        }
+        // An instance its owner has not completed yet has no bindings and no
+        // procedure copies.
+        size_t bindings = 0, definition_bindings = 0;
+        bool corresponding = true;
+        for (const auto &entry : x.m_symtab->get_scope()) {
+            if (!ASR::is_a<StructMethodDeclaration_t>(*entry.second)) continue;
+            bindings++;
+            ASR::symbol_t *original = definition->m_symtab->get_symbol(entry.first);
+            corresponding &= original && ASR::is_a<StructMethodDeclaration_t>(*original);
+        }
+        for (const auto &entry : definition->m_symtab->get_scope()) {
+            if (ASR::is_a<StructMethodDeclaration_t>(*entry.second)) definition_bindings++;
+        }
+        bool complete = bindings || x.n_trait_obligations || instance.n_procedures;
+        require_id(members && obligations && corresponding &&
+                (!complete || (bindings == definition_bindings &&
+                    x.n_trait_obligations == definition->n_trait_obligations)),
+            "asr.verify.generic_type.instance_layout",
+            "A generic type's instance must have its definition's components, with "
+            "its type arguments substituted, obligations and bindings");
+        // The procedures of the package that are not requirements of its
+        // constraints are copied, once each, into the owner of a completed
+        // instance; its bindings and conformances use those copies.
+        std::set<ASR::symbol_t*> requirements;
+        size_t package_procedures = 0;
+        for (const auto &entry : package->m_symtab->get_scope()) {
+            if (!ASR::is_a<TraitConstraint_t>(*entry.second)) continue;
+            auto *constraint = ASR::down_cast<TraitConstraint_t>(entry.second);
+            for (size_t i = 0; i < constraint->n_requirements; i++) {
+                requirements.insert(ASRUtils::symbol_get_past_external(
+                    constraint->m_requirements[i].m_procedure));
+            }
+        }
+        for (const auto &entry : package->m_symtab->get_scope()) {
+            if ((ASR::is_a<Function_t>(*entry.second) || ASR::is_a<Template_t>(*entry.second)) &&
+                    !requirements.count(entry.second)) package_procedures++;
+        }
+        bool procedures = !complete || instance.n_procedures == package_procedures;
+        std::set<ASR::symbol_t*> copies;
+        for (size_t i = 0; procedures && i < instance.n_procedures; i++) {
+            ASR::symbol_t *copy = instance.m_procedures[i];
+            procedures = copy && !ASR::is_a<ExternalSymbol_t>(*copy) &&
+                ASRUtils::symbol_parent_symtab(copy) == owner_scope &&
+                (ASR::is_a<Function_t>(*copy) || (ASR::is_a<Template_t>(*copy) &&
+                    ASRUtils::trait_method_function(copy))) &&
+                copies.insert(copy).second;
+        }
+        for (const auto &entry : x.m_symtab->get_scope()) {
+            if (!procedures || !ASR::is_a<StructMethodDeclaration_t>(*entry.second)) continue;
+            procedures = ASRUtils::generic_instance_procedure(instance,
+                ASR::down_cast<StructMethodDeclaration_t>(entry.second)->m_proc);
+        }
+        for (const auto &entry : owner_scope->get_scope()) {
+            if (!procedures || !ASR::is_a<TraitImplementation_t>(*entry.second)) continue;
+            auto *conformance = ASR::down_cast<TraitImplementation_t>(entry.second);
+            if (!conformance->m_type_declaration || ASRUtils::symbol_get_past_external(
+                    conformance->m_type_declaration) != &x.base) continue;
+            for (size_t i = 0; procedures && i < conformance->n_bindings; i++) {
+                procedures = ASRUtils::generic_instance_procedure(instance,
+                    conformance->m_bindings[i].m_procedure);
+            }
+        }
+        require_id(procedures, "asr.verify.generic_type.instance_procedures",
+            "A completed generic type's instance must record one copy, owned by its "
+            "module or program, of each procedure of the package, and its bindings and "
+            "conformances must use those copies");
+        for (const auto &entry : owner_scope->get_scope()) {
+            if (entry.second == &x.base || !ASR::is_a<Struct_t>(*entry.second)) continue;
+            auto *other = ASR::down_cast<Struct_t>(entry.second);
+            auto *metadata = ASRUtils::generic_type_instance(*other);
+            if (!metadata || !metadata->m_definition ||
+                    ASRUtils::symbol_get_past_external(metadata->m_definition) !=
+                        definition_symbol ||
+                    metadata->n_arguments != instance.n_arguments) continue;
+            require_id(!ASRUtils::same_generic_instance(x, *other),
+                "asr.verify.generic_type.instance_unique",
+                "A scope must not declare two equal instances of a generic type");
+        }
+    }
+
+    void verify_generic_type(const Struct_t &x) {
+        if (!x.m_generic) return;
+        require_id(x.m_parent == nullptr, "asr.verify.generic_type.not_extended",
+            "A generic type's definition or instance cannot extend another type");
+        if (ASR::is_a<GenericTypeDefinition_t>(*x.m_generic)) {
+            verify_generic_type_definition(x,
+                *ASR::down_cast<GenericTypeDefinition_t>(x.m_generic));
+        } else {
+            verify_generic_type_instance(x,
+                *ASR::down_cast<GenericTypeInstance_t>(x.m_generic));
+        }
+    }
+
     // A derived type extends another derived type and nothing else. Every
     // member lookup, every dispatch and every layout decision walks this
     // chain, so a parent that is not a type is followed straight into the
     // wrong node.
     void visit_Struct(const Struct_t& x) {
+        require_id(!x.m_is_sealed || !x.m_is_abstract,
+            "asr.verify.struct.sealed_not_abstract",
+            "A sealed type cannot be abstract");
         if (x.m_parent != nullptr) {
             ASR::symbol_t *parent = check_external
                 ? ASRUtils::symbol_get_past_external(x.m_parent) : x.m_parent;
@@ -1430,6 +4723,9 @@ public:
                 "'" + std::string(x.m_name) +
                 "' is a sequence type, so it cannot extend another type");
             if (parent != nullptr && ASR::is_a<ASR::Struct_t>(*parent)) {
+                require_id(!ASR::down_cast<ASR::Struct_t>(parent)->m_is_sealed,
+                    "asr.verify.struct.parent_not_sealed",
+                    "A sealed type cannot be extended");
                 require_id(
                     !ASR::down_cast<ASR::Struct_t>(parent)->m_is_sequence,
                     "asr.verify.struct.sequence_type_not_extended",
@@ -1448,7 +4744,14 @@ public:
                 "asr.verify.struct.parent_in_scope",
                 "Struct::m_parent of '" + std::string(x.m_name) +
                 "' cannot point outside of its symbol table");
+            if (check_external && parent != nullptr && ASR::is_a<ASR::Struct_t>(*parent)) {
+                require_id(!ASR::down_cast<ASR::Struct_t>(parent)->m_generic,
+                    "asr.verify.generic_type.not_extended",
+                    "A generic type's definition or instance cannot be extended");
+            }
         }
+        verify_generic_type(x);
+        verify_type_trait_obligations(x);
         verify_deferred_bindings(x);
         verify_final_procedures(x);
         visit_UserDefinedType(x);
@@ -1523,6 +4826,139 @@ public:
     }
 
     void visit_Variable(const Variable_t &x) {
+        if (x.m_storage == storage_typeType::Association) {
+            auto *value = ASRUtils::association_value(x);
+            require_id(x.m_type && !ASRUtils::is_array(x.m_type) &&
+                    !ASRUtils::is_pointer(x.m_type) && !ASRUtils::is_allocatable(x.m_type) &&
+                    (ASR::is_a<StructType_t>(*x.m_type) ||
+                     ASR::is_a<TraitObjectType_t>(*x.m_type) ||
+                     ASR::is_a<Integer_t>(*x.m_type) || ASR::is_a<Real_t>(*x.m_type) ||
+                     ASR::is_a<Complex_t>(*x.m_type) || ASR::is_a<Logical_t>(*x.m_type) ||
+                     ASR::is_a<String_t>(*x.m_type) || ASR::is_a<CPtr_t>(*x.m_type)) &&
+                    (x.m_intent == intentType::Local || x.m_intent == intentType::In) &&
+                    x.m_presence == presenceType::Required && !x.m_symbolic_value &&
+                    !x.m_value && !x.m_value_attr && !x.n_codims && value,
+                "asr.verify.association.storage",
+                "A data association is a once-bound scalar construct local, not an owner or pointer");
+            require_id(!check_external || ASRUtils::association_is_definable(value) ||
+                    x.m_intent == intentType::In,
+                "asr.verify.association.definable",
+                "A data association must preserve its selector's nondefinability");
+            require_id(!check_external || !x.m_target_attr || ASRUtils::association_has_target(value),
+                "asr.verify.association.target",
+                "A data association cannot acquire TARGET from a selector without TARGET or POINTER");
+        }
+        if (contains_retained_result_storage(x.m_type)) {
+            auto *scope_owner = x.m_parent_symtab ? x.m_parent_symtab->asr_owner : nullptr;
+            require_id(ASR::is_a<TraitOwnerList_t>(*x.m_type) &&
+                    x.m_intent == intentType::Local &&
+                    x.m_storage == storage_typeType::Default &&
+                    x.m_presence == presenceType::Required && !x.m_value_attr &&
+                    !x.m_target_attr && !x.m_symbolic_value && !x.m_value &&
+                    !x.m_type_declaration && !x.n_codims && scope_owner &&
+                    ASR::is_a<symbol_t>(*scope_owner) &&
+                    (ASR::is_a<Block_t>(*ASR::down_cast<symbol_t>(scope_owner)) ||
+                     ASR::is_a<AssociateBlock_t>(*ASR::down_cast<symbol_t>(scope_owner))),
+                "asr.verify.trait_results.local_storage",
+                "A retained-result store must be an initially empty local of an executable scope");
+        }
+        // Erased values may only be copied between dictionary-sized scalars,
+        // so arrays of them are dummies or pointer associations, never
+        // value temporaries.
+        if (x.m_type && ASRUtils::is_trait_erased(x.m_type)) {
+            require_with_loc_id(!ASRUtils::is_allocatable(x.m_type) &&
+                    (!ASRUtils::is_array(x.m_type) || ASRUtils::is_arg_dummy(x.m_intent) ||
+                     ASRUtils::is_pointer(x.m_type)),
+                "asr.verify.trait_erased.storage",
+                "Erased values are stored only in scalars, dummies and pointer associations",
+                x.base.base.loc);
+        }
+        if (x.m_type && ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(x.m_type))) {
+            bool dummy = false;
+            bool returned = false;
+            Function_t *function = nullptr;
+            if (x.m_parent_symtab && x.m_parent_symtab->asr_owner &&
+                    ASR::is_a<symbol_t>(*x.m_parent_symtab->asr_owner) &&
+                    ASR::is_a<Function_t>(*ASR::down_cast<symbol_t>(
+                        x.m_parent_symtab->asr_owner))) {
+                function = ASR::down_cast2<Function_t>(x.m_parent_symtab->asr_owner);
+                returned = function->m_return_var &&
+                    ASR::is_a<Var_t>(*function->m_return_var) &&
+                    ASR::down_cast<Var_t>(function->m_return_var)->m_v == &x.base;
+                for (size_t i = 0; i < function->n_args; i++) {
+                    dummy |= function->m_args[i] && ASR::is_a<Var_t>(*function->m_args[i]) &&
+                        ASR::down_cast<Var_t>(function->m_args[i])->m_v == &x.base;
+                }
+            }
+            bool borrowed = ASR::is_a<TraitObjectType_t>(*x.m_type) &&
+                dummy && x.m_storage == storage_typeType::Default &&
+                x.m_intent == intentType::In;
+            bool slot = ASRUtils::is_trait_owner(x.m_type) && dummy &&
+                x.m_storage == storage_typeType::Default &&
+                ASRUtils::is_arg_dummy(x.m_intent);
+            bool result = ASRUtils::is_trait_owner(x.m_type) && returned &&
+                x.m_storage == storage_typeType::Default && x.m_intent == intentType::ReturnVar;
+            bool pointer = ASRUtils::is_trait_pointer(x.m_type) && !returned &&
+                ((dummy && x.m_storage == storage_typeType::Default &&
+                  ASRUtils::is_arg_dummy(x.m_intent)) ||
+                 (!dummy && x.m_intent == intentType::Local &&
+                  x.m_parent_symtab && x.m_parent_symtab->asr_owner &&
+                  ASR::is_a<symbol_t>(*x.m_parent_symtab->asr_owner) &&
+                  !ASR::is_a<Struct_t>(*ASR::down_cast<symbol_t>(
+                      x.m_parent_symtab->asr_owner)) &&
+                  !ASR::is_a<Union_t>(*ASR::down_cast<symbol_t>(
+                      x.m_parent_symtab->asr_owner)) &&
+                  (x.m_storage == storage_typeType::Default ||
+                   x.m_storage == storage_typeType::Save)));
+            bool null_initialized = pointer && !dummy &&
+                (!x.m_symbolic_value || ASR::is_a<PointerNullConstant_t>(*x.m_symbolic_value)) &&
+                (!x.m_value || ASR::is_a<PointerNullConstant_t>(*x.m_value));
+            if (null_initialized && check_external) {
+                for (auto *value : {x.m_symbolic_value, x.m_value}) {
+                    if (!value) continue;
+                    auto *source = typed_expr_type(value);
+                    require_id(source && ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(source)),
+                        "asr.verify.trait_pointer.null_contract",
+                        "A null initializer must use the pointer's declared runtime trait contract");
+                    visit_ttype(*source);
+                    visit_ttype(*x.m_type);
+                    require_id(ASRUtils::trait_contracts_equal(source, x.m_type),
+                        "asr.verify.trait_pointer.null_contract",
+                        "A null initializer must use the pointer's declared runtime trait contract");
+                }
+            }
+            bool owner = ASRUtils::is_trait_owner(x.m_type) && !dummy &&
+                x.m_intent == intentType::Local && x.m_parent_symtab &&
+                x.m_parent_symtab->asr_owner &&
+                ASR::is_a<symbol_t>(*x.m_parent_symtab->asr_owner) &&
+                (x.m_storage == storage_typeType::Default || x.m_storage == storage_typeType::Save) &&
+                !ASR::is_a<Union_t>(*ASR::down_cast<symbol_t>(
+                    x.m_parent_symtab->asr_owner));
+            bool association = x.m_storage == storage_typeType::Association &&
+                ASR::is_a<TraitObjectType_t>(*x.m_type);
+            require_id((borrowed || owner || slot || result || pointer || association) &&
+                    x.m_presence == presenceType::Required &&
+                    !x.m_value_attr &&
+                    ((!x.m_symbolic_value && !x.m_value) || null_initialized) &&
+                    !x.m_type_declaration && !x.n_codims,
+                "asr.verify.trait_view.borrowed_storage",
+                "Trait storage must be a required read-only view, a scalar allocatable slot/result, "
+                "or an initially unallocated local owner");
+            if (slot || result || (pointer && dummy)) {
+                auto *signature = ASRUtils::get_FunctionType(function);
+                require_id(signature->m_abi != abiType::BindC &&
+                        (!result || ((signature->m_abi == abiType::Source ||
+                            signature->m_abi == abiType::ExternalUndefined) &&
+                            !ASRUtils::is_bare_implicit_interface(*signature))) &&
+                        !(signature->m_pure && (result || x.m_intent == intentType::Out)),
+                    "asr.verify.trait_owner.slot_effects",
+                    "An allocatable trait slot or result requires the source ABI and proven lifecycle effects");
+                require_id(!slot || x.m_intent != intentType::Out ||
+                        (!function->m_side_effect_free && !function->m_deterministic),
+                    "asr.verify.trait_owner.entry_effects",
+                    "A trait OUT-slot procedure must retain its unchecked entry cleanup effects");
+            }
+        }
         std::string current_name_copy = current_name;
         current_name = x.m_name;
         variable_dependencies.clear();
@@ -1916,10 +5352,21 @@ public:
             require(std::string(x.m_original_name) == std::string(orig_name),
                 "ExternalSymbol::m_original_name must match external->m_name");
             ASR::Module_t *m = ASRUtils::get_sym_module(x.m_external);
+            // A symbol nested in generic or trait scopes of a program can be
+            // imported inside that program.
+            std::vector<char*> nested_scopes;
+            ASR::symbol_t *nested_unit = ASRUtils::nested_symbol_unit(
+                x.m_external, nested_scopes);
+            ASR::Program_t *program = nested_unit && ASR::is_a<ASR::Program_t>(*nested_unit) &&
+                    !nested_scopes.empty() &&
+                    ASRUtils::nested_symbol_importable(*nested_unit, x.m_parent_symtab)
+                ? ASR::down_cast<ASR::Program_t>(nested_unit) : nullptr;
             ASR::Struct_t* sm = nullptr;
             ASR::Enum_t* em = nullptr;
             ASR::Union_t* um = nullptr;
             ASR::Function_t* fm = nullptr;
+            ASR::Trait_t* tm = nullptr;
+            ASR::TraitRuntimeContract_t* runtime_contract = nullptr;
             bool is_valid_owner = false;
             is_valid_owner = m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external));
             std::string asr_owner_name = "";
@@ -1936,6 +5383,14 @@ public:
                 is_valid_owner = (ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Enum_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
+                                  ASR::is_a<ASR::Trait_t>(*asr_owner_sym) ||
+                                  ASR::is_a<ASR::TraitRuntimeContract_t>(*asr_owner_sym) ||
+                                  ((ASR::is_a<ASR::Template_t>(*asr_owner_sym) ||
+                                    ASR::is_a<ASR::TraitErasure_t>(*asr_owner_sym) ||
+                                    ASR::is_a<ASR::TraitWitness_t>(*asr_owner_sym) ||
+                                    ASR::is_a<ASR::TraitDictionaryContract_t>(*asr_owner_sym) ||
+                                    ASR::is_a<ASR::TraitDictionary_t>(*asr_owner_sym)) &&
+                                    (m || program) && x.n_scope_names > 0) ||
                                   ASR::is_a<ASR::Union_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ) {
                     sm = ASR::down_cast<ASR::Struct_t>(asr_owner_sym);
@@ -1949,6 +5404,18 @@ public:
                 } else if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
                     fm = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
                     asr_owner_name = fm->m_name;
+                } else if (ASR::is_a<ASR::Trait_t>(*asr_owner_sym)) {
+                    tm = ASR::down_cast<ASR::Trait_t>(asr_owner_sym);
+                    asr_owner_name = tm->m_name;
+                } else if (ASR::is_a<ASR::TraitRuntimeContract_t>(*asr_owner_sym)) {
+                    runtime_contract = ASR::down_cast<ASR::TraitRuntimeContract_t>(asr_owner_sym);
+                    asr_owner_name = runtime_contract->m_name;
+                } else if (ASR::is_a<ASR::Template_t>(*asr_owner_sym) ||
+                        ASR::is_a<ASR::TraitErasure_t>(*asr_owner_sym) ||
+                        ASR::is_a<ASR::TraitWitness_t>(*asr_owner_sym) ||
+                        ASR::is_a<ASR::TraitDictionaryContract_t>(*asr_owner_sym) ||
+                        ASR::is_a<ASR::TraitDictionary_t>(*asr_owner_sym)) {
+                    asr_owner_name = ASRUtils::symbol_name(asr_owner_sym);
                 }
             } else {
                 asr_owner_name = m->m_name;
@@ -1967,6 +5434,9 @@ public:
             bool name_matches = (x_m_module_name == asr_owner_name);
             if (!name_matches && m != nullptr && x.n_scope_names > 0) {
                 name_matches = (x_m_module_name == std::string(m->m_name));
+            }
+            if (!name_matches && program != nullptr && x.n_scope_names > 0) {
+                name_matches = (x_m_module_name == std::string(program->m_name));
             }
             // When the direct owner is a Struct, m_module_name refers
             // to the enclosing Module, not the Struct itself. Walk up
@@ -1992,6 +5462,10 @@ public:
                 // m_module_name refers to the top-level module and
                 // scope_names encodes the path to the nested owner.
                 s = m->m_symtab->find_scoped_symbol(x.m_original_name, x.n_scope_names, x.m_scope_names);
+            } else if( program != nullptr && x.n_scope_names > 0
+                       && x_m_module_name == std::string(program->m_name) ) {
+                s = program->m_symtab->find_scoped_symbol(x.m_original_name,
+                    x.n_scope_names, x.m_scope_names);
             } else if( sm ) {
                 s = sm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( em ) {
@@ -2000,6 +5474,10 @@ public:
                 s = fm->m_symtab->resolve_symbol(std::string(x.m_original_name));
             } else if( um ) {
                 s = um->m_symtab->resolve_symbol(std::string(x.m_original_name));
+            } else if (tm) {
+                s = tm->m_symtab->resolve_symbol(std::string(x.m_original_name));
+            } else if (runtime_contract) {
+                s = runtime_contract->m_symtab->resolve_symbol(std::string(x.m_original_name));
             }
             require(s != nullptr,
                 "ExternalSymbol::m_original_name ('"
@@ -2068,7 +5546,41 @@ public:
 
     void visit_ImplicitDeallocate(const ImplicitDeallocate_t &x) {
         // TODO: check that every allocated variable is deallocated.
+        verify_trait_deallocation(x, true);
         BaseWalkVisitor::visit_ImplicitDeallocate(x);
+    }
+
+    template <typename T>
+    void verify_trait_deallocation(const T &x, bool implicit = false) {
+        std::vector<expr_t*> owners;
+        for (size_t i = 0; i < x.n_vars; i++) {
+            auto *association = ASRUtils::association_variable(x.m_vars[i]);
+            require_id(!association || (association->m_intent != intentType::In &&
+                    !ASR::is_a<Var_t>(*x.m_vars[i])),
+                "asr.verify.association.deallocate",
+                "A data association owns no storage and cannot deallocate a read-only subobject");
+            auto *type = typed_expr_type(x.m_vars[i]);
+            if (!type || !ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(type))) continue;
+            verify_trait_owner(x.m_vars[i], x.base.base.loc);
+            // A component is released while its definable containing object
+            // takes a new value, such as an omitted constructor component.
+            require_id(!implicit || ASR::is_a<StructInstanceMember_t>(*x.m_vars[i]) ||
+                    (ASR::is_a<Var_t>(*x.m_vars[i]) &&
+                     ASRUtils::EXPR2VAR(x.m_vars[i])->m_intent == intentType::Local),
+                "asr.verify.trait_owner.caller_lifetime",
+                "Implicit scope cleanup must not destroy a caller-owned dummy slot or result");
+            for (auto *previous : owners) {
+                require_id(!ASRUtils::trait_owner_same_slot(previous, x.m_vars[i]),
+                    "asr.verify.trait_owner.duplicate_cleanup",
+                    "One deallocation cannot destroy the same owner twice");
+            }
+            owners.push_back(x.m_vars[i]);
+        }
+    }
+
+    void visit_ExplicitDeallocate(const ExplicitDeallocate_t &x) {
+        verify_trait_deallocation(x);
+        BaseWalkVisitor::visit_ExplicitDeallocate(x);
     }
 
     void check_var_external(const ASR::expr_t &x) {
@@ -2539,14 +6051,44 @@ public:
             require(is_method,
                 "StructMethodDeclaration '" + std::string(method->m_name) +
                 "' called without dt (not as a method).");
-            if (method->m_proc && ASR::is_a<ASR::Function_t>(*method->m_proc)) {
-                func = ASR::down_cast<ASR::Function_t>(method->m_proc);
+            ASR::symbol_t *proc = check_external
+                ? ASRUtils::symbol_get_past_external(method->m_proc) : method->m_proc;
+            if (proc && ASR::is_a<ASR::Function_t>(*proc)) {
+                func = ASR::down_cast<ASR::Function_t>(proc);
                 nopass = method->m_is_nopass;
+                size_t self = ASRUtils::passed_object_index(*method, func);
+                if (!nopass && self < func->n_args && self < x.n_args &&
+                        x.m_args[self].m_value) {
+                    auto *formal = ASRUtils::expr_to_variable_or_null(func->m_args[self]);
+                    auto *type_symbol = formal ? ASRUtils::symbol_get_past_external(
+                        formal->m_type_declaration) : nullptr;
+                    if (formal && type_symbol && ASR::is_a<Struct_t>(*type_symbol) &&
+                            ASR::down_cast<Struct_t>(type_symbol)->m_is_sealed &&
+                            ASR::is_a<StructType_t>(*formal->m_type) &&
+                            !ASRUtils::is_class_type(formal->m_type)) {
+                        auto *actual_type = typed_expr_type(x.m_args[self].m_value);
+                        require_id(actual_type &&
+                                !ASRUtils::is_class_type(ASRUtils::extract_type(actual_type)),
+                            "asr.verify.call.sealed_receiver",
+                            "A sealed nonpolymorphic passed object requires an explicit concrete view");
+                    }
+                }
             }
         } else if (func_sym && ASR::is_a<ASR::Function_t>(*func_sym)) {
             func = ASR::down_cast<ASR::Function_t>(func_sym);
         } else if (func_sym && ASR::is_a<ASR::Variable_t>(*func_sym)) {
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(func_sym);
+            if (var->m_type_declaration) {
+                auto *interface_symbol = ASRUtils::symbol_get_past_external(var->m_type_declaration);
+                // Module loading verifies local structure before resolving imports.
+                if (check_external || interface_symbol) {
+                    require_id(interface_symbol && ASR::is_a<Function_t>(*interface_symbol),
+                        "asr.verify.call.procedure_interface",
+                        "A procedure variable call requires a declared function interface");
+                    auto *declared = ASR::down_cast<Function_t>(interface_symbol);
+                    if (!ASRUtils::is_bare_implicit_interface(*declared)) func = declared;
+                }
+            }
             if (is_method) {
                 require(var->m_pass_attr != ASR::pass_attrType::NotMethod,
                     "Call with dt!=nullptr targets Variable '" +
@@ -2589,6 +6131,19 @@ public:
                     continue;
                 }
                 ASR::Variable_t* callee_param = ASR::down_cast<ASR::Variable_t>(arg_sym);
+                auto *actual = x.m_args[i].m_value;
+                auto *association = ASRUtils::association_variable(actual);
+                require_id(!association || association->m_intent != intentType::In ||
+                        (callee_param->m_intent != intentType::Out &&
+                         callee_param->m_intent != intentType::InOut),
+                    "asr.verify.association.definable",
+                    "A read-only data association cannot be a defining actual argument");
+                require_id(!association || !ASR::is_a<Var_t>(*actual) ||
+                        (!ASRUtils::is_allocatable(callee_param->m_type) &&
+                         (!ASRUtils::is_pointer(callee_param->m_type) ||
+                          callee_param->m_intent == intentType::In)),
+                    "asr.verify.association.actual_attributes",
+                    "A data association is neither an allocation slot nor a defining pointer slot");
 
                 // Skip detailed checks for self argument (args[0] in method calls)
                 if (i == 0 && is_method && !nopass) {
@@ -2609,6 +6164,55 @@ public:
                 ASR::ttype_t *actual_type =
                     typed_expr_type(passed_arg_expr);
                 ASR::ttype_t *formal_type = callee_param->m_type;
+                require_with_loc_id(!actual_type || !ASRUtils::is_trait_erased(actual_type) ||
+                        ASRUtils::is_trait_erased(formal_type),
+                    "asr.verify.trait_erased.boundary",
+                    "An erased value can only be passed to an erased dummy",
+                    passed_arg_expr->base.loc);
+                if (actual_type && ASRUtils::is_trait_erased(formal_type)) {
+                    require_with_loc_id(trait_erased_type_matches(*func, formal_type,
+                            actual_type, x.m_args, x.n_args),
+                        "asr.verify.trait_erased.argument",
+                        "An erased argument must have the type its dictionary argument describes",
+                        passed_arg_expr->base.loc);
+                    continue;
+                }
+                if (actual_type && (ASR::is_a<TraitObjectType_t>(
+                        *ASRUtils::extract_type(formal_type)) ||
+                        ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(actual_type)))) {
+                    bool slot = ASRUtils::is_trait_owner(formal_type);
+                    bool pointer = ASRUtils::is_trait_pointer(formal_type);
+                    bool pointer_actual = pointer &&
+                        ((ASRUtils::is_trait_pointer(actual_type) &&
+                          (ASR::is_a<Var_t>(*passed_arg_expr) ||
+                           (callee_param->m_intent == intentType::In &&
+                            (ASR::is_a<PointerNullConstant_t>(*passed_arg_expr) ||
+                             ASR::is_a<TraitProject_t>(*passed_arg_expr))))) ||
+                         (callee_param->m_intent == intentType::In &&
+                          ASR::is_a<TraitObjectType_t>(*actual_type) &&
+                          ASRUtils::is_valid_pointer_assignment_target(passed_arg_expr)));
+                    require_with_loc_id(
+                        ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(formal_type)) &&
+                        ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(actual_type)) &&
+                        (slot ? ASRUtils::is_trait_owner(actual_type) &&
+                            (check_external ? ASRUtils::trait_owner_variable(passed_arg_expr) != nullptr
+                                : ASR::is_a<Var_t>(*passed_arg_expr) ||
+                                  ASR::is_a<StructInstanceMember_t>(*passed_arg_expr))
+                            : pointer ? pointer_actual
+                            : ASR::is_a<TraitObjectType_t>(*actual_type)) &&
+                        ASRUtils::check_equal_type(formal_type, actual_type,
+                            func->m_args[i], passed_arg_expr),
+                        "asr.verify.trait_owner.argument",
+                        "Trait arguments require the same declared contract and explicit slot or borrow association",
+                        passed_arg_expr->base.loc);
+                    if (slot) {
+                        verify_trait_owner(passed_arg_expr, passed_arg_expr->base.loc,
+                            callee_param->m_intent != intentType::In);
+                    }
+                    if (pointer && callee_param->m_intent != intentType::In) {
+                        verify_trait_pointer(passed_arg_expr, passed_arg_expr->base.loc, true);
+                    }
+                }
                 // Derived type arguments are skipped for the same reason
                 // as in the signature check above, and this also covers a
                 // polymorphic argument passed as a pointer or allocatable,
@@ -2748,8 +6352,12 @@ public:
                         "(actual argument to INTENT = OUT/INOUT)",
                         passed_arg_expr->base.loc);
 
-                    if (ASR::is_a<ASR::Var_t>(*passed_arg_expr)) {
-                        ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(passed_arg_expr)->m_v;
+                    ASR::expr_t *defined_arg = passed_arg_expr;
+                    if (ASR::is_a<ASR::TraitRecover_t>(*defined_arg)) {
+                        defined_arg = ASR::down_cast<ASR::TraitRecover_t>(defined_arg)->m_value;
+                    }
+                    if (ASR::is_a<ASR::Var_t>(*defined_arg)) {
+                        ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(defined_arg)->m_v;
                         if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
                             ASR::Variable_t* passed_var = ASR::down_cast<ASR::Variable_t>(passed_sym);
                             require_with_loc(
@@ -3168,6 +6776,14 @@ public:
     }
 
     void visit_SubroutineCall(const SubroutineCall_t &x) {
+        if (check_external) {
+            auto *owner = ASRUtils::get_asr_owner(
+                ASRUtils::symbol_get_past_external(x.m_name));
+            require_id(!owner || !ASR::is_a<TraitRuntimeContract_t>(*owner)
+                    || _inside_trait_subroutine,
+                "asr.verify.trait_call.dynamic_required",
+                "A runtime contract interface must be invoked through its witness slot");
+        }
         require(symtab_in_scope(current_symtab, x.m_name),
             "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table");
         if (check_external) {
@@ -3271,6 +6887,25 @@ public:
 
     void visit_PointerNullConstant(const PointerNullConstant_t& x) {
         require(x.m_type != nullptr, "null() must have a type");
+        if (check_external && ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(x.m_type))) {
+            visit_ttype(*x.m_type);
+            require_id(ASRUtils::is_trait_pointer(x.m_type),
+                "asr.verify.trait_pointer.null_type",
+                "A runtime trait null value must have pointer type");
+            if (x.m_var_expr) {
+                auto *mold_type = typed_expr_type(x.m_var_expr);
+                bool owner_variable = ASRUtils::is_trait_owner(mold_type) &&
+                    ASRUtils::trait_owner_variable(x.m_var_expr);
+                require_id(mold_type &&
+                        (ASRUtils::is_trait_pointer(mold_type) || owner_variable),
+                    "asr.verify.trait_pointer.null_mold",
+                    "A runtime trait null mold must be a pointer or allocatable variable");
+                visit_ttype(*mold_type);
+                require_id(ASRUtils::trait_contracts_equal(x.m_type, mold_type),
+                    "asr.verify.trait_pointer.null_mold",
+                    "A runtime trait null value must retain its mold's declared contract");
+            }
+        }
         if ( x.m_var_expr != nullptr ) {
             visit_expr(*x.m_var_expr);
         }
@@ -3349,7 +6984,21 @@ public:
             std::string(to_fn->m_name) + "'");
     }
 
+    void visit_IntrinsicImpureFunction(const IntrinsicImpureFunction_t &x) {
+        if (x.m_impure_intrinsic_id ==
+                    static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated) &&
+                x.n_args == 1 && x.m_args &&
+                ASRUtils::is_trait_owner(typed_expr_type(x.m_args[0]))) {
+            require_id(check_external ? ASRUtils::trait_owner_variable(x.m_args[0]) != nullptr
+                    : ASR::is_a<Var_t>(*x.m_args[0]) || ASR::is_a<StructInstanceMember_t>(*x.m_args[0]),
+                "asr.verify.trait_owner.inquiry_variable",
+                "An allocated inquiry requires a variable, not a function result");
+        }
+        BaseWalkVisitor::visit_IntrinsicImpureFunction(x);
+    }
+
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
+        verify_trait_erased_operands(x.m_args, x.n_args, "an intrinsic procedure");
         if( !check_external ) {
             BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicElementalFunction(x);
             return ;
@@ -3365,6 +7014,11 @@ public:
     }
 
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
+        // Only the shape of an erased array can be inquired.
+        if (x.m_arr_intrinsic_id !=
+                static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape)) {
+            verify_trait_erased_operands(x.m_args, x.n_args, "an intrinsic procedure");
+        }
         if( !check_external ) {
             BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicArrayFunction(x);
             return ;
@@ -3382,6 +7036,39 @@ public:
     void visit_FunctionCall(const FunctionCall_t &x) {
         require(x.m_name,
             "FunctionCall::m_name must be present");
+        require_with_loc_id(!x.m_type || !ASRUtils::is_array(x.m_type) ||
+                !ASRUtils::is_trait_erased(x.m_type),
+            "asr.verify.trait_erased.temporary",
+            "Erased values have no array temporaries", x.base.base.loc);
+        if (check_external) {
+            auto *owner = ASRUtils::get_asr_owner(
+                ASRUtils::symbol_get_past_external(x.m_name));
+            require_id(!owner || !ASR::is_a<TraitRuntimeContract_t>(*owner) ||
+                    (current_expr && ASR::is_a<TraitFunctionCall_t>(*current_expr)),
+                "asr.verify.trait_call.dynamic_required",
+                "A runtime contract interface must be invoked through its witness slot");
+        }
+        if (check_external && !_inside_template) {
+            auto *function = ASRUtils::symbol_get_past_external(x.m_name);
+            if (function && ASR::is_a<ASR::Function_t>(*function)) {
+                bool intrinsic_restriction = false;
+                auto *scope = ASRUtils::symbol_parent_symtab(function);
+                auto *owner = ASRUtils::get_asr_owner(function);
+                if (owner && ASR::is_a<ASR::Template_t>(*owner)) {
+                    for (const auto &entry : scope->get_scope()) {
+                        if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+                        auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+                        for (size_t i = 0; i < constraint->n_intrinsic_requirements; i++) {
+                            intrinsic_restriction |=
+                                constraint->m_intrinsic_requirements[i].m_procedure == function;
+                        }
+                    }
+                }
+                require_id(!intrinsic_restriction,
+                    "asr.verify.call.unbound_restriction",
+                    "A concrete executable cannot call an unbound intrinsic restriction");
+            }
+        }
         variable_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
         if (x.m_dt) {
             visit_expr(*x.m_dt);
@@ -3452,7 +7139,21 @@ public:
             // was typed against; the callee's is what the call actually
             // produces. Where they disagree, the two disagree about the call.
             ASR::ttype_t *returned = typed_expr_type(fn_->m_return_var);
+            if (returned && x.m_type &&
+                    (ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(returned)) ||
+                     ASR::is_a<TraitObjectType_t>(*ASRUtils::extract_type(x.m_type)))) {
+                require_id(ASRUtils::is_trait_owner(returned) &&
+                        ASRUtils::is_trait_owner(x.m_type),
+                    "asr.verify.trait_result.type",
+                    "A trait function call must preserve its owning result type");
+            }
             if (returned != nullptr && x.m_type != nullptr &&
+                    ASRUtils::is_trait_erased(returned)) {
+                require_id(trait_erased_type_matches(*fn_, returned, x.m_type,
+                        x.m_args, x.n_args),
+                    "asr.verify.trait_erased.result",
+                    "An erased result has the type its dictionary argument describes");
+            } else if (returned != nullptr && x.m_type != nullptr &&
                     !ASRUtils::is_intrinsic_symbol(x.m_name) &&
                     !is_struct_like_type(returned) &&
                     !is_struct_like_type(x.m_type) &&
@@ -3472,6 +7173,29 @@ public:
         visit_ttype(*x.m_type);
     }
 
+    void visit_TypeParameter(const TypeParameter_t &x) {
+        if (_inside_template) return;
+        for (auto *scope = current_symtab; scope; scope = scope->parent) {
+            if (scope->asr_owner && ASR::is_a<ASR::symbol_t>(*scope->asr_owner) &&
+                    ASR::is_a<ASR::Requirement_t>(
+                        *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) return;
+        }
+        for (auto *scope = current_symtab; scope; scope = scope->parent) {
+            if (!scope->asr_owner || !ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) continue;
+            auto *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+            require_id(!ASR::is_a<ASR::Program_t>(*owner),
+                "asr.verify.type_parameter.concrete_executable",
+                "A concrete executable cannot contain an unresolved type parameter");
+            if (ASR::is_a<ASR::Function_t>(*owner)) {
+                require_id(ASRUtils::get_FunctionType(owner)->m_deftype !=
+                        ASR::deftypeType::Implementation,
+                    "asr.verify.type_parameter.concrete_executable",
+                    "A concrete executable cannot contain an unresolved type parameter");
+                return;
+            }
+        }
+    }
+
     void visit_StructType(const StructType_t& x) {
         for (size_t i = 0; i < x.n_data_member_types; i++) {
             visit_ttype(*x.m_data_member_types[i]);
@@ -3481,6 +7205,9 @@ public:
     void visit_ArrayConstructor(const ArrayConstructor_t& x) {
         require(ASRUtils::is_array(x.m_type),
             "Type of ArrayConstructor must be an array");
+        require_with_loc_id(!ASRUtils::is_trait_erased(x.m_type),
+            "asr.verify.trait_erased.temporary",
+            "Erased values have no array temporaries", x.base.base.loc);
         if (x.m_struct_var != nullptr) {
             require(ASR::is_a<ASR::Var_t>(*x.m_struct_var),
                 "ArrayConstructor::m_struct_vars must be nullptr or var to struct symbol");
@@ -3516,6 +7243,7 @@ public:
         require(x.m_kind != ASR::string_format_kindType::FormatFortranLeadingBlank
                 || x.m_fmt == nullptr,
             "StringFormat::m_fmt must be nil for FormatFortranLeadingBlank");
+        verify_trait_erased_operands(x.m_args, x.n_args, "formatting");
         BaseWalkVisitor<VerifyVisitor>::visit_StringFormat(x);
     }
 
@@ -4048,6 +7776,10 @@ public:
     void visit_Array(const Array_t& x) {
         require(!ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable cannot be inside array");
+        require_id(!ASR::is_a<TraitErasedType_t>(*x.m_type) ||
+                x.m_physical_type == ASR::array_physical_typeType::DescriptorArray,
+            "asr.verify.trait_erased.array",
+            "An array of erased values is a descriptor of storage its dictionary describes");
         bool _inside_array_physical_cast_type_copy = _inside_array_physical_cast_type;
         _inside_array_physical_cast_type = false;
         visit_ttype(*x.m_type);
@@ -4220,12 +7952,21 @@ public:
 
     void visit_Allocate(const Allocate_t &x) {
         if(check_external){
+            if (x.m_source) {
+                reject_implicit_trait_storage(x.m_source, x.m_source->base.loc);
+            }
             for( size_t i = 0; i < x.n_args; i++ ) {
+                auto *association = ASRUtils::association_variable(x.m_args[i].m_a);
+                require_id(!association || association->m_intent != intentType::In,
+                    "asr.verify.association.definable",
+                    "A read-only data association cannot allocate a subobject");
+                reject_implicit_trait_storage(x.m_args[i].m_a, x.base.base.loc);
                 require(ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x.m_args[i].m_a)) ||
                         ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_args[i].m_a)),
                     "Allocate should only be called with  Allocatable or Pointer type inputs, found " +
                     std::string(ASRUtils::get_type_code(ASRUtils::expr_type(x.m_args[i].m_a))));
                 ASR::ttype_t* alloc_arg_type = x.m_args[i].m_type;
+                reject_implicit_trait_type(alloc_arg_type, x.m_args[i].loc);
                 if ( alloc_arg_type && ASRUtils::is_struct(*alloc_arg_type) && x.m_args[i].m_sym_subclass != nullptr) {
                     require(ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(x.m_args[i].m_sym_subclass)),
                         "Allocate::m_sym_subclass must point to a Struct_t when the m_a member is of a type StructType");
@@ -4264,6 +8005,122 @@ public:
         }
 
         BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
+    }
+
+    void verify_association_definable(expr_t *value) {
+        auto *association = ASRUtils::association_variable(value);
+        if (association) {
+            require_with_loc_id(association->m_intent != intentType::In,
+                "asr.verify.association.definable",
+                "A read-only construct association cannot appear in a variable definition context",
+                value->base.loc);
+        }
+    }
+
+    void verify_io_item_definable(expr_t *item, bool input) {
+        if (!item) return;
+        if (ASR::is_a<ImpliedDoLoop_t>(*item)) {
+            auto *loop = ASR::down_cast<ImpliedDoLoop_t>(item);
+            verify_association_definable(loop->m_var);
+            for (size_t i = 0; i < loop->n_values; i++) {
+                verify_io_item_definable(loop->m_values[i], input);
+            }
+        } else if (!input && ASR::is_a<StringFormat_t>(*item)) {
+            auto *format = ASR::down_cast<StringFormat_t>(item);
+            for (size_t i = 0; i < format->n_args; i++) {
+                verify_io_item_definable(format->m_args[i], false);
+            }
+        } else if (input) {
+            verify_association_definable(item);
+        }
+    }
+
+    void visit_FileRead(const FileRead_t &x) {
+        for (auto *output : {x.m_iostat, x.m_iomsg, x.m_size, x.m_id}) {
+            verify_association_definable(output);
+        }
+        for (size_t i = 0; i < x.n_values; i++) verify_io_item_definable(x.m_values[i], true);
+        verify_trait_erased_operands(x.m_values, x.n_values, "input/output");
+        if (x.m_nml && check_external) {
+            auto *group = ASRUtils::symbol_get_past_external(x.m_nml);
+            require(group && ASR::is_a<Namelist_t>(*group), "FileRead requires a namelist group");
+            auto *namelist = ASR::down_cast<Namelist_t>(group);
+            for (size_t i = 0; i < namelist->n_var_list; i++) {
+                auto *variable = ASRUtils::get_variable_from_symbol(
+                    ASRUtils::symbol_get_past_external(namelist->m_var_list[i]));
+                require_id(!variable || variable->m_storage != storage_typeType::Association ||
+                        variable->m_intent != intentType::In,
+                    "asr.verify.association.definable",
+                    "A read-only construct association cannot be a namelist input item");
+            }
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_FileRead(x);
+    }
+
+    void visit_FileWrite(const FileWrite_t &x) {
+        for (auto *output : {x.m_iostat, x.m_iomsg, x.m_id}) {
+            verify_association_definable(output);
+        }
+        auto *unit_type = typed_expr_type(x.m_unit);
+        if (unit_type && ASRUtils::is_character(*unit_type)) verify_association_definable(x.m_unit);
+        for (size_t i = 0; i < x.n_values; i++) verify_io_item_definable(x.m_values[i], false);
+        verify_trait_erased_operands(x.m_values, x.n_values, "input/output");
+        BaseWalkVisitor<VerifyVisitor>::visit_FileWrite(x);
+    }
+
+    void visit_FileInquire(const FileInquire_t &x) {
+        for (auto *output : {x.m_iostat, x.m_exist, x.m_opened, x.m_number,
+                x.m_named, x.m_name, x.m_access, x.m_sequential, x.m_direct,
+                x.m_form, x.m_formatted, x.m_unformatted, x.m_recl, x.m_nextrec,
+                x.m_blank, x.m_position, x.m_action, x.m_read, x.m_write,
+                x.m_readwrite, x.m_delim, x.m_pad, x.m_flen, x.m_blocksize,
+                x.m_convert, x.m_carriagecontrol, x.m_size, x.m_pos, x.m_iolength,
+                x.m_decimal, x.m_sign, x.m_encoding, x.m_stream, x.m_iomsg,
+                x.m_round, x.m_pending, x.m_asynchronous}) {
+            verify_association_definable(output);
+        }
+        for (size_t i = 0; i < x.n_iolength_vars; i++) {
+            verify_io_item_definable(x.m_iolength_vars[i], false);
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_FileInquire(x);
+    }
+
+    void visit_FileOpen(const FileOpen_t &x) {
+        // NEWUNIT is defined by the preceding explicit call; this node takes
+        // the resulting unit number, just like OPEN(UNIT=...).
+        verify_association_definable(x.m_iostat);
+        verify_association_definable(x.m_iomsg);
+        BaseWalkVisitor<VerifyVisitor>::visit_FileOpen(x);
+    }
+
+    void visit_FileClose(const FileClose_t &x) {
+        verify_association_definable(x.m_iostat);
+        verify_association_definable(x.m_iomsg);
+        BaseWalkVisitor<VerifyVisitor>::visit_FileClose(x);
+    }
+
+    void visit_FileBackspace(const FileBackspace_t &x) {
+        verify_association_definable(x.m_iostat);
+        verify_association_definable(x.m_iomsg);
+        BaseWalkVisitor<VerifyVisitor>::visit_FileBackspace(x);
+    }
+
+    void visit_FileRewind(const FileRewind_t &x) {
+        verify_association_definable(x.m_iostat);
+        verify_association_definable(x.m_iomsg);
+        BaseWalkVisitor<VerifyVisitor>::visit_FileRewind(x);
+    }
+
+    void visit_FileEndfile(const FileEndfile_t &x) {
+        verify_association_definable(x.m_iostat);
+        verify_association_definable(x.m_iomsg);
+        BaseWalkVisitor<VerifyVisitor>::visit_FileEndfile(x);
+    }
+
+    void visit_Flush(const Flush_t &x) {
+        verify_association_definable(x.m_iostat);
+        verify_association_definable(x.m_iomsg);
+        BaseWalkVisitor<VerifyVisitor>::visit_Flush(x);
     }
 
     void verify_sync_stat_list(const std::string &stmt_name, const Location &loc, ASR::expr_t *stat, ASR::expr_t *errmsg,

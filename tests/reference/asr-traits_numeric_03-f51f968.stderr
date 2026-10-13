@@ -1,0 +1,9 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+ --> tests/../integration_tests/traits_numeric_03.f90:5:5 - 8:1
+  |
+5 |        abstract interface :: IIntegerOnly
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+8 |    
+  | ...^ LFortran extension

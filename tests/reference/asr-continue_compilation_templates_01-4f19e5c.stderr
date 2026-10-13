@@ -132,11 +132,11 @@ syntax error: import statement must appear before implicit and declaration state
 1797 | import :: y
      | ^^^^^^^^^^^^ 
 
-syntax error: Token '{' is unexpected here
-    --> tests/errors/continue_compilation_templates_01.f90:1864:20
+syntax error: Token '}' is unexpected here
+    --> tests/errors/continue_compilation_templates_01.f90:1864:22
      |
-1864 |     subroutine swap{t}(x, y)  ! {Error} Token '{' is unexpected here
-     |                    ^ 
+1864 |     subroutine swap{t}(x, y)  ! {Error} Token '}' is unexpected here
+     |                      ^ 
 
 syntax error: Token 'end subroutine' is unexpected here
     --> tests/errors/continue_compilation_templates_01.f90:1867:5
@@ -144,11 +144,11 @@ syntax error: Token 'end subroutine' is unexpected here
 1867 |     end subroutine
      |     ^^^^^^^^^^^^^^ 
 
-syntax error: Token '{' is unexpected here
-    --> tests/errors/continue_compilation_templates_01.f90:1875:30
+syntax error: Token '}' is unexpected here
+    --> tests/errors/continue_compilation_templates_01.f90:1875:32
      |
-1875 |     pure subroutine copy_into{t}(x, y)  ! {Error} Token '{' is unexpected here
-     |                              ^ 
+1875 |     pure subroutine copy_into{t}(x, y)  ! {Error} Token '}' is unexpected here
+     |                                ^ 
 
 syntax error: Token 'end subroutine' is unexpected here
     --> tests/errors/continue_compilation_templates_01.f90:1879:5
@@ -156,11 +156,11 @@ syntax error: Token 'end subroutine' is unexpected here
 1879 |     end subroutine
      |     ^^^^^^^^^^^^^^ 
 
-syntax error: Token '{' is unexpected here
-    --> tests/errors/continue_compilation_templates_01.f90:1885:23
+syntax error: Token '}' is unexpected here
+    --> tests/errors/continue_compilation_templates_01.f90:1885:25
      |
-1885 |     function pick_last{t}(x, y) result(res)  ! {Error} Token '{' is unexpected here
-     |                       ^ 
+1885 |     function pick_last{t}(x, y) result(res)  ! {Error} Token '}' is unexpected here
+     |                         ^ 
 
 syntax error: Token 'end function' is unexpected here
     --> tests/errors/continue_compilation_templates_01.f90:1889:5
@@ -168,11 +168,11 @@ syntax error: Token 'end function' is unexpected here
 1889 |     end function
      |     ^^^^^^^^^^^^ 
 
-syntax error: Token '{' is unexpected here
-    --> tests/errors/continue_compilation_templates_01.f90:1895:30
+syntax error: Token '}' is unexpected here
+    --> tests/errors/continue_compilation_templates_01.f90:1895:32
      |
-1895 |     pure function pick_second{t}(x, y) result(res)  ! {Error} Token '{' is unexpected here
-     |                              ^ 
+1895 |     pure function pick_second{t}(x, y) result(res)  ! {Error} Token '}' is unexpected here
+     |                                ^ 
 
 syntax error: Token 'end function' is unexpected here
     --> tests/errors/continue_compilation_templates_01.f90:1899:5

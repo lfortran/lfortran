@@ -87,6 +87,8 @@ typedef struct {
 LFORTRAN_API lfortran_allocator_t* _lfortran_get_default_allocator(void);
 /* Debug allocator that tracks allocations (defined in lfortran_intrinsics.c) */
 LFORTRAN_API lfortran_allocator_t* _lfortran_get_compiler_mem_dbg_allocator(void);
+LFORTRAN_API void _lcompilers_init_checked_allocator(
+    lfortran_allocator_t* proxy, lfortran_allocator_t* base);
 
 /* Convenience macros for calling through an allocator */
 #define ALLOCATOR_ALLOC(a, size)          ((a)->alloc((a)->context, (size)))

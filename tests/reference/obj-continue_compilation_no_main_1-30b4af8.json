@@ -1,0 +1,13 @@
+{
+    "basename": "obj-continue_compilation_no_main_1-30b4af8",
+    "cmd": "lfortran --no-color -c {infile} -o output.o",
+    "infile": "tests/errors/continue_compilation_no_main_1.f90",
+    "infile_hash": "1aa39d7fa0ac1cc363f02c69e579b37f1d4c55956a6a7e2f3fac4424",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "obj-continue_compilation_no_main_1-30b4af8.stderr",
+    "stderr_hash": "6959bde262a6f097d07845536883ddcf99ea505a3b45b4d9f1abbc5e",
+    "returncode": 1
+}

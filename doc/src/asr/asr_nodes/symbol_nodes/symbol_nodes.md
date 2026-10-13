@@ -27,6 +27,9 @@ Struct
 StructMethodDeclaration
 symbol
 Template
+TraitErasure
+TraitDictionaryContract
+TraitDictionary
 Union
 Variable
 ```

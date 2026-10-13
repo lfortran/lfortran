@@ -1,0 +1,13 @@
+{
+    "basename": "run-continue_compilation_no_main_2-953e666",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/continue_compilation_no_main_2.f90",
+    "infile_hash": "a96b8ed4de76c544ec87fe1b0b318b43eeb719cd10a1d121a4826743",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-continue_compilation_no_main_2-953e666.stderr",
+    "stderr_hash": "e00d7e91d3a8b18f928ac1083581e788ac5f16debd5ce7335de4dc7f",
+    "returncode": 1
+}

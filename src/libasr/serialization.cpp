@@ -279,8 +279,11 @@ public:
         }
 
         if (global_symtab->get_symbol(module_name) != nullptr) {
-            Module_t *m = down_cast<Module_t>(global_symtab->get_symbol(module_name));
-            symbol_t *sym = m->m_symtab->find_scoped_symbol(original_name, x.n_scope_names, x.m_scope_names);
+            // A program's own nested symbols are imported through its name.
+            symbol_t *unit = global_symtab->get_symbol(module_name);
+            SymbolTable *unit_symtab = is_a<Program_t>(*unit)
+                ? down_cast<Program_t>(unit)->m_symtab : down_cast<Module_t>(unit)->m_symtab;
+            symbol_t *sym = unit_symtab->find_scoped_symbol(original_name, x.n_scope_names, x.m_scope_names);
             if (sym) {
                 // FIXME: this is a hack, we need to pass in a non-const `x`.
                 ExternalSymbol_t &xx = const_cast<ExternalSymbol_t&>(x);

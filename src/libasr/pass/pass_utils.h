@@ -325,6 +325,7 @@ namespace LCompilers {
 
         static inline bool is_aggregate_or_array_or_nonPrimitive_type(ASR::expr_t* var) {
             return  is_aggregate_or_array_type(var) ||
+                    ASRUtils::is_trait_owner(ASRUtils::expr_type(var)) ||
                     is_non_primitive_return_type(ASRUtils::expr_type(var));
         }
 
@@ -489,6 +490,13 @@ namespace LCompilers {
                             ASR::Block_t *s = ASR::down_cast<ASR::Block_t>(item.second);
                             self().visit_Block(*s);
                         }
+                        // Runtime witnesses and generic entries a program
+                        // owns hold executable procedures.
+                        if (ASR::is_a<ASR::TraitWitness_t>(*item.second) ||
+                                ASR::is_a<ASR::TraitErasure_t>(*item.second) ||
+                                ASR::is_a<ASR::TraitDictionary_t>(*item.second)) {
+                            self().visit_symbol(*item.second);
+                        }
                     }
                     this->current_scope = current_scope_copy;
                 }
@@ -642,6 +650,51 @@ namespace LCompilers {
                     if( fill_variable_dependencies && ASRUtils::symbol_name(x.m_v) != current_name ) {
                         variable_dependencies.push_back(al, ASRUtils::symbol_name(x.m_v));
                     }
+                }
+
+                void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &x) {
+                    ASR::FunctionCall_t call{};
+                    call.m_name = x.m_name;
+                    call.m_args = x.m_args;
+                    call.n_args = x.n_args;
+                    call.m_type = x.m_type;
+                    visit_FunctionCall(call);
+                }
+
+                void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t &x) {
+                    ASR::SubroutineCall_t call{};
+                    call.m_name = x.m_name;
+                    call.m_args = x.m_args;
+                    call.n_args = x.n_args;
+                    visit_SubroutineCall(call);
+                }
+
+                void visit_TraitWitness(const ASR::TraitWitness_t &x) {
+                    for (const auto &entry : x.m_symtab->get_scope()) {
+                        visit_symbol(*entry.second);
+                    }
+                    Vec<char*> dependencies;
+                    dependencies.reserve(al, x.n_procedures);
+                    for (size_t i = 0; i < x.n_procedures; i++) {
+                        dependencies.push_back(al, ASRUtils::symbol_name(x.m_procedures[i]));
+                    }
+                    auto &witness = const_cast<ASR::TraitWitness_t&>(x);
+                    witness.m_dependencies = dependencies.p;
+                    witness.n_dependencies = dependencies.size();
+                }
+
+                void visit_TraitDictionary(const ASR::TraitDictionary_t &x) {
+                    for (const auto &entry : x.m_symtab->get_scope()) {
+                        visit_symbol(*entry.second);
+                    }
+                    Vec<char*> dependencies;
+                    dependencies.reserve(al, x.n_procedures);
+                    for (size_t i = 0; i < x.n_procedures; i++) {
+                        dependencies.push_back(al, ASRUtils::symbol_name(x.m_procedures[i]));
+                    }
+                    auto &dictionary = const_cast<ASR::TraitDictionary_t&>(x);
+                    dictionary.m_dependencies = dependencies.p;
+                    dictionary.n_dependencies = dependencies.size();
                 }
 
                 void visit_FunctionCall(const ASR::FunctionCall_t& x) {
@@ -1690,6 +1743,10 @@ namespace LCompilers {
                 a_args.push_back(al, x->m_return_var);
                 x->m_args = a_args.p;
                 x->n_args = a_args.n;
+                if (ASRUtils::contains_trait_owner(ASRUtils::expr_type(x->m_return_var))) {
+                    x->m_side_effect_free = false;
+                    x->m_deterministic = false;
+                }
                 x->m_return_var = nullptr;
                 ASR::FunctionType_t* s_func_type = ASR::down_cast<ASR::FunctionType_t>(
                     x->m_function_signature);

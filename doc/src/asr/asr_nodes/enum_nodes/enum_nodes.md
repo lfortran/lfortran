@@ -32,4 +32,5 @@ reduction_op
 storage_type
 string_format_kind
 string_length_kind
+trait_kind
 ```

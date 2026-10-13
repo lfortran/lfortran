@@ -1,0 +1,1 @@
+  class(IAdmissible), allocatable :: obj

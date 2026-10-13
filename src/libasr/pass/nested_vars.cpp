@@ -6,6 +6,7 @@
 #include <libasr/pass/nested_vars.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <algorithm>
 #include <set>
 
 namespace LCompilers {
@@ -193,6 +194,18 @@ public:
     size_t nesting_depth = 0;
     SymbolTable* current_scope;
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> nesting_map;
+    // The earliest place a nested procedure references each captured symbol.
+    std::map<ASR::symbol_t*, Location> first_reference;
+
+    void capture(ASR::symbol_t *procedure, ASR::symbol_t *symbol, const Location &loc) {
+        nesting_map[procedure].insert(symbol);
+        auto found = first_reference.find(symbol);
+        if (found == first_reference.end()) {
+            first_reference.insert({symbol, loc});
+        } else if (loc.first < found->second.first) {
+            found->second = loc;
+        }
+    }
 
     NestedVarVisitor(Allocator& al_): al(al_) {
         current_scope = nullptr;
@@ -318,7 +331,7 @@ public:
                 // from the nested procedure.
                 if ( current_scope && par_func_sym &&
                     !is_sym_in_scope_chain(v->m_parent_symtab, current_scope)) {
-                    nesting_map[get_declaring_procedure(v)].insert(x.m_v);
+                    capture(get_declaring_procedure(v), x.m_v, x.base.base.loc);
                 }
             }
         }
@@ -372,7 +385,7 @@ public:
              ASRUtils::symbol_parent_symtab(fn_sym)->get_counter() != current_scope->get_counter() &&
              current_scope->parent && current_scope->parent->parent != nullptr &&
              (current_scope->parent)->get_counter() == ASRUtils::symbol_parent_symtab(fn_sym)->get_counter() ) {
-            nesting_map[par_func_sym].insert(fn_sym);
+            capture(par_func_sym, fn_sym, x.base.base.loc);
         }
         ASR::BaseWalkVisitor<NestedVarVisitor>::visit_SubroutineCall(x);
     }
@@ -385,13 +398,13 @@ public:
                 ASRUtils::symbol_parent_symtab(x.m_name)->get_counter() != current_scope->get_counter() &&
                 current_scope->parent && current_scope->parent->parent != nullptr &&
                 (current_scope->parent)->get_counter() == ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) {
-                nesting_map[par_func_sym].insert(x.m_name);
+                capture(par_func_sym, x.m_name, x.base.base.loc);
             }
         }
         ASR::BaseWalkVisitor<NestedVarVisitor>::visit_FunctionCall(x);
     }
 
-    void capture_namelist_vars(ASR::symbol_t *nml_sym) {
+    void capture_namelist_vars(ASR::symbol_t *nml_sym, const Location &loc) {
         if (nesting_depth <= 1 || !par_func_sym || !nml_sym) {
             return;
         }
@@ -411,21 +424,21 @@ public:
             }
             if (current_scope && par_func_sym &&
                 !is_sym_in_scope_chain(v->m_parent_symtab, current_scope)) {
-                nesting_map[par_func_sym].insert(nml->m_var_list[i]);
+                capture(par_func_sym, nml->m_var_list[i], loc);
             }
         }
     }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
         if (x.m_nml) {
-            capture_namelist_vars(x.m_nml);
+            capture_namelist_vars(x.m_nml, x.base.base.loc);
         }
         ASR::BaseWalkVisitor<NestedVarVisitor>::visit_FileWrite(x);
     }
 
     void visit_FileRead(const ASR::FileRead_t &x) {
         if (x.m_nml) {
-            capture_namelist_vars(x.m_nml);
+            capture_namelist_vars(x.m_nml, x.base.base.loc);
         }
         ASR::BaseWalkVisitor<NestedVarVisitor>::visit_FileRead(x);
     }
@@ -1043,7 +1056,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             if( x.m_dt )
             visit_expr(*x.m_dt);
         }
-        ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt,
+        ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, xx.m_dt,
             nullptr, false);
     }
 
@@ -1084,7 +1097,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         }
 
 
-        ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt,
+        ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, xx.m_dt,
             nullptr, false);
     }
 
@@ -1931,6 +1944,24 @@ public:
         ASR::ASRPassBaseWalkVisitor<ReplaceMovedProgramStructs>::visit_ClassStmt(x);
     }
 };
+
+std::vector<std::pair<ASR::symbol_t*, Location>> host_associated_variables(
+        Allocator &al, const ASR::Program_t &program) {
+    NestedVarVisitor v(al);
+    v.visit_Program(program);
+    std::vector<std::pair<ASR::symbol_t*, Location>> captured;
+    auto found = v.nesting_map.find(const_cast<ASR::symbol_t*>(&program.base));
+    if (found == v.nesting_map.end()) return captured;
+    for (ASR::symbol_t *symbol : found->second) {
+        captured.push_back({symbol, v.first_reference.at(symbol)});
+    }
+    std::sort(captured.begin(), captured.end(), [](const auto &a, const auto &b) {
+        if (a.second.first != b.second.first) return a.second.first < b.second.first;
+        return std::string(ASRUtils::symbol_name(a.first)) <
+            std::string(ASRUtils::symbol_name(b.first));
+    });
+    return captured;
+}
 
 void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& /*pass_options*/) {

@@ -63,6 +63,9 @@
               :alignment nil
               :parent nil
               :kind_params []
+              :is_sealed false
+              :trait_obligations []
+              :generic nil
             )
             "vec_add" (Function
               :symtab (SymbolTable

@@ -97,6 +97,8 @@ String
 StringPhysicalType
 StructType
 SymbolicExpression
+TraitErasedType
+TraitDictionaryType
 Tuple
 TypeParameter
 UnionType

@@ -476,6 +476,12 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'end' whitespace 'interface' { KW(END_INTERFACE) }
             'endinterface' { KW(ENDINTERFACE) }
 
+            'end' whitespace 'implements' { KW(END_IMPLEMENTS) }
+            'endimplements' { KW(ENDIMPLEMENTS) }
+
+            'end' whitespace 'initial' { KW(END_INITIAL) }
+            'endinitial' { KW(ENDINITIAL) }
+
             'end' whitespace 'type' { KW(END_TYPE) }
             'endtype' { KW(ENDTYPE) }
 
@@ -538,10 +544,12 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'images' { KW(IMAGES) }
             'implicit' { KW(IMPLICIT) }
             'import' { KW(IMPORT) }
+            'implements' { KW(IMPLEMENTS) }
             'impure' { KW(IMPURE) }
             'in' { KW(IN) }
             'include' { KW(INCLUDE) }
             'inout' { KW(INOUT) }
+            'initial' { KW(INITIAL) }
             'in' whitespace 'out' { KW(IN_OUT) }
             'inquire' { KW(INQUIRE) }
             'instantiate' { KW(INSTANTIATE) }
@@ -596,11 +604,13 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'return' { KW(RETURN) }
             'rewind' { KW(REWIND) }
             'save' { KW(SAVE) }
+            'sealed' { KW(SEALED) }
             'select' { KW(SELECT) }
             'selectcase' { KW(SELECT_CASE) }
             'selectrank' { KW(SELECT_RANK) }
             'selecttype' { KW(SELECT_TYPE) }
             'sequence' { KW(SEQUENCE) }
+            'static' { KW(STATIC) }
             'shared' { KW(SHARED) }
             'source' { KW(SOURCE) }
             'stat' { KW(STAT) }

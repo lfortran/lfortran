@@ -1,0 +1,33 @@
+{
+  "source_repository": "Traits-for-Fortran",
+  "source_revision": "5163a026967c165d77b033aaa1476c96feba53bd",
+  "normative_paper": {
+    "file": "traits.tex",
+    "sha256": "fea5d29ce2cd58314fb282d86098ebcbcabf605842397d63349c4554cad6ca21",
+    "listing": "lst:OOFortran (sect:Fortran_dynamic_dispatch)"
+  },
+  "fixtures": [
+    {
+      "corpus_id": "mixed",
+      "source_path": "Code/Fortran/mixed.f90",
+      "file": "mixed.f90",
+      "sha256": "6f9515b4230468ee7f179395713a2b90ed1759e91ce26dd69c884c9115c0516a"
+    }
+  ],
+  "preservation": "Byte-for-byte copy, including the original module names, whitespace, initial :: constructors, class(ISum) allocatable components and the program's READ/SELECT CASE driver. No edits were needed or applied.",
+  "acceptance": {
+    "driver": "traits_paper_functional.py",
+    "stdin_choices": [
+      1,
+      2
+    ],
+    "expected": [
+      "integer 3",
+      "real 3.0"
+    ],
+    "modes": [
+      "normal",
+      "fast"
+    ]
+  }
+}

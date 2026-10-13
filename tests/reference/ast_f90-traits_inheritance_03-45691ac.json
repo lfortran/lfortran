@@ -1,0 +1,13 @@
+{
+    "basename": "ast_f90-traits_inheritance_03-45691ac",
+    "cmd": "lfortran --show-ast-f90 --no-indent --no-color {infile}",
+    "infile": "tests/../integration_tests/traits_inheritance_03.f90",
+    "infile_hash": "43f4939ea75fef71eee85c989b73bf26608dea47bf30f9400a7ce273",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_f90-traits_inheritance_03-45691ac.stdout",
+    "stdout_hash": "9115aa51b66567b3ad83389d112e0766214a307190159d6b8fdf8e03",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

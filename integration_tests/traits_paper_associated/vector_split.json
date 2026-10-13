@@ -1,0 +1,61 @@
+{
+ "schema": "traits-final-four-acceptance.split.v1",
+ "example": "vector",
+ "source": "integration_tests/traits_paper_associated/vector.f90",
+ "source_sha256": "88d11188ce85ed6c5c4067344eb2a432f39ec742730584310a2576143d671b40",
+ "original_sha256": "88d11188ce85ed6c5c4067344eb2a432f39ec742730584310a2576143d671b40",
+ "rule": "Split only at program-unit boundaries; each piece keeps its trailing blank separator line; the byte concatenation in order must reproduce source_sha256 before any compilation. Pieces are verbatim slices; no unit is renamed, reordered, simplified or completed.",
+ "rejoined_sha256": "88d11188ce85ed6c5c4067344eb2a432f39ec742730584310a2576143d671b40",
+ "frozen_before_main": [
+  "traits",
+  "vector_library"
+ ],
+ "dependency_note": "vector_library holds only the generic Vector{U} package. Only test_vector names the instances Vector{real(8)}, Vector{logical} and Vector{character(len=5)}; like static's generic packages, vector_library's object and module file hold no instance code.",
+ "units": [
+  {
+   "unit": "traits",
+   "kind": "module",
+   "first_line": 1,
+   "end_statement_line": 12,
+   "last_line": 13,
+   "bytes": 242,
+   "sha256": "fc8e30a27086b36c67ce7e1e23cc0bd9dc69eb410d3b296fb0debbb7a1655533",
+   "imports": [],
+   "file": "vector_1_traits.f90",
+   "compile_after": []
+  },
+  {
+   "unit": "vector_library",
+   "kind": "module",
+   "first_line": 14,
+   "end_statement_line": 49,
+   "last_line": 50,
+   "bytes": 841,
+   "sha256": "ea1fe8501baedf7094874eedd0466dbbedbe082e8d0f771688a1fde3fb422441",
+   "imports": [
+    "traits"
+   ],
+   "file": "vector_2_vector_library.f90",
+   "compile_after": [
+    "traits"
+   ]
+  },
+  {
+   "unit": "test_vector",
+   "kind": "program",
+   "first_line": 51,
+   "end_statement_line": 72,
+   "last_line": 72,
+   "bytes": 556,
+   "sha256": "640d6a827a4fee3aae59b1f9cdcf671ef3a77deb32ca3aa68862847e9789b025",
+   "imports": [
+    "vector_library"
+   ],
+   "file": "vector_3_test_vector.f90",
+   "compile_after": [
+    "traits",
+    "vector_library"
+   ]
+  }
+ ]
+}

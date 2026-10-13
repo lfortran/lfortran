@@ -2,6 +2,7 @@
 #include <set>
 
 #include <libasr/asr_utils.h>
+#include <libasr/asr_side_effect.h>
 #include <libasr/asr.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
@@ -9,6 +10,15 @@
 #include <libasr/semantic_exception.h>
 
 namespace LCompilers {
+
+// An instantiation for a type that owns runtime trait components can have
+// dynamic lifecycle effects that its generic definition does not have.
+static void retain_trait_lifecycle_effects(ASR::Function_t &function) {
+    if (ASR::has_trait_lifecycle_effects(function)) {
+        function.m_side_effect_free = false;
+        function.m_deterministic = false;
+    }
+}
 
 namespace LPython {
 
@@ -257,6 +267,7 @@ public:
         new_f->n_body = body.size();
         new_f->m_dependencies = deps_vec.p;
         new_f->n_dependencies = deps_vec.size();
+        retain_trait_lifecycle_effects(*new_f);
 
         ASR::symbol_t *t = current_scope->resolve_symbol(new_sym_name);
         return t;
@@ -342,7 +353,8 @@ public:
             data_member_names.p, data_member_names.size(), nullptr, 0,
             x->m_abi, x->m_access, x->m_is_packed, x->m_is_abstract,
             x->m_is_sequence,
-            nullptr, 0, m_alignment, nullptr, nullptr, 0);
+            nullptr, 0, m_alignment, nullptr, nullptr, 0, x->m_is_sealed,
+            x->m_trait_obligations, x->n_trait_obligations, nullptr);
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(result);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x->base.base.loc, struct_sym, true);
         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_sym);
@@ -456,10 +468,19 @@ public:
         SymbolInstantiator cp_t(al, context_map, type_subs, symbol_subs,
             func_scope, template_scope, new_cp_name);
         ASR::symbol_t *new_cp_proc = cp_t.instantiate_symbol(cp_proc);
+        ASR::symbol_t *dispatch = nullptr;
+        if (x->m_dispatch_proc) {
+            std::string dispatch_name = func_scope->get_unique_name(
+                new_cp_name + "_dispatch", false);
+            SymbolInstantiator dispatch_t(al, context_map, type_subs, symbol_subs,
+                func_scope, template_scope, dispatch_name);
+            dispatch = dispatch_t.instantiate_symbol(x->m_dispatch_proc);
+        }
 
         ASR::symbol_t *new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
             al, x->base.base.loc, current_scope, x->m_name, x->m_self_argument,
-            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass));
+            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass,
+            dispatch));
         current_scope->add_symbol(x->m_name, new_x);
 
         return new_x;
@@ -1055,6 +1076,62 @@ static bool is_template_procedure(ASR::symbol_t* s) {
     return true;
 }
 
+// Type declarations are input-typed symbols, but not procedure dummies.
+// A serialized forwarding copy can rename their types without renaming the declarations.
+static bool is_erased_binder_alias(ASR::symbol_t *symbol,
+        const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types) {
+    if (!ASR::is_a<ASR::Variable_t>(*symbol)) return false;
+    auto *variable = ASR::down_cast<ASR::Variable_t>(symbol);
+    if (!ASR::is_a<ASR::TypeParameter_t>(*variable->m_type) ||
+            variable->m_intent != ASR::intentType::In) return false;
+    auto *parameter = ASR::down_cast<ASR::TypeParameter_t>(variable->m_type);
+    auto type = types.find(parameter->m_param);
+    if (type == types.end() || (!ASR::is_a<ASR::TraitObjectType_t>(*type->second.first) &&
+            !ASR::is_a<ASR::TraitErasedType_t>(*type->second.first))) return false;
+    auto *owner = ASRUtils::get_asr_owner(symbol);
+    if (!owner || !ASR::is_a<ASR::Function_t>(*owner)) return false;
+    auto *function = ASR::down_cast<ASR::Function_t>(owner);
+    auto *generic = ASRUtils::get_asr_owner(owner);
+    if (!generic || !ASR::is_a<ASR::Template_t>(*generic)) return false;
+    for (size_t i = 0; i < function->n_args; i++) {
+        if (&ASRUtils::EXPR2VAR(function->m_args[i])->base == symbol) return false;
+    }
+    return !function->m_return_var ||
+        &ASRUtils::EXPR2VAR(function->m_return_var)->base != symbol;
+}
+
+// The erased binders of a dictionary instantiation of a procedure of a
+// template: each erased parameter and its binder's dictionary contract, in
+// the template's binder order.
+static std::vector<std::pair<std::string, ASR::TraitDictionaryContract_t*>>
+erased_dictionary_binders(ASR::symbol_t *procedure,
+        const std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &types) {
+    std::vector<std::pair<std::string, ASR::TraitDictionaryContract_t*>> result;
+    ASR::symbol_t *owner = ASRUtils::get_asr_owner(procedure);
+    if (!owner || !ASR::is_a<ASR::Template_t>(*owner)) return result;
+    auto *generic = ASR::down_cast<ASR::Template_t>(owner);
+    for (size_t i = 0; i < generic->n_args; i++) {
+        auto found = types.find(generic->m_args[i]);
+        if (found == types.end() || !found->second.first ||
+                !ASR::is_a<ASR::TraitErasedType_t>(*found->second.first)) continue;
+        auto *contract = ASRUtils::trait_parameter_dictionary(
+            generic->m_symtab->get_symbol(generic->m_args[i]));
+        if (!contract) continue;
+        result.push_back({ASR::down_cast<ASR::TraitErasedType_t>(
+            found->second.first)->m_parameter, contract});
+    }
+    return result;
+}
+
+// A dictionary contract's slot interface, or nullptr.
+static ASR::Function_t *trait_dictionary_slot_interface(ASR::symbol_t *symbol) {
+    symbol = symbol ? ASRUtils::symbol_get_past_external(symbol) : nullptr;
+    if (!symbol || !ASR::is_a<ASR::Function_t>(*symbol)) return nullptr;
+    auto *owner = ASRUtils::get_asr_owner(symbol);
+    return owner && ASR::is_a<ASR::TraitDictionaryContract_t>(*owner)
+        ? ASR::down_cast<ASR::Function_t>(symbol) : nullptr;
+}
+
 // A variable, such as a named constant, declared in the template itself, as
 // opposed to a deferred constant, which is substituted by the instantiation's
 // argument.
@@ -1088,18 +1165,20 @@ public:
     }
 };
 
-// An associate block of a template procedure is instantiated as an
-// associate block of the instantiated procedure, so `new_scope` corresponds
-// to `old_scope` of the template. Returns the instantiated scope that
+// A block of a template procedure is instantiated as a block of the
+// instantiated procedure, so `new_scope` corresponds to `old_scope` of the
+// template. Returns the instantiated scope that
 // corresponds to `scope`, a scope enclosing `old_scope`, by leaving the
-// associate blocks between them; other scopes are left to the callers.
+// blocks between them; other scopes are left to the callers.
 static SymbolTable* instantiated_enclosing_scope(SymbolTable* old_scope,
         SymbolTable* new_scope, SymbolTable* scope) {
     while (old_scope != nullptr && old_scope != scope
             && old_scope->asr_owner != nullptr
             && ASR::is_a<ASR::symbol_t>(*old_scope->asr_owner)
-            && ASR::is_a<ASR::AssociateBlock_t>(
-                *ASR::down_cast<ASR::symbol_t>(old_scope->asr_owner))) {
+            && (ASR::is_a<ASR::AssociateBlock_t>(
+                *ASR::down_cast<ASR::symbol_t>(old_scope->asr_owner)) ||
+                ASR::is_a<ASR::Block_t>(
+                *ASR::down_cast<ASR::symbol_t>(old_scope->asr_owner)))) {
         LCOMPILERS_ASSERT(new_scope->parent != nullptr);
         old_scope = old_scope->parent;
         new_scope = new_scope->parent;
@@ -1160,18 +1239,19 @@ public:
         }
 
         // if passed as instantiation's argument. Members of a derived type
-        // (components and type-bound procedures) live in the type's own
-        // namespace, so a substitution for a same-named symbol elsewhere in
-        // the template must not replace them. A named constant of the
-        // template has no identity, so an only-list name for it is a new
+        // (components and type-bound procedures) and block locals live in
+        // their own scopes, so a substitution for a same-named symbol
+        // elsewhere in the template must not replace them. A named constant of
+        // the template has no identity, so an only-list name for it is a new
         // instance even if the instantiation already has one, e.g. created
         // for a component of a type listed before it.
         ASR::symbol_t* owner = ASRUtils::get_asr_owner(sym);
-        bool is_struct_member = owner != nullptr && ASR::is_a<ASR::Struct_t>(*owner);
+        bool is_scoped_local = owner != nullptr && (ASR::is_a<ASR::Struct_t>(*owner) ||
+            ASR::is_a<ASR::Block_t>(*owner) || ASR::is_a<ASR::AssociateBlock_t>(*owner));
         bool is_new_constant = instantiates_own_scope && is_template_variable(sym)
             && ASR::down_cast<ASR::Variable_t>(sym)->m_storage
                 == ASR::storage_typeType::Parameter;
-        if (!is_struct_member && !is_new_constant
+        if (!is_scoped_local && !is_new_constant
                 && symbol_subs.find(sym_name) != symbol_subs.end()) {
             ASR::symbol_t* added_sym = symbol_subs[sym_name];
             std::string added_sym_name = ASRUtils::symbol_name(added_sym);
@@ -1221,6 +1301,15 @@ public:
                 ASR::AssociateBlock_t* x = ASR::down_cast<ASR::AssociateBlock_t>(sym);
                 return instantiate_AssociateBlock(x);
             }
+            case (ASR::symbolType::Block) : {
+                return instantiate_Block(ASR::down_cast<ASR::Block_t>(sym));
+            }
+            case (ASR::symbolType::TraitConstraint) : {
+                return instantiate_TraitConstraint(ASR::down_cast<ASR::TraitConstraint_t>(sym));
+            }
+            case (ASR::symbolType::Trait) : {
+                return instantiate_Trait(ASR::down_cast<ASR::Trait_t>(sym));
+            }
             default: {
                 std::string sym_name = ASRUtils::symbol_name(sym);
                 throw LCompilersException("Instantiation of " + sym_name
@@ -1229,10 +1318,95 @@ public:
         }
     }
 
+    // A symbol referenced by a symbol of the instantiated scope `source`: a
+    // symbol of `source` itself is instantiated into target_scope, any other
+    // is referenced from target_scope, through an import when it is not
+    // visible there.
+    ASR::symbol_t* instantiate_reference(ASR::symbol_t* s, SymbolTable* source) {
+        if (s == nullptr) return nullptr;
+        if (ASRUtils::symbol_parent_symtab(s) == source) {
+            SymbolInstantiator t(al, target_scope, type_subs, symbol_subs,
+                ASRUtils::symbol_name(s), s, diagnostics);
+            return t.instantiate();
+        }
+        return ASRUtils::import_nested_symbol(al, s, target_scope);
+    }
+
+    // The constraint of a binder of a nested generic: its procedures belong
+    // to the same scope and are instantiated there, the trait is referenced.
+    ASR::symbol_t* instantiate_TraitConstraint(ASR::TraitConstraint_t* x) {
+        SymbolTable* source = x->m_parent_symtab;
+        Vec<ASR::trait_requirement_t> requirements;
+        requirements.reserve(al, x->n_requirements);
+        for (size_t i = 0; i < x->n_requirements; i++) {
+            ASR::trait_requirement_t requirement = x->m_requirements[i];
+            requirement.m_member = instantiate_reference(requirement.m_member, source);
+            requirement.m_procedure = instantiate_reference(requirement.m_procedure, source);
+            Vec<ASR::trait_evidence_t> evidence;
+            evidence.reserve(al, requirement.n_evidence);
+            for (size_t j = 0; j < requirement.n_evidence; j++) {
+                ASR::trait_evidence_t record = requirement.m_evidence[j];
+                record.m_constraint = instantiate_reference(record.m_constraint, source);
+                record.m_implementation = instantiate_reference(record.m_implementation, source);
+                evidence.push_back(al, record);
+            }
+            requirement.m_evidence = evidence.p;
+            requirement.n_evidence = evidence.size();
+            requirements.push_back(al, requirement);
+        }
+        Vec<ASR::type_set_requirement_t> intrinsic_requirements;
+        intrinsic_requirements.reserve(al, x->n_intrinsic_requirements);
+        for (size_t i = 0; i < x->n_intrinsic_requirements; i++) {
+            ASR::type_set_requirement_t requirement = x->m_intrinsic_requirements[i];
+            requirement.m_procedure = instantiate_reference(requirement.m_procedure, source);
+            Vec<ASR::type_set_witness_t> witnesses;
+            witnesses.reserve(al, requirement.n_witnesses);
+            for (size_t j = 0; j < requirement.n_witnesses; j++) {
+                ASR::type_set_witness_t witness = requirement.m_witnesses[j];
+                witness.m_member_type = ASRUtils::duplicate_type(al, witness.m_member_type);
+                witness.m_procedure = instantiate_reference(witness.m_procedure, source);
+                witnesses.push_back(al, witness);
+            }
+            requirement.m_witnesses = witnesses.p;
+            requirement.n_witnesses = witnesses.size();
+            intrinsic_requirements.push_back(al, requirement);
+        }
+        ASR::symbol_t* parameter = instantiate_reference(x->m_parameter, source);
+        ASR::symbol_t* trait = instantiate_reference(x->m_trait, source);
+        if (target_scope->get_symbol(new_sym_name) != nullptr) {
+            return target_scope->get_symbol(new_sym_name);
+        }
+        ASR::symbol_t* result = ASR::down_cast<ASR::symbol_t>(ASR::make_TraitConstraint_t(
+            al, x->base.base.loc, target_scope, s2c(al, new_sym_name), parameter, trait,
+            requirements.p, requirements.size(), intrinsic_requirements.p,
+            intrinsic_requirements.size()));
+        target_scope->add_symbol(new_sym_name, result);
+        return result;
+    }
+
+    // An inline type set owned by a generic.
+    ASR::symbol_t* instantiate_Trait(ASR::Trait_t* x) {
+        if (x->n_parents != 0 || x->m_kind != ASR::trait_kindType::IntrinsicTypeSet) {
+            throw LCompilersException("Instantiation of trait " + std::string(x->m_name)
+                + " is not supported");
+        }
+        Vec<ASR::ttype_t*> members;
+        members.reserve(al, x->n_member_types);
+        for (size_t i = 0; i < x->n_member_types; i++) {
+            members.push_back(al, ASRUtils::duplicate_type(al, x->m_member_types[i]));
+        }
+        ASR::symbol_t* result = ASR::down_cast<ASR::symbol_t>(ASR::make_Trait_t(al,
+            x->base.base.loc, al.make_new<SymbolTable>(target_scope), s2c(al, new_sym_name),
+            nullptr, 0, x->m_access, x->m_kind, members.p, members.size(), nullptr, 0));
+        target_scope->add_symbol(new_sym_name, result);
+        return result;
+    }
+
     // Instantiates the symbols of `symtab` into `new_scope`.
     void instantiate_local_symbols(SymbolTable* symtab) {
         std::vector<std::pair<std::string, ASR::symbol_t*>> instantiation_vector;
         for (auto &sym_pair: symtab->get_scope()) {
+            if (is_erased_binder_alias(sym_pair.second, type_subs)) continue;
             // instatiate variables first as they might be used in the
             // instantiation of other symbols like StructMethodDeclaration
             if (ASR::is_a<ASR::Variable_t>(*sym_pair.second)) {
@@ -1288,12 +1462,48 @@ public:
             ASRUtils::get_FunctionType(x)->m_elemental, ASRUtils::get_FunctionType(x)->m_pure,
             ASRUtils::get_FunctionType(x)->m_module, ASRUtils::get_FunctionType(x)->m_inline,
             ASRUtils::get_FunctionType(x)->m_static, ASRUtils::get_FunctionType(x)->m_restrictions,
-            ASRUtils::get_FunctionType(x)->n_restrictions, false,
+            ASRUtils::get_FunctionType(x)->n_restrictions,
+            ASRUtils::get_FunctionType(x)->m_is_restriction,
             x->m_deterministic, x->m_side_effect_free);
 
         ASR::symbol_t *f = ASR::down_cast<ASR::symbol_t>(result);
         target_scope->add_symbol(new_sym_name, f);
         symbol_subs[x->m_name] = f;
+        ASR::Function_t &instance = *ASR::down_cast<ASR::Function_t>(f);
+        // Erased binders travel with trailing dictionary dummies, in binder order.
+        auto dictionaries = erased_dictionary_binders(&x->base, type_subs);
+        if (!dictionaries.empty()) {
+            Vec<ASR::expr_t*> with_dictionaries;
+            with_dictionaries.reserve(al, instance.n_args + dictionaries.size());
+            for (size_t i = 0; i < instance.n_args; i++) {
+                with_dictionaries.push_back(al, instance.m_args[i]);
+            }
+            for (auto &binder : dictionaries) {
+                std::string name = new_scope->get_unique_name("__dictionary_" + binder.first);
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_TraitDictionaryType_t(al,
+                    x->base.base.loc, ASRUtils::import_type_declaration(al,
+                        &binder.second->base, new_scope), s2c(al, binder.first)));
+                ASR::symbol_t *dummy = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Variable_t_util(al, x->base.base.loc, new_scope,
+                        s2c(al, name), nullptr, 0, ASR::intentType::In, nullptr, nullptr,
+                        ASR::storage_typeType::Default, type, nullptr, ASR::abiType::Source,
+                        ASR::accessType::Private, ASR::presenceType::Required, false));
+                new_scope->add_symbol(name, dummy);
+                with_dictionaries.push_back(al, ASRUtils::EXPR(
+                    ASR::make_Var_t(al, x->base.base.loc, dummy)));
+            }
+            instance.m_args = with_dictionaries.p;
+            instance.n_args = with_dictionaries.size();
+            instance.m_function_signature = ASRUtils::TYPE(ASRUtils::make_FunctionType_t_util(
+                al, instance.base.base.loc, instance.m_args, instance.n_args,
+                instance.m_return_var, ASRUtils::get_FunctionType(instance), instance.m_symtab));
+        }
+        if (ASRUtils::get_FunctionType(instance)->m_pure &&
+                ASR::has_trait_lifecycle_effects(instance)) {
+            report_error("this instantiation adds runtime trait component lifecycle "
+                "effects, which are not allowed inside a pure procedure", x->base.base.loc);
+        }
+        retain_trait_lifecycle_effects(instance);
 
         return f;
     }
@@ -1343,6 +1553,15 @@ public:
         new_scope = al.make_new<SymbolTable>(target_scope);
         instantiate_local_symbols(x->m_symtab);
         ASR::symbol_t* b = ASR::down_cast<ASR::symbol_t>(ASR::make_AssociateBlock_t(
+            al, x->base.base.loc, new_scope, s2c(al, new_sym_name), nullptr, 0));
+        target_scope->add_symbol(new_sym_name, b);
+        return b;
+    }
+
+    ASR::symbol_t* instantiate_Block(ASR::Block_t* x) {
+        new_scope = al.make_new<SymbolTable>(target_scope);
+        instantiate_local_symbols(x->m_symtab);
+        ASR::symbol_t* b = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
             al, x->base.base.loc, new_scope, s2c(al, new_sym_name), nullptr, 0));
         target_scope->add_symbol(new_sym_name, b);
         return b;
@@ -1792,10 +2011,11 @@ public:
             // The global scope encloses every instantiation.
             return var_sym;
         }
-        if (host != nullptr && ASR::is_a<ASR::Function_t>(*host)
+        if (host != nullptr && (ASR::is_a<ASR::Function_t>(*host) ||
+                ASR::is_a<ASR::Block_t>(*host) || ASR::is_a<ASR::AssociateBlock_t>(*host))
                 && source_scope != nullptr && source_scope != host_scope) {
-            // A variable of an enclosing procedure, used by host association
-            // in an internal procedure. The instantiated scopes are nested
+            // A variable of an enclosing procedure or block, used by host
+            // association. The instantiated scopes are nested
             // like the template's, so the host's instantiation is as many
             // levels up from target_scope as host_scope is from source_scope.
             SymbolTable* s = source_scope;
@@ -1849,9 +2069,14 @@ public:
 
         // duplicate symbol table
         for (auto const &sym_pair: x->m_symtab->get_scope()) {
+            // The function of a generic procedure is named like its
+            // Template, also when the copy is renamed.
+            std::string name = ASRUtils::symbol_name(sym_pair.second);
+            if (name == x->m_name && ASR::is_a<ASR::Function_t>(*sym_pair.second)) {
+                name = new_sym_name;
+            }
             SymbolInstantiator t(al, new_scope, nested_type_subs, symbol_subs,
-                ASRUtils::symbol_name(sym_pair.second), sym_pair.second,
-                diagnostics);
+                name, sym_pair.second, diagnostics);
             t.instantiates_own_scope = true;
             t.instantiate();
         }
@@ -1893,7 +2118,8 @@ public:
         ASR::asr_t* result = ASR::make_Struct_t(al, x->base.base.loc,
             new_scope, s2c(al, new_sym_name), nullptr, nullptr, 0, data_member_names.p,
             data_member_names.size(), nullptr, 0, x->m_abi, x->m_access, x->m_is_packed,
-            x->m_is_abstract, x->m_is_sequence, nullptr, 0, m_alignment, nullptr, nullptr, 0);
+            x->m_is_abstract, x->m_is_sequence, nullptr, 0, m_alignment, nullptr, nullptr, 0,
+            x->m_is_sealed, x->m_trait_obligations, x->n_trait_obligations, nullptr);
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(result);
         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, x->base.base.loc, struct_sym, true);
         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_sym);
@@ -1966,10 +2192,20 @@ public:
             diagnostics);
         ASR::symbol_t* new_cp_proc = t.instantiate();
         symbol_subs[ASRUtils::symbol_name(cp_proc)] = new_cp_proc;
+        ASR::symbol_t* dispatch = nullptr;
+        if (x->m_dispatch_proc) {
+            std::string dispatch_name = target_scope->parent->get_unique_name(
+                new_cp_name + "_dispatch", false);
+            SymbolInstantiator dispatch_t(al, target_scope->parent, type_subs,
+                symbol_subs, dispatch_name, x->m_dispatch_proc, diagnostics);
+            dispatch = dispatch_t.instantiate();
+            symbol_subs[ASRUtils::symbol_name(x->m_dispatch_proc)] = dispatch;
+        }
 
         ASR::symbol_t *new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
             al, x->base.base.loc, target_scope, x->m_name, x->m_self_argument,
-            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass));
+            s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass,
+            dispatch));
         target_scope->add_symbol(x->m_name, new_x);
 
         return new_x;
@@ -2361,6 +2597,10 @@ public:
             case (ASR::symbolType::GenericProcedure) : {
                 break;
             }
+            case (ASR::symbolType::TraitConstraint) :
+            case (ASR::symbolType::Trait) : {
+                break;
+            }
             default: {
                 std::string sym_name = ASRUtils::symbol_name(sym);
                 throw LCompilersException("Instantiation body of " + sym_name
@@ -2374,6 +2614,7 @@ public:
     Vec<ASR::stmt_t*> instantiate_local_scope(ASR::stmt_t** stmts, size_t n_stmts) {
         for (auto const &sym_pair: old_scope->get_scope()) {
             ASR::symbol_t* sym_i = sym_pair.second;
+            if (is_erased_binder_alias(sym_i, type_subs)) continue;
 
             SymbolInstantiator t_i(al, new_scope, type_subs, symbol_subs, sym_pair.first, sym_i);
             ASR::symbol_t* new_sym_i = t_i.instantiate();
@@ -2381,8 +2622,13 @@ public:
             if (ASR::is_a<ASR::AssociateBlock_t>(*sym_i)) {
                 // Part of this procedure's body, so it shares its
                 // dependencies.
-                instantiate_AssociateBlock(ASR::down_cast<ASR::AssociateBlock_t>(sym_i),
+                instantiate_scoped_body(ASR::down_cast<ASR::AssociateBlock_t>(sym_i),
                     ASR::down_cast<ASR::AssociateBlock_t>(new_sym_i));
+                continue;
+            }
+            if (ASR::is_a<ASR::Block_t>(*sym_i)) {
+                instantiate_scoped_body(ASR::down_cast<ASR::Block_t>(sym_i),
+                    ASR::down_cast<ASR::Block_t>(new_sym_i));
                 continue;
             }
 
@@ -2414,8 +2660,8 @@ public:
         return body;
     }
 
-    void instantiate_AssociateBlock(ASR::AssociateBlock_t* x,
-            ASR::AssociateBlock_t* new_b) {
+    template <typename Block>
+    void instantiate_scoped_body(Block* x, Block* new_b) {
         SymbolTable* outer_old_scope = old_scope;
         SymbolTable* outer_new_scope = new_scope;
         old_scope = x->m_symtab;
@@ -2448,6 +2694,7 @@ public:
         new_f->n_body = body.size();
         new_f->m_dependencies = deps_vec.p;
         new_f->n_dependencies = deps_vec.size();
+        retain_trait_lifecycle_effects(*new_f);
     }
 
     void instantiate_Variable(ASR::Variable_t* x) {
@@ -2495,7 +2742,13 @@ public:
 
         for (auto const &sym_pair: new_t->m_symtab->get_scope()) {
             ASR::symbol_t* new_sym_i = sym_pair.second;
-            ASR::symbol_t* sym_i = x->m_symtab->get_symbol(sym_pair.first);
+            ASR::symbol_t* sym_i = x->m_symtab->get_symbol(
+                sym_pair.first == new_t->m_name &&
+                    ASR::is_a<ASR::Function_t>(*new_sym_i) ? x->m_name : sym_pair.first);
+            // A symbol added to the copy itself, such as the static adapter
+            // a generic type's instance binds a requirement of its method
+            // to, has its own body already.
+            if (sym_i == nullptr) continue;
 
             BodyInstantiator t(al, nested_type_subs, symbol_subs, new_sym_i, sym_i,
                 instantiated_bodies);
@@ -2509,6 +2762,9 @@ public:
         for (auto const &sym_pair: new_s->m_symtab->get_scope()) {
             ASR::symbol_t* new_sym_i = sym_pair.second;
             ASR::symbol_t* sym_i = x->m_symtab->get_symbol(sym_pair.first);
+            // A symbol the copy has and the source does not, such as an
+            // import a generic type's instance records, has no body.
+            if (sym_i == nullptr) continue;
 
             BodyInstantiator t(al, type_subs, symbol_subs, new_sym_i, sym_i,
                 instantiated_bodies);
@@ -2525,6 +2781,11 @@ public:
         BodyInstantiator t(al, type_subs, symbol_subs, new_proc, proc,
             instantiated_bodies);
         t.instantiate();
+        if (x->m_dispatch_proc) {
+            BodyInstantiator dispatch_t(al, type_subs, symbol_subs,
+                new_c->m_dispatch_proc, x->m_dispatch_proc, instantiated_bodies);
+            dispatch_t.instantiate();
+        }
     }
 
     /* expr */
@@ -2606,6 +2867,188 @@ public:
         return nullptr;
     }
 
+    ASR::asr_t *duplicate_TraitObjectType(ASR::TraitObjectType_t *x) {
+        return &ASRUtils::import_trait_type(al, &x->base, new_scope)->base;
+    }
+
+    ASR::asr_t *duplicate_TraitDeferredPack(ASR::TraitDeferredPack_t *x) {
+        auto *payload = duplicate_expr(x->m_payload);
+        auto *type = ASRUtils::import_trait_type(al, x->m_type, new_scope);
+        auto selected = symbol_subs.find(ASRUtils::trait_deferred_pack_key(*x));
+        LCOMPILERS_ASSERT(selected != symbol_subs.end());
+        [[maybe_unused]] auto *evidence = ASRUtils::symbol_get_past_external(selected->second);
+        auto *actual_type = ASRUtils::expr_type(payload);
+        if (ASR::is_a<ASR::TypeParameter_t>(*actual_type)) {
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::TraitConstraint_t>(*evidence));
+            return ASR::make_TraitDeferredPack_t(al, x->base.base.loc,
+                payload, selected->second, type);
+        }
+        if (ASR::is_a<ASR::TraitObjectType_t>(*actual_type)) {
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::TraitRuntimeContract_t>(*evidence));
+            std::vector<int64_t> mapping;
+            [[maybe_unused]] bool implied = ASRUtils::trait_projection_slots(
+                *ASRUtils::trait_runtime_contract(actual_type),
+                *ASRUtils::trait_runtime_contract(type), mapping);
+            LCOMPILERS_ASSERT(implied);
+            Vec<ASR::trait_projection_slot_t> slots;
+            slots.reserve(al, mapping.size());
+            for (auto index : mapping) {
+                slots.push_back(al, ASR::trait_projection_slot_t{x->base.base.loc, index});
+            }
+            return ASR::make_TraitProject_t(al, x->base.base.loc,
+                payload, slots.p, slots.size(), type);
+        }
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::TraitWitness_t>(*evidence));
+        return ASR::make_TraitPack_t(al, x->base.base.loc, payload, selected->second, type);
+    }
+
+    ASR::symbol_t *instantiate_trait_callee(ASR::symbol_t *symbol) {
+        if (!ASRUtils::is_visible_from(symbol, new_scope)) {
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::ExternalSymbol_t>(*symbol));
+            SymbolInstantiator instance(al, new_scope, type_subs, symbol_subs,
+                ASRUtils::symbol_name(symbol), symbol);
+            symbol = instance.instantiate();
+        }
+        ADD_ASR_DEPENDENCIES(new_scope, symbol, dependencies);
+        return symbol;
+    }
+
+    ASR::asr_t *duplicate_TraitFunctionCall(ASR::TraitFunctionCall_t *x) {
+        auto *call = ASR::down_cast2<ASR::TraitFunctionCall_t>(
+            BaseExprStmtDuplicator<BodyInstantiator>::duplicate_TraitFunctionCall(x));
+        call->m_name = instantiate_trait_callee(x->m_name);
+        return &call->base.base;
+    }
+
+    // The dictionary dummy that describes erased parameter `parameter` in the
+    // procedure whose body is being instantiated.
+    ASR::expr_t *erased_dictionary(const std::string &parameter, const Location &loc) {
+        ASR::Function_t *owner = ASRUtils::trait_erased_owner(new_scope);
+        ASR::Variable_t *dummy = owner ? ASRUtils::trait_dictionary_dummy(*owner, parameter)
+            : nullptr;
+        LCOMPILERS_ASSERT(dummy);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, &dummy->base));
+    }
+
+    // The erased parameter of a dictionary binder, by the binder's name.
+    std::string erased_parameter(const std::string &binder) {
+        auto type = type_subs.find(binder);
+        LCOMPILERS_ASSERT(type != type_subs.end() && type->second.first &&
+            ASR::is_a<ASR::TraitErasedType_t>(*type->second.first));
+        return ASR::down_cast<ASR::TraitErasedType_t>(type->second.first)->m_parameter;
+    }
+
+    // A requirement of a dictionary binder is called through the slot of
+    // the binder's dictionary, which is passed first.
+    Vec<ASR::call_arg_t> dictionary_call_args(const std::string &requirement,
+            Vec<ASR::call_arg_t> &args, const Location &loc) {
+        auto binder = symbol_subs.find(ASRUtils::trait_dictionary_binder_key(requirement));
+        LCOMPILERS_ASSERT(binder != symbol_subs.end());
+        Vec<ASR::call_arg_t> call_args;
+        call_args.reserve(al, args.size() + 1);
+        call_args.push_back(al, ASR::call_arg_t{loc, erased_dictionary(
+            erased_parameter(ASRUtils::symbol_name(binder->second)), loc)});
+        for (size_t i = 0; i < args.size(); i++) call_args.push_back(al, args[i]);
+        return call_args;
+    }
+
+    size_t dictionary_slot(ASR::Function_t &interface) {
+        auto *contract = ASR::down_cast<ASR::TraitDictionaryContract_t>(
+            ASRUtils::get_asr_owner(&interface.base));
+        for (size_t i = 0; i < contract->n_slots; i++) {
+            if (ASRUtils::symbol_get_past_external(contract->m_slots[i].m_procedure) ==
+                    &interface.base) return i;
+        }
+        LCOMPILERS_ASSERT(false);
+        return contract->n_slots;
+    }
+
+    // A call of a procedure with trailing dictionary dummies, made in an
+    // erased body, passes the caller's dictionaries of the same parameters.
+    void append_dictionary_actuals(ASR::symbol_t *callee, Vec<ASR::call_arg_t> &args,
+            const Location &loc) {
+        ASR::symbol_t *definition = ASRUtils::symbol_get_past_external(callee);
+        if (!definition || !ASR::is_a<ASR::Function_t>(*definition)) return;
+        auto *function = ASR::down_cast<ASR::Function_t>(definition);
+        if (args.size() >= function->n_args) return;
+        std::vector<std::string> parameters;
+        for (size_t i = args.size(); i < function->n_args; i++) {
+            auto *dummy = ASRUtils::get_variable_from_symbol(ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(function->m_args[i])->m_v));
+            if (!dummy || !ASR::is_a<ASR::TraitDictionaryType_t>(*dummy->m_type) ||
+                    !ASR::down_cast<ASR::TraitDictionaryType_t>(dummy->m_type)->m_parameter) {
+                return;
+            }
+            parameters.push_back(ASR::down_cast<ASR::TraitDictionaryType_t>(
+                dummy->m_type)->m_parameter);
+        }
+        for (auto &parameter : parameters) {
+            args.push_back(al, ASR::call_arg_t{loc, erased_dictionary(parameter, loc)});
+        }
+    }
+
+    // The dictionary of a binder: the conformance's selected for a concrete
+    // type argument, the caller's still-deferred one when forwarded, or the
+    // erased procedure's own dummy.
+    ASR::asr_t *duplicate_TraitDeferredDictionary(ASR::TraitDeferredDictionary_t *x) {
+        auto selected = symbol_subs.find(ASRUtils::trait_deferred_dictionary_key(*x));
+        LCOMPILERS_ASSERT(selected != symbol_subs.end());
+        auto *type = ASRUtils::import_trait_type(al, x->m_type, new_scope);
+        auto *evidence = ASRUtils::symbol_get_past_external(selected->second);
+        if (ASR::is_a<ASR::TraitConstraint_t>(*evidence)) {
+            return ASR::make_TraitDeferredDictionary_t(al, x->base.base.loc,
+                selected->second, type);
+        }
+        if (ASR::is_a<ASR::TraitDictionary_t>(*evidence)) {
+            ASR::symbol_t *reference = selected->second;
+            if (!ASRUtils::is_visible_from(reference, new_scope)) {
+                reference = ASRUtils::import_type_declaration(al, evidence, new_scope);
+            }
+            return ASR::make_TraitDictionaryValue_t(al, x->base.base.loc, reference,
+                ASRUtils::TYPE(ASR::make_TraitDictionaryType_t(al, x->base.base.loc,
+                    ASR::down_cast<ASR::TraitDictionaryType_t>(type)->m_contract, nullptr)));
+        }
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*evidence));
+        return &erased_dictionary(erased_parameter(ASRUtils::symbol_name(evidence)),
+            x->base.base.loc)->base;
+    }
+
+    ASR::asr_t *duplicate_TraitSubroutineCall(ASR::TraitSubroutineCall_t *x) {
+        auto *call = ASR::down_cast2<ASR::TraitSubroutineCall_t>(
+            BaseExprStmtDuplicator<BodyInstantiator>::duplicate_TraitSubroutineCall(x));
+        call->m_name = instantiate_trait_callee(x->m_name);
+        return &call->base.base;
+    }
+
+    // Substituted closed type arguments select their member slot; binders of
+    // a still-generic caller keep the call deferred.
+    ASR::asr_t *duplicate_TraitDeferredCall(ASR::TraitDeferredCall_t *x) {
+        auto *call = ASR::down_cast2<ASR::TraitDeferredCall_t>(
+            BaseExprStmtDuplicator<BodyInstantiator>::duplicate_TraitDeferredCall(x));
+        for (size_t i = 0; i < call->n_type_arguments; i++) {
+            if (ASR::is_a<ASR::TypeParameter_t>(*call->m_type_arguments[i])) {
+                return &call->base.base;
+            }
+        }
+        auto *contract = ASRUtils::trait_runtime_contract(
+            ASRUtils::expr_type(call->m_args[0].m_value));
+        size_t slot = ASRUtils::trait_member_slot(*contract, call->m_family,
+            call->m_type_arguments, call->n_type_arguments);
+        LCOMPILERS_ASSERT(slot < contract->n_slots);
+        auto *origin = ASRUtils::symbol_get_past_external(
+            contract->m_slots[slot].m_origins[0]);
+        auto *callee = ASRUtils::import_trait_slot(al, *contract, slot, new_scope,
+            ASRUtils::symbol_name(origin), x->base.base.loc);
+        ADD_ASR_DEPENDENCIES(new_scope, callee, dependencies);
+        auto *result = ASRUtils::expr_type(
+            ASRUtils::trait_method_function(contract->m_slots[slot].m_procedure)->m_return_var);
+        auto *selected = ASR::down_cast2<ASR::FunctionCall_t>(ASRUtils::make_FunctionCall_t_util(
+            al, x->base.base.loc, callee, nullptr, call->m_args, call->n_args,
+            ASRUtils::duplicate_type(al, result), nullptr, nullptr, new_scope, dependencies));
+        return ASR::make_TraitFunctionCall_t(al, x->base.base.loc, callee, slot,
+            selected->m_args, selected->n_args, selected->m_type);
+    }
+
     ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t* x) {
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x->n_args);
@@ -2626,6 +3069,14 @@ public:
         // requirement function
         if (symbol_subs.find(call_name) != symbol_subs.end()) {
             name = symbol_subs[call_name];
+
+            if (ASR::Function_t *interface = trait_dictionary_slot_interface(name)) {
+                Vec<ASR::call_arg_t> call_args = dictionary_call_args(call_name, args,
+                    x->base.base.loc);
+                return ASR::make_TraitFunctionCall_t(al, x->base.base.loc,
+                    instantiate_trait_callee(name), dictionary_slot(*interface),
+                    call_args.p, call_args.size(), type);
+            }
 
             if (ASRUtils::symbol_parent_symtab(name)->get_counter() != new_scope->get_counter()) {
                 std::string sym_name = ASRUtils::symbol_name(name);
@@ -2654,6 +3105,7 @@ public:
             ADD_ASR_DEPENDENCIES(new_scope, name, dependencies);
         }
 
+        append_dictionary_actuals(name, args, x->base.base.loc);
         // A call made by its own name must keep naming the instantiated
         // procedure, not the template's.
         ASR::symbol_t* original_name = x->m_original_name == x->m_name
@@ -2680,6 +3132,14 @@ public:
         // requirement function
         if (symbol_subs.find(call_name) != symbol_subs.end()) {
             name = symbol_subs[call_name];
+
+            if (ASR::Function_t *interface = trait_dictionary_slot_interface(name)) {
+                Vec<ASR::call_arg_t> call_args = dictionary_call_args(call_name, args,
+                    x->base.base.loc);
+                return ASR::make_TraitSubroutineCall_t(al, x->base.base.loc,
+                    instantiate_trait_callee(name), dictionary_slot(*interface),
+                    call_args.p, call_args.size());
+            }
 
             // A sibling's import needs rebinding, but a visible procedure
             // argument must keep its identity even when its name is shadowed.
@@ -2723,6 +3183,7 @@ public:
             ADD_ASR_DEPENDENCIES(new_scope, name, dependencies);
         }
 
+        append_dictionary_actuals(name, args, x->base.base.loc);
         ASR::symbol_t* original_name = x->m_original_name == x->m_name
             ? name : instantiate_original_name(x->m_original_name, name);
         return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name,
@@ -2848,6 +3309,14 @@ public:
                 t = ASRUtils::duplicate_type(al, member_type);
             }
         }
+        // A procedure component has the type of its instantiated interface
+        // (see SymbolInstantiator::instantiate_Variable), which substitute_type
+        // does not derive from the template's procedure type.
+        if (ASR::is_a<ASR::Variable_t>(*member) &&
+                ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(t))) {
+            t = ASRUtils::import_trait_type(al, ASRUtils::import_procedure_type(al,
+                ASRUtils::symbol_type(member), new_scope), new_scope);
+        }
 
         return ASR::make_StructInstanceMember_t(al, x->base.base.loc, v, s, t, value);
     }
@@ -2865,10 +3334,13 @@ public:
     ASR::asr_t* duplicate_Cast(ASR::Cast_t *x) {
         ASR::expr_t *arg = duplicate_expr(x->m_arg);
         ASR::ttype_t *type = substitute_type(x->m_arg, ASRUtils::expr_type(x->m_arg));
-        if (ASRUtils::is_real(*type)) {
+        if (x->m_kind == ASR::cast_kindType::IntegerToReal && ASRUtils::is_real(*type)) {
             return (ASR::asr_t*) arg;
         }
-        return ASRUtils::make_Cast_t_value(al, x->base.base.loc, arg, ASR::cast_kindType::IntegerToReal, x->m_type);
+        auto *cast = ASR::down_cast2<ASR::Cast_t>(ASRUtils::make_Cast_t_value(
+            al, x->base.base.loc, arg, x->m_kind, duplicate_ttype(x->m_type)));
+        cast->m_dest = duplicate_expr(x->m_dest);
+        return &cast->base.base;
     }
 
     /* stmt */
@@ -2877,6 +3349,12 @@ public:
         ASR::symbol_t* m = new_scope->get_symbol(ASRUtils::symbol_name(x->m_m));
         LCOMPILERS_ASSERT(m != nullptr && ASR::is_a<ASR::AssociateBlock_t>(*m));
         return ASR::make_AssociateBlockCall_t(al, x->base.base.loc, m);
+    }
+
+    ASR::asr_t* duplicate_BlockCall(ASR::BlockCall_t* x) {
+        ASR::symbol_t* m = new_scope->get_symbol(ASRUtils::symbol_name(x->m_m));
+        LCOMPILERS_ASSERT(m != nullptr && ASR::is_a<ASR::Block_t>(*m));
+        return ASR::make_BlockCall_t(al, x->base.base.loc, x->m_label, m);
     }
 
     ASR::asr_t* duplicate_Assignment(ASR::Assignment_t *x) {
@@ -2996,6 +3474,12 @@ public:
                 ASR::Pointer_t *p = ASR::down_cast<ASR::Pointer_t>(ttype);
                 return ASRUtils::make_Pointer_t_util(al, ttype->base.loc,
                     substitute_type(expr, p->m_type));
+            }
+            // A trait contract the template named may be imported into a
+            // scope the instantiation cannot see, e.g. a component's.
+            case (ASR::ttypeType::TraitObjectType) :
+            case (ASR::ttypeType::TraitOwnerList) : {
+                return ASRUtils::import_trait_type(al, ttype, new_scope);
             }
             default : return ttype;
         }

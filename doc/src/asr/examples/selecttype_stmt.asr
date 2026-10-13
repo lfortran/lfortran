@@ -63,6 +63,9 @@
               :alignment nil
               :parent (SymbolRef 1 "shape")
               :kind_params []
+              :is_sealed false
+              :trait_obligations []
+              :generic nil
             )
             "shape" (Struct
               :symtab (SymbolTable
@@ -88,6 +91,9 @@
               :alignment nil
               :parent nil
               :kind_params []
+              :is_sealed false
+              :trait_obligations []
+              :generic nil
             )
           }
         )

@@ -1,0 +1,5 @@
+semantic error: Variable 'undefined_in_module' is not declared
+ --> tests/errors/continue_compilation_no_main_1.f90:9:17
+  |
+9 |         r = n + undefined_in_module
+  |                 ^^^^^^^^^^^^^^^^^^^ 'undefined_in_module' is undeclared

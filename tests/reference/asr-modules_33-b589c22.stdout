@@ -549,6 +549,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             dependency_node_t:
                                 (Struct
@@ -701,6 +704,9 @@
                                     ()
                                     7 dependency_config_t
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             dependency_tree_t:
                                 (Struct
@@ -725,6 +731,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             add_project_dependencies:
                                                 (StructMethodDeclaration
@@ -736,6 +743,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             cache:
                                                 (Variable
@@ -903,6 +911,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             verbosity:
                                                 (Variable
@@ -983,6 +992,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             error_t:
                                 (Struct
@@ -1038,6 +1050,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             package_config_t:
                                 (Struct
@@ -1093,6 +1108,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             update_dependency:
                                 (Function
@@ -1651,6 +1669,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     fpm_model_modules_33

@@ -667,6 +667,9 @@
                                     ()
                                     2 shape
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             shape:
                                 (Struct
@@ -733,6 +736,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -810,6 +814,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     shape_mod

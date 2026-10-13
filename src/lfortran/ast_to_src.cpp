@@ -466,6 +466,21 @@ public:
     }
 
     void visit_Subroutine(const Subroutine_t &x) {
+        print_subroutine(x, nullptr, 0);
+    }
+
+    std::string format_trait_parameters(const trait_parameter_t *parameters, size_t count) {
+        std::string result = "{";
+        for (size_t i = 0; i < count; i++) {
+            if (i) result += ", ";
+            visit_trait_parameter(parameters[i]);
+            result += s;
+        }
+        return result + "}";
+    }
+
+    void print_subroutine(const Subroutine_t &x,
+            const trait_parameter_t *parameters, size_t count) {
         std::string r = indent;
         for (size_t i=0; i<x.n_attributes; i++) {
             visit_decl_attribute(*x.m_attributes[i]);
@@ -482,7 +497,9 @@ public:
         r += syn();
         r += " ";
         r.append(x.m_name);
-        if (x.n_temp_args > 0) {
+        if (count > 0) {
+            r += format_trait_parameters(parameters, count);
+        } else if (x.n_temp_args > 0) {
             r.append(" ");
             r += format_generic_args(x.m_temp_args, x.n_temp_args);
         }
@@ -517,6 +534,17 @@ public:
             r.append("\n");
         }
         s = r;
+    }
+
+    void visit_TraitProcedure(const TraitProcedure_t &x) {
+        if (is_a<Function_t>(*x.m_procedure)) {
+            print_function(*down_cast<Function_t>(x.m_procedure),
+                x.m_parameters, x.n_parameters);
+        } else {
+            LCOMPILERS_ASSERT(is_a<Subroutine_t>(*x.m_procedure));
+            print_subroutine(*down_cast<Subroutine_t>(x.m_procedure),
+                x.m_parameters, x.n_parameters);
+        }
     }
 
     void visit_Procedure(const Procedure_t &x) {
@@ -570,7 +598,18 @@ public:
                 == simple_attributeType::AttrDeferred;
     }
 
+    void visit_TraitDerivedType(const TraitDerivedType_t &x) {
+        LCOMPILERS_ASSERT(is_a<DerivedType_t>(*x.m_derived_type));
+        print_derived_type(*down_cast<DerivedType_t>(x.m_derived_type),
+            x.m_parameters, x.n_parameters);
+    }
+
     void visit_DerivedType(const DerivedType_t &x) {
+        print_derived_type(x, nullptr, 0);
+    }
+
+    void print_derived_type(const DerivedType_t &x,
+            const trait_parameter_t *parameters, size_t count) {
         if (is_deferred_type(x)) {
             std::string r = indent;
             r += syn(gr::UnitHeader);
@@ -603,6 +642,9 @@ public:
         }
         r.append(" :: ");
         r.append(x.m_name);
+        if (count > 0) {
+            r += format_trait_parameters(parameters, count);
+        }
         for (size_t i=0; i<x.n_namelist; i++) {
             if (i == 0) r += "(";
             r.append(x.m_namelist[i]);
@@ -834,6 +876,32 @@ public:
         } else {
             r.append("\n");
         }
+        s = r;
+    }
+
+    void visit_InitialProcedure(const InitialProcedure_t &x) {
+        std::string r = syn(gr::String) + "initial :: " + syn();
+        for (size_t i = 0; i < x.n_names; i++) {
+            if (i) r += ", ";
+            r += x.m_names[i];
+        }
+        r += x.m_trivia ? print_trivia_after(*x.m_trivia) : "\n";
+        s = r;
+    }
+
+    void visit_OperatorProcedure(const OperatorProcedure_t &x) {
+        std::string r = syn(gr::String) + "procedure" + syn();
+        for (size_t i = 0; i < x.n_attr; i++) {
+            r += ", ";
+            visit_decl_attribute(*x.m_attr[i]);
+            r += s;
+        }
+        r += " :: operator(" + intrinsicop2str(x.m_op) + ") => ";
+        for (size_t i = 0; i < x.n_names; i++) {
+            if (i) r += ", ";
+            r += x.m_names[i];
+        }
+        r += x.m_trivia ? print_trivia_after(*x.m_trivia) : "\n";
         s = r;
     }
 
@@ -1078,6 +1146,151 @@ public:
         s = r;
     }
 
+    void visit_InterfaceTypeSet(const InterfaceTypeSet_t &x) {
+        std::string r = indent;
+        for (size_t i = 0; i < x.n_member_types; i++) {
+            if (i) r += " | ";
+            visit_decl_attribute(*x.m_member_types[i]);
+            r += s;
+        }
+        s = r + "\n";
+    }
+
+    void visit_InterfaceInitial(const InterfaceInitial_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("initial");
+        r += syn();
+        r.append("(");
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (i) r.append(", ");
+            this->visit_arg(x.m_args[i]);
+            r.append(s);
+        }
+        r.append(")");
+        r += x.m_trivia ? print_trivia_inside(*x.m_trivia) : "\n";
+        if (indent_unit) inc_indent();
+        r += format_items(x);
+        if (indent_unit) dec_indent();
+        r += indent;
+        r += syn(gr::UnitHeader);
+        r.append("end initial");
+        r += syn();
+        r += x.m_trivia ? print_trivia_after(*x.m_trivia) : "\n";
+        s = r;
+    }
+
+    void visit_InterfaceOperator(const InterfaceOperator_t &x) {
+        this->visit_program_unit(*x.m_proc);
+    }
+
+    void visit_InterfaceAssociatedType(const InterfaceAssociatedType_t &x) {
+        std::string r = indent;
+        r += syn(gr::Type);
+        r += "type";
+        r += syn();
+        r += " :: ";
+        r.append(x.m_name);
+        s = r + "\n";
+    }
+
+    void visit_Trait(const Trait_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("abstract interface");
+        r += syn();
+        if (x.n_parents > 0) {
+            r.append(", extends(");
+            for (size_t i=0; i<x.n_parents; i++) {
+                r.append(x.m_parents[i]);
+                if (i < x.n_parents-1) r.append(" + ");
+            }
+            r.append(")");
+        }
+        r += " :: ";
+        r.append(x.m_name);
+        r.append("\n");
+        inc_indent();
+        for (size_t i=0; i<x.n_items; i++) {
+            this->visit_interface_item(*x.m_items[i]);
+            r.append(s);
+        }
+        dec_indent();
+        r += indent;
+        r += syn(gr::UnitHeader);
+        r.append("end interface");
+        r += syn();
+        r += " ";
+        r.append(x.m_name);
+        r.append("\n");
+        s = r;
+    }
+
+    void visit_Implements(const Implements_t &x) {
+        std::string r = indent;
+        r += syn(gr::UnitHeader);
+        r.append("implements");
+        r += syn();
+        for (size_t i=0; i<x.n_traits; i++) {
+            r.append(i ? " + " : " ");
+            r.append(x.m_traits[i]);
+        }
+        r += " :: ";
+        if (x.m_implementing_type->type == decl_attributeType::AttrType) {
+            const AttrType_t &t = *down_cast<AttrType_t>(x.m_implementing_type);
+            if (t.m_name) {
+                r.append(t.m_name);
+            } else {
+                this->visit_decl_attribute(*x.m_implementing_type);
+                r.append(s);
+            }
+        } else {
+            this->visit_decl_attribute(*x.m_implementing_type);
+            r.append(s);
+        }
+        if (x.n_procedures > 0) {
+            r.append("\n");
+            inc_indent();
+            for (size_t i=0; i<x.n_procedures; i++) {
+                this->visit_procedure_decl(*x.m_procedures[i]);
+                r.append(s);
+            }
+            dec_indent();
+        } else {
+            r.append("\n");
+        }
+        r += indent;
+        r += syn(gr::UnitHeader);
+        r.append("end implements");
+        r += syn();
+        r += " ";
+        if (x.m_end_type) {
+            const AttrType_t &t = *down_cast<AttrType_t>(x.m_end_type);
+            if (t.m_name) {
+                r.append(t.m_name);
+            } else {
+                this->visit_decl_attribute(*x.m_end_type);
+                r.append(s);
+            }
+        } else if (x.m_implementing_type->type == decl_attributeType::AttrType) {
+            const AttrType_t &t = *down_cast<AttrType_t>(x.m_implementing_type);
+            if (t.m_name) {
+                r.append(t.m_name);
+            } else {
+                this->visit_decl_attribute(*x.m_implementing_type);
+                r.append(s);
+            }
+        } else if (x.m_implementing_type->type ==
+                decl_attributeType::AttrGenericTypeParams) {
+            r.append(down_cast<AttrGenericTypeParams_t>(x.m_implementing_type)->m_name);
+        } else {
+            this->visit_decl_attribute(*x.m_implementing_type);
+            r.append(s);
+        }
+        r.append("\n");
+        s = r;
+    }
+
     void visit_InterfaceHeader(const InterfaceHeader_t &/* x */) {
         s = "";
     }
@@ -1193,6 +1406,11 @@ public:
     }
 
     void visit_Function(const Function_t &x) {
+        print_function(x, nullptr, 0);
+    }
+
+    void print_function(const Function_t &x,
+            const trait_parameter_t *parameters, size_t count) {
         std::string r = indent;
         for (size_t i=0; i<x.n_attributes; i++) {
             visit_decl_attribute(*x.m_attributes[i]);
@@ -1209,7 +1427,9 @@ public:
         r += syn();
         r += " ";
         r.append(x.m_name);
-        if (x.n_temp_args > 0) {
+        if (count > 0) {
+            r += format_trait_parameters(parameters, count);
+        } else if (x.n_temp_args > 0) {
             r.append(" ");
             r += format_generic_args(x.m_temp_args, x.n_temp_args);
         }
@@ -1701,7 +1921,9 @@ public:
             ATTRTYPE(Pure)
             ATTRTYPE(Recursive)
             ATTRTYPE(Save)
+            ATTRTYPE(Sealed)
             ATTRTYPE(Sequence)
+            ATTRTYPE(Static)
             ATTRTYPE(Target)
             ATTRTYPE(Value)
             ATTRTYPE(Volatile)
@@ -1716,6 +1938,33 @@ public:
             case (decl_typeType::Type##x) : \
                 r.append(y); \
                 break;
+
+    void visit_AttrTraitClass(const AttrTraitClass_t &x) {
+        std::string r = "class(";
+        for (size_t i = 0; i < x.n_traits; i++) {
+            if (i) r += " + ";
+            r += x.m_traits[i];
+        }
+        s = r + ")";
+    }
+
+    void visit_AttrGenericTypeArgs(const AttrGenericTypeArgs_t &x) {
+        s = std::string(x.m_name) + format_generic_args(x.m_args, x.n_args);
+    }
+
+    void visit_AttrGenericTypeParams(const AttrGenericTypeParams_t &x) {
+        s = std::string(x.m_name) + format_trait_parameters(x.m_parameters,
+            x.n_parameters);
+    }
+
+    void visit_AttrImplements(const AttrImplements_t &x) {
+        std::string r = "implements(";
+        for (size_t i = 0; i < x.n_traits; i++) {
+            if (i) r += " + ";
+            r += x.m_traits[i];
+        }
+        s = r + ")";
+    }
 
     void visit_AttrType(const AttrType_t &x) {
         std::string r;
@@ -1879,6 +2128,22 @@ public:
             }
             r += ")";
         }
+        s = r;
+    }
+
+    void visit_trait_parameter(const trait_parameter_t &x) {
+        std::string r;
+        for (size_t i=0; i<x.n_traits; i++) {
+            r.append(x.m_traits[i]);
+            if (i < x.n_traits-1) r.append(" + ");
+        }
+        for (size_t i=0; i<x.n_member_types; i++) {
+            if (i) r += " | ";
+            visit_decl_attribute(*x.m_member_types[i]);
+            r += s;
+        }
+        if (x.n_traits || x.n_member_types) r += " :: ";
+        r.append(x.m_name);
         s = r;
     }
 
@@ -2601,6 +2866,15 @@ public:
     }
 
     void visit_DoLoop(const DoLoop_t &x) {
+        visit_do_loop(x, " = ");
+    }
+
+    void visit_InferDoLoop(const InferDoLoop_t &x) {
+        visit_do_loop(x, " := ");
+    }
+
+    template <typename Loop>
+    void visit_do_loop(const Loop &x, const char* assignment) {
         std::string r = indent;
         r += print_label(x);
         r += print_stmt_name(x);
@@ -2610,7 +2884,7 @@ public:
         if (x.m_var) {
             r.append(" ");
             r.append(x.m_var);
-            r.append(" = ");
+            r.append(assignment);
         }
         if (x.m_start) {
             this->visit_expr(*x.m_start);
@@ -2655,6 +2929,15 @@ public:
     }
 
     void visit_ImpliedDoLoop(const ImpliedDoLoop_t &x) {
+        visit_implied_do_loop(x, " = ");
+    }
+
+    void visit_InferImpliedDoLoop(const InferImpliedDoLoop_t &x) {
+        visit_implied_do_loop(x, " := ");
+    }
+
+    template <typename Loop>
+    void visit_implied_do_loop(const Loop &x, const char* assignment) {
         std::string r = "";
         r += "(";
         for (size_t i=0; i<x.n_values; i++) {
@@ -2663,7 +2946,7 @@ public:
             r.append(", ");
         }
         r.append(x.m_var);
-        r.append(" = ");
+        r.append(assignment);
         this->visit_expr(*x.m_start);
         r.append(s);
         r.append(", ");
@@ -3849,6 +4132,11 @@ public:
         } else {
             s += "(" + right + ")";
         }
+    }
+
+    void visit_GenericProcedureValue(const GenericProcedureValue_t &x) {
+        s = std::string(x.m_name) + format_generic_args(x.m_args, x.n_args);
+        last_expr_precedence = 13;
     }
 
     void visit_FuncCallOrArray(const FuncCallOrArray_t &x) {

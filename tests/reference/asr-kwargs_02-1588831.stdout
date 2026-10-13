@@ -320,6 +320,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             log_io_error:
                                                 (StructMethodDeclaration
@@ -331,6 +332,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     logger_type
@@ -352,6 +354,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     kwargs_02_stdlib_logger

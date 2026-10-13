@@ -135,6 +135,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             my_type:
                                 (Struct
@@ -159,6 +162,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             proc:
                                                 (StructMethodDeclaration
@@ -170,6 +174,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             super:
                                                 (Variable
@@ -211,6 +216,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -272,6 +278,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             plus:
                                 (Function

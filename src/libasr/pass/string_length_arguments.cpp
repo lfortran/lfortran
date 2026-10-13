@@ -1,12 +1,9 @@
 #include <libasr/asr.h>
 #include <libasr/containers.h>
-#include <libasr/exception.h>
 #include <libasr/asr_utils.h>
-#include <libasr/asr_verify.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/string_length_arguments.h>
 
-#include <iostream>
 #include <map>
 #include <set>
 #include <vector>
@@ -62,9 +59,10 @@ is moved to a temporary before the statement, to be evaluated only once.
 The pass runs after the other lowering passes, so that every call is in place,
 and after the .mod files are written, so they keep the argument lists as
 declared: every translation unit applies it to the procedures it reads from
-them. When the passes are verified, the pass verifies its own result with
-ASRVerifyOptions::string_length_arguments set, which requires every such dummy
-to have its hidden length and every call to pass it.
+them. When the passes are verified, the pass manager verifies the result of
+this pass and of every later one with ASRVerifyOptions::string_length_arguments
+set, which requires every such dummy to have its hidden length and every call
+to pass it, and tells the verifier which arguments are hidden lengths.
 
 The LLVM and C code generators pass character dummies as this pass lays them
 out, so it is required for them, like the other lowering passes.
@@ -177,7 +175,8 @@ void add_hidden_length_dummies(Allocator &al, ASR::Function_t *fn,
     transformed[fn_sym] = n;
 }
 
-// Every procedure that is not a template.
+// Lower checked interfaces together with their implementations and adapters;
+// retained conformance evidence must describe the same calling convention.
 void collect_procedures(SymbolTable *symtab,
         std::vector<ASR::Function_t*> &procedures) {
     for (auto &item : symtab->get_scope()) {
@@ -193,7 +192,15 @@ void collect_procedures(SymbolTable *symtab,
             case ASR::symbolType::Module:
             case ASR::symbolType::Struct:
             case ASR::symbolType::Block:
-            case ASR::symbolType::AssociateBlock: {
+            case ASR::symbolType::AssociateBlock:
+            case ASR::symbolType::Requirement:
+            case ASR::symbolType::Template:
+            case ASR::symbolType::Trait:
+            case ASR::symbolType::TraitRuntimeContract:
+            case ASR::symbolType::TraitWitness:
+            case ASR::symbolType::TraitErasure:
+            case ASR::symbolType::TraitDictionaryContract:
+            case ASR::symbolType::TraitDictionary: {
                 collect_procedures(ASRUtils::symbol_symtab(sym), procedures);
                 break;
             }
@@ -276,7 +283,8 @@ public:
 };
 
 // True if evaluating the call `x` can have a side effect.
-bool is_impure_call(const ASR::FunctionCall_t &x) {
+template <typename T>
+bool is_impure_call(const T &x) {
     ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
     if (!is_a<ASR::Function_t>(*s)) return true;
     ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(
@@ -353,6 +361,14 @@ public:
         }
     }
 
+    void replace_TraitFunctionCall(ASR::TraitFunctionCall_t *x) {
+        if (is_impure_call(*x)) {
+            hoist(&x->base);
+        } else {
+            ASR::BaseExprReplacer<HoistImpureCalls>::replace_TraitFunctionCall(x);
+        }
+    }
+
     void replace_IntrinsicImpureFunction(ASR::IntrinsicImpureFunction_t *x) {
         hoist(&x->base);
     }
@@ -369,6 +385,11 @@ public:
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         if (is_impure_call(x)) found = true;
         ASR::BaseWalkVisitor<FindImpureCall>::visit_FunctionCall(x);
+    }
+
+    void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &x) {
+        if (is_impure_call(x)) found = true;
+        ASR::BaseWalkVisitor<FindImpureCall>::visit_TraitFunctionCall(x);
     }
 
     void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t &/*x*/) {
@@ -388,10 +409,31 @@ public:
     // The statements to insert before the statement being visited, or null
     // where an expression cannot be moved before it (a loop condition).
     Vec<ASR::stmt_t*> *before = nullptr;
+    const ASR::Function_t *forwarding_wrapper = nullptr;
 
     AddHiddenLengthActuals(Allocator &al_,
         const TransformedProcedures &transformed_):
         al{al_}, transformed{transformed_} {}
+
+    void visit_Function(const ASR::Function_t &x) {
+        auto *saved_wrapper = forwarding_wrapper;
+        forwarding_wrapper = nullptr;
+        auto *owner = ASRUtils::get_asr_owner(&x.base);
+        if (owner && is_a<ASR::TraitErasure_t>(*owner)) {
+            auto *erasure = down_cast<ASR::TraitErasure_t>(owner);
+            for (size_t i = 0; i < erasure->n_parameters; i++) {
+                const auto &parameter = erasure->m_parameters[i];
+                for (size_t j = 0; j < parameter.n_operations; j++) {
+                    if (ASRUtils::symbol_get_past_external(
+                            parameter.m_operations[j].m_procedure) == &x.base) {
+                        forwarding_wrapper = &x;
+                    }
+                }
+            }
+        }
+        ASR::ASRPassBaseWalkVisitor<AddHiddenLengthActuals>::visit_Function(x);
+        forwarding_wrapper = saved_wrapper;
+    }
 
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         Vec<ASR::stmt_t*> *before_copy = before;
@@ -504,7 +546,7 @@ public:
     }
 
     template <typename T>
-    void add_actuals(T &x) {
+    void add_actuals(T &x, bool forward_lengths = false) {
         ASR::Function_t *fn = callee(x.m_name);
         if (fn == nullptr) return;
         size_t n = transformed.at(&fn->base);
@@ -525,7 +567,15 @@ public:
             }
             ASR::call_arg_t arg;
             arg.loc = args[i].loc;
-            arg.m_value = actual_length(args.p[i].m_value, arg.loc);
+            if (forward_lengths) {
+                // A checked erased-operation wrapper forwards the whole ABI,
+                // including the caller's hidden lengths, without rebuilding it.
+                LCOMPILERS_ASSERT(forwarding_wrapper &&
+                    forwarding_wrapper->n_args == fn->n_args);
+                arg.m_value = forwarding_wrapper->m_args[args.size()];
+            } else {
+                arg.m_value = actual_length(args.p[i].m_value, arg.loc);
+            }
             args.push_back(al, arg);
         }
         LCOMPILERS_ASSERT(args.size() == fn->n_args);
@@ -542,34 +592,22 @@ public:
         ASR::ASRPassBaseWalkVisitor<AddHiddenLengthActuals>::visit_FunctionCall(x);
         add_actuals(const_cast<ASR::FunctionCall_t&>(x));
     }
-};
 
-// The verification after each pass does not know which passes have run, so
-// this pass checks the invariant it establishes itself, whenever the passes
-// are verified.
-void verify_hidden_string_lengths(const ASR::TranslationUnit_t &unit,
-        const LCompilers::PassOptions &pass_options) {
-    bool verify = pass_options.verify_all_passes;
-#if defined(WITH_LFORTRAN_ASSERT)
-    verify = true;
-#endif
-    if (!verify) return;
-    diag::Diagnostics local_diagnostics;
-    diag::Diagnostics &diagnostics = pass_options.diagnostics != nullptr
-        ? *pass_options.diagnostics : local_diagnostics;
-    ASRVerifyOptions verify_options;
-    verify_options.string_length_arguments = true;
-    if (!asr_verify(unit, verify_options, diagnostics)) {
-        std::cerr << diagnostics.render2();
-        throw LCompilersException("pass=string_length_arguments",
-            LFORTRAN_ASR_PASS_VERIFY_FAILED);
+    void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t &x) {
+        ASR::ASRPassBaseWalkVisitor<AddHiddenLengthActuals>::visit_TraitFunctionCall(x);
+        add_actuals(const_cast<ASR::TraitFunctionCall_t&>(x), forwarding_wrapper != nullptr);
     }
-}
+
+    void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t &x) {
+        ASR::ASRPassBaseWalkVisitor<AddHiddenLengthActuals>::visit_TraitSubroutineCall(x);
+        add_actuals(const_cast<ASR::TraitSubroutineCall_t&>(x), forwarding_wrapper != nullptr);
+    }
+};
 
 } // namespace
 
 void pass_string_length_arguments(Allocator &al, ASR::TranslationUnit_t &unit,
-        const LCompilers::PassOptions &pass_options) {
+        const LCompilers::PassOptions &/*pass_options*/) {
     // In interactive mode each cell is a TranslationUnit chained to copies of
     // the earlier cells (see FortranEvaluator::snapshot_cell_scope), which no
     // pass has seen. Their procedures were compiled with hidden lengths, so
@@ -612,7 +650,6 @@ void pass_string_length_arguments(Allocator &al, ASR::TranslationUnit_t &unit,
     a.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);
-    verify_hidden_string_lengths(unit, pass_options);
 }
 
 } // namespace LCompilers

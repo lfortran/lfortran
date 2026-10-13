@@ -26,10 +26,12 @@ echo "LFORTRAN_LLVM_VERSION: ${LFORTRAN_LLVM_VERSION:-unset}"
 # for real(16)/real128 (gpu_metal_291 error-stops "real16"; real128_compare_01
 # error-stops 1; template_deferred_const_05 error-stops): their x86-64 backend
 # passes fp128 libcall arguments (e.g. __lttf2, __trunctfdf2) in general
-# purpose registers instead of SSE registers. Keep compiling them; skip
-# running them on LLVM 7 and 8.
+# purpose registers instead of SSE registers. traits_kind_sets_02 and
+# traits_generics_module_04 hold the real(16) arithmetic and comparisons of
+# the kind wildcard and intrinsic module generics tests for the same reason.
+# Keep compiling them; skip running them on LLVM 7 and 8.
 if [[ "${LFORTRAN_LLVM_VERSION}" == "7" || "${LFORTRAN_LLVM_VERSION}" == "8" ]]; then
-    export LFORTRAN_CTEST_EXCLUDE='gpu_metal_291|real128_compare_01|template_deferred_const_05'
+    export LFORTRAN_CTEST_EXCLUDE='gpu_metal_291|real128_compare_01|template_deferred_const_05|traits_kind_sets_02|traits_generics_module_04'
     echo "LFORTRAN_CTEST_EXCLUDE=${LFORTRAN_CTEST_EXCLUDE}"
 fi
 

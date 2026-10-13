@@ -409,6 +409,10 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         self.emit("node_to_return = ( ASR::asr_t* ) ((Struct_t*)sym);", 4)
         self.emit("return;", 4)
         self.emit("}", 3)
+        self.emit("case ASR::symbolType::Trait: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Trait_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
         self.emit("case ASR::symbolType::Enum: {", 3)
         self.emit("node_to_return = ( ASR::asr_t* ) ((Enum_t*)sym);", 4)
         self.emit("return;", 4)
@@ -425,6 +429,20 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         self.emit("node_to_return = ( ASR::asr_t* ) ((StructMethodDeclaration_t*)sym);", 4)
         self.emit("return;", 4)
         self.emit("}", 3)
+        self.emit("case ASR::symbolType::TraitConstraint: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((TraitConstraint_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::TraitImplementation: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((TraitImplementation_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        for name in ("TraitRuntimeContract", "TraitWitness", "TraitErasure",
+                     "TraitDictionaryContract", "TraitDictionary"):
+            self.emit("case ASR::symbolType::%s: {" % name, 3)
+            self.emit("node_to_return = ( ASR::asr_t* ) ((%s_t*)sym);" % name, 4)
+            self.emit("return;", 4)
+            self.emit("}", 3)
         self.emit("case ASR::symbolType::AssociateBlock: {", 3)
         self.emit("node_to_return = ( ASR::asr_t* ) ((AssociateBlock_t*)sym);", 4)
         self.emit("return;", 4)
@@ -3232,7 +3250,8 @@ class SerializationVisitorVisitor(ASDLVisitor):
                     self.emit('self().write_int64(x.m_%s->counter);' % field.name, level)
                     self.emit('self().write_int64(x.m_%s->get_scope().size());' % field.name, level)
                     self.emit('for (auto &a : x.m_%s->get_scope()) {' % field.name, level)
-                    self.emit('    if (ASR::is_a<ASR::Function_t>(*a.second)) {', level)
+                    self.emit('    if (ASR::is_a<ASR::Function_t>(*a.second) ||', level)
+                    self.emit('            ASR::is_a<ASR::TraitConstraint_t>(*a.second)) {', level)
                     self.emit('        continue;', level)
                     self.emit('    }', level)
                     self.emit('    self().write_string(a.first);', level)
@@ -3240,6 +3259,16 @@ class SerializationVisitorVisitor(ASDLVisitor):
                     self.emit('}', level)
                     self.emit('for (auto &a : x.m_%s->get_scope()) {' % field.name, level)
                     self.emit('    if (ASR::is_a<ASR::Function_t>(*a.second)) {', level)
+                    self.emit('        self().write_string(a.first);', level)
+                    self.emit('        this->visit_symbol(*a.second);', level)
+                    self.emit('    }', level)
+                    self.emit('}', level)
+                    # A constraint's requirement evidence refers into the
+                    # symbol tables of the generic requirements and
+                    # specializations declared beside it, so it is written
+                    # after them.
+                    self.emit('for (auto &a : x.m_%s->get_scope()) {' % field.name, level)
+                    self.emit('    if (ASR::is_a<ASR::TraitConstraint_t>(*a.second)) {', level)
                     self.emit('        self().write_string(a.first);', level)
                     self.emit('        this->visit_symbol(*a.second);', level)
                     self.emit('    }', level)
@@ -3367,7 +3396,7 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                     if field.type == "identifier":
                         self.emit('{', 2)
                         self.emit('uint64_t n = self().read_int64();', 3)
-                        self.emit("Vec<char*> v_%s;" % (field.name), 3)
+                        self.emit("Vec<char*> v;", 3)
                         self.emit("v.reserve(al, n);", 3)
                         self.emit("for (uint64_t i=0; i<n; i++) {", 3)
                         self.emit("v.push_back(al, self().read_cstring());", 4)
@@ -3767,6 +3796,12 @@ static inline ASR::expr_t* expr_value0(ASR::expr_t *f)
         elif name.endswith("Constant") or name == "CompilerOptions":
             self.emit("case ASR::exprType::%s: { return f; }"\
                     % (name), 2, new_line=False)
+        elif name in ("TraitPack", "TraitReceiver", "TraitFunctionCall", "TraitBorrow",
+                      "TraitProject", "TraitInspect", "TraitDeferredPack",
+                      "TraitDeferredCall", "TraitDictionaryValue",
+                      "TraitDeferredDictionary", "TraitRecover"):
+            self.emit("case ASR::exprType::%s: { return nullptr; }"
+                    % name, 2, new_line=False)
         else:
             self.emit("case ASR::exprType::%s: { return ((ASR::%s_t*)f)->m_value; }"\
                     % (name, name), 2, new_line=False)

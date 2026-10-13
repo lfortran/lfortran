@@ -159,7 +159,7 @@
                                                                     9
                                                                     this
                                                                     []
-                                                                    In
+                                                                    InOut
                                                                     ()
                                                                     ()
                                                                     Default
@@ -690,6 +690,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             resize:
                                                                 (StructMethodDeclaration
@@ -701,6 +702,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             sz:
                                                                 (Variable
@@ -748,6 +750,9 @@
                                                     ()
                                                     ()
                                                     []
+                                                    .false.
+                                                    []
+                                                    ()
                                                 ),
                                             v:
                                                 (Variable
@@ -946,7 +951,7 @@
                                                                     5
                                                                     this
                                                                     []
-                                                                    In
+                                                                    InOut
                                                                     ()
                                                                     ()
                                                                     Default
@@ -1620,6 +1625,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             resize:
                                                                 (StructMethodDeclaration
@@ -1631,6 +1637,7 @@
                                                                     Source
                                                                     .false.
                                                                     .false.
+                                                                    ()
                                                                 ),
                                                             sz:
                                                                 (Variable
@@ -1691,6 +1698,9 @@
                                                     ()
                                                     ()
                                                     []
+                                                    .false.
+                                                    []
+                                                    ()
                                                 )
                                         })
                                     vector_t

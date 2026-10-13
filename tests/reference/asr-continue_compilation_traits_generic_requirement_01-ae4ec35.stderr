@@ -1,0 +1,75 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_generic_requirement_01.f90:8:5 - 10:27
+   |
+ 8 |        abstract interface :: INumeric
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+10 |        end interface INumeric
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: generic methods in generic type parameter constraints are not implemented yet
+   --> tests/errors/continue_compilation_traits_generic_requirement_01.f90:174:24
+    |
+174 |         function visit{ISum :: S}(summer) result(r)
+    |                        ^^^^^^^^^ 
+
+semantic error: complex(8) is not a member of type-set trait 'inumeric'
+  --> tests/errors/continue_compilation_traits_generic_requirement_01.f90:57:13
+   |
+57 |         r = a%sum(c)
+   |             ^^^^^^^^ 
+
+semantic error: forwarding between distinct type-set traits is not implemented yet
+  --> tests/errors/continue_compilation_traits_generic_requirement_01.f90:69:13
+   |
+69 |         r = a%sum(x)
+   |             ^^^^^^^^ 
+
+semantic error: declared constraints of generic type parameter 'v' do not imply trait 'ivalue' required by generic 'apply'
+  --> tests/errors/continue_compilation_traits_generic_requirement_01.f90:81:13
+   |
+81 |         r = alg%apply(object)
+   |             ^^^^^^^^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'ivalue' for generic type parameter 't'
+  --> tests/errors/continue_compilation_traits_generic_requirement_01.f90:93:13
+   |
+93 |         r = alg%apply(object)
+   |             ^^^^^^^^^^^^^^^^^ 
+
+semantic error: method 'product' is not provided by the declared trait constraints
+   --> tests/errors/continue_compilation_traits_generic_requirement_01.f90:105:13
+    |
+105 |         r = a%product(x)
+    |             ^^^^^^^^^^^^ 
+
+semantic error: cannot infer generic type parameter 't'; provide it explicitly
+   --> tests/errors/continue_compilation_traits_generic_requirement_01.f90:117:17
+    |
+117 |         r = x + a%zero()
+    |                 ^^^^^^^^ 
+
+semantic error: incorrect number of generic type arguments
+   --> tests/errors/continue_compilation_traits_generic_requirement_01.f90:129:13
+    |
+129 |         r = a%sum{E, E}(x)
+    |             ^^^^^^^^^^^^^^ 
+
+semantic error: 'u' is not a deferred argument of the referenced template or requirement
+   --> tests/errors/continue_compilation_traits_generic_requirement_01.f90:141:19
+    |
+141 |         r = a%sum{U=E}(x)
+    |                   ^^^ 
+
+semantic error: mixing concrete and deferred generic type arguments in a forwarded trait call is not implemented yet
+   --> tests/errors/continue_compilation_traits_generic_requirement_01.f90:153:13
+    |
+153 |         r = a%pair(x, 1)
+    |             ^^^^^^^^^^^^ 
+
+semantic error: function or subroutine category does not match trait procedure
+   --> tests/errors/continue_compilation_traits_generic_requirement_01.f90:164:9
+    |
+164 |         call a%sum(x)
+    |         ^^^^^^^^^^^^^ 

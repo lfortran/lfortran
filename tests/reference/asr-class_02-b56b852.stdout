@@ -49,6 +49,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             circle_print:
                                                 (StructMethodDeclaration
@@ -60,6 +61,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             radius:
                                                 (Variable
@@ -106,6 +108,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             circle_area:
                                 (Function

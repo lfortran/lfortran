@@ -87,6 +87,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             e:
                                 (Variable
@@ -198,6 +201,9 @@
                                     ()
                                     2 e_t
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             e_t:
                                 (Struct
@@ -249,6 +255,9 @@
                                     ()
                                     2 base_t
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     structure_constructor_parent_01

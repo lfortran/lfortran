@@ -151,6 +151,20 @@ namespace LCompilers {
 
         bool apply_default_passes;
         bool c_skip_pass; // This will contain the passes that are to be skipped in C
+        // Whether the translation unit being processed has been through the
+        // string_length_arguments pass, whose hidden character lengths the
+        // verification after it and every later pass then requires.
+        bool string_lengths_added = false;
+
+        ASRVerifyOptions verify_options() const {
+            ASRVerifyOptions options;
+            options.string_length_arguments = string_lengths_added;
+            return options;
+        }
+
+        void ran_pass(pass_function pass) {
+            if (pass == &pass_string_length_arguments) string_lengths_added = true;
+        }
 
         public:
         // This should be removed after a refactor to `pass_manager.h` (This action should be done using more flexible function)
@@ -217,12 +231,13 @@ namespace LCompilers {
                 bool had_error = diagnostics.has_error();
                 _passes_db[passes[i]](al, *asr, pass_options);
                 if (!had_error && diagnostics.has_error()) return;
+                ran_pass(_passes_db[passes[i]]);
                 bool verify_after_pass = pass_options.verify_all_passes;
 #if defined(WITH_LFORTRAN_ASSERT)
                 verify_after_pass = true;
 #endif
                 if (verify_after_pass &&
-                        !asr_verify(*asr, true, diagnostics)) {
+                        !asr_verify(*asr, verify_options(), diagnostics)) {
                     std::cerr << diagnostics.render2();
                     throw LCompilersException(
                         "pass=" + passes[i],
@@ -399,6 +414,7 @@ namespace LCompilers {
         void apply_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                           PassOptions& pass_options,
                           diag::Diagnostics &diagnostics) {
+            string_lengths_added = false;
             double cummulative_time_taken_by_passes_in_microseconds = 0.0;
             auto t1 = std::chrono::high_resolution_clock::now();
             if( !_user_defined_passes.empty() ) {
@@ -428,6 +444,7 @@ namespace LCompilers {
         void dump_all_passes(Allocator& al, ASR::TranslationUnit_t* asr,
                            PassOptions &pass_options,
                            [[maybe_unused]] diag::Diagnostics &diagnostics, LocationManager &lm) {
+            string_lengths_added = false;
             std::vector<std::string> passes;
             if (pass_options.fast) {
                 passes = _passes;
@@ -453,6 +470,7 @@ namespace LCompilers {
                 bool had_error = diagnostics.has_error();
                 _passes_db[passes[i]](al, *asr, pass_options);
                 if (!had_error && diagnostics.has_error()) return;
+                ran_pass(_passes_db[passes[i]]);
                 if (pass_options.dump_all_passes) {
                     std::string str_i = std::to_string(pass_cnt_asr_dump+1);
                     if ( pass_cnt_asr_dump < 9 )  str_i = "0" + str_i;
@@ -498,7 +516,7 @@ namespace LCompilers {
                 verify_after_pass = true;
 #endif
                 if (verify_after_pass &&
-                        !asr_verify(*asr, true, diagnostics)) {
+                        !asr_verify(*asr, verify_options(), diagnostics)) {
                     std::cerr << diagnostics.render2();
                     throw LCompilersException(
                         "pass=" + passes[i],

@@ -85,6 +85,22 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
                 }
                 break;
             }
+            case ASR::symbolType::TraitWitness: {
+                auto *witness = ASR::down_cast<ASR::TraitWitness_t>(a.second);
+                witness->m_abi = ASR::abiType::ExternalUndefined;
+                witness->m_symtab->mark_all_variables_external(al);
+                break;
+            }
+            case ASR::symbolType::TraitErasure: {
+                ASR::down_cast<ASR::TraitErasure_t>(a.second)->m_symtab->mark_all_variables_external(al);
+                break;
+            }
+            case ASR::symbolType::TraitDictionary: {
+                auto *dictionary = ASR::down_cast<ASR::TraitDictionary_t>(a.second);
+                dictionary->m_abi = ASR::abiType::ExternalUndefined;
+                dictionary->m_symtab->mark_all_variables_external(al);
+                break;
+            }
             // What a program unit declares is referred to, as the code of
             // the unit itself is, only through its views of common blocks.
             case (ASR::symbolType::Program) : {

@@ -1,0 +1,110 @@
+module traits_generic_requirement_01_m
+use, intrinsic :: iso_fortran_env, only: real64
+implicit none
+private
+public :: INumeric, ISum, SimpleSum, ScaledSum, twice_sum
+
+abstract interface :: INumeric
+    integer | real(real64)
+end interface INumeric
+abstract interface :: ISum
+    function sum{INumeric :: T}(x) result(s)
+    type(T), intent(in) :: x(:)
+    type(T) :: s
+    end function sum
+end interface ISum
+type, sealed, implements(ISum) :: SimpleSum
+
+contains
+
+procedure, nopass :: sum => simple_sum
+end type SimpleSum
+
+type, sealed, implements(ISum) :: ScaledSum
+    integer :: factor = 1
+
+contains
+
+procedure, pass :: sum => scaled_sum
+end type ScaledSum
+
+
+contains
+
+function simple_sum{INumeric :: T}(x) result(s)
+type(T), intent(in) :: x(:)
+type(T) :: s
+s = T(0)
+do i := 1, size(x)
+    s = s + x(i)
+end do
+end function simple_sum
+
+
+function scaled_sum{INumeric :: T}(self, x) result(s)
+type(ScaledSum), intent(in) :: self
+type(T), intent(in) :: x(:)
+type(T) :: s
+s = T(self%factor)*simple_sum(x)
+end function scaled_sum
+
+! Adder's ISum message is generic in its own T; the call forwards Elem.
+
+function twice_sum{ISum :: Adder, INumeric :: Elem}(a, x) result(s)
+type(Adder), intent(in) :: a
+type(Elem), intent(in) :: x(:)
+type(Elem) :: s
+s = a%sum(x) + a%sum(x)
+end function twice_sum
+
+end module traits_generic_requirement_01_m
+
+
+program traits_generic_requirement_01
+use, intrinsic :: iso_fortran_env, only: real64
+use traits_generic_requirement_01_m, only: SimpleSum, ScaledSum, twice_sum
+implicit none
+integer, allocatable :: xi(:)
+real(real64), allocatable :: xr(:)
+integer :: n, i, base, checks
+
+checks = 0
+do n = 0, 9
+    xi = [(i, i = 1, n)]
+    xr = [(real(i, real64), i = 1, n)]
+    base = n*(n + 1)/2
+    call check_i(twice_sum(SimpleSum(), xi), 2*base, 1)
+    call check_r(twice_sum(SimpleSum(), xr), 2*base, 2)
+    call check_i(twice_sum(ScaledSum(3), xi), 6*base, 3)
+    call check_r(twice_sum(ScaledSum(3), xr), 6*base, 4)
+    call check_i(twice_sum{SimpleSum, integer}(SimpleSum(), xi), 2*base, 5)
+    call check_r(twice_sum{ScaledSum, real(real64)}(ScaledSum(2), xr), 4*base, 6)
+end do
+if (checks /= 60) error stop 99
+print "(a,i0)", "traits_generic_requirement_01 checks: ", checks
+
+
+contains
+
+subroutine check_i(actual, expected, code)
+integer, intent(in) :: actual, expected, code
+checks = checks + 1
+if (actual /= expected) then
+    print "(a,i0,a,i0,a,i0)", "check ", code, ": ", actual, " /= ", expected
+    error stop code
+end if
+end subroutine check_i
+
+
+subroutine check_r(actual, expected, code)
+real(real64), intent(in) :: actual
+integer, intent(in) :: expected, code
+checks = checks + 1
+if (actual /= real(expected, real64)) then
+    print "(a,i0,a,g0,a,i0)", "check ", code, ": ", actual, " /= ", expected
+    error stop code
+end if
+end subroutine check_r
+
+
+end program traits_generic_requirement_01

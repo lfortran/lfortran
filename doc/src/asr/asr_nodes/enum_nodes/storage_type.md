@@ -7,7 +7,7 @@ How a variable's storage behaves.
 ### Syntax
 
 ```text
-storage_type = Default | Save | Parameter | Threadprivate
+storage_type = Default | Save | Parameter | Threadprivate | Association
 ```
 
 ### Values
@@ -18,6 +18,7 @@ storage_type = Default | Save | Parameter | Threadprivate
 | `Save` | the `save` attribute: the variable keeps its value between calls, so it is allocated statically. |
 | `Parameter` | a named constant. Its `value` is required and is substituted wherever the name is used, so it needs no storage at all. |
 | `Threadprivate` | a module variable with a separate persistent instance for each thread. |
+| `Association` | a scalar construct-local data alias, bound once by `Associate`; owns no payload or wrapper storage. |
 
 ### Return values
 
@@ -34,6 +35,13 @@ expression.
 retaining the module variable's lifetime and declaration initializer, and
 is preserved in module files. LLVM emits thread-local globals, including
 imported declarations. The C and C++ backends report this storage as unsupported.
+
+`Association` separates the reference representation of a SELECT TYPE associate
+name from source POINTER and ALLOCATABLE attributes. Its type has neither
+qualifier; `intent=In` records a nondefinable selector and `target_attr` records
+the selector's TARGET/POINTER eligibility. It has no initializer, is bound
+exactly once in its own executable scope, and is never finalized by that scope.
+Concrete narrowing is checked against the enclosing nominal type guard.
 
 ## See Also
 

@@ -312,6 +312,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             dependency_node_t:
                                 (Struct
@@ -464,6 +467,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             dependency_tree_t:
                                 (Struct
@@ -487,6 +493,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             cache:
                                                 (Variable
@@ -604,6 +611,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 ),
                                             ndep:
                                                 (Variable
@@ -734,6 +742,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 ),
                             find_dependency:
                                 (Function

@@ -1,0 +1,52 @@
+! Traits are an LFortran extension, including across module-file boundaries.
+module traits_numeric_05_client_m
+    use traits_numeric_05_contracts_m, only: OriginalNumeric => INumeric
+    use traits_numeric_05_facade_m, only: ImportedNumeric => PublicNumeric, bumped
+    implicit none
+    private
+    public :: through_original, through_reexport
+
+contains
+
+    function through_original{OriginalNumeric :: T}(x) result(value)
+        type(T), intent(in) :: x
+        type(T) :: value
+        value = bumped(x)
+    end function through_original
+
+    function through_reexport{ImportedNumeric :: T}(x) result(value)
+        type(T), intent(in) :: x
+        type(T) :: value
+        value = through_original{T}(x)
+    end function through_reexport
+end module traits_numeric_05_client_m
+
+program traits_numeric_05
+    use traits_numeric_05_client_m, only: through_original, through_reexport
+    use traits_numeric_05_facade_m, only: bumped, integer_bumped
+    use iso_fortran_env, only: real64
+    implicit none
+
+    call expect_integer(bumped(4), 5)
+    call expect_integer(integer_bumped(4), 6)
+    call expect_integer(integer_bumped{integer}(4), 6)
+    call expect_integer(through_original{integer}(8), 9)
+    call expect_integer(through_reexport(8), 9)
+    call expect_real64(bumped(2.5_real64), 3.5_real64)
+    call expect_real64(through_original(2.5_real64), 3.5_real64)
+    call expect_real64(through_reexport{real(real64)}(2.5_real64), 3.5_real64)
+
+contains
+
+    subroutine expect_integer(actual, expected)
+        integer, intent(in) :: actual, expected
+        if (actual /= expected) error stop
+    end subroutine expect_integer
+
+    subroutine expect_real64(actual, expected)
+        real(real64), intent(in) :: actual, expected
+        real(real64) :: tolerance
+        tolerance = 32.0_real64 * epsilon(1.0_real64) * max(1.0_real64, abs(expected))
+        if (.not. (abs(actual - expected) <= tolerance)) error stop
+    end subroutine expect_real64
+end program traits_numeric_05

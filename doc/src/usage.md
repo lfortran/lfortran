@@ -94,6 +94,36 @@ scalars; fixed-size arrays when dimensions are compile-time constants;
 derived types via structure constructors or typed expressions.
 The inferred kind matches the expression (`3.14d0` produces `real(8)`).
 
+#### Inferred loop indices
+
+`:=` can also declare a `DO` control variable from the scalar integer
+initial bound, preserving its kind:
+
+```fortran
+real :: arr(10)
+do i := 1, 10
+    tmp := real(i)
+    arr(i) = tmp
+end do
+```
+
+As with an ordinary local `:=` declaration, `i` and `tmp` belong to the
+containing procedure, main program, or explicit `BLOCK`, not a new implicit
+loop scope. They cannot redeclare a local name; the assignments execute on
+each applicable iteration. Bounds and an optional step otherwise use ordinary
+`DO` semantics, including evaluating the initial bound only once.
+
+An array constructor can infer its own implied-`DO` index:
+
+```fortran
+arr := [(real(i), i := 1, 10)]
+```
+
+Here `i` is local to the implied-`DO`, like a Fortran array-constructor
+index. It does not declare or modify an enclosing `i`. Nested implied loops
+must use distinct index names. Both forms retain `:=` in the AST and source
+output, but lower to ordinary typed ASR loops; backends do not infer types.
+
 #### Guidance
 
 Use `:=` when the type is evident from the right-hand side:

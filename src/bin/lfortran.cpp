@@ -1353,6 +1353,9 @@ int compile_src_to_object_file(const std::string &infile,
         && !LCompilers::ASRUtils::main_program_present(*asr)
         && !LCompilers::ASRUtils::global_function_present(*asr)
         && !LCompilers::ASRUtils::block_data_present(*asr)) {
+        // Errors already reported with --continue-compilation decide the
+        // result: no missing main program error and no empty object file.
+        if (has_error_w_cc) return 1;
         if (!arg_c) {
             diagnostics.add(LCompilers::diag::Diagnostic(
                 "no main program found; cannot build an executable. "
@@ -1971,7 +1974,7 @@ int compile_to_binary_fortran(const std::string &infile,
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics, pass_manager);
+    LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics, pass_manager, true);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (!src.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1986,6 +1989,9 @@ int compile_to_binary_fortran(const std::string &infile,
     }
 
     std::string cmd = "gfortran -fno-backtrace -o " + outfile + " -c " + in_file;
+    if (!compiler_options.po.mod_files_dir.empty()) {
+        cmd += " -J\"" + compiler_options.po.mod_files_dir.string() + "\"";
+    }
     int err = system(cmd.c_str());
     if (err) {
         std::cout << "The command '" + cmd + "' failed." << std::endl;

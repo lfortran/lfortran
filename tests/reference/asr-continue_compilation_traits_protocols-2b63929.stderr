@@ -1,0 +1,251 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_protocols.f90:7:5 - 21:1
+   |
+ 7 |        abstract interface :: IRing
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+21 |    
+   | ...^ LFortran extension
+
+semantic error: type 'noplus' does not bind operator(+) matching the requirement of trait 'iring'
+  --> tests/errors/continue_compilation_traits_protocols.f90:36:5 - 39:26
+   |
+36 |        implements IRing :: NoPlus
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+39 |        end implements NoPlus
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: argument 'rhs' does not match trait method 'operator(+)': expected skewed, got integer(4)
+  --> tests/errors/continue_compilation_traits_protocols.f90:63:9
+   |
+63 |         procedure, static :: operator(+) => plus_integer
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a static binding cannot have a passed-object argument
+  --> tests/errors/continue_compilation_traits_protocols.f90:94:9
+   |
+94 |         procedure, static, pass :: code => shown_code
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the intrinsic operator(+) of integer(4) cannot be redefined
+   --> tests/errors/continue_compilation_traits_protocols.f90:109:9
+    |
+109 |         procedure, static :: operator(+) => integer_plus
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the intrinsic initializer of real(8) cannot be redefined
+   --> tests/errors/continue_compilation_traits_protocols.f90:125:9
+    |
+125 |         initial :: real64_from_integer
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: ambiguous bindings of operator(+) required by trait 'iring': procedures 'add_a' and 'add_b' both match
+   --> tests/errors/continue_compilation_traits_protocols.f90:151:9
+    |
+151 |         procedure, static :: operator(+) => add_a, add_b
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: operator bindings without the static attribute are not implemented yet
+   --> tests/errors/continue_compilation_traits_protocols.f90:194:9
+    |
+194 |         procedure :: operator(+) => add_unbound
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: procedure 'minus_extra' bound to operator(-) implements no requirement of the adopted traits
+   --> tests/errors/continue_compilation_traits_protocols.f90:201:9
+    |
+201 |         procedure, static :: operator(-) => minus_extra
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: intent, optionality or value attribute of argument 'lhs' does not match trait method 'operator(+)'
+   --> tests/errors/continue_compilation_traits_protocols.f90:205:9
+    |
+205 |         procedure, static :: operator(+) => add_mutating
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type 'noinit' does not bind an initializer matching the requirement of trait 'iring'
+   --> tests/errors/continue_compilation_traits_protocols.f90:275:5 - 278:26
+    |
+275 |        implements IRing :: NoInit
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+278 |        end implements NoInit
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: initializers can be bound only in the unit that declares the type
+   --> tests/errors/continue_compilation_traits_protocols.f90:280:9
+    |
+280 |         initial :: twin_from
+    |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: an operand of operator(+) must have type itself
+   --> tests/errors/continue_compilation_traits_protocols.f90:305:9 - 308:33
+    |
+305 |            function operator(+)(lhs, rhs) result(res)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+308 |            end function operator(+)
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: duplicate operator(*) requirement in trait 'itwice'
+   --> tests/errors/continue_compilation_traits_protocols.f90:316:9 - 319:33
+    |
+316 |            function operator(*)(lhs, rhs) result(res)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+319 |            end function operator(*)
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type(itself) in a message of a trait is not implemented yet; it is supported in initializer and operator requirements
+   --> tests/errors/continue_compilation_traits_protocols.f90:323:9 - 326:25
+    |
+323 |            function same(other) result(r)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+326 |            end function same
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: trait 'iring' has the associated type itself and can only be used as a generic constraint
+   --> tests/errors/continue_compilation_traits_protocols.f90:358:9
+    |
+358 |         class(IRing), intent(in) :: x
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'x' not defined
+   --> tests/errors/continue_compilation_traits_protocols.f90:357:5 - 359:28
+    |
+357 |        subroutine show_ring(x)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+359 |        end subroutine show_ring
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the static attribute is supported only in implements statements; use nopass for a type-bound procedure without a passed-object argument
+   --> tests/errors/continue_compilation_traits_protocols.f90:408:20
+    |
+408 |         procedure, static :: show
+    |                    ^^^^^^ 
+
+semantic error: operator bindings are supported only in implements statements; use 'generic :: operator(*) => times_scaled' for a type-bound operator
+   --> tests/errors/continue_compilation_traits_protocols.f90:424:9
+    |
+424 |         procedure, static :: operator(*) => times_scaled
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: operator bindings are supported only in implements statements; use 'generic :: operator(+) => plus_summed' for a type-bound operator
+   --> tests/errors/continue_compilation_traits_protocols.f90:429:9
+    |
+429 |         procedure :: operator(+) => plus_summed
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: operator bindings are supported only in implements statements; use 'generic :: operator(*) => times_adopted' for a type-bound operator
+   --> tests/errors/continue_compilation_traits_protocols.f90:468:9
+    |
+468 |         procedure, static :: operator(*) => times_adopted
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type 'adopted' does not bind operator(*) matching the requirement of trait 'iscale'
+   --> tests/errors/continue_compilation_traits_protocols.f90:465:5 - 469:21
+    |
+465 |        type, sealed, implements(IScale) :: Adopted
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+469 |        end type Adopted
+    | ...^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: operand 'lhs' of operator(+) must have intent(in) or the value attribute
+   --> tests/errors/continue_compilation_traits_protocols.f90:485:44
+    |
+485 |             type(itself), intent(inout) :: lhs
+    |                                            ^^^ 
+
+semantic error: operand 'rhs' of operator(-) must have intent(in) or the value attribute
+   --> tests/errors/continue_compilation_traits_protocols.f90:493:42
+    |
+493 |             type(itself), intent(out) :: rhs
+    |                                          ^^^ 
+
+semantic error: operand 'rhs' of operator(*) cannot be optional
+   --> tests/errors/continue_compilation_traits_protocols.f90:500:46
+    |
+500 |             integer, intent(in), optional :: rhs
+    |                                              ^^^ 
+
+semantic error: conflicting implementations of inherited trait method 'operator(+)': procedure and receiver bindings must agree
+   --> tests/errors/continue_compilation_traits_protocols.f90:596:5 - 599:24
+    |
+596 |        implements IRight :: Pair
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+599 |        end implements Pair
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: ambiguous operator(*) for operands of type t and integer(4): several requirements of the constraints accept them
+   --> tests/errors/continue_compilation_traits_protocols.f90:348:13
+    |
+348 |         r = x * 2
+    |             ^^^^^ 
+
+semantic error: no operator(/) of the constraints of type parameter 't' accepts operands of type t and type t
+   --> tests/errors/continue_compilation_traits_protocols.f90:365:13
+    |
+365 |         r = x / x
+    |             ^^^^^ 
+
+semantic error: no initializer of type parameter 't' accepts real(4)
+   --> tests/errors/continue_compilation_traits_protocols.f90:372:13
+    |
+372 |         r = T(2.5) + x
+    |             ^^^^^^ 
+
+semantic error: no operator(*) of the constraints of type parameter 't' accepts operands of type t and real(4)
+   --> tests/errors/continue_compilation_traits_protocols.f90:379:13
+    |
+379 |         r = x * 2.0
+    |             ^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'iring' for generic type parameter 't'
+   --> tests/errors/continue_compilation_traits_protocols.f90:395:9
+    |
+395 |     x = twice(2.0)
+    |         ^^^^^^^^^^ 
+
+semantic error: no visible nominal implementation of trait 'iring' for generic type parameter 't'
+   --> tests/errors/continue_compilation_traits_protocols.f90:398:9
+    |
+398 |     i = twice(3)
+    |         ^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   --> tests/errors/continue_compilation_traits_protocols.f90:525:15
+    |
+525 |         r = T(1)
+    |               ^ 
+
+semantic error: Argument `k` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_protocols.f90:530:15
+    |
+530 |         r = T(k)
+    |               ^ 
+
+semantic error: ambiguous visible implementations of trait 'iadd' for method 'operator(+)': procedure and receiver bindings must agree
+   --> tests/errors/continue_compilation_traits_protocols.f90:684:13
+    |
+684 |         r = twice(x)
+    |             ^^^^^^^^ 
+
+semantic error: conflicting implementations of composed trait method 'operator(/)' for generic type parameter 't': procedure and receiver bindings must agree
+   --> tests/errors/continue_compilation_traits_protocols.f90:718:13
+    |
+718 |         r = half(x)
+    |             ^^^^^^^ 

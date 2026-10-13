@@ -115,6 +115,7 @@
                                                     Source
                                                     .false.
                                                     .false.
+                                                    ()
                                                 )
                                         })
                                     open_hashmap_type
@@ -136,6 +137,9 @@
                                     ()
                                     ()
                                     []
+                                    .false.
+                                    []
+                                    ()
                                 )
                         })
                     mod_submodule_04

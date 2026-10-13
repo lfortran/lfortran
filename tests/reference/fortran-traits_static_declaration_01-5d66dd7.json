@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-traits_static_declaration_01-5d66dd7",
+    "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/traits_static_declaration_01.f90",
+    "infile_hash": "3bb0baa95b5c12ec1ad47c7fac74528ca5618b71ba3cb3718e0f229a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-traits_static_declaration_01-5d66dd7.f90",
+    "stdout_hash": "ee944b741cfc38e5cd1f8ce36763111bc91af7881bdc03c07c2c9763",
+    "stderr": "fortran-traits_static_declaration_01-5d66dd7.stderr",
+    "stderr_hash": "acc20f7dc9e8325da336d576175e3a1800d029a7fdbf542a126b1cb3",
+    "returncode": 0
+}

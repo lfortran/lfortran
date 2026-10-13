@@ -1,0 +1,13 @@
+{
+    "basename": "ast-traits_generic_requirement_01-0636fcd",
+    "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/traits_generic_requirement_01.f90",
+    "infile_hash": "d5ec4f6b5e9d4df5fe8448fa48942ac60c951d36dce2492c8685fe85",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-traits_generic_requirement_01-0636fcd.stdout",
+    "stdout_hash": "0e11dc96647b9da07866f21ae07235372f0dafbd14579f245ea7a317",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
