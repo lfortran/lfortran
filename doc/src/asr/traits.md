@@ -774,8 +774,10 @@ subroutine messages, and member signatures outside the runtime slot surface
 character arrays, and scalar integer, real, complex, logical or
 constant-length character results). A kind wildcard contributes one slot per
 supported kind, so a message over `integer(*) | real(*) | complex(*)` has nine
-slots. A character length wildcard would need one slot per length, so a view
-of a message over a set with one is diagnosed as not implemented.
+slots. These slots enumerate the member tuples of a type set, which the
+unbounded lengths of a character length wildcard do not allow, so a view of a
+message over a set with one is diagnosed as not implemented: a temporary limit
+of this implementation, kept for now by the maintainer's choice (TD-34).
 `class(INumeric)` remains invalid: a type-set trait is not a runtime view.
 
 A complex result crosses a slot with the platform's convention for the results
@@ -1257,22 +1259,25 @@ compiled module.
 
 A member of assumed length, `character(*)`, `character(len=*)` or
 `character*(*)`, is the length wildcard: the one member of its kind that
-admits character values of every constant length (TD-34). Each length is
-still its own type argument with its own specialization (TD-21), so a generic
-over `character(*)` called with `character(len=3)` and `character(len=7)`
-arrays is specialized twice, and an argument whose length is not a constant,
-such as an assumed-length dummy, is diagnosed: a character generic type
-argument requires a constant length. The wildcard absorbs the members of its
-kind and a constant length, so `character(len=3) | character(*)` is
+admits character values of every constant length (TD-34). Each length is still
+its own type argument with its own specialization (TD-21), so a generic over
+`character(*)` called with `character(len=3)` and `character(len=7)` arrays is
+specialized twice. The prototype keeps to lengths known at compile time for
+now, by the maintainer's choice (TD-34), so an argument whose length is not a
+constant, such as an assumed-length dummy, is diagnosed: a character generic
+type argument requires a constant length. The wildcard absorbs the members of
+its kind and a constant length, so `character(len=3) | character(*)` is
 `character(*)`. A generic over it is checked once, against the wildcard: its
 operations are those of every length, the comparisons, while `//`, whose
 result length depends on its operands, is not implemented for it. A runtime
-view of a message over such a set is diagnosed as not implemented. Members of
-deferred (`character(len=:)`) or nonconstant length remain diagnosed as not
-implemented. `traits_type_sets_04` covers named and inline sets with the
-length and kind wildcards, specializations of several lengths, inferred,
-explicit and forwarded type arguments and static dispatch, read from a
-separately compiled module.
+view of a message over such a set is diagnosed as not implemented too, since
+the current closed slots enumerate members, while members of constant length
+dispatch at run time. Both runtime-length cases are temporary limits, not
+language rules. Members of deferred (`character(len=:)`) or nonconstant length
+remain diagnosed as not implemented. `traits_type_sets_04` covers named and
+inline sets with the length and kind wildcards, specializations of several
+lengths, inferred, explicit and forwarded type arguments and static dispatch,
+read from a separately compiled module.
 
 ### Kind wildcards
 

@@ -142,8 +142,9 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-12 | Static-only providers outside the runtime subset (`ocp.f90`) | **Preserve static use; diagnose only a requested runtime use**; reject such providers at definition time for now | TD-16 |
 | 2026-10-12 | Existing standard constructor interfaces (`interface MyType`) as implementations of initializer requirements | **Allow matching standard constructor interfaces as initializer implementations**; require an explicit `initial ::` binding | TD-33 |
 | 2026-10-13 | Scope of the `intent(inout)` improvement for trait-object arguments: whether calls such as `call object%increment()`, whose implementation modifies its receiver, should be added now (revising TD-10) | **Finish INOUT borrowing; keep trait methods read-only for now**; also implement mutating trait methods and agree on explicit effect syntax next | TD-35, TD-10 |
-| 2026-10-13 | A type-set member written `character` without a length | **Exactly `character(len=1)`, matching ordinary declarations**; a member admitting every length | TD-34 |
-| 2026-10-13 | A type-set member of assumed length, `character(*)` | **Admit any length; implement length-wildcard support**; keep diagnosing it as not implemented | TD-34 |
+| 2026-10-13 | A type-set member written `character` without a length | **Exactly character(len=1), matching ordinary declarations**; Any character length | TD-34 |
+| 2026-10-13 | A type-set member of assumed length, `character(*)` | **Admit any length; implement length-wildcard support**; Support explicit fixed lengths now; defer length wildcards with a diagnostic | TD-34 |
+| 2026-10-13 | Character lengths known only at run time: actual arguments of assumed or nonconstant length for a length wildcard, and runtime trait dispatch over a type set with a length wildcard | **Keep compile-time-known lengths only for now; document the runtime limits**; Complete runtime-length arguments and wildcard trait dispatch now (recommended) | TD-21, TD-34 |
 
 ### Instructions given without an option form
 
@@ -794,9 +795,12 @@ specification action, that is, what the paper should say.
   `integer | real | complex` needs; they use the platform's convention for
   complex function results, like ordinary calls. Members and ordinary
   messages also take and return character values of a constant length, with
-  the ordinary hidden lengths and the result passed as a last argument. A
-  character length wildcard (TD-34) would need a slot per length, so a view of
-  a message over a set with one is diagnosed as not implemented.
+  the ordinary hidden lengths and the result passed as a last argument. The
+  current slot layout enumerates the member tuples of a type set, and the
+  lengths of a character length wildcard (TD-34) are unbounded, so a view of a
+  message over a set with one is diagnosed as not implemented. The maintainer
+  chose to keep this limit for now (TD-34); it is a limit of this
+  implementation, not of the dispatch semantics.
 - **Specification action.** State the dispatch semantics of generic methods on
   trait objects (static type argument, dynamic provider) explicitly, and leave
   the mechanism to processors.
@@ -994,6 +998,8 @@ specification action, that is, what the paper should say.
 #### TD-21: Character type arguments
 
 - **Status:** Implementation choice (recorded as an assumption, not asked).
+  Keeping lengths known only at run time out of type arguments for now, also
+  for a type-set length wildcard, was approved on 2026-10-13 (TD-34).
 - **Question.** Does a type argument inferred from a character value carry its
   length? `Vector("John ")` stores five-character names, and the paper's output
   `John Mary Anne ` requires five-character storage.
@@ -1005,7 +1011,10 @@ specification action, that is, what the paper should say.
   `character(len=5)` are different members with different specializations, and
   a length wildcard member admits each constant length as its own type
   argument with its own specialization. An actual of nonconstant or assumed
-  length is diagnosed for a length wildcard too.
+  length is diagnosed for a length wildcard too: by the maintainer's choice
+  (TD-34), the prototype keeps to lengths known at compile time for now. This
+  is a temporary limit, not a rule; a per-call length convention could
+  support such actuals later.
 - **Implementation status.** Implemented.
 - **Specification action.** Say whether length (and other) type parameters are
   part of a type argument, and whether assumed or deferred lengths can be type
@@ -1088,7 +1097,8 @@ specification action, that is, what the paper should say.
 #### TD-34: Type sets of every intrinsic type
 
 - **Status:** Approved prototype options (scope; the meaning of `character` and
-  `character(*)` members); implementation choices (the rest).
+  `character(*)` members; lengths known at compile time only, for now);
+  implementation choices (the rest).
 - **What the paper says.** A type set is a union of types whose operations are
   the intersection of their members' operations (lines 1760-1802). Its
   examples have integer, real and complex members, and its wildcards name "all
@@ -1101,13 +1111,22 @@ specification action, that is, what the paper should say.
   `static.f90` whose `class(IAverager)` view returns the member type: it was
   rejected because closed runtime slots did not return complex results
   (TD-15).
-- **Options presented (2026-10-13).** Two questions about character members,
-  which the coordinating agent put to the maintainer: whether a member written
-  `character` is **exactly `character(len=1)`, matching ordinary
-  declarations**, or admits every length; and whether a member of assumed
-  length, `character(*)`, should **admit any length, with length-wildcard
-  support implemented**, or stay diagnosed as not implemented. The chosen
-  options are in bold.
+- **Options presented (2026-10-13).** Three questions about character members,
+  which the coordinating agent put to the maintainer; the chosen options are in
+  bold.
+  - A member written `character` without a length: **Exactly
+    character(len=1), matching ordinary declarations**; Any character length.
+  - A member of assumed length, `character(*)`: **Admit any length; implement
+    length-wildcard support**; Support explicit fixed lengths now; defer length
+    wildcards with a diagnostic.
+  - Asked after the length wildcard was implemented, lengths known only at run
+    time: actual arguments of assumed or nonconstant length for a length
+    wildcard, and runtime trait dispatch over a type set with a length
+    wildcard. The question explained both cases, that kinds are finite while
+    lengths are unbounded, and that a per-call length convention could support
+    them: **Keep compile-time-known lengths only for now; document the runtime
+    limits**; Complete runtime-length arguments and wildcard trait dispatch now
+    (recommended).
 - **Current rules.**
   - Members can be of any intrinsic category with a supported kind; a
     derived-type member is diagnosed as not implemented. `logical(*)` and
@@ -1127,15 +1146,21 @@ specification action, that is, what the paper should say.
     length, the comparisons (an implementation choice).
   - Closed runtime slots of constant-length members take and return character
     values (TD-15).
-  - Limits of the prototype, diagnosed as not implemented rather than language
-    rules: members of deferred or nonconstant length; for a length wildcard,
-    actuals of nonconstant or assumed length (TD-21), `//`, whose result length
-    depends on its operands, and runtime views of its messages, which would
-    need a slot per length.
+  - Lengths known only at run time are left out for now (chosen), as
+    temporary limits diagnosed as not implemented, not as language rules: an
+    actual of assumed or nonconstant length for a length wildcard (TD-21), and
+    a runtime view of a message over a type set with a length wildcard. The
+    current closed slots enumerate the member tuples of a type set (TD-15),
+    which would require enumerating lengths for a wildcard; that is a property
+    of this implementation, and a per-call length convention, for example,
+    could support both cases. Runtime dispatch over members of constant length
+    is supported.
+  - Other limits of the prototype, diagnosed as not implemented rather than
+    language rules: members of deferred or nonconstant length, and `//` for a
+    length wildcard, whose result length depends on its operands.
 - **Open.** Derived-type members, which the instruction excludes from the
-  prototype; whether actuals of nonconstant length could be type arguments of
-  a length wildcard; and how runtime views would dispatch over one. None of
-  these has been decided by the maintainer.
+  prototype, and when and how to complete the two runtime-length cases, which
+  the maintainer deferred rather than rejected.
 - **Implementation status.** Implemented as described, with complex and
   constant-length character results of closed runtime slots and of ordinary
   runtime messages; the maintainer's averaging program runs for both of its
@@ -1404,7 +1429,7 @@ names the entries with the details.
 | OQ-18 | Whether a sealed type can be abstract. A commented-out sentence of the paper source (lines 1515-1517) says it cannot; the prototype rejects the combination. | -- |
 | OQ-19 | Whether the new words are reserved and where they are recognized. | TD-03 |
 | OQ-20 | Which restrictions are normative. `sect:restrictions` states that type sets and traits with associated types are generic constraints only "presently (i.e. in the framework of a prototype implementation of this proposal)" (lines 1977-1983). A specification should separate permanent rules from limits of a first implementation; the temporary limits recorded here must not become implicit prohibitions. | TD-24 to TD-27 |
-| OQ-21 | Members of type sets: derived-type members, the kinds of `character(kind=*)` (TD-17), type arguments of nonconstant length and runtime dispatch for length wildcards, and whether processor extensions add operations. | TD-17, TD-34 |
+| OQ-21 | Members of type sets: derived-type members, the kinds of `character(kind=*)` (TD-17), whether a type argument can have a length known only at run time and how runtime dispatch over a length wildcard would work (deferred for now by the maintainer), and whether processor extensions add operations. | TD-17, TD-21, TD-34 |
 
 ## Questions that do not affect the language
 
