@@ -6,7 +6,7 @@ module traits_type_sets_04_sets
     implicit none
     private
     public :: IText, IAlsoText, ILetter, ICountOrText, IOrder, Least, smallest, &
-        count_equal, ordered, last_letter, differ
+        count_equal, ordered, last_letter, differ, same_text, first_code
 
     ! A character member of any length; character(*) and character(len=*)
     ! are the same member.
@@ -88,6 +88,20 @@ contains
         logical             :: r
         r = a /= b .and. (a < b .or. a > b) .and. .not. (a <= b .and. a >= b)
     end function differ
+
+    ! The keyword type parameters in either order.
+    function same_text{character(kind=*, len=*) :: T}(a, b) result(r)
+        type(T), intent(in) :: a, b
+        logical             :: r
+        r = a == b
+    end function same_text
+
+    ! A positional length and a positional kind wildcard.
+    function first_code{character(3, *) :: T}(x) result(r)
+        type(T), intent(in) :: x(:)
+        type(T)             :: r
+        r = x(1)
+    end function first_code
 
     function least_of{IText :: T}(x) result(r)
         type(T), intent(in) :: x(:)

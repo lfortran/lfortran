@@ -4349,16 +4349,24 @@ public:
     std::vector<ASR::ttype_t*> character_type_set_members(AST::AttrType_t &member,
             std::string &name) {
         const Location &loc = member.base.base.loc;
+        if (member.n_kind > 2) {
+            trait_error("Syntax error in CHARACTER declaration: at most two type "
+                "parameters, 'len' and 'kind', are allowed", loc);
+        }
+        // The type parameters are checked as in a declaration, with the
+        // default kind in place of a kind wildcard, before it is expanded.
         Vec<AST::kind_item_t> items;
         items.reserve(al, member.n_kind);
         bool kind_wildcard = false;
         for (size_t k = 0; k < member.n_kind; k++) {
-            const auto &item = member.m_kind[k];
+            AST::kind_item_t item = member.m_kind[k];
             std::string id = item.m_id ? to_lower(item.m_id) : "";
             if (item.m_type == AST::kind_item_typeType::Star &&
                     (id == "kind" || (id.empty() && k == 1))) {
                 kind_wildcard = true;
-                continue;
+                item.m_type = AST::kind_item_typeType::Value;
+                item.m_value = AST::down_cast<AST::expr_t>(
+                    AST::make_Num_t(al, item.loc, 1, nullptr));
             }
             items.push_back(al, item);
         }

@@ -66,6 +66,36 @@ semantic error: character type-set members of nonconstant length are not impleme
 301 |         character(len=:)
     |         ^^^^^^^^^^^^^^^^ 
 
+semantic error: Syntax error in CHARACTER declaration: can't use a keyword argument more than once
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:309:9
+    |
+309 |         character(kind=*, kind=4)
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: can't use a keyword argument more than once
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:317:9
+    |
+317 |         character(kind=*, kind=*)
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: positional type parameters cannot follow a keyword argument
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:325:9
+    |
+325 |         character(len=3, *)
+    |         ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: positional type parameters cannot follow a keyword argument
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:333:9
+    |
+333 |         character(kind=*, 3)
+    |         ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: at most two type parameters, 'len' and 'kind', are allowed
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:341:9
+    |
+341 |         character(3, *, 4)
+    |         ^^^^^^^^^^^^^^^^^^ 
+
 semantic error: operator '+' is not available for type-set member logical(1)
   --> tests/errors/continue_compilation_traits_kind_sets.f90:35:13
    |

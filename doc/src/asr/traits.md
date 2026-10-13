@@ -1308,7 +1308,9 @@ In a character member, a first positional `*` is the length (`character(*)`
 is `character(len=*)`, the length wildcard), and `character(kind=*)`, or a
 second positional `*`, is the kind wildcard, with the member's length: 1
 without one, as in `character(kind=*)`, or any length in
-`character(len=*, kind=*)`. Declarations also accept character kind 4
+`character(len=*, kind=*)`. Otherwise the type parameters follow the rules of
+a declaration, so `character(kind=*, kind=4)`, `character(len=3, *)` and
+`character(3, *, 4)` are invalid. Declarations also accept character kind 4
 (`selected_char_kind('ISO_10646')`), which is not one of `CHARACTER_KINDS`:
 the relational operators give wrong results for its values, so
 `character(kind=*)` does not include it, and it can still be written as an

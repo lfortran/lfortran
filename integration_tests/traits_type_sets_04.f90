@@ -30,7 +30,7 @@ end module traits_type_sets_04_client
 
 program traits_type_sets_04
     use traits_type_sets_04_sets, only: Least, smallest, count_equal, ordered, &
-        last_letter, differ
+        last_letter, differ, same_text, first_code
     use traits_type_sets_04_client, only: smaller_of, same
     implicit none
     character(len=1) :: c1(4)
@@ -68,8 +68,11 @@ program traits_type_sets_04
     call check(.not. same{character(len=1)}('a', 'b'))
     call check(picker%least(c4) == 'bush')
     call check(picker%least(c1(3:4)) == 'k')
+    call check(same_text(c7(3), 'gliders'))
+    call check(.not. same_text('ab', 'ba'))
+    call check(first_code(c3(2:4)) == 'cat')
 
-    if (checks /= 22) error stop 2
+    if (checks /= 25) error stop 2
     print '(a,i0,a)', 'traits_type_sets_04: ', checks, ' checks passed'
 
 contains

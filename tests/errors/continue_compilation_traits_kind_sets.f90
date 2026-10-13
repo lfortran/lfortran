@@ -301,3 +301,43 @@ module cc_traits_kind_sets_deferred_length
         character(len=:)
     end interface IDeferred
 end module cc_traits_kind_sets_deferred_length
+
+! E23: a kind wildcard does not make a second kind type parameter valid.
+module cc_traits_kind_sets_character_two_kinds
+    implicit none
+    abstract interface :: ITwoKinds
+        character(kind=*, kind=4)
+    end interface ITwoKinds
+end module cc_traits_kind_sets_character_two_kinds
+
+! E24: nor a second kind wildcard.
+module cc_traits_kind_sets_character_two_wildcards
+    implicit none
+    abstract interface :: ITwoWildcards
+        character(kind=*, kind=*)
+    end interface ITwoWildcards
+end module cc_traits_kind_sets_character_two_wildcards
+
+! E25: a positional kind wildcard cannot follow a keyword type parameter.
+module cc_traits_kind_sets_character_positional_kind
+    implicit none
+    abstract interface :: IPositionalKind
+        character(len=3, *)
+    end interface IPositionalKind
+end module cc_traits_kind_sets_character_positional_kind
+
+! E26: nor a positional length a keyword kind wildcard.
+module cc_traits_kind_sets_character_positional_length
+    implicit none
+    abstract interface :: IPositionalLength
+        character(kind=*, 3)
+    end interface IPositionalLength
+end module cc_traits_kind_sets_character_positional_length
+
+! E27: character has two type parameters, the length and the kind.
+module cc_traits_kind_sets_character_three_parameters
+    implicit none
+    abstract interface :: IThreeParameters
+        character(3, *, 4)
+    end interface IThreeParameters
+end module cc_traits_kind_sets_character_three_parameters
