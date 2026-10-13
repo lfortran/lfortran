@@ -812,7 +812,7 @@ void GpuOffloadVisitor::inline_array_section_in_body(
         ASR::expr_t *array_item = ASRUtils::EXPR(
             ASR::make_ArrayItem_t(al, loc, as->m_v,
                 new_args.p, new_args.n, elem_type,
-                ASR::arraystorageType::ColMajor, nullptr));
+                ASR::arraystorageType::ColMajor, nullptr, false));
 
         // Elementize: recursively replace ArraySection with
         // ArrayItem and unwrap ArrayBroadcast in the RHS
@@ -851,7 +851,7 @@ void GpuOffloadVisitor::inline_array_section_in_body(
                 return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
                     rhs_as->m_v, rhs_new_args.p, rhs_new_args.n,
                     rhs_elem, ASR::arraystorageType::ColMajor,
-                    nullptr));
+                    nullptr, false));
             } else if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
                 return ASR::down_cast<ASR::ArrayBroadcast_t>(
                     e)->m_array;
@@ -998,7 +998,7 @@ void GpuOffloadVisitor::inline_array_section_in_body(
                     return ASRUtils::EXPR(
                         ASR::make_ArrayItem_t(al, loc, new_fc,
                             rhs_args.p, rhs_args.n, rhs_elem,
-                            ASR::arraystorageType::ColMajor, nullptr));
+                            ASR::arraystorageType::ColMajor, nullptr, false));
                 }
                 ASR::ttype_t *et = ASRUtils::extract_type(
                     ASRUtils::expr_type(e));
@@ -1041,7 +1041,7 @@ void GpuOffloadVisitor::inline_array_section_in_body(
                 return ASRUtils::EXPR(
                     ASR::make_ArrayItem_t(al, loc, e,
                         rhs_args.p, rhs_args.n, rhs_elem,
-                        ASR::arraystorageType::ColMajor, nullptr));
+                        ASR::arraystorageType::ColMajor, nullptr, false));
             }
             return e;
         };
@@ -1313,7 +1313,7 @@ ASR::stmt_t* GpuOffloadVisitor::build_section_copy_loops(const Location &loc,
     }
     ASR::expr_t *src_elem = ASRUtils::EXPR(ASR::make_ArrayItem_t(al,
         loc, as->m_v, src_args.p, src_args.n, elem_type,
-        ASR::arraystorageType::ColMajor, nullptr));
+        ASR::arraystorageType::ColMajor, nullptr, false));
 
     // The temporary's element for the same iteration: the temporary is
     // 1-based and contiguous, so the counters index it directly.
@@ -1329,7 +1329,7 @@ ASR::stmt_t* GpuOffloadVisitor::build_section_copy_loops(const Location &loc,
     }
     ASR::expr_t *tmp_elem = ASRUtils::EXPR(ASR::make_ArrayItem_t(al,
         loc, tmp, tmp_args.p, tmp_args.n, elem_type,
-        ASR::arraystorageType::ColMajor, nullptr));
+        ASR::arraystorageType::ColMajor, nullptr, false));
 
     ASR::stmt_t *inner = ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
         to_temp ? tmp_elem : src_elem,
@@ -2851,7 +2851,7 @@ void GpuOffloadVisitor::inline_elemental_array_var_in_body(ASR::stmt_t** &body,
                 ASR::expr_t *lhs_item = ASRUtils::EXPR(
                     ASR::make_ArrayItem_t(al, loc, asgn->m_target,
                         lhs_args.p, lhs_args.n, elem_type,
-                        ASR::arraystorageType::ColMajor, nullptr));
+                        ASR::arraystorageType::ColMajor, nullptr, false));
 
                 Vec<ASR::stmt_t*> innermost_body;
                 innermost_body.reserve(al, 1);
@@ -2978,7 +2978,7 @@ void GpuOffloadVisitor::inline_elemental_array_var_in_body(ASR::stmt_t** &body,
                             ASR::make_ArrayItem_t(al, loc, e,
                                 idx_args.p, idx_args.n, velem,
                                 ASR::arraystorageType::ColMajor,
-                                nullptr));
+                                nullptr, false));
                     }
                     return e;
                 } else if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
@@ -3099,7 +3099,7 @@ void GpuOffloadVisitor::inline_elemental_array_var_in_body(ASR::stmt_t** &body,
                             ASR::make_ArrayItem_t(al, loc, e,
                                 idx_args.p, idx_args.n, melem,
                                 ASR::arraystorageType::ColMajor,
-                                nullptr));
+                                nullptr, false));
                     }
                     return e;
                 }
@@ -3119,7 +3119,7 @@ void GpuOffloadVisitor::inline_elemental_array_var_in_body(ASR::stmt_t** &body,
             ASR::expr_t *lhs_item = ASRUtils::EXPR(
                 ASR::make_ArrayItem_t(al, loc, asgn->m_target,
                     lhs_args.p, lhs_args.n, elem_type,
-                    ASR::arraystorageType::ColMajor, nullptr));
+                    ASR::arraystorageType::ColMajor, nullptr, false));
 
             ASR::expr_t *rhs_item = elementize(asgn->m_value);
 
@@ -3227,7 +3227,7 @@ void GpuOffloadVisitor::inline_elemental_array_var_in_body(ASR::stmt_t** &body,
                     ASRUtils::expr_type(as->m_v));
                 return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
                     as->m_v, new_args.p, new_args.n,
-                    elem_type, ASR::arraystorageType::ColMajor, nullptr));
+                    elem_type, ASR::arraystorageType::ColMajor, nullptr, false));
             } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*e)) {
                 ASR::IntrinsicElementalFunction_t *f =
                     ASR::down_cast<ASR::IntrinsicElementalFunction_t>(e);
@@ -3321,7 +3321,7 @@ void GpuOffloadVisitor::inline_elemental_array_var_in_body(ASR::stmt_t** &body,
         ASR::expr_t *lhs_item = ASRUtils::EXPR(
             ASR::make_ArrayItem_t(al, loc, asgn->m_target,
                 lhs_args.p, lhs_args.n, elem_type,
-                ASR::arraystorageType::ColMajor, nullptr));
+                ASR::arraystorageType::ColMajor, nullptr, false));
 
         // Build RHS: elementize the value expression
         ASR::expr_t *rhs_item = elementize(asgn->m_value);

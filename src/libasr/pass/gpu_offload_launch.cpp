@@ -251,7 +251,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         ASR::expr_t *buf_item = ASRUtils::EXPR(
             ASR::make_ArrayItem_t(al, loc, buf_var,
                 ai_args.p, 1, ls.scalar_type,
-                ASR::arraystorageType::ColMajor, nullptr));
+                ASR::arraystorageType::ColMajor, nullptr, false));
         launch_stmts.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, buf_item, scalar_var,
                 nullptr, false, false)));
@@ -360,7 +360,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         ASR::expr_t *buf_item = ASRUtils::EXPR(
             ASR::make_ArrayItem_t(al, loc, buf_var,
                 ai_args.p, 1, ls.scalar_type,
-                ASR::arraystorageType::ColMajor, nullptr));
+                ASR::arraystorageType::ColMajor, nullptr, false));
         launch_stmts.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, scalar_var, buf_item,
                 nullptr, false, false)));

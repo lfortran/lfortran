@@ -187,7 +187,7 @@ expr
     | FunctionParam(int param_number, ttype type, expr? value)
     | ArrayConstructor(expr* args, ttype type, expr? value, arraystorage storage_format, expr? struct_var)
     | ArrayConstant(int n_data, void data, ttype type, arraystorage storage_format)
-    | ArrayItem(expr v, array_index* args, ttype type, arraystorage storage_format, expr? value)
+    | ArrayItem(expr v, array_index* args, ttype type, arraystorage storage_format, expr? value, bool in_bounds)
     | ArraySection(expr v, array_index* args, ttype type, expr? value)
     | CoarrayRef(expr var, coarray_index* coindices, ttype type, expr? value)
     | ArraySize(expr v, expr? dim, ttype type, expr? value)

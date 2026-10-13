@@ -3763,6 +3763,7 @@
                                 (Real 4)
                                 ColMajor
                                 ()
+                                .false.
                             )
                             (IntrinsicElementalFunction
                                 Real
@@ -3808,6 +3809,7 @@
                                             (Real 4)
                                             ColMajor
                                             ()
+                                            .false.
                                         )
                                         (RealBinOp
                                             (ArrayItem
@@ -3818,6 +3820,7 @@
                                                 (Real 4)
                                                 ColMajor
                                                 ()
+                                                .false.
                                             )
                                             Mul
                                             (IntrinsicElementalFunction
@@ -3912,6 +3915,7 @@
                                     (Real 4)
                                     ColMajor
                                     ()
+                                    .false.
                                 )]
                                 FormatFortran
                                 (Allocatable

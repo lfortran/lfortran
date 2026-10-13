@@ -88,6 +88,7 @@
                     )
                     :storage_format :ColMajor
                     :value nil
+                    :in_bounds false
                   )
                   :anchor (Var
                     :v (SymbolRef 1 "n")
@@ -200,6 +201,7 @@
               )
               :storage_format :ColMajor
               :value nil
+              :in_bounds false
             )
             :value (IntegerConstant
               :n 2
