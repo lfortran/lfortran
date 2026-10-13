@@ -1403,16 +1403,13 @@ public:
         if (new_value == nullptr && new_symbolic_value
                 && x->m_storage == ASR::storage_typeType::Parameter) {
             new_value = ASRUtils::expr_value(new_symbolic_value);
-            // In the copy of a nested template, an initializer that uses
-            // the nested template's own deferred constants gets its value
-            // only when that template is instantiated.
-            SymbolTable* template_scope = enclosing_template_scope(
-                x->m_parent_symtab);
-            bool in_nested_template = template_scope != nullptr
-                && is_in_template(template_scope->parent);
+            // An initializer that still uses a deferred constant, of a
+            // nested template in its copy or of an enclosing template that
+            // is an argument of this instantiation, gets its value only when
+            // that template is instantiated.
             if (diagnostics && diagnostics->diagnostics.size() == n_diagnostics
                     && !ASRUtils::is_value_constant(new_value)
-                    && !in_nested_template) {
+                    && !ASRUtils::reads_valueless_parameter(new_symbolic_value)) {
                 // The semantics accept only initializers that the operations
                 // above evaluate, so this is not expected; report it rather
                 // than leave the named constant without a value.
