@@ -764,15 +764,49 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         // arguments stay constants and are never expanded into temporaries
     }
 
+    // A rank one constant of intrinsic numeric or logical type that is the
+    // whole value of an assignment is named as a named constant (parameter),
+    // which backends keep as static data. Filling a temporary with it
+    // instead takes code for each element, for every such assignment.
+    bool is_named_array_constant(ASR::ArrayConstant_t* x, bool is_assignment_value) {
+        if (!is_assignment_value ||
+                ASRUtils::extract_n_dims_from_ttype(x->m_type) != 1 ||
+                ASRUtils::get_fixed_size_of_array(x->m_type) <= 0) {
+            return false;
+        }
+        ASR::ttype_t* element_type = ASRUtils::extract_type(x->m_type);
+        return ASR::is_a<ASR::Integer_t>(*element_type) ||
+            ASR::is_a<ASR::Real_t>(*element_type) ||
+            ASR::is_a<ASR::Complex_t>(*element_type) ||
+            ASR::is_a<ASR::Logical_t>(*element_type);
+    }
+
+    ASR::expr_t* create_named_array_constant(ASR::ArrayConstant_t* x) {
+        const Location& loc = x->base.base.loc;
+        std::string name = current_scope->get_unique_name("__libasr_array_constant_");
+        ASR::expr_t* value = &(x->base);
+        ASR::symbol_t* constant = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, name),
+                nullptr, 0, ASR::intentType::Local, value, value,
+                ASR::storage_typeType::Parameter, ASRUtils::duplicate_type(al, x->m_type),
+                nullptr, ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false));
+        current_scope->add_symbol(name, constant);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, constant));
+    }
+
     void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
         const Location& loc = x->base.base.loc;
         ASR::expr_t* result_var_copy = result_var;
         bool is_result_var_fixed_size = false;
+        bool is_assignment_value = false;
         if (result_var != nullptr &&
             resultvar2value.find(result_var) != resultvar2value.end() &&
             resultvar2value[result_var] == &(x->base)) {
+            is_assignment_value = true;
             is_result_var_fixed_size = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(result_var));
         }
+        bool is_named_constant = is_named_array_constant(x, is_assignment_value);
         ASR::ttype_t* result_type_ = nullptr;
         bool is_allocatable = false;
         ASR::expr_t* array_constant_size = get_ArrayConstant_size(x);
@@ -815,8 +849,12 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         if (ASRUtils::is_struct(*result_type_)) {
             struct_expr = ASRUtils::EXPR((ASR::asr_t*) x);
         }
-        result_var = PassUtils::create_var(result_counter, "_array_constant_",
-                        loc, result_type_, al, current_scope, struct_expr);
+        if (is_named_constant) {
+            result_var = create_named_array_constant(x);
+        } else {
+            result_var = PassUtils::create_var(result_counter, "_array_constant_",
+                            loc, result_type_, al, current_scope, struct_expr);
+        }
         result_counter += 1;
         *current_expr = result_var;
 
@@ -862,9 +900,11 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             pass_result.push_back(al, allocate_stmt);
         }
         LCOMPILERS_ASSERT(result_var != nullptr);
-        Vec<ASR::stmt_t*>* result_vec = &pass_result;
-        PassUtils::ReplacerUtils::replace_ArrayConstant(x, this,
-            remove_original_statement, result_vec);
+        if (!is_named_constant) {
+            Vec<ASR::stmt_t*>* result_vec = &pass_result;
+            PassUtils::ReplacerUtils::replace_ArrayConstant(x, this,
+                remove_original_statement, result_vec);
+        }
         result_var = result_var_copy;
     }
 
