@@ -8699,11 +8699,13 @@ static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
 }
 
 // Whether an Assignment with move_allocation can transfer the allocation of
-// a `value` of type `value_type` to a `target` of type `target_type`: both
-// are allocatable descriptor arrays, or both are allocatable noncharacter
-// scalars.
-static inline bool is_move_allocation_pair(ASR::ttype_t* target_type,
-        ASR::ttype_t* value_type) {
+// `value` to `target`: both are allocatable descriptor arrays, or both are
+// allocatable noncharacter scalars and `target` is type compatible with
+// `value` (F2018 16.9.137), so that the object keeps its representation.
+static inline bool is_move_allocation_pair(ASR::expr_t* target,
+        ASR::expr_t* value) {
+    ASR::ttype_t* target_type = expr_type(target);
+    ASR::ttype_t* value_type = expr_type(value);
     if (!is_allocatable(target_type) || !is_allocatable(value_type)) {
         return false;
     }
@@ -8712,7 +8714,27 @@ static inline bool is_move_allocation_pair(ASR::ttype_t* target_type,
             extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray &&
             extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray;
     }
-    return !is_character(*target_type) && !is_character(*value_type);
+    if (is_character(*target_type) || is_character(*value_type)) {
+        return false;
+    }
+    ASR::ttype_t* target_el_type = extract_type(target_type);
+    ASR::ttype_t* value_el_type = extract_type(value_type);
+    if (is_class_type(target_el_type)) {
+        return is_unlimited_polymorphic_type(target_el_type) ||
+            (ASR::is_a<ASR::StructType_t>(*value_el_type) &&
+             check_class_assignment_compatibility(target, value));
+    }
+    if (is_class_type(value_el_type)) {
+        return false;
+    }
+    if (ASR::is_a<ASR::StructType_t>(*target_el_type) ||
+            ASR::is_a<ASR::StructType_t>(*value_el_type)) {
+        return ASR::is_a<ASR::StructType_t>(*target_el_type) &&
+            ASR::is_a<ASR::StructType_t>(*value_el_type) &&
+            symbol_get_past_external(get_struct_sym_from_struct_expr(target)) ==
+            symbol_get_past_external(get_struct_sym_from_struct_expr(value));
+    }
+    return check_equal_type(target_el_type, value_el_type, target, value);
 }
 
 // Reports whether a value of the derived type `st` has a constant byte
