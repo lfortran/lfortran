@@ -15,3 +15,15 @@ semantic error: Assignment procedure `cc_op_iface_bad_assign_sub` not found
    |
 28 |         module procedure cc_op_iface_bad_assign_sub
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: procedure 'cc_op_iface_external' named in an interface block must have an explicit interface
+  --> tests/errors/continue_compilation_operator_interface.f90:55:9
+   |
+55 |         procedure cc_op_iface_external
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: procedure 'cc_op_iface_external' named in an interface block must have an explicit interface
+  --> tests/errors/continue_compilation_operator_interface.f90:52:9
+   |
+52 |         procedure cc_op_iface_external
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
