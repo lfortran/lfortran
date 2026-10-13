@@ -428,6 +428,21 @@ namespace LCompilers {
         return str_ptr;
     }
 
+    // Number of arguments consumed by a printf-style format string
+    [[maybe_unused]] static size_t count_format_arguments(const std::string &format) {
+        size_t n = 0;
+        for (size_t i = 0; i < format.size(); i++) {
+            if (format[i] == '%') {
+                if (i + 1 < format.size() && format[i + 1] == '%') {
+                    i++;
+                } else {
+                    n++;
+                }
+            }
+        }
+        return n;
+    }
+
     void LLVMUtils::generate_runtime_error(llvm::Value* cond, const std::string &message,
             const std::vector<RuntimeLabel> &labels, std::string &infile,
             LocationManager& lm, const std::vector<llvm::Value*> &args) {
@@ -469,9 +484,13 @@ namespace LCompilers {
         // Identical runtime errors (e.g. repeated checks of one expression)
         // share their constant data
         std::string info_key = message;
+        // All format arguments share one argument list, so each format
+        // string must receive exactly its own arguments
+        LCOMPILERS_ASSERT(count_format_arguments(message) == args.size());
         std::vector<llvm::Value*> call_args = {nullptr};
         call_args.insert(call_args.end(), args.begin(), args.end());
         for (const RuntimeLabel &label : labels) {
+            LCOMPILERS_ASSERT(count_format_arguments(label.message) == label.args.size());
             label_spans.emplace_back();
             info_key += std::string(1, '\0') + (label.primary ? "1" : "0")
                 + std::to_string(label.spans.size()) + std::string(1, '\0') + label.message;
