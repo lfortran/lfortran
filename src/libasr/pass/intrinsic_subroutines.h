@@ -1355,6 +1355,98 @@ namespace MoveAlloc {
         ASRUtils::require_impl(ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_args[1])), "Second argument must be an allocatable type", x.base.base.loc, diagnostics);
     }
 
+    // Whether `to` is type compatible with `from` and has the same kind type
+    // parameters (F2018 7.3.2.3, 16.9.137).
+    static inline bool is_type_compatible(ASR::expr_t* from, ASR::expr_t* to) {
+        ASR::ttype_t* from_type = ASRUtils::extract_type(ASRUtils::expr_type(from));
+        ASR::ttype_t* to_type = ASRUtils::extract_type(ASRUtils::expr_type(to));
+        if (ASRUtils::is_unlimited_polymorphic_type(to_type)) {
+            return true;
+        }
+        if (ASRUtils::is_unlimited_polymorphic_type(from_type)) {
+            return false;
+        }
+        bool is_from_struct = ASR::is_a<ASR::StructType_t>(*from_type);
+        bool is_to_struct = ASR::is_a<ASR::StructType_t>(*to_type);
+        if (is_from_struct != is_to_struct) {
+            return false;
+        }
+        if (!is_to_struct) {
+            return ASRUtils::check_equal_type(to_type, from_type, to, from);
+        }
+        if (ASRUtils::is_class_type(to_type)) {
+            return ASRUtils::check_class_assignment_compatibility(to, from);
+        }
+        return ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(to)) ==
+            ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(from));
+    }
+
+    static inline bool check_arguments(ASR::expr_t* from, ASR::expr_t* to,
+            diag::Diagnostics& diag) {
+        ASR::expr_t* move_args[2] = {from, to};
+        const std::string arg_names[2] = {"from", "to"};
+        for (size_t i = 0; i < 2; i++) {
+            if (!ASRUtils::is_allocatable(move_args[i])) {
+                diag.add(diag::Diagnostic(
+                    "`" + arg_names[i] + "` argument of `move_alloc` must be allocatable",
+                    diag::Level::Error, diag::Stage::Semantic,
+                    {diag::Label("must be allocatable", { move_args[i]->base.loc })}));
+                return false;
+            }
+        }
+        ASR::ttype_t* from_type = ASRUtils::expr_type(from);
+        ASR::ttype_t* to_type = ASRUtils::expr_type(to);
+        auto declared_type_str = [](ASR::expr_t* arg) {
+            ASR::ttype_t* type = ASRUtils::extract_type(ASRUtils::expr_type(arg));
+            std::string str = ASRUtils::type_to_str_with_kind(type, arg);
+            if (ASR::is_a<ASR::StructType_t>(*type) &&
+                    !ASRUtils::is_unlimited_polymorphic_type(type)) {
+                str = (ASRUtils::is_class_type(type) ? "class(" : "type(") + str + ")";
+            }
+            return str;
+        };
+        std::string from_type_str = declared_type_str(from);
+        std::string to_type_str = declared_type_str(to);
+        if (!is_type_compatible(from, to)) {
+            diag.add(diag::Diagnostic(
+                "`to` argument of `move_alloc` must be type compatible with "
+                "`from` argument, but `to` is " + to_type_str +
+                " and `from` is " + from_type_str,
+                diag::Level::Error, diag::Stage::Semantic,
+                {diag::Label("not type compatible with " + from_type_str,
+                    { to->base.loc })}));
+            return false;
+        }
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(from_type)) &&
+                !ASRUtils::is_class_type(ASRUtils::extract_type(to_type))) {
+            diag.add(diag::Diagnostic(
+                "`to` argument of `move_alloc` must be polymorphic because "
+                "`from` argument is polymorphic",
+                diag::Level::Error, diag::Stage::Semantic,
+                {diag::Label(to_type_str + " is not polymorphic",
+                    { to->base.loc })}));
+            return false;
+        }
+        if (!ASRUtils::is_assumed_rank_array(ASRUtils::type_get_past_allocatable(from_type)) &&
+                !ASRUtils::is_assumed_rank_array(ASRUtils::type_get_past_allocatable(to_type))) {
+            size_t from_rank = ASRUtils::extract_n_dims_from_ttype(from_type);
+            size_t to_rank = ASRUtils::extract_n_dims_from_ttype(to_type);
+            if (from_rank != to_rank) {
+                diag.add(diag::Diagnostic(
+                    "`from` and `to` arguments of `move_alloc` must have the "
+                    "same rank, but `from` has rank " + std::to_string(from_rank) +
+                    " and `to` has rank " + std::to_string(to_rank),
+                    diag::Level::Error, diag::Stage::Semantic,
+                    {diag::Label("rank " + std::to_string(to_rank),
+                        { to->base.loc })}));
+                return false;
+            }
+        }
+        return true;
+    }
+
     static inline ASR::asr_t* create_MoveAlloc(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         for (size_t i = 0; i < 2; i++) {
             ASR::symbol_t *sym = nullptr;
@@ -1377,6 +1469,9 @@ namespace MoveAlloc {
                     {diag::Label("", { loc })}));
                 return nullptr;
             }
+        }
+        if (!check_arguments(args[0], args[1], diag)) {
+            return nullptr;
         }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 2);
         m_args.push_back(al, args[0]); m_args.push_back(al, args[1]);

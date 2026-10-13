@@ -1141,33 +1141,33 @@ semantic error: using the internal procedure 'cos', which is defined later, as a
      |         ^^^^^^^^^^^^^^ 
 
 semantic error: using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
-    --> tests/errors/continue_compilation_1.f90:2479:5
+    --> tests/errors/continue_compilation_1.f90:2518:5
      |
-2479 |     procedure(tan) :: f  ! {Error} using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
+2518 |     procedure(tan) :: f  ! {Error} using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
      |     ^^^^^^^^^^^^^^ 
 
 semantic error: Type bound procedure 'get' of 'child' overriding the binding of the same name in 'base' must return i32, not r32
-    --> tests/errors/continue_compilation_1.f90:2504:13
+    --> tests/errors/continue_compilation_1.f90:2543:13
      |
-2504 |             procedure, nopass :: get => later_binding_get2  ! {Error} Type bound procedure 'get' of 'child' overriding the binding of the same name in 'base' must return i32, not r32
+2543 |             procedure, nopass :: get => later_binding_get2  ! {Error} Type bound procedure 'get' of 'child' overriding the binding of the same name in 'base' must return i32, not r32
      |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Type bound procedure 'get' of 'grandchild' overriding the binding of the same name in 'base' must return i32, not r32
-    --> tests/errors/continue_compilation_1.f90:2513:17
+    --> tests/errors/continue_compilation_1.f90:2552:17
      |
-2513 |                 procedure, nopass :: get => later_binding_get2  ! {Error} Type bound procedure 'get' of 'grandchild' overriding the binding of the same name in 'base' must return i32, not r32
+2552 |                 procedure, nopass :: get => later_binding_get2  ! {Error} Type bound procedure 'get' of 'grandchild' overriding the binding of the same name in 'base' must return i32, not r32
      |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Initialization of `k` must reduce to a compile time constant.
-    --> tests/errors/continue_compilation_1.f90:2528:5
+    --> tests/errors/continue_compilation_1.f90:2567:5
      |
-2528 |     integer, parameter :: k = n  ! {Error} Initialization of `k` must reduce to a compile time constant.
+2567 |     integer, parameter :: k = n  ! {Error} Initialization of `k` must reduce to a compile time constant.
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: the kind parameter `k` is not a constant expression
-    --> tests/errors/continue_compilation_1.f90:2529:10
+    --> tests/errors/continue_compilation_1.f90:2568:10
      |
-2529 |     real(k) :: x  ! {Error} the kind parameter `k` is not a constant expression
+2568 |     real(k) :: x  ! {Error} the kind parameter `k` is not a constant expression
      |          ^ 
 
 semantic error: Restriction type mismatch with provided function argument
@@ -3438,3 +3438,57 @@ semantic error: 'mask' argument of 'maxval' intrinsic must be logical
      |
 2395 |         print *, maxval(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'maxval' intrinsic must be logical
      |                  ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is type(mai_u) and `from` is type(mai_t)
+    --> tests/errors/continue_compilation_1.f90:2503:36
+     |
+2503 |         call move_alloc(mai_t_arr, mai_u_arr)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is type(mai_u) and `from` is type(mai_t)
+     |                                    ^^^^^^^^^ not type compatible with type(mai_t)
+
+semantic error: `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is type(mai_u) and `from` is type(mai_t)
+    --> tests/errors/continue_compilation_1.f90:2504:36
+     |
+2504 |         call move_alloc(mai_t_scl, mai_u_scl)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is type(mai_u) and `from` is type(mai_t)
+     |                                    ^^^^^^^^^ not type compatible with type(mai_t)
+
+semantic error: `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is real(4) and `from` is integer(4)
+    --> tests/errors/continue_compilation_1.f90:2505:36
+     |
+2505 |         call move_alloc(mai_i_arr, mai_r_arr)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is real(4) and `from` is integer(4)
+     |                                    ^^^^^^^^^ not type compatible with integer(4)
+
+semantic error: `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is integer(8) and `from` is integer(4)
+    --> tests/errors/continue_compilation_1.f90:2506:36
+     |
+2506 |         call move_alloc(mai_i_arr, mai_i8_arr)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is integer(8) and `from` is integer(4)
+     |                                    ^^^^^^^^^^ not type compatible with integer(4)
+
+semantic error: `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is integer(4) and `from` is class(*)
+    --> tests/errors/continue_compilation_1.f90:2507:36
+     |
+2507 |         call move_alloc(mai_upoly, mai_i_scl)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is integer(4) and `from` is class(*)
+     |                                    ^^^^^^^^^ not type compatible with class(*)
+
+semantic error: `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is class(mai_child) and `from` is class(mai_base)
+    --> tests/errors/continue_compilation_1.f90:2508:40
+     |
+2508 |         call move_alloc(mai_poly_base, mai_poly_child)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is class(mai_child) and `from` is class(mai_base)
+     |                                        ^^^^^^^^^^^^^^ not type compatible with class(mai_base)
+
+semantic error: `to` argument of `move_alloc` must be polymorphic because `from` argument is polymorphic
+    --> tests/errors/continue_compilation_1.f90:2509:40
+     |
+2509 |         call move_alloc(mai_poly_base, mai_base_scl)  ! {Error} `to` argument of `move_alloc` must be polymorphic because `from` argument is polymorphic
+     |                                        ^^^^^^^^^^^^ type(mai_base) is not polymorphic
+
+semantic error: `from` and `to` arguments of `move_alloc` must have the same rank, but `from` has rank 1 and `to` has rank 2
+    --> tests/errors/continue_compilation_1.f90:2510:36
+     |
+2510 |         call move_alloc(mai_i_arr, mai_i_mat)  ! {Error} `from` and `to` arguments of `move_alloc` must have the same rank, but `from` has rank 1 and `to` has rank 2
+     |                                    ^^^^^^^^^ rank 2
+
+semantic error: `to` argument of `move_alloc` must be allocatable
+    --> tests/errors/continue_compilation_1.f90:2511:36
+     |
+2511 |         call move_alloc(mai_i_arr, mai_fixed)  ! {Error} `to` argument of `move_alloc` must be allocatable
+     |                                    ^^^^^^^^^ must be allocatable

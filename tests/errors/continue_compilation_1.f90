@@ -2473,6 +2473,45 @@ contains
     end function cos
 end subroutine later_internal_procedure_interface_error
 
+! The `to` argument of `move_alloc` must be allocatable, type compatible with
+! `from`, have the same rank, and be polymorphic if `from` is polymorphic.
+module cc1_move_alloc_mod
+    implicit none
+contains
+    subroutine cc1_move_alloc()
+        type :: mai_t
+            integer :: k
+        end type
+        type :: mai_u
+            integer :: k
+        end type
+        type :: mai_base
+            integer :: x
+        end type
+        type, extends(mai_base) :: mai_child
+        end type
+        type(mai_t), allocatable :: mai_t_arr(:), mai_t_scl
+        type(mai_u), allocatable :: mai_u_arr(:), mai_u_scl
+        integer, allocatable :: mai_i_arr(:), mai_i_mat(:,:), mai_i_scl
+        real, allocatable :: mai_r_arr(:)
+        integer(8), allocatable :: mai_i8_arr(:)
+        integer :: mai_fixed(2)
+        class(*), allocatable :: mai_upoly
+        class(mai_base), allocatable :: mai_poly_base
+        type(mai_base), allocatable :: mai_base_scl
+        class(mai_child), allocatable :: mai_poly_child
+        call move_alloc(mai_t_arr, mai_u_arr)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is type(mai_u) and `from` is type(mai_t)
+        call move_alloc(mai_t_scl, mai_u_scl)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is type(mai_u) and `from` is type(mai_t)
+        call move_alloc(mai_i_arr, mai_r_arr)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is real(4) and `from` is integer(4)
+        call move_alloc(mai_i_arr, mai_i8_arr)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is integer(8) and `from` is integer(4)
+        call move_alloc(mai_upoly, mai_i_scl)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is integer(4) and `from` is class(*)
+        call move_alloc(mai_poly_base, mai_poly_child)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is class(mai_child) and `from` is class(mai_base)
+        call move_alloc(mai_poly_base, mai_base_scl)  ! {Error} `to` argument of `move_alloc` must be polymorphic because `from` argument is polymorphic
+        call move_alloc(mai_i_arr, mai_i_mat)  ! {Error} `from` and `to` arguments of `move_alloc` must have the same rank, but `from` has rank 1 and `to` has rank 2
+        call move_alloc(mai_i_arr, mai_fixed)  ! {Error} `to` argument of `move_alloc` must be allocatable
+    end subroutine cc1_move_alloc
+end module cc1_move_alloc_mod
+
 integer function later_internal_function_interface_error(x)
     implicit none
     real, intent(in) :: x
