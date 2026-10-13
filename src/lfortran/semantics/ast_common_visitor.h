@@ -3238,20 +3238,96 @@ public:
     // scope. Otherwise only a variable of a module is read through a getter.
     // A bound or a length with a compile-time value, such as a named
     // constant, is never read through a getter: it keeps the type constant.
+    // A signature that would still read a variable of an enclosing BLOCK
+    // construct is reported, see check_block_variable_reads.
     ASR::expr_t* read_variables_through_getters(ASR::expr_t* end,
             bool in_signature) {
+        if (in_signature) {
+            check_block_variable_reads(end, end, true);
+        }
+        ASR::expr_t* read = end;
         if (ASR::is_a<ASR::Var_t>(*end)) {
             ASR::symbol_t* end_sym = ASR::down_cast<ASR::Var_t>(end)->m_v;
             SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
             if (ASRUtils::expr_value(end) == nullptr &&
                 (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
                 (symbol_scope->counter != current_scope->counter && in_signature)) ) {
-                return get_transformed_function_call(end_sym);
+                read = get_transformed_function_call(end_sym);
             }
         } else if (ASR::is_a<ASR::IntegerBinOp_t>(*end)) {
-            return convert_integer_binop_to_function_call(end, in_signature);
+            read = convert_integer_binop_to_function_call(end, in_signature);
         }
-        return end;
+        if (in_signature) {
+            check_block_variable_reads(end, read, false);
+        }
+        return read;
+    }
+
+    // Finds the first variable of a BLOCK construct enclosing `scope` that an
+    // expression reads at run time (with `only_allocatable_or_pointer`, the
+    // first such allocatable or pointer variable).
+    class BlockVariableFinder :
+            public ASR::BaseWalkVisitor<BlockVariableFinder> {
+        public:
+            SymbolTable *scope;
+            bool only_allocatable_or_pointer;
+            ASR::symbol_t *variable = nullptr;
+
+            BlockVariableFinder(SymbolTable *scope_,
+                    bool only_allocatable_or_pointer_)
+                : scope{scope_},
+                  only_allocatable_or_pointer{only_allocatable_or_pointer_} {}
+
+            void visit_expr(const ASR::expr_t &x) {
+                if (variable == nullptr && ASRUtils::expr_value(
+                        const_cast<ASR::expr_t*>(&x)) == nullptr) {
+                    ASR::BaseWalkVisitor<BlockVariableFinder>::visit_expr(x);
+                }
+            }
+
+            void visit_Var(const ASR::Var_t &x) {
+                if (!ASR::is_a<ASR::Variable_t>(*x.m_v)) {
+                    return;
+                }
+                SymbolTable *symbol_scope = ASRUtils::symbol_parent_symtab(x.m_v);
+                if (symbol_scope == scope || symbol_scope->asr_owner == nullptr
+                        || !ASR::is_a<ASR::symbol_t>(*symbol_scope->asr_owner)
+                        || !ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(
+                            symbol_scope->asr_owner))) {
+                    return;
+                }
+                if (only_allocatable_or_pointer &&
+                        !ASRUtils::is_allocatable_or_pointer(
+                            ASRUtils::symbol_type(x.m_v))) {
+                    return;
+                }
+                variable = x.m_v;
+            }
+    };
+
+    // A bound or a length in the signature of a procedure, whose type must
+    // not be tied to a scope, can read a variable of an enclosing BLOCK
+    // construct only through a getter, see get_transformed_function_call.
+    // Reports `bound` if `read`, what the signature reads for it, still reads
+    // such a variable directly, or, with `only_allocatable_or_pointer`, if a
+    // getter would have to follow an allocatable or pointer variable.
+    void check_block_variable_reads(ASR::expr_t* bound, ASR::expr_t* read,
+            bool only_allocatable_or_pointer) {
+        BlockVariableFinder finder(current_scope, only_allocatable_or_pointer);
+        finder.visit_expr(*read);
+        if (finder.variable == nullptr) {
+            return;
+        }
+        diag.add(Diagnostic(
+            "a specification expression in an interface body that "
+            "references a variable of the enclosing BLOCK construct is "
+            "not supported yet in this form",
+            Level::Error, Stage::Semantic, {
+                Label("'" + std::string(ASRUtils::symbol_name(finder.variable))
+                    + "' is a variable of the enclosing BLOCK construct",
+                    {bound->base.loc})
+            }));
+        throw SemanticAbort();
     }
 
     void check_intent_out_in_spec_expr(ASR::expr_t* expr) {
@@ -3935,6 +4011,7 @@ public:
         RestrictedExprScope restricted_scope(*this,
             RestrictedExprContext::ArrayBound);
         _processing_dimensions = true;
+        bool in_signature = is_argument || is_procedure_result(var_name);
 	    dims.reserve(al, n_dim);
 	    for (size_t i=0; i<n_dim; i++) {
 	        if (is_argument &&
@@ -3961,6 +4038,11 @@ public:
                     dim.m_start = ASRUtils::EXPR(tmp);
                     check_specification_expr(dim.m_start,
                         RestrictedExprContext::ArrayBound);
+                    // A lower bound is never read through a getter.
+                    if (in_signature) {
+                        check_block_variable_reads(dim.m_start, dim.m_start,
+                            false);
+                    }
                     dimension_attribute_error_check(dim.m_start);
                     if (is_derived_type
                             && !depends_on_pdt_kind_param(dim.m_start)) {
@@ -3986,17 +4068,17 @@ public:
                     end = ASRUtils::EXPR(tmp);
                     check_specification_expr(end,
                         RestrictedExprContext::ArrayBound);
+                    ASR::expr_t* end_read = read_variables_through_getters(end,
+                        in_signature);
                     dimension_attribute_error_check(end);
                     bool pdt_kind_bound = depends_on_pdt_kind_param(end)
                         || (dim.m_start && depends_on_pdt_kind_param(dim.m_start));
-                    if (is_derived_type && !pdt_kind_bound) {
-                        ASR::expr_t* end_value = ASRUtils::expr_value(end);
-                        if (end_value != nullptr) {
-                            end = end_value;
-                        }
+                    ASR::expr_t* end_value = ASRUtils::expr_value(end);
+                    if (is_derived_type && !pdt_kind_bound && end_value != nullptr) {
+                        end = end_value;
+                    } else {
+                        end = end_read;
                     }
-                    end = read_variables_through_getters(end,
-                        is_argument || is_procedure_result(var_name));
                     if (pdt_kind_bound) {
                         dim.m_length = pdt_component_extent(dim.m_start, end);
                     } else {
