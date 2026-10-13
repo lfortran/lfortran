@@ -54,8 +54,9 @@
                                                     7
                                                     1_intvector_elements
                                                     8 elements
-                                                    intvector
-                                                    []
+                                                    template_vector_m
+                                                    [main
+                                                    intvector]
                                                     elements
                                                     Public
                                                 ),
@@ -79,8 +80,9 @@
                                                                     9
                                                                     1_intvector_elements
                                                                     8 elements
-                                                                    intvector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [main
+                                                                    intvector]
                                                                     elements
                                                                     Public
                                                                 ),
@@ -89,8 +91,9 @@
                                                                     9
                                                                     1_intvector_resize
                                                                     8 resize
-                                                                    intvector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [main
+                                                                    intvector]
                                                                     resize
                                                                     Public
                                                                 ),
@@ -99,8 +102,9 @@
                                                                     9
                                                                     1_intvector_sz
                                                                     8 sz
-                                                                    intvector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [main
+                                                                    intvector]
                                                                     sz
                                                                     Public
                                                                 ),
@@ -127,6 +131,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -151,6 +156,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -180,6 +186,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __asr_push_back
@@ -289,8 +296,9 @@
                                                                     10
                                                                     1_intvector_sz
                                                                     8 sz
-                                                                    intvector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [main
+                                                                    intvector]
                                                                     sz
                                                                     Public
                                                                 ),
@@ -317,6 +325,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -341,6 +350,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -370,6 +380,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -402,6 +413,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __asr_resize
@@ -671,6 +683,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             push_back:
                                                                 (StructMethodDeclaration
@@ -717,6 +730,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     intvector
@@ -768,6 +782,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     main
@@ -852,8 +867,9 @@
                                                                     5
                                                                     1_vector_elements
                                                                     4 elements
-                                                                    vector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [vector_t
+                                                                    vector]
                                                                     elements
                                                                     Public
                                                                 ),
@@ -872,8 +888,9 @@
                                                                     5
                                                                     1_vector_sz
                                                                     4 sz
-                                                                    vector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [vector_t
+                                                                    vector]
                                                                     sz
                                                                     Public
                                                                 ),
@@ -904,6 +921,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -928,6 +946,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -970,6 +989,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     push_back
@@ -1104,8 +1124,9 @@
                                                                     6
                                                                     1_vector_elements
                                                                     4 elements
-                                                                    vector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [vector_t
+                                                                    vector]
                                                                     elements
                                                                     Public
                                                                 ),
@@ -1114,8 +1135,9 @@
                                                                     6
                                                                     1_vector_sz
                                                                     4 sz
-                                                                    vector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [vector_t
+                                                                    vector]
                                                                     sz
                                                                     Public
                                                                 ),
@@ -1142,6 +1164,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -1166,6 +1189,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -1208,6 +1232,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -1244,6 +1269,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     resize
@@ -1549,6 +1575,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             vector:
                                                 (Struct
@@ -1590,6 +1617,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             push_back:
                                                                 (StructMethodDeclaration
@@ -1636,6 +1664,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     vector

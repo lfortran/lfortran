@@ -25,17 +25,32 @@ symbol
     -- pass creates such locals to evaluate automatic array bounds exactly
     -- once. The initializer references only dummy arguments, host or module
     -- entities, parameters and other such locals (checked by asr_verify).
+    -- A Variable whose common_block is present has no storage of its own: it
+    -- lives in the storage of that CommonBlock of its own symbol table, as one
+    -- of its members or as the variable of one of its associations.
     | Variable(symbol_table parent_symtab, identifier name, identifier* dependencies, intent intent,
                expr? symbolic_value, expr? value, storage_type storage, ttype type, symbol? type_declaration,
                abi abi, access access, presence presence, bool value_attr, bool target_attr, bool contiguous_attr,
                string? bindc_name, bool is_volatile, bool is_protected, pass_attr pass_attr, identifier? self_argument,
-               codimension* codims)
+               codimension* codims, symbol? common_block)
     | StructMethodDeclaration(symbol_table parent_symtab, identifier name, identifier? self_argument, identifier proc_name, symbol proc, abi abi, bool is_deferred, bool is_nopass)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
     | Requirement(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Template(symbol_table symtab, identifier name, identifier* args, require_instantiation* requires)
     | Namelist(symbol_table parent_symtab, identifier group_name, symbol* var_list)
+    -- A BLOCK DATA program unit. It has no executable statements: the DATA
+    -- values it gives are the initializers of its own variables.
+    -- block_data_name is absent for the unnamed BLOCK DATA.
+    | BlockData(symbol_table symtab, identifier name, identifier? block_data_name, identifier* dependencies, location start_name, location end_name)
+    -- The view of one common block that one scoping unit declares. `name` is
+    -- the key in parent_symtab, distinct from any Fortran name; block_name is
+    -- the source name, absent for blank COMMON. Every unit that names the same
+    -- block has its own CommonBlock with the same link_name, the global symbol
+    -- of the shared storage. `members` are the variables of the COMMON
+    -- statements in order, laid out one after another; `associations` place
+    -- the other variables that EQUIVALENCE connects to the block.
+    | CommonBlock(symbol_table parent_symtab, identifier name, identifier? block_name, identifier link_name, symbol* members, common_association* associations, abi abi, storage_type storage, common_block_role role)
 
 stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)
@@ -254,6 +269,11 @@ cast_kind = RealToInteger | IntegerToReal | LogicalToReal | RealToReal | Integer
 deferred_type_attr = NonExtensible | Extensible | Abstract
 cptr_kind = CPointer | CFunPointer | CPtrUnspecified
 storage_type = Default | Save | Parameter | Threadprivate
+-- How a CommonBlock view provides the block's storage: a Tentative view
+-- gives no initial value, an Initialized one gives initial values (even all
+-- zero ones) through its variables, and an External one (in a module read
+-- from a module file) only refers to storage defined elsewhere.
+common_block_role = Tentative | Initialized | External
 access = Public | Private
 intent = Local | In | Out | InOut | ReturnVar | Unspecified
 deftype = Implementation | Interface | ImplicitInterface
@@ -266,6 +286,10 @@ memory_space = Global | Shared | Constant | Thread
 dimension = (expr? start, expr? length)
 codimension = (expr? start, expr? end, codimension_type end_star)
 codimension_type = CodimensionExpr | CodimensionStar
+-- The first storage unit of `designator`, a designator of `variable`, is the
+-- first storage unit of `anchor`, a designator of a member of the block or
+-- of the variable of an earlier association.
+common_association = (symbol variable, expr designator, expr anchor)
 alloc_arg = (expr a, dimension* dims, codimension* codims, expr? len_expr, symbol? sym_subclass, ttype? type)
 attribute = Attribute(identifier name, attribute_arg *args)
 attribute_arg = (identifier arg)
@@ -315,6 +339,7 @@ omp_clause
   | OMPMap(map_type type, expr* vars)
   | OMPIndependent()
   | OMPTargetRequested()
+  | OMPCriticalName(identifier name)
 
 map_type 
     = To | From | ToFrom | Alloc | Release | Delete

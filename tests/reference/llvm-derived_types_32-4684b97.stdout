@@ -22,7 +22,7 @@ target datalayout = "..."
 @5 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @6 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define i32 @_lcompilers_len_trim_str(i8* %str, i64 %__libasr_len_str) {
+define internal i32 @_lcompilers_len_trim_str(i8* %str, i64 %__libasr_len_str) {
 .entry:
   %StringItem = alloca %string_descriptor, align 8
   %str_desc = alloca %string_descriptor, align 8
@@ -103,7 +103,7 @@ FINALIZE_SYMTABLE__lcompilers_len_trim_str:       ; preds = %return
   ret i32 %28
 }
 
-define void @_lcompilers_trim_str(i8* %str, i8* %result, i64 %__libasr_len_str, i64 %__libasr_len_result) {
+define internal void @_lcompilers_trim_str(i8* %str, i8* %result, i64 %__libasr_len_str, i64 %__libasr_len_result) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %StrSlice_StrView = alloca %string_descriptor, align 8
@@ -194,7 +194,7 @@ define void @__module_testdrive_derived_types_32_real_dp_to_string(double* %val,
   %7 = call i8* @_lfortran_get_default_allocator()
   %8 = call i8* @_lfortran_malloc_alloc(i8* %7, i64 1)
   store i8* %8, i8** %6, align 8
-  %9 = load %string_descriptor, %string_descriptor* %string, align 8
+  %9 = load %string_descriptor, %string_descriptor* %string, align 1
   %10 = getelementptr %string_descriptor, %string_descriptor* %string, i32 0, i32 0
   %11 = load i8*, i8** %10, align 8
   %12 = icmp ne i8* %11, null

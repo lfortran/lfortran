@@ -4,7 +4,9 @@
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 #include <libasr/codegen/llvm_compat.h>
+#include <llvm/IR/Operator.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Transforms/Utils/Local.h>
 
 namespace LCompilers {
 
@@ -12,8 +14,34 @@ namespace LCompilers {
 
         static bool memory_debug_enabled = false;
 
+        llvm::MaybeAlign known_underalignment(llvm::Type *type,
+                llvm::Value *address, const llvm::DataLayout &data_layout) {
+#if LLVM_VERSION_MAJOR >= 11
+            if (!type->isSized()) {
+                return llvm::MaybeAlign();
+            }
+            // Also for the address of a variable allocated here: it has the
+            // alignment of the variable's type, which need not be that of
+            // the type accessed through it.
+            llvm::Align known = llvm::getKnownAlignment(address, data_layout);
+            if (known >= data_layout.getABITypeAlign(type)) {
+                return llvm::MaybeAlign();
+            }
+            return known;
+#else
+            (void)type;
+            (void)address;
+            (void)data_layout;
+            return llvm::MaybeAlign();
+#endif
+        }
+
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y) {
             LCOMPILERS_ASSERT(y->getType()->isPointerTy());
+            if (llvm::MaybeAlign alignment = known_underalignment(x->getType(), y,
+                    builder.GetInsertBlock()->getModule()->getDataLayout())) {
+                return builder.CreateAlignedStore(x, y, alignment);
+            }
             return builder.CreateStore(x, y);
         }
 
@@ -2041,6 +2069,10 @@ namespace LCompilers {
 
     llvm::Value *LLVMUtils::CreateLoad2([[maybe_unused]] llvm::Type *t, llvm::Value *x, bool is_volatile) {
 #if LLVM_VERSION_MAJOR >= 8
+        if (llvm::MaybeAlign alignment = LLVM::known_underalignment(t, x,
+                module->getDataLayout())) {
+            return builder->CreateAlignedLoad(t, x, alignment, is_volatile);
+        }
         return builder->CreateLoad(t, x, is_volatile);
 #else
         // LLVM 7 has no `CreateLoad(Type*, Value*, bool)` and `CreateLoad(x)`
@@ -3639,7 +3671,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             total_data_bytes, llvm::MaybeAlign());
 
         // Store data in wrapper's data field (field 1)
-        builder->CreateStore(data_mem,
+        builder->CreateStore(builder->CreateBitCast(data_mem,
+                class_type->getStructElementType(1)),
             create_gep2(class_type, wrapper, 1));
 
         // For string types, initialize each string descriptor.
@@ -3927,16 +3960,16 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         ensure_string_descriptor_on_heap(llvm_array_type, dest, llvm_str_desc_type);
                         ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(
                             ASRUtils::extract_type(alloc_type->m_type));
-                        int64_t str_len;
-                        ASRUtils::extract_value(str_t->m_len, str_len);
-                        llvm::Value* num_elements = arr_api->get_array_size(llvm_array_type, src, nullptr, 4);
-                        llvm::Value* total_bytes = builder->CreateMul(
-                            builder->CreateSExtOrBitCast(num_elements, llvm::Type::getInt64Ty(context)),
-                            llvm::ConstantInt::get(context, llvm::APInt(64, str_len)));
                         // Get src string_descriptor and char data
                         llvm::Value* src_data_ptr = arr_api->get_pointer_to_data(llvm_array_type, src);
                         llvm::Value* src_str_desc = CreateLoad2(llvm_str_desc_type->getPointerTo(), src_data_ptr);
                         llvm::Value* src_char_ptr = CreateLoad2(i8_ptr, create_gep2(llvm_str_desc_type, src_str_desc, 0));
+                        // The element length is a run-time value for deferred length
+                        llvm::Value* str_len = get_string_length(str_t, src_str_desc);
+                        llvm::Value* num_elements = arr_api->get_array_size(llvm_array_type, src, nullptr, 4);
+                        llvm::Value* total_bytes = builder->CreateMul(
+                            builder->CreateSExtOrBitCast(num_elements, llvm::Type::getInt64Ty(context)),
+                            str_len);
                         // Reuse existing dest string_descriptor; allocate new char data and copy
                         llvm::Value* dest_data_ptr = arr_api->get_pointer_to_data(llvm_array_type, dest);
                         llvm::Value* dest_str_desc = CreateLoad2(llvm_str_desc_type->getPointerTo(), dest_data_ptr);
@@ -3948,7 +3981,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         // Update the existing dest string_descriptor with new char data and length
                         builder->CreateStore(builder->CreateBitCast(new_char_data, i8_ptr),
                             create_gep2(llvm_str_desc_type, dest_str_desc, 0));
-                        builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, str_len)),
+                        builder->CreateStore(str_len,
                             create_gep2(llvm_str_desc_type, dest_str_desc, 1));
                         // Fill the array details for offset, rank, dim using existing function
                         arr_api->fill_array_details(src_expr, src_expr, src, dest,
@@ -4243,29 +4276,6 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             return val->getType()->isIntegerTy() ?
                 builder->CreateSExt(val, target_type): builder->CreateFPExt(val, target_type);
         }
-    }
-
-    llvm::Value* LLVMUtils::apply_common_block_alias_cast(
-        llvm::Value* ptr,
-        ASR::expr_t* expr,
-        ASR::ttype_t* expected_type,
-        ASR::ttype_t* actual_type)
-    {
-    #if LLVM_VERSION_MAJOR < 15
-        llvm::Type* expected_llvm_type = get_type_from_ttype_t_util(
-            expr, expected_type, module);
-        llvm::Type* actual_llvm_type = get_type_from_ttype_t_util(
-            expr, actual_type, module);
-        
-        if (expected_llvm_type != actual_llvm_type) {
-            return builder->CreateBitCast(ptr, expected_llvm_type->getPointerTo());
-        }
-    #else
-        (void)expr;
-        (void)expected_type;
-        (void)actual_type;
-    #endif
-        return ptr;
     }
 
     LLVMList::LLVMList(llvm::LLVMContext& context_,
@@ -10589,6 +10599,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1))), r);
         });
         llvm_utils->arr_api->set_rank(llvm_array_type, dest, n_dims);
+        builder->CreateStore(
+            llvm_utils->arr_api->get_offset(llvm_array_type, src),
+            llvm_utils->arr_api->get_offset(llvm_array_type, dest, false));
     }
 
     bool LLVMStruct::try_call_struct_defined_assignment(ASR::Struct_t* struct_t,

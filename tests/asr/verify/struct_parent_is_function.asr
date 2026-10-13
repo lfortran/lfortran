@@ -34,6 +34,7 @@
                     :NotMethod
                     nil
                     []
+                    nil
                   )
                   "local" (Variable
                     7
@@ -59,6 +60,7 @@
                     :NotMethod
                     nil
                     []
+                    nil
                   )
                 }
               )

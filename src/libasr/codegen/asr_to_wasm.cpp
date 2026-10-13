@@ -651,6 +651,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             // Ignore type variables
             return;
         }
+        reject_common_block_variable(*v);
 
         using namespace wasm;
         uint32_t global_var_idx = UINT_MAX;
@@ -754,6 +755,12 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         if (x.m_global_init != nullptr) {
             throw CodeGenError("a startup initializer of the translation unit "
                 "is not supported by this backend");
+        }
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::BlockData_t>(*item.second)) {
+                throw CodeGenError("BLOCK DATA is not supported by the WASM backend",
+                    item.second->base.loc);
+            }
         }
         // All loose statements must be converted to a function, so the items
         // must be empty:
@@ -996,11 +1003,21 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                 v->m_intent == ASRUtils::intent_return_var);
     }
 
+    // A variable in a common block has no storage of its own, and this
+    // backend does not lay out the storage of common blocks.
+    void reject_common_block_variable(const ASR::Variable_t &v) {
+        if (ASR::CommonBlock_t *block = ASRUtils::get_common_block(&v)) {
+            throw CodeGenError("COMMON blocks are not supported by the WASM backend",
+                block->base.base.loc);
+        }
+    }
+
     void get_local_vars(SymbolTable* symtab) {
         for (auto &item : symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v =
                     ASR::down_cast<ASR::Variable_t>(item.second);
+                reject_common_block_variable(*v);
                 if (isLocalVar(v)) {
                     m_var_idx_map[get_hash((ASR::asr_t *)v)] = cur_sym_info.no_of_params + local_vars.size();
                     get_var_type(v, local_vars);
@@ -1197,8 +1214,67 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         return false;
     }
 
+    // True if `x` is an interface body for an external procedure, rather
+    // than for a dummy procedure, a separate module procedure or a bind(c)
+    // procedure.
+    bool is_external_procedure_interface(const ASR::Function_t &x) {
+        ASR::FunctionType_t *type = ASRUtils::get_FunctionType(x);
+        if (type->m_deftype != ASR::deftypeType::Interface || type->m_module ||
+                type->m_abi != ASR::abiType::Source) {
+            return false;
+        }
+        SymbolTable *parent = x.m_symtab->parent;
+        if (parent->asr_owner && ASR::is_a<ASR::symbol_t>(*parent->asr_owner)) {
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(parent->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*owner) && ASRUtils::is_dummy_argument(
+                    *ASR::down_cast<ASR::Function_t>(owner), &x.base)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // A WASM module is not linked with other objects, so the external
+    // procedure that an interface body declares has to be the external
+    // procedure of that name defined in this translation unit. It is
+    // called instead, and no function is emitted for the interface body.
+    ASR::Function_t *get_external_procedure_definition(const ASR::Function_t &x) {
+        // A specific procedure named like its generic interface is stored
+        // under a disambiguated name; the procedure's name is the link name.
+        ASR::symbol_t *def = ASRUtils::get_tu_symtab(x.m_symtab)->get_symbol(
+            ASRUtils::strip_genericprocedure_suffix(x.m_name));
+        if (def == nullptr || !ASR::is_a<ASR::Function_t>(*def)) {
+            return nullptr;
+        }
+        ASR::Function_t *def_fn = ASR::down_cast<ASR::Function_t>(def);
+        if (ASRUtils::get_FunctionType(def_fn)->m_deftype !=
+                ASR::deftypeType::Implementation) {
+            return nullptr;
+        }
+        return def_fn;
+    }
+
+    ASR::Function_t *get_called_function(ASR::symbol_t *name, const Location &loc) {
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(name));
+        if (!is_external_procedure_interface(*fn)) {
+            return fn;
+        }
+        ASR::Function_t *def = get_external_procedure_definition(*fn);
+        if (def == nullptr) {
+            throw CodeGenError("the external procedure '" +
+                ASRUtils::strip_genericprocedure_suffix(fn->m_name) +
+                "' is not defined in this file; the WASM backend does not "
+                "support calling an external procedure defined elsewhere", loc);
+        }
+        return def;
+    }
+
     void visit_Function(const ASR::Function_t &x) {
         if (ASRUtils::is_bare_implicit_interface(x)) {
+            return;
+        }
+        if (is_external_procedure_interface(x)) {
             return;
         }
         declare_all_functions(*x.m_symtab);
@@ -2801,8 +2877,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             return;
         }
 
-        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
-            ASRUtils::symbol_get_past_external(x.m_name));
+        ASR::Function_t *fn = get_called_function(x.m_name, x.base.base.loc);
 
         for (size_t i = 0; i < x.n_args; i++) {
             visit_expr(*x.m_args[i].m_value);
@@ -2926,8 +3001,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
-        ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(
-            ASRUtils::symbol_get_past_external(x.m_name));
+        ASR::Function_t *s = get_called_function(x.m_name, x.base.base.loc);
 
         Vec<ASR::expr_t *> vars_passed_by_refs;
         vars_passed_by_refs.reserve(m_al, s->n_args);
@@ -3646,7 +3720,12 @@ Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al,
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        wasm::save_bin(wasm.result, filename);
+        if (!wasm::save_bin(wasm.result, filename)) {
+            diagnostics.add(diag::Diagnostic(
+                "cannot write the output file '" + filename + "'",
+                diag::Level::Error, diag::Stage::CodeGen));
+            return Error();
+        }
         auto t2 = std::chrono::high_resolution_clock::now();
         time_save =
             std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)

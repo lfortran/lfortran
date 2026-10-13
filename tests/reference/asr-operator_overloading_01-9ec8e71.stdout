@@ -46,6 +46,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             logical_and:
                                 (ExternalSymbol
@@ -86,6 +87,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             ~add:
                                 (ExternalSymbol
@@ -385,6 +387,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             log1:
                                                 (Variable
@@ -409,6 +412,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             log2:
                                                 (Variable
@@ -433,6 +437,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     bin_add
@@ -538,6 +543,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             log2:
                                                 (Variable
@@ -562,6 +568,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             logical_and:
                                                 (Variable
@@ -586,6 +593,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     logical_and

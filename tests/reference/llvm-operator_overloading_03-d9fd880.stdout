@@ -48,8 +48,8 @@ target datalayout = "..."
 define i32 @__module_operator_overloading_01_overload_comp_m_greater_than_inverse(i32* %log1, i32* %log2) {
 .entry:
   %greater_than_inverse = alloca i32, align 4
-  %0 = load i32, i32* %log1, align 4
-  %1 = load i32, i32* %log2, align 4
+  %0 = load i32, i32* %log1, align 1
+  %1 = load i32, i32* %log2, align 1
   %2 = and i32 1, %1
   %3 = xor i32 %0, %2
   %4 = xor i32 %3, 1
@@ -80,8 +80,8 @@ FINALIZE_SYMTABLE_greater_than_inverse:           ; preds = %return
 define i32 @__module_operator_overloading_01_overload_comp_m_less_than_inverse(i32* %log1, i32* %log2) {
 .entry:
   %less_than_inverse = alloca i32, align 4
-  %0 = load i32, i32* %log1, align 4
-  %1 = load i32, i32* %log2, align 4
+  %0 = load i32, i32* %log1, align 1
+  %1 = load i32, i32* %log2, align 1
   %2 = and i32 0, %1
   %3 = xor i32 %0, %2
   %4 = xor i32 %3, 1

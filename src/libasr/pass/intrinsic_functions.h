@@ -1697,6 +1697,11 @@ namespace OutOfRange
 
 namespace CompilerVersion {
 
+    // Defined in intrinsic_function.cpp: the version changes with every
+    // commit, and expanding it in this widely included header would change
+    // every including file and defeat compiler caches.
+    std::string version_string();
+
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 0,
             "compiler_version() takes no argument",
@@ -1706,7 +1711,7 @@ namespace CompilerVersion {
     static ASR::expr_t *eval_CompilerVersion(Allocator &al, const Location &loc,
             ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         ASRUtils::ASRBuilder b(al, loc);
-        std::string version = std::string("LFortran version ") + LFORTRAN_VERSION;
+        std::string version = version_string();
         return b.StringConstant(version, character(version.length()));
     }
 
@@ -6227,7 +6232,11 @@ namespace StringConcat {
             ASR::expr_t* expr, ASR::ttype_t* expr_type, ASRBuilder& b) {
         ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(expr_type));
         if (str_type->m_len) {
-            return b.i2i_t(str_type->m_len, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
+            // Copy the length, so that later rewrites of the returned
+            // expression do not modify the type it was taken from.
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            return b.i2i_t(duplicator.duplicate_expr(str_type->m_len),
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
         }
         // For deferred-length strings, check if expr is a StringConcat.
         // If so, recursively compute the length to avoid embedding the

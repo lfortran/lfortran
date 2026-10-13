@@ -1,0 +1,13 @@
+{
+    "basename": "pass_array_struct_temporary-string_array_concat_04-2ad41d4",
+    "cmd": "lfortran --pass=array_struct_temporary --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/string_array_concat_04.f90",
+    "infile_hash": "f5d50e5e1c85d598621bd35e8513f2d8e276c1bd23e98b77b85e0bcf",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_array_struct_temporary-string_array_concat_04-2ad41d4.stdout",
+    "stdout_hash": "88cefeb8318acbc28908d5e20a844019b3b38f2744592a7e23423d36",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

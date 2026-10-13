@@ -36,14 +36,23 @@ Pipeline: **repro-issue → create-mre → fix-mre**
 
 Before starting, confirm you have:
 
-- A built `lfortran` — `build/src/bin/lfortran` for a standard in-tree build
-  (see `AGENTS.md`). Put it first on `PATH`, or set `$LFORTRAN` to its path.
-- A **reference Fortran compiler** on `PATH`. `gfortran` is the project
-  default — it is what `integration_tests` uses via the `gfortran` label, so
-  prefer it. `flang` works too if that is what you have.
-- `gh` CLI available on `PATH` and authenticated (`gh auth status`)
-- Working directory is the lfortran repository root (same dir as
-  `CMakeLists.txt`) — output files go here
+- A built `lfortran` from the assigned worktree. **Use only Pixi**:
+  `pixi run -e llvm11 build` installs dependencies and builds
+  `build/llvm11/src/bin/lfortran` (see `AGENTS.md`). Save the build log.
+  Reuse the assigned Pixi environment and its build. Run every compiler and
+  test command through that environment, for example
+  `pixi run -e llvm11 bash run_re.sh`, and verify the compiler path/version.
+  Do not duplicate package lists or CMake setup flags here.
+- Pixi's **reference Fortran compiler**, `gfortran`, in the selected environment.
+  Additional reference compilers must also be provisioned through Pixi.
+- GitHub access: authenticated `gh` (`gh auth status`), or GitHub MCP tools
+  where the session recommends them (see "Git Remotes & Issues" in `AGENTS.md`)
+- Working directory is the **assigned worktree's root** (same dir as
+  `CMakeLists.txt`) — output files go here, never in another worker's checkout.
+
+Follow [AGENTS.md](../../../AGENTS.md#required-agent-toolchain-pixi) for the
+required Pixi toolchain policy. Never install dependencies outside Pixi;
+reference tests and updates require the `llvm11` environment.
 
 ## Inputs to Gather
 
@@ -58,8 +67,8 @@ Ask the user for (if not already provided):
 ### Phase 0: Read Project Guidelines
 
 Read `AGENTS.md` in the repository root. It is the single point of reference
-for build commands, test layout, and contribution rules. Follow it, but the
-instructions in this SKILL.md take precedence where they conflict.
+for build commands, test layout, and contribution rules, including the
+required Pixi toolchain policy.
 
 ### Phase 1: Fetch the Issue
 
@@ -131,22 +140,22 @@ For a **compilation error** reported in the issue:
 
 ```bash
 # Must succeed with the reference compiler
-gfortran -o test_ref <re_file>.f90 && ./test_ref
+pixi run -e llvm11 gfortran -o test_ref <re_file>.f90 && pixi run -e llvm11 ./test_ref
 echo "reference exit code: $?"
 
 # Must fail with lfortran — ideally with the same error message as the issue
-lfortran <re_file>.f90
+pixi run -e llvm11 start <re_file>.f90
 echo "lfortran exit code: $?"
 ```
 
 For a **runtime failure** reported in the issue:
 
 ```bash
-gfortran -o test_ref <re_file>.f90
-lfortran <re_file>.f90 -o test_lfortran
+pixi run -e llvm11 gfortran -o test_ref <re_file>.f90
+pixi run -e llvm11 start <re_file>.f90 -o test_lfortran
 
-./test_ref         # must succeed / produce expected output
-./test_lfortran    # must crash or produce wrong output
+pixi run -e llvm11 ./test_ref         # must succeed / produce expected output
+pixi run -e llvm11 ./test_lfortran    # must crash or produce wrong output
 ```
 
 Confirm:
@@ -186,7 +195,10 @@ Name files with an `re_` prefix and a short descriptor derived from the issue
 
 Create an executable bash script **`./run_re.sh`** in the repository root
 directory. Replace any previous `./run_re.sh` if it exists. Do NOT place it
-inside any subdirectory. Template:
+inside any subdirectory. Run it with `pixi run -e llvm11 bash run_re.sh`
+(substitute the assigned Pixi environment when the issue requires another
+configuration). Compiler commands inside the script use that activated
+environment. Template:
 
 ```bash
 #!/usr/bin/env bash
@@ -199,7 +211,7 @@ set -e
 # Expected: compiles and runs with the reference compiler
 # Actual:   fails with lfortran — <brief error description from the issue>
 
-LFORTRAN="${LFORTRAN:-lfortran}"
+LFORTRAN="${LFORTRAN:-${LFORTRAN_BUILD_DIR:?run this script through pixi run}/src/bin/lfortran}"
 REF="${REF:-gfortran}"
 
 echo "=== Verifying RE for issue <N> ==="
@@ -213,7 +225,7 @@ echo "reference: OK"
 echo ""
 echo "--- lfortran (should fail) ---"
 echo "Expected error: <paste key part of the error message from the issue>"
-$LFORTRAN <lfortran-flags-from-issue> <file(s)> 2>&1 || true
+"$LFORTRAN" <lfortran-flags-from-issue> <file(s)> 2>&1 || true
 echo ""
 echo "Done. If lfortran showed the expected error above, the RE is valid."
 
@@ -250,7 +262,7 @@ URL:        <issue URL>
 Error type: <compilation | runtime | wrong output>
 
 To reproduce:
-  ./run_re.sh
+  pixi run -e llvm11 bash run_re.sh
 
 The RE compiles with the reference compiler but fails with lfortran,
 matching the issue.

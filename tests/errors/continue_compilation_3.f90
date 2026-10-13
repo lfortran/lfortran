@@ -218,3 +218,85 @@ program continue_compilation_3
     end subroutine
         
 end program
+
+module fref_m_13849
+    implicit none
+    type :: s_13849
+        integer, allocatable :: a(:)
+    end type
+contains
+    function mk_13849(i) result(r)
+        integer, intent(in) :: i
+        type(s_13849) :: r
+        allocate(r%a(2))
+        r%a = i
+    end function
+    subroutine test_fref_13849()
+        print *, size(mk_13849(1)%a)
+        print *, mk_13849(1)%a
+    end subroutine
+end module
+
+! An intrinsic numeric operator applied to an operand of a derived type, or of
+! `type(c_ptr)`, for which no operator is defined is an error.
+subroutine cc3_derived_type_intrinsic_binop_error(c)
+    use iso_c_binding, only: c_ptr
+    implicit none
+    type(c_ptr), intent(in) :: c
+    type :: cc3_binop_t
+        integer :: k = 2
+    end type
+    type(cc3_binop_t) :: x, y(3)
+    print *, x + 1  ! {Error} Operator `+` undefined for the types in the expression `cc3_binop_t + integer(4)`
+    print *, 2 - x  ! {Error} Operator `-` undefined for the types in the expression `integer(4) - cc3_binop_t`
+    print *, x * x  ! {Error} Operator `*` undefined for the types in the expression `cc3_binop_t * cc3_binop_t`
+    print *, 2.0 ** y  ! {Error} Operator `**` undefined for the types in the expression `real(4) ** cc3_binop_t[:]`
+    print *, c / 2  ! {Error} Operator `/` undefined for the types in the expression `type(c_ptr) / integer(4)`
+end subroutine cc3_derived_type_intrinsic_binop_error
+
+! An intrinsic numeric operator with two logical operands is an error (#14735).
+subroutine cc3_logical_intrinsic_binop_error()
+    implicit none
+    logical :: a, b(2)
+    logical(8) :: c
+    a = .true.
+    b = .false.
+    c = .true.
+    print *, a + a  ! {Error} Operator `+` undefined for the types in the expression `logical(4) + logical(4)`
+    print *, a - b  ! {Error} Operator `-` undefined for the types in the expression `logical(4) - logical(4)[:]`
+    print *, b * a  ! {Error} Operator `*` undefined for the types in the expression `logical(4)[:] * logical(4)`
+    print *, a / c  ! {Error} Operator `/` undefined for the types in the expression `logical(4) / logical(8)`
+    print *, c ** a  ! {Error} Operator `**` undefined for the types in the expression `logical(8) ** logical(4)`
+end subroutine cc3_logical_intrinsic_binop_error
+
+! A defined operator applies only if the kinds of its dummy arguments agree
+! with the operands; otherwise the intrinsic operator is used and rejected.
+module cc3_operator_kind_mismatch_m
+    implicit none
+    type :: cc3_kind_t
+        integer :: i = 0
+    end type
+    interface operator(+)
+        module procedure cc3_kind_add
+    end interface
+    interface operator(==)
+        module procedure cc3_kind_eq
+    end interface
+contains
+    function cc3_kind_add(x, y) result(r)
+        type(cc3_kind_t), intent(in) :: x
+        integer(8), intent(in) :: y
+        type(cc3_kind_t) :: r
+        r%i = x%i + int(y)
+    end function
+    logical function cc3_kind_eq(x, y)
+        type(cc3_kind_t), intent(in) :: x
+        real(8), intent(in) :: y
+        cc3_kind_eq = x%i == y
+    end function
+    subroutine cc3_kind_mismatch(x)
+        type(cc3_kind_t), intent(in) :: x
+        print *, x + 1  ! {Error} Operator `+` undefined for the types in the expression `cc3_kind_t + integer(4)`
+        print *, x == 1.0  ! {Error} Operands of comparison operator '==' are not comparable: cc3_kind_t == real
+    end subroutine
+end module

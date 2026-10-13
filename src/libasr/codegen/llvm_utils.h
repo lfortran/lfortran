@@ -12,6 +12,7 @@
 
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/raw_ostream.h>
+#include <libasr/codegen/llvm_compat.h>
 #include <map>
 #include <set>
 #include <string>
@@ -204,6 +205,18 @@ class ASRToLLVMVisitor;
 
     namespace LLVM {
 
+        // The alignment that a load or store of `type` at `address` can
+        // claim when the address is not known to be as aligned as `type`:
+        // the alignment LLVM can prove for it. An address received from
+        // elsewhere, such as a dummy argument or a pointer, may be the
+        // address of a variable that EQUIVALENCE places at an offset the
+        // alignment of its type does not divide, so nothing more is claimed
+        // for it than what is known. Otherwise none, and the access claims
+        // the alignment of `type`.
+        llvm::MaybeAlign known_underalignment(llvm::Type *type,
+            llvm::Value *address, const llvm::DataLayout &data_layout);
+        // A store that claims only the alignment its address is known to
+        // have (known_underalignment).
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
         void set_memory_debug(bool state);
         bool use_memory_debug();
@@ -993,8 +1006,6 @@ class ASRToLLVMVisitor;
             // addition, the `if_block` must not be terminated, we terminate it
             // ourselves. The `else_block` can be either terminated or not.
 
-            llvm::Value* apply_common_block_alias_cast(llvm::Value* ptr, ASR::expr_t* expr,ASR::ttype_t* expected_type,ASR::ttype_t* actual_type);
-
             llvm::Value* to_i1(llvm::Value* cond) {
                 if (cond->getType()->isIntegerTy(1)) {
                     return cond;
@@ -1274,8 +1285,8 @@ class ASRToLLVMVisitor;
             // Call user-defined FINAL procedures for non-allocatable struct
             // locals at scope exit (Fortran 2018 §7.5.6.3).
             // Allocatable types are handled by the deallocate path, except
-            // for an allocatable array component, which is deallocated (and
-            // so finalized) with the structure that it is a component of.
+            // for an allocatable component, which is deallocated (and so
+            // finalized) with the structure that it is a component of.
             if (call_final_subroutines_ && struct_sym != nullptr && !ASRUtils::is_pointer(type)
                     && chain_has_final_procedure(struct_sym)) {
                 ASR::ttype_t* v_type_past =
@@ -1289,6 +1300,12 @@ class ASRToLLVMVisitor;
                     if (!ASRUtils::is_allocatable(type)) {
                         call_final_procedure(select_final_procedure(struct_sym, 0),
                             ptr, v_type_past, struct_sym);
+                    } else if (in_struct
+                            && !ASRUtils::is_class_type(ASRUtils::extract_type(v_type_past))) {
+                        check_if_allocated_then_finalize(ptr, type, struct_sym, [&]() {
+                            call_final_procedure(select_final_procedure(struct_sym, 0),
+                                ptr, v_type_past, struct_sym);
+                        });
                     }
                 } else if (!ASRUtils::is_allocatable(type)) {
                     call_array_final_procedures(ptr, v_type_past, struct_sym,
@@ -2590,6 +2607,11 @@ class ASRToLLVMVisitor;
 
         /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
+            // The storage of a common block outlives every scope that
+            // declares the block.
+            if (v->m_common_block != nullptr) {
+                return true;
+            }
             if (LLVM::is_struct_value_dummy_copied(*v)) {
                 return false;
             }
@@ -3377,7 +3399,7 @@ class ASRToLLVMVisitor;
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
                 bool use_defined_assignment = false, bool finalize_dest = true);
 
-            // Copy dimension descriptors and rank from src to dest array descriptor.
+            // Copy dimension descriptors, rank and offset from src to dest array descriptor.
             void copy_dimension_descriptors(
                 llvm::Type* llvm_array_type, llvm::Value* src, llvm::Value* dest,
                 llvm::Module* module);

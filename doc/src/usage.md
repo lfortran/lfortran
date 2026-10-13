@@ -284,24 +284,28 @@ end module varray
 
 ## Selecting the C Compiler
 
-By default LFortran uses the `clang` compiler.  On some systems
-the compiler has a version number or spelling difference.  The compiler
-can be changed with the `LFORTRAN_CC` symbol:
+The C backend (`--backend=c`) uses the same C compiler for compiling generated
+C and linking the executable. It selects `LFORTRAN_CC` when set, otherwise
+`CC`, otherwise `gcc`. This honors the compiler selected by a build environment
+such as Pixi. Use `LFORTRAN_CC` to override that selection for LFortran alone:
 
+```bash
+CC=clang lfortran --backend=c hw.f90 -o hw
+LFORTRAN_CC=gcc lfortran --backend=c hw.f90 -o hw
 ```
-unset LFORTRAN_CC
-lfortran hw.f90
-Hello World!
 
-export LFORTRAN_CC=gcc
-lfortran hw.f90
-Hello World!
+The C and C++ backends also use this selection when compiling empty C objects
+for module-only source files, retaining `cc` as the default when neither
+variable is set. This does not change the C++ compiler used for generated C++.
 
-export LFORTRAN_CC=clang-14
-lfortran hw.f90
-sh: clang-14: not found
-...(further error messages)...
-```
+The LLVM backend's native linker selection is separate: it defaults to `clang`
+and can be changed with `--linker` / `--linker-path` or the
+`LFORTRAN_LINKER` / `LFORTRAN_LINKER_PATH` environment variables.
+
+Native LLVM OpenMP programs use Clang with LLVM's `libomp`. Pass `--openmp`
+during both compilation and linking, and `--openmp-lib-dir=/path/to/lib`
+when linking. The Pixi `llvm_omp` integration backend uses the selected
+environment's `lib` directory.
 
 ## Differences from other compilers
 

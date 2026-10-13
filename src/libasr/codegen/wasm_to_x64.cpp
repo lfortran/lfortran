@@ -696,7 +696,12 @@ Result<int> wasm_to_x64(Vec<uint8_t> &wasm_bytes, Allocator &al,
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        m_a.save_binary64(filename);
+        if (!m_a.save_binary64(filename)) {
+            diagnostics.add(diag::Diagnostic(
+                "cannot write the output file '" + filename + "'",
+                diag::Level::Error, diag::Stage::CodeGen));
+            return Error();
+        }
         auto t2 = std::chrono::high_resolution_clock::now();
         time_save =
             std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)

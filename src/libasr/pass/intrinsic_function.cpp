@@ -121,7 +121,16 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         Vec<ASR::ttype_t*> arg_types;
         arg_types.reserve(al, x->n_args);
         for( size_t i = 0; i < x->n_args; i++ ) {
-            arg_types.push_back(al, ASRUtils::expr_type(x->m_args[i]));
+            ASR::ttype_t* arg_type = ASRUtils::expr_type(x->m_args[i]);
+            if( ASRUtils::is_array(arg_type) ) {
+                // An array intrinsic indexes its array arguments from 1 in
+                // every dimension, so the implementation takes them as
+                // assumed-shape dummies. An allocatable or pointer dummy would
+                // keep the lower bounds of the actual argument instead.
+                arg_type = ASRUtils::ArrIntrinsic::assumed_length_if_deferred(al,
+                    ASRUtils::type_get_past_allocatable_pointer(arg_type));
+            }
+            arg_types.push_back(al, arg_type);
         }
         ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
             PassUtils::instantiation_scope(global_scope, caller_scope,
@@ -434,12 +443,22 @@ void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit
     int index_kind = pass_options.descriptor_index_64 ? 8 : 4;
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions> func2intrinsicid;
     ReplaceIntrinsicFunctionsVisitor v(al, unit.m_symtab, func2intrinsicid, index_kind);
-    v.visit_TranslationUnit(unit);
+    PassUtils::make_new_tu_functions_private(unit, [&]() {
+        v.visit_TranslationUnit(unit);
+    });
     ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicid);
     u.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);
 }
 
+
+namespace ASRUtils::CompilerVersion {
+
+std::string version_string() {
+    return std::string("LFortran version ") + LFORTRAN_VERSION;
+}
+
+} // namespace ASRUtils::CompilerVersion
 
 } // namespace LCompilers

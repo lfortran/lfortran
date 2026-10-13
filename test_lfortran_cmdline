@@ -111,6 +111,18 @@ $FC -c $f1
 [ -f "unordered_linking.o" ]
 [ ! -x "unordered_linking.o" ]
 
+if [[ $FC == "lfortran" ]]; then
+    cd $(mktemp -d)
+    echo "Testing an output file that cannot be written"
+    mkdir out
+    for backend in x86 wasm; do
+        ! $FC --backend=$backend $f -o out 2> err.txt
+        grep "cannot write the output file 'out'" err.txt
+        ! $FC --backend=$backend $f -o missing/out 2> err.txt
+        grep "cannot write the output file 'missing/out'" err.txt
+    done
+fi
+
 cd $(mktemp -d)
 echo "Testing invalid command-line usage"
 ! $FC -invalidflag $f1 2>&1 | grep "unrecognized command line option"

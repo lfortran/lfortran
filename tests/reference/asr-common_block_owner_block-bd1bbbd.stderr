@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.common_block.owner]: CommonBlock 'common~blk' must belong to a program, a procedure, a module, a block data program unit or the global scope
+  --> tests/asr/verify/common_block_owner_block.asr:13:33
+   |
+13 |                   "common~blk" (CommonBlock
+   |                                 ^^^^^^^^^^^ failed here
