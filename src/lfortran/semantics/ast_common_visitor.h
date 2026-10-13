@@ -15283,11 +15283,11 @@ public:
                         char_type = ASRUtils::expr_type(arr_ref_val);
                     } else {
                         ASR::expr_t *a_len_expr = nullptr;
-                        if (ASRUtils::is_value_constant(r) && 
-                            ASRUtils::is_value_constant(l)) {
-                            int64_t a_len_value = std::max<int64_t>(0,
-                                ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(r))->m_n -
-                                ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(l))->m_n + 1);
+                        int64_t r_val, l_val;
+                        // A deferred constant of a template is a parameter without a value
+                        if (ASRUtils::extract_value(ASRUtils::expr_value(r), r_val) &&
+                            ASRUtils::extract_value(ASRUtils::expr_value(l), l_val)) {
+                            int64_t a_len_value = std::max<int64_t>(0, r_val - l_val + 1);
                             a_len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, a_len_value, int_type));
                         } else {
                             ASRUtils::ASRBuilder b(al, loc);
@@ -15405,10 +15405,10 @@ public:
                 ASR::ttype_t *string_tt;
                 {
                     ASR::expr_t* a_len_expr = nullptr;
-                    if (ASRUtils::is_value_constant(r) && ASRUtils::is_value_constant(l)) {
-                        int64_t a_len_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(r))->m_n -
-                                              ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(l))->m_n +
-                                              1;
+                    int64_t r_val, l_val;
+                    if (ASRUtils::extract_value(ASRUtils::expr_value(r), r_val) &&
+                        ASRUtils::extract_value(ASRUtils::expr_value(l), l_val)) {
+                        int64_t a_len_value = r_val - l_val + 1;
                         a_len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, a_len_value, sub_int_type));
                     } else {
                         ASRUtils::ASRBuilder b(al, loc);
@@ -25352,12 +25352,9 @@ public:
                     al, loc, s_len, int_type));
             }
             ASR::expr_t *a_len_expr = nullptr;
-            if (ASRUtils::is_value_constant(r) &&
-                ASRUtils::is_value_constant(l)) {
-                int64_t r_val = ASR::down_cast<ASR::IntegerConstant_t>(
-                    ASRUtils::expr_value(r))->m_n;
-                int64_t l_val = ASR::down_cast<ASR::IntegerConstant_t>(
-                    ASRUtils::expr_value(l))->m_n;
+            int64_t r_val, l_val;
+            if (ASRUtils::extract_value(ASRUtils::expr_value(r), r_val) &&
+                ASRUtils::extract_value(ASRUtils::expr_value(l), l_val)) {
                 int64_t a_len_value = r_val - l_val + 1;
                 a_len_expr = ASRUtils::EXPR(
                     ASR::make_IntegerConstant_t(al, loc, a_len_value, int_type));
