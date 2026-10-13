@@ -1048,13 +1048,22 @@ end subroutine intrinsic_block
     CHECK_FALSE(depends("user_code", "generics"));
     CHECK(depends("early_user", "lfortran_intrinsic_generics"));
     CHECK_FALSE(depends("early_user", "generics"));
-    for (const auto &entry : module("user_code")->m_symtab->get_scope()) {
+    // ONLY imports INumeric alone. The one other entity is ISum's own runtime
+    // contract, with a member slot for each member of INumeric.
+    auto *user_code = module("user_code");
+    size_t isum_contracts = 0;
+    for (const auto &entry : user_code->m_symtab->get_scope()) {
         CAPTURE(entry.first);
-        // ONLY imports INumeric alone; the runtime contract is ISum's own,
-        // with a member slot for each member of INumeric.
-        CHECK((entry.first == "inumeric" || entry.first == "isum" ||
-            ASR::is_a<ASR::TraitRuntimeContract_t>(*entry.second)));
+        bool isum_contract = ASR::is_a<ASR::TraitRuntimeContract_t>(*entry.second) &&
+            ASR::down_cast<ASR::TraitRuntimeContract_t>(entry.second)->m_trait ==
+                user_code->m_symtab->get_symbol("isum") &&
+            !ASR::down_cast<ASR::TraitRuntimeContract_t>(entry.second)->m_anonymous &&
+            ASRUtils::trait_runtime_contract(user_code->m_symtab->get_symbol("isum")) ==
+                ASR::down_cast<ASR::TraitRuntimeContract_t>(entry.second);
+        isum_contracts += isum_contract;
+        CHECK((entry.first == "inumeric" || entry.first == "isum" || isum_contract));
     }
+    CHECK(isum_contracts == 1);
 
     // ISum's binder is constrained by that canonical trait, in memory and
     // through user_code's modfile.
