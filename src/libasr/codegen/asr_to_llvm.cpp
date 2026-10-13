@@ -24415,12 +24415,24 @@ public:
         ptr_loads = ptr_loads_copy;
 
         std::vector<llvm::Value*> unformatted_copies_to_free;
+        llvm::Value *iostat_user = nullptr;
+        int iostat_kind = 4;
         if (x.m_iostat) {
             int ptr_copy = ptr_loads;
             ptr_loads = 0;
             this->visit_expr_wrapper(x.m_iostat, false);
             ptr_loads = ptr_copy;
             iostat = tmp;
+            iostat_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_iostat));
+            if (iostat_kind != 4) {
+                // The runtime sets an i32 status; copy it back after the call
+                iostat_user = iostat;
+                iostat = llvm_utils->CreateAlloca(*builder,
+                    llvm::Type::getInt32Ty(context), nullptr, "tmp_iostat");
+                builder->CreateStore(
+                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
+                    iostat);
+            }
         } else {
             iostat = llvm_utils->CreateAlloca(*builder,
                         llvm::Type::getInt32Ty(context)->getPointerTo());
@@ -24793,6 +24805,11 @@ public:
                     llvm::Function::ExternalLinkage, runtime_func_name, module.get());
         }
         tmp = builder->CreateCall(fn, printf_args);
+        if (iostat_user) {
+            llvm::Value* i32_val = builder->CreateLoad(llvm::Type::getInt32Ty(context), iostat);
+            builder->CreateStore(builder->CreateIntCast(i32_val,
+                llvm::Type::getIntNTy(context, iostat_kind * 8), true), iostat_user);
+        }
         for (llvm::Value* copy_ptr : unformatted_copies_to_free) {
             llvm_utils->lfortran_free(copy_ptr);
         }
