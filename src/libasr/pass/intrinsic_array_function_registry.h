@@ -2671,7 +2671,7 @@ namespace Spread {
     }
 
     static ASR::expr_t *eval_Spread(Allocator &al, const Location &loc,
-            ASR::ttype_t *type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+            ASR::ttype_t *type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASRBuilder b(al, loc);
         int dim_val = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[1])) -> m_n;
         if (all_args_evaluated(args) &&
@@ -2822,10 +2822,10 @@ namespace Spread {
                 }
             }
             return b.ArrayConstant(m_eles, extract_type(type), false, type);
-        } else {
-            append_error(diag, "`dim` argument of `spread` intrinsic is not a valid dimension index", loc);
-            return nullptr;
         }
+        // `create_Spread` has already validated `dim`; other sources are
+        // simply not folded at compile time.
+        return nullptr;
     }
 
     static inline ASR::expr_t* get_result_dimension(Allocator& al, const Location& loc,

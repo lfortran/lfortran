@@ -1943,6 +1943,7 @@ RUN(NAME intrinsics_488 LABELS gfortran llvm) # dot_product of descriptor intege
 RUN(NAME intrinsics_489 LABELS gfortran llvm) 
 RUN(NAME intrinsics_490 LABELS gfortran llvm) # get_command status is 0 on success, -1 on truncation (#690)
 RUN(NAME intrinsics_491 LABELS llvm EXTRAFILES intrinsics_491c.c) # get_command status is positive when called from a C main (#690); GFortran gives 0
+RUN(NAME intrinsics_492 LABELS gfortran llvm fortran) # spread of a constant rank>1 array is not rejected as an invalid dim
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
