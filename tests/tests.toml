@@ -886,6 +886,10 @@ asr = true
 pass = "function_call_in_declaration"
 
 [[test]]
+filename = "../integration_tests/string_array_concat_04.f90"
+pass = "array_struct_temporary"
+
+[[test]]
 filename = "../integration_tests/external_string_arg_02.f90"
 asr = true
 llvm = true
