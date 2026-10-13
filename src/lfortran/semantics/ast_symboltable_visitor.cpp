@@ -781,6 +781,7 @@ public:
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         assgn_proc_names_locations.clear();
         class_procedures.clear();
+        later_module_procedure_bindings.clear();
         // Access assigned by name in an earlier module of the same file must
         // not carry over to a same-named entity of this module.
         assgnd_access.clear();
@@ -996,6 +997,7 @@ public:
         add_generic_procedures();
         add_overloaded_procedures();
         add_class_procedures();
+        add_later_module_procedure_bindings();
         add_generic_class_procedures();
         resolve_proc_pointer_placeholders();
         resolve_pending_proc_ptr_inits();
@@ -4938,15 +4940,21 @@ public:
         }
     }
 
+    // The key of the derived type `dt_name` in class_deferred_procedures.
+    // visit_DerivedTypeProc qualifies it with the module being visited, which
+    // is also the module of a type declared in one of its procedures.
+    static std::string class_deferred_procedures_key(const std::string &dt_name,
+            ASR::Struct_t *clss) {
+        ASR::Module_t *mod = ASRUtils::get_sym_module0(&clss->base);
+        if (mod) {
+            return std::string(mod->m_name) + "_" + dt_name;
+        }
+        return dt_name;
+    }
+
     bool check_is_deferred(const std::string& pname, ASR::Struct_t* clss) {
         auto& cdf = class_deferred_procedures;
-        std::string proc = clss->m_name;
-        // Use module-qualified name
-        ASR::symbol_t* owner_sym = ASRUtils::get_asr_owner(&clss->base);
-        if (owner_sym && ASR::is_a<ASR::Module_t>(*owner_sym)) {
-            ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(owner_sym);
-            proc = std::string(mod->m_name) + "_" + proc;
-        }
+        std::string proc = class_deferred_procedures_key(clss->m_name, clss);
         if(cdf.count(proc) && cdf[proc].count(pname) && cdf[proc][pname].count("deferred")) {
             return true;
         }
@@ -5132,6 +5140,85 @@ public:
         pending_proc_ptr_inits.clear();
     }
 
+    // A type declared in a module procedure can bind a module procedure
+    // defined after that procedure. Such a binding is added once the
+    // module's procedures are defined.
+    struct LaterModuleProcedureBinding {
+        SymbolTable *scope;
+        std::string dt_name;
+        std::string binding;
+        std::map<std::string, ClassProcInfo> info;
+        std::map<std::string, Location> attributes;
+    };
+    std::vector<LaterModuleProcedureBinding> later_module_procedure_bindings;
+
+    void add_later_module_procedure_bindings() {
+        std::vector<LaterModuleProcedureBinding> bindings;
+        bindings.swap(later_module_procedure_bindings);
+        SymbolTable *scope = current_scope;
+        for (auto &later : bindings) {
+            current_scope = later.scope;
+            ASR::Struct_t *clss = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(
+                    current_scope->resolve_symbol(later.dt_name)));
+            class_procedures[later.dt_name][later.binding] = later.info;
+            if (!later.attributes.empty()) {
+                class_deferred_procedures[class_deferred_procedures_key(
+                    later.dt_name, clss)][later.binding] = later.attributes;
+            }
+            try {
+                add_class_procedures();
+                check_overrides_of_later_binding(clss, later.binding);
+            } catch (SemanticAbort &e) {
+                class_procedures.clear();
+                class_deferred_procedures.clear();
+                if (!compiler_options.continue_compilation) {
+                    current_scope = scope;
+                    throw;
+                }
+            }
+        }
+        current_scope = scope;
+    }
+
+    // The bindings of an extension of `clss` were checked against the
+    // bindings they override when they were added. A binding `name` of
+    // `clss` added later did not exist then, so the bindings that override
+    // it are checked now. An extension of a type declared in a procedure is
+    // declared in the same procedure or in a scope nested in it.
+    void check_overrides_of_later_binding(ASR::Struct_t *clss,
+            const std::string &name) {
+        ASR::symbol_t *late = clss->m_symtab->get_symbol(name);
+        if (late == nullptr
+                || !ASR::is_a<ASR::StructMethodDeclaration_t>(*late)) {
+            return;
+        }
+        std::function<void(SymbolTable*)> check_scope = [&](SymbolTable *scope) {
+            for (auto &item : scope->get_scope()) {
+                ASR::symbol_t *sym = item.second;
+                if (ASR::is_a<ASR::Struct_t>(*sym)) {
+                    ASR::Struct_t *ext = ASR::down_cast<ASR::Struct_t>(sym);
+                    ASR::symbol_t *b = ext->m_symtab->get_symbol(name);
+                    if (ext != clss && b != nullptr
+                            && ASR::is_a<ASR::StructMethodDeclaration_t>(*b)) {
+                        ASR::StructMethodDeclaration_t *binding =
+                            ASR::down_cast<ASR::StructMethodDeclaration_t>(b);
+                        if (ASRUtils::overridden_binding(*binding)
+                                == ASR::down_cast<ASR::StructMethodDeclaration_t>(late)) {
+                            check_class_procedure_override(ext, binding,
+                                binding->base.base.loc);
+                        }
+                    }
+                } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+                    check_scope(ASR::down_cast<ASR::Function_t>(sym)->m_symtab);
+                } else if (ASR::is_a<ASR::Block_t>(*sym)) {
+                    check_scope(ASR::down_cast<ASR::Block_t>(sym)->m_symtab);
+                }
+            }
+        };
+        check_scope(clss->m_symtab->parent);
+    }
+
     void add_class_procedures() {
         for (auto &proc : class_procedures) {
             ASR::symbol_t* clss_sym = ASRUtils::symbol_get_past_external(
@@ -5143,13 +5230,8 @@ public:
                 auto& cdf = class_deferred_procedures;
                 bool is_pass = pname.second.count("pass");
                 bool is_deferred = check_is_deferred(pname.first, clss);
-                std::string new_dt_name = proc.first;
-                // Use module-qualified name
-                ASR::symbol_t* owner_sym = ASRUtils::get_asr_owner(&clss->base);
-                if (owner_sym && ASR::is_a<ASR::Module_t>(*owner_sym)) {
-                    ASR::Module_t* mod = ASR::down_cast<ASR::Module_t>(owner_sym);
-                    new_dt_name = std::string(mod->m_name) + "_" + new_dt_name;
-                } 
+                std::string new_dt_name = class_deferred_procedures_key(
+                    proc.first, clss);
                 bool is_nopass = (cdf.count(new_dt_name) && cdf[new_dt_name].count(pname.first) && cdf[new_dt_name][pname.first].count("nopass"));
                 if (is_pass && is_nopass) {
                     diag.add(diag::Diagnostic("Pass and NoPass attributes cannot be provided together",
@@ -5161,6 +5243,20 @@ public:
                 }
 
                 ASR::symbol_t *proc_sym = proc_scope->resolve_symbol(pname.second["procedure"].name);
+                if (proc_sym == nullptr && !is_deferred
+                        && procedure_declared_later(pname.second["procedure"].name)
+                            == ProcedureDeclaredLater::InModule) {
+                    LaterModuleProcedureBinding later;
+                    later.scope = current_scope;
+                    later.dt_name = proc.first;
+                    later.binding = pname.first;
+                    later.info = pname.second;
+                    if (cdf.count(new_dt_name) && cdf[new_dt_name].count(pname.first)) {
+                        later.attributes = cdf[new_dt_name][pname.first];
+                    }
+                    later_module_procedure_bindings.push_back(later);
+                    continue;
+                }
                 if (proc_sym == nullptr) {
                     if (is_deferred) {
                         diag.add(diag::Diagnostic(
@@ -5257,37 +5353,41 @@ public:
                         !ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
                     continue;
                 }
-                ASR::StructMethodDeclaration_t *binding =
-                    ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
-                ASR::symbol_t *proc_sym = ASRUtils::symbol_get_past_external(
-                    binding->m_proc);
-                if (proc_sym == nullptr ||
-                        !ASR::is_a<ASR::Function_t>(*proc_sym)) {
-                    continue;
-                }
-                std::string what = "Type bound procedure '" +
-                    std::string(binding->m_name) + "' of '" +
-                    std::string(clss->m_name) + "' overriding the binding of "
-                    "the same name in '" + overridden_binding_owner(*binding) +
-                    "'";
-                ASRUtils::InterfaceMismatch m =
-                    ASRUtils::binding_override_mismatch(*binding,
-                        ASR::down_cast<ASR::Function_t>(proc_sym), what, true);
-                if (m.mismatch) {
-                    diag.add(diag::Diagnostic(m.message,
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {pname.second["procedure"].loc})}));
-                    if (!compiler_options.continue_compilation) {
-                        throw SemanticAbort();
-                    }
-                    // Continuing means the rest of the file still has to be
-                    // walked, and every later stage assumes a binding it can
-                    // dispatch through. Leaving this one in place hands them a
-                    // procedure the parent's interface does not describe, so
-                    // the type keeps the binding it inherited instead.
-                    adopt_overridden_binding(binding);
-                }
+                check_class_procedure_override(clss,
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(sym),
+                    pname.second["procedure"].loc);
             }
+        }
+    }
+
+    void check_class_procedure_override(ASR::Struct_t *clss,
+            ASR::StructMethodDeclaration_t *binding, const Location &loc) {
+        ASR::symbol_t *proc_sym = ASRUtils::symbol_get_past_external(
+            binding->m_proc);
+        if (proc_sym == nullptr || !ASR::is_a<ASR::Function_t>(*proc_sym)) {
+            return;
+        }
+        std::string what = "Type bound procedure '" +
+            std::string(binding->m_name) + "' of '" +
+            std::string(clss->m_name) + "' overriding the binding of "
+            "the same name in '" + overridden_binding_owner(*binding) +
+            "'";
+        ASRUtils::InterfaceMismatch m =
+            ASRUtils::binding_override_mismatch(*binding,
+                ASR::down_cast<ASR::Function_t>(proc_sym), what, true);
+        if (m.mismatch) {
+            diag.add(diag::Diagnostic(m.message,
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            if (!compiler_options.continue_compilation) {
+                throw SemanticAbort();
+            }
+            // Continuing means the rest of the file still has to be
+            // walked, and every later stage assumes a binding it can
+            // dispatch through. Leaving this one in place hands them a
+            // procedure the parent's interface does not describe, so
+            // the type keeps the binding it inherited instead.
+            adopt_overridden_binding(binding);
         }
     }
 
