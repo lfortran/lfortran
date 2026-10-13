@@ -1355,34 +1355,6 @@ namespace MoveAlloc {
         ASRUtils::require_impl(ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_args[1])), "Second argument must be an allocatable type", x.base.base.loc, diagnostics);
     }
 
-    // Whether `to` is type compatible with `from` and has the same kind type
-    // parameters (F2018 7.3.2.3, 16.9.137).
-    static inline bool is_type_compatible(ASR::expr_t* from, ASR::expr_t* to) {
-        ASR::ttype_t* from_type = ASRUtils::extract_type(ASRUtils::expr_type(from));
-        ASR::ttype_t* to_type = ASRUtils::extract_type(ASRUtils::expr_type(to));
-        if (ASRUtils::is_unlimited_polymorphic_type(to_type)) {
-            return true;
-        }
-        if (ASRUtils::is_unlimited_polymorphic_type(from_type)) {
-            return false;
-        }
-        bool is_from_struct = ASR::is_a<ASR::StructType_t>(*from_type);
-        bool is_to_struct = ASR::is_a<ASR::StructType_t>(*to_type);
-        if (is_from_struct != is_to_struct) {
-            return false;
-        }
-        if (!is_to_struct) {
-            return ASRUtils::check_equal_type(to_type, from_type, to, from);
-        }
-        if (ASRUtils::is_class_type(to_type)) {
-            return ASRUtils::check_class_assignment_compatibility(to, from);
-        }
-        return ASRUtils::symbol_get_past_external(
-                ASRUtils::get_struct_sym_from_struct_expr(to)) ==
-            ASRUtils::symbol_get_past_external(
-                ASRUtils::get_struct_sym_from_struct_expr(from));
-    }
-
     static inline bool check_arguments(ASR::expr_t* from, ASR::expr_t* to,
             diag::Diagnostics& diag) {
         ASR::expr_t* move_args[2] = {from, to};
@@ -1409,7 +1381,7 @@ namespace MoveAlloc {
         };
         std::string from_type_str = declared_type_str(from);
         std::string to_type_str = declared_type_str(to);
-        if (!is_type_compatible(from, to)) {
+        if (!ASRUtils::is_move_alloc_type_compatible(from, to)) {
             diag.add(diag::Diagnostic(
                 "`to` argument of `move_alloc` must be type compatible with "
                 "`from` argument, but `to` is " + to_type_str +
