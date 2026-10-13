@@ -461,6 +461,16 @@ void set_allocation_size_elemental_function(
     // Set len_allocate_expr ( e.g. `allocate(character(5) :: arr(10))` )
     if( ASRUtils::is_character(*ASRUtils::expr_type(first_array_arg)) ) {
         ASRUtils::ASRBuilder b(al, loc);
+        if constexpr (std::is_same_v<T, ASR::IntrinsicElementalFunction_t>) {
+            // The result of a concatenation is longer than its first operand.
+            if( elemental_function->m_intrinsic_id == static_cast<int64_t>(
+                    ASRUtils::IntrinsicElementalFunctions::StringConcat) ) {
+                len_allocate_expr = ASRUtils::StringConcat::get_safe_string_len(al, loc,
+                    &elemental_function->base,
+                    elemental_function->m_type, b);
+                return;
+            }
+        }
         len_allocate_expr = b.StringLen(first_array_arg);
     }
 }
