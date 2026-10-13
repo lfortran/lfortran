@@ -7,6 +7,10 @@ reach every type-set member through the declared runtime views, without
 provider names, bodies, witnesses or erasures, and the archive must stay
 byte-identical.
 
+complex: the same flow for the closed integer | complex(real32) |
+complex(real64) type set and an ordinary message with complex results, so
+that results of all three return conventions cross the frozen boundary.
+
 protocol: the provider of generic messages over the open INumeric protocol
 is frozen the same way before any derived or real(real32) conformance
 exists. A late module then adds Rational and real(real32) conformances, each
@@ -28,6 +32,12 @@ NUMERIC_GENERICS = ["hidden_simple_sum", "hidden_pairwise_sum",
                     "hidden_scaled_sum", "hidden_average"]
 PROTOCOL_GENERICS = ["open_simple_sum", "open_reverse_sum", "open_pairwise_sum",
                      "open_average"]
+# The LLVM result types of the member entries and slot calls: complex(real32)
+# is <2 x float> or, on Apple arm64, the complex struct type.
+I32 = r"i32"
+DOUBLE = r"double"
+COMPLEX32 = r"(?:<2 x float>|%complex_4|\{ float, float \})"
+COMPLEX64 = r"(?:%complex_8|\{ double, double \})"
 CASES = {
     "numeric": {
         "prefix": "traits_runtime_numeric_separate_01",
@@ -35,7 +45,22 @@ CASES = {
         "names": NUMERIC_GENERICS + [
             "hiddensimple", "hiddenpairwise", "hiddenscaled", "hiddenaverager",
             "traits_runtime_numeric_separate_01_provider_m"],
+        "witnesses": 4,
+        "members": {"i32": I32, "double": DOUBLE},
+        "contracts": ["isum", "iaverager"],
         "summary": "numeric separate: frozen provider, contract-only consumer, 123 checks passed",
+    },
+    "complex": {
+        "prefix": "traits_runtime_numeric_separate_02",
+        "generics": NUMERIC_GENERICS,
+        "names": NUMERIC_GENERICS + [
+            "hidden_turn", "hidden_mirror", "hiddensimple", "hiddenpairwise",
+            "hiddenscaled", "hiddenaverager", "hiddenturn",
+            "traits_runtime_numeric_separate_02_provider_m"],
+        "witnesses": 5,
+        "members": {"i32": I32, "complex32": COMPLEX32, "complex64": COMPLEX64},
+        "contracts": ["isum", "iaverager", "iphase"],
+        "summary": "complex separate: frozen provider, contract-only consumer, 162 checks passed",
     },
     "protocol": {
         "prefix": "traits_protocol_separate_01",
@@ -261,13 +286,14 @@ def main():
         for node in ["(TraitErasure", "(TraitWitness", "(TraitImplementation", "(TraitPack"]:
             assert node not in semantic, (part, node)
         assert "(TraitFunctionCall" in semantic, part
-        assert "__trait_contract_isum" in semantic.lower(), part
-        assert "__trait_contract_iaverager" in semantic.lower(), part
+        for contract in case["contracts"]:
+            assert "__trait_contract_" + contract in semantic.lower(), (part, contract)
         if deferred:
             assert "(TraitDeferredCall" in semantic, "the generic consumer keeps member selection open"
         # Optimized calls may carry fast-math flags before the result type.
-        assert re.search(r"call (?:[a-z]+ )*i32 %", llvm), (part, "integer member slot must be loaded and called")
-        assert re.search(r"call (?:[a-z]+ )*double %", llvm), (part, "real64 member slot must be loaded and called")
+        for member, result in case["members"].items():
+            assert re.search(rf"call (?:[a-z]+ )*{result} %", llvm), \
+                (part, member + " member slot must be loaded and called")
         symbols = run(part + "-symbols", ["nm", obj])
         assert not re.search(r"provider_m|hidden", symbols, re.IGNORECASE), symbols
 
@@ -362,21 +388,28 @@ def main():
               f"real(real32) dictionaries, 75 checks")
 
     def numeric_flow():
+        members = case["members"]
         contracts, _, _ = compile_part("contracts", [])
         provider, provider_source, provider_includes = compile_part("provider", ["contracts"])
         semantic, llvm = inspect("provider", provider_source, provider_includes)
         assert "traits are an experimental LFortran extension" in semantic
-        assert semantic.count("(TraitWitness") == 4, "three ISum and one IAverager conformance"
-        assert semantic.count("(TraitErasure") == 8, "one provider entry per generic and member"
+        assert semantic.count("(TraitWitness") == case["witnesses"], \
+            "one witness per conformance"
+        assert semantic.count("(TraitErasure") == len(members) * len(case["generics"]), \
+            "one provider entry per generic and member"
         symbols = run("provider-symbols", ["nm", provider])
         for name in case["generics"]:
-            entries = re.findall(rf"(?m)^define [^@\n]*?(i32|double) @[^(\n]*__trait_erasure_"
-                                 rf"{name}[^(\n]*_entry\(", llvm)
-            assert sorted(entries) == ["double", "i32"], (name, entries)
+            entries = []
+            for head in re.finditer(rf"(?m)^define [^@\n]*?@[^(\n]*__trait_erasure_"
+                                    rf"{name}[^(\n]*_entry\(", llvm):
+                entries += [member for member, result in members.items()
+                            if re.match(rf"define [^@\n]*?{result} @", head[0])]
+            assert sorted(entries) == sorted(members), (name, entries)
             assert len(re.findall(rf"(?m)^\S* *[Tt] \S*__trait_erasure_{name}\S*_entry$",
-                                  symbols)) == 2, (name, symbols)
+                                  symbols)) == len(members), (name, symbols)
             assert "__instantiated_" + name not in semantic, "the provider owns its member entries"
-        assert len(re.findall(r"(?m)^\S* *[DdSsRr] \S*__trait_witness_", symbols)) == 4, symbols
+        assert len(re.findall(r"(?m)^\S* *[DdSsRr] \S*__trait_witness_", symbols)) == \
+            case["witnesses"], symbols
 
         run("archive", ["ar", "rcs", archive, provider])
         freeze([archive, provider, contracts, *(work / "contracts").rglob("*.mod"),
@@ -404,7 +437,7 @@ def main():
                 assert "NO LEAKS FOUND" in output, output
             check_frozen("after_" + order)
         print(f"{prefix}: frozen provider {frozen[archive]}, contract-only consumer and "
-              f"driver, integer and real64 member slots, both selection orders")
+              f"driver, {', '.join(members)} member slots, both selection orders")
 
     if args.case == "protocol":
         protocol_flow()

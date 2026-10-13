@@ -84,20 +84,20 @@ contains
     end function
 end module
 
-module traits_numeric_runtime_boundary_complex
+module traits_numeric_runtime_boundary_character
     implicit none
-    abstract interface :: IComplexMember
-        integer | complex(8)
-    end interface IComplexMember
-    abstract interface :: IComplexSum
-        function sum{IComplexMember :: T}(x) result(s)
+    abstract interface :: ICharacterMember
+        integer | character(len=4)
+    end interface ICharacterMember
+    abstract interface :: ICharacterSum
+        function sum{ICharacterMember :: T}(x) result(s)
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function sum
-    end interface IComplexSum
+    end interface ICharacterSum
 contains
-    subroutine use_complex(summer)
-        class(IComplexSum), intent(in) :: summer
+    subroutine use_character(summer)
+        class(ICharacterSum), intent(in) :: summer
     end subroutine
 end module
 

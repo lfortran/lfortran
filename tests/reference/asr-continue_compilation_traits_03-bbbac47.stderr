@@ -11,14 +11,14 @@ warning: traits are an experimental LFortran extension; use ordinary derived typ
 semantic error: runtime dispatch for this trait method signature is not implemented yet
    --> tests/errors/continue_compilation_traits_03.f90:100:9
     |
-100 |         class(IComplexSum), intent(in) :: summer
-    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+100 |         class(ICharacterSum), intent(in) :: summer
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Dummy argument 'summer' not defined
    --> tests/errors/continue_compilation_traits_03.f90:99:5 - 101:18
     |
- 99 |        subroutine use_complex(summer)
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+ 99 |        subroutine use_character(summer)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
 101 |        end subroutine

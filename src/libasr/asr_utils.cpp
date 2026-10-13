@@ -6930,7 +6930,9 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
         if (is_array(result) || is_allocatable(result) || is_pointer(result)) return false;
         result = member(result);
         if (!result || !(ASR::is_a<ASR::Integer_t>(*result) || ASR::is_a<ASR::Real_t>(*result) ||
-                ASR::is_a<ASR::Logical_t>(*result))) return false;
+                ASR::is_a<ASR::Complex_t>(*result) || ASR::is_a<ASR::Logical_t>(*result))) {
+            return false;
+        }
     }
     for (size_t i = 0; i < method.n_args; i++) {
         if (!ASR::is_a<ASR::Var_t>(*method.m_args[i])) return false;

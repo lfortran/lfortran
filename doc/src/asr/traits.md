@@ -771,12 +771,17 @@ diagnosed rather than specialized by a client. Unsupported forms remain
 diagnosed as not implemented: messages mixing closed and open binders, generic
 subroutine messages, and member signatures outside the runtime slot surface
 (scalar arguments, read-only assumed-shape numeric or logical arrays, and
-scalar integer, real or logical results; a character member is outside it). A
-kind wildcard contributes one slot per supported kind, so a message over
-`integer(*) | real(*) | complex(*)` with a `type(T)` result is outside the
-surface because of its complex members, while one with an integer result has
-nine slots.
+scalar integer, real, complex or logical results; a character member is
+outside it). A kind wildcard contributes one slot per supported kind, so a
+message over `integer(*) | real(*) | complex(*)` has nine slots.
 `class(INumeric)` remains invalid: a type-set trait is not a runtime view.
+
+A complex result crosses a slot with the platform's convention for the results
+of ordinary complex functions: the provider's adapter returns it as any
+function does, and the call through the slot converts it back exactly as an
+ordinary call does (`CreateCallUtil` and
+`LLVMUtils::complex_function_return_abi_to_internal`), including the hidden
+result argument of `complex(8)` on Windows.
 
 `traits_runtime_numeric_01` covers `nopass`, named non-first `pass`, static
 recursion inside an entry, lengths 0 through 9, strided, reversed and 2-D
@@ -787,13 +792,22 @@ pairwise providers, a scaled leaf, exact recursive leaf counts and owner
 copies. `traits_runtime_numeric_03` loads a separately compiled provider of a
 two-binder message (one slot per member pair), ordinary runtime messages with
 complex 2-D, lower-bound and real arrays and real and logical results, and
-generic procedures borrowing constructor values and function results. The
-native `traits_runtime_numeric_separate_01.py` gate compiles and freezes the
-provider first, hides its sources and modules, and checks that the
-contract-only consumer and late driver contain no provider names, entries or
-witnesses while reaching both members in both selection orders.
+generic procedures borrowing constructor values and function results.
+`traits_runtime_numeric_04` is a user's averaging program over
+`integer | real | complex` with both simple and recursive pairwise generic
+providers, whose `class(IAverager)` view returns default complex averages.
+`traits_runtime_numeric_separate_02` returns `complex(real32)` and
+`complex(real64)` results through member slots and ordinary messages of
+separately compiled modules, with nopass, first and non-first passed objects,
+keyword arguments and sections. The native
+`traits_runtime_numeric_separate_01.py` gate compiles and freezes the provider
+first, hides its sources and modules, and checks that the contract-only
+consumer and late driver contain no provider names, entries or witnesses while
+reaching every member in both selection orders; its `--case complex` does so
+for the `integer | complex(real32) | complex(real64)` providers of
+`traits_runtime_numeric_separate_02`.
 Standard-Fortran oracles with matching check counts accompany the first two
-tests and the gate.
+tests, `traits_runtime_numeric_04` and the gate.
 
 ### Open protocol runtime generic methods
 
@@ -1508,8 +1522,8 @@ Fortran inspection preserves experimental trait declarations and implementations
 Executable Fortran output leaves this compile-only metadata as comments and
 continues to reject actual runtime views with an explicit backend diagnostic.
 
-Supported methods are functions with scalar integer, real or logical results,
-and subroutines. Arguments are scalar integer, real, complex, logical,
+Supported methods are functions with scalar integer, real, complex or logical
+results, and subroutines. Arguments are scalar integer, real, complex, logical,
 character, or nonpolymorphic derived-type values, or read-only, required,
 nonallocatable, nonpointer assumed-shape arrays of an intrinsic numeric or
 logical type. Array descriptors pass by reference, so strided, reversed and

@@ -1050,7 +1050,10 @@ end subroutine intrinsic_block
     CHECK_FALSE(depends("early_user", "generics"));
     for (const auto &entry : module("user_code")->m_symtab->get_scope()) {
         CAPTURE(entry.first);
-        CHECK((entry.first == "inumeric" || entry.first == "isum"));
+        // ONLY imports INumeric alone; the runtime contract is ISum's own,
+        // with a member slot for each member of INumeric.
+        CHECK((entry.first == "inumeric" || entry.first == "isum" ||
+            ASR::is_a<ASR::TraitRuntimeContract_t>(*entry.second)));
     }
 
     // ISum's binder is constrained by that canonical trait, in memory and

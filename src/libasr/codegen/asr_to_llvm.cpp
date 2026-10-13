@@ -29069,7 +29069,7 @@ public:
         return pointer_to_struct;
     }
 
-    llvm::Value* CreateCallUtil(llvm::FunctionType* fnty, llvm::Function* fn,
+    llvm::Value* CreateCallUtil(llvm::FunctionType* fnty, llvm::Value* fn,
                                 std::vector<llvm::Value*>& args,
                                 ASR::ttype_t* asr_return_type) {
         if (fnty->getReturnType()->isVoidTy()) {
@@ -29082,11 +29082,11 @@ public:
                 compiler_options.platform == Platform::Windows) {
                 llvm::Value* sret_tmp = llvm_utils->CreateAlloca(complex_type_8, nullptr, "complex_ret_tmp");
                 args.insert(args.begin(), sret_tmp);
-                builder->CreateCall(fn, args);
+                builder->CreateCall(fnty, fn, args);
                 return llvm_utils->CreateLoad2(complex_type_8, sret_tmp);
             }
         }
-        llvm::Value* return_value = builder->CreateCall(fn, args);
+        llvm::Value* return_value = builder->CreateCall(fnty, fn, args);
         return CreatePointerToStructTypeReturnValue(fnty, return_value,
                                                 asr_return_type);
     }
@@ -29342,6 +29342,17 @@ public:
                 ASR::is_a<ASR::TraitErasedType_t>(*ASRUtils::expr_type(procedure->m_return_var))) {
             tmp = call_with_trait_result(function_type, entry, args, result_type,
                 x.m_args, x.n_args, *procedure, trait_call_expression(x));
+            return;
+        }
+        if (!procedure->m_return_var) {
+            tmp = builder->CreateCall(function_type, entry, args);
+            return;
+        }
+        // A complex result follows the calling convention of ordinary calls.
+        ASR::ttype_t *return_type = ASRUtils::expr_type(procedure->m_return_var);
+        if (ASR::is_a<ASR::Complex_t>(*return_type)) {
+            tmp = llvm_utils->complex_function_return_abi_to_internal(
+                CreateCallUtil(function_type, entry, args, return_type), return_type);
             return;
         }
         tmp = builder->CreateCall(function_type, entry, args);
