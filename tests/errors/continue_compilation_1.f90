@@ -2574,3 +2574,24 @@ subroutine cc1_valueless_kind_parameter()
     integer, parameter :: k = n  ! {Error} Initialization of `k` must reduce to a compile time constant.
     real(k) :: x  ! {Error} the kind parameter `k` is not a constant expression
 end subroutine cc1_valueless_kind_parameter
+
+! A reference to a generic function that matches none of its specific procedures.
+module generic_function_no_match_m
+    implicit none
+    interface generic_no_match
+        module procedure generic_no_match_spec
+    end interface
+contains
+    pure integer function generic_no_match_spec(y)
+        integer, intent(in) :: y
+        generic_no_match_spec = y
+    end function
+end module
+
+subroutine generic_function_no_match_error(n)
+    use generic_function_no_match_m, only: generic_no_match
+    implicit none
+    integer, intent(in) :: n
+    integer :: a(generic_no_match(1.5, n))  ! {Error} no specific procedure of the generic 'generic_no_match' matches the arguments
+    integer :: b(generic_no_match(z=n))  ! {Error} no specific procedure of the generic 'generic_no_match' matches the arguments
+end subroutine
