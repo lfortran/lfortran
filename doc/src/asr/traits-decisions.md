@@ -83,7 +83,8 @@ paper:
   type from its own module, or an intrinsic kind constant, is not enough
   (TD-07).
 - A receiver may be modified (`intent(inout)`) only by direct calls on concrete
-  objects; generic trait calls and trait objects are read-only (TD-10).
+  objects; generic trait calls and method calls through trait objects are
+  read-only (TD-10).
 - A trait-object dummy argument can have `intent(inout)`: its object can then
   be modified through concrete `SELECT TYPE` inspection or by forwarding it,
   but the messages called through it stay read-only (TD-35).
@@ -545,8 +546,8 @@ specification action, that is, what the paper should say.
 #### TD-10: Receiver effects
 
 - **Status:** Approved semantic decision, in two steps, kept when revisited
-  on 2026-10-13 (TD-35); mutation through generic code and trait objects
-  remains an open question.
+  on 2026-10-13 (TD-35); mutating messages called through generic code and
+  trait objects remain an open question.
 - **Why the paper is not tight.** Messages carry no receiver (lines 1098-1116),
   so a trait cannot say whether a message may modify its receiver. In
   `vector.f90`, the message `append(item)` is implemented by
@@ -579,9 +580,12 @@ specification action, that is, what the paper should say.
   - An implementation may take its receiver with `intent(inout)`. Such a
     binding serves direct calls on concrete objects under the ordinary Fortran
     rule that the passed object must then be definable.
-  - Generic trait calls and trait objects stay read-only: selecting a mutating
-    binding for a constraint's requirement, or forming a trait object from a
-    conformance with one, is diagnosed.
+  - Generic trait calls and method calls through trait objects stay read-only:
+    selecting a mutating binding for a constraint's requirement, or forming a
+    trait object from a conformance with one, is diagnosed. This restricts
+    only receiver effects: the object of an `intent(inout)` trait-object dummy
+    can be modified through concrete `SELECT TYPE` inspection (TD-11) or by
+    forwarding it (TD-35).
   - Pointer and allocatable receivers remain unsupported, and `intent(out)`
     receivers are rejected.
   - The effect is not new syntax: it is the intent of the binding's
@@ -672,9 +676,9 @@ specification action, that is, what the paper should say.
   without a receiver are initializers declares trait objects (inline-12 and
   inline-13). Its initializer requirements are checked when a conformance is
   established and have no slot in the view, so a view of `ICastable` alone has
-  none and is inspected with `SELECT TYPE`. Views stay read-only (TD-10), and
-  traits with operator requirements or associated types stay generic
-  constraints only.
+  none and is inspected with `SELECT TYPE`. Messages called through views stay
+  read-only (TD-10), and traits with operator requirements or associated types
+  stay generic constraints only.
 - **Specification action.** State whether initializer requirements are part of
   a trait object's interface. If not, say that they are conformance-only. If
   they are, define how a value of the dynamic type is constructed through a

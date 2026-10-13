@@ -2047,7 +2047,8 @@ Semantics emits `TraitAssociate` rather than copying an ownership header.
 The LLVM descriptor contains a three-word prefix and its own inline method
 slots, passed by address to pointer dummies. It has no separately allocated wrapper that could escape a
 callee or be shared accidentally by independent aliases. `TraitBorrow` supplies
-an associated pointer's read-only view, retaining its selected witness.
+an associated pointer's borrowed view, including the `intent(inout)` view of its
+target, retaining its selected witness.
 
 `traits_runtime_pointer_01` covers unrelated implementations, aliases, returned
 OUT association, saved descriptors, PURE controls, null inquiry, owner borrowing
@@ -2179,8 +2180,9 @@ because `class(A+B)` is an extension, not GFortran syntax.
 
 ## Concrete SELECT TYPE inspection (R3)
 
-Scalar pointer views, allocated owners, read-only borrowed views, and genuine
-owning function selectors support concrete derived-type guards:
+Scalar pointer views, allocated owners, borrowed `intent(in)` and
+`intent(inout)` views, and genuine owning function selectors support concrete
+derived-type guards:
 
 ```fortran
 type(Cell), target :: first, second
