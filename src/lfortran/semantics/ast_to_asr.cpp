@@ -77,6 +77,12 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     } else {
         return res.error;
     }
+    // Some errors are reported without aborting, so that the rest of the
+    // code is still checked. Without --continue-compilation, any reported
+    // error must still fail the compilation.
+    if (!compiler_options.continue_compilation && diagnostics.has_error()) {
+        return Error();
+    }
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
     if (compiler_options.po.dump_all_passes) {
         std::ofstream outfile ("pass_00_initial_asr_01.clj");
@@ -112,6 +118,9 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
             tu = res.result;
         } else {
             return res.error;
+        }
+        if (!compiler_options.continue_compilation && diagnostics.has_error()) {
+            return Error();
         }
         if (compiler_options.rtlib) load_rtlib();
         if (compiler_options.po.dump_all_passes) {

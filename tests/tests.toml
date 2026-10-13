@@ -188,6 +188,10 @@ filename = "../integration_tests/template_interface_01.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_intrinsic_func_01.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/template_commutative.f90"
 asr = true
 
@@ -5575,6 +5579,14 @@ filename = "errors/duplicate_module_procedures.f90"
 asr = true
 
 [[test]]
+filename = "errors/proc_ptr_undefined_interface.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_deferred_interface_procedure.f90"
+asr = true
+
+[[test]]
 filename = "errors/string_negative_start_index.f90"
 asr = true
 
@@ -5914,6 +5926,10 @@ filename = "../integration_tests/shadow_same_symbol.f90"
 run = true
 
 [[test]]
+filename = "errors/template_intrinsic_op_01.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/continue_compilation_templates_01.f90"
 semantics_only_cc = true
 
@@ -6030,6 +6046,10 @@ asr = true
 
 [[test]]
 filename = "asr/verify/assignment_value_type_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/assignment_move_type_mismatch.asr"
 asr = true
 
 [[test]]
@@ -6436,3 +6456,11 @@ asr = true
 [[test]]
 filename = "../integration_tests/character_35.f90"
 ast_f90 = true
+
+[[test]]
+filename = "errors/template_component_default_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_component_default_02.f90"
+asr = true

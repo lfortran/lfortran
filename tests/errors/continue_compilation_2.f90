@@ -600,3 +600,39 @@ contains
         print *, p
     end subroutine
 end module io_function_name_mod
+
+! A unary `-` on an array of a derived type needs an elemental `operator(-)`
+! or one whose dummy has the rank of the operand (#13657).
+module cc2_unary_minus_array_mod
+    implicit none
+    type :: cc2_um_t
+        integer :: k = 0
+    end type
+    interface operator(-)
+        module procedure cc2_um_neg
+    end interface
+contains
+    type(cc2_um_t) function cc2_um_neg(a)
+        type(cc2_um_t), intent(in) :: a
+        cc2_um_neg%k = -a%k
+    end function
+
+    subroutine cc2_um_s()
+        type(cc2_um_t) :: x(2), y(2)
+        y = -x  ! {Error} No matching `operator(-)` found for this operand type
+    end subroutine
+end module cc2_unary_minus_array_mod
+
+! A unary `+` on an array of a derived type needs a user-defined `operator(+)`
+! (#14730).
+module cc2_unary_plus_array_mod
+    implicit none
+    type :: cc2_up_t
+        integer :: k = 0
+    end type
+contains
+    subroutine cc2_up_s()
+        type(cc2_up_t) :: x(2), y(2)
+        y = +x  ! {Error} No matching `operator(+)` found for this operand type
+    end subroutine
+end module cc2_unary_plus_array_mod

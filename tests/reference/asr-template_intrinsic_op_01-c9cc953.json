@@ -1,0 +1,13 @@
+{
+    "basename": "asr-template_intrinsic_op_01-c9cc953",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/template_intrinsic_op_01.f90",
+    "infile_hash": "493872edaec70512fcfa8387c3c3642391b9f06d514a1a432240ea5a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-template_intrinsic_op_01-c9cc953.stderr",
+    "stderr_hash": "e27044de5a570cbd5566b68b209e13724765608adb7ed06b1cd338f3",
+    "returncode": 1
+}

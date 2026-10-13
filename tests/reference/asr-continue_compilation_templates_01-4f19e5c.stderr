@@ -1483,6 +1483,30 @@ semantic error: 'g' is not a deferred argument of 'deferred_iface_name_s'
 2795 |                end function
      | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: the instantiation of template 'const_clash_t' defines 'const_k', which is already declared in this scope
+    --> tests/errors/continue_compilation_templates_01.f90:2851:9
+     |
+2851 |         instantiate const_clash_t {3}  ! {Error} the instantiation of template 'const_clash_t' defines 'const_k', which is already declared in this scope
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'const_k' is already declared
+     |
+2850 |         integer, parameter :: const_k = 1
+     |                               ~~~~~~~~~~~ 'const_k' is declared here
+     |
+2851 |         instantiate const_clash_t {3}  ! {Error} the instantiation of template 'const_clash_t' defines 'const_k', which is already declared in this scope
+     |         ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ help: name the entities to instantiate in an only-list and rename this one, e.g. `only: const_k_instance => const_k`
+
+semantic error: Array index 3 is out of bounds (1 to 2) in dimension 1
+    --> tests/errors/continue_compilation_templates_01.f90:2864:26
+     |
+2864 |             integer :: b(item_arr(n))  ! {Error} Array index 3 is out of bounds (1 to 2) in dimension 1
+     |                          ^^^^^^^^^^^ 
+
+semantic error: variable 'n' in a template or templated procedure cannot have the save attribute
+    --> tests/errors/continue_compilation_templates_01.f90:2882:30
+     |
+2882 |             integer, save :: n = 7  ! {Error} variable 'n' in a template or templated procedure cannot have the save attribute
+     |                              ^^^^^ 
+
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55
     |
@@ -1675,3 +1699,21 @@ semantic error: Function 'p' not found (not user defined nor intrinsic)
      |
 2784 |             deferred_iface_call_g = p(x)  ! {Error} Function 'p' not found
      |                                     ^^^^ 
+
+semantic error: Operator `-` undefined for the type in the expression `-t[:]`
+    --> tests/errors/continue_compilation_templates_01.f90:2811:13
+     |
+2811 |         y = -x  ! {Error} Operator `-` undefined for the type in the expression `-t[:]`
+     |             ^^ 
+
+semantic error: Operator `+` undefined for the type in the expression `+t`
+    --> tests/errors/continue_compilation_templates_01.f90:2824:13
+     |
+2824 |         y = +x  ! {Error} Operator `+` undefined for the type in the expression `+t`
+     |             ^^ 
+
+semantic error: Operator `+` undefined for the type in the expression `+t[:]`
+    --> tests/errors/continue_compilation_templates_01.f90:2836:13
+     |
+2836 |         y = +x  ! {Error} Operator `+` undefined for the type in the expression `+t[:]`
+     |             ^^ 

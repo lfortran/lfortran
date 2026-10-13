@@ -300,3 +300,82 @@ contains
         print *, x == 1.0  ! {Error} Operands of comparison operator '==' are not comparable: cc3_kind_t == real
     end subroutine
 end module
+
+subroutine upoly_type_name_14739(d)
+    implicit none
+    class(*), intent(in) :: d
+    if (d) print *, "x"  ! {Error} Expected logical expression in if statement, but recieved class(*) instead
+    print *, d == 1  ! {Error} Operands of comparison operator '==' are not comparable: class(*) == integer
+end subroutine
+
+subroutine assumed_type_name_14739(x)
+    implicit none
+    type(*), intent(in) :: x
+    if (x) print *, "x"  ! {Error} Expected logical expression in if statement, but recieved type(*) instead
+end subroutine
+
+module upoly_to_specific_14738
+    implicit none
+    type :: t_14738
+        integer :: x
+    end type
+contains
+    subroutine g_int(i)
+        integer, intent(in) :: i
+        print *, i
+    end subroutine
+    subroutine g_t(a)
+        type(t_14738), intent(in) :: a
+        print *, a%x
+    end subroutine
+    integer function f_int(i)
+        integer, intent(in) :: i
+        f_int = i
+    end function
+end module
+
+subroutine upoly_to_specific_type_14738(d)
+    use upoly_to_specific_14738, only: t_14738, g_int, g_t, f_int
+    implicit none
+    class(*), intent(in) :: d
+    integer :: i
+    character(len=10) :: c
+    type(t_14738) :: a
+    class(*), allocatable :: u
+    i = d  ! {Error} Type mismatch in assignment, the types must be compatible
+    c = d  ! {Error} Type mismatch in assignment, the types must be compatible
+    a = d  ! {Error} Type mismatch in assignment, the types must be compatible
+    u = d
+    call g_int(d)  ! {Error} Type mismatch in argument `i`: expected `integer(4)` but got `class(*)`
+    call g_t(d)  ! {Error} Type mismatch in argument `a`: expected `t_14738` but got `class(*)`
+    print *, f_int(d)  ! {Error} Type mismatch in argument `i`: expected `integer(4)` but got `class(*)`.
+end subroutine
+
+module lhs_rhs_errors_14736
+    ! Errors in the target are reported even when the value has an error
+    implicit none
+    integer, parameter :: p_14736 = 1
+contains
+    subroutine sub_14736()
+    end subroutine
+    subroutine test_lhs_14736(a)
+        integer, intent(in) :: a
+        integer :: i
+        p_14736 = undeclared_14736_1
+        a = undeclared_14736_2
+        do i = 1, 3
+            i = undeclared_14736_3
+        end do
+        sub_14736 = undeclared_14736_4
+    end subroutine
+    integer function f_14736(i)
+        integer, intent(in) :: i
+        f_14736 = i
+    end function
+    subroutine test_lhs_func_14736()
+        integer :: arr(3)
+        f_14736(1) = undeclared_14736_5
+        arr(f_14736(1)) = undeclared_14736_6
+        print *, arr
+    end subroutine
+end module
