@@ -2126,10 +2126,12 @@ namespace LCompilers {
         llvm::Value* SimpleCMODescriptor::cfi_to_internal(
                 llvm::Type* internal_type,
                 llvm::Type* el_type, llvm::Value* cfi_desc,
-                int n_dims, uint64_t elem_size) {
+                int n_dims, uint64_t elem_size,
+                llvm::Value* internal_desc) {
             llvm::StructType* cfi_type = get_cfi_type(el_type, n_dims);
-            llvm::Value* internal = create_descriptor_alloca(
-                static_cast<llvm::StructType*>(internal_type));
+            llvm::Value* internal = internal_desc ? internal_desc
+                : create_descriptor_alloca(
+                    static_cast<llvm::StructType*>(internal_type));
 
             // Bitcast incoming pointer to CFI type for GEP access
             llvm::Value* cfi_ptr = builder->CreateBitCast(

@@ -41,7 +41,7 @@
             } \
             temp_scope = temp_scope->parent; \
         } \
-        if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter()) { \
+        if (!ASRUtils::is_scope_between(ASRUtils::symbol_parent_symtab(final_sym), current_scope, temp_scope)) { \
             current_function_dependencies.push_back(al, ASRUtils::symbol_name(final_sym)); \
         } \
     } \
@@ -59,7 +59,7 @@
             } \
             temp_scope = temp_scope->parent; \
         } \
-        if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(final_sym)->get_counter()) { \
+        if (!ASRUtils::is_scope_between(ASRUtils::symbol_parent_symtab(final_sym), current_scope, temp_scope)) { \
             current_function_dependencies.push_back(al, dep_name); \
         } \
     } \
@@ -115,6 +115,7 @@ bool is_iso_c_binding_symbol(SymbolTable* scope, ASR::symbol_t* sym,
 bool is_iso_c_null_symbol(SymbolTable* scope, ASR::symbol_t* sym);
 bool is_iso_c_ptr_type_symbol(SymbolTable* scope, ASR::symbol_t* sym);
 bool is_iso_c_funptr_type_symbol(SymbolTable* scope, ASR::symbol_t* sym);
+bool is_iso_fortran_env_team_type_symbol(SymbolTable* scope, ASR::symbol_t* sym);
 ASR::cptr_kindType cptr_kind_from_type_declaration(SymbolTable* scope,
         ASR::symbol_t* type_decl);
 ASR::ttype_t* make_cptr_type(Allocator& al, const Location& loc,
@@ -305,6 +306,13 @@ static inline const uint8_t* real_constant_unpack_r10(double m_r) {
 static inline const uint8_t* real_constant_get_r10_bytes(
         const ASR::RealConstant_t* c) {
     return real_constant_unpack_r10(c->m_r);
+}
+
+// Read the value of a kind=10 RealConstant as a host long double.
+static inline long double real_constant_get_r10(const ASR::RealConstant_t* c) {
+    long double v;
+    std::memcpy(&v, real_constant_get_r10_bytes(c), sizeof(long double));
+    return v;
 }
 
 static inline double real_constant_pack_r10(const uint8_t* bytes) {
@@ -1520,6 +1528,10 @@ static inline std::string type_to_str_with_kind(const ASR::ttype_t* t, ASR::expr
             ASR::Complex_t* complex_t = ASR::down_cast<ASR::Complex_t>(t);
             return "complex(" + std::to_string(complex_t->m_kind) + ")";
         }
+        case ASR::ttypeType::Logical: {
+            ASR::Logical_t* logical_t = ASR::down_cast<ASR::Logical_t>(t);
+            return "logical(" + std::to_string(logical_t->m_kind) + ")";
+        }
         case ASR::ttypeType::Pointer: {
             return type_to_str_with_kind(ASRUtils::type_get_past_pointer(
                         const_cast<ASR::ttype_t*>(t)), expr) + " pointer";
@@ -1695,6 +1707,23 @@ static inline bool is_present_in_current_scope(ASR::ExternalSymbol_t* external_s
         return false;
     }
 
+// Whether `scope` is `inner` or one of the scopes that enclose it, up to
+// `outer`. Between a procedure (`outer`) and a scope of its body (`inner`) are
+// its BLOCK and ASSOCIATE scopes: a procedure declared in one of them is not a
+// dependency of the procedure.
+static inline bool is_scope_between(SymbolTable *scope, SymbolTable *inner,
+        SymbolTable *outer) {
+    for (SymbolTable *s = inner; s != nullptr; s = s->parent) {
+        if (s->get_counter() == scope->get_counter()) {
+            return true;
+        }
+        if (s == outer) {
+            break;
+        }
+    }
+    return false;
+}
+
 static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
 {
     switch (f->type) {
@@ -1755,6 +1784,23 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         default : throw LCompilersException("Not implemented for type " +
               std::to_string(f->type));
     }
+}
+
+// The scope of the procedure, program, module, ... that `scope` belongs to:
+// `scope` itself, unless it is the scope of a BLOCK or ASSOCIATE construct,
+// which belongs to the procedure, program, ... it is nested in.
+static inline SymbolTable *scope_past_constructs(SymbolTable *scope)
+{
+    while (scope->parent && scope->asr_owner &&
+            ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+        if (!ASR::is_a<ASR::AssociateBlock_t>(*owner) &&
+                !ASR::is_a<ASR::Block_t>(*owner)) {
+            break;
+        }
+        scope = scope->parent;
+    }
+    return scope;
 }
 
 // Returns the `symbol`'s symtab, or nullptr if the symbol has no symtab
@@ -1820,6 +1866,23 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
             return nullptr;
         }
         default : throw LCompilersException("Not implemented");
+    }
+}
+
+// Calls `f` with each symbol of `scope` and, recursively, of the scopes of
+// the BLOCK and ASSOCIATE constructs in it. The procedures declared by an
+// interface block in a BLOCK construct are in the scope of the BLOCK, so a
+// pass that transforms the procedures declared in a procedure or program
+// has to visit these scopes too.
+template <typename F>
+static inline void for_each_symbol_in_scope_and_constructs(SymbolTable *scope, const F &f)
+{
+    for (auto &item : scope->get_scope()) {
+        f(item.second);
+        if (ASR::is_a<ASR::Block_t>(*item.second) ||
+                ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+            for_each_symbol_in_scope_and_constructs(symbol_symtab(item.second), f);
+        }
     }
 }
 
@@ -3574,6 +3637,12 @@ static inline bool is_const(ASR::expr_t *x) {
 
 ASR::expr_t* get_struct_member_value_from_constant(ASR::expr_t* value,
                             ASR::symbol_t* member);
+
+// Whether the constant `value` of derived type names a procedure, as the
+// value of an associated procedure pointer component does. The procedure is
+// named by a symbol of the scope that wrote the constant, so the constant
+// cannot stand in for its named constant in another scope.
+bool struct_constant_names_procedure(ASR::expr_t* value);
 
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                             ASR::asr_t* v_var, ASR::symbol_t *v,
@@ -6522,6 +6591,52 @@ static inline ASR::ttype_t* get_type_parameter(ASR::ttype_t* t) {
     }
 }
 
+// If the derived type of the component that the ExternalSymbol `e` refers to
+// is defined in a module, directly or in a procedure or block of it, names
+// that module in `e` and the path from it to the type (e.g. `[run, t]`) in its
+// scope names, so that deserialization does not resolve the type by a name
+// that something else may stand for in `e`'s scope, e.g. a module of the same
+// name or a dummy argument. Returns false, leaving `e` unchanged, if there is
+// no such module, or if an enclosing procedure is still being declared and so
+// has no symbol yet.
+static inline bool set_struct_member_owner_path(Allocator& al,
+        ASR::ExternalSymbol_t* e) {
+    ASR::symbol_t* struct_t = ASRUtils::get_asr_owner(
+        ASRUtils::symbol_get_past_external(e->m_external));
+    std::vector<ASR::symbol_t*> path = {struct_t};
+    ASR::symbol_t* owner = ASRUtils::get_asr_owner(struct_t);
+    while (owner != nullptr && !ASR::is_a<ASR::Module_t>(*owner)) {
+        path.push_back(owner);
+        owner = ASRUtils::get_asr_owner(owner);
+    }
+    if (owner == nullptr) {
+        return false;
+    }
+    e->m_module_name = s2c(al, ASRUtils::symbol_name(owner));
+    e->n_scope_names = path.size();
+    e->m_scope_names = al.allocate<char*>(e->n_scope_names);
+    for (size_t i = 0; i < e->n_scope_names; i++) {
+        e->m_scope_names[i] = s2c(al,
+            ASRUtils::symbol_name(path[e->n_scope_names - 1 - i]));
+    }
+    return true;
+}
+
+// An ExternalSymbol `name` in `scope` for the component `struct_member`,
+// naming its type by a path from a module (set_struct_member_owner_path), or
+// otherwise by `struct_local_name`, the type's name in `scope`.
+static inline ASR::symbol_t* make_struct_member_external_symbol(Allocator& al,
+        const Location& loc, SymbolTable* scope, const std::string& name,
+        ASR::symbol_t* struct_member, const std::string& struct_local_name,
+        ASR::accessType access) {
+    struct_member = ASRUtils::symbol_get_past_external(struct_member);
+    ASR::symbol_t* e = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+        loc, scope, s2c(al, name), struct_member, s2c(al, struct_local_name),
+        nullptr, 0, s2c(al, ASRUtils::symbol_name(struct_member)), access));
+    set_struct_member_owner_path(al, ASR::down_cast<ASR::ExternalSymbol_t>(e));
+    return e;
+}
+
 static inline ASR::symbol_t* import_struct_instance_member(Allocator& al,
                                                            ASR::symbol_t* struct_member,
                                                            SymbolTable* scope)
@@ -6543,7 +6658,8 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al,
                                             ASRUtils::symbol_get_past_external(struct_t));
         LCOMPILERS_ASSERT(struct_t_module != nullptr);
 
-        if (ASR::is_a<ASR::Program_t>(*struct_t_module)) {
+        if (ASR::is_a<ASR::Program_t>(*struct_t_module) ||
+                ASR::is_a<ASR::Block_t>(*struct_t_module)) {
             return struct_member;
         }
 
@@ -6578,34 +6694,9 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al,
 
     std::string struct_member_external_symbol_name = "1_" + struct_t_name + "_" + struct_member_name;
     if (scope->get_symbol(struct_member_external_symbol_name) == nullptr) {
-        std::string member_module_name = struct_external_symbol_name;
-        char** scope_names_arr = nullptr;
-        size_t n_scope_names = 0;
-
-        // Use the owning module's name as module_name and encode the struct
-        // name in scope_names. This avoids ambiguity during deserialization
-        // when a struct and a top-level module share the same name (the
-        // deserializer would otherwise find the Module instead of the Struct).
-        ASR::symbol_t* struct_t_actual = ASRUtils::symbol_get_past_external(struct_t);
-        ASR::symbol_t* struct_t_owner = ASRUtils::get_asr_owner(struct_t_actual);
-        if (struct_t_owner != nullptr && ASR::is_a<ASR::Module_t>(*struct_t_owner)) {
-            member_module_name = ASRUtils::symbol_name(struct_t_owner);
-            scope_names_arr = al.allocate<char*>(1);
-            scope_names_arr[0] = s2c(al, struct_t_name);
-            n_scope_names = 1;
-        }
-
-        ASR::symbol_t* struct_member_external_symbol = ASR::down_cast<ASR::symbol_t>(
-                                                        ASR::make_ExternalSymbol_t(al,
-                                                                                struct_member->base.loc,
-                                                                                scope,
-                                                                                s2c(al, struct_member_external_symbol_name),
-                                                                                ASRUtils::symbol_get_past_external(struct_member),
-                                                                                s2c(al, member_module_name),
-                                                                                scope_names_arr,
-                                                                                n_scope_names,
-                                                                                s2c(al, struct_member_name),
-                                                                                ASR::accessType::Public));
+        ASR::symbol_t* struct_member_external_symbol = make_struct_member_external_symbol(
+            al, struct_member->base.loc, scope, struct_member_external_symbol_name,
+            struct_member, struct_external_symbol_name, ASR::accessType::Public);
         scope->add_symbol(struct_member_external_symbol_name, struct_member_external_symbol);
     }
 
@@ -7191,10 +7282,45 @@ class SymbolDuplicator {
 
     void duplicate_SymbolTable(SymbolTable* symbol_table,
         SymbolTable* destination_symtab) {
+        std::vector<std::pair<ASR::Variable_t*, ASR::Variable_t*>> variables;
         for( auto& item: symbol_table->get_scope() ) {
+            bool is_new = destination_symtab->get_symbol(item.first) == nullptr;
             duplicate_symbol(item.second, destination_symtab);
+            ASR::symbol_t* copy = destination_symtab->get_symbol(item.first);
+            if (is_new && copy && ASR::is_a<ASR::Variable_t>(*item.second)
+                    && ASR::is_a<ASR::Variable_t>(*copy)) {
+                variables.push_back({ASR::down_cast<ASR::Variable_t>(item.second),
+                    ASR::down_cast<ASR::Variable_t>(copy)});
+            }
         }
+        remap_local_references(variables, destination_symtab);
         fixup_local_type_declarations(destination_symtab, symbol_table);
+    }
+
+    // The type and the values of a copied variable may refer to other
+    // variables of the same scope, e.g. `a(n)` or `character(len=len(s))`.
+    // When such a variable is copied before the variables it refers to,
+    // those references still point into the original scope, so copy them
+    // again once every variable of the scope exists.
+    void remap_local_references(
+            const std::vector<std::pair<ASR::Variable_t*, ASR::Variable_t*>> &variables,
+            SymbolTable* destination_symtab) {
+        for (auto &pair : variables) {
+            ASR::Variable_t* orig = pair.first;
+            ASR::Variable_t* copy = pair.second;
+            ExprStmtWithScopeDuplicator node_duplicator(al, destination_symtab);
+            node_duplicator.success = true;
+            ASR::ttype_t* m_type = node_duplicator.duplicate_ttype(orig->m_type);
+            ASR::expr_t* m_symbolic_value = node_duplicator.duplicate_expr(
+                orig->m_symbolic_value);
+            ASR::expr_t* m_value = node_duplicator.duplicate_expr(orig->m_value);
+            if (!node_duplicator.success) {
+                continue;
+            }
+            copy->m_type = m_type;
+            copy->m_symbolic_value = m_symbolic_value;
+            copy->m_value = m_value;
+        }
     }
 
     void duplicate_symbol(ASR::symbol_t* symbol,
@@ -8135,15 +8261,16 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
         // The following if check determines whether the i-th argument
         // can be called by just passing the data pointer and
         // dimensional information spearately via extra arguments.
-        // Exclude assumed-size arrays (UnboundedPointerArray) since they
-        // don't pass dimension info by design.
+        // Only descriptor arguments qualify: assumed-size and bind(C)
+        // arrays (UnboundedPointerArray, PointerArray) are already passed
+        // as a bare data pointer and carry no dimension info by design.
         ASR::array_physical_typeType phys_type = ASR::array_physical_typeType::DescriptorArray;
         if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(argi->m_type))) {
             phys_type = ASR::down_cast<ASR::Array_t>(
                 ASRUtils::type_get_past_allocatable_pointer(argi->m_type))->m_physical_type;
         }
         if( n_dims > 0 && ASRUtils::is_dimension_empty(dims, n_dims) &&
-            phys_type != ASR::array_physical_typeType::UnboundedPointerArray &&
+            phys_type == ASR::array_physical_typeType::DescriptorArray &&
             (argi->m_intent == ASRUtils::intent_in ||
              argi->m_intent == ASRUtils::intent_out ||
              argi->m_intent == ASRUtils::intent_inout) &&

@@ -61,6 +61,11 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
 
     }
 
+    void replace_StringLen(ASR::StringLen_t* /*x*/) {
+        // LEN of a character array is a scalar inquiry, like SIZE; its
+        // array argument is not an elemental operand of the expression.
+    }
+
     void replace_Var(ASR::Var_t* x) {
         if( ASRUtils::is_array(ASRUtils::symbol_type(x->m_v)) ) {
             vars.push_back(al, current_expr);
@@ -557,6 +562,7 @@ public:
         void visit_ArraySize(const ASR::ArraySize_t&) {}
         void visit_ArrayReshape(const ASR::ArrayReshape_t&) {}
         void visit_ArrayBound(const ASR::ArrayBound_t&) {}
+        void visit_StringLen(const ASR::StringLen_t&) {}
 
         void visit_Var(const ASR::Var_t& x) {
             ASR::Var_t *xx = const_cast<ASR::Var_t*>(&x);
@@ -1551,14 +1557,22 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 from_function_result = src_name.find("__libasr_created__function_call_") == 0;
             }
         }
+        // F2018 10.2.1.3 allocates the variable with LBOUND(expr), which is
+        // the operand's lower bound only for a whole array (F2018 16.9.109).
+        // Any other array expression has lower bounds of 1.
+        bool value_is_whole_array = ASR::is_a<ASR::Var_t>(*underlying_value) ||
+            (ASR::is_a<ASR::StructInstanceMember_t>(*underlying_value) &&
+             !ASRUtils::is_array(ASRUtils::expr_type(
+                ASR::down_cast<ASR::StructInstanceMember_t>(underlying_value)->m_v)));
         Vec<ASR::dimension_t> realloc_dims;
         size_t target_rank = ASRUtils::extract_n_dims_from_ttype(target_type);
         realloc_dims.reserve(al, target_rank);
         for( size_t i = 0; i < target_rank; i++ ) {
             ASR::dimension_t realloc_dim;
             realloc_dim.loc = loc;
-            if (from_function_result) {
+            if (from_function_result || !value_is_whole_array) {
                 // Reset lower bound to 1, for function return assignment
+                // and for array expressions
                 realloc_dim.m_start = make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, idx_kind, loc);
             } else {
                 // For other cases (For example, variable copy a = b) preserve source lbounds
