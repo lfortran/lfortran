@@ -43,10 +43,18 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
         switch (a.second->type) {
             case (ASR::symbolType::Variable) : {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(a.second);
-                if ( v->m_abi == ASR::abiType::BindC ) {
+                // A variable in a common block has no storage of its own to
+                // refer to; its block becomes External below.
+                if ( v->m_abi == ASR::abiType::BindC ||
+                        v->m_common_block != nullptr ) {
                     break;
                 }
                 v->m_abi = ASR::abiType::ExternalUndefined;
+                break;
+            }
+            case (ASR::symbolType::CommonBlock) : {
+                ASR::CommonBlock_t *c = ASR::down_cast<ASR::CommonBlock_t>(a.second);
+                c->m_role = ASR::common_block_roleType::External;
                 break;
             }
             case (ASR::symbolType::Enum) : {
@@ -91,6 +99,18 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
                 auto *dictionary = ASR::down_cast<ASR::TraitDictionary_t>(a.second);
                 dictionary->m_abi = ASR::abiType::ExternalUndefined;
                 dictionary->m_symtab->mark_all_variables_external(al);
+                break;
+            }
+            // What a program unit declares is referred to, as the code of
+            // the unit itself is, only through its views of common blocks.
+            case (ASR::symbolType::Program) : {
+                ASR::down_cast<ASR::Program_t>(a.second)->m_symtab
+                    ->mark_all_variables_external(al);
+                break;
+            }
+            case (ASR::symbolType::BlockData) : {
+                ASR::down_cast<ASR::BlockData_t>(a.second)->m_symtab
+                    ->mark_all_variables_external(al);
                 break;
             }
             default : {};

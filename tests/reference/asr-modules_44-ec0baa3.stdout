@@ -67,6 +67,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             warnwrite:
                                 (ExternalSymbol
@@ -142,6 +143,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             settings:
                                                 (Variable
@@ -173,6 +175,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     cmd_new
@@ -269,6 +272,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     fpm_cmd_settings
@@ -326,6 +330,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     fpm_new_settings
@@ -411,6 +416,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             fname:
                                                 (Variable
@@ -435,6 +441,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     warnwrite

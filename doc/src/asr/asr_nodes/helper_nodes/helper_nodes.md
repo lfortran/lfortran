@@ -16,6 +16,7 @@ call_arg
 case_stmt
 coarray_index
 codimension
+common_association
 dimension
 do_loop_head
 generic_type_argument

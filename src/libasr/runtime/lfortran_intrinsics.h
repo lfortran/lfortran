@@ -409,6 +409,7 @@ LFORTRAN_API int32_t _lfortran_get_environment_variable_status_value(fchar *name
 LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len);
 LFORTRAN_API void _lfortran_get_command_command(char* receiver);
 LFORTRAN_API int32_t _lfortran_get_command_length();
+LFORTRAN_API int32_t _lfortran_get_command_status(int32_t command_len, int32_t length);
 
 // Namelist I/O support
 typedef enum {

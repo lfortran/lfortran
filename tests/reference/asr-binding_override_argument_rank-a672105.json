@@ -2,12 +2,12 @@
     "basename": "asr-binding_override_argument_rank-a672105",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/binding_override_argument_rank.asr",
-    "infile_hash": "30cd37c341aaf115960f7c504e616b277d39c9da756f8949d263be1d",
+    "infile_hash": "811f29d79739768f6aa967a5db4024d13117592c4ca3c809c2acf87f",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-binding_override_argument_rank-a672105.stderr",
-    "stderr_hash": "fa79745a13ced266decab25b933dde61bdcc654683bf55e567f998f4",
+    "stderr_hash": "63389edf445f333c7a56e68e30381c8a50f70c688621f0fedf93cbe8",
     "returncode": 2
 }

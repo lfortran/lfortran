@@ -86,6 +86,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     r
@@ -149,6 +150,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -177,6 +179,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     get_fst
@@ -289,6 +292,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -317,6 +321,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     get_snd
@@ -404,6 +409,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             tuple:
                                                 (Struct
@@ -437,6 +443,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             snd:
                                                                 (Variable
@@ -465,6 +472,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     tuple
@@ -596,6 +604,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -620,6 +629,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     get_int_fst
@@ -706,6 +716,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -730,6 +741,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     get_int_snd
@@ -816,6 +828,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -840,6 +853,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     get_real_fst
@@ -926,6 +940,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -950,6 +965,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     get_real_snd
@@ -1021,6 +1037,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             snd:
                                                                 (Variable
@@ -1045,6 +1062,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     int_tuple
@@ -1099,6 +1117,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             snd:
                                                                 (Variable
@@ -1123,6 +1142,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     real_tuple
@@ -1177,6 +1197,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             tr:
                                                 (Variable
@@ -1206,6 +1227,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     test_template

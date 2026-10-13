@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             val:
                                 (Variable
@@ -54,6 +55,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     test

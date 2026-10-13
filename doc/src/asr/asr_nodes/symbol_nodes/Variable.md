@@ -14,7 +14,7 @@ Variable(symbol_table parent_symtab, identifier name,
     presence presence, bool value_attr, bool target_attr,
     bool contiguous_attr, string? bindc_name, bool is_volatile,
     bool is_protected, pass_attr pass_attr, identifier? self_argument,
-    codimension* codims)
+    codimension* codims, symbol? common_block)
 ```
 
 ### Arguments
@@ -30,7 +30,7 @@ Variable(symbol_table parent_symtab, identifier name,
 | `storage` | See [storage_type](../enum_nodes/storage_type.md), including nonowning construct `Association` storage. |
 | `type` | the type of the variable. |
 | `type_declaration` | for a variable of a derived type, an enumeration or a union, the symbol that defines it; `nil` otherwise. |
-| `abi` | `Source` when this ASR allocates the variable, otherwise the ABI of the definition it is shared with. |
+| `abi` | `Source` when this ASR allocates the variable, otherwise the ABI of the definition it is shared with. A variable with a `common_block` has the `Source` ABI but no allocation of its own: its storage is that of the block, and the [CommonBlock](CommonBlock.md) view gives the ABI and the role of the block's definition. |
 | `access` | `Public` or `Private`. |
 | `presence` | `Required`, or `Optional` for an optional dummy argument. |
 | `value_attr` | `true` when a `bind(c)` dummy argument is passed by value. |
@@ -42,6 +42,7 @@ Variable(symbol_table parent_symtab, identifier name,
 | `pass_attr` | for a component holding a procedure pointer, whether the object is passed as an argument; `NotMethod` otherwise. |
 | `self_argument` | the name of the passed-object dummy argument, when `pass_attr` is `Pass`. |
 | `codims` | the codimensions of a coarray; empty for anything else. |
+| `common_block` | the [CommonBlock](CommonBlock.md) of the same symbol table whose storage the variable lives in, as one of its `members` or as the `variable` of one of its `associations`; `nil` for a variable with storage of its own. |
 
 ### Return values
 
@@ -51,7 +52,9 @@ None.
 
 Everything a Fortran declaration says about a variable is stored here, so that
 a backend never has to look at anything but the **Variable** and its `type` to
-allocate it.
+allocate it. The exception is a variable with a `common_block`: it is not
+allocated on its own, and a backend follows `common_block` to the storage of
+the block and to the variable's position in it.
 
 A variable is referenced from an expression by [Var](../expression_nodes/Var.md),
 which holds nothing but a reference to this symbol; every property is read from
@@ -61,6 +64,14 @@ the symbol itself.
 initializer as the user wrote it, and `value` is what it folds to.
 `storage=Parameter` requires `value`, since a named constant is substituted
 wherever it is used.
+
+A variable in a COMMON block has no storage of its own. Its `common_block`
+names the view of the block that its own scoping unit declares, and its
+address is the block's storage at the position that view gives it. Nothing
+else changes: a [Var](../expression_nodes/Var.md) still refers to the
+variable, and a module variable in a COMMON block is used from other scoping
+units like any other module variable, through an
+[ExternalSymbol](ExternalSymbol.md).
 
 ## Examples
 
@@ -101,6 +112,7 @@ wherever it is used.
   :pass_attr :NotMethod
   :self_argument nil
   :codims []
+  :common_block nil
 )
 ```
 
@@ -112,4 +124,4 @@ It comes from this complete ASR text document:
 
 ## See Also
 
-[Var](../expression_nodes/Var.md), [Program](Program.md), [Function](Function.md), ttype
+[Var](../expression_nodes/Var.md), [Program](Program.md), [Function](Function.md), [CommonBlock](CommonBlock.md), ttype

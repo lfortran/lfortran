@@ -75,6 +75,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             s:
                                                 (Variable
@@ -99,6 +100,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     t
@@ -155,6 +157,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     bindc_char_len_01

@@ -70,6 +70,7 @@
                     :NotMethod
                     nil
                     []
+                    nil
                   )
                 }
               )
@@ -170,6 +171,7 @@
                     :NotMethod
                     nil
                     []
+                    nil
                   )
                   "derived_meth" (Variable
                     5
@@ -195,6 +197,7 @@
                     :NotMethod
                     nil
                     []
+                    nil
                   )
                 }
               )

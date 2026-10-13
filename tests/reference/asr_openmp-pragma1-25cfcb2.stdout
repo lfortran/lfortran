@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -66,6 +67,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i:
                                 (Variable
@@ -90,6 +92,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             n:
                                 (Variable
@@ -114,6 +117,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     a1
@@ -269,6 +273,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i:
                                 (Variable
@@ -293,6 +298,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             n:
                                 (Variable
@@ -317,6 +323,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             partial_sum:
                                 (Variable
@@ -341,6 +348,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             total_sum:
                                 (Variable
@@ -365,6 +373,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     parallel_sum

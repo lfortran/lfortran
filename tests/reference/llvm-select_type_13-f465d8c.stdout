@@ -100,14 +100,14 @@ define float @__module_select_type_13_module_circle_area(%select_type_13_module.
 .entry:
   %circle_area = alloca float, align 4
   %0 = getelementptr %select_type_13_module.circle.5_class, %select_type_13_module.circle.5_class* %this, i32 0, i32 1
-  %1 = load %select_type_13_module.circle.5*, %select_type_13_module.circle.5** %0, align 8
+  %1 = load %select_type_13_module.circle.5*, %select_type_13_module.circle.5** %0, align 1
   %2 = getelementptr %select_type_13_module.circle.5, %select_type_13_module.circle.5* %1, i32 0, i32 1
-  %3 = load float, float* %2, align 4
+  %3 = load float, float* %2, align 1
   %4 = fmul float 0x400921FA00000000, %3
   %5 = getelementptr %select_type_13_module.circle.5_class, %select_type_13_module.circle.5_class* %this, i32 0, i32 1
-  %6 = load %select_type_13_module.circle.5*, %select_type_13_module.circle.5** %5, align 8
+  %6 = load %select_type_13_module.circle.5*, %select_type_13_module.circle.5** %5, align 1
   %7 = getelementptr %select_type_13_module.circle.5, %select_type_13_module.circle.5* %6, i32 0, i32 1
-  %8 = load float, float* %7, align 4
+  %8 = load float, float* %7, align 1
   %9 = fmul float %4, %8
   store float %9, float* %circle_area, align 4
   br label %return
@@ -124,13 +124,13 @@ define float @__module_select_type_13_module_rectangle_area(%select_type_13_modu
 .entry:
   %rectangle_area = alloca float, align 4
   %0 = getelementptr %select_type_13_module.rectangle.6_class, %select_type_13_module.rectangle.6_class* %this, i32 0, i32 1
-  %1 = load %select_type_13_module.rectangle.6*, %select_type_13_module.rectangle.6** %0, align 8
+  %1 = load %select_type_13_module.rectangle.6*, %select_type_13_module.rectangle.6** %0, align 1
   %2 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %1, i32 0, i32 1
-  %3 = load float, float* %2, align 4
+  %3 = load float, float* %2, align 1
   %4 = getelementptr %select_type_13_module.rectangle.6_class, %select_type_13_module.rectangle.6_class* %this, i32 0, i32 1
-  %5 = load %select_type_13_module.rectangle.6*, %select_type_13_module.rectangle.6** %4, align 8
+  %5 = load %select_type_13_module.rectangle.6*, %select_type_13_module.rectangle.6** %4, align 1
   %6 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %5, i32 0, i32 2
-  %7 = load float, float* %6, align 4
+  %7 = load float, float* %6, align 1
   %8 = fmul float %3, %7
   store float %8, float* %rectangle_area, align 4
   br label %return
@@ -165,7 +165,7 @@ define i32 @main(i32 %0, i8** %1) {
   %9 = getelementptr %select_type_13_module.shape.3_class, %select_type_13_module.shape.3_class* %8, i32 0, i32 1
   %10 = bitcast i8* %4 to %select_type_13_module.shape.3*
   store %select_type_13_module.shape.3* %10, %select_type_13_module.shape.3** %9, align 8
-  %11 = load %select_type_13_module.shape.3*, %select_type_13_module.shape.3** %9, align 8
+  %11 = load %select_type_13_module.shape.3*, %select_type_13_module.shape.3** %9, align 1
   %12 = bitcast %select_type_13_module.shape.3* %11 to %select_type_13_module.circle.5*
   %13 = bitcast %select_type_13_module.shape.3_class* %7 to i32 (...)***
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_21_select_type_13_module6_circle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %13, align 8
@@ -288,9 +288,9 @@ ifcont8:                                          ; preds = %"~select_type_block
   %65 = load %select_type_13_module.shape.3_class*, %select_type_13_module.shape.3_class** %s1, align 8
   %66 = bitcast %select_type_13_module.shape.3_class* %65 to %select_type_13_module.circle.5_class*
   %67 = getelementptr %select_type_13_module.circle.5_class, %select_type_13_module.circle.5_class* %66, i32 0, i32 1
-  %68 = load %select_type_13_module.circle.5*, %select_type_13_module.circle.5** %67, align 8
+  %68 = load %select_type_13_module.circle.5*, %select_type_13_module.circle.5** %67, align 1
   %69 = getelementptr %select_type_13_module.circle.5, %select_type_13_module.circle.5* %68, i32 0, i32 1
-  store float 1.000000e+01, float* %69, align 4
+  store float 1.000000e+01, float* %69, align 1
   %70 = alloca i64, align 8
   %71 = load %select_type_13_module.shape.3_class**, %select_type_13_module.shape.3_class** %s1, align 8
   %72 = ptrtoint %select_type_13_module.shape.3_class** %71 to i64
@@ -333,9 +333,9 @@ ifcont10:                                         ; preds = %ifcont8
   %92 = load %select_type_13_module.shape.3_class*, %select_type_13_module.shape.3_class** %s1, align 8
   %93 = bitcast %select_type_13_module.shape.3_class* %92 to %select_type_13_module.circle.5_class*
   %94 = getelementptr %select_type_13_module.circle.5_class, %select_type_13_module.circle.5_class* %93, i32 0, i32 1
-  %95 = load %select_type_13_module.circle.5*, %select_type_13_module.circle.5** %94, align 8
+  %95 = load %select_type_13_module.circle.5*, %select_type_13_module.circle.5** %94, align 1
   %96 = getelementptr %select_type_13_module.circle.5, %select_type_13_module.circle.5* %95, i32 0, i32 1
-  %97 = load float, float* %96, align 4
+  %97 = load float, float* %96, align 1
   %98 = alloca float, align 4
   store float %97, float* %98, align 4
   %99 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %70, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, float* %98)
@@ -399,9 +399,9 @@ ifcont12:                                         ; preds = %free_done
   %130 = load %select_type_13_module.shape.3_class*, %select_type_13_module.shape.3_class** %s1, align 8
   %131 = bitcast %select_type_13_module.shape.3_class* %130 to %select_type_13_module.circle.5_class*
   %132 = getelementptr %select_type_13_module.circle.5_class, %select_type_13_module.circle.5_class* %131, i32 0, i32 1
-  %133 = load %select_type_13_module.circle.5*, %select_type_13_module.circle.5** %132, align 8
+  %133 = load %select_type_13_module.circle.5*, %select_type_13_module.circle.5** %132, align 1
   %134 = getelementptr %select_type_13_module.circle.5, %select_type_13_module.circle.5* %133, i32 0, i32 1
-  %135 = load float, float* %134, align 4
+  %135 = load float, float* %134, align 1
   %136 = fcmp une float %135, 1.000000e+01
   br i1 %136, label %then13, label %else14
 
@@ -453,7 +453,7 @@ ifcont17:                                         ; preds = %"FINALIZE_SYMTABLE_
   %145 = getelementptr %select_type_13_module.shape.3_class, %select_type_13_module.shape.3_class* %144, i32 0, i32 1
   %146 = bitcast i8* %140 to %select_type_13_module.shape.3*
   store %select_type_13_module.shape.3* %146, %select_type_13_module.shape.3** %145, align 8
-  %147 = load %select_type_13_module.shape.3*, %select_type_13_module.shape.3** %145, align 8
+  %147 = load %select_type_13_module.shape.3*, %select_type_13_module.shape.3** %145, align 1
   %148 = bitcast %select_type_13_module.shape.3* %147 to %select_type_13_module.rectangle.6*
   %149 = bitcast %select_type_13_module.shape.3_class* %143 to i32 (...)***
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_21_select_type_13_module9_rectangle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %149, align 8
@@ -577,9 +577,9 @@ ifcont28:                                         ; preds = %"~select_type_block
   %202 = load %select_type_13_module.shape.3_class*, %select_type_13_module.shape.3_class** %s2, align 8
   %203 = bitcast %select_type_13_module.shape.3_class* %202 to %select_type_13_module.rectangle.6_class*
   %204 = getelementptr %select_type_13_module.rectangle.6_class, %select_type_13_module.rectangle.6_class* %203, i32 0, i32 1
-  %205 = load %select_type_13_module.rectangle.6*, %select_type_13_module.rectangle.6** %204, align 8
+  %205 = load %select_type_13_module.rectangle.6*, %select_type_13_module.rectangle.6** %204, align 1
   %206 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %205, i32 0, i32 1
-  store float 5.000000e+00, float* %206, align 4
+  store float 5.000000e+00, float* %206, align 1
   %207 = load %select_type_13_module.shape.3_class**, %select_type_13_module.shape.3_class** %s2, align 8
   %208 = ptrtoint %select_type_13_module.shape.3_class** %207 to i64
   %209 = icmp eq i64 %208, 0
@@ -621,9 +621,9 @@ ifcont30:                                         ; preds = %ifcont28
   %228 = load %select_type_13_module.shape.3_class*, %select_type_13_module.shape.3_class** %s2, align 8
   %229 = bitcast %select_type_13_module.shape.3_class* %228 to %select_type_13_module.rectangle.6_class*
   %230 = getelementptr %select_type_13_module.rectangle.6_class, %select_type_13_module.rectangle.6_class* %229, i32 0, i32 1
-  %231 = load %select_type_13_module.rectangle.6*, %select_type_13_module.rectangle.6** %230, align 8
+  %231 = load %select_type_13_module.rectangle.6*, %select_type_13_module.rectangle.6** %230, align 1
   %232 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %231, i32 0, i32 2
-  store float 4.000000e+00, float* %232, align 4
+  store float 4.000000e+00, float* %232, align 1
   %233 = alloca i64, align 8
   %234 = load %select_type_13_module.shape.3_class**, %select_type_13_module.shape.3_class** %s2, align 8
   %235 = ptrtoint %select_type_13_module.shape.3_class** %234 to i64
@@ -666,9 +666,9 @@ ifcont32:                                         ; preds = %ifcont30
   %255 = load %select_type_13_module.shape.3_class*, %select_type_13_module.shape.3_class** %s2, align 8
   %256 = bitcast %select_type_13_module.shape.3_class* %255 to %select_type_13_module.rectangle.6_class*
   %257 = getelementptr %select_type_13_module.rectangle.6_class, %select_type_13_module.rectangle.6_class* %256, i32 0, i32 1
-  %258 = load %select_type_13_module.rectangle.6*, %select_type_13_module.rectangle.6** %257, align 8
+  %258 = load %select_type_13_module.rectangle.6*, %select_type_13_module.rectangle.6** %257, align 1
   %259 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %258, i32 0, i32 1
-  %260 = load float, float* %259, align 4
+  %260 = load float, float* %259, align 1
   %261 = alloca float, align 4
   store float %260, float* %261, align 4
   %262 = load %select_type_13_module.shape.3_class**, %select_type_13_module.shape.3_class** %s2, align 8
@@ -712,9 +712,9 @@ ifcont34:                                         ; preds = %ifcont32
   %283 = load %select_type_13_module.shape.3_class*, %select_type_13_module.shape.3_class** %s2, align 8
   %284 = bitcast %select_type_13_module.shape.3_class* %283 to %select_type_13_module.rectangle.6_class*
   %285 = getelementptr %select_type_13_module.rectangle.6_class, %select_type_13_module.rectangle.6_class* %284, i32 0, i32 1
-  %286 = load %select_type_13_module.rectangle.6*, %select_type_13_module.rectangle.6** %285, align 8
+  %286 = load %select_type_13_module.rectangle.6*, %select_type_13_module.rectangle.6** %285, align 1
   %287 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %286, i32 0, i32 2
-  %288 = load float, float* %287, align 4
+  %288 = load float, float* %287, align 1
   %289 = alloca float, align 4
   store float %288, float* %289, align 4
   %290 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info.9, i32 0, i32 0), i64* %233, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, float* %261, float* %289)
@@ -778,9 +778,9 @@ ifcont39:                                         ; preds = %free_done37
   %321 = load %select_type_13_module.shape.3_class*, %select_type_13_module.shape.3_class** %s2, align 8
   %322 = bitcast %select_type_13_module.shape.3_class* %321 to %select_type_13_module.rectangle.6_class*
   %323 = getelementptr %select_type_13_module.rectangle.6_class, %select_type_13_module.rectangle.6_class* %322, i32 0, i32 1
-  %324 = load %select_type_13_module.rectangle.6*, %select_type_13_module.rectangle.6** %323, align 8
+  %324 = load %select_type_13_module.rectangle.6*, %select_type_13_module.rectangle.6** %323, align 1
   %325 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %324, i32 0, i32 1
-  %326 = load float, float* %325, align 4
+  %326 = load float, float* %325, align 1
   %327 = fcmp une float %326, 5.000000e+00
   br i1 %327, label %then40, label %else41
 
@@ -835,9 +835,9 @@ ifcont44:                                         ; preds = %ifcont42
   %349 = load %select_type_13_module.shape.3_class*, %select_type_13_module.shape.3_class** %s2, align 8
   %350 = bitcast %select_type_13_module.shape.3_class* %349 to %select_type_13_module.rectangle.6_class*
   %351 = getelementptr %select_type_13_module.rectangle.6_class, %select_type_13_module.rectangle.6_class* %350, i32 0, i32 1
-  %352 = load %select_type_13_module.rectangle.6*, %select_type_13_module.rectangle.6** %351, align 8
+  %352 = load %select_type_13_module.rectangle.6*, %select_type_13_module.rectangle.6** %351, align 1
   %353 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %352, i32 0, i32 2
-  %354 = load float, float* %353, align 4
+  %354 = load float, float* %353, align 1
   %355 = fcmp une float %354, 4.000000e+00
   br i1 %355, label %then45, label %else46
 
@@ -972,7 +972,7 @@ entry:
   %3 = call i8* @_lfortran_malloc_alloc(i8* %2, i64 16)
   call void @llvm.memset.p0i8.i32(i8* %3, i8 0, i32 16, i1 false)
   store i8* %3, i8** %0, align 8
-  %4 = load i8*, i8** %0, align 8
+  %4 = load i8*, i8** %0, align 1
   %5 = bitcast i8* %4 to %select_type_13_module.shape.3_class*
   %6 = bitcast %select_type_13_module.shape.3_class* %5 to i32 (...)***
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_21_select_type_13_module5_shape, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
@@ -1017,12 +1017,12 @@ then1:                                            ; preds = %ifcont
 
 then2:                                            ; preds = %then1
   %9 = getelementptr %select_type_13_module.circle.5, %select_type_13_module.circle.5* %5, i32 0, i32 1
-  %10 = load float, float* %9, align 4
+  %10 = load float, float* %9, align 1
   %11 = getelementptr %select_type_13_module.circle.5, %select_type_13_module.circle.5* %6, i32 0, i32 1
   br i1 true, label %then3, label %else4
 
 then3:                                            ; preds = %then2
-  store float %10, float* %11, align 4
+  store float %10, float* %11, align 1
   br label %ifcont5
 
 else4:                                            ; preds = %then2
@@ -1035,12 +1035,12 @@ ifcont5:                                          ; preds = %else4, %then3
 
 else6:                                            ; preds = %then1
   %14 = getelementptr %select_type_13_module.circle.5, %select_type_13_module.circle.5* %5, i32 0, i32 1
-  %15 = load float, float* %14, align 4
+  %15 = load float, float* %14, align 1
   %16 = getelementptr %select_type_13_module.circle.5, %select_type_13_module.circle.5* %6, i32 0, i32 1
   br i1 true, label %then7, label %else8
 
 then7:                                            ; preds = %else6
-  store float %15, float* %16, align 4
+  store float %15, float* %16, align 1
   br label %ifcont9
 
 else8:                                            ; preds = %else6
@@ -1059,12 +1059,12 @@ else11:                                           ; preds = %ifcont
 
 then12:                                           ; preds = %else11
   %19 = getelementptr %select_type_13_module.circle.5, %select_type_13_module.circle.5* %5, i32 0, i32 1
-  %20 = load float, float* %19, align 4
+  %20 = load float, float* %19, align 1
   %21 = getelementptr %select_type_13_module.circle.5, %select_type_13_module.circle.5* %6, i32 0, i32 1
   br i1 true, label %then13, label %else14
 
 then13:                                           ; preds = %then12
-  store float %20, float* %21, align 4
+  store float %20, float* %21, align 1
   br label %ifcont15
 
 else14:                                           ; preds = %then12
@@ -1077,12 +1077,12 @@ ifcont15:                                         ; preds = %else14, %then13
 
 else16:                                           ; preds = %else11
   %24 = getelementptr %select_type_13_module.circle.5, %select_type_13_module.circle.5* %5, i32 0, i32 1
-  %25 = load float, float* %24, align 4
+  %25 = load float, float* %24, align 1
   %26 = getelementptr %select_type_13_module.circle.5, %select_type_13_module.circle.5* %6, i32 0, i32 1
   br i1 true, label %then17, label %else18
 
 then17:                                           ; preds = %else16
-  store float %25, float* %26, align 4
+  store float %25, float* %26, align 1
   br label %ifcont19
 
 else18:                                           ; preds = %else16
@@ -1111,12 +1111,12 @@ entry:
   %2 = bitcast i8* %0 to %select_type_13_module.circle.5*
   %3 = bitcast i8* %1 to %select_type_13_module.circle.5*
   %4 = getelementptr %select_type_13_module.circle.5, %select_type_13_module.circle.5* %2, i32 0, i32 1
-  %5 = load float, float* %4, align 4
+  %5 = load float, float* %4, align 1
   %6 = getelementptr %select_type_13_module.circle.5, %select_type_13_module.circle.5* %3, i32 0, i32 1
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %entry
-  store float %5, float* %6, align 4
+  store float %5, float* %6, align 1
   br label %ifcont
 
 else:                                             ; preds = %entry
@@ -1138,7 +1138,7 @@ entry:
   %3 = call i8* @_lfortran_malloc_alloc(i8* %2, i64 16)
   call void @llvm.memset.p0i8.i32(i8* %3, i8 0, i32 16, i1 false)
   store i8* %3, i8** %0, align 8
-  %4 = load i8*, i8** %0, align 8
+  %4 = load i8*, i8** %0, align 1
   %5 = bitcast i8* %4 to %select_type_13_module.circle.5_class*
   %6 = bitcast %select_type_13_module.circle.5_class* %5 to i32 (...)***
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_21_select_type_13_module6_circle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
@@ -1184,12 +1184,12 @@ then1:                                            ; preds = %ifcont
 
 then2:                                            ; preds = %then1
   %10 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %5, i32 0, i32 1
-  %11 = load float, float* %10, align 4
+  %11 = load float, float* %10, align 1
   %12 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %6, i32 0, i32 1
   br i1 true, label %then3, label %else4
 
 then3:                                            ; preds = %then2
-  store float %11, float* %12, align 4
+  store float %11, float* %12, align 1
   br label %ifcont5
 
 else4:                                            ; preds = %then2
@@ -1197,12 +1197,12 @@ else4:                                            ; preds = %then2
 
 ifcont5:                                          ; preds = %else4, %then3
   %13 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %5, i32 0, i32 2
-  %14 = load float, float* %13, align 4
+  %14 = load float, float* %13, align 1
   %15 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %6, i32 0, i32 2
   br i1 true, label %then6, label %else7
 
 then6:                                            ; preds = %ifcont5
-  store float %14, float* %15, align 4
+  store float %14, float* %15, align 1
   br label %ifcont8
 
 else7:                                            ; preds = %ifcont5
@@ -1215,12 +1215,12 @@ ifcont8:                                          ; preds = %else7, %then6
 
 else9:                                            ; preds = %then1
   %18 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %5, i32 0, i32 1
-  %19 = load float, float* %18, align 4
+  %19 = load float, float* %18, align 1
   %20 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %6, i32 0, i32 1
   br i1 true, label %then10, label %else11
 
 then10:                                           ; preds = %else9
-  store float %19, float* %20, align 4
+  store float %19, float* %20, align 1
   br label %ifcont12
 
 else11:                                           ; preds = %else9
@@ -1228,12 +1228,12 @@ else11:                                           ; preds = %else9
 
 ifcont12:                                         ; preds = %else11, %then10
   %21 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %5, i32 0, i32 2
-  %22 = load float, float* %21, align 4
+  %22 = load float, float* %21, align 1
   %23 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %6, i32 0, i32 2
   br i1 true, label %then13, label %else14
 
 then13:                                           ; preds = %ifcont12
-  store float %22, float* %23, align 4
+  store float %22, float* %23, align 1
   br label %ifcont15
 
 else14:                                           ; preds = %ifcont12
@@ -1252,12 +1252,12 @@ else17:                                           ; preds = %ifcont
 
 then18:                                           ; preds = %else17
   %26 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %5, i32 0, i32 1
-  %27 = load float, float* %26, align 4
+  %27 = load float, float* %26, align 1
   %28 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %6, i32 0, i32 1
   br i1 true, label %then19, label %else20
 
 then19:                                           ; preds = %then18
-  store float %27, float* %28, align 4
+  store float %27, float* %28, align 1
   br label %ifcont21
 
 else20:                                           ; preds = %then18
@@ -1265,12 +1265,12 @@ else20:                                           ; preds = %then18
 
 ifcont21:                                         ; preds = %else20, %then19
   %29 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %5, i32 0, i32 2
-  %30 = load float, float* %29, align 4
+  %30 = load float, float* %29, align 1
   %31 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %6, i32 0, i32 2
   br i1 true, label %then22, label %else23
 
 then22:                                           ; preds = %ifcont21
-  store float %30, float* %31, align 4
+  store float %30, float* %31, align 1
   br label %ifcont24
 
 else23:                                           ; preds = %ifcont21
@@ -1283,12 +1283,12 @@ ifcont24:                                         ; preds = %else23, %then22
 
 else25:                                           ; preds = %else17
   %34 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %5, i32 0, i32 1
-  %35 = load float, float* %34, align 4
+  %35 = load float, float* %34, align 1
   %36 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %6, i32 0, i32 1
   br i1 true, label %then26, label %else27
 
 then26:                                           ; preds = %else25
-  store float %35, float* %36, align 4
+  store float %35, float* %36, align 1
   br label %ifcont28
 
 else27:                                           ; preds = %else25
@@ -1296,12 +1296,12 @@ else27:                                           ; preds = %else25
 
 ifcont28:                                         ; preds = %else27, %then26
   %37 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %5, i32 0, i32 2
-  %38 = load float, float* %37, align 4
+  %38 = load float, float* %37, align 1
   %39 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %6, i32 0, i32 2
   br i1 true, label %then29, label %else30
 
 then29:                                           ; preds = %ifcont28
-  store float %38, float* %39, align 4
+  store float %38, float* %39, align 1
   br label %ifcont31
 
 else30:                                           ; preds = %ifcont28
@@ -1330,12 +1330,12 @@ entry:
   %2 = bitcast i8* %0 to %select_type_13_module.rectangle.6*
   %3 = bitcast i8* %1 to %select_type_13_module.rectangle.6*
   %4 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %2, i32 0, i32 1
-  %5 = load float, float* %4, align 4
+  %5 = load float, float* %4, align 1
   %6 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %3, i32 0, i32 1
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %entry
-  store float %5, float* %6, align 4
+  store float %5, float* %6, align 1
   br label %ifcont
 
 else:                                             ; preds = %entry
@@ -1343,12 +1343,12 @@ else:                                             ; preds = %entry
 
 ifcont:                                           ; preds = %else, %then
   %7 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %2, i32 0, i32 2
-  %8 = load float, float* %7, align 4
+  %8 = load float, float* %7, align 1
   %9 = getelementptr %select_type_13_module.rectangle.6, %select_type_13_module.rectangle.6* %3, i32 0, i32 2
   br i1 true, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
-  store float %8, float* %9, align 4
+  store float %8, float* %9, align 1
   br label %ifcont3
 
 else2:                                            ; preds = %ifcont
@@ -1370,7 +1370,7 @@ entry:
   %3 = call i8* @_lfortran_malloc_alloc(i8* %2, i64 16)
   call void @llvm.memset.p0i8.i32(i8* %3, i8 0, i32 16, i1 false)
   store i8* %3, i8** %0, align 8
-  %4 = load i8*, i8** %0, align 8
+  %4 = load i8*, i8** %0, align 1
   %5 = bitcast i8* %4 to %select_type_13_module.rectangle.6_class*
   %6 = bitcast %select_type_13_module.rectangle.6_class* %5 to i32 (...)***
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_21_select_type_13_module9_rectangle, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
@@ -1427,7 +1427,7 @@ entry:
 is_allocated.then:                                ; preds = %entry
   call void @release_StructType_Class__shape_3_of_select_type_13_module(%select_type_13_module.shape.3_class* %0)
   %3 = getelementptr %select_type_13_module.shape.3_class, %select_type_13_module.shape.3_class* %0, i32 0, i32 1
-  %4 = load %select_type_13_module.shape.3*, %select_type_13_module.shape.3** %3, align 8
+  %4 = load %select_type_13_module.shape.3*, %select_type_13_module.shape.3** %3, align 1
   %5 = icmp ne %select_type_13_module.shape.3* %4, null
   br i1 %5, label %is_allocated.then1, label %is_allocated.else
 
@@ -1454,16 +1454,16 @@ is_allocated.ifcont3:                             ; preds = %is_allocated.else2,
 define internal void @release_StructType_Class__shape_3_of_select_type_13_module(%select_type_13_module.shape.3_class* %0) {
 entry:
   %1 = getelementptr %select_type_13_module.shape.3_class, %select_type_13_module.shape.3_class* %0, i32 0, i32 0
-  %2 = load i32 (...)**, i32 (...)*** %1, align 8
+  %2 = load i32 (...)**, i32 (...)*** %1, align 1
   %3 = getelementptr %select_type_13_module.shape.3_class, %select_type_13_module.shape.3_class* %0, i32 0, i32 1
-  %4 = load %select_type_13_module.shape.3**, %select_type_13_module.shape.3** %3, align 8
+  %4 = load %select_type_13_module.shape.3**, %select_type_13_module.shape.3** %3, align 1
   %5 = bitcast %select_type_13_module.shape.3** %4 to i8*
   %6 = icmp ne i32 (...)** %2, null
   br i1 %6, label %is_allocated.then, label %is_allocated.else2
 
 is_allocated.then:                                ; preds = %entry
   %7 = getelementptr inbounds i32 (...)*, i32 (...)** %2, i32 3
-  %8 = load i8*, i32 (...)** %7, align 8
+  %8 = load i8*, i32 (...)** %7, align 1
   %9 = bitcast i8* %8 to void (i8*)*
   %10 = icmp ne i8* %5, null
   br i1 %10, label %is_allocated.then1, label %is_allocated.else

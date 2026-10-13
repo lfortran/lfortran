@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i_value:
                                 (Variable
@@ -60,6 +61,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             l_value:
                                 (Variable
@@ -90,6 +92,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             r_value:
                                 (Variable
@@ -126,6 +129,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             str:
                                 (GenericProcedure
@@ -167,6 +171,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             str_scalar:
                                                 (Variable
@@ -191,6 +196,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     str_scalar

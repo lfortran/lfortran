@@ -242,6 +242,16 @@ class ASTNodeVisitor(ASDLVisitor):
         self.emit(    "%s_t base;" % base, 2);
         args = ["Allocator &al", "const Location &a_loc"]
         lines = []
+        # An optional symbol reference that only defaulted fields follow
+        # defaults to absent, so that appending one to a constructor does not
+        # change its existing callers.
+        defaulted = set()
+        for f in reversed(cons.fields):
+            if f.type == "location" or (f.type == "symbol" and f.opt
+                    and not f.seq):
+                defaulted.add(f.name)
+            else:
+                break
         for f in cons.fields:
             type_ = convert_type(f.type, f.seq, f.opt, self.mod.name.lower())
             if f.seq:
@@ -249,7 +259,7 @@ class ASTNodeVisitor(ASDLVisitor):
             else:
                 seq = ""
             self.emit("%s m_%s;%s" % (type_, f.name, seq), 2)
-            if f.type == "location":
+            if f.name in defaulted:
                 args.append("%s a_%s = nullptr" % (type_, f.name))
             else:
                 args.append("%s a_%s" % (type_, f.name))
@@ -451,6 +461,14 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         self.emit("}", 3)
         self.emit("case ASR::symbolType::Namelist: {", 3)
         self.emit("node_to_return = ( ASR::asr_t* ) ((Variable_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::BlockData: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((BlockData_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::CommonBlock: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((CommonBlock_t*)sym);", 4)
         self.emit("return;", 4)
         self.emit("}", 3)
         self.emit("}", 2)

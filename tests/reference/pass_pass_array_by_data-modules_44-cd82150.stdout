@@ -67,6 +67,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     modules_44
@@ -132,6 +133,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             settings:
                                                 (Variable
@@ -163,6 +165,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     cmd_new
@@ -279,6 +282,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     fpm_cmd_settings
@@ -336,6 +340,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     fpm_new_settings
@@ -415,6 +420,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             data:
                                                 (Variable
@@ -445,6 +451,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             fname:
                                                 (Variable
@@ -469,6 +476,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     warnwrite_string____1

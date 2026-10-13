@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             pi:
                                 (Variable
@@ -66,6 +67,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             r:
                                 (Variable
@@ -90,6 +92,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             s1:
                                 (Variable
@@ -129,6 +132,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             s2:
                                 (Variable
@@ -168,6 +172,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -198,6 +203,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             z:
                                 (Variable
@@ -237,6 +243,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     fma

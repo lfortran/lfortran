@@ -4008,9 +4008,14 @@ end module
     auto *object = ASR::down_cast<ASR::Variable_t>(consumer->m_symtab->get_symbol("object"));
     auto *layout = ASR::down_cast<ASR::StructType_t>(object->m_type);
     REQUIRE(layout->n_data_member_types == 1);
-    for (auto *type : {factory->m_type, layout->m_data_member_types[0]}) {
-        auto *reference = contract_reference(type);
-        CHECK(ASRUtils::is_visible_from(reference, consumer->m_symtab));
+    // The shared signature of a derived type records a procedure component
+    // with the opaque procedure type; the component keeps its interface.
+    CHECK(ASRUtils::is_opaque_procedure_type(layout->m_data_member_types[0]));
+    auto *holder = ASR::down_cast<ASR::Struct_t>(consumer->m_symtab->get_symbol("holder"));
+    auto *component = ASR::down_cast<ASR::Variable_t>(holder->m_symtab->get_symbol("factory"));
+    for (auto *variable : {factory, component}) {
+        auto *reference = contract_reference(variable->m_type);
+        CHECK(ASRUtils::is_visible_from(reference, variable->m_parent_symtab));
         CHECK(ASRUtils::symbol_get_past_external(reference) == canonical);
     }
     CHECK(contract_reference(original->m_function_signature) == original_contract);

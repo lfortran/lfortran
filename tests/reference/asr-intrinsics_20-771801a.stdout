@@ -39,6 +39,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             pi:
                                 (Variable
@@ -85,6 +86,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             pi_dp:
                                 (Variable
@@ -131,6 +133,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -194,6 +197,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             y:
                                 (Variable
@@ -218,6 +222,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             y2:
                                 (Variable
@@ -242,6 +247,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     intrinsics_20

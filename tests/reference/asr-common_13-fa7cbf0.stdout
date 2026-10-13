@@ -2,110 +2,254 @@
     (SymbolTable
         1
         {
-            1_arrblock_myarr:
-                (ExternalSymbol
-                    1
-                    1_arrblock_myarr
-                    3 myarr
-                    arrblock
+            block_data~:
+                (BlockData
+                    (SymbolTable
+                        2
+                        {
+                            common~arrblock:
+                                (CommonBlock
+                                    2
+                                    common~arrblock
+                                    arrblock
+                                    __module_file_common_block_arrblock_struct_instance_arrblock
+                                    [2 myarr]
+                                    []
+                                    Source
+                                    Default
+                                    Initialized
+                                ),
+                            common~myblock:
+                                (CommonBlock
+                                    2
+                                    common~myblock
+                                    myblock
+                                    __module_file_common_block_myblock_struct_instance_myblock
+                                    [2 myint
+                                    2 myzero]
+                                    []
+                                    Source
+                                    Default
+                                    Initialized
+                                ),
+                            myarr:
+                                (Variable
+                                    2
+                                    myarr
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        40
+                                        [1, 2, 3, ...., 8, 9, 10]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 10 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                            Global
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        40
+                                        [1, 2, 3, ...., 8, 9, 10]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 10 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                            Global
+                                        )
+                                        ColMajor
+                                    )
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    2 common~arrblock
+                                ),
+                            myint:
+                                (Variable
+                                    2
+                                    myint
+                                    []
+                                    Local
+                                    (IntegerConstant 44 (Integer 4) Decimal)
+                                    (IntegerConstant 44 (Integer 4) Decimal)
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    2 common~myblock
+                                ),
+                            myzero:
+                                (Variable
+                                    2
+                                    myzero
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    2 common~myblock
+                                )
+                        })
+                    block_data~
+                    ()
                     []
-                    myarr
-                    Public
-                ),
-            1_myblock_myint:
-                (ExternalSymbol
-                    1
-                    1_myblock_myint
-                    5 myint
-                    myblock
-                    []
-                    myint
-                    Public
-                ),
-            arrblock:
-                (ExternalSymbol
-                    1
-                    arrblock
-                    2 arrblock
-                    file_common_block_arrblock
-                    []
-                    arrblock
-                    Public
                 ),
             common_13:
                 (Program
                     (SymbolTable
-                        6
+                        3
                         {
-                            1_arrblock_myarr:
-                                (ExternalSymbol
-                                    6
-                                    1_arrblock_myarr
-                                    3 myarr
+                            common~arrblock:
+                                (CommonBlock
+                                    3
+                                    common~arrblock
                                     arrblock
+                                    __module_file_common_block_arrblock_struct_instance_arrblock
+                                    [3 myarr]
                                     []
+                                    Source
+                                    Default
+                                    Tentative
+                                ),
+                            common~myblock:
+                                (CommonBlock
+                                    3
+                                    common~myblock
+                                    myblock
+                                    __module_file_common_block_myblock_struct_instance_myblock
+                                    [3 myint
+                                    3 myzero]
+                                    []
+                                    Source
+                                    Default
+                                    Tentative
+                                ),
+                            myarr:
+                                (Variable
+                                    3
                                     myarr
-                                    Public
-                                ),
-                            1_myblock_myint:
-                                (ExternalSymbol
-                                    6
-                                    1_myblock_myint
-                                    5 myint
-                                    myblock
                                     []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    3 common~arrblock
+                                ),
+                            myint:
+                                (Variable
+                                    3
                                     myint
-                                    Public
-                                ),
-                            1_myblock_myzero:
-                                (ExternalSymbol
-                                    6
-                                    1_myblock_myzero
-                                    5 myzero
-                                    myblock
                                     []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    3 common~myblock
+                                ),
+                            myzero:
+                                (Variable
+                                    3
                                     myzero
-                                    Public
-                                ),
-                            arrblock:
-                                (ExternalSymbol
-                                    6
-                                    arrblock
-                                    2 arrblock
-                                    file_common_block_arrblock
                                     []
-                                    arrblock
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
                                     Public
-                                ),
-                            myblock:
-                                (ExternalSymbol
-                                    6
-                                    myblock
-                                    4 myblock
-                                    file_common_block_myblock
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
                                     []
-                                    myblock
-                                    Public
-                                ),
-                            struct_instance_arrblock:
-                                (ExternalSymbol
-                                    6
-                                    struct_instance_arrblock
-                                    2 struct_instance_arrblock
-                                    file_common_block_arrblock
-                                    []
-                                    struct_instance_arrblock
-                                    Public
-                                ),
-                            struct_instance_myblock:
-                                (ExternalSymbol
-                                    6
-                                    struct_instance_myblock
-                                    4 struct_instance_myblock
-                                    file_common_block_myblock
-                                    []
-                                    struct_instance_myblock
-                                    Public
+                                    3 common~myblock
                                 )
                         })
                     common_13
@@ -113,12 +257,7 @@
                     [(If
                         ()
                         (IntegerCompare
-                            (StructInstanceMember
-                                (Var 6 struct_instance_myblock)
-                                6 1_myblock_myint
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 3 myint)
                             NotEq
                             (IntegerConstant 44 (Integer 4) Decimal)
                             (Logical 4)
@@ -132,12 +271,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (StructInstanceMember
-                                (Var 6 struct_instance_myblock)
-                                6 1_myblock_myzero
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 3 myzero)
                             NotEq
                             (IntegerConstant 0 (Integer 4) Decimal)
                             (Logical 4)
@@ -154,18 +288,7 @@
                             Any
                             [(ArrayPhysicalCast
                                 (IntegerCompare
-                                    (StructInstanceMember
-                                        (Var 6 struct_instance_arrblock)
-                                        6 1_arrblock_myarr
-                                        (Array
-                                            (Integer 4)
-                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (IntegerConstant 10 (Integer 4) Decimal))]
-                                            FixedSizeArray
-                                            Global
-                                        )
-                                        ()
-                                    )
+                                    (Var 3 myarr)
                                     NotEq
                                     (ArrayConstant
                                         40
@@ -209,419 +332,6 @@
                         []
                     )]
                     ()
-                ),
-            file_common_block_arrblock:
-                (Module
-                    (SymbolTable
-                        2
-                        {
-                            arrblock:
-                                (Struct
-                                    (SymbolTable
-                                        3
-                                        {
-                                            myarr:
-                                                (Variable
-                                                    3
-                                                    myarr
-                                                    []
-                                                    Local
-                                                    (ArrayConstant
-                                                        40
-                                                        [1, 2, 3, ...., 8, 9, 10]
-                                                        (Array
-                                                            (Integer 4)
-                                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (IntegerConstant 10 (Integer 4) Decimal))]
-                                                            FixedSizeArray
-                                                            Global
-                                                        )
-                                                        ColMajor
-                                                    )
-                                                    (ArrayConstant
-                                                        40
-                                                        [1, 2, 3, ...., 8, 9, 10]
-                                                        (Array
-                                                            (Integer 4)
-                                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                                            (IntegerConstant 10 (Integer 4) Decimal))]
-                                                            FixedSizeArray
-                                                            Global
-                                                        )
-                                                        ColMajor
-                                                    )
-                                                    Default
-                                                    (Array
-                                                        (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (IntegerConstant 10 (Integer 4) Decimal))]
-                                                        FixedSizeArray
-                                                        Global
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    arrblock
-                                    (StructType
-                                        []
-                                        []
-                                        .true.
-                                        .false.
-                                    )
-                                    []
-                                    [myarr]
-                                    []
-                                    Source
-                                    Public
-                                    .false.
-                                    .false.
-                                    .true.
-                                    []
-                                    ()
-                                    ()
-                                    []
-                                    .false.
-                                    []
-                                    ()
-                                ),
-                            struct_instance_arrblock:
-                                (Variable
-                                    2
-                                    struct_instance_arrblock
-                                    []
-                                    Local
-                                    (StructConstant
-                                        2 arrblock
-                                        [((ArrayConstant
-                                            40
-                                            [1, 2, 3, ...., 8, 9, 10]
-                                            (Array
-                                                (Integer 4)
-                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (IntegerConstant 10 (Integer 4) Decimal))]
-                                                FixedSizeArray
-                                                Global
-                                            )
-                                            ColMajor
-                                        ))]
-                                        (StructType
-                                            []
-                                            []
-                                            .true.
-                                            .false.
-                                        )
-                                    )
-                                    (StructConstant
-                                        2 arrblock
-                                        [((ArrayConstant
-                                            40
-                                            [1, 2, 3, ...., 8, 9, 10]
-                                            (Array
-                                                (Integer 4)
-                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (IntegerConstant 10 (Integer 4) Decimal))]
-                                                FixedSizeArray
-                                                Global
-                                            )
-                                            ColMajor
-                                        ))]
-                                        (StructType
-                                            []
-                                            []
-                                            .true.
-                                            .false.
-                                        )
-                                    )
-                                    Default
-                                    (StructType
-                                        []
-                                        []
-                                        .true.
-                                        .false.
-                                    )
-                                    2 arrblock
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                )
-                        })
-                    file_common_block_arrblock
-                    ()
-                    []
-                    .false.
-                    .false.
-                    .false.
-                    ()
-                ),
-            file_common_block_myblock:
-                (Module
-                    (SymbolTable
-                        4
-                        {
-                            myblock:
-                                (Struct
-                                    (SymbolTable
-                                        5
-                                        {
-                                            myint:
-                                                (Variable
-                                                    5
-                                                    myint
-                                                    []
-                                                    Local
-                                                    (IntegerConstant 44 (Integer 4) Decimal)
-                                                    (IntegerConstant 44 (Integer 4) Decimal)
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            myzero:
-                                                (Variable
-                                                    5
-                                                    myzero
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    myblock
-                                    (StructType
-                                        []
-                                        []
-                                        .true.
-                                        .false.
-                                    )
-                                    []
-                                    [myint
-                                    myzero]
-                                    []
-                                    Source
-                                    Public
-                                    .false.
-                                    .false.
-                                    .true.
-                                    []
-                                    ()
-                                    ()
-                                    []
-                                    .false.
-                                    []
-                                    ()
-                                ),
-                            struct_instance_myblock:
-                                (Variable
-                                    4
-                                    struct_instance_myblock
-                                    []
-                                    Local
-                                    (StructConstant
-                                        4 myblock
-                                        [((IntegerConstant 44 (Integer 4) Decimal))
-                                        (())]
-                                        (StructType
-                                            []
-                                            []
-                                            .true.
-                                            .false.
-                                        )
-                                    )
-                                    (StructConstant
-                                        4 myblock
-                                        [((IntegerConstant 44 (Integer 4) Decimal))
-                                        (())]
-                                        (StructType
-                                            []
-                                            []
-                                            .true.
-                                            .false.
-                                        )
-                                    )
-                                    Default
-                                    (StructType
-                                        []
-                                        []
-                                        .true.
-                                        .false.
-                                    )
-                                    4 myblock
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                    NotMethod
-                                    ()
-                                    []
-                                )
-                        })
-                    file_common_block_myblock
-                    ()
-                    []
-                    .false.
-                    .false.
-                    .false.
-                    ()
-                ),
-            myarr:
-                (Variable
-                    1
-                    myarr
-                    []
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Array
-                        (Integer 4)
-                        [((IntegerConstant 1 (Integer 4) Decimal)
-                        (IntegerConstant 10 (Integer 4) Decimal))]
-                        FixedSizeArray
-                        Global
-                    )
-                    ()
-                    Source
-                    Public
-                    Required
-                    .false.
-                    .false.
-                    .false.
-                    ()
-                    .false.
-                    .false.
-                    NotMethod
-                    ()
-                    []
-                ),
-            myblock:
-                (ExternalSymbol
-                    1
-                    myblock
-                    4 myblock
-                    file_common_block_myblock
-                    []
-                    myblock
-                    Public
-                ),
-            myint:
-                (Variable
-                    1
-                    myint
-                    []
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Integer 4)
-                    ()
-                    Source
-                    Public
-                    Required
-                    .false.
-                    .false.
-                    .false.
-                    ()
-                    .false.
-                    .false.
-                    NotMethod
-                    ()
-                    []
-                ),
-            myzero:
-                (Variable
-                    1
-                    myzero
-                    []
-                    Local
-                    ()
-                    ()
-                    Default
-                    (Integer 4)
-                    ()
-                    Source
-                    Public
-                    Required
-                    .false.
-                    .false.
-                    .false.
-                    ()
-                    .false.
-                    .false.
-                    NotMethod
-                    ()
-                    []
-                ),
-            struct_instance_arrblock:
-                (ExternalSymbol
-                    1
-                    struct_instance_arrblock
-                    2 struct_instance_arrblock
-                    file_common_block_arrblock
-                    []
-                    struct_instance_arrblock
-                    Public
-                ),
-            struct_instance_myblock:
-                (ExternalSymbol
-                    1
-                    struct_instance_myblock
-                    4 struct_instance_myblock
-                    file_common_block_myblock
-                    []
-                    struct_instance_myblock
-                    Public
                 )
         })
     []

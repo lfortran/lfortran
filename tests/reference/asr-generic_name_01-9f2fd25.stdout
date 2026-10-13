@@ -43,6 +43,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             integer_add_subrout:
                                                 (StructMethodDeclaration
@@ -79,6 +80,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             real_add_subrout:
                                                 (StructMethodDeclaration
@@ -166,6 +168,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             r:
                                                 (Variable
@@ -190,6 +193,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             sum:
                                                 (Variable
@@ -220,6 +224,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             this:
                                                 (Variable
@@ -250,6 +255,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     integer_add_subrout
@@ -406,6 +412,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             r:
                                                 (Variable
@@ -430,6 +437,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             sum:
                                                 (Variable
@@ -460,6 +468,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             this:
                                                 (Variable
@@ -490,6 +499,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     real_add_subrout
@@ -679,6 +689,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             c:
                                 (Variable
@@ -709,6 +720,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             complextype:
                                 (ExternalSymbol
@@ -743,6 +755,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             fptwo:
                                 (Variable
@@ -767,6 +780,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             fpzero:
                                 (Variable
@@ -791,6 +805,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             ione:
                                 (Variable
@@ -815,6 +830,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             izero:
                                 (Variable
@@ -839,6 +855,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             negfpone:
                                 (Variable
@@ -863,6 +880,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     generic_name_01

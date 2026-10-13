@@ -57,6 +57,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     enum_escape
@@ -129,6 +130,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             tfc:
                                 (Variable
@@ -162,6 +164,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             toml_escape:
                                 (Variable
@@ -215,6 +218,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     derived_type1

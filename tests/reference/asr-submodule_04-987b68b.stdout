@@ -35,6 +35,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             map:
                                                 (Variable
@@ -64,6 +65,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     map_open_entry
@@ -181,6 +183,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             key:
                                                 (Variable
@@ -205,6 +208,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             map:
                                                 (Variable
@@ -234,6 +238,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     map_open_entry
@@ -331,6 +336,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             map:
                                 (Variable
@@ -360,6 +366,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             open_hashmap_type:
                                 (ExternalSymbol

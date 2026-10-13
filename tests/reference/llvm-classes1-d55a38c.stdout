@@ -20,9 +20,9 @@ target datalayout = "..."
 define void @__module_xx_show_x(%xx.base.3_class* %this) {
 .entry:
   %0 = getelementptr %xx.base.3_class, %xx.base.3_class* %this, i32 0, i32 1
-  %1 = load %xx.base.3*, %xx.base.3** %0, align 8
+  %1 = load %xx.base.3*, %xx.base.3** %0, align 1
   %2 = getelementptr %xx.base.3, %xx.base.3* %1, i32 0, i32 0
-  store i32 12, i32* %2, align 4
+  store i32 12, i32* %2, align 1
   br label %return
 
 return:                                           ; preds = %.entry
@@ -120,12 +120,12 @@ then1:                                            ; preds = %ifcont
 
 then2:                                            ; preds = %then1
   %8 = getelementptr %xx.base.3, %xx.base.3* %5, i32 0, i32 0
-  %9 = load i32, i32* %8, align 4
+  %9 = load i32, i32* %8, align 1
   %10 = getelementptr %xx.base.3, %xx.base.3* %6, i32 0, i32 0
   br i1 true, label %then3, label %else4
 
 then3:                                            ; preds = %then2
-  store i32 %9, i32* %10, align 4
+  store i32 %9, i32* %10, align 1
   br label %ifcont5
 
 else4:                                            ; preds = %then2
@@ -136,12 +136,12 @@ ifcont5:                                          ; preds = %else4, %then3
 
 else6:                                            ; preds = %then1
   %11 = getelementptr %xx.base.3, %xx.base.3* %5, i32 0, i32 0
-  %12 = load i32, i32* %11, align 4
+  %12 = load i32, i32* %11, align 1
   %13 = getelementptr %xx.base.3, %xx.base.3* %6, i32 0, i32 0
   br i1 true, label %then7, label %else8
 
 then7:                                            ; preds = %else6
-  store i32 %12, i32* %13, align 4
+  store i32 %12, i32* %13, align 1
   br label %ifcont9
 
 else8:                                            ; preds = %else6
@@ -158,12 +158,12 @@ else11:                                           ; preds = %ifcont
 
 then12:                                           ; preds = %else11
   %14 = getelementptr %xx.base.3, %xx.base.3* %5, i32 0, i32 0
-  %15 = load i32, i32* %14, align 4
+  %15 = load i32, i32* %14, align 1
   %16 = getelementptr %xx.base.3, %xx.base.3* %6, i32 0, i32 0
   br i1 true, label %then13, label %else14
 
 then13:                                           ; preds = %then12
-  store i32 %15, i32* %16, align 4
+  store i32 %15, i32* %16, align 1
   br label %ifcont15
 
 else14:                                           ; preds = %then12
@@ -174,12 +174,12 @@ ifcont15:                                         ; preds = %else14, %then13
 
 else16:                                           ; preds = %else11
   %17 = getelementptr %xx.base.3, %xx.base.3* %5, i32 0, i32 0
-  %18 = load i32, i32* %17, align 4
+  %18 = load i32, i32* %17, align 1
   %19 = getelementptr %xx.base.3, %xx.base.3* %6, i32 0, i32 0
   br i1 true, label %then17, label %else18
 
 then17:                                           ; preds = %else16
-  store i32 %18, i32* %19, align 4
+  store i32 %18, i32* %19, align 1
   br label %ifcont19
 
 else18:                                           ; preds = %else16
@@ -206,12 +206,12 @@ entry:
   %2 = bitcast i8* %0 to %xx.base.3*
   %3 = bitcast i8* %1 to %xx.base.3*
   %4 = getelementptr %xx.base.3, %xx.base.3* %2, i32 0, i32 0
-  %5 = load i32, i32* %4, align 4
+  %5 = load i32, i32* %4, align 1
   %6 = getelementptr %xx.base.3, %xx.base.3* %3, i32 0, i32 0
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %entry
-  store i32 %5, i32* %6, align 4
+  store i32 %5, i32* %6, align 1
   br label %ifcont
 
 else:                                             ; preds = %entry
@@ -231,7 +231,7 @@ entry:
   %3 = call i8* @_lfortran_malloc_alloc(i8* %2, i64 16)
   call void @llvm.memset.p0i8.i32(i8* %3, i8 0, i32 16, i1 false)
   store i8* %3, i8** %0, align 8
-  %4 = load i8*, i8** %0, align 8
+  %4 = load i8*, i8** %0, align 1
   %5 = bitcast i8* %4 to %xx.base.3_class*
   %6 = bitcast %xx.base.3_class* %5 to i32 (...)***
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_2_xx4_base, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8

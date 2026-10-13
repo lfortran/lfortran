@@ -50,6 +50,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             b:
                                                 (Variable
@@ -79,6 +80,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             eq:
                                                 (Variable
@@ -103,6 +105,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     map_s_iter_equal
@@ -197,6 +200,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             b:
                                                 (Variable
@@ -226,6 +230,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             ne:
                                                 (Variable
@@ -250,6 +255,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     map_s_iter_not_equal
@@ -349,6 +355,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     map_setiterator
@@ -440,6 +447,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             iter2:
                                 (Variable
@@ -469,6 +477,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             map_s_iter_equal:
                                 (ExternalSymbol

@@ -43,6 +43,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             table:
                                                 (Variable
@@ -75,6 +76,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             toml_parse:
                                                 (ExternalSymbol
@@ -249,6 +251,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             error:
                                                 (Variable
@@ -283,6 +286,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             table:
                                                 (Variable
@@ -315,6 +319,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     toml_parse_string
@@ -408,6 +413,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             table:
                                                 (Variable
@@ -440,6 +446,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             unit:
                                                 (Variable
@@ -464,6 +471,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     toml_parse_unit
@@ -568,6 +576,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             stat:
                                                 (Variable
@@ -592,6 +601,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     toml_error
@@ -669,6 +679,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             inline:
                                                 (Variable
@@ -699,6 +710,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     toml_table

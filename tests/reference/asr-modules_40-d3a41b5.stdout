@@ -57,6 +57,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             fill_stack:
                                                 (Function
@@ -91,6 +92,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             stack:
                                                                 (Variable
@@ -130,6 +132,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             top:
                                                                 (Variable
@@ -154,6 +157,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     fill_stack
@@ -264,6 +268,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             stack:
                                                                 (Variable
@@ -303,6 +308,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     resize
@@ -401,6 +407,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             toml_key:
                                 (Struct
@@ -432,6 +439,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     toml_key

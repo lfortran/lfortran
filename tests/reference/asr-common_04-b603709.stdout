@@ -2,136 +2,22 @@
     (SymbolTable
         1
         {
-            file_common_block_block_1:
-                (Module
+            main:
+                (Program
                     (SymbolTable
-                        3
+                        2
                         {
-                            block_1:
-                                (Struct
-                                    (SymbolTable
-                                        4
-                                        {
-                                            a:
-                                                (Variable
-                                                    4
-                                                    a
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            b:
-                                                (Variable
-                                                    4
-                                                    b
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                ),
-                                            c:
-                                                (Variable
-                                                    4
-                                                    c
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Array
-                                                        (Integer 4)
-                                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                                        (IntegerConstant 5 (Integer 4) Decimal))]
-                                                        FixedSizeArray
-                                                        Global
-                                                    )
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    NotMethod
-                                                    ()
-                                                    []
-                                                )
-                                        })
-                                    block_1
-                                    (StructType
-                                        []
-                                        []
-                                        .true.
-                                        .false.
-                                    )
-                                    []
-                                    [a
-                                    b
-                                    c]
-                                    []
-                                    Source
-                                    Public
-                                    .false.
-                                    .false.
-                                    .true.
-                                    []
-                                    ()
-                                    ()
-                                    []
-                                    .false.
-                                    []
-                                    ()
-                                ),
-                            struct_instance_block_1:
+                            a:
                                 (Variable
-                                    3
-                                    struct_instance_block_1
+                                    2
+                                    a
                                     []
                                     Local
                                     ()
                                     ()
                                     Default
-                                    (StructType
-                                        []
-                                        []
-                                        .true.
-                                        .false.
-                                    )
-                                    3 block_1
+                                    (Integer 4)
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -144,60 +30,77 @@
                                     NotMethod
                                     ()
                                     []
-                                )
-                        })
-                    file_common_block_block_1
-                    ()
-                    []
-                    .false.
-                    .false.
-                    .false.
-                    ()
-                ),
-            main:
-                (Program
-                    (SymbolTable
-                        2
-                        {
-                            1_block_1_a:
-                                (ExternalSymbol
-                                    2
-                                    1_block_1_a
-                                    4 a
-                                    block_1
-                                    []
-                                    a
-                                    Public
+                                    2 common~block_1
                                 ),
-                            1_block_1_b:
-                                (ExternalSymbol
+                            b:
+                                (Variable
                                     2
-                                    1_block_1_b
-                                    4 b
-                                    block_1
-                                    []
                                     b
-                                    Public
-                                ),
-                            1_block_1_c:
-                                (ExternalSymbol
-                                    2
-                                    1_block_1_c
-                                    4 c
-                                    block_1
                                     []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    2 common~block_1
+                                ),
+                            c:
+                                (Variable
+                                    2
                                     c
-                                    Public
-                                ),
-                            block_1:
-                                (ExternalSymbol
-                                    2
-                                    block_1
-                                    3 block_1
-                                    file_common_block_block_1
                                     []
-                                    block_1
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
                                     Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    2 common~block_1
+                                ),
+                            common~block_1:
+                                (CommonBlock
+                                    2
+                                    common~block_1
+                                    block_1
+                                    __module_file_common_block_block_1_struct_instance_block_1
+                                    [2 a
+                                    2 b
+                                    2 c]
+                                    []
+                                    Source
+                                    Default
+                                    Tentative
                                 ),
                             d:
                                 (Variable
@@ -222,39 +125,20 @@
                                     NotMethod
                                     ()
                                     []
-                                ),
-                            struct_instance_block_1:
-                                (ExternalSymbol
-                                    2
-                                    struct_instance_block_1
-                                    3 struct_instance_block_1
-                                    file_common_block_block_1
-                                    []
-                                    struct_instance_block_1
-                                    Public
+                                    ()
                                 )
                         })
                     main
                     []
                     [(Assignment
-                        (StructInstanceMember
-                            (Var 2 struct_instance_block_1)
-                            2 1_block_1_a
-                            (Integer 4)
-                            ()
-                        )
+                        (Var 2 a)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (StructInstanceMember
-                            (Var 2 struct_instance_block_1)
-                            2 1_block_1_b
-                            (Integer 4)
-                            ()
-                        )
+                        (Var 2 b)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
                         .false.
@@ -262,29 +146,13 @@
                     )
                     (Assignment
                         (Var 2 d)
-                        (StructInstanceMember
-                            (Var 2 struct_instance_block_1)
-                            2 1_block_1_b
-                            (Integer 4)
-                            ()
-                        )
+                        (Var 2 b)
                         ()
                         .false.
                         .false.
                     )
                     (Assignment
-                        (StructInstanceMember
-                            (Var 2 struct_instance_block_1)
-                            2 1_block_1_c
-                            (Array
-                                (Integer 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 5 (Integer 4) Decimal))]
-                                FixedSizeArray
-                                Global
-                            )
-                            ()
-                        )
+                        (Var 2 c)
                         (ArrayBroadcast
                             (IntegerConstant 4 (Integer 4) Decimal)
                             (ArrayConstant
@@ -325,18 +193,7 @@
                     )
                     (Assignment
                         (ArrayItem
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_c
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 5 (Integer 4) Decimal))]
-                                    FixedSizeArray
-                                    Global
-                                )
-                                ()
-                            )
+                            (Var 2 c)
                             [(()
                             (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
@@ -350,25 +207,9 @@
                         .false.
                     )
                     (Assignment
-                        (StructInstanceMember
-                            (Var 2 struct_instance_block_1)
-                            2 1_block_1_b
-                            (Integer 4)
-                            ()
-                        )
+                        (Var 2 b)
                         (ArrayItem
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_c
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 5 (Integer 4) Decimal))]
-                                    FixedSizeArray
-                                    Global
-                                )
-                                ()
-                            )
+                            (Var 2 c)
                             [(()
                             (IntegerConstant 3 (Integer 4) Decimal)
                             ())]
@@ -383,12 +224,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_a
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 2 a)
                             NotEq
                             (IntegerConstant 2 (Integer 4) Decimal)
                             (Logical 4)
@@ -402,12 +238,7 @@
                     (If
                         ()
                         (IntegerCompare
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_b
-                                (Integer 4)
-                                ()
-                            )
+                            (Var 2 b)
                             NotEq
                             (IntegerConstant 4 (Integer 4) Decimal)
                             (Logical 4)
@@ -422,18 +253,7 @@
                         ()
                         (IntegerCompare
                             (ArrayItem
-                                (StructInstanceMember
-                                    (Var 2 struct_instance_block_1)
-                                    2 1_block_1_c
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 5 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                        Global
-                                    )
-                                    ()
-                                )
+                                (Var 2 c)
                                 [(()
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
@@ -455,18 +275,7 @@
                         ()
                         (IntegerCompare
                             (ArrayItem
-                                (StructInstanceMember
-                                    (Var 2 struct_instance_block_1)
-                                    2 1_block_1_c
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 5 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                        Global
-                                    )
-                                    ()
-                                )
+                                (Var 2 c)
                                 [(()
                                 (IntegerConstant 2 (Integer 4) Decimal)
                                 ())]
@@ -488,18 +297,7 @@
                         ()
                         (IntegerCompare
                             (ArrayItem
-                                (StructInstanceMember
-                                    (Var 2 struct_instance_block_1)
-                                    2 1_block_1_c
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 5 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                        Global
-                                    )
-                                    ()
-                                )
+                                (Var 2 c)
                                 [(()
                                 (IntegerConstant 3 (Integer 4) Decimal)
                                 ())]
@@ -521,18 +319,7 @@
                         ()
                         (IntegerCompare
                             (ArrayItem
-                                (StructInstanceMember
-                                    (Var 2 struct_instance_block_1)
-                                    2 1_block_1_c
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 5 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                        Global
-                                    )
-                                    ()
-                                )
+                                (Var 2 c)
                                 [(()
                                 (IntegerConstant 4 (Integer 4) Decimal)
                                 ())]
@@ -554,18 +341,7 @@
                         ()
                         (IntegerCompare
                             (ArrayItem
-                                (StructInstanceMember
-                                    (Var 2 struct_instance_block_1)
-                                    2 1_block_1_c
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 5 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                        Global
-                                    )
-                                    ()
-                                )
+                                (Var 2 c)
                                 [(()
                                 (IntegerConstant 5 (Integer 4) Decimal)
                                 ())]
@@ -600,43 +376,11 @@
                     (Print
                         (StringFormat
                             ()
-                            [(StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_a
-                                (Integer 4)
-                                ()
-                            )
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_b
-                                (Integer 4)
-                                ()
-                            )
-                            (StructInstanceMember
-                                (Var 2 struct_instance_block_1)
-                                2 1_block_1_c
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 5 (Integer 4) Decimal))]
-                                    FixedSizeArray
-                                    Global
-                                )
-                                ()
-                            )
+                            [(Var 2 a)
+                            (Var 2 b)
+                            (Var 2 c)
                             (ArrayItem
-                                (StructInstanceMember
-                                    (Var 2 struct_instance_block_1)
-                                    2 1_block_1_c
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 5 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                        Global
-                                    )
-                                    ()
-                                )
+                                (Var 2 c)
                                 [(()
                                 (IntegerConstant 5 (Integer 4) Decimal)
                                 ())]

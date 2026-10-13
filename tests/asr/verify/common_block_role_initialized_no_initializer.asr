@@ -1,0 +1,98 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "blockdata" (Program
+        (SymbolTable
+          1
+          {
+            "common~blk" (CommonBlock
+              1
+              "common~blk"
+              "blk"
+              "__module_file_common_block_blk_struct_instance_blk"
+              [
+                (SymbolRef 1 "j")
+              ]
+              []
+              :Source
+              :Default
+              :Tentative
+            )
+            "common~zero" (CommonBlock
+              1
+              "common~zero"
+              "zero"
+              "__module_file_common_block_zero_struct_instance_zero"
+              [
+                (SymbolRef 1 "y")
+              ]
+              []
+              :Source
+              :Default
+              :Initialized
+            )
+            "j" (Variable
+              1
+              "j"
+              []
+              :Local
+              nil
+              nil
+              :Default
+              (Integer
+                0
+              )
+              nil
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              :NotMethod
+              nil
+              []
+              (SymbolRef 1 "common~blk")
+            )
+            "y" (Variable
+              1
+              "y"
+              []
+              :Local
+              nil
+              nil
+              :Default
+              (Integer
+                0
+              )
+              nil
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              :NotMethod
+              nil
+              []
+              (SymbolRef 1 "common~zero")
+            )
+          }
+        )
+        "blockdata"
+        []
+        []
+        nil
+      )
+    }
+  )
+  []
+  nil
+)

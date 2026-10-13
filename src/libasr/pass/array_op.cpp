@@ -61,6 +61,11 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
 
     }
 
+    void replace_StringLen(ASR::StringLen_t* /*x*/) {
+        // LEN of a character array is a scalar inquiry, like SIZE; its
+        // array argument is not an elemental operand of the expression.
+    }
+
     void replace_Var(ASR::Var_t* x) {
         if( ASRUtils::is_array(ASRUtils::symbol_type(x->m_v)) ) {
             vars.push_back(al, current_expr);
@@ -166,7 +171,7 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
     void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t& x) {
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_IntrinsicElementalFunction(x);
         ASR::IntrinsicElementalFunction_t& xx = const_cast<ASR::IntrinsicElementalFunction_t&>(x);
-        if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0])) ) {
+        if (ASRUtils::is_array(xx.m_type)) {
             xx.m_type = ASRUtils::extract_type(xx.m_type);
             xx.m_value = nullptr;
         }
@@ -178,8 +183,7 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
             return ;
         }
         ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
-        if( (x.m_dt && !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt))) ||
-            !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0].m_value)) ) {
+        if (ASRUtils::is_array(xx.m_type)) {
             xx.m_type = ASRUtils::extract_type(xx.m_type);
             xx.m_value = nullptr;
         }
@@ -558,6 +562,7 @@ public:
         void visit_ArraySize(const ASR::ArraySize_t&) {}
         void visit_ArrayReshape(const ASR::ArrayReshape_t&) {}
         void visit_ArrayBound(const ASR::ArrayBound_t&) {}
+        void visit_StringLen(const ASR::StringLen_t&) {}
 
         void visit_Var(const ASR::Var_t& x) {
             ASR::Var_t *xx = const_cast<ASR::Var_t*>(&x);
@@ -1494,8 +1499,6 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
         }
 
-        Vec<ASR::alloc_arg_t> alloc_args;
-        alloc_args.reserve(al, 1);
         ASR::alloc_arg_t aa;
         aa.loc = loc;
         aa.m_a = target;
@@ -1506,10 +1509,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         aa.m_sym_subclass = nullptr;
         aa.m_codims = nullptr;
         aa.n_codims = 0;
-        set_dynamic_type_of_polymorphic_target(aa, target, value);
-        alloc_args.push_back(al, aa);
-        pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(al,
-            loc, alloc_args.p, alloc_args.size())));
+        reallocate_target(aa, target, value, loc);
         return true;
     }
 
@@ -1612,7 +1612,6 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             }
         }
 
-        Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
         ASR::alloc_arg_t alloc_arg;
         alloc_arg.loc = loc;
         alloc_arg.m_a = underlying_target;
@@ -1623,26 +1622,101 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         alloc_arg.m_sym_subclass = nullptr;
         alloc_arg.m_codims = nullptr;
         alloc_arg.n_codims = 0;
-        set_dynamic_type_of_polymorphic_target(alloc_arg, underlying_target, value);
-        alloc_args.push_back(al, alloc_arg);
+        reallocate_target(alloc_arg, underlying_target, value, loc);
+    }
 
-        pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(
+    // Reallocates the target of `alloc_arg` for the assignment of `value`.
+    // A polymorphic target takes the dynamic type of the value: a value
+    // that is not polymorphic gives it statically, and a polymorphic one
+    // gives it at run time, as the MOLD= of an ALLOCATE of the target.
+    void reallocate_target(ASR::alloc_arg_t& alloc_arg, ASR::expr_t* target,
+            ASR::expr_t* value, const Location& loc) {
+        ASR::expr_t* mold = get_polymorphic_mold(target, value);
+        set_dynamic_type_of_polymorphic_target(alloc_arg, target, value, mold);
+        deallocate_polymorphic_target_of_other_shape_or_type(alloc_arg, mold,
+            loc);
+        Vec<ASR::alloc_arg_t> alloc_args;
+        alloc_args.reserve(al, 1);
+        alloc_args.push_back(al, alloc_arg);
+        if (mold == nullptr) {
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(
                 al, loc, alloc_args.p, alloc_args.size())));
+            return;
+        }
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::stmt_t* allocate = ASRUtils::STMT(ASR::make_Allocate_t(al, loc,
+            alloc_args.p, alloc_args.size(), nullptr, nullptr, mold));
+        pass_result.push_back(al, b.If(b.Not(make_allocated(alloc_arg.m_a,
+            loc)), {allocate}, {}));
+    }
+
+    // The variable whose dynamic type a polymorphic array `value` has, for
+    // a polymorphic `target`, or nullptr when the value is not polymorphic
+    // or that variable is not known. A section of an array has the dynamic
+    // type of the array.
+    ASR::expr_t* get_polymorphic_mold(ASR::expr_t* target, ASR::expr_t* value) {
+        if (!ASRUtils::is_class_type(ASRUtils::extract_type(
+                    ASRUtils::expr_type(target))) ||
+                !ASRUtils::is_class_type(ASRUtils::extract_type(
+                    ASRUtils::expr_type(value)))) {
+            return nullptr;
+        }
+        ASR::expr_t* mold = ASRUtils::get_past_array_physical_cast(value);
+        if (ASR::is_a<ASR::ArraySection_t>(*mold)) {
+            mold = ASRUtils::get_past_array_physical_cast(
+                ASR::down_cast<ASR::ArraySection_t>(mold)->m_v);
+        } else if (ASR::is_a<ASR::ArrayItem_t>(*mold)) {
+            mold = ASRUtils::get_past_array_physical_cast(
+                ASR::down_cast<ASR::ArrayItem_t>(mold)->m_v);
+        }
+        ASR::ttype_t* mold_type = ASRUtils::expr_type(mold);
+        if (!(ASR::is_a<ASR::Var_t>(*mold) ||
+                ASR::is_a<ASR::StructInstanceMember_t>(*mold)) ||
+                !ASRUtils::is_array(mold_type) ||
+                ASRUtils::extract_physical_type(mold_type) !=
+                    ASR::array_physical_typeType::DescriptorArray) {
+            return nullptr;
+        }
+        ASRUtils::ExprStmtDuplicator d(al);
+        return d.duplicate_expr(mold);
+    }
+
+    ASR::expr_t* make_allocated(ASR::expr_t* target, const Location& loc) {
+        Vec<ASR::expr_t*> allocated_args;
+        allocated_args.reserve(al, 1);
+        allocated_args.push_back(al, target);
+        return ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(al, loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+            allocated_args.p, allocated_args.size(), 0,
+            ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
     }
 
     // F2018 10.2.1.3: an allocatable polymorphic variable that is
     // (re)allocated by an intrinsic assignment takes the dynamic type of
     // the expression. When the expression is not polymorphic, that type is
-    // its declared type, so allocate the target with it.
+    // its declared type (an intrinsic type only for an unlimited
+    // polymorphic variable), so allocate the target with it. Otherwise it
+    // is the dynamic type of `mold`, and the declared type of the mold
+    // marks the allocation as one with MOLD=.
     void set_dynamic_type_of_polymorphic_target(ASR::alloc_arg_t& alloc_arg,
-            ASR::expr_t* target, ASR::expr_t* value) {
+            ASR::expr_t* target, ASR::expr_t* value, ASR::expr_t* mold) {
+        if (mold != nullptr) {
+            alloc_arg.m_type = ASRUtils::duplicate_type(al,
+                ASRUtils::extract_type(ASRUtils::expr_type(mold)));
+            return;
+        }
         ASR::ttype_t* target_el_type = ASRUtils::extract_type(
             ASRUtils::expr_type(target));
         ASR::ttype_t* value_el_type = ASRUtils::extract_type(
             ASRUtils::expr_type(value));
         if (!ASRUtils::is_class_type(target_el_type) ||
-                !ASR::is_a<ASR::StructType_t>(*value_el_type) ||
                 ASRUtils::is_class_type(value_el_type)) {
+            return;
+        }
+        if (!ASR::is_a<ASR::StructType_t>(*value_el_type)) {
+            if (ASRUtils::is_unlimited_polymorphic_type(target_el_type)) {
+                alloc_arg.m_type = ASRUtils::duplicate_type(al, value_el_type);
+            }
             return;
         }
         ASR::symbol_t* value_struct_sym =
@@ -1653,6 +1727,96 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         alloc_arg.m_type = ASRUtils::make_StructType_t_util(al,
             alloc_arg.loc, value_struct_sym, true);
         alloc_arg.m_sym_subclass = value_struct_sym;
+    }
+
+    // F2018 10.2.1.3: an allocated polymorphic variable whose shape or
+    // dynamic type differs from the expression's is deallocated before the
+    // ReAlloc of `alloc_arg`, which then allocates it with the dynamic type
+    // set by set_dynamic_type_of_polymorphic_target, or the ALLOCATE with
+    // `mold`, which then allocates it with the dynamic type of the mold.
+    // The ReAlloc itself only compares the size. The value is read after
+    // the deallocation: a function result is already in a temporary here,
+    // and a value that can refer to the variable is evaluated into one by
+    // array_struct_temporary.
+    void deallocate_polymorphic_target_of_other_shape_or_type(
+            const ASR::alloc_arg_t& alloc_arg, ASR::expr_t* mold,
+            const Location& loc) {
+        if (alloc_arg.m_type == nullptr) {
+            return;
+        }
+        ASR::expr_t* target = alloc_arg.m_a;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASRUtils::ExprStmtDuplicator d(al);
+        ASR::ttype_t* idx_type = get_index_type(loc);
+        ASR::ttype_t* logical_type = ASRUtils::TYPE(
+            ASR::make_Logical_t(al, loc, 4));
+        auto make_deallocate = [&]() {
+            Vec<ASR::expr_t*> vars;
+            vars.reserve(al, 1);
+            vars.push_back(al, target);
+            return ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(
+                al, loc, vars.p, vars.size()));
+        };
+        ASR::expr_t* shape_differs = nullptr;
+        for (size_t i = 0; i < alloc_arg.n_dims; i++) {
+            ASR::expr_t* length = d.duplicate_expr(alloc_arg.m_dims[i].m_length);
+            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(length))
+                    != get_index_kind()) {
+                length = b.i2i_t(length, idx_type);
+            }
+            ASR::expr_t* dim_differs = b.NotEq(
+                b.ArraySize(target, b.i_t(i + 1, idx_type), idx_type), length);
+            shape_differs = shape_differs == nullptr ? dim_differs
+                : b.Or(shape_differs, dim_differs);
+        }
+        // The guard naming the type of the expression keeps a variable of
+        // that type. A character expression has no guard, as its length is
+        // part of its dynamic type but not of a guard. A variable of the
+        // dynamic type of a mold is kept as well.
+        ASR::type_stmt_t* same_type_guard = nullptr;
+        if (mold == nullptr && alloc_arg.m_sym_subclass != nullptr) {
+            same_type_guard = ASR::down_cast<ASR::type_stmt_t>(
+                ASR::make_TypeStmtName_t(al, loc,
+                    alloc_arg.m_sym_subclass, nullptr, 0));
+        } else if (mold == nullptr &&
+                !ASRUtils::is_character(*alloc_arg.m_type)) {
+            same_type_guard = ASR::down_cast<ASR::type_stmt_t>(
+                ASR::make_TypeStmtType_t(al, loc,
+                    ASRUtils::duplicate_type(al, alloc_arg.m_type), nullptr, 0));
+        }
+        ASR::stmt_t* deallocate_if_other_type = make_deallocate();
+        if (mold != nullptr) {
+            Vec<ASR::expr_t*> same_type_as_args;
+            same_type_as_args.reserve(al, 2);
+            same_type_as_args.push_back(al, target);
+            same_type_as_args.push_back(al, d.duplicate_expr(mold));
+            ASR::expr_t* same_type = ASRUtils::EXPR(
+                ASR::make_IntrinsicElementalFunction_t(al, loc,
+                    static_cast<int64_t>(
+                        ASRUtils::IntrinsicElementalFunctions::SameTypeAs),
+                    same_type_as_args.p, same_type_as_args.size(), 0,
+                    logical_type, nullptr));
+            deallocate_if_other_type = b.If(b.Not(same_type),
+                {deallocate_if_other_type}, {});
+        } else if (same_type_guard != nullptr) {
+            Vec<ASR::type_stmt_t*> type_guards;
+            type_guards.reserve(al, 1);
+            type_guards.push_back(al, same_type_guard);
+            Vec<ASR::stmt_t*> other_type_body;
+            other_type_body.reserve(al, 1);
+            other_type_body.push_back(al, deallocate_if_other_type);
+            deallocate_if_other_type = ASRUtils::STMT(ASR::make_SelectType_t(
+                al, loc, target, nullptr, type_guards.p, type_guards.size(),
+                other_type_body.p, other_type_body.size()));
+        }
+        ASR::expr_t* is_allocated = make_allocated(target, loc);
+        ASR::stmt_t* deallocate_if_differs = deallocate_if_other_type;
+        if (shape_differs != nullptr) {
+            deallocate_if_differs = b.If(shape_differs, {make_deallocate()},
+                {deallocate_if_other_type});
+        }
+        pass_result.push_back(al, b.If(is_allocated, {deallocate_if_differs},
+            {}));
     }
 
     ASR::Variable_t* get_base_variable(ASR::expr_t* expr) {
@@ -1834,8 +1998,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     void visit_Allocate(const ASR::Allocate_t& x) {
         ASR::Allocate_t& xx = const_cast<ASR::Allocate_t&>(x);
         if (xx.m_source) {
+            size_t allocate_pos = pass_result.size();
             pass_result.push_back(al, &(xx.base));
             bool generated_loop = false;
+            ASR::expr_t* mold = nullptr;
             // Pushing assignment statements to source
             for (size_t i = 0; i < x.n_args ; i++) {
                 if( !ASRUtils::is_array(
@@ -1894,13 +2060,73 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 }
                 generate_loop(*assignment_t, vars1, fix_type_args, x.base.base.loc);
                 generated_loop = true;
+                // A polymorphic array takes the dynamic type of a
+                // polymorphic source, which the loops do not copy, so it
+                // is allocated with that source as its mold.
+                ASR::expr_t* arg_mold = get_polymorphic_mold(
+                    xx.m_args[i].m_a, xx.m_source);
+                if (arg_mold != nullptr) {
+                    mold = arg_mold;
+                    xx.m_args[i].m_type = ASRUtils::duplicate_type(al,
+                        ASRUtils::extract_type(ASRUtils::expr_type(mold)));
+                }
             }
             // Clear source when data copy loops were generated, since
             // the loops handle the copy. Keeping array-typed source
-            // expressions (e.g. real(a)) would cause backend errors.
+            // expressions (e.g. real(a)) would cause backend errors. Only
+            // the mold of a polymorphic array is kept.
             if (generated_loop) {
-                xx.m_source = nullptr;
+                xx.m_source = mold;
             }
+            if (mold != nullptr) {
+                split_polymorphic_allocate(xx, allocate_pos);
+            }
+        }
+    }
+
+    // Moves the objects allocated with a mold out of `x`, which is at
+    // `allocate_pos` in pass_result, into their own ALLOCATE with the mold
+    // as SOURCE=, placed right after `x`, when `x` also allocates other
+    // objects. A later run of this pass generates the copy loops of the
+    // other objects again and clears SOURCE=, which would leave the
+    // objects allocated with a mold without it.
+    void split_polymorphic_allocate(ASR::Allocate_t& x, size_t allocate_pos) {
+        Vec<ASR::alloc_arg_t> mold_args, other_args;
+        mold_args.reserve(al, x.n_args);
+        other_args.reserve(al, x.n_args);
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_type != nullptr) {
+                mold_args.push_back(al, x.m_args[i]);
+            } else {
+                other_args.push_back(al, x.m_args[i]);
+            }
+        }
+        if (other_args.size() == 0) {
+            return;
+        }
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::stmt_t* mold_allocate = ASRUtils::STMT(ASR::make_Allocate_t(al,
+            x.base.base.loc, mold_args.p, mold_args.size(),
+            duplicator.duplicate_expr(x.m_stat),
+            duplicator.duplicate_expr(x.m_errmsg), x.m_source));
+        x.m_args = other_args.p;
+        x.n_args = other_args.size();
+        x.m_source = nullptr;
+        pass_result.push_back(al, mold_allocate);
+        for (size_t j = pass_result.size() - 1; j > allocate_pos + 1; j--) {
+            pass_result.p[j] = pass_result.p[j - 1];
+        }
+        pass_result.p[allocate_pos + 1] = mold_allocate;
+        if (x.m_stat != nullptr) {
+            // The mold ALLOCATE and the copy loops run only when `x`
+            // succeeded, so that its failure stays in STAT= (F2018 9.7.4).
+            ASRUtils::ASRBuilder b(al, x.base.base.loc);
+            ASR::expr_t* stat = duplicator.duplicate_expr(x.m_stat);
+            std::vector<ASR::stmt_t*> body(pass_result.p + allocate_pos + 1,
+                pass_result.p + pass_result.size());
+            pass_result.n = allocate_pos + 1;
+            pass_result.push_back(al, b.If(b.Eq(stat,
+                b.i_t(0, ASRUtils::expr_type(stat))), body, {}));
         }
     }
 

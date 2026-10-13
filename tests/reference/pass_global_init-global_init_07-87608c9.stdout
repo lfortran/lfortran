@@ -120,6 +120,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             c:
                                                 (Variable
@@ -169,6 +170,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     host_bound
@@ -517,6 +519,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             shared:
                                 (ExternalSymbol
@@ -859,6 +862,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             expected:
                                                 (Variable
@@ -883,6 +887,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     counts
@@ -1021,6 +1026,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             step:
                                                 (Variable
@@ -1045,6 +1051,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     extent
@@ -1135,6 +1142,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     module_bound
@@ -1354,6 +1362,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     global_init_07_m
@@ -1437,6 +1446,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             c:
                                 (Variable
@@ -1486,6 +1496,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             counts:
                                 (ExternalSymbol

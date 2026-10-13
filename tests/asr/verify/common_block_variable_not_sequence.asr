@@ -1,0 +1,87 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "cbseq" (Program
+        (SymbolTable
+          1
+          {
+            "common~seqblk" (CommonBlock
+              1
+              "common~seqblk"
+              "seqblk"
+              "__module_file_common_block_seqblk_struct_instance_seqblk"
+              [
+                (SymbolRef 1 "p")
+              ]
+              []
+              :Source
+              :Default
+              :Tentative
+            )
+            "p" (Variable
+              1
+              "p"
+              []
+              :Local
+              nil
+              nil
+              :Default
+              (StructType
+                []
+                []
+                true
+                false
+              )
+              (SymbolRef 1 "pair")
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              :NotMethod
+              nil
+              []
+              (SymbolRef 1 "common~seqblk")
+            )
+            "pair" (Struct
+              (SymbolTable
+                2
+                {}
+              )
+              "pair"
+              (StructType
+                []
+                []
+                true
+                false
+              )
+              []
+              []
+              []
+              :Source
+              :Public
+              false
+              false
+              false
+              []
+              nil
+              nil
+              [] false [] nil
+            )
+          }
+        )
+        "cbseq"
+        []
+        []
+        nil
+      )
+    }
+  )
+  []
+  nil
+)

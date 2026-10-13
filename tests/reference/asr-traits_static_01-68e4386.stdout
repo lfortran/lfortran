@@ -55,6 +55,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             t:
                                                 (Variable
@@ -84,6 +85,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -113,6 +115,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     __instantiated_read_value
@@ -186,6 +189,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             t:
                                                 (Variable
@@ -215,6 +219,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -244,6 +249,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     __instantiated_read_value1
@@ -317,6 +323,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -346,6 +353,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     __trait_adapter
@@ -419,6 +427,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -448,6 +457,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     __trait_adapter1
@@ -551,6 +561,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             read_value:
                                 (ExternalSymbol
@@ -590,6 +601,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             small_value:
                                 (ExternalSymbol
@@ -790,6 +802,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             self:
                                                                 (Variable
@@ -816,6 +829,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __implements_largebox_ivalue_witness_0
@@ -930,6 +944,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             self:
                                                                 (Variable
@@ -956,6 +971,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __implements_smallbox_ivalue_witness_0
@@ -1052,6 +1068,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             self:
                                                                 (Variable
@@ -1078,6 +1095,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __trait_ivalue_get_value
@@ -1168,6 +1186,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     get_value
@@ -1241,6 +1260,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -1270,6 +1290,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     large_value
@@ -1347,6 +1368,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     largebox
@@ -1426,6 +1448,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             self:
                                                                 (Variable
@@ -1454,6 +1477,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __trait_t_get_value
@@ -1513,6 +1537,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -1541,6 +1566,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -1569,6 +1595,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     read_value
@@ -1640,6 +1667,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     read_value
@@ -1684,6 +1712,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -1713,6 +1742,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     small_value
@@ -1784,6 +1814,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     smallbox

@@ -47,6 +47,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             iostat:
                                                 (Variable
@@ -71,6 +72,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             iotype:
                                                 (Variable
@@ -95,6 +97,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             line:
                                                 (Variable
@@ -121,6 +124,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -152,6 +156,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             unit:
                                                 (Variable
@@ -176,6 +181,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             v_list:
                                                 (Variable
@@ -206,6 +212,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     read_formatted
@@ -286,6 +293,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     string_type
@@ -341,6 +349,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             iostat:
                                                 (Variable
@@ -365,6 +374,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             iotype:
                                                 (Variable
@@ -389,6 +399,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -420,6 +431,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             unit:
                                                 (Variable
@@ -444,6 +456,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             v_list:
                                                 (Variable
@@ -474,6 +487,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     write_formatted

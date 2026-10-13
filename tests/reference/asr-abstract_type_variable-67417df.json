@@ -2,7 +2,7 @@
     "basename": "asr-abstract_type_variable-67417df",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/abstract_type_variable.asr",
-    "infile_hash": "ae9ff8ff25470558f0c210974ae0124466e3df97382167298c0764aa",
+    "infile_hash": "3865aefedb5a6a83ee56a650e5422ea67cba66b4be85ba195599711c",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

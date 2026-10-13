@@ -116,6 +116,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             rectangle:
                                 (ExternalSymbol
@@ -168,6 +169,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     derived_types_08
@@ -389,6 +391,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             filled:
                                                 (Variable
@@ -413,6 +416,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             sh:
                                                 (Variable
@@ -445,6 +449,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -469,6 +474,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             y:
                                                 (Variable
@@ -493,6 +499,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     initialize_subrout
@@ -611,6 +618,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             width:
                                                 (Variable
@@ -635,6 +643,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     rectangle
@@ -690,6 +699,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             filled:
                                                 (Variable
@@ -714,6 +724,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             initialize:
                                                 (StructMethodDeclaration
@@ -750,6 +761,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             y:
                                                 (Variable
@@ -774,6 +786,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     shape

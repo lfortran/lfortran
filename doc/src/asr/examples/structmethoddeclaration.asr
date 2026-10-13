@@ -45,6 +45,7 @@
                     :pass_attr :NotMethod
                     :self_argument nil
                     :codims []
+                    :common_block nil
                   )
                 }
               )
@@ -107,6 +108,7 @@
                     :pass_attr :NotMethod
                     :self_argument nil
                     :codims []
+                    :common_block nil
                   )
                   "self" (Variable
                     :parent_symtab 3
@@ -139,6 +141,7 @@
                     :pass_attr :NotMethod
                     :self_argument nil
                     :codims []
+                    :common_block nil
                   )
                 }
               )

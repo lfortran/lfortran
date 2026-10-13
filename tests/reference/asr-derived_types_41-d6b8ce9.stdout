@@ -240,6 +240,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             b:
                                                 (Variable
@@ -264,6 +265,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             c:
                                                 (Variable
@@ -294,6 +296,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     mytype
@@ -471,6 +474,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     derived_types_41_mod

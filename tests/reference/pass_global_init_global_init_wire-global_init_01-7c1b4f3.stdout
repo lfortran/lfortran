@@ -61,6 +61,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             __lfortran_global_init_global_init_01_a:
                                                 (ExternalSymbol
@@ -242,6 +243,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             leaf:
                                 (ExternalSymbol
@@ -288,6 +290,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     global_init_01
@@ -691,6 +694,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     __lfortran_global_init_global_init_01_a
@@ -820,6 +824,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             leaf:
                                 (Struct
@@ -849,6 +854,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             tag:
                                                 (Variable
@@ -879,6 +885,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     leaf
@@ -954,6 +961,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     __lfortran_global_init_global_init_01_b
@@ -1093,6 +1101,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             check_a:
                                 (Function
@@ -1142,6 +1151,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     check_a

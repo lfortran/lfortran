@@ -34,6 +34,7 @@
                     :pass_attr :NotMethod
                     :self_argument nil
                     :codims []
+                    :common_block nil
                   )
                   "y" (Variable
                     :parent_symtab 2
@@ -59,6 +60,7 @@
                     :pass_attr :NotMethod
                     :self_argument nil
                     :codims []
+                    :common_block nil
                   )
                 }
               )
@@ -211,6 +213,7 @@
               :pass_attr :NotMethod
               :self_argument nil
               :codims []
+              :common_block nil
             )
             "point" (ExternalSymbol
               :parent_symtab 3

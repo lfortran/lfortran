@@ -71,6 +71,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -95,6 +96,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -119,6 +121,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     copy_text
@@ -180,6 +183,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -204,6 +208,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -228,6 +233,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     text
@@ -336,6 +342,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -360,6 +367,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -384,6 +392,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             self:
                                                                 (Variable
@@ -412,6 +421,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __trait_t_copy_text
@@ -479,6 +489,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -503,6 +514,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -527,6 +539,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             self:
                                                                 (Variable
@@ -555,6 +568,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __trait_t_text
@@ -621,6 +635,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             unused:
                                                 (Function
@@ -650,6 +665,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -678,6 +694,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -706,6 +723,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     unused

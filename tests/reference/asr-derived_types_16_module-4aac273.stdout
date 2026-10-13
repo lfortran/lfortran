@@ -89,6 +89,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     derived_types_16
@@ -224,6 +225,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             float:
                                                 (Variable
@@ -248,6 +250,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             int:
                                                 (Variable
@@ -272,6 +275,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     fpm_run_settings
@@ -338,6 +342,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     get_command_line_settings

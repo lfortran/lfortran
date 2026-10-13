@@ -405,7 +405,8 @@ def check_vector(logs):
     definitions = [llvm_name(a or b) for a, b in LLVM_DEFINITION.findall(logs["test_vector-llvm"])]
     procedures = [f"{instance}_{method}" for instance in instances
                   for method in ("init", "append", "printout")]
-    missing = [name for name in procedures if name not in definitions]
+    # A procedure contained in the program is qualified with its name.
+    missing = [name for name in procedures if f"test_vector.{name}" not in definitions]
     require(not missing, f"test_vector does not define {missing}")
     require(not [name for name in definitions if "trait_witness" in name or
                  "trait_erasure" in name or "trait_lifecycle" in name],

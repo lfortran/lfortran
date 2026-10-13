@@ -63,7 +63,7 @@ free_nonnull:                                     ; preds = %.entry
 
 free_done:                                        ; preds = %free_nonnull, %.entry
   store i32 2, i32* %call_arg_value, align 4
-  %13 = load i32, i32* %iter, align 4
+  %13 = load i32, i32* %iter, align 1
   %14 = sub i32 %13, 1
   store i32 %14, i32* %call_arg_value1, align 4
   %15 = call i32 @__module_recursion_02_sub1(i32* %call_arg_value, i32* %call_arg_value1)
@@ -106,11 +106,11 @@ define i32 @__module_recursion_02_sub1(i32* %y, i32* %iter) {
   %sub1 = alloca i32, align 4
   %tmp = alloca i32, align 4
   %x = alloca i32, align 4
-  %0 = load i32, i32* %y, align 4
+  %0 = load i32, i32* %y, align 1
   store i32 %0, i32* %x, align 4
   %1 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.8, i32 0, i32 0), align 8
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %1, i32 7, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
-  %2 = load i32, i32* %iter, align 4
+  %2 = load i32, i32* %iter, align 1
   %3 = icmp eq i32 %2, 1
   br i1 %3, label %then, label %else
 

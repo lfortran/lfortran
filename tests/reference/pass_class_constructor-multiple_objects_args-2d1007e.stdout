@@ -51,6 +51,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     circle
@@ -119,6 +120,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             n:
                                                 (Variable
@@ -148,6 +150,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     print_radius
@@ -246,6 +249,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             temp_struct_var__1:
                                 (Variable
@@ -275,6 +279,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             was_called:
                                 (Variable
@@ -305,6 +310,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     main

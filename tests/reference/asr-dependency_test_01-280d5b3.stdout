@@ -55,6 +55,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             id:
                                                 (Variable
@@ -79,6 +80,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -137,6 +139,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     add_dependency
@@ -254,6 +257,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             path:
                                                 (Variable
@@ -280,6 +284,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     dependency_config_t
@@ -345,6 +350,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             proj_dir:
                                                 (Variable
@@ -371,6 +377,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             revision:
                                                 (Variable
@@ -397,6 +404,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             update:
                                                 (Variable
@@ -427,6 +435,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     dependency_node_t
@@ -511,6 +520,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             dep:
                                                 (Variable
@@ -555,6 +565,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             dep_dir:
                                                 (Variable
@@ -581,6 +592,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             find:
                                                 (GenericProcedure
@@ -624,6 +636,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             unit:
                                                 (Variable
@@ -648,6 +661,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             verbosity:
                                                 (Variable
@@ -672,6 +686,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     dependency_tree_t
@@ -769,6 +784,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             pos:
                                                 (Variable
@@ -793,6 +809,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -851,6 +868,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     find_dependency

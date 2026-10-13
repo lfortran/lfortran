@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             rp1d:
                                 (Struct
@@ -67,6 +68,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     rp1d
@@ -147,6 +149,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     sds
@@ -282,6 +285,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             sds:
                                 (ExternalSymbol

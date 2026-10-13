@@ -505,7 +505,15 @@ namespace LCompilers {
             } else if(ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))){
                 ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(
                     ASRUtils::extract_type(asr_type));
-                if (struct_type->m_is_unlimited_polymorphic && alloc_type != nullptr
+                if (alloc_type != nullptr && ASRUtils::is_class_type(alloc_type)) {
+                    // The dynamic type is that of a polymorphic mold, known
+                    // only at run time: allocate ONE wrapper with NULL data,
+                    // and the caller sets its vptr and data from the mold.
+                    llvm::Type* const class_type = llvm_utils->getClassType(
+                        ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(variable_declaration)));
+                    llvm::Value* wrapper_ptr = llvm_utils->alloc_zeroed_type(class_type);
+                    builder->CreateStore(wrapper_ptr, ptr2firstptr);
+                } else if (struct_type->m_is_unlimited_polymorphic && alloc_type != nullptr
                         && !ASR::is_a<ASR::StructType_t>(*alloc_type)) {
                     // Unlimited polymorphic array with intrinsic type spec
                     // (e.g., allocate(integer :: arr(5)))
@@ -2109,10 +2117,12 @@ namespace LCompilers {
         llvm::Value* SimpleCMODescriptor::cfi_to_internal(
                 llvm::Type* internal_type,
                 llvm::Type* el_type, llvm::Value* cfi_desc,
-                int n_dims, uint64_t elem_size) {
+                int n_dims, uint64_t elem_size,
+                llvm::Value* internal_desc) {
             llvm::StructType* cfi_type = get_cfi_type(el_type, n_dims);
-            llvm::Value* internal = create_descriptor_alloca(
-                static_cast<llvm::StructType*>(internal_type));
+            llvm::Value* internal = internal_desc ? internal_desc
+                : create_descriptor_alloca(
+                    static_cast<llvm::StructType*>(internal_type));
 
             // Bitcast incoming pointer to CFI type for GEP access
             llvm::Value* cfi_ptr = builder->CreateBitCast(

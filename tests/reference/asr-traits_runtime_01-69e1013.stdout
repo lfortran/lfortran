@@ -115,6 +115,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             actual:
                                 (Variable
@@ -139,6 +140,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -169,6 +171,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             choice:
                                 (Variable
@@ -193,6 +196,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             choose_value:
                                 (ExternalSymbol
@@ -247,6 +251,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             ivalue:
                                 (ExternalSymbol
@@ -485,6 +490,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             self:
                                                                 (Variable
@@ -511,6 +517,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __implements_directvalue_ivalue_witness_0
@@ -626,6 +633,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             self:
                                                                 (Variable
@@ -652,6 +660,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __implements_scaledvalue_ivalue_witness_0
@@ -749,6 +758,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             self:
                                                                 (Variable
@@ -775,6 +785,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __trait_ivalue_value
@@ -860,6 +871,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             first:
                                                 (Variable
@@ -886,6 +898,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             r:
                                                 (Variable
@@ -910,6 +923,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             second:
                                                 (Variable
@@ -936,6 +950,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     choose_value
@@ -1046,6 +1061,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -1075,6 +1091,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     direct_value
@@ -1146,6 +1163,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     directvalue
@@ -1204,6 +1222,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     value
@@ -1279,6 +1298,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             r:
                                                 (Variable
@@ -1303,6 +1323,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     observe
@@ -1391,6 +1412,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -1421,6 +1443,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     scaled_value
@@ -1510,6 +1533,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             payload:
                                                 (Variable
@@ -1534,6 +1558,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     scaledvalue

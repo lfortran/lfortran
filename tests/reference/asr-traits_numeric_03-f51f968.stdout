@@ -35,6 +35,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             t:
                                                 (Variable
@@ -59,6 +60,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             value:
                                                 (Variable
@@ -83,6 +85,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -107,6 +110,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     __instantiated_singleton_value
@@ -218,6 +222,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             value:
                                                 (Variable
@@ -242,6 +247,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     __type_set_selected
@@ -309,6 +315,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             arg1:
                                                 (Variable
@@ -333,6 +340,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             value:
                                                 (Variable
@@ -357,6 +365,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     __type_set_selected1
@@ -426,6 +435,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             arg1:
                                                 (Variable
@@ -450,6 +460,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             value:
                                                 (Variable
@@ -474,6 +485,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     __type_set_selected2
@@ -543,6 +555,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             arg1:
                                                 (Variable
@@ -567,6 +580,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             value:
                                                 (Variable
@@ -591,6 +605,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     __type_set_selected3
@@ -660,6 +675,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             expected:
                                                 (Variable
@@ -684,6 +700,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     expect_integer
@@ -916,6 +933,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             value:
                                                                 (Variable
@@ -944,6 +962,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __type_set_requirement
@@ -1007,6 +1026,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             arg1:
                                                                 (Variable
@@ -1035,6 +1055,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             value:
                                                                 (Variable
@@ -1063,6 +1084,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __type_set_requirement1
@@ -1132,6 +1154,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             arg1:
                                                                 (Variable
@@ -1156,6 +1179,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             value:
                                                                 (Variable
@@ -1180,6 +1204,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __type_set_requirement1_witness_0
@@ -1253,6 +1278,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             arg1:
                                                                 (Variable
@@ -1281,6 +1307,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             value:
                                                                 (Variable
@@ -1309,6 +1336,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __type_set_requirement2
@@ -1378,6 +1406,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             arg1:
                                                                 (Variable
@@ -1402,6 +1431,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             value:
                                                                 (Variable
@@ -1426,6 +1456,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __type_set_requirement2_witness_0
@@ -1499,6 +1530,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             arg1:
                                                                 (Variable
@@ -1527,6 +1559,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             value:
                                                                 (Variable
@@ -1555,6 +1588,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __type_set_requirement3
@@ -1624,6 +1658,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             arg1:
                                                                 (Variable
@@ -1648,6 +1683,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             value:
                                                                 (Variable
@@ -1672,6 +1708,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __type_set_requirement3_witness_0
@@ -1741,6 +1778,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             value:
                                                                 (Variable
@@ -1765,6 +1803,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __type_set_requirement_witness_0
@@ -1832,6 +1871,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -1860,6 +1900,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             value:
                                                                 (Variable
@@ -1888,6 +1929,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -1916,6 +1958,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     singleton_value
@@ -2058,6 +2101,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     singleton_value

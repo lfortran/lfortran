@@ -72,6 +72,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             q:
                                 (Variable
@@ -96,6 +97,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     functions_07
@@ -162,6 +164,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             v:
                                                 (Variable
@@ -186,6 +189,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     f_a
@@ -285,6 +289,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             v:
                                                                 (Variable
@@ -309,6 +314,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __inlined_f_a
@@ -366,6 +372,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -390,6 +397,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             y:
                                                 (Variable
@@ -414,6 +422,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     f_b
@@ -522,6 +531,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             z:
                                                 (Variable
@@ -546,6 +556,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     f_c

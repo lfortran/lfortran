@@ -42,22 +42,22 @@ define void @__module_complex_module_integer_add_subrout(%complex_module.complex
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %2, i32 27, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
   %3 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %sum, i32 0, i32 0
   %4 = getelementptr %complex_module.complextype.3_class, %complex_module.complextype.3_class* %this, i32 0, i32 1
-  %5 = load %complex_module.complextype.3*, %complex_module.complextype.3** %4, align 8
+  %5 = load %complex_module.complextype.3*, %complex_module.complextype.3** %4, align 1
   %6 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %5, i32 0, i32 0
-  %7 = load float, float* %6, align 4
-  %8 = load i32, i32* %r, align 4
+  %7 = load float, float* %6, align 1
+  %8 = load i32, i32* %r, align 1
   %9 = sitofp i32 %8 to float
   %10 = fadd float %7, %9
-  store float %10, float* %3, align 4
+  store float %10, float* %3, align 1
   %11 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %sum, i32 0, i32 1
   %12 = getelementptr %complex_module.complextype.3_class, %complex_module.complextype.3_class* %this, i32 0, i32 1
-  %13 = load %complex_module.complextype.3*, %complex_module.complextype.3** %12, align 8
+  %13 = load %complex_module.complextype.3*, %complex_module.complextype.3** %12, align 1
   %14 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %13, i32 0, i32 1
-  %15 = load float, float* %14, align 4
-  %16 = load i32, i32* %i, align 4
+  %15 = load float, float* %14, align 1
+  %16 = load i32, i32* %i, align 1
   %17 = sitofp i32 %16 to float
   %18 = fadd float %15, %17
-  store float %18, float* %11, align 4
+  store float %18, float* %11, align 1
   br label %return
 
 return:                                           ; preds = %.entry
@@ -75,20 +75,20 @@ define void @__module_complex_module_real_add_subrout(%complex_module.complextyp
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %2, i32 24, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
   %3 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %sum, i32 0, i32 0
   %4 = getelementptr %complex_module.complextype.3_class, %complex_module.complextype.3_class* %this, i32 0, i32 1
-  %5 = load %complex_module.complextype.3*, %complex_module.complextype.3** %4, align 8
+  %5 = load %complex_module.complextype.3*, %complex_module.complextype.3** %4, align 1
   %6 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %5, i32 0, i32 0
-  %7 = load float, float* %6, align 4
-  %8 = load float, float* %r, align 4
+  %7 = load float, float* %6, align 1
+  %8 = load float, float* %r, align 1
   %9 = fadd float %7, %8
-  store float %9, float* %3, align 4
+  store float %9, float* %3, align 1
   %10 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %sum, i32 0, i32 1
   %11 = getelementptr %complex_module.complextype.3_class, %complex_module.complextype.3_class* %this, i32 0, i32 1
-  %12 = load %complex_module.complextype.3*, %complex_module.complextype.3** %11, align 8
+  %12 = load %complex_module.complextype.3*, %complex_module.complextype.3** %11, align 1
   %13 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %12, i32 0, i32 1
-  %14 = load float, float* %13, align 4
-  %15 = load float, float* %i, align 4
+  %14 = load float, float* %13, align 1
+  %15 = load float, float* %i, align 1
   %16 = fadd float %14, %15
-  store float %16, float* %10, align 4
+  store float %16, float* %10, align 1
   br label %return
 
 return:                                           ; preds = %.entry
@@ -294,12 +294,12 @@ then1:                                            ; preds = %ifcont
 
 then2:                                            ; preds = %then1
   %9 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %5, i32 0, i32 0
-  %10 = load float, float* %9, align 4
+  %10 = load float, float* %9, align 1
   %11 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %6, i32 0, i32 0
   br i1 true, label %then3, label %else4
 
 then3:                                            ; preds = %then2
-  store float %10, float* %11, align 4
+  store float %10, float* %11, align 1
   br label %ifcont5
 
 else4:                                            ; preds = %then2
@@ -307,12 +307,12 @@ else4:                                            ; preds = %then2
 
 ifcont5:                                          ; preds = %else4, %then3
   %12 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %5, i32 0, i32 1
-  %13 = load float, float* %12, align 4
+  %13 = load float, float* %12, align 1
   %14 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %6, i32 0, i32 1
   br i1 true, label %then6, label %else7
 
 then6:                                            ; preds = %ifcont5
-  store float %13, float* %14, align 4
+  store float %13, float* %14, align 1
   br label %ifcont8
 
 else7:                                            ; preds = %ifcont5
@@ -323,12 +323,12 @@ ifcont8:                                          ; preds = %else7, %then6
 
 else9:                                            ; preds = %then1
   %15 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %5, i32 0, i32 0
-  %16 = load float, float* %15, align 4
+  %16 = load float, float* %15, align 1
   %17 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %6, i32 0, i32 0
   br i1 true, label %then10, label %else11
 
 then10:                                           ; preds = %else9
-  store float %16, float* %17, align 4
+  store float %16, float* %17, align 1
   br label %ifcont12
 
 else11:                                           ; preds = %else9
@@ -336,12 +336,12 @@ else11:                                           ; preds = %else9
 
 ifcont12:                                         ; preds = %else11, %then10
   %18 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %5, i32 0, i32 1
-  %19 = load float, float* %18, align 4
+  %19 = load float, float* %18, align 1
   %20 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %6, i32 0, i32 1
   br i1 true, label %then13, label %else14
 
 then13:                                           ; preds = %ifcont12
-  store float %19, float* %20, align 4
+  store float %19, float* %20, align 1
   br label %ifcont15
 
 else14:                                           ; preds = %ifcont12
@@ -358,12 +358,12 @@ else17:                                           ; preds = %ifcont
 
 then18:                                           ; preds = %else17
   %21 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %5, i32 0, i32 0
-  %22 = load float, float* %21, align 4
+  %22 = load float, float* %21, align 1
   %23 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %6, i32 0, i32 0
   br i1 true, label %then19, label %else20
 
 then19:                                           ; preds = %then18
-  store float %22, float* %23, align 4
+  store float %22, float* %23, align 1
   br label %ifcont21
 
 else20:                                           ; preds = %then18
@@ -371,12 +371,12 @@ else20:                                           ; preds = %then18
 
 ifcont21:                                         ; preds = %else20, %then19
   %24 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %5, i32 0, i32 1
-  %25 = load float, float* %24, align 4
+  %25 = load float, float* %24, align 1
   %26 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %6, i32 0, i32 1
   br i1 true, label %then22, label %else23
 
 then22:                                           ; preds = %ifcont21
-  store float %25, float* %26, align 4
+  store float %25, float* %26, align 1
   br label %ifcont24
 
 else23:                                           ; preds = %ifcont21
@@ -387,12 +387,12 @@ ifcont24:                                         ; preds = %else23, %then22
 
 else25:                                           ; preds = %else17
   %27 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %5, i32 0, i32 0
-  %28 = load float, float* %27, align 4
+  %28 = load float, float* %27, align 1
   %29 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %6, i32 0, i32 0
   br i1 true, label %then26, label %else27
 
 then26:                                           ; preds = %else25
-  store float %28, float* %29, align 4
+  store float %28, float* %29, align 1
   br label %ifcont28
 
 else27:                                           ; preds = %else25
@@ -400,12 +400,12 @@ else27:                                           ; preds = %else25
 
 ifcont28:                                         ; preds = %else27, %then26
   %30 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %5, i32 0, i32 1
-  %31 = load float, float* %30, align 4
+  %31 = load float, float* %30, align 1
   %32 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %6, i32 0, i32 1
   br i1 true, label %then29, label %else30
 
 then29:                                           ; preds = %ifcont28
-  store float %31, float* %32, align 4
+  store float %31, float* %32, align 1
   br label %ifcont31
 
 else30:                                           ; preds = %ifcont28
@@ -432,12 +432,12 @@ entry:
   %2 = bitcast i8* %0 to %complex_module.complextype.3*
   %3 = bitcast i8* %1 to %complex_module.complextype.3*
   %4 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %2, i32 0, i32 0
-  %5 = load float, float* %4, align 4
+  %5 = load float, float* %4, align 1
   %6 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %3, i32 0, i32 0
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %entry
-  store float %5, float* %6, align 4
+  store float %5, float* %6, align 1
   br label %ifcont
 
 else:                                             ; preds = %entry
@@ -445,12 +445,12 @@ else:                                             ; preds = %entry
 
 ifcont:                                           ; preds = %else, %then
   %7 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %2, i32 0, i32 1
-  %8 = load float, float* %7, align 4
+  %8 = load float, float* %7, align 1
   %9 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %3, i32 0, i32 1
   br i1 true, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
-  store float %8, float* %9, align 4
+  store float %8, float* %9, align 1
   br label %ifcont3
 
 else2:                                            ; preds = %ifcont
@@ -470,7 +470,7 @@ entry:
   %3 = call i8* @_lfortran_malloc_alloc(i8* %2, i64 16)
   call void @llvm.memset.p0i8.i32(i8* %3, i8 0, i32 16, i1 false)
   store i8* %3, i8** %0, align 8
-  %4 = load i8*, i8** %0, align 8
+  %4 = load i8*, i8** %0, align 1
   %5 = bitcast i8* %4 to %complex_module.complextype.3_class*
   %6 = bitcast %complex_module.complextype.3_class* %5 to i32 (...)***
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [8 x i8*] }, { [8 x i8*] }* @_VTable_14_complex_module11_complextype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8

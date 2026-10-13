@@ -39,6 +39,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             success:
                                                 (Variable
@@ -63,6 +64,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     enum_stat
@@ -141,6 +143,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     class_default_select_type
@@ -200,6 +203,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     check_table
@@ -274,6 +278,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             stat:
                                                 (Variable
@@ -298,6 +303,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             table:
                                                 (Variable
@@ -328,6 +334,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             tmp:
                                                 (Variable
@@ -360,6 +367,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             ~select_type_block_:
                                                 (Block
@@ -582,6 +590,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             inline:
                                                 (Variable
@@ -612,6 +621,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     toml_table
@@ -667,6 +677,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             int:
                                                 (Variable
@@ -691,6 +702,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     toml_value
