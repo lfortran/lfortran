@@ -337,12 +337,6 @@ semantic error: Type mismatch in binary operator, the types must be compatible
 164 |     x = 5 + "x"
     |         ^   ^^^ type mismatch (integer and string)
 
-semantic error: Type mismatch in assignment, the types must be compatible
-   --> tests/errors/continue_compilation_3.f90:164:5
-    |
-164 |     x = 5 + "x"
-    |     ^       ^^^ type mismatch (integer and string)
-
 semantic error: Subroutine `bpe` called as a function
    --> tests/errors/continue_compilation_3.f90:167:9
     |
@@ -672,3 +666,72 @@ semantic error: Type mismatch in argument `i`: expected `integer(4)` but got `cl
     |
 351 |     print *, f_int(d)  ! {Error} Type mismatch in argument `i`: expected `integer(4)` but got `class(*)`.
     |                    ^ 
+
+semantic error: Variable 'undeclared_14736_1' is not declared
+   --> tests/errors/continue_compilation_3.f90:364:19
+    |
+364 |         p_14736 = undeclared_14736_1
+    |                   ^^^^^^^^^^^^^^^^^^ 'undeclared_14736_1' is undeclared
+
+semantic error: Cannot assign to a constant variable
+   --> tests/errors/continue_compilation_3.f90:364:9
+    |
+364 |         p_14736 = undeclared_14736_1
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+    |
+357 |     integer, parameter :: p_14736 = 1
+    |                           ~~~~~~~~~~~ declared as constant
+
+semantic error: Variable 'undeclared_14736_2' is not declared
+   --> tests/errors/continue_compilation_3.f90:365:13
+    |
+365 |         a = undeclared_14736_2
+    |             ^^^^^^^^^^^^^^^^^^ 'undeclared_14736_2' is undeclared
+
+semantic error: Cannot assign to an intent(in) variable `a`
+   --> tests/errors/continue_compilation_3.f90:365:9
+    |
+365 |         a = undeclared_14736_2
+    |         ^ 
+
+semantic error: Variable 'undeclared_14736_3' is not declared
+   --> tests/errors/continue_compilation_3.f90:367:17
+    |
+367 |             i = undeclared_14736_3
+    |                 ^^^^^^^^^^^^^^^^^^ 'undeclared_14736_3' is undeclared
+
+semantic error: Assignment to loop variable `i` is not allowed
+   --> tests/errors/continue_compilation_3.f90:367:13
+    |
+367 |             i = undeclared_14736_3
+    |             ^ 
+
+semantic error: Variable 'undeclared_14736_4' is not declared
+   --> tests/errors/continue_compilation_3.f90:369:21
+    |
+369 |         sub_14736 = undeclared_14736_4
+    |                     ^^^^^^^^^^^^^^^^^^ 'undeclared_14736_4' is undeclared
+
+semantic error: Assignment to subroutine is not allowed
+   --> tests/errors/continue_compilation_3.f90:369:9
+    |
+369 |         sub_14736 = undeclared_14736_4
+    |         ^^^^^^^^^ 
+
+semantic error: Variable 'undeclared_14736_5' is not declared
+   --> tests/errors/continue_compilation_3.f90:377:22
+    |
+377 |         f_14736(1) = undeclared_14736_5
+    |                      ^^^^^^^^^^^^^^^^^^ 'undeclared_14736_5' is undeclared
+
+semantic error: The LHS of assignment can only be a variable or an array reference
+   --> tests/errors/continue_compilation_3.f90:377:9
+    |
+377 |         f_14736(1) = undeclared_14736_5
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 'undeclared_14736_6' is not declared
+   --> tests/errors/continue_compilation_3.f90:378:27
+    |
+378 |         arr(f_14736(1)) = undeclared_14736_6
+    |                           ^^^^^^^^^^^^^^^^^^ 'undeclared_14736_6' is undeclared
