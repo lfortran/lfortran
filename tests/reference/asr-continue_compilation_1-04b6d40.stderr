@@ -2242,13 +2242,13 @@ semantic error: `rec` must be of type, Integer
 606 |     write(10, rec=2.5) y
     |     ^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: No matching procedure found in `.def_op.` with compatible argument types
+semantic error: No matching procedure found for defined operator `.bad.` with operand type integer(4)
    --> tests/errors/continue_compilation_1.f90:609:13
     |
 609 |     bad_x = .bad. 10
     |             ^^^^^^^^ 
 
-semantic error: No matching procedure found in `.def_op.` with compatible argument types
+semantic error: No matching procedure found for defined operator `.op.` with operand types integer(4) and integer(4)
    --> tests/errors/continue_compilation_1.f90:610:13
     |
 610 |     bad_x = 5 .op. 3

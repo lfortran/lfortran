@@ -24510,8 +24510,18 @@ public:
         }
 
         if (!matched) {
+            std::string operand_types = ASRUtils::type_to_str_with_kind(
+                ASRUtils::expr_type(first_operand), first_operand);
+            if (is_binary) {
+                operand_types = "types " + operand_types + " and "
+                    + ASRUtils::type_to_str_with_kind(
+                        ASRUtils::expr_type(second_operand), second_operand);
+            } else {
+                operand_types = "type " + operand_types;
+            }
             diag.add(Diagnostic(
-                "No matching procedure found in `.def_op.` with compatible argument types",
+                "No matching procedure found for defined operator `." + op
+                    + ".` with operand " + operand_types,
                 Level::Error,
                 Stage::Semantic,
                 { Label("", { loc }) }));
