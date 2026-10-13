@@ -6003,6 +6003,9 @@ public:
                 current_scope = template_scope;
             }
         }
+        // A procedure dummy of a template procedure can take its interface
+        // from a procedure of the template defined after it.
+        resolve_proc_pointer_placeholders();
 
         SetChar args;
         args.reserve(al, x.n_namelist);
