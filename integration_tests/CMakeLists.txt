@@ -3778,6 +3778,7 @@ RUN(NAME bits_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #ibits
 RUN(NAME bits_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bits_07 LABELS gfortran llvm)
 RUN(NAME cpu_time_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME cpu_time_02 LABELS gfortran llvm)
 # RUN(NAME cpu_time_02_wasm LABELS wasm)
 RUN(NAME system_clock_01 LABELS gfortran llvm)
 RUN(NAME boz_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
