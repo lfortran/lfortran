@@ -2595,3 +2595,34 @@ subroutine generic_function_no_match_error(n)
     integer :: a(generic_no_match(1.5, n))  ! {Error} no specific procedure of the generic 'generic_no_match' matches the arguments
     integer :: b(generic_no_match(z=n))  ! {Error} no specific procedure of the generic 'generic_no_match' matches the arguments
 end subroutine
+
+! A procedure given to a procedure pointer component whose interface is a
+! module procedure defined later must match that interface.
+module cc1_pclim_procs_mod
+    implicit none
+contains
+    subroutine cc1_pclim_known_sub()
+    end subroutine cc1_pclim_known_sub
+    integer function cc1_pclim_known_func()
+        cc1_pclim_known_func = 0
+    end function cc1_pclim_known_func
+end module cc1_pclim_procs_mod
+
+module cc1_proc_component_later_interface_mismatch_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_sub, cc1_pclim_known_func
+    implicit none
+    type :: cc1_pclim_func_t
+        procedure(cc1_pclim_func), pointer, nopass :: pf => null()
+    end type
+    type :: cc1_pclim_sub_t
+        procedure(cc1_pclim_sub), pointer, nopass :: pf => null()
+    end type
+    type(cc1_pclim_func_t) :: cc1_pclim_s1 = cc1_pclim_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+    type(cc1_pclim_sub_t) :: cc1_pclim_s2 = cc1_pclim_sub_t(pf=cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+contains
+    integer function cc1_pclim_func()
+        cc1_pclim_func = 0
+    end function cc1_pclim_func
+    subroutine cc1_pclim_sub()
+    end subroutine cc1_pclim_sub
+end module cc1_proc_component_later_interface_mismatch_mod

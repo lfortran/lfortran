@@ -2508,15 +2508,17 @@ public:
     // procedure given to a procedure pointer component before its
     // definition, see `declare_forward_procedure_target()`.
     std::set<ASR::symbol_t*> forward_procedure_targets;
-    // Each value of a procedure pointer component that names one of
-    // `forward_procedure_targets`, checked against the component once the
-    // procedure is known.
-    struct ForwardProcedureTargetUse {
-        ASR::symbol_t* placeholder;
+    // Each procedure given to a procedure pointer component that cannot be
+    // checked against the component yet, because the procedure is one of
+    // `forward_procedure_targets` or the component's interface is one of
+    // `pending_proc_placeholders`. It is checked once both are known, see
+    // `resolve_proc_pointer_placeholders()`.
+    struct DeferredProcedureComponentValue {
+        ASR::symbol_t* procedure;
         ASR::Variable_t* member;
         Location loc;
     };
-    std::vector<ForwardProcedureTargetUse> forward_procedure_target_uses;
+    std::vector<DeferredProcedureComponentValue> deferred_procedure_component_values;
     // The pointers created by create_construct_variable_pointer, each with
     // the variable of the BLOCK construct it is associated with
     std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> construct_variable_pointers;
@@ -14150,7 +14152,7 @@ public:
         ASR::symbol_t* declared = current_scope->resolve_symbol(name);
         if (declared != nullptr) {
             if (forward_procedure_targets.count(declared) > 0) {
-                forward_procedure_target_uses.push_back(
+                deferred_procedure_component_values.push_back(
                     {declared, member_var, value->base.loc});
             }
             return;
@@ -14167,7 +14169,7 @@ public:
         current_scope->add_symbol(name, placeholder);
         pending_proc_placeholders.push_back({name, placeholder});
         forward_procedure_targets.insert(placeholder);
-        forward_procedure_target_uses.push_back(
+        deferred_procedure_component_values.push_back(
             {placeholder, member_var, value->base.loc});
     }
 
@@ -14681,11 +14683,22 @@ public:
             ASR::expr_t* arg = vals[i].m_value;
             ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
             if (ASRUtils::is_procedure_pointer_value(member_var, arg)) {
-                // A procedure defined later is checked once it is known, see
+                // A procedure defined later, or one given to a component
+                // whose interface is a procedure defined later, is checked
+                // once both are known, see
                 // `resolve_proc_pointer_placeholders()`.
                 bool forward_target = ASR::is_a<ASR::Var_t>(*arg)
                     && forward_procedure_targets.count(
                         ASR::down_cast<ASR::Var_t>(arg)->m_v) > 0;
+                if (!forward_target && ASR::is_a<ASR::Var_t>(*arg)
+                        && member_var->m_type_declaration != nullptr
+                        && is_pending_proc_placeholder(
+                            member_var->m_type_declaration)) {
+                    deferred_procedure_component_values.push_back(
+                        {ASR::down_cast<ASR::Var_t>(arg)->m_v, member_var,
+                            arg->base.loc});
+                    continue;
+                }
                 if (!forward_target
                         && !procedure_component_value_matches(member_var, arg)) {
                     if (!compiler_options.continue_compilation) {

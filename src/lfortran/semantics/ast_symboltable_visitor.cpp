@@ -1112,7 +1112,7 @@ public:
         }
         pending_proc_placeholders.clear();
         forward_procedure_targets.clear();
-        forward_procedure_target_uses.clear();
+        deferred_procedure_component_values.clear();
         in_module = false;
         if (compiler_options.implicit_typing) {
             implicit_stack.pop_back();
@@ -5154,24 +5154,6 @@ public:
             PlaceholderVarReplacer replacer(placeholder_to_real);
             replace_placeholder_in_initializers(current_scope, replacer);
         }
-        // A procedure given to a procedure pointer component before its
-        // definition is checked against the component as the structure
-        // constructor checks a procedure defined earlier. Every mismatch is
-        // reported before compilation stops.
-        bool forward_target_mismatch = false;
-        for (auto &use : forward_procedure_target_uses) {
-            auto it = placeholder_to_real.find(use.placeholder);
-            if (it == placeholder_to_real.end()) continue;
-            ASR::expr_t* target = ASRUtils::EXPR(
-                ASR::make_Var_t(al, use.loc, it->second));
-            if (!procedure_component_value_matches(use.member, target)) {
-                forward_target_mismatch = true;
-            }
-        }
-        forward_procedure_target_uses.clear();
-        if (forward_target_mismatch && !compiler_options.continue_compilation) {
-            throw SemanticAbort();
-        }
         for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
             ASR::symbol_t *real_sym = current_scope->resolve_symbol(name);
             if (!real_sym || real_sym == placeholder_sym) continue;
@@ -5229,6 +5211,36 @@ public:
                     }
                 }
             }
+        }
+        // A procedure given to a procedure pointer component before the
+        // procedure or the component's interface is defined is checked
+        // against the component as the structure constructor checks one
+        // whose interface and procedure are both known. A placeholder that
+        // no procedure replaced is reported by the caller instead. Every
+        // mismatch is reported before compilation stops.
+        bool deferred_value_mismatch = false;
+        for (auto &value : deferred_procedure_component_values) {
+            ASR::symbol_t* procedure = value.procedure;
+            auto it = placeholder_to_real.find(procedure);
+            if (it != placeholder_to_real.end()) {
+                procedure = it->second;
+            } else if (is_pending_proc_placeholder(procedure)) {
+                continue;
+            }
+            ASR::symbol_t* iface = value.member->m_type_declaration;
+            if (iface != nullptr && is_pending_proc_placeholder(iface)
+                    && placeholder_to_real.count(iface) == 0) {
+                continue;
+            }
+            ASR::expr_t* target = ASRUtils::EXPR(
+                ASR::make_Var_t(al, value.loc, procedure));
+            if (!procedure_component_value_matches(value.member, target)) {
+                deferred_value_mismatch = true;
+            }
+        }
+        deferred_procedure_component_values.clear();
+        if (deferred_value_mismatch && !compiler_options.continue_compilation) {
+            throw SemanticAbort();
         }
     }
 

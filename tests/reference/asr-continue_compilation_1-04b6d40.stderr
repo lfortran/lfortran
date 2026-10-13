@@ -1182,6 +1182,18 @@ semantic error: no specific procedure of the generic 'generic_no_match' matches 
 2596 |     integer :: b(generic_no_match(z=n))  ! {Error} no specific procedure of the generic 'generic_no_match' matches the arguments
      |                  ^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+    --> tests/errors/continue_compilation_1.f90:2620:63
+     |
+2620 |     type(cc1_pclim_func_t) :: cc1_pclim_s1 = cc1_pclim_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+     |                                                               ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    --> tests/errors/continue_compilation_1.f90:2621:64
+     |
+2621 |     type(cc1_pclim_sub_t) :: cc1_pclim_s2 = cc1_pclim_sub_t(pf=cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+     |                                                                ^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
