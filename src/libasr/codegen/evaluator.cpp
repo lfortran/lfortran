@@ -521,6 +521,20 @@ std::vector<std::string> get_arch_features(
         + triple.str() + "'");
 }
 
+#if LLVM_VERSION_MAJOR >= 18
+using CodeGenOptLevel = llvm::CodeGenOptLevel;
+#else
+using CodeGenOptLevel = llvm::CodeGenOpt::Level;
+#endif
+
+// Machine code generation follows clang and flang: the default mode is -O0,
+// whose CodeGenOpt::None selects the fast instruction selector and register
+// allocator, and `--fast` is -O3. The default mode runs no IR optimizations.
+CodeGenOptLevel codegen_opt_level(bool fast)
+{
+    return fast ? CodeGenOptLevel::Aggressive : CodeGenOptLevel::None;
+}
+
 std::unique_ptr<llvm::TargetMachine> create_target_machine(
     const LLVMTargetConfig &config)
 {
@@ -545,14 +559,7 @@ std::unique_ptr<llvm::TargetMachine> create_target_machine(
         config.triple,
 #endif
         config.cpu, config.features, options, relocation_model, code_model,
-#if LLVM_VERSION_MAJOR >= 18
-        config.fast ? llvm::CodeGenOptLevel::Aggressive
-                    : llvm::CodeGenOptLevel::Default
-#else
-        config.fast ? llvm::CodeGenOpt::Aggressive
-                    : llvm::CodeGenOpt::Default
-#endif
-    );
+        codegen_opt_level(config.fast));
     if (!machine) {
         throw LCompilersException("could not create target machine for '"
             + config.triple + "'");
@@ -786,7 +793,8 @@ LLVMEvaluator::LLVMEvaluator(LLVMTargetConfig target_config_)
     TM = create_target_machine(target_config);
 
     // For some reason the JIT requires a different TargetMachine
-    jit = cantFail(llvm::orc::KaleidoscopeJIT::Create());
+    jit = cantFail(llvm::orc::KaleidoscopeJIT::Create(
+        codegen_opt_level(target_config.fast)));
 
     _lfortran_stan(0.5);
 }
@@ -1170,9 +1178,13 @@ void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_c
     llvm::TargetOptions TO;
     std::unique_ptr<llvm::TargetMachine> TM(
 #if LLVM_VERSION_MAJOR >= 21
-        Target->createTargetMachine(llvm::Triple(triple), "", "", TO, llvm::Reloc::Model::PIC_)
+        Target->createTargetMachine(llvm::Triple(triple), "", "", TO,
+            llvm::Reloc::Model::PIC_, RM_OPTIONAL_TYPE<llvm::CodeModel::Model>(),
+            codegen_opt_level(false))
 #else
-        Target->createTargetMachine(triple, "", "", TO, llvm::Reloc::Model::PIC_)
+        Target->createTargetMachine(triple, "", "", TO,
+            llvm::Reloc::Model::PIC_, RM_OPTIONAL_TYPE<llvm::CodeModel::Model>(),
+            codegen_opt_level(false))
 #endif
     );
     mod->setTargetTriple(llvm::Triple(triple));

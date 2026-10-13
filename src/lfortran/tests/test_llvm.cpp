@@ -26,6 +26,7 @@
 #include <llvm/IR/Instructions.h>
 #include <llvm/IR/LLVMContext.h>
 #include <llvm/IR/Module.h>
+#include <llvm/Target/TargetMachine.h>
 #if LLVM_VERSION_MAJOR >= 17
 #include <llvm/TargetParser/Triple.h>
 #else
@@ -157,6 +158,26 @@ TEST_CASE("LLVM target configuration") {
     CHECK_THROWS_AS(
         LCompilers::resolve_llvm_target_config(invalid_cpu_options),
         LCompilers::LCompilersException);
+}
+
+TEST_CASE("LLVM code generation optimization level") {
+    // Like clang and flang, the default mode generates machine code at -O0
+    // and `--fast` at -O3.
+#if LLVM_VERSION_MAJOR >= 18
+    using CodeGenOptLevel = llvm::CodeGenOptLevel;
+#else
+    using CodeGenOptLevel = llvm::CodeGenOpt::Level;
+#endif
+    CompilerOptions default_options;
+    LCompilers::LLVMEvaluator default_evaluator(default_options);
+    CHECK(default_evaluator.get_target_machine().getOptLevel()
+        == CodeGenOptLevel::None);
+
+    CompilerOptions fast_options;
+    fast_options.po.fast = true;
+    LCompilers::LLVMEvaluator fast_evaluator(fast_options);
+    CHECK(fast_evaluator.get_target_machine().getOptLevel()
+        == CodeGenOptLevel::Aggressive);
 }
 
 TEST_CASE("llvm 1") {
