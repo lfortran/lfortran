@@ -2638,13 +2638,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
             ASRUtils::ExprStmtDuplicator expr_duplicator(al);
             ASR::expr_t* d_target = expr_duplicator.duplicate_expr(x.m_target);
-            ASR::expr_t* d_value = expr_duplicator.duplicate_expr(x.m_value);
-
             Vec<ASR::expr_t*> vars;
-            vars.reserve(al, 1);
-
-            CollectComponentsFromElementalExpr cv(al, vars);
-            cv.visit_expr(*d_value);
+            vars.reserve(al, components.size());
+            for (size_t i = 0; i < components.size(); i++) {
+                vars.push_back(al, expr_duplicator.duplicate_expr(components[i]));
+            }
 
             if (!conforms_at_compile_time &&
                     debug_inserted.find(&x) == debug_inserted.end()) {

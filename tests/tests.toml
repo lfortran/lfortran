@@ -6089,6 +6089,10 @@ filename = "asr/verify/array_item_element_kind_mismatch.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/array_item_in_bounds_array.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/struct_member_element_of_array_base.asr"
 asr = true
 

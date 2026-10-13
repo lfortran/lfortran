@@ -107,6 +107,151 @@
                                     []
                                     ()
                                 ),
+                            __libasr_index_0_4:
+                                (Variable
+                                    2
+                                    __libasr_index_0_4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            __libasr_index_0_5:
+                                (Variable
+                                    2
+                                    __libasr_index_0_5
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            scale:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            a:
+                                                (Variable
+                                                    3
+                                                    a
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            b:
+                                                (Variable
+                                                    3
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    scale
+                                    (FunctionType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 3 a)
+                                    (Var 3 b)]
+                                    [(Assignment
+                                        (Var 3 a)
+                                        (RealBinOp
+                                            (Var 3 a)
+                                            Mul
+                                            (Var 3 b)
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
                             x:
                                 (Variable
                                     2
@@ -386,6 +531,78 @@
                             (Var 2 __libasr_index_0_3)
                             (IntegerBinOp
                                 (Var 2 __libasr_index_0_3)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                            .false.
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 __libasr_index_0_5)
+                        (ArrayBound
+                            (Var 2 z)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (DoLoop
+                        ()
+                        ((Var 2 __libasr_index_0_4)
+                        (ArrayBound
+                            (Var 2 x)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            LBound
+                            ()
+                        )
+                        (ArrayBound
+                            (Var 2 x)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            UBound
+                            ()
+                        )
+                        ())
+                        [(SubroutineCall
+                            2 scale
+                            ()
+                            [((ArrayItem
+                                (Var 2 x)
+                                [(()
+                                (Var 2 __libasr_index_0_4)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                                .true.
+                            ))
+                            ((ArrayItem
+                                (Var 2 z)
+                                [(()
+                                (Var 2 __libasr_index_0_5)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                                .false.
+                            ))]
+                            ()
+                            .false.
+                        )
+                        (Assignment
+                            (Var 2 __libasr_index_0_5)
+                            (IntegerBinOp
+                                (Var 2 __libasr_index_0_5)
                                 Add
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
