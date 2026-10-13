@@ -1373,7 +1373,10 @@ namespace MoveAlloc {
         auto declared_type_str = [](ASR::expr_t* arg) {
             ASR::ttype_t* type = ASRUtils::extract_type(ASRUtils::expr_type(arg));
             std::string str = ASRUtils::type_to_str_with_kind(type, arg);
-            if (ASR::is_a<ASR::StructType_t>(*type) &&
+            if (ASR::is_a<ASR::String_t>(*type)) {
+                str = "character(kind=" + std::to_string(
+                    ASRUtils::extract_kind_from_ttype_t(type)) + ")";
+            } else if (ASR::is_a<ASR::StructType_t>(*type) &&
                     !ASRUtils::is_unlimited_polymorphic_type(type)) {
                 str = (ASRUtils::is_class_type(type) ? "class(" : "type(") + str + ")";
             }
@@ -1382,6 +1385,21 @@ namespace MoveAlloc {
         std::string from_type_str = declared_type_str(from);
         std::string to_type_str = declared_type_str(to);
         if (!ASRUtils::is_move_alloc_type_compatible(from, to)) {
+            ASR::ttype_t* from_base = ASRUtils::extract_type(from_type);
+            ASR::ttype_t* to_base = ASRUtils::extract_type(to_type);
+            if (from_base->type == to_base->type &&
+                    !ASR::is_a<ASR::StructType_t>(*from_base) &&
+                    ASRUtils::extract_kind_from_ttype_t(from_base) !=
+                    ASRUtils::extract_kind_from_ttype_t(to_base)) {
+                diag.add(diag::Diagnostic(
+                    "`to` argument of `move_alloc` must have the same kind as "
+                    "`from` argument, but `to` is " + to_type_str +
+                    " and `from` is " + from_type_str,
+                    diag::Level::Error, diag::Stage::Semantic,
+                    {diag::Label("kind differs from " + from_type_str,
+                        { to->base.loc })}));
+                return false;
+            }
             diag.add(diag::Diagnostic(
                 "`to` argument of `move_alloc` must be type compatible with "
                 "`from` argument, but `to` is " + to_type_str +
