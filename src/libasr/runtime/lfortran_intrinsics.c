@@ -3002,7 +3002,8 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
             }
         } else if (cur == '(' || cur == '{') { // StructStart, complexStart
             s_info->current_arg_info.is_complex = (cur == '{');
-            push_stack(s_info->array_sizes_stack, -1000000); // dummy size. needed to know when to move from arg* to another.
+            // Keep empty arrays empty while walking a contained struct.
+            push_stack(s_info->array_sizes_stack, zero_size ? 0 : -1000000); // dummy size. needed to know when to move from arg* to another.
             ++s_info->current_stop;
         } else if (cur == ')' || cur == '}') { // StructEnd, ComplexEnd
             s_info->current_arg_info.is_complex = false;
