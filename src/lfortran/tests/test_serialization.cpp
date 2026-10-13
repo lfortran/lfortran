@@ -576,7 +576,7 @@ end module
         scope->erase_symbol("extra");
         auto *member = ASR::down_cast<ASR::Integer_t>(trait->m_member_types[0]);
         member->m_kind = 1001;
-        rejected("asr.verify.trait.numeric_member");
+        rejected("asr.verify.trait.intrinsic_member");
         member->m_kind = 4;
         CHECK(LCompilers::asr_verify(*unit, true, diagnostics));
     };
@@ -616,10 +616,10 @@ end module
             {"IValue | integer", false, "unexpected"},
             {"integer |", false, "unexpected"},
             {"IValue + integer", true, "type-set trait composition is not implemented yet"},
-            {"logical(*)", true, "non-numeric type-set members are not implemented yet"},
+            {"character(len=:)", true,
+                "character type-set members of nonconstant length are not implemented yet"},
             {"integer(len=*)", true, "a kind wildcard must be the only type parameter"},
             {"real(*, 8)", true, "a kind wildcard must be the only type parameter"},
-            {"logical(4)", true, "non-numeric type-set members are not implemented yet"},
             {"tuple(integer, real)", false, "unexpected"}}) {
         Allocator al(64 * 1024);
         LCompilers::CompilerOptions options;
@@ -1508,7 +1508,7 @@ function unused{a_numeric :: T}(x) result(r)
 end function
 end module
 )";
-            check_mutation(source, member.category, "asr.verify.trait.numeric_member");
+            check_mutation(source, member.category, "asr.verify.trait.intrinsic_member");
         }
     }
     check_mutation(R"(

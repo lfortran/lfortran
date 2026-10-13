@@ -482,10 +482,14 @@ schedule_type
 
 trait_kind = UniversalTrait | IntrinsicTypeSet
 
+-- TypeSetLogical is a binary logical operator (.and., .or., .eqv., .neqv.) and
+-- TypeSetConcat the character concatenation (//).
 type_set_operation
     = TypeSetBinary(binop op)
     | TypeSetComparison(cmpop op)
     | TypeSetConversion()
+    | TypeSetLogical(logicalbinop op)
+    | TypeSetConcat()
 
 type_set_witness
     = (ttype member_type, symbol procedure)

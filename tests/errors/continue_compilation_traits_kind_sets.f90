@@ -25,12 +25,15 @@ contains
     end function twice
 end module cc_traits_kind_sets_contracts
 
-! E01: a logical wildcard is not a numeric type-set member.
+! E01: logical members have no arithmetic.
 module cc_traits_kind_sets_logical
     implicit none
-    abstract interface :: IFlags
-        logical(*)
-    end interface IFlags
+contains
+    function twice{logical(*) :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T)             :: r
+        r = x + x
+    end function twice
 end module cc_traits_kind_sets_logical
 
 ! E02: the wildcard must be the kind type parameter.
@@ -79,15 +82,24 @@ contains
     end subroutine double_it
 end module cc_traits_kind_sets_long_double
 
-! E07: a closed runtime slot cannot return a complex scalar yet.
-module cc_traits_kind_sets_complex_slot
-    use cc_traits_kind_sets_contracts, only: ISum
+! E07: closed runtime slots of character members are not implemented yet.
+module cc_traits_kind_sets_character_slot
     implicit none
+    abstract interface :: ICode
+        character(len=3) | character(len=5)
+    end interface ICode
+
+    abstract interface :: IPick
+        function pick{ICode :: T}(x) result(r)
+            type(T), intent(in) :: x(:)
+            type(T)             :: r
+        end function pick
+    end interface IPick
 contains
-    subroutine use_view(summer)
-        class(ISum), intent(in) :: summer
+    subroutine use_view(picker)
+        class(IPick), intent(in) :: picker
     end subroutine use_view
-end module cc_traits_kind_sets_complex_slot
+end module cc_traits_kind_sets_character_slot
 
 ! E08: the intrinsic module generics provides INumeric only.
 module cc_traits_kind_sets_any_type
@@ -158,3 +170,78 @@ subroutine cc_traits_kind_sets_block_natures()
         use, intrinsic :: generics, only: Theirs => INumeric
     end block
 end subroutine cc_traits_kind_sets_block_natures
+
+! E13: the relational operators of standard Fortran do not apply to logical
+! values, so logical members have no operator(==).
+module cc_traits_kind_sets_logical_equal
+    implicit none
+contains
+    function same{logical | logical(1) :: T}(x, y) result(r)
+        type(T), intent(in) :: x, y
+        logical             :: r
+        r = x == y
+    end function same
+end module cc_traits_kind_sets_logical_equal
+
+! E14: integer members have no operator(.and.).
+module cc_traits_kind_sets_mixed_and
+    implicit none
+contains
+    function both{integer | logical :: T}(x, y) result(r)
+        type(T), intent(in) :: x, y
+        type(T)             :: r
+        r = x .and. y
+    end function both
+end module cc_traits_kind_sets_mixed_and
+
+! E15: an integer is not a valid source of the intrinsic LOGICAL conversion.
+module cc_traits_kind_sets_logical_conversion
+    implicit none
+contains
+    function zero{logical(*) :: T}() result(r)
+        type(T) :: r
+        r = T(0)
+    end function zero
+end module cc_traits_kind_sets_logical_conversion
+
+! E16: concatenating members of different lengths has a different result type
+! for each member.
+module cc_traits_kind_sets_concat_lengths
+    implicit none
+contains
+    function joined{character(len=3) | character(len=5) :: T}(x, y) result(r)
+        type(T), intent(in) :: x, y
+        character(len=10)   :: r
+        r = x // y
+    end function joined
+end module cc_traits_kind_sets_concat_lengths
+
+! E17: the length of a character member is part of the member.
+module cc_traits_kind_sets_character_length
+    implicit none
+contains
+    function first{character(len=3) | character(len=5) :: T}(x) result(r)
+        type(T), intent(in) :: x(:)
+        type(T)             :: r
+        r = x(1)
+    end function first
+
+    subroutine use_first(words)
+        character(len=4), intent(in) :: words(:)
+        print *, first(words)
+    end subroutine use_first
+end module cc_traits_kind_sets_character_length
+
+! E18: a condition must be logical for every member.
+module cc_traits_kind_sets_mixed_condition
+    implicit none
+contains
+    function count_true{integer | logical :: T}(x) result(n)
+        type(T), intent(in) :: x(:)
+        integer             :: n, i
+        n = 0
+        do i = 1, size(x)
+            if (x(i)) n = n + 1
+        end do
+    end function count_true
+end module cc_traits_kind_sets_mixed_condition

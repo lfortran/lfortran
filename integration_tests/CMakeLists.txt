@@ -4446,6 +4446,10 @@ RUN(NAME traits_kind_sets_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
 RUN(NAME traits_kind_sets_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes
     EXTRAFILES traits_kind_sets_01_contracts.f90 traits_kind_sets_01_providers.f90)
+RUN(NAME traits_type_sets_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_type_sets_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_type_sets_03 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes EXTRAFILES traits_type_sets_03_sets.f90)
 RUN(NAME traits_generics_module_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes
     EXTRAFILES traits_generics_module_01_sums.f90 traits_generics_module_01_ops.f90)

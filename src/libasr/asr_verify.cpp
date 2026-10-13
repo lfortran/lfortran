@@ -1286,6 +1286,13 @@ public:
         return kind > 0 && kind < 1000;
     }
 
+    // An intrinsic scalar type of a concrete kind and, for character, a
+    // constant length: a possible type-set member or operand.
+    static bool type_set_intrinsic_type(ASR::ttype_t *type) {
+        return type_set_concrete_kind(type) || (type && constant_length_character(type) &&
+            ASRUtils::is_supported_character_kind(ASRUtils::extract_kind_from_ttype_t(type)));
+    }
+
     void visit_Trait(const Trait_t &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
@@ -1346,16 +1353,13 @@ public:
                 "An intrinsic type set must be nonempty and have no nominal methods or parents");
             for (size_t i = 0; i < x.n_member_types; i++) {
                 auto *type = x.m_member_types[i];
-                require_id(type && (ASR::is_a<ASR::Integer_t>(*type) ||
-                        ASR::is_a<ASR::Real_t>(*type) ||
-                        ASR::is_a<ASR::Complex_t>(*type)) &&
-                        type_set_concrete_kind(type),
-                    "asr.verify.trait.numeric_member",
-                    "An intrinsic type-set member must be a concrete scalar numeric type");
+                require_id(type_set_intrinsic_type(type),
+                    "asr.verify.trait.intrinsic_member",
+                    "An intrinsic type-set member must be a concrete scalar intrinsic type");
                 visit_ttype(*type);
                 for (size_t j = 0; j < i; j++) {
-                    require_id(!ASRUtils::types_equal(
-                            type, x.m_member_types[j], nullptr, nullptr),
+                    require_id(!ASRUtils::type_argument_types_equal(
+                            type, x.m_member_types[j]),
                         "asr.verify.trait.unique_member",
                         "Type-set members must be unique");
                 }
@@ -1486,7 +1490,7 @@ public:
                 auto *expr = ASR::down_cast<ASR::ComplexBinOp_t>(value);
                 left = expr->m_left; right = expr->m_right; op = expr->m_op; constant = expr->m_value;
             }
-            return witness->n_args == 2 && !constant &&
+            return explicit_argument_count(*witness) == 2 && !constant &&
                 op == ASR::down_cast<ASR::TypeSetBinary_t>(operation)->m_op &&
                 (op == ASR::Add || op == ASR::Sub || op == ASR::Mul || op == ASR::Div) &&
                 same_variable(left, witness->m_args[0]) &&
@@ -1507,14 +1511,61 @@ public:
                 auto *expr = ASR::down_cast<ASR::ComplexCompare_t>(value);
                 if (expr->m_op != op || (op != ASR::Eq && op != ASR::NotEq)) return false;
                 left = expr->m_left; right = expr->m_right; constant = expr->m_value;
+            } else if (ASR::is_a<ASR::StringCompare_t>(*value) && ASR::is_a<ASR::String_t>(*member)) {
+                auto *expr = ASR::down_cast<ASR::StringCompare_t>(value);
+                if (expr->m_op != op) return false;
+                left = expr->m_left; right = expr->m_right; constant = expr->m_value;
             }
-            return witness->n_args == 2 && !constant &&
+            return explicit_argument_count(*witness) == 2 && !constant &&
                 same_variable(left, witness->m_args[0]) &&
                 same_variable(right, witness->m_args[1]);
         }
-        if (witness->n_args != 1) return false;
+        if (ASR::is_a<ASR::TypeSetLogical_t>(*operation)) {
+            if (!ASR::is_a<ASR::LogicalBinOp_t>(*value) || !ASR::is_a<ASR::Logical_t>(*member)) {
+                return false;
+            }
+            auto *expr = ASR::down_cast<ASR::LogicalBinOp_t>(value);
+            auto op = ASR::down_cast<ASR::TypeSetLogical_t>(operation)->m_op;
+            return explicit_argument_count(*witness) == 2 && !expr->m_value &&
+                expr->m_op == op &&
+                op != ASR::logicalbinopType::Xor &&
+                same_variable(expr->m_left, witness->m_args[0]) &&
+                same_variable(expr->m_right, witness->m_args[1]);
+        }
+        if (ASR::is_a<ASR::TypeSetConcat_t>(*operation)) {
+            if (!ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) ||
+                    !ASR::is_a<ASR::String_t>(*member)) return false;
+            auto *call = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
+            return explicit_argument_count(*witness) == 2 && !call->m_value &&
+                call->m_overload_id == 0 &&
+                call->m_intrinsic_id == static_cast<int64_t>(
+                    ASRUtils::IntrinsicElementalFunctions::StringConcat) &&
+                call->n_args == 2 && same_variable(call->m_args[0], witness->m_args[0]) &&
+                same_variable(call->m_args[1], witness->m_args[1]);
+        }
+        if (explicit_argument_count(*witness) != 1) return false;
         auto *arg = witness->m_args[0];
         auto *source = ASRUtils::expr_type(arg);
+        if (ASR::is_a<ASR::Logical_t>(*member)) {
+            // The intrinsic LOGICAL converts only between logical kinds.
+            if (!ASR::is_a<ASR::Logical_t>(*source)) return false;
+            if (same_variable(value, arg)) {
+                return ASRUtils::types_equal(source, member, nullptr, nullptr);
+            }
+            if (ASR::is_a<ASR::Cast_t>(*value)) {
+                auto *cast = ASR::down_cast<ASR::Cast_t>(value);
+                return same_variable(cast->m_arg, arg) && !cast->m_value && !cast->m_dest &&
+                    cast->m_kind == ASR::cast_kindType::LogicalToLogical;
+            }
+            if (!ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value)) return false;
+            auto *call = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
+            return call->m_intrinsic_id == static_cast<int64_t>(
+                    ASRUtils::IntrinsicElementalFunctions::Logical) &&
+                !call->m_value && call->m_overload_id == 0 && call->n_args == 1 &&
+                same_variable(call->m_args[0], arg);
+        }
+        if (!ASR::is_a<ASR::Integer_t>(*member) && !ASR::is_a<ASR::Real_t>(*member) &&
+                !ASR::is_a<ASR::Complex_t>(*member)) return false;
         if (!ASR::is_a<ASR::Integer_t>(*source) && !ASR::is_a<ASR::Real_t>(*source) &&
                 !ASR::is_a<ASR::Complex_t>(*source)) return false;
         if (same_variable(value, arg)) {
@@ -1607,7 +1658,10 @@ public:
                 "asr.verify.type_set.restriction",
                 "An intrinsic requirement must be a bodyless function restriction");
             const bool conversion = ASR::is_a<ASR::TypeSetConversion_t>(*requirement.m_operation);
-            require_id(procedure->n_args == (conversion ? 1u : 2u) && procedure->m_args,
+            // Character dummies of witnesses gain hidden lengths after the
+            // string_length_arguments pass; the operands precede them.
+            const size_t n_operands = explicit_argument_count(*procedure);
+            require_id(n_operands == (conversion ? 1u : 2u) && procedure->m_args,
                 "asr.verify.type_set.arity",
                 "An intrinsic restriction must have the operation's arity");
             for (size_t j = 0; j < procedure->n_args; j++) {
@@ -1621,10 +1675,7 @@ public:
                 bool deferred = ASR::is_a<ASR::TypeParameter_t>(*type);
                 require_id((deferred && parameter ==
                             ASR::down_cast<ASR::TypeParameter_t>(type)->m_param) ||
-                        (!deferred && type_set_concrete_kind(type) &&
-                            (ASR::is_a<ASR::Integer_t>(*type) ||
-                            ASR::is_a<ASR::Real_t>(*type) || ASR::is_a<ASR::Complex_t>(*type) ||
-                            (j == procedure->n_args && ASR::is_a<ASR::Logical_t>(*type)))),
+                        (!deferred && type_set_intrinsic_type(type)),
                     "asr.verify.type_set.signature",
                     "An intrinsic restriction must use its own scalar binder or a concrete scalar type");
                 require_id(conversion || j == procedure->n_args || deferred,
@@ -1640,8 +1691,8 @@ public:
                 const auto &proof = requirement.m_witnesses[j];
                 size_t index = trait.n_member_types;
                 for (size_t k = 0; k < trait.n_member_types; k++) {
-                    if (proof.m_member_type && ASRUtils::types_equal(
-                            proof.m_member_type, trait.m_member_types[k], nullptr, nullptr)) index = k;
+                    if (proof.m_member_type && ASRUtils::type_argument_types_equal(
+                            proof.m_member_type, trait.m_member_types[k])) index = k;
                 }
                 require_id(index != trait.n_member_types,
                     "asr.verify.type_set.member_in_set",
@@ -1660,7 +1711,7 @@ public:
                         ASR::is_a<ASR::FunctionType_t>(*witness->m_function_signature) &&
                         ASRUtils::get_FunctionType(witness)->m_deftype == ASR::deftypeType::Implementation &&
                         !ASRUtils::get_FunctionType(witness)->m_is_restriction &&
-                        witness->n_args == procedure->n_args && witness->m_args &&
+                        explicit_argument_count(*witness) == n_operands && witness->m_args &&
                         local_variable(witness->m_return_var, witness, ASR::intentType::ReturnVar),
                     "asr.verify.type_set.witness_signature",
                     "A capability witness must implement the restriction signature");
@@ -1673,7 +1724,7 @@ public:
                         "Capability witness locals must be concrete variables");
                     auto *variable = ASR::down_cast<ASR::Variable_t>(entry.second);
                     require_id(variable->m_type &&
-                            type_set_concrete_kind(variable->m_type) &&
+                            type_set_intrinsic_type(variable->m_type) &&
                             !variable->m_symbolic_value && !variable->m_value &&
                             variable->m_storage == ASR::storage_typeType::Default &&
                             variable->m_presence == ASR::presenceType::Required,
@@ -1688,14 +1739,14 @@ public:
                         "asr.verify.type_set.witness_arguments",
                         "Capability witness arguments must be distinct read-only variables");
                 }
-                for (size_t k = 0; k <= procedure->n_args; k++) {
-                    auto *abstract = ASRUtils::expr_type(k == procedure->n_args ?
+                for (size_t k = 0; k <= n_operands; k++) {
+                    auto *abstract = ASRUtils::expr_type(k == n_operands ?
                         procedure->m_return_var : procedure->m_args[k]);
-                    auto *concrete = ASRUtils::expr_type(k == witness->n_args ?
+                    auto *concrete = ASRUtils::expr_type(k == n_operands ?
                         witness->m_return_var : witness->m_args[k]);
                     auto *expected = ASR::is_a<ASR::TypeParameter_t>(*abstract) ?
                         proof.m_member_type : abstract;
-                    require_id(ASRUtils::types_equal(concrete, expected, nullptr, nullptr),
+                    require_id(ASRUtils::type_argument_types_equal(concrete, expected),
                         "asr.verify.type_set.witness_type",
                         "Witness arguments and result must have the substituted category and kind");
                 }
@@ -1714,10 +1765,23 @@ public:
                     "The witness body must be precisely the recorded intrinsic operation");
                 bool comparison = ASR::is_a<ASR::TypeSetComparison_t>(*requirement.m_operation);
                 auto *result_type = ASRUtils::expr_type(witness->m_return_var);
-                require_id(comparison ? ASR::is_a<ASR::Logical_t>(*result_type) :
-                        ASRUtils::types_equal(result_type, proof.m_member_type, nullptr, nullptr),
+                bool result = comparison ? ASR::is_a<ASR::Logical_t>(*result_type) :
+                    ASRUtils::type_argument_types_equal(result_type, proof.m_member_type);
+                int64_t length = 0, joined = 0;
+                if (ASR::is_a<ASR::TypeSetConcat_t>(*requirement.m_operation)) {
+                    // The concatenation of two members has twice their length.
+                    result = ASR::is_a<ASR::String_t>(*result_type) &&
+                        ASR::is_a<ASR::String_t>(*proof.m_member_type) &&
+                        ASRUtils::extract_kind_from_ttype_t(result_type) ==
+                            ASRUtils::extract_kind_from_ttype_t(proof.m_member_type) &&
+                        ASRUtils::constant_string_length(proof.m_member_type, length) &&
+                        ASRUtils::constant_string_length(result_type, joined) &&
+                        joined == 2 * length;
+                }
+                require_id(result,
                     "asr.verify.type_set.operation_result",
-                    "Comparison results must be logical; arithmetic and conversions must preserve the member kind");
+                    "Comparison results must be logical, concatenations join their operands, "
+                    "and other operations and conversions must preserve the member type");
             }
         }
     }
@@ -7912,6 +7976,29 @@ public:
         require(str->m_len_kind == ImplicitLength,
             "StringPhysicalCast expression should have length kind of \"ImplicitLength\".")
         BaseWalkVisitor<VerifyVisitor>::visit_StringPhysicalCast(x);
+    }
+    // A condition of a type parameter belongs to a generic body whose binder
+    // has a type set of logical members only.
+    template <typename T>
+    void verify_type_set_condition(const T &x) {
+        ASR::ttype_t *type = typed_expr_type(x.m_test);
+        if (!type || !ASR::is_a<ASR::TypeParameter_t>(*type)) return;
+        ASR::symbol_t *binder = ASRUtils::trait_type_parameter(x.m_test);
+        ASR::Trait_t *set = binder ? ASRUtils::trait_parameter_type_set(binder) : nullptr;
+        bool all_logical = set != nullptr;
+        for (size_t i = 0; all_logical && i < set->n_member_types; i++) {
+            all_logical = ASR::is_a<ASR::Logical_t>(*set->m_member_types[i]);
+        }
+        require_id(all_logical, "asr.verify.type_set.logical_condition",
+            "A condition of a type parameter requires a type set of logical members");
+    }
+    void visit_If(const If_t &x) {
+        verify_type_set_condition(x);
+        BaseWalkVisitor<VerifyVisitor>::visit_If(x);
+    }
+    void visit_WhileLoop(const WhileLoop_t &x) {
+        verify_type_set_condition(x);
+        BaseWalkVisitor<VerifyVisitor>::visit_WhileLoop(x);
     }
     void visit_IfExp(const IfExp_t &x) {
         // Fortran 2023 conditional expression (10.1.2.3) and compiler

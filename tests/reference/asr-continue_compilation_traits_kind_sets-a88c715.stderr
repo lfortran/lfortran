@@ -8,84 +8,120 @@ warning: traits are an experimental LFortran extension; use ordinary derived typ
 9 |    
   | ...^ LFortran extension
 
-semantic error: non-numeric type-set members are not implemented yet
-  --> tests/errors/continue_compilation_traits_kind_sets.f90:32:9
-   |
-32 |         logical(*)
-   |         ^^^^^^^^^^ 
-
 semantic error: a kind wildcard must be the only type parameter of a type-set member, as in 'real(*)' or 'real(kind=*)'
-  --> tests/errors/continue_compilation_traits_kind_sets.f90:40:17
+  --> tests/errors/continue_compilation_traits_kind_sets.f90:43:17
    |
-40 |         integer(len=*)
+43 |         integer(len=*)
    |                 ^^^^^ 
 
 semantic error: a kind wildcard must be the only type parameter of a type-set member, as in 'real(*)' or 'real(kind=*)'
-  --> tests/errors/continue_compilation_traits_kind_sets.f90:48:14
+  --> tests/errors/continue_compilation_traits_kind_sets.f90:51:14
    |
-48 |         real(*, 8)
+51 |         real(*, 8)
    |              ^ 
 
 semantic error: Kind 3 is not supported for Integer
-  --> tests/errors/continue_compilation_traits_kind_sets.f90:56:30
+  --> tests/errors/continue_compilation_traits_kind_sets.f90:59:30
    |
-56 |         integer(*) | integer(3)
+59 |         integer(*) | integer(3)
    |                              ^ 
 
 semantic error: runtime dispatch for this trait method signature is not implemented yet
-  --> tests/errors/continue_compilation_traits_kind_sets.f90:88:9
-   |
-88 |         class(ISum), intent(in) :: summer
-   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:100:9
+    |
+100 |         class(IPick), intent(in) :: picker
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Dummy argument 'summer' not defined
-  --> tests/errors/continue_compilation_traits_kind_sets.f90:87:5 - 89:27
-   |
-87 |        subroutine use_view(summer)
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+semantic error: Dummy argument 'picker' not defined
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:99:5 - 101:27
+    |
+ 99 |        subroutine use_view(picker)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
-   |
-89 |        end subroutine use_view
-   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |
+101 |        end subroutine use_view
+    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: The symbol 'ianytype' not found in the module 'generics'
-  --> tests/errors/continue_compilation_traits_kind_sets.f90:94:39
-   |
-94 |     use, intrinsic :: generics, only: IAnyType
-   |                                       ^^^^^^^^ 
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:106:39
+    |
+106 |     use, intrinsic :: generics, only: IAnyType
+    |                                       ^^^^^^^^ 
 
 semantic error: The symbol 'origin' not found in the module 'generics'
-   --> tests/errors/continue_compilation_traits_kind_sets.f90:112:39
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:124:39
     |
-112 |     use, intrinsic :: generics, only: origin
+124 |     use, intrinsic :: generics, only: origin
     |                                       ^^^^^^ 
 
 semantic error: a scoping unit cannot access both the intrinsic and a nonintrinsic module 'generics'
-   --> tests/errors/continue_compilation_traits_kind_sets.f90:149:5
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:161:5
     |
-149 |     use, intrinsic :: generics, only: Theirs => INumeric
+161 |     use, intrinsic :: generics, only: Theirs => INumeric
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: operator '<' is not available for type-set member complex(4)
-  --> tests/errors/continue_compilation_traits_kind_sets.f90:67:13
+semantic error: operator '+' is not available for type-set member logical(1)
+  --> tests/errors/continue_compilation_traits_kind_sets.f90:35:13
    |
-67 |         r = x < y
+35 |         r = x + x
+   |             ^^^^^ 
+
+semantic error: operator '<' is not available for type-set member complex(4)
+  --> tests/errors/continue_compilation_traits_kind_sets.f90:70:13
+   |
+70 |         r = x < y
    |             ^^^^^ 
 
 semantic error: real(10) is not a member of type-set trait 'ireal'
-  --> tests/errors/continue_compilation_traits_kind_sets.f90:78:13
+  --> tests/errors/continue_compilation_traits_kind_sets.f90:81:13
    |
-78 |         x = twice(x)
+81 |         x = twice(x)
    |             ^^^^^^^^ 
 
 semantic error: real(8) is not a member of type-set trait 'inumeric'
-   --> tests/errors/continue_compilation_traits_kind_sets.f90:134:18
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:146:18
     |
-134 |         print *, total(x)
+146 |         print *, total(x)
     |                  ^^^^^^^^ 
 
 semantic error: a scoping unit cannot access both the intrinsic and a nonintrinsic module 'generics'
-   --> tests/errors/continue_compilation_traits_kind_sets.f90:158:9
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:170:9
     |
-158 |         use, intrinsic :: generics, only: Theirs => INumeric
+170 |         use, intrinsic :: generics, only: Theirs => INumeric
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: operator '==' is not available for type-set member logical(4)
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:182:13
+    |
+182 |         r = x == y
+    |             ^^^^^^ 
+
+semantic error: operator '.and.' is not available for type-set member integer(4)
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:193:13
+    |
+193 |         r = x .and. y
+    |             ^^^^^^^^^ 
+
+semantic error: conversion is not available for type-set member logical(1)
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:203:13
+    |
+203 |         r = T(0)
+    |             ^^^^ 
+
+semantic error: type-set operations with differing result types are not implemented yet
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:215:13
+    |
+215 |         r = x // y
+    |             ^^^^^^ 
+
+semantic error: character(len=4) is not a member of inline type set {character(len=3) | character(len=5) :: t} of generic 'first'
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:231:18
+    |
+231 |         print *, first(words)
+    |                  ^^^^^^^^^^^^ 
+
+semantic error: a logical condition is not available for type-set member integer(4)
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:244:17
+    |
+244 |             if (x(i)) n = n + 1
+    |                 ^^^^ 

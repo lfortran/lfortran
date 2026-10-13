@@ -15,7 +15,7 @@ If(identifier? name, expr test, stmt* body, stmt* orelse)
 | Argument | Description |
 |----------|-------------|
 | `name` | the construct name, or `nil`. |
-| `test` | the condition, of a logical type. |
+| `test` | the condition, of a logical type, or in a generic body of a type parameter whose type set has only logical members. |
 | `body` | the statements run when the condition is true. |
 | `orelse` | the statements run when it is false. `else if` is an **If** nested in `orelse`. |
 
@@ -26,7 +26,9 @@ None.
 ## Description
 
 `test` must already be logical: ASR has no notion of a value being truthy, so
-a frontend that allows one inserts the comparison itself.
+a frontend that allows one inserts the comparison itself. In a generic body,
+`test` may have a type parameter whose binder is constrained by a type set of
+logical members only; every specialization makes it logical.
 
 There is no `else if` node. `else if` is an **If** whose parent's `orelse`
 holds exactly it, which keeps the tree uniform for passes that rewrite

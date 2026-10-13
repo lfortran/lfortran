@@ -57,6 +57,13 @@ public:
                 // site references its own inferred interface instead.
                 return;
             }
+            if (ASRUtils::is_type_set_capability(x)) {
+                // A type-set restriction or witness keeps the function form
+                // its verified proof states. Only the concrete copies
+                // instantiated into executable scopes are code-generated, and
+                // they are transformed there like any other function.
+                return;
+            }
             ASR::ttype_t* const return_type = ASRUtils::get_FunctionType(x_ptr)->m_return_var_type;
             
             /* Transform This Function Into Subroutine IF NEEDED */
@@ -708,6 +715,11 @@ public :
         }
 
         ASR::Function_t* func = ASRUtils::get_function(x->m_name);
+        if (func && ASRUtils::is_type_set_capability(*func)) {
+            // A call of a type-set restriction in a template body keeps the
+            // function form of its untransformed callee.
+            return;
+        }
         bool was_converted = func && Function__TO__ReturnType_MAP_.count(func) > 0;
         // Elemental functions returning primitive scalars are not converted
         // to subroutines, but the call expression type is an array (due to

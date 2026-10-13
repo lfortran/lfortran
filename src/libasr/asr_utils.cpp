@@ -6028,6 +6028,16 @@ bool trait_runtime_view_admissible(const ASR::Trait_t &trait)
 std::string trait_operation_display_name(const ASR::type_set_operation_t &operation)
 {
     if (ASR::is_a<ASR::TypeSetConversion_t>(operation)) return "initializer";
+    if (ASR::is_a<ASR::TypeSetConcat_t>(operation)) return "operator(//)";
+    if (ASR::is_a<ASR::TypeSetLogical_t>(operation)) {
+        switch (ASR::down_cast<ASR::TypeSetLogical_t>(&operation)->m_op) {
+            case ASR::logicalbinopType::And: return "operator(.and.)";
+            case ASR::logicalbinopType::Or: return "operator(.or.)";
+            case ASR::logicalbinopType::Eqv: return "operator(.eqv.)";
+            case ASR::logicalbinopType::NEqv: return "operator(.neqv.)";
+            default: return "operator";
+        }
+    }
     if (ASR::is_a<ASR::TypeSetBinary_t>(operation)) {
         switch (ASR::down_cast<ASR::TypeSetBinary_t>(&operation)->m_op) {
             case ASR::binopType::Add: return "operator(+)";
@@ -6068,6 +6078,10 @@ bool same_trait_operation(const ASR::type_set_operation_t &left,
     if (ASR::is_a<ASR::TypeSetComparison_t>(left)) {
         return ASR::down_cast<ASR::TypeSetComparison_t>(&left)->m_op ==
             ASR::down_cast<ASR::TypeSetComparison_t>(&right)->m_op;
+    }
+    if (ASR::is_a<ASR::TypeSetLogical_t>(left)) {
+        return ASR::down_cast<ASR::TypeSetLogical_t>(&left)->m_op ==
+            ASR::down_cast<ASR::TypeSetLogical_t>(&right)->m_op;
     }
     return true;
 }
@@ -6196,6 +6210,30 @@ ASR::Trait_t *trait_parameter_type_set(ASR::symbol_t *parameter)
         trait->n_member_types && trait->m_member_types ? trait : nullptr;
 }
 
+bool is_type_set_capability(const ASR::Function_t &function)
+{
+    // Type-set constraints, and so their restrictions and witnesses, belong
+    // to a template.
+    SymbolTable *scope = function.m_symtab ? function.m_symtab->parent : nullptr;
+    if (!scope || !scope->asr_owner || !ASR::is_a<ASR::symbol_t>(*scope->asr_owner) ||
+            !ASR::is_a<ASR::Template_t>(*ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
+        return false;
+    }
+    const ASR::symbol_t *self = &function.base;
+    for (const auto &entry : scope->get_scope()) {
+        if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+        auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+        for (size_t i = 0; i < constraint->n_intrinsic_requirements; i++) {
+            const auto &requirement = constraint->m_intrinsic_requirements[i];
+            if (requirement.m_procedure == self) return true;
+            for (size_t j = 0; j < requirement.n_witnesses; j++) {
+                if (requirement.m_witnesses[j].m_procedure == self) return true;
+            }
+        }
+    }
+    return false;
+}
+
 std::vector<std::vector<ASR::ttype_t*>> trait_member_tuples(const ASR::Template_t &generic)
 {
     if (!generic.n_args || !generic.m_args || !generic.m_symtab) return {};
@@ -6220,7 +6258,7 @@ bool trait_type_arguments_equal(ASR::ttype_t **left, size_t n_left,
 {
     if (n_left != n_right || (n_left && (!left || !right))) return false;
     for (size_t i = 0; i < n_left; i++) {
-        if (!left[i] || !right[i] || !types_equal(left[i], right[i], nullptr, nullptr)) {
+        if (!left[i] || !right[i] || !type_argument_types_equal(left[i], right[i])) {
             return false;
         }
     }
@@ -6916,6 +6954,8 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
             continue;
         }
         auto *type = member(arg->m_type);
+        // A character member of a closed slot is not implemented yet.
+        if (type && type != arg->m_type && ASR::is_a<ASR::String_t>(*type)) return false;
         if (!type || !(ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type)
                 || ASR::is_a<ASR::Complex_t>(*type) || ASR::is_a<ASR::Logical_t>(*type)
                 || ASR::is_a<ASR::String_t>(*type)
@@ -7692,7 +7732,7 @@ static bool trait_member_type_matches(ASR::expr_t *generic, ASR::expr_t *instanc
     return member != members.end() && member->second &&
         is_pointer(a) == is_pointer(b) && is_allocatable(a) == is_allocatable(b) &&
         trait_shapes_equal(a, b, arguments) &&
-        types_equal(member->second, extract_type(b), nullptr, nullptr);
+        type_argument_types_equal(member->second, extract_type(b));
 }
 
 bool trait_member_signature_matches(const ASR::Function_t &generic,
@@ -7712,7 +7752,7 @@ bool trait_member_signature_matches(const ASR::Function_t &generic,
             definition->m_symtab->get_symbol(definition->m_args[i]));
         bool member = false;
         for (size_t j = 0; set && members[i] && j < set->n_member_types; j++) {
-            member |= types_equal(set->m_member_types[j], members[i], nullptr, nullptr);
+            member |= type_argument_types_equal(set->m_member_types[j], members[i]);
         }
         if (!member) return false;
     }
@@ -7973,8 +8013,8 @@ std::string trait_generic_requirement_mismatch(const ASR::Template_t &message,
                 bool same = true;
                 for (size_t k = 0; same && k < trait->n_member_types; k++) {
                     same = left[j]->m_member_types[k] && trait->m_member_types[k] &&
-                        types_equal(left[j]->m_member_types[k], trait->m_member_types[k],
-                            nullptr, nullptr);
+                        type_argument_types_equal(left[j]->m_member_types[k],
+                            trait->m_member_types[k]);
                 }
                 found = same;
             }

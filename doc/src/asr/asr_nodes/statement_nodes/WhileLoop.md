@@ -15,7 +15,7 @@ WhileLoop(identifier? name, expr test, stmt* body, stmt* orelse)
 | Argument | Description |
 |----------|-------------|
 | `name` | the construct name, or `nil`. |
-| `test` | the condition, checked before each iteration. |
+| `test` | the logical condition, checked before each iteration; in a generic body it may have a type parameter whose type set has only logical members, as for [If](If.md). |
 | `body` | the statements of the loop. |
 | `orelse` | statements to run when the loop ends because the condition became false rather than through an `exit`. Fortran has no such clause; it is there for Python's `while ... else`. |
 

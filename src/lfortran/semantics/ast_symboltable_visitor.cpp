@@ -4276,15 +4276,16 @@ public:
             AST::decl_attribute_t **members, size_t count, std::string name) {
         Vec<ASR::ttype_t*> member_types;
         member_types.reserve(al, count);
+        // A member is its complete type: kind and, for character, length.
         auto add_member = [&](ASR::ttype_t *type) {
             for (auto *member : member_types) {
-                if (ASRUtils::types_equal(member, type, nullptr, nullptr)) return;
+                if (ASRUtils::type_argument_types_equal(member, type)) return;
             }
             member_types.push_back(al, type);
         };
         for (size_t j = 0; j < count; j++) {
             if (!AST::is_a<AST::AttrType_t>(*members[j])) {
-                trait_error("non-numeric type-set members are not implemented yet",
+                trait_error("this type-set member is not implemented yet",
                     members[j]->base.loc);
             }
             auto *attribute = AST::down_cast<AST::AttrType_t>(members[j]);
@@ -4296,6 +4297,7 @@ public:
                     add_member(ASRUtils::TYPE(
                         *category == ASR::ttypeType::Integer ? ASR::make_Integer_t(al, loc, kind) :
                         *category == ASR::ttypeType::Real ? ASR::make_Real_t(al, loc, kind) :
+                        *category == ASR::ttypeType::Logical ? ASR::make_Logical_t(al, loc, kind) :
                         ASR::make_Complex_t(al, loc, kind)));
                 }
                 continue;
@@ -4306,10 +4308,18 @@ public:
             ASR::ttype_t *type = determine_type(attribute->base.base.loc,
                 name, members[j], false, false, dims, nullptr,
                 declaration, current_procedure_abi_type);
-            if (!ASR::is_a<ASR::Integer_t>(*type) &&
-                    !ASR::is_a<ASR::Real_t>(*type) &&
-                    !ASR::is_a<ASR::Complex_t>(*type)) {
-                trait_error("non-numeric type-set members are not implemented yet",
+            int64_t length = 0;
+            if (ASR::is_a<ASR::StructType_t>(*type)) {
+                trait_error("derived types as type-set members are not implemented yet",
+                    attribute->base.base.loc);
+            } else if (ASR::is_a<ASR::String_t>(*type) &&
+                    !ASRUtils::constant_string_length(type, length)) {
+                trait_error("character type-set members of nonconstant length are not "
+                    "implemented yet", attribute->base.base.loc);
+            } else if (!ASR::is_a<ASR::Integer_t>(*type) && !ASR::is_a<ASR::Real_t>(*type) &&
+                    !ASR::is_a<ASR::Complex_t>(*type) && !ASR::is_a<ASR::Logical_t>(*type) &&
+                    !ASR::is_a<ASR::String_t>(*type)) {
+                trait_error("this type-set member is not implemented yet",
                     attribute->base.base.loc);
             }
             add_member(type);
@@ -4317,8 +4327,9 @@ public:
         return member_types;
     }
 
-    // The numeric type of a type-set member written with a kind wildcard,
-    // `integer(*)`, `real(kind=*)` or `complex(*)`; none without a wildcard.
+    // The type of a type-set member written with a kind wildcard,
+    // `integer(*)`, `real(kind=*)`, `complex(*)` or `logical(*)`; none
+    // without a wildcard. For character, `*` is the length, not the kind.
     std::optional<ASR::ttypeType> type_set_kind_wildcard(const AST::AttrType_t &member) {
         const AST::kind_item_t *wildcard = nullptr;
         for (size_t k = 0; k < member.n_kind; k++) {
@@ -4327,10 +4338,18 @@ public:
             }
         }
         if (!wildcard) return std::nullopt;
+        if (member.m_type == AST::decl_typeType::TypeCharacter) {
+            if (wildcard->m_id && to_lower(wildcard->m_id) == "kind") {
+                trait_error("character kind wildcards in type sets are not implemented yet",
+                    wildcard->loc);
+            }
+            return std::nullopt;
+        }
         if (member.m_type != AST::decl_typeType::TypeInteger &&
                 member.m_type != AST::decl_typeType::TypeReal &&
-                member.m_type != AST::decl_typeType::TypeComplex) {
-            trait_error("non-numeric type-set members are not implemented yet",
+                member.m_type != AST::decl_typeType::TypeComplex &&
+                member.m_type != AST::decl_typeType::TypeLogical) {
+            trait_error("this type-set member is not implemented yet",
                 member.base.base.loc);
         }
         if (member.n_kind != 1 || (wildcard->m_id && to_lower(wildcard->m_id) != "kind")) {
@@ -4339,6 +4358,7 @@ public:
         }
         return member.m_type == AST::decl_typeType::TypeInteger ? ASR::ttypeType::Integer :
             member.m_type == AST::decl_typeType::TypeReal ? ASR::ttypeType::Real :
+            member.m_type == AST::decl_typeType::TypeLogical ? ASR::ttypeType::Logical :
             ASR::ttypeType::Complex;
     }
 

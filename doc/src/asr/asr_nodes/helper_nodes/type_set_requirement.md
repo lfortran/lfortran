@@ -1,6 +1,6 @@
 # type_set_requirement
 
-A serializable, all-member certificate for an intrinsic numeric operation.
+A serializable, all-member certificate for an intrinsic operation.
 
 ## Declaration
 

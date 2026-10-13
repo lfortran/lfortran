@@ -24300,13 +24300,16 @@ public:
             restriction, true, true));
     }
 
-    // The intrinsic conversion `int`, `real` or `cmplx` of `arg` to the
-    // numeric type `target`, with its explicit kind.
+    // The intrinsic conversion `int`, `real`, `cmplx` or `logical` of `arg`
+    // to the intrinsic type `target`, with its explicit kind. Character has
+    // no conversion: the result is null.
     ASR::asr_t *intrinsic_type_conversion(ASR::ttype_t *target, ASR::expr_t *arg,
             const Location &loc) {
         using Intrinsic = ASRUtils::IntrinsicElementalFunctions;
+        if (ASR::is_a<ASR::String_t>(*target)) return nullptr;
         auto id = ASR::is_a<ASR::Integer_t>(*target) ? Intrinsic::Int :
-            ASR::is_a<ASR::Real_t>(*target) ? Intrinsic::Real : Intrinsic::Cmplx;
+            ASR::is_a<ASR::Real_t>(*target) ? Intrinsic::Real :
+            ASR::is_a<ASR::Logical_t>(*target) ? Intrinsic::Logical : Intrinsic::Cmplx;
         Vec<ASR::expr_t*> actuals;
         actuals.reserve(al, 3);
         actuals.push_back(al, arg);
@@ -24322,16 +24325,7 @@ public:
 
     static bool same_type_set_operation(const ASR::type_set_operation_t &left,
             const ASR::type_set_operation_t &right) {
-        if (left.type != right.type) return false;
-        if (ASR::is_a<ASR::TypeSetBinary_t>(left)) {
-            return ASR::down_cast<ASR::TypeSetBinary_t>(&left)->m_op ==
-                ASR::down_cast<ASR::TypeSetBinary_t>(&right)->m_op;
-        }
-        if (ASR::is_a<ASR::TypeSetComparison_t>(left)) {
-            return ASR::down_cast<ASR::TypeSetComparison_t>(&left)->m_op ==
-                ASR::down_cast<ASR::TypeSetComparison_t>(&right)->m_op;
-        }
-        return true;
+        return ASRUtils::same_trait_operation(left, right);
     }
 
     ASR::type_set_requirement_t *find_type_set_requirement(
@@ -24436,13 +24430,48 @@ public:
                         case ASR::cmpopType::GtE: source.m_op = AST::GtE; break;
                     }
                     operation_name = "operator '" + CommonVisitorMethods::cmpop_to_str(op) + "'";
+                    // Standard Fortran has no relational operators for
+                    // logical values, whatever a processor extension accepts.
+                    if (ASR::is_a<ASR::Logical_t>(*member)) throw SemanticAbort();
                     auto *left = witness->m_args[0], *right = witness->m_args[1];
                     CommonVisitorMethods::visit_Compare(al, source, left, right,
                         expression, cmpop2str[source.m_op], &intrinsic_scope,
                         current_function_dependencies, current_module_dependencies,
                         compiler_options, diag);
+                } else if (ASR::is_a<ASR::TypeSetLogical_t>(*operation)) {
+                    auto op = ASR::down_cast<ASR::TypeSetLogical_t>(operation)->m_op;
+                    AST::BoolOp_t source{};
+                    source.base.base.loc = loc;
+                    switch (op) {
+                        case ASR::logicalbinopType::And: source.m_op = AST::And; break;
+                        case ASR::logicalbinopType::Or: source.m_op = AST::Or; break;
+                        case ASR::logicalbinopType::Eqv: source.m_op = AST::Eqv; break;
+                        case ASR::logicalbinopType::NEqv: source.m_op = AST::NEqv; break;
+                        default: LCOMPILERS_ASSERT(false);
+                    }
+                    operation_name = "operator '" + std::string(
+                        op == ASR::logicalbinopType::And ? ".and." :
+                        op == ASR::logicalbinopType::Or ? ".or." :
+                        op == ASR::logicalbinopType::Eqv ? ".eqv." : ".neqv.") + "'";
+                    auto *left = witness->m_args[0], *right = witness->m_args[1];
+                    std::string spelling = boolop2str[source.m_op];
+                    CommonVisitorMethods::visit_BoolOp(al, source, left, right, expression,
+                        diag, spelling, &intrinsic_scope, current_function_dependencies,
+                        current_module_dependencies);
+                } else if (ASR::is_a<ASR::TypeSetConcat_t>(*operation)) {
+                    operation_name = "operator '//'";
+                    auto *left = witness->m_args[0], *right = witness->m_args[1];
+                    if (!ASR::is_a<ASR::String_t>(*member)) throw SemanticAbort();
+                    Vec<ASR::expr_t*> operands;
+                    operands.reserve(al, 2);
+                    operands.push_back(al, left);
+                    operands.push_back(al, right);
+                    expression = ASRUtils::IntrinsicElementalFunctionRegistry::
+                        get_create_function("stringconcat")(al, loc, operands, diag);
+                    if (!expression) throw SemanticAbort();
                 } else {
                     expression = intrinsic_type_conversion(member, witness->m_args[0], loc);
+                    if (!expression) throw SemanticAbort();
                 }
             } catch (const SemanticAbort &) {
                 bool unsupported_kind = false;
@@ -24463,14 +24492,14 @@ public:
             ASR::expr_t *value = ASRUtils::EXPR(expression);
             ASR::ttype_t *result_type = ASRUtils::expr_type(value);
             if (ASR::is_a<ASR::TypeSetConversion_t>(*operation) &&
-                    !ASRUtils::types_equal(result_type, member, nullptr, nullptr)) {
+                    !ASRUtils::type_argument_types_equal(result_type, member)) {
                 trait_call_error("conversion to type-set member " +
                     ASRUtils::type_to_str_fortran_symbol(member, nullptr, true) +
                     " is not implemented yet", loc);
             }
-            result_is_parameter &= ASRUtils::types_equal(result_type, member, nullptr, nullptr);
+            result_is_parameter &= ASRUtils::type_argument_types_equal(result_type, member);
             if (!common_result) common_result = result_type;
-            result_is_common &= ASRUtils::types_equal(result_type, common_result, nullptr, nullptr);
+            result_is_common &= ASRUtils::type_argument_types_equal(result_type, common_result);
             ASRUtils::EXPR2VAR(witness->m_return_var)->m_type =
                 ASRUtils::duplicate_type(al, result_type);
             witness->m_function_signature = ASRUtils::TYPE(ASRUtils::make_FunctionType_t_util(
@@ -24506,12 +24535,12 @@ public:
         if (!constraint || constraint != right_constraint ||
                 ASRUtils::is_array(ASRUtils::expr_type(left)) ||
                 ASRUtils::is_array(ASRUtils::expr_type(right))) {
-            trait_call_error("type-set arithmetic currently requires scalar operands "
+            trait_call_error("type-set operators currently require scalar operands "
                 "of the same type parameter; other forms are not implemented yet", loc);
         }
         if (!ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::expr_type(left)) ||
                 !ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::expr_type(right))) {
-            trait_call_error("this type-set arithmetic signature is not implemented yet", loc);
+            trait_call_error("this type-set operator signature is not implemented yet", loc);
         }
         auto &requirement = require_type_set_operation(constraint, operation,
             {ASRUtils::expr_type(left), ASRUtils::expr_type(right)}, loc);
@@ -24520,6 +24549,26 @@ public:
         args.push_back(al, ASR::call_arg_t{loc, left});
         args.push_back(al, ASR::call_arg_t{loc, right});
         tmp = create_FunctionCall(loc, requirement.m_procedure, args);
+        return true;
+    }
+
+    // Whether `test` is a scalar value of a type-set binder whose members are
+    // all logical, so that it can be the condition of an IF or DO WHILE.
+    bool type_set_condition(ASR::expr_t *test, const Location &loc) {
+        auto *constraint = type_set_constraint(test);
+        if (!constraint) return false;
+        if (ASRUtils::is_array(ASRUtils::expr_type(test))) {
+            trait_call_error("type-set array conditions are not implemented yet", loc);
+        }
+        auto *trait = ASR::down_cast<ASR::Trait_t>(
+            ASRUtils::symbol_get_past_external(constraint->m_trait));
+        for (size_t i = 0; i < trait->n_member_types; i++) {
+            if (!ASR::is_a<ASR::Logical_t>(*trait->m_member_types[i])) {
+                trait_call_error("a logical condition is not available for type-set member " +
+                    ASRUtils::type_to_str_fortran_symbol(trait->m_member_types[i], nullptr, true),
+                    loc);
+            }
+        }
         return true;
     }
 
@@ -27628,8 +27677,8 @@ public:
                         || (ASR::is_a<ASR::StructType_t>(
                                 *ASRUtils::extract_type(entry.second.first))
                             && !entry.second.second)
-                        || !ASRUtils::types_equal(prior->second.first, entry.second.first,
-                            nullptr, nullptr)) {
+                        || !ASRUtils::type_argument_types_equal(prior->second.first,
+                            entry.second.first)) {
                     same = false;
                     break;
                 }
@@ -27836,8 +27885,8 @@ public:
                     ASR::ttype_t *type = types.at(parameter).first;
                     bool member = false;
                     for (size_t i = 0; i < trait->n_member_types; i++) {
-                        if (ASRUtils::types_equal(type, trait->m_member_types[i],
-                                nullptr, nullptr)) member = true;
+                        if (ASRUtils::type_argument_types_equal(type,
+                                trait->m_member_types[i])) member = true;
                     }
                     if (!member) {
                         std::string description = "type-set trait '" +
@@ -29184,8 +29233,8 @@ public:
                     ASR::symbol_t *witness = nullptr;
                     for (size_t j = 0; j < requirement.n_witnesses; j++) {
                         const auto &proof = requirement.m_witnesses[j];
-                        if (ASRUtils::types_equal(proof.m_member_type, actual.first,
-                                nullptr, nullptr)) witness = proof.m_procedure;
+                        if (ASRUtils::type_argument_types_equal(proof.m_member_type,
+                                actual.first)) witness = proof.m_procedure;
                     }
                     LCOMPILERS_ASSERT(witness);
                     for (const auto &selection : p.symbols) {
@@ -32113,6 +32162,21 @@ public:
         ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);
         ASR::expr_t *right = ASRUtils::EXPR(tmp);
+        if (type_set_constraint(left) || type_set_constraint(right)) {
+            ASR::logicalbinopType op;
+            switch (x.m_op) {
+                case AST::And: op = ASR::And; break;
+                case AST::Or: op = ASR::Or; break;
+                case AST::Eqv: op = ASR::Eqv; break;
+                case AST::NEqv: op = ASR::NEqv; break;
+                default:
+                    trait_call_error("this type-set logical operator is not implemented yet",
+                        x.base.base.loc);
+            }
+            type_set_binary(left, right, ASR::down_cast<ASR::type_set_operation_t>(
+                ASR::make_TypeSetLogical_t(al, x.base.base.loc, op)), x.base.base.loc);
+            return;
+        }
         CommonVisitorMethods::visit_BoolOp(al, x, left, right, tmp, diag, boolop2str[x.m_op], current_scope, current_function_dependencies, current_module_dependencies);
     }
 
@@ -32121,6 +32185,11 @@ public:
         ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);
         ASR::expr_t *right = ASRUtils::EXPR(tmp);
+        if (type_set_constraint(left) || type_set_constraint(right)) {
+            type_set_binary(left, right, ASR::down_cast<ASR::type_set_operation_t>(
+                ASR::make_TypeSetConcat_t(al, x.base.base.loc)), x.base.base.loc);
+            return;
+        }
         std::string intrinsic_op_name = intrinsic2str[AST::intrinsicopType::CONCAT];
         LCOMPILERS_ASSERT(x.m_op == AST::Concat)
         ASR::ttype_t *left_type_ = ASRUtils::expr_type(left);

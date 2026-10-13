@@ -1133,6 +1133,8 @@ public:
             } else if (ASR::is_a<ASR::TypeSetComparison_t>(*requirement.m_operation)) {
                 r += " operator " + cmpop2str(
                     ASR::down_cast<ASR::TypeSetComparison_t>(requirement.m_operation)->m_op);
+            } else if (!ASR::is_a<ASR::TypeSetConversion_t>(*requirement.m_operation)) {
+                r += " " + ASRUtils::trait_operation_display_name(*requirement.m_operation);
             } else {
                 r += " conversion";
             }

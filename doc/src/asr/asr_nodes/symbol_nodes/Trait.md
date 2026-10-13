@@ -20,7 +20,7 @@ Trait(symbol_table symtab, identifier name, symbol* parents, access access,
 | `parents` | Visible references to the parent traits whose requirements are inherited. |
 | `access` | Visibility of the trait declaration. |
 | `kind` | `UniversalTrait` or `IntrinsicTypeSet`. |
-| `member_types` | Nonempty, unique, concrete scalar numeric types for a finite set; empty for universal traits. |
+| `member_types` | Nonempty, unique, concrete scalar intrinsic types for a finite set; empty for universal traits. |
 | `operations` | The directly declared members that are initializer or operator requirements, each with its operation; empty for type sets. |
 
 ### Return values
@@ -53,7 +53,9 @@ one type, are one requirement of a composed constraint, and one trait does
 not declare both.
 
 An `IntrinsicTypeSet` has no nominal methods or parents in the current slice.
-It admits exactly its listed intrinsic categories and kinds. A kind wildcard
+It admits exactly its listed intrinsic categories and kinds, and for a
+character member its constant length, which distinguishes members as it
+distinguishes character type arguments. A kind wildcard
 of the source, such as `real(*)`, is already expanded into one member per
 supported kind (`ASRUtils::supported_kinds`), so `member_types` lists only
 concrete types. It is not an

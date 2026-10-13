@@ -2,7 +2,7 @@
 
 Traits are an experimental, nonstandard LFortran extension. The initial
 implementation supports nominal constraints for concrete derived types and
-finite intrinsic-numeric type sets on generic procedures. Existing requirements,
+finite type sets of intrinsic types on generic procedures. Existing requirements,
 templates, and standard Fortran
 type-bound procedures keep their existing meanings.
 
@@ -771,10 +771,11 @@ diagnosed rather than specialized by a client. Unsupported forms remain
 diagnosed as not implemented: messages mixing closed and open binders, generic
 subroutine messages, and member signatures outside the runtime slot surface
 (scalar arguments, read-only assumed-shape numeric or logical arrays, and
-scalar integer, real or logical results). A kind wildcard contributes one slot
-per supported kind, so a message over `integer(*) | real(*) | complex(*)` with
-a `type(T)` result is outside the surface because of its complex members,
-while one with an integer result has nine slots.
+scalar integer, real or logical results; a character member is outside it). A
+kind wildcard contributes one slot per supported kind, so a message over
+`integer(*) | real(*) | complex(*)` with a `type(T)` result is outside the
+surface because of its complex members, while one with an integer result has
+nine slots.
 `class(INumeric)` remains invalid: a type-set trait is not a runtime view.
 
 `traits_runtime_numeric_01` covers `nopass`, named non-first `pass`, static
@@ -1108,9 +1109,10 @@ Module trait signatures are checked again after postponed specification
 expressions have been resolved. Component-based bounds must agree before ASR
 leaves semantics; this diagnostic does not depend on compiler assertions.
 
-## Finite numeric type sets
+## Finite type sets
 
-A named trait can instead enumerate intrinsic numeric categories and kinds:
+A named trait can instead enumerate intrinsic types, of any of the categories
+`integer`, `real`, `complex`, `logical` and `character`, with their kinds:
 
 ```fortran
 use iso_fortran_env, only: real64
@@ -1124,7 +1126,8 @@ Membership is exact: this set admits `integer(4)` and `real(8)` with the normal
 default kinds, not `integer(8)`, `real(4)`, or `complex(8)`. A singleton such as
 `abstract interface :: IInteger; integer; end interface` has the same semantics.
 Repeated equivalent members are coalesced. Membership supplies implicit
-conformance; no `implements` declaration is required or allowed.
+conformance; no `implements` declaration is required or allowed. Derived types
+cannot be members yet.
 
 The compiler checks one generic body against **every** declared member, even
 when the function is never instantiated:
@@ -1147,20 +1150,36 @@ function numeric_average{INumeric :: T}(x) result(a)
 end function
 ```
 
-Scalar `+`, `-`, `*`, `/` and comparisons use the ordinary intrinsic operator
-rules for each member. The operands must currently have the same type
-parameter. Adding `complex(8)` to the set makes ordered comparisons invalid,
-including in unused generic definitions. Integer division stays integer
-division. Whole-array or mixed-binder generic arithmetic and unary generic
-operators are separate stages; scalar array elements are supported.
+Scalar `+`, `-`, `*`, `/`, comparisons, the binary logical operators `.and.`,
+`.or.`, `.eqv.` and `.neqv.`, and the concatenation `//` use the ordinary
+intrinsic operator rules for each member. The operands must currently have the
+same type parameter. An operation is available only if every member provides
+it as an intrinsic operation of standard Fortran, so arithmetic needs numeric
+members, ordered comparisons integer, real or character members, the logical
+operators logical members and `//` character members. Adding `complex(8)` to
+the set makes ordered comparisons invalid, including in unused generic
+definitions. Standard Fortran compares logical values with `.eqv.` and
+`.neqv.`, not with `==` and `/=`, so logical members have no `==` even though
+LFortran accepts it for ordinary logical operands. Integer division stays
+integer division. An operation's result must be the type parameter for every
+member, or one common type: comparisons give default logical, and `//` on the
+one member `character(len=2)` gives `character(len=4)`, while concatenating
+members of different lengths, whose result types differ, is not implemented
+yet. Whole-array or mixed-binder generic arithmetic and unary generic
+operators such as `-x` and `.not. x` are separate stages; scalar array
+elements are supported. A scalar value of a type parameter whose members are
+all logical is a valid condition of an `IF` statement or construct and of
+`DO WHILE`.
 
-`T(expr)` checks the actual intrinsic `int`, `real`, or `cmplx` conversion with
-the target's explicit kind. It does not convert through default real first.
-A logical source is not a valid numeric initializer. Conversion currently
-accepts one scalar numeric source; unsupported conversion kinds are diagnosed
-as not implemented. `size` uses its element-type-independent array inquiry
-rules. Other intrinsic calls on numeric type parameters are explicitly
-diagnosed as not implemented, rather than bypassing definition-time checking.
+`T(expr)` checks the actual intrinsic `int`, `real`, `cmplx` or `logical`
+conversion with the target's explicit kind. It does not convert through
+default real first. A logical source is not a valid numeric initializer, and
+only a logical source converts to a logical member; character members have no
+conversion. Conversion currently accepts one scalar source; unsupported
+conversion kinds are diagnosed as not implemented. `size` uses its
+element-type-independent array inquiry rules. Other intrinsic calls on
+type-set parameters are explicitly diagnosed as not implemented, rather than
+bypassing definition-time checking.
 
 Both `numeric_sum(values)` and `numeric_sum{real(real64)}(values)` work for
 real64 arrays. A type parameter appearing only in the result requires an
@@ -1182,13 +1201,41 @@ The complete executable examples and concrete GFortran counterparts are
 `integration_tests/traits_numeric_01.f90` through `traits_numeric_05.f90` and
 `traits_numeric_01_oracle.f90` / `traits_numeric_02_oracle.f90`.
 
+### Logical and character members
+
+```fortran
+abstract interface :: IFlag
+    logical | logical(1)
+end interface IFlag
+
+abstract interface :: ICode
+    character(len=3) | character(len=5)
+end interface ICode
+```
+
+A generic over `IFlag` can combine its values with the logical operators, test
+them in conditions and convert a logical value with `T(.true.)`; a generic
+over `integer | logical` only stores, assigns and passes its values, since the
+two categories share no operator. A character member's constant length is
+part of the member, as it is part of a character type argument (TD-21 of the
+[decisions record](traits-decisions.md)): `character(len=3)` and
+`character(len=5)` are two members with their own specializations, and a
+`character(len=4)` value belongs to neither. A member written `character`
+without a length is `character(len=1)`, as in a declaration. Character
+members of assumed (`character(*)`), deferred (`character(len=:)`) or
+nonconstant length and the character kind wildcard `character(kind=*)` are
+diagnosed as not implemented, and so is a closed runtime slot of a character
+member. `traits_type_sets_01` and `traits_type_sets_02` cover logical and
+character members, and `traits_type_sets_03` reads such sets and their
+generics from a separately compiled module.
+
 ### Kind wildcards
 
-A member written with a kind wildcard, `integer(*)`, `real(kind=*)` or
-`complex(*)`, is the union of that type with every kind that this
-implementation supports: the kinds of `ISO_FORTRAN_ENV`'s `INTEGER_KINDS`
-(1, 2, 4, 8) and `REAL_KINDS` (4, 8, 16), and the real kinds that have a
-complex type (4, 8). The proposal's
+A member written with a kind wildcard, `integer(*)`, `real(kind=*)`,
+`complex(*)` or `logical(*)`, is the union of that type with every kind that
+this implementation supports: the kinds of `ISO_FORTRAN_ENV`'s `INTEGER_KINDS`
+(1, 2, 4, 8), `REAL_KINDS` (4, 8, 16) and `LOGICAL_KINDS` (1, 2, 4, 8), and the
+real kinds that have a complex type (4, 8). The proposal's
 
 ```fortran
 abstract interface :: INumeric
@@ -1206,18 +1253,20 @@ ordered. `ASRUtils::supported_kinds` is the one list of these kinds, which
 declarations also check. `real(10)`, the `C_LONG_DOUBLE` kind, is accepted in
 declarations for C interoperability but is not one of `REAL_KINDS`, so
 `real(*)` does not include it; it can still be written as an explicit member.
-Logical and character wildcards, like their explicit members, are not
-implemented. `traits_kind_sets_01` calls every member statically and through
-closed runtime slots of separately compiled modules, except `real(16)`, which
-`traits_kind_sets_02` calls: CI does not run it with LLVM 7 and 8, which
-miscompile `real(16)` operations.
+In a character member, `*` is the length (`character(*)` is
+`character(len=*)`), not the kind; character members of assumed length and
+`character(kind=*)` are not implemented. `traits_kind_sets_01` calls every
+member statically and through closed runtime slots of separately compiled
+modules, except `real(16)`, which `traits_kind_sets_02` calls: CI does not run
+it with LLVM 7 and 8, which miscompile `real(16)` operations.
+`traits_type_sets_01` calls every member of `logical(*)`.
 
 These members are an implementation choice for the open question of what a
 wildcard denotes (TD-17 of the [decisions record](traits-decisions.md)), not
 an approved rule. They
-are this processor's `INTEGER_KINDS` and `REAL_KINDS`, the same on every
-target, and the complex kinds that LFortran implements: it has no
-`complex(16)`, so `complex(*)` lacks the complex type of `real(16)` that the
+are this processor's `INTEGER_KINDS`, `REAL_KINDS` and `LOGICAL_KINDS`, the
+same on every target, and the complex kinds that LFortran implements: it has
+no `complex(16)`, so `complex(*)` lacks the complex type of `real(16)` that the
 proposal's "all complex types admitted by the language" would include.
 
 ### The intrinsic module `generics`

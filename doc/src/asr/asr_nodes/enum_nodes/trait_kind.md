@@ -11,9 +11,10 @@ trait_kind = UniversalTrait | IntrinsicTypeSet
 `UniversalTrait` describes nominal receiver-independent method requirements.
 It has no finite member types.
 
-`IntrinsicTypeSet` is a finite, nonempty set of concrete scalar numeric
-categories and kinds. Membership provides conformance without user
-implementation records. It is constraint-only; runtime objects and concrete
+`IntrinsicTypeSet` is a finite, nonempty set of concrete scalar intrinsic
+types: integer, real, complex and logical types of supported kinds and
+character types of a supported kind and a constant length. Membership provides
+conformance without user implementation records. It is constraint-only; runtime objects and concrete
 union variables are not supported.
 
 See [Trait](../symbol_nodes/Trait.md).

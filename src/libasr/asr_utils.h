@@ -11187,6 +11187,9 @@ std::vector<ASR::symbol_t*> trait_parameter_traits(ASR::symbol_t *parameter);
 ASR::TraitRuntimeContract_t *trait_parameter_contract(ASR::symbol_t *parameter);
 // The single normalized type-set trait of a closed binder, or nullptr.
 ASR::Trait_t *trait_parameter_type_set(ASR::symbol_t *parameter);
+// Whether `function` is the restriction or a member witness of a type-set
+// requirement: definition metadata of its template, never called directly.
+bool is_type_set_capability(const ASR::Function_t &function);
 // Every member tuple of a generic whose binders are all closed, in binder
 // order and declared member order; empty unless every binder is closed.
 std::vector<std::vector<ASR::ttype_t*>> trait_member_tuples(const ASR::Template_t &generic);
