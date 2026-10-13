@@ -2836,3 +2836,19 @@ contains
         y = +x  ! {Error} Operator `+` undefined for the type in the expression `+t[:]`
     end subroutine
 end module
+
+! An INSTANTIATE statement without an only-list defines the named constants
+! of the template too.
+module continue_compilation_templates_01_const_clash
+    implicit none
+    template const_clash_t {n}
+        deferred integer, parameter :: n
+        integer, parameter :: const_k = n*2
+    end template
+contains
+    subroutine const_clash_proc()
+        integer, parameter :: const_k = 1
+        instantiate const_clash_t {3}  ! {Error} the instantiation of template 'const_clash_t' defines 'const_k', which is already declared in this scope
+        print *, const_k
+    end subroutine
+end module

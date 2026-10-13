@@ -6363,7 +6363,8 @@ public:
             bool is_generic = ASR::is_a<ASR::GenericProcedure_t>(*s)
                 && is_instantiable_generic_spec(s, temp);
             if (!(ASR::is_a<ASR::Function_t>(*s) || ASR::is_a<ASR::Struct_t>(*s)
-                        || is_generic)
+                        || is_generic
+                        || is_template_named_constant(s, &temp->base))
                     || ASRUtils::is_template_arg(&temp->base, s_name)) {
                 continue;
             }
@@ -6614,6 +6615,16 @@ public:
         size_t n_diagnostics = diag.diagnostics.size();
         std::map<std::string, ASR::symbol_t*> scope_before = current_scope->get_scope();
         if (x.n_symbols == 0) {
+            // Named constants first, so that the other entities that use
+            // them refer to these instances.
+            for (auto const &sym_pair: temp->m_symtab->get_scope()) {
+                ASR::symbol_t *s = sym_pair.second;
+                if (is_template_named_constant(s, sym)) {
+                    std::string s_name = ASRUtils::symbol_name(s);
+                    symbol_subs[s_name] = instantiate_symbol(al, current_scope,
+                        type_subs, symbol_subs, s_name, s, diag);
+                }
+            }
             // An abstract interface that a procedure instantiated before it
             // uses is already instantiated, under a generated name; that
             // instance becomes the named one, as for derived types below.
