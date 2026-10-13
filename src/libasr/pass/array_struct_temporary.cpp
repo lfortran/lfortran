@@ -1951,8 +1951,30 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
             al, loc, array_var_temporary, value, nullptr, exprs_with_target)));
         if( dummy->m_intent != ASRUtils::intent_in && !dummy->m_value_attr ) {
+            // Copying back into the whole allocatable actual would, with
+            // reallocation on assignment, give it the dynamic type of the
+            // temporary. Its full section keeps the allocation and the
+            // dynamic type, and only the `t` part of each element is stored.
+            ASR::expr_t* copy_out_target = value;
+            if( ASRUtils::is_allocatable(ASRUtils::expr_type(value)) ) {
+                ASRUtils::ASRBuilder b(al, loc);
+                size_t n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(value));
+                Vec<ASR::array_index_t> section_indices; section_indices.reserve(al, n_dims);
+                for( size_t i = 0; i < n_dims; i++ ) {
+                    ASR::array_index_t index;
+                    index.loc = loc;
+                    index.m_left = b.ArrayLBound(value, i + 1);
+                    index.m_right = b.ArrayUBound(value, i + 1);
+                    index.m_step = b.i32(1);
+                    section_indices.push_back(al, index);
+                }
+                ASR::ttype_t* section_type = ASRUtils::create_array_type_with_empty_dims(
+                    al, n_dims, ASRUtils::expr_type(value));
+                copy_out_target = ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc, value,
+                    section_indices.p, section_indices.size(), section_type, nullptr));
+            }
             body_after_curr_stmt->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
-                al, loc, value, array_var_temporary, nullptr, exprs_with_target)));
+                al, loc, copy_out_target, array_var_temporary, nullptr, exprs_with_target)));
         }
         ASR::call_arg_t call_arg;
         call_arg.loc = loc;
