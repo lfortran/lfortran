@@ -23545,166 +23545,11 @@ public:
                     }
                 }
             } else if (AST::is_a<AST::AttrIntrinsicOperator_t>(*arg_attr)) {
-                AST::AttrIntrinsicOperator_t *intrinsic_op
-                    = AST::down_cast<AST::AttrIntrinsicOperator_t>(arg_attr);
-                ASR::binopType binop = ASR::Add;
-                ASR::cmpopType cmpop = ASR::Eq;
-                bool is_binop = false, is_cmpop = false;
-                std::string op_name;
-                switch (intrinsic_op->m_op) {
-                    case (AST::PLUS):
-                        is_binop = true; binop = ASR::Add; op_name = "~add"; break;
-                    case (AST::MINUS):
-                        is_binop = true; binop = ASR::Sub; op_name = "~sub"; break;
-                    case (AST::STAR):
-                        is_binop = true; binop = ASR::Mul; op_name = "~mul"; break;
-                    case (AST::DIV):
-                        is_binop = true; binop = ASR::Div; op_name = "~div"; break;
-                    case (AST::POW):
-                        is_binop = true; binop = ASR::Pow; op_name = "~pow"; break;
-                    case (AST::EQ):
-                        is_cmpop = true; cmpop = ASR::Eq; op_name = "~eq"; break;
-                    case (AST::NOTEQ):
-                        is_cmpop = true; cmpop = ASR::NotEq; op_name = "~neq"; break;
-                    case (AST::LT):
-                        is_cmpop = true; cmpop = ASR::Lt; op_name = "~lt"; break;
-                    case (AST::LTE):
-                        is_cmpop = true; cmpop = ASR::LtE; op_name = "~lte"; break;
-                    case (AST::GT):
-                        is_cmpop = true; cmpop = ASR::Gt; op_name = "~gt"; break;
-                    case (AST::GTE):
-                        is_cmpop = true; cmpop = ASR::GtE; op_name = "~gte"; break;
-                    default:
-                        diag.add(Diagnostic("Unsupported binary operator",
-                            Level::Error, Stage::Semantic, {Label("", {arg_attr->base.loc})}));
-                        throw SemanticAbort();
-                }
-
-                bool is_overloaded;
-                if (is_binop) {
-                    is_overloaded = ASRUtils::is_op_overloaded(binop, op_name, current_scope, nullptr);
-                } else if (is_cmpop) {
-                    is_overloaded = ASRUtils::is_op_overloaded(cmpop, op_name, current_scope, nullptr);
-                } else {
-                    throw LCompilersException("ICE: must be binop or cmop");
-                }
-
-                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
-                std::string f_name = f->m_name;
-                bool found = false;
-                // check if an alias is defined for the operator
-                if (is_overloaded) {
-                    ASR::symbol_t* sym = current_scope->resolve_symbol(op_name);
-                    ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
-                    ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
-                    SymbolTable *op_scope = is_nested ? current_scope->parent : current_scope;
-                    for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
-                        ASR::symbol_t* proc = gen_proc->m_procs[i];
-                        found = check_restriction(type_subs,
-                                    symbol_subs, f, proc, loc, diag,
-                                    []() { throw SemanticAbort(); }, false);
-                        if (found) {
-                            symbol_subs[f_name] = make_operator_proc_visible(
-                                proc, op_name, op_scope);
-                        }
-                    }
-                }
-
-                // if not found, then try to build a function for intrinsic operator
-                if (!found) {
-                    if (f->n_args != 2) {
-                        diag.add(Diagnostic("The restriction " + f_name
-                            + " does not have 2 parameters", Level::Error, Stage::Semantic, {Label("", {loc})}));
-                        throw SemanticAbort();
-                    }
-
-                    ASR::ttype_t *left_type = ASRUtils::subs_expr_type(type_subs, f->m_args[0]);
-                    ASR::ttype_t *right_type = ASRUtils::subs_expr_type(type_subs, f->m_args[1]);
-                    ASR::ttype_t *ftype = ASRUtils::subs_expr_type(type_subs, f->m_return_var);
-
-                    SymbolTable *parent_scope = current_scope;
-                    current_scope = al.make_new<SymbolTable>(parent_scope);
-                    Vec<ASR::expr_t*> args;
-                    args.reserve(al, 2);
-                    for (size_t i=0; i<2; i++) {
-                        std::string var_name = "arg" + std::to_string(i);
-                        ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, loc, current_scope,
-                            s2c(al, var_name), nullptr, 0, ASR::intentType::In, nullptr,
-                            nullptr, ASR::storage_typeType::Default,
-                            (i == 0 ? ASRUtils::duplicate_type(al, left_type)
-                                : ASRUtils::duplicate_type(al, right_type)),
-                            nullptr, ASR::abiType::Source, ASR::accessType::Private,
-                            ASR::presenceType::Required, false);
-                        current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v));
-                        ASR::symbol_t *var = current_scope->get_symbol(var_name);
-                        args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, var)));
-                    }
-
-                    std::string func_name = parent_scope->get_unique_name(op_name + "_intrinsic");
-
-                    ASR::ttype_t *return_type = nullptr;
-                    ASR::expr_t *value = nullptr;
-                    ASR::expr_t *left = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-                        current_scope->get_symbol("arg0")));
-                    ASR::expr_t *right = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-                        current_scope->get_symbol("arg1")));
-
-                    ASR::expr_t **conversion_cand = &left;
-                    ASR::ttype_t *source_type = left_type;
-                    ASR::ttype_t *dest_type = right_type;
-
-                    if (is_binop) {
-                        ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
-                                                                     right_type, conversion_cand,
-                                                                     &source_type, &dest_type);
-                        ImplicitCastRules::set_converted_value(al, loc, conversion_cand,
-                                                               source_type, dest_type, diag);
-                        return_type = ASRUtils::duplicate_type(al, ftype);
-                        value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, loc, binop, left, right, dest_type));
-                        if (!ASRUtils::check_equal_type(dest_type, return_type, f->m_args[1], f->m_return_var)) {
-                            ImplicitCastRules::set_converted_value(al, loc,
-                                &value, dest_type, return_type, diag);
-                        }
-                    } else {
-                        return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
-                        value = ASRUtils::EXPR(ASRUtils::make_Cmpop_util(al, loc, cmpop, left, right, left_type));
-                    }
-
-                    ASR::asr_t *return_v = ASRUtils::make_Variable_t_util(al, loc,
-                        current_scope, s2c(al, "ret"), nullptr, 0,
-                        ASR::intentType::ReturnVar, nullptr, nullptr, ASR::storage_typeType::Default,
-                        return_type, ASRUtils::get_struct_sym_from_struct_expr(value), ASR::abiType::Source,
-                        ASR::accessType::Private, ASR::presenceType::Required, false);
-                    current_scope->add_symbol("ret", ASR::down_cast<ASR::symbol_t>(return_v));
-                    ASR::expr_t *return_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-                        current_scope->get_symbol("ret")));
-
-                    Vec<ASR::stmt_t*> body;
-                    body.reserve(al, 1);
-                    ASR::symbol_t *return_sym = current_scope->get_symbol("ret");
-                    ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_sym));
-                    ASRUtils::make_ArrayBroadcast_t_util(al, loc, target, value);
-                    ASR::stmt_t *assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
-                        target, value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
-                    body.push_back(al, assignment);
-
-                    ASR::FunctionType_t *req_type = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
-
-                    ASR::asr_t *op_function = ASRUtils::make_Function_t_util(
-                        al, loc, current_scope, s2c(al, func_name),
-                        nullptr, 0, args.p, 2, body.p, 1, return_expr,
-                        ASR::abiType::Source, ASR::accessType::Public,
-                        ASR::deftypeType::Implementation, nullptr, req_type->m_elemental,
-                        req_type->m_pure, req_type->m_module, req_type->m_inline,
-                        req_type->m_static, nullptr, 0, false, false, true);
-                    ASR::symbol_t *op_sym = ASR::down_cast<ASR::symbol_t>(op_function);
-                    parent_scope->add_symbol(func_name, op_sym);
-
-                    // Bind the wrapper only to the deferred procedure, not to
-                    // the instantiating scope's operator interface.
-                    current_scope = parent_scope;
-                    symbol_subs[f->m_name] = op_sym;
-                }
+                bind_intrinsic_op_arg(
+                    AST::down_cast<AST::AttrIntrinsicOperator_t>(arg_attr)->m_op,
+                    param, param_sym, type_subs, symbol_subs,
+                    is_nested ? current_scope->parent : current_scope,
+                    loc, arg_attr->base.loc);
             } else if (AST::is_a<AST::AttrDefinedOperator_t>(*arg_attr)) {
                 bind_defined_operator_arg(
                     *AST::down_cast<AST::AttrDefinedOperator_t>(arg_attr),
@@ -28060,8 +27905,8 @@ public:
             ASR::deftypeType::Implementation, nullptr,
             req_type->m_elemental, req_type->m_pure,
             req_type->m_module, req_type->m_inline,
-            req_type->m_static, nullptr, 0, f->m_deterministic,
-            f->m_side_effect_free, true);
+            req_type->m_static, nullptr, 0, /* is_restriction */ false,
+            /* deterministic */ true, /* side_effect_free */ true);
         ASR::symbol_t *op_sym =
             ASR::down_cast<ASR::symbol_t>(op_function);
         parent_scope->add_symbol(func_name, op_sym);
@@ -28148,6 +27993,173 @@ public:
             diag::Level::Error, diag::Stage::Semantic, {
                 diag::Label("", {x.base.base.loc})}));
         throw SemanticAbort();
+    }
+
+    // Bind the deferred procedure `param_sym` of a template to the intrinsic
+    // operator `op` passed as an instantiation argument, e.g. `operator(+)`.
+    // A specific procedure of a user-defined operator of that name that
+    // matches the interface of the deferred procedure is used if there is
+    // one; otherwise a function applying the intrinsic operator is generated
+    // in `op_scope`, the scope that receives the other symbols generated for
+    // the instantiation. `loc` is the instantiation and `arg_loc` the
+    // operator argument.
+    void bind_intrinsic_op_arg(AST::intrinsicopType op,
+            const std::string &param, ASR::symbol_t *param_sym,
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &type_subs,
+            std::map<std::string, ASR::symbol_t*> &symbol_subs,
+            SymbolTable *op_scope, const Location &loc, const Location &arg_loc) {
+        static const std::map<AST::intrinsicopType, std::string> op_spelling = {
+            {AST::PLUS, "+"}, {AST::MINUS, "-"}, {AST::STAR, "*"},
+            {AST::DIV, "/"}, {AST::POW, "**"}, {AST::EQ, "=="},
+            {AST::NOTEQ, "/="}, {AST::LT, "<"}, {AST::LTE, "<="},
+            {AST::GT, ">"}, {AST::GTE, ">="}, {AST::NOT, ".not."},
+            {AST::AND, ".and."}, {AST::OR, ".or."}, {AST::EQV, ".eqv."},
+            {AST::NEQV, ".neqv."}, {AST::XOR, ".xor."}, {AST::CONCAT, "//"}};
+        if (!ASR::is_a<ASR::Function_t>(*param_sym)
+                || ASR::down_cast<ASR::Function_t>(param_sym)->m_return_var == nullptr) {
+            diag.add(Diagnostic("the instantiation argument 'operator("
+                + op_spelling.at(op) + ")' for '" + param
+                + "' requires a deferred function",
+                Level::Error, Stage::Semantic, {Label("", {arg_loc})}));
+            throw SemanticAbort();
+        }
+        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
+        ASR::binopType binop = ASR::Add;
+        ASR::cmpopType cmpop = ASR::Eq;
+        bool is_binop = false;
+        std::string op_name;
+        switch (op) {
+            case (AST::PLUS):
+                is_binop = true; binop = ASR::Add; op_name = "~add"; break;
+            case (AST::MINUS):
+                is_binop = true; binop = ASR::Sub; op_name = "~sub"; break;
+            case (AST::STAR):
+                is_binop = true; binop = ASR::Mul; op_name = "~mul"; break;
+            case (AST::DIV):
+                is_binop = true; binop = ASR::Div; op_name = "~div"; break;
+            case (AST::POW):
+                is_binop = true; binop = ASR::Pow; op_name = "~pow"; break;
+            case (AST::EQ):
+                cmpop = ASR::Eq; op_name = "~eq"; break;
+            case (AST::NOTEQ):
+                cmpop = ASR::NotEq; op_name = "~neq"; break;
+            case (AST::LT):
+                cmpop = ASR::Lt; op_name = "~lt"; break;
+            case (AST::LTE):
+                cmpop = ASR::LtE; op_name = "~lte"; break;
+            case (AST::GT):
+                cmpop = ASR::Gt; op_name = "~gt"; break;
+            case (AST::GTE):
+                cmpop = ASR::GtE; op_name = "~gte"; break;
+            default:
+                diag.add(Diagnostic("Unsupported binary operator",
+                    Level::Error, Stage::Semantic, {Label("", {arg_loc})}));
+                throw SemanticAbort();
+        }
+
+        ASR::symbol_t *op_sym = current_scope->resolve_symbol(op_name);
+        ASR::symbol_t *orig_sym = op_sym
+            ? ASRUtils::symbol_get_past_external(op_sym) : nullptr;
+        if (orig_sym && ASR::is_a<ASR::CustomOperator_t>(*orig_sym)) {
+            ASR::CustomOperator_t *gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
+            for (size_t i = 0; i < gen_proc->n_procs; i++) {
+                ASR::symbol_t *proc = gen_proc->m_procs[i];
+                if (check_restriction(type_subs, symbol_subs, f, proc, loc,
+                        diag, []() { throw SemanticAbort(); }, false)) {
+                    symbol_subs[f->m_name] = make_operator_proc_visible(
+                        proc, op_name, op_scope);
+                    return;
+                }
+            }
+        }
+
+        if (f->n_args != 2) {
+            diag.add(Diagnostic("The restriction " + std::string(f->m_name)
+                + " does not have 2 parameters", Level::Error, Stage::Semantic,
+                {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+
+        SymbolTable *fn_scope = al.make_new<SymbolTable>(op_scope);
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, f->n_args);
+        for (size_t i = 0; i < f->n_args; i++) {
+            std::string var_name = "arg" + std::to_string(i);
+            ASR::symbol_t *var = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, fn_scope,
+                    s2c(al, var_name), nullptr, 0, ASR::intentType::In, nullptr,
+                    nullptr, ASR::storage_typeType::Default,
+                    ASRUtils::duplicate_type(al,
+                        ASRUtils::subs_expr_type(type_subs, f->m_args[i])),
+                    ASRUtils::get_struct_sym_from_struct_expr(f->m_args[i]),
+                    ASR::abiType::Source, ASR::accessType::Private,
+                    ASR::presenceType::Required, false));
+            fn_scope->add_symbol(var_name, var);
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, var)));
+        }
+
+        ASR::ttype_t *return_type = nullptr;
+        ASR::expr_t *value = nullptr;
+        if (is_binop) {
+            ASR::expr_t *left = args[0];
+            ASR::expr_t *right = args[1];
+            ASR::ttype_t *left_type = ASRUtils::expr_type(left);
+            ASR::ttype_t *right_type = ASRUtils::expr_type(right);
+            ASR::expr_t **conversion_cand = &left;
+            ASR::ttype_t *source_type = left_type;
+            ASR::ttype_t *dest_type = right_type;
+            ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
+                right_type, conversion_cand, &source_type, &dest_type);
+            ImplicitCastRules::set_converted_value(al, loc, conversion_cand,
+                source_type, dest_type, diag);
+            return_type = ASRUtils::duplicate_type(al,
+                ASRUtils::subs_expr_type(type_subs, f->m_return_var));
+            value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, loc, binop,
+                left, right, dest_type));
+            if (!ASRUtils::check_equal_type(dest_type, return_type,
+                    f->m_args[1], f->m_return_var)) {
+                ImplicitCastRules::set_converted_value(al, loc, &value,
+                    dest_type, return_type, diag);
+            }
+        } else {
+            return_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc,
+                compiler_options.po.default_integer_kind));
+            value = ASRUtils::EXPR(ASRUtils::make_Cmpop_util(al, loc, cmpop,
+                args[0], args[1], ASRUtils::expr_type(args[0])));
+        }
+
+        ASR::symbol_t *ret = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, fn_scope, s2c(al, "ret"),
+                nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
+                ASR::storage_typeType::Default, return_type,
+                ASRUtils::get_struct_sym_from_struct_expr(value),
+                ASR::abiType::Source, ASR::accessType::Private,
+                ASR::presenceType::Required, false));
+        fn_scope->add_symbol("ret", ret);
+        ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret));
+        ASRUtils::make_ArrayBroadcast_t_util(al, loc, target, value);
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 1);
+        body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
+            loc, target, value, nullptr,
+            compiler_options.po.realloc_lhs_arrays, false)));
+
+        std::string func_name = op_scope->get_unique_name(op_name + "_intrinsic");
+        ASR::FunctionType_t *req_type = ASR::down_cast<ASR::FunctionType_t>(
+            f->m_function_signature);
+        ASR::symbol_t *op_function = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Function_t_util(al, loc, fn_scope, s2c(al, func_name),
+                nullptr, 0, args.p, args.size(), body.p, 1,
+                ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret)),
+                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::deftypeType::Implementation, nullptr, req_type->m_elemental,
+                req_type->m_pure, req_type->m_module, req_type->m_inline,
+                req_type->m_static, nullptr, 0, /* is_restriction */ false,
+                /* deterministic */ true, /* side_effect_free */ true));
+        op_scope->add_symbol(func_name, op_function);
+        // Bind the wrapper only to the deferred procedure, not to the
+        // instantiating scope's operator interface.
+        symbol_subs[f->m_name] = op_function;
     }
 
     ASR::symbol_t* resolve_custom_operator_proc(const std::string& intrinsic_op_name, ASR::expr_t *left, ASR::expr_t *right,

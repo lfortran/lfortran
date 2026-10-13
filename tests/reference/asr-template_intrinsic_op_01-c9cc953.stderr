@@ -1,0 +1,11 @@
+semantic error: the instantiation argument 'operator(+)' for 'op' requires a deferred function
+  --> tests/errors/template_intrinsic_op_01.f90:36:23
+   |
+36 |     instantiate sub_t{operator(+)}, only: run_add => run  ! {Error} the instantiation argument 'operator(+)' for 'op' requires a deferred function
+   |                       ^^^^^^^^^^^ 
+
+semantic error: the instantiation argument 'operator(-)' for 'op' requires a deferred function
+  --> tests/errors/template_intrinsic_op_01.f90:39:20
+   |
+39 |     call apply_sub{operator(-)}(x, 2.0)  ! {Error} the instantiation argument 'operator(-)' for 'op' requires a deferred function
+   |                    ^^^^^^^^^^^ 
