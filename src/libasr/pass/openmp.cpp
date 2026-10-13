@@ -645,9 +645,26 @@ class InvolvedSymbolsCollector:
         std::set<std::string> contiguity_checked_arrays;
         // Arrays listed in a private or firstprivate clause, with that clause
         std::map<std::string, ASR::omp_clauseType> private_arrays;
+        // Named constants used in the region. They are not data passed to
+        // the region; its procedure declares them with their values.
+        std::map<std::string, ASR::symbol_t*> named_constants;
         InvolvedSymbolsCollector(Allocator& al_, std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &symbols) :
             al(al_), symbols(symbols) {}
 
+        // Records `sym` if it is a named constant, see `named_constants`.
+        bool add_named_constant(ASR::symbol_t* sym) {
+            ASR::symbol_t* target = ASRUtils::symbol_get_past_external(sym);
+            if (!ASR::is_a<ASR::Variable_t>(*target)) {
+                return false;
+            }
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(target);
+            if (v->m_storage != ASR::storage_typeType::Parameter || v->m_value == nullptr
+                    || ASRUtils::is_struct(*ASRUtils::extract_type(v->m_type))) {
+                return false;
+            }
+            named_constants[to_lower(ASRUtils::symbol_name(sym))] = sym;
+            return true;
+        }
 
         void visit_Var(const ASR::Var_t &x) {
             if(symbols.find(to_lower(ASRUtils::symbol_name(x.m_v))) != symbols.end()) {
@@ -656,6 +673,9 @@ class InvolvedSymbolsCollector:
             if (!ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_v))) {
                 // A procedure is not data: it is declared where the region
                 // is moved to (see import_procedure_declaration).
+                return;
+            }
+            if (add_named_constant(x.m_v)) {
                 return;
             }
             ASR::ttype_t* type = ASRUtils::symbol_type(x.m_v);
@@ -712,7 +732,8 @@ class InvolvedSymbolsCollector:
                 symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].first = ASRUtils::symbol_type(var->m_v);
                 symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].second = &var->base;
             }
-            if (ASR::is_a<ASR::Var_t>(*x.m_end)) {
+            if (ASR::is_a<ASR::Var_t>(*x.m_end)
+                    && !add_named_constant(ASR::down_cast<ASR::Var_t>(x.m_end)->m_v)) {
                 var = ASR::down_cast<ASR::Var_t>(x.m_end);
                 if(symbols.find((to_lower(ASRUtils::symbol_name(var->m_v)))) != symbols.end()) {
                     // Make the bool false in that pair
@@ -728,7 +749,8 @@ class InvolvedSymbolsCollector:
                 symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].first = ASRUtils::symbol_type(var->m_v);
                 symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].second = &var->base;
             }
-            if (ASR::is_a<ASR::Var_t>(*x.m_start)) {
+            if (ASR::is_a<ASR::Var_t>(*x.m_start)
+                    && !add_named_constant(ASR::down_cast<ASR::Var_t>(x.m_start)->m_v)) {
                 var = ASR::down_cast<ASR::Var_t>(x.m_start);
                 if(symbols.find((to_lower(ASRUtils::symbol_name(var->m_v)))) != symbols.end()) {
                     // Make the bool false in that pair
@@ -750,6 +772,44 @@ class InvolvedSymbolsCollector:
         }
 };
 std::map<SymbolTable*, InvolvedSymbolsCollector*> involved_symbols_collector_map;
+
+// Makes the references to the named constants that are keys of `renamed`
+// refer to their values in `renamed` instead.
+class ReplaceNamedConstants: public ASR::BaseExprReplacer<ReplaceNamedConstants> {
+private:
+    Allocator &al;
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &renamed;
+
+public:
+    ReplaceNamedConstants(Allocator &al_,
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &renamed_) :
+        al(al_), renamed(renamed_) {}
+
+    void replace_Var(ASR::Var_t *x) {
+        auto it = renamed.find(x->m_v);
+        if (it != renamed.end()) {
+            *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, it->second));
+        }
+    }
+};
+
+class ReplaceNamedConstantsVisitor:
+    public ASR::CallReplacerOnExpressionsVisitor<ReplaceNamedConstantsVisitor> {
+
+private:
+    ReplaceNamedConstants replacer;
+
+public:
+    ReplaceNamedConstantsVisitor(Allocator &al,
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &renamed) :
+        replacer(al, renamed) {}
+
+    void call_replacer() {
+        replacer.current_expr = current_expr;
+        replacer.replace_expr(*current_expr);
+    }
+};
+
 // Replaces all the symbols used inside the region with the same symbols
 // passed as argument to the function
 class ReplaceSymbols: public ASR::BaseExprReplacer<ReplaceSymbols> {
@@ -875,6 +935,56 @@ class ParallelRegionVisitor :
                     target, value));
             }
             return ASRUtils::ASRBuilder(al, target->base.loc).Assignment(target, value);
+        }
+
+        // Declares the named constants used in region `x` in `current_scope`,
+        // the scope of the region's procedure, with their values. The scope
+        // already has symbols of its own, such as the imported iso_c_binding
+        // and omp_lib entities and the `data` argument: a constant whose name
+        // is taken by another entity is declared under a new name, to which
+        // the references of the region are renamed.
+        void declare_named_constants(const Location &loc, const ASR::OMPRegion_t &x,
+                InvolvedSymbolsCollector* c) {
+            std::map<ASR::symbol_t*, ASR::symbol_t*> renamed;
+            for (auto &it : c->named_constants) {
+                ASR::symbol_t* sym = it.second;
+                std::string name = it.first;
+                if (ASR::symbol_t* existing = current_scope->get_symbol(name)) {
+                    if (ASRUtils::symbol_get_past_external(existing)
+                            == ASRUtils::symbol_get_past_external(sym)) {
+                        continue;
+                    }
+                    name = current_scope->get_unique_name(name, false);
+                }
+                ASR::symbol_t* decl = nullptr;
+                if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+                    ASR::ExternalSymbol_t* ext = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
+                    decl = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, loc,
+                        current_scope, s2c(al, name), ext->m_external, ext->m_module_name,
+                        ext->m_scope_names, ext->n_scope_names, ext->m_original_name,
+                        ASR::accessType::Public));
+                } else {
+                    ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+                    // The value is a constant, unlike the symbolic value, which
+                    // can refer to other variables of the enclosing scope.
+                    ASRUtils::ExprStmtDuplicator duplicator(al);
+                    decl = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
+                        loc, current_scope, s2c(al, name), nullptr, 0, ASR::intentType::Local,
+                        duplicator.duplicate_expr(v->m_value),
+                        duplicator.duplicate_expr(v->m_value),
+                        ASR::storage_typeType::Parameter,
+                        ASRUtils::duplicate_type(al, v->m_type), nullptr, v->m_abi,
+                        ASR::accessType::Public, ASR::presenceType::Required, false));
+                }
+                current_scope->add_symbol(name, decl);
+                if (name != it.first) {
+                    renamed[sym] = decl;
+                }
+            }
+            if (!renamed.empty()) {
+                ReplaceNamedConstantsVisitor v(al, renamed);
+                v.visit_OMPRegion(x);
+            }
         }
 
         void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
@@ -2300,6 +2410,7 @@ class ParallelRegionVisitor :
                 }
             }
 
+            declare_named_constants(x.base.base.loc, x, c);
             unpack_data_from_thread_data_omp(x.base.base.loc, thread_data_module_name, tdata_expr, fn_body, c);
 
             DoConcurrentStatementVisitor stmt_visitor(al, current_scope, program_procedure_copies);
@@ -3247,6 +3358,7 @@ class ParallelRegionVisitor :
                 }
             }
             
+            declare_named_constants(loc, x, c);
             unpack_data_from_thread_data_omp(loc, thread_data_module_name, tdata_expr, fn_body, c, "task_data_struct");
 
             visit_OMPBody(&x, fn_body);
@@ -3661,6 +3773,7 @@ class ParallelRegionVisitor :
             }
             
             // Unpack data
+            declare_named_constants(x.base.base.loc, x, c);
             unpack_data_from_thread_data_omp(x.base.base.loc, thread_data_module_name, tdata_expr, fn_body, c, "teams_thread_data");
             
             Vec<ASR::OMPReduction_t*> reduction_clauses;

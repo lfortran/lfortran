@@ -2001,6 +2001,7 @@ RUN(NAME parameter_19 LABELS gfortran llvm)
 RUN(NAME parameter_20 LABELS gfortran llvm)
 RUN(NAME parameter_21 LABELS gfortran llvm)
 RUN(NAME parameter_22 LABELS gfortran llvm)
+RUN(NAME parameter_23 LABELS gfortran llvm c)
 
 RUN(NAME fortuno_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -4167,6 +4168,7 @@ RUN(NAME array_section_33 LABELS gfortran llvm)
 RUN(NAME array_section_34 LABELS gfortran llvm)
 RUN(NAME array_section_35 LABELS gfortran llvm)
 RUN(NAME array_section_36 LABELS gfortran llvm)
+RUN(NAME array_section_37 LABELS gfortran llvm)
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME nested_vars_02 LABELS gfortran llvm)
@@ -5219,6 +5221,7 @@ RUN(NAME openmp_100 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_101 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_102 LABELS gfortran llvm_omp EXTRAFILES openmp_102b.f90 GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_103 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_104 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_threadprivate_tls LABELS gfortran llvm_omp
     EXTRAFILES openmp_threadprivate_tls_mod.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)
