@@ -23,6 +23,7 @@
 #include <map>
 #include <queue>
 #include <limits>
+#include <memory>
 #include <utility>
 #include <cstring>
 
@@ -1363,7 +1364,14 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
             return;
         } else if (ASRUtils::is_real(*result_type)) {
             if (ASRUtils::expr_value(operand) != nullptr) {
-                if (ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(operand))) {
+                if (ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(operand))
+                        && ASRUtils::extract_kind_from_ttype_t(result_type) == 10) {
+                    // kind=10 m_r is a pointer to the long double bytes
+                    long double op_value = ASRUtils::real_constant_get_r10(
+                        ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(operand)));
+                    value = ASRUtils::make_RealConstant_r10(al, x.base.base.loc,
+                        -op_value, result_type);
+                } else if (ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(operand))) {
                     double op_value = ASR::down_cast<ASR::RealConstant_t>(
                                             ASRUtils::expr_value(operand))->m_r;
                     value = ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(
@@ -1776,6 +1784,41 @@ public:
         }
         active = nullptr;
     }
+};
+
+class SymbolTableVisitor;
+
+// The scope of a BLOCK construct is created by the body visitor, which visits
+// the specification part of the BLOCK. Its interface blocks are declared in
+// that scope by one symbol table visitor, in order, the same way as in the
+// specification part of any other scoping unit: `finalize` builds the generic
+// interfaces once the whole specification part has been visited.
+class BlockInterfaceVisitor {
+    std::unique_ptr<SymbolTableVisitor> v;
+
+public:
+    BlockInterfaceVisitor(Allocator &al, SymbolTable *block_scope,
+        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+        std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping,
+        std::map<uint64_t, std::vector<std::string>> &explicit_intrinsic_procedures_mapping,
+        std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        LCompilers::LocationManager &lm);
+    ~BlockInterfaceVisitor();
+    BlockInterfaceVisitor(const BlockInterfaceVisitor &) = delete;
+    BlockInterfaceVisitor &operator=(const BlockInterfaceVisitor &) = delete;
+
+    void visit_Interface(const AST::Interface_t &x);
+    // The modules used in the interface bodies are added to
+    // `module_dependencies`, the dependencies of the enclosing module, and
+    // the pointers through which their getters read variables of the BLOCK
+    // to `construct_variable_pointers`.
+    void finalize(Allocator &al, SetChar &module_dependencies,
+        std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> &construct_variable_pointers);
 };
 
 template <class Derived>
@@ -2198,6 +2241,9 @@ public:
     // Current procedure arguments. Only non-empty for SymbolTableVisitor,
     // empty for BodyVisitor.
     std::vector<std::string> current_procedure_args;
+    // The name of the result variable of the current function, like
+    // current_procedure_args
+    std::string current_procedure_result;
     std::vector<std::string> excluded_from_symtab;
     int64_t current_symbol;
     ASR::abiType current_procedure_abi_type = ASR::abiType::Source;
@@ -2430,6 +2476,22 @@ public:
     // the masked body.
     Vec<ASR::stmt_t*>* body_enclosing_where = nullptr;
     std::vector<std::pair<std::string, ASR::symbol_t*>> pending_proc_placeholders;
+    // The placeholders in `pending_proc_placeholders` that stand for a
+    // procedure given to a procedure pointer component before its
+    // definition, see `declare_forward_procedure_target()`.
+    std::set<ASR::symbol_t*> forward_procedure_targets;
+    // Each value of a procedure pointer component that names one of
+    // `forward_procedure_targets`, checked against the component once the
+    // procedure is known.
+    struct ForwardProcedureTargetUse {
+        ASR::symbol_t* placeholder;
+        ASR::Variable_t* member;
+        Location loc;
+    };
+    std::vector<ForwardProcedureTargetUse> forward_procedure_target_uses;
+    // The pointers created by create_construct_variable_pointer, each with
+    // the variable of the BLOCK construct it is associated with
+    std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> construct_variable_pointers;
 
     struct PendingProcPtrInit {
         std::string proc_name;
@@ -2980,9 +3042,9 @@ public:
         }
     }
 
-    std::string create_getter_function(const Location& loc, ASR::symbol_t* end_sym) {
+    std::string create_getter_function(const Location& loc, ASR::symbol_t* end_sym,
+            ASR::ttype_t* type, SymbolTable* parent_scope) {
         SymbolTable* current_scope_copy = current_scope;
-        SymbolTable* parent_scope = current_scope->parent; // use parent scope instead of local to avoid unintended wrong manipulation by nested_vars pass.
         ASRUtils::ASRBuilder b(al, loc);
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
@@ -2998,7 +3060,7 @@ public:
             sd.duplicate_symbol(end_sym, current_scope);
             end_sym = current_scope->resolve_symbol(ASRUtils::symbol_name(end_sym));
         }
-        ASR::expr_t* return_var_expr = b.Variable(current_scope, func_name, ASRUtils::symbol_type(end_sym),
+        ASR::expr_t* return_var_expr = b.Variable(current_scope, func_name, type,
                                 ASR::intentType::ReturnVar);
         // populate body
         Vec<ASR::stmt_t*> body; body.reserve(al, 1);
@@ -3045,15 +3107,53 @@ public:
                 end subroutine
             end module y
         */
-        SymbolTable* parent_scope = current_scope->parent;
-        std::string func_name = create_getter_function(end_sym->base.loc, end_sym);
+        // The getter is created in the host of the procedure (not in the
+        // procedure itself, which the nested_vars pass would wrongly
+        // manipulate). The procedures of an interface block in a BLOCK
+        // construct have the BLOCK as their host, but the backends define no
+        // procedures there, so the getter is created in the procedure or
+        // program that contains the BLOCK. A variable of the BLOCK is not
+        // visible there, so the getter reads it through a pointer of that
+        // procedure or program instead, see construct_variable_pointers.
+        SymbolTable* parent_scope = ASRUtils::scope_past_constructs(current_scope->parent);
+        ASR::ttype_t* type = ASRUtils::symbol_type(end_sym);
+        ASR::symbol_t* read_sym = end_sym;
+        if (parent_scope != current_scope->parent &&
+                !ASR::is_a<ASR::ExternalSymbol_t>(*end_sym)) {
+            SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
+            if (symbol_scope != parent_scope &&
+                    !ASRUtils::is_parent(symbol_scope, parent_scope)) {
+                read_sym = create_construct_variable_pointer(end_sym, parent_scope);
+            }
+        }
+        std::string func_name = create_getter_function(end_sym->base.loc, read_sym,
+            type, parent_scope);
         ASR::symbol_t* getter_func_sym = parent_scope->resolve_symbol(LCompilers::s2c(al,func_name));
         current_function_dependencies.push_back(al,s2c(al, func_name));
 
         ASR::expr_t* func_call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, getter_func_sym->base.loc,
-                                getter_func_sym, getter_func_sym, nullptr, 0, ASRUtils::symbol_type(end_sym), nullptr, nullptr, current_scope, current_function_dependencies,
+                                getter_func_sym, getter_func_sym, nullptr, 0, type, nullptr, nullptr, current_scope, current_function_dependencies,
                                 compiler_options.implicit_argument_casting));
         return func_call;
+    }
+
+    // Creates in `scope` a pointer through which a procedure of `scope`
+    // reads `variable`, a variable of a BLOCK construct in it. The BLOCK
+    // associates the pointer with `variable` when it is entered.
+    ASR::symbol_t* create_construct_variable_pointer(ASR::symbol_t* variable,
+            SymbolTable* scope) {
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*variable));
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(variable);
+        ASRUtils::ASRBuilder b(al, variable->base.loc);
+        std::string name = scope->get_unique_name(
+            "__lcompilers_block_" + std::string(v->m_name), false);
+        ASR::ttype_t* type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
+            variable->base.loc, ASRUtils::type_get_past_allocatable_pointer(v->m_type)));
+        ASR::symbol_t* pointer = ASR::down_cast<ASR::Var_t>(
+            b.Variable(scope, name, type, ASR::intentType::Local))->m_v;
+        v->m_target_attr = true;
+        construct_variable_pointers.push_back({pointer, variable});
+        return pointer;
     }
 
     ASR::expr_t* convert_integer_binop_to_function_call(ASR::expr_t* end, bool is_argument) {
@@ -3125,6 +3225,109 @@ public:
         }
         return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, end->base.loc,
             left, end_bin_op->m_op, right, end_bin_op->m_type, end_bin_op->m_value));
+    }
+
+    bool is_procedure_result(const char* name) {
+        return name != nullptr && !current_procedure_result.empty()
+            && to_lower(name) == current_procedure_result;
+    }
+
+    // A bound or a length in the declaration of a dummy argument or of the
+    // result (`in_signature`) reads a variable of the host or of a module
+    // through a getter, so that the type of the procedure is not tied to a
+    // scope. Otherwise only a variable of a module is read through a getter.
+    // A bound or a length with a compile-time value, such as a named
+    // constant, is never read through a getter: it keeps the type constant.
+    // A signature that would still read a variable of an enclosing BLOCK
+    // construct is reported, see check_block_variable_reads.
+    ASR::expr_t* read_variables_through_getters(ASR::expr_t* end,
+            bool in_signature) {
+        if (in_signature) {
+            check_block_variable_reads(end, end, true);
+        }
+        ASR::expr_t* read = end;
+        if (ASR::is_a<ASR::Var_t>(*end)) {
+            ASR::symbol_t* end_sym = ASR::down_cast<ASR::Var_t>(end)->m_v;
+            SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
+            if (ASRUtils::expr_value(end) == nullptr &&
+                (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
+                (symbol_scope->counter != current_scope->counter && in_signature)) ) {
+                read = get_transformed_function_call(end_sym);
+            }
+        } else if (ASR::is_a<ASR::IntegerBinOp_t>(*end)) {
+            read = convert_integer_binop_to_function_call(end, in_signature);
+        }
+        if (in_signature) {
+            check_block_variable_reads(end, read, false);
+        }
+        return read;
+    }
+
+    // Finds the first variable of a BLOCK construct enclosing `scope` that an
+    // expression reads at run time (with `only_allocatable_or_pointer`, the
+    // first such allocatable or pointer variable).
+    class BlockVariableFinder :
+            public ASR::BaseWalkVisitor<BlockVariableFinder> {
+        public:
+            SymbolTable *scope;
+            bool only_allocatable_or_pointer;
+            ASR::symbol_t *variable = nullptr;
+
+            BlockVariableFinder(SymbolTable *scope_,
+                    bool only_allocatable_or_pointer_)
+                : scope{scope_},
+                  only_allocatable_or_pointer{only_allocatable_or_pointer_} {}
+
+            void visit_expr(const ASR::expr_t &x) {
+                if (variable == nullptr && ASRUtils::expr_value(
+                        const_cast<ASR::expr_t*>(&x)) == nullptr) {
+                    ASR::BaseWalkVisitor<BlockVariableFinder>::visit_expr(x);
+                }
+            }
+
+            void visit_Var(const ASR::Var_t &x) {
+                if (!ASR::is_a<ASR::Variable_t>(*x.m_v)) {
+                    return;
+                }
+                SymbolTable *symbol_scope = ASRUtils::symbol_parent_symtab(x.m_v);
+                if (symbol_scope == scope || symbol_scope->asr_owner == nullptr
+                        || !ASR::is_a<ASR::symbol_t>(*symbol_scope->asr_owner)
+                        || !ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(
+                            symbol_scope->asr_owner))) {
+                    return;
+                }
+                if (only_allocatable_or_pointer &&
+                        !ASRUtils::is_allocatable_or_pointer(
+                            ASRUtils::symbol_type(x.m_v))) {
+                    return;
+                }
+                variable = x.m_v;
+            }
+    };
+
+    // A bound or a length in the signature of a procedure, whose type must
+    // not be tied to a scope, can read a variable of an enclosing BLOCK
+    // construct only through a getter, see get_transformed_function_call.
+    // Reports `bound` if `read`, what the signature reads for it, still reads
+    // such a variable directly, or, with `only_allocatable_or_pointer`, if a
+    // getter would have to follow an allocatable or pointer variable.
+    void check_block_variable_reads(ASR::expr_t* bound, ASR::expr_t* read,
+            bool only_allocatable_or_pointer) {
+        BlockVariableFinder finder(current_scope, only_allocatable_or_pointer);
+        finder.visit_expr(*read);
+        if (finder.variable == nullptr) {
+            return;
+        }
+        diag.add(Diagnostic(
+            "a specification expression in an interface body that "
+            "references a variable of the enclosing BLOCK construct is "
+            "not supported yet in this form",
+            Level::Error, Stage::Semantic, {
+                Label("'" + std::string(ASRUtils::symbol_name(finder.variable))
+                    + "' is a variable of the enclosing BLOCK construct",
+                    {bound->base.loc})
+            }));
+        throw SemanticAbort();
     }
 
     void check_intent_out_in_spec_expr(ASR::expr_t* expr) {
@@ -3808,6 +4011,7 @@ public:
         RestrictedExprScope restricted_scope(*this,
             RestrictedExprContext::ArrayBound);
         _processing_dimensions = true;
+        bool in_signature = is_argument || is_procedure_result(var_name);
 	    dims.reserve(al, n_dim);
 	    for (size_t i=0; i<n_dim; i++) {
 	        if (is_argument &&
@@ -3834,6 +4038,11 @@ public:
                     dim.m_start = ASRUtils::EXPR(tmp);
                     check_specification_expr(dim.m_start,
                         RestrictedExprContext::ArrayBound);
+                    // A lower bound is never read through a getter.
+                    if (in_signature) {
+                        check_block_variable_reads(dim.m_start, dim.m_start,
+                            false);
+                    }
                     dimension_attribute_error_check(dim.m_start);
                     if (is_derived_type
                             && !depends_on_pdt_kind_param(dim.m_start)) {
@@ -3859,27 +4068,16 @@ public:
                     end = ASRUtils::EXPR(tmp);
                     check_specification_expr(end,
                         RestrictedExprContext::ArrayBound);
+                    ASR::expr_t* end_read = read_variables_through_getters(end,
+                        in_signature);
                     dimension_attribute_error_check(end);
                     bool pdt_kind_bound = depends_on_pdt_kind_param(end)
                         || (dim.m_start && depends_on_pdt_kind_param(dim.m_start));
-                    if (is_derived_type && !pdt_kind_bound) {
-                        ASR::expr_t* end_value = ASRUtils::expr_value(end);
-                        if (end_value != nullptr) {
-                            end = end_value;
-                        }
-                    }
-                    if (ASR::is_a<ASR::Var_t>(*end)) {
-                        ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(end);
-                        ASR::symbol_t* end_sym = end_var->m_v;
-                        SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
-                        if ((is_argument || ASRUtils::expr_value(end) == nullptr) &&
-                            (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
-                            (symbol_scope->counter != current_scope->counter && is_argument &&
-                            ASRUtils::expr_value(end) == nullptr)) ) {
-                                end = get_transformed_function_call(end_sym);
-                        }
-                    } else if(ASR::is_a<ASR::IntegerBinOp_t>(*end)) {
-                        end = convert_integer_binop_to_function_call(end, is_argument);
+                    ASR::expr_t* end_value = ASRUtils::expr_value(end);
+                    if (is_derived_type && !pdt_kind_bound && end_value != nullptr) {
+                        end = end_value;
+                    } else {
+                        end = end_read;
                     }
                     if (pdt_kind_bound) {
                         dim.m_length = pdt_component_extent(dim.m_start, end);
@@ -12924,7 +13122,9 @@ public:
                     type = ASRUtils::TYPE(ASR::make_Array_t(al, loc, type, nullptr, 0, ASR::array_physical_typeType::AssumedRankArray, ASR::memory_spaceType::Global));
                 } else {
                     type = ASRUtils::make_Array_t_util(
-                        al, loc, type, dims.p, dims.size(), abi, is_argument);
+                        al, loc, type, dims.p, dims.size(), abi, is_argument,
+                        ASR::array_physical_typeType::DescriptorArray, false,
+                        abi == ASR::abiType::BindC && is_dimension_star);
                 }
                 if (is_pointer) {
                     type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
@@ -13633,6 +13833,7 @@ public:
             ASR::ttype_t* prev_variable_type = current_variable_type_;
             ASR::expr_t* prev_struct_type_var_expr = current_struct_type_var_expr;
             set_null_context_to_component(member, args[i].m_end->base.loc);
+            declare_forward_procedure_target(member, args[i].m_end);
             visit_expr_list(&args[i], 1, val);
             current_variable_type_ = prev_variable_type;
             current_struct_type_var_expr = prev_struct_type_var_expr;
@@ -13862,6 +14063,84 @@ public:
     // `integer(4)` or `real(8), dimension(2)`.
     std::string struct_component_type_to_str(ASR::Variable_t* member) {
         return fortran_type_to_str(member->m_type, member->m_type_declaration);
+    }
+
+    // A structure constructor in the specification part of a module may give
+    // a procedure pointer component a module procedure that the module
+    // defines only later, after `contains`, as in
+    // `type(t), parameter :: c = t(f)` (F2018 7.5.10: such a component value
+    // is an initial procedure target). If the name `value` of the component
+    // `member` is not declared yet, declare it as a placeholder procedure
+    // with the component's interface. The module refers to the procedure
+    // instead once its procedures are known, see
+    // `resolve_proc_pointer_placeholders()`, which checks the procedure
+    // against every component given it, and reports a placeholder that no
+    // procedure replaced.
+    void declare_forward_procedure_target(ASR::symbol_t* member,
+            AST::expr_t* value) {
+        if (is_body_visitor || !in_module || !AST::is_a<AST::Name_t>(*value)
+                || member == nullptr || !ASR::is_a<ASR::Variable_t>(*member)
+                || current_scope->parent == nullptr
+                || current_scope->parent->parent != nullptr) {
+            return;
+        }
+        ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member);
+        ASR::FunctionType_t* iface = ASRUtils::get_procedure_pointer_component_type(
+            member_var);
+        if (iface == nullptr) {
+            return;
+        }
+        std::string name = to_lower(AST::down_cast<AST::Name_t>(value)->m_id);
+        ASR::symbol_t* declared = current_scope->resolve_symbol(name);
+        if (declared != nullptr) {
+            if (forward_procedure_targets.count(declared) > 0) {
+                forward_procedure_target_uses.push_back(
+                    {declared, member_var, value->base.loc});
+            }
+            return;
+        }
+        ASR::FunctionType_t* placeholder_type = ASR::down_cast<ASR::FunctionType_t>(
+            ASRUtils::duplicate_type(al, &iface->base));
+        placeholder_type->m_deftype = ASR::deftypeType::Interface;
+        SymbolTable* fn_scope = al.make_new<SymbolTable>(current_scope);
+        ASR::symbol_t* placeholder = ASR::down_cast<ASR::symbol_t>(
+            ASR::make_Function_t(al, value->base.loc, fn_scope, s2c(al, name),
+                &placeholder_type->base, nullptr, 0, nullptr, 0, nullptr, 0,
+                nullptr, ASR::accessType::Public, false, false, nullptr,
+                nullptr, nullptr));
+        current_scope->add_symbol(name, placeholder);
+        pending_proc_placeholders.push_back({name, placeholder});
+        forward_procedure_targets.insert(placeholder);
+        forward_procedure_target_uses.push_back(
+            {placeholder, member_var, value->base.loc});
+    }
+
+    // Whether the procedure `arg` can be the value of the procedure pointer
+    // component `member_var`, reporting it if not: a function cannot be the
+    // value of a component with a subroutine interface, nor the other way
+    // around.
+    bool procedure_component_value_matches(ASR::Variable_t* member_var,
+            ASR::expr_t* arg) {
+        ASR::FunctionType_t* member_func_type =
+            ASRUtils::get_procedure_pointer_component_type(member_var);
+        ASR::FunctionType_t* arg_func_type =
+            ASRUtils::get_procedure_type_from_expr(arg);
+        if (member_func_type == nullptr || arg_func_type == nullptr) {
+            return true;
+        }
+        bool member_is_subroutine = member_func_type->m_return_var_type == nullptr;
+        bool arg_is_subroutine = arg_func_type->m_return_var_type == nullptr;
+        if (member_is_subroutine == arg_is_subroutine) {
+            return true;
+        }
+        diag.add(Diagnostic("type mismatch in structure constructor: value of type "
+            + ASRUtils::type_to_str_with_kind(ASRUtils::expr_type(arg), arg)
+            + " cannot be the value of pointer component '"
+            + std::string(member_var->m_name) + "' of type "
+            + struct_component_type_to_str(member_var),
+            Level::Error, Stage::Semantic, {
+                Label("", {arg->base.loc})}));
+        return false;
     }
 
     void set_null_context_to_component(ASR::symbol_t* member, const Location& loc) {
@@ -14301,21 +14580,14 @@ public:
             }
             ASR::expr_t* arg = vals[i].m_value;
             ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
-            ASR::FunctionType_t* member_func_type =
-                ASRUtils::get_procedure_pointer_component_type(member_var);
-            ASR::FunctionType_t* arg_func_type =
-                ASRUtils::get_procedure_type_from_expr(arg);
-            if (member_func_type != nullptr && arg_func_type != nullptr) {
-                bool member_is_subroutine = member_func_type->m_return_var_type == nullptr;
-                bool arg_is_subroutine = arg_func_type->m_return_var_type == nullptr;
-                if (member_is_subroutine != arg_is_subroutine) {
-                    diag.add(Diagnostic("type mismatch in structure constructor: value of type "
-                        + ASRUtils::type_to_str_with_kind(ASRUtils::expr_type(arg), arg)
-                        + " cannot be the value of pointer component '"
-                        + std::string(member_var->m_name) + "' of type "
-                        + struct_component_type_to_str(member_var),
-                        Level::Error, Stage::Semantic, {
-                            Label("", {arg->base.loc})}));
+            if (ASRUtils::is_procedure_pointer_value(member_var, arg)) {
+                // A procedure defined later is checked once it is known, see
+                // `resolve_proc_pointer_placeholders()`.
+                bool forward_target = ASR::is_a<ASR::Var_t>(*arg)
+                    && forward_procedure_targets.count(
+                        ASR::down_cast<ASR::Var_t>(arg)->m_v) > 0;
+                if (!forward_target
+                        && !procedure_component_value_matches(member_var, arg)) {
                     if (!compiler_options.continue_compilation) {
                         throw SemanticAbort();
                     }
@@ -14901,6 +15173,13 @@ public:
                             ASRUtils::get_fixed_size_of_array(val2->m_type)) {
                         arr_ref_val = ASRUtils::fetch_ArrayConstant_value(
                             al, val2, index);
+                        // Such an element names its target procedure, which
+                        // need not be accessible here, as after
+                        // `use m, only: table`, so it is read from the array
+                        // at run time instead.
+                        if (ASRUtils::struct_constant_names_procedure(arr_ref_val)) {
+                            arr_ref_val = nullptr;
+                        }
                     }
                 }
             }
@@ -23097,10 +23376,21 @@ public:
         ASR::ttype_t *dest_type = right_type;
 
         if( overloaded == nullptr ) {
-            // A deferred type of a template has no intrinsic arithmetic and
-            // no implicit conversion; only an operator from a requirement
-            // (resolved as `overloaded` above) applies to it.
-            if (ASRUtils::is_type_parameter(*left_type) || ASRUtils::is_type_parameter(*right_type)) {
+            // Only an intrinsic type has intrinsic arithmetic. An operand of
+            // a derived type, `type(c_ptr)` or a deferred type of a template
+            // needs a defined operator (resolved as `overloaded` above).
+            auto has_intrinsic_type = [](ASR::ttype_t *t) {
+                return ASRUtils::is_integer(*t) || ASRUtils::is_unsigned_integer(*t) ||
+                    ASRUtils::is_real(*t) || ASRUtils::is_complex(*t) ||
+                    ASRUtils::is_character(*t) || ASRUtils::is_logical(*t);
+            };
+            // A logical operand is accepted (as an extension) only when the
+            // other operand is numeric; two logical operands have no numeric
+            // type to be converted to.
+            bool both_logical = ASRUtils::is_logical(*left_type) &&
+                ASRUtils::is_logical(*right_type);
+            if (!has_intrinsic_type(left_type) || !has_intrinsic_type(right_type) ||
+                    both_logical) {
                 std::string op_str = "+";
                 switch (op) {
                     case (ASR::Add):
@@ -23120,8 +23410,8 @@ public:
                     default:
                         LCOMPILERS_ASSERT(false);
                 }
-                diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_fortran_expr(left_type, left)
-                                    + " " +  op_str + " " + ASRUtils::type_to_str_fortran_expr(right_type, right) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                diag.add(Diagnostic("Operator `" + op_str + "` undefined for the types in the expression `" + ASRUtils::type_to_str_with_kind(left_type, left)
+                                    + " " +  op_str + " " + ASRUtils::type_to_str_with_kind(right_type, right) + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
             ImplicitCastRules::find_conversion_candidate(&left, &right, left_type,
@@ -24624,7 +24914,7 @@ public:
 
     // Renders the types of the two arms of a conditional expression for a
     // diagnostic. type_to_str_with_kind spells out the kind for the numeric
-    // types but not for logical or character, where a kind mismatch would
+    // and logical types but not for character, where a kind mismatch would
     // otherwise print the same text on both sides.
     void conditional_arm_type_strs(ASR::expr_t *body, ASR::expr_t *orelse,
             std::string &body_str, std::string &orelse_str) {
@@ -26229,6 +26519,8 @@ public:
             ASR::expr_t* prev_struct_type_var_expr = current_struct_type_var_expr;
             set_null_context_to_component(constructor_arg_syms[idx],
                 kwargs[i].m_value->base.loc);
+            declare_forward_procedure_target(constructor_arg_syms[idx],
+                kwargs[i].m_value);
             this->visit_expr(*kwargs[i].m_value);
             current_variable_type_ = prev_variable_type;
             current_struct_type_var_expr = prev_struct_type_var_expr;
@@ -26822,6 +27114,7 @@ public:
             str->m_physical_type = ASR::DescriptorString;
         }
         // Handle length
+        bool in_signature = is_argument || is_procedure_result(sym.c_str());
         if(len_item){ // Standard Fortran Declaration. `character(len=10) :: str`
             // Set length of the string -> [`:`, `*`, `expr`]
             switch (len_item->m_type) {
@@ -26841,7 +27134,8 @@ public:
                         if (len_value) {
                             str->m_len = len_value;
                         } else {
-                            str->m_len = len_expr;
+                            str->m_len = in_signature
+                                ? read_variables_through_getters(len_expr, true) : len_expr;
                         }
                         _processing_char_len = false;
                         if (var_sym != nullptr &&
@@ -26917,7 +27211,8 @@ public:
                         if (len_value) {
                             str->m_len = len_value;
                         } else {
-                            str->m_len = len_expr;
+                            str->m_len = in_signature
+                                ? read_variables_through_getters(len_expr, true) : len_expr;
                         }
                         _processing_char_len = false;
                         if (ASR::is_a<ASR::Var_t>(*str->m_len) &&

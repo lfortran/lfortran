@@ -432,23 +432,31 @@ public:
 
     void visit_Program(const Program_t &x) {
         std::string r;
-        r += syn(gr::UnitHeader);
-        r.append("program");
-        r += syn();
-        r += " ";
-        r.append(x.m_name);
-        if(x.m_trivia){
-            r += print_trivia_inside(*x.m_trivia);
-        } else {
-            r.append("\n");
+        // A main program written without a PROGRAM statement has only an
+        // internal name and no start name location: print it without a
+        // PROGRAM statement and end it with a nameless END PROGRAM.
+        bool has_program_stmt = x.m_start_name != nullptr;
+        if (has_program_stmt) {
+            r += syn(gr::UnitHeader);
+            r.append("program");
+            r += syn();
+            r += " ";
+            r.append(x.m_name);
+            if(x.m_trivia){
+                r += print_trivia_inside(*x.m_trivia);
+            } else {
+                r.append("\n");
+            }
         }
 
         r += format_unit_body(x);
         r += syn(gr::UnitHeader);
         r.append("end program");
         r += syn();
-        r += " ";
-        r.append(x.m_name);
+        if (has_program_stmt) {
+            r += " ";
+            r.append(x.m_name);
+        }
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {

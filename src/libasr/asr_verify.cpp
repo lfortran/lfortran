@@ -515,6 +515,15 @@ public:
             "The asr_owner invariant failed");
         id_symtab_map[x.m_symtab->counter] = x.m_symtab;
         for (auto &a : x.m_symtab->get_scope()) {
+            // The backends only declare the procedures of a BLOCK: the
+            // procedures of its interface blocks and its external procedures.
+            if (ASR::is_a<ASR::Function_t>(*a.second)) {
+                require_with_loc(ASRUtils::get_FunctionType(*ASR::down_cast<ASR::Function_t>(
+                        a.second))->m_deftype != ASR::deftypeType::Implementation,
+                    "The procedure '" + a.first + "' in the scope of a Block "
+                    "must not have an implementation",
+                    a.second->base.loc);
+            }
             this->visit_symbol(*a.second);
         }
         for (size_t i=0; i<x.n_body; i++) {

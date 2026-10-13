@@ -1061,67 +1061,79 @@ semantic error: 'cc1_eu_arr' is use-associated and cannot appear in an EQUIVALEN
      |                     ^^^^^^^^^^^^^ not allowed in EQUIVALENCE
 
 semantic error: dummy procedure 'f' cannot have an elemental interface
-    --> tests/errors/continue_compilation_1.f90:2449:23
+    --> tests/errors/continue_compilation_1.f90:2465:23
      |
-2449 |     procedure(sin) :: f  ! {Error} dummy procedure 'f' cannot have an elemental interface
+2465 |     procedure(sin) :: f  ! {Error} dummy procedure 'f' cannot have an elemental interface
      |                       ^ 
 
 semantic error: procedure pointer 'fp' cannot have an elemental interface
-    --> tests/errors/continue_compilation_1.f90:2450:32
+    --> tests/errors/continue_compilation_1.f90:2466:32
      |
-2450 |     procedure(sin), pointer :: fp  ! {Error} procedure pointer 'fp' cannot have an elemental interface
+2466 |     procedure(sin), pointer :: fp  ! {Error} procedure pointer 'fp' cannot have an elemental interface
      |                                ^^ 
 
 semantic error: Dummy argument 'f' not defined
-    --> tests/errors/continue_compilation_1.f90:2446:1 - 2451:50
+    --> tests/errors/continue_compilation_1.f90:2462:1 - 2467:50
      |
-2446 |    subroutine elemental_procedure_interface_error(f)
+2462 |    subroutine elemental_procedure_interface_error(f)
      |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
      |
-2451 |    end subroutine elemental_procedure_interface_error
+2467 |    end subroutine elemental_procedure_interface_error
      | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: intrinsic procedure 'floor' is not allowed in a procedure declaration statement
-    --> tests/errors/continue_compilation_1.f90:2458:5
+    --> tests/errors/continue_compilation_1.f90:2474:5
      |
-2458 |     procedure(floor) :: f  ! {Error} intrinsic procedure 'floor' is not allowed in a procedure declaration statement
+2474 |     procedure(floor) :: f  ! {Error} intrinsic procedure 'floor' is not allowed in a procedure declaration statement
      |     ^^^^^^^^^^^^^^^^ 
 
 semantic error: intrinsic procedure 'min0' is not allowed in a procedure declaration statement
-    --> tests/errors/continue_compilation_1.f90:2459:5
+    --> tests/errors/continue_compilation_1.f90:2475:5
      |
-2459 |     procedure(min0) :: g  ! {Error} intrinsic procedure 'min0' is not allowed in a procedure declaration statement
+2475 |     procedure(min0) :: g  ! {Error} intrinsic procedure 'min0' is not allowed in a procedure declaration statement
      |     ^^^^^^^^^^^^^^^ 
 
 semantic error: Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
-    --> tests/errors/continue_compilation_1.f90:2466:5
+    --> tests/errors/continue_compilation_1.f90:2482:5
      |
-2466 |     procedure(real) :: f  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+2482 |     procedure(real) :: f  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
      |     ^^^^^^^^^^^^^^^ 
 
 semantic error: Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
-    --> tests/errors/continue_compilation_1.f90:2467:5
+    --> tests/errors/continue_compilation_1.f90:2483:5
      |
-2467 |     procedure(logical) :: g  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+2483 |     procedure(logical) :: g  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
      |     ^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
-    --> tests/errors/continue_compilation_1.f90:2468:5
+    --> tests/errors/continue_compilation_1.f90:2484:5
      |
-2468 |     procedure(complex) :: h  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
+2484 |     procedure(complex) :: h  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
      |     ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 'cc1_pcut_nosuch' is not declared
+    --> tests/errors/continue_compilation_1.f90:2498:49
+     |
+2498 |     type(cc1_pcut_t) :: cc1_pcut_s = cc1_pcut_t(cc1_pcut_nosuch)  ! {Error} Variable 'cc1_pcut_nosuch' is not declared
+     |                                                 ^^^^^^^^^^^^^^^ 'cc1_pcut_nosuch' is undeclared
+
+semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    --> tests/errors/continue_compilation_1.f90:2515:49
+     |
+2515 |     type(cc1_pcfm_t) :: cc1_pcfm_s = cc1_pcfm_t(cc1_pcfm_f)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+     |                                                 ^^^^^^^^^^ 
 
 semantic error: using the internal procedure 'cos', which is defined later, as a procedure interface is not supported yet
-    --> tests/errors/continue_compilation_1.f90:2478:9
+    --> tests/errors/continue_compilation_1.f90:2529:9
      |
-2478 |         procedure(cos) :: f  ! {Error} using the internal procedure 'cos', which is defined later, as a procedure interface is not supported yet
+2529 |         procedure(cos) :: f  ! {Error} using the internal procedure 'cos', which is defined later, as a procedure interface is not supported yet
      |         ^^^^^^^^^^^^^^ 
 
 semantic error: using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
-    --> tests/errors/continue_compilation_1.f90:2489:5
+    --> tests/errors/continue_compilation_1.f90:2540:5
      |
-2489 |     procedure(tan) :: f  ! {Error} using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
+2540 |     procedure(tan) :: f  ! {Error} using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
      |     ^^^^^^^^^^^^^^ 
 
 semantic error: Restriction type mismatch with provided function argument
@@ -2362,11 +2374,11 @@ semantic error: Variable 'k' is not declared
 681 |         do k = 1, 3
     |            ^ 'k' is undeclared
 
-semantic error: Expected logical expression in if statement, but recieved logical[:] instead
+semantic error: Expected logical expression in if statement, but recieved logical(4)[:] instead
    --> tests/errors/continue_compilation_1.f90:692:13
     |
 692 |         if (abs(arr1)(1) /= 2471095) error stop
-    |             ^^^^^^^^^^^^^^^^^^^^^^^ logical[:] expression, expected logical
+    |             ^^^^^^^^^^^^^^^^^^^^^^^ logical(4)[:] expression, expected logical
 
 semantic error: Character intrinsic 'len' with class(*) argument must be inside 'type is (character(len=*))' guard
    --> tests/errors/continue_compilation_1.f90:700:22
@@ -2666,7 +2678,7 @@ semantic error: the arms of a conditional expression must have the same type and
     --> tests/errors/continue_compilation_1.f90:1045:24
      |
 1045 |         l = ( .true. ? l4 : l8 )  ! {Error} the arms of a conditional expression must have the same type and kind
-     |                        ^^   ^^ type mismatch (logical(kind=4) and logical(kind=8))
+     |                        ^^   ^^ type mismatch (logical(4) and logical(8))
 
 semantic error: the arms of a conditional expression must have the same rank
     --> tests/errors/continue_compilation_1.f90:1052:29
@@ -2690,7 +2702,7 @@ semantic error: the condition of a conditional expression must be scalar
     --> tests/errors/continue_compilation_1.f90:1081:20
      |
 1081 |         print *, ( m ? a : b )  ! {Error} the condition of a conditional expression must be scalar
-     |                    ^ this condition is logical[:]
+     |                    ^ this condition is logical(4)[:]
      |
 1081 |         print *, ( m ? a : b )  ! {Error} the condition of a conditional expression must be scalar
      |                    ~ help: use `merge` to select elementwise with an array mask
@@ -3434,3 +3446,33 @@ semantic error: type-bound procedures of a derived type defined in a BLOCK const
      |
 2439 |             procedure, nopass :: bdtbp_get  ! {Error} type-bound procedures of a derived type defined in a BLOCK construct are not supported yet
      |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'mask' argument of 'iany' intrinsic must be logical
+    --> tests/errors/continue_compilation_1.f90:2452:18
+     |
+2452 |         print *, iany(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'iany' intrinsic must be logical
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'mask' argument of 'iall' intrinsic must be logical
+    --> tests/errors/continue_compilation_1.f90:2453:18
+     |
+2453 |         print *, iall(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'iall' intrinsic must be logical
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'mask' argument of 'iparity' intrinsic must be logical
+    --> tests/errors/continue_compilation_1.f90:2454:18
+     |
+2454 |         print *, iparity(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'iparity' intrinsic must be logical
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'mask' argument of 'product' intrinsic must be logical
+    --> tests/errors/continue_compilation_1.f90:2455:18
+     |
+2455 |         print *, product(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'product' intrinsic must be logical
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'mask' argument of 'maxval' intrinsic must be logical
+    --> tests/errors/continue_compilation_1.f90:2456:18
+     |
+2456 |         print *, maxval(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'maxval' intrinsic must be logical
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^^ 

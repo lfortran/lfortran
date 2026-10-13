@@ -108,8 +108,9 @@
                                                                     6
                                                                     1_tuple_fst
                                                                     5 fst
-                                                                    tuple
-                                                                    []
+                                                                    template_struct_01_m
+                                                                    [struct_t
+                                                                    tuple]
                                                                     fst
                                                                     Public
                                                                 ),
@@ -250,8 +251,9 @@
                                                                     7
                                                                     1_tuple_snd
                                                                     5 snd
-                                                                    tuple
-                                                                    []
+                                                                    template_struct_01_m
+                                                                    [struct_t
+                                                                    tuple]
                                                                     snd
                                                                     Public
                                                                 ),
@@ -523,8 +525,9 @@
                                                     8
                                                     1_int_tuple_fst
                                                     9 fst
-                                                    int_tuple
-                                                    []
+                                                    template_struct_01_m
+                                                    [test_template
+                                                    int_tuple]
                                                     fst
                                                     Public
                                                 ),
@@ -533,8 +536,9 @@
                                                     8
                                                     1_int_tuple_snd
                                                     9 snd
-                                                    int_tuple
-                                                    []
+                                                    template_struct_01_m
+                                                    [test_template
+                                                    int_tuple]
                                                     snd
                                                     Public
                                                 ),
@@ -543,8 +547,9 @@
                                                     8
                                                     1_real_tuple_fst
                                                     12 fst
-                                                    real_tuple
-                                                    []
+                                                    template_struct_01_m
+                                                    [test_template
+                                                    real_tuple]
                                                     fst
                                                     Public
                                                 ),
@@ -553,8 +558,9 @@
                                                     8
                                                     1_real_tuple_snd
                                                     12 snd
-                                                    real_tuple
-                                                    []
+                                                    template_struct_01_m
+                                                    [test_template
+                                                    real_tuple]
                                                     snd
                                                     Public
                                                 ),
@@ -568,8 +574,9 @@
                                                                     10
                                                                     1_int_tuple_fst
                                                                     9 fst
-                                                                    int_tuple
-                                                                    []
+                                                                    template_struct_01_m
+                                                                    [test_template
+                                                                    int_tuple]
                                                                     fst
                                                                     Public
                                                                 ),
@@ -680,8 +687,9 @@
                                                                     11
                                                                     1_int_tuple_snd
                                                                     9 snd
-                                                                    int_tuple
-                                                                    []
+                                                                    template_struct_01_m
+                                                                    [test_template
+                                                                    int_tuple]
                                                                     snd
                                                                     Public
                                                                 ),
@@ -792,8 +800,9 @@
                                                                     13
                                                                     1_real_tuple_fst
                                                                     12 fst
-                                                                    real_tuple
-                                                                    []
+                                                                    template_struct_01_m
+                                                                    [test_template
+                                                                    real_tuple]
                                                                     fst
                                                                     Public
                                                                 ),
@@ -904,8 +913,9 @@
                                                                     14
                                                                     1_real_tuple_snd
                                                                     12 snd
-                                                                    real_tuple
-                                                                    []
+                                                                    template_struct_01_m
+                                                                    [test_template
+                                                                    real_tuple]
                                                                     snd
                                                                     Public
                                                                 ),

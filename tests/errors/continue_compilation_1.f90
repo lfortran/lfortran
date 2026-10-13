@@ -2441,6 +2441,22 @@ subroutine block_derived_type_bound_procedure()
     end block
 end subroutine
 
+! A non-logical `mask` of a reduction intrinsic is reported with the name of
+! that intrinsic.
+module cc1_reduction_mask_mod
+    implicit none
+contains
+    subroutine cc1_reduction_mask()
+        integer :: a(3)
+        a = [1, 2, 3]
+        print *, iany(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'iany' intrinsic must be logical
+        print *, iall(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'iall' intrinsic must be logical
+        print *, iparity(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'iparity' intrinsic must be logical
+        print *, product(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'product' intrinsic must be logical
+        print *, maxval(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'maxval' intrinsic must be logical
+    end subroutine cc1_reduction_mask
+end module cc1_reduction_mask_mod
+
 ! A procedure pointer or a dummy procedure cannot have an elemental interface,
 ! such as the interface of a specific intrinsic function.
 subroutine elemental_procedure_interface_error(f)
@@ -2467,6 +2483,41 @@ subroutine type_spec_procedure_interface_error()
     procedure(logical) :: g  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
     procedure(complex) :: h  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
 end subroutine type_spec_procedure_interface_error
+
+! A procedure pointer component value in a module's specification part may
+! name a module procedure defined later, but the module must define it.
+module cc1_proc_component_undefined_target_mod
+    implicit none
+    abstract interface
+        subroutine cc1_pcut_iface()
+        end subroutine cc1_pcut_iface
+    end interface
+    type :: cc1_pcut_t
+        procedure(cc1_pcut_iface), pointer, nopass :: pf => null()
+    end type
+    type(cc1_pcut_t) :: cc1_pcut_s = cc1_pcut_t(cc1_pcut_nosuch)  ! {Error} Variable 'cc1_pcut_nosuch' is not declared
+contains
+    subroutine cc1_pcut_defined()
+    end subroutine cc1_pcut_defined
+end module cc1_proc_component_undefined_target_mod
+
+! A module procedure defined later and given to a procedure pointer component
+! must match the component's interface, as one defined earlier must.
+module cc1_proc_component_forward_mismatch_mod
+    implicit none
+    abstract interface
+        subroutine cc1_pcfm_iface()
+        end subroutine cc1_pcfm_iface
+    end interface
+    type :: cc1_pcfm_t
+        procedure(cc1_pcfm_iface), pointer, nopass :: pf => null()
+    end type
+    type(cc1_pcfm_t) :: cc1_pcfm_s = cc1_pcfm_t(cc1_pcfm_f)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+contains
+    integer function cc1_pcfm_f()
+        cc1_pcfm_f = 3
+    end function cc1_pcfm_f
+end module cc1_proc_component_forward_mismatch_mod
 
 ! An internal procedure named like a specific intrinsic function that its host
 ! defines after it is used as the interface is not supported yet.
