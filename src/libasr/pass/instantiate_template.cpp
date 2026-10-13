@@ -1406,6 +1406,38 @@ public:
             }
         }
 
+        // A component's type and interface are named from the scope that
+        // hosts its derived type, as outside a template; the type's own scope
+        // holds only its components and bound procedures. If they are not
+        // visible there, e.g. from a main program that does not use them,
+        // import them under names that cannot clash with the host's entities
+        // (an unlimited polymorphic type is synthesized there instead). A
+        // template, such as the instance of a nested template, holds only the
+        // instances of its own entities, so its host is used instead.
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(&x->base);
+        if (owner != nullptr && ASR::is_a<ASR::Struct_t>(*owner)
+                && target_scope->parent != nullptr) {
+            SymbolTable* host_scope = target_scope->parent;
+            // A scope being instantiated has no owner yet; it is a template
+            // if the scope it instantiates is one.
+            SymbolTable* source_host_scope = ASRUtils::symbol_parent_symtab(owner);
+            while (host_scope->parent != nullptr && is_template_scope(
+                    host_scope->asr_owner != nullptr ? host_scope : source_host_scope)) {
+                host_scope = host_scope->parent;
+                source_host_scope = source_host_scope != nullptr
+                    ? source_host_scope->parent : nullptr;
+            }
+            if (type_decl != nullptr
+                    && ASRUtils::is_unlimited_polymorphic_type(type_decl)) {
+                type_decl = ASRUtils::import_type_declaration(al, type_decl,
+                    host_scope);
+            } else if (type_decl != nullptr) {
+                type_decl = ASRUtils::import_symbol(al, type_decl, host_scope,
+                    ASR::accessType::Private, "1_");
+            }
+            new_type = ASRUtils::import_procedure_type(al, new_type, host_scope);
+        }
+
         // The initializer can refer to the variable itself, e.g. the mold of
         // `=> null()`, so the variable is added before it is instantiated.
         ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
@@ -2043,12 +2075,17 @@ public:
         return new_x;
     }
 
+    static bool is_template_scope(SymbolTable* scope) {
+        return scope != nullptr && scope->asr_owner != nullptr
+            && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)
+            && ASR::is_a<ASR::Template_t>(
+                *ASR::down_cast<ASR::symbol_t>(scope->asr_owner));
+    }
+
     // The scope of the innermost template enclosing scope, if any.
     static SymbolTable* enclosing_template_scope(SymbolTable* scope) {
         for (SymbolTable* s = scope; s != nullptr; s = s->parent) {
-            if (s->asr_owner != nullptr && ASR::is_a<ASR::symbol_t>(*s->asr_owner)
-                    && ASR::is_a<ASR::Template_t>(
-                        *ASR::down_cast<ASR::symbol_t>(s->asr_owner))) {
+            if (is_template_scope(s)) {
                 return s;
             }
         }
