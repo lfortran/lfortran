@@ -3566,13 +3566,163 @@ class ReplaceExprWithTemporaryVisitor:
         ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_ArrayItem(x);
     }
 
+    // A subscript that denotes the same value throughout an assignment: a
+    // constant, or a bound of an array, which assigning to a section of an
+    // array cannot change.
+    static bool is_invariant_section_subscript(ASR::expr_t* expr) {
+        if( ASRUtils::is_value_constant(expr) ||
+            ASRUtils::is_value_constant(ASRUtils::expr_value(expr)) ) {
+            return true;
+        }
+        if( !ASR::is_a<ASR::ArrayBound_t>(*expr) ) {
+            return false;
+        }
+        ASR::ArrayBound_t* bound = ASR::down_cast<ASR::ArrayBound_t>(expr);
+        return ASR::is_a<ASR::Var_t>(*bound->m_v) && bound->m_dim != nullptr &&
+            ASRUtils::is_value_constant(ASRUtils::expr_value(bound->m_dim));
+    }
+
+    // A scalar integer expression of variables and constants, which can be
+    // evaluated once before the assignment without any further temporaries.
+    static bool is_simple_section_subscript(ASR::expr_t* expr) {
+        if( !ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(expr)) ) {
+            return false;
+        }
+        if( is_invariant_section_subscript(expr) ) {
+            return true;
+        }
+        switch( expr->type ) {
+            case ASR::exprType::Var: {
+                return ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(expr)->m_v));
+            }
+            case ASR::exprType::IntegerBinOp: {
+                ASR::IntegerBinOp_t* binop = ASR::down_cast<ASR::IntegerBinOp_t>(expr);
+                return is_simple_section_subscript(binop->m_left) &&
+                    is_simple_section_subscript(binop->m_right);
+            }
+            case ASR::exprType::IntegerUnaryMinus: {
+                return is_simple_section_subscript(
+                    ASR::down_cast<ASR::IntegerUnaryMinus_t>(expr)->m_arg);
+            }
+            case ASR::exprType::Cast: {
+                ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(expr);
+                return cast->m_kind == ASR::cast_kindType::IntegerToInteger &&
+                    is_simple_section_subscript(cast->m_arg);
+            }
+            default: {
+                return false;
+            }
+        }
+    }
+
+    // Whether the section target of `a(:, i) = value`, with `a` an array
+    // variable of intrinsic type, is left for array_op to assign element by
+    // element through `a` itself, instead of through a pointer to the
+    // section, which needs a descriptor of its own. An array value must be
+    // an elemental expression, whose operands array_op indexes alongside.
+    bool is_section_assigned_through_base(const ASR::Assignment_t& x) {
+        if( inside_where || x.m_overloaded != nullptr || x.m_move_allocation ||
+            !ASR::is_a<ASR::ArraySection_t>(*x.m_target) ||
+            ASRUtils::is_simd_array(x.m_target) ||
+            ASRUtils::is_simd_array(x.m_value) ) {
+            return false;
+        }
+        if( ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) ) {
+            switch( x.m_value->type ) {
+                case ASR::exprType::Var:
+                case ASR::exprType::StructInstanceMember:
+                case ASR::exprType::ArraySection:
+                case ASR::exprType::FunctionCall:
+                case ASR::exprType::IntrinsicElementalFunction:
+                case ASR::exprType::IntrinsicArrayFunction:
+                case ASR::exprType::Cast:
+                case ASR::exprType::IntegerBinOp:
+                case ASR::exprType::UnsignedIntegerBinOp:
+                case ASR::exprType::RealBinOp:
+                case ASR::exprType::ComplexBinOp:
+                case ASR::exprType::LogicalBinOp:
+                case ASR::exprType::IntegerCompare:
+                case ASR::exprType::RealCompare:
+                case ASR::exprType::ComplexCompare:
+                case ASR::exprType::IntegerUnaryMinus:
+                case ASR::exprType::RealUnaryMinus:
+                case ASR::exprType::ComplexUnaryMinus:
+                case ASR::exprType::LogicalNot: {
+                    break;
+                }
+                default: {
+                    return false;
+                }
+            }
+        }
+        ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
+        if( !ASR::is_a<ASR::Var_t>(*section->m_v) ) {
+            return false;
+        }
+        ASR::ttype_t* base_type = ASRUtils::expr_type(section->m_v);
+        if( !ASRUtils::is_array(base_type) ||
+            ASRUtils::is_assumed_rank_array(base_type) ) {
+            return false;
+        }
+        switch( ASRUtils::extract_type(base_type)->type ) {
+            case ASR::ttypeType::Integer:
+            case ASR::ttypeType::UnsignedInteger:
+            case ASR::ttypeType::Real:
+            case ASR::ttypeType::Complex:
+            case ASR::ttypeType::Logical: {
+                break;
+            }
+            default: {
+                return false;
+            }
+        }
+        for( size_t i = 0; i < section->n_args; i++ ) {
+            ASR::array_index_t& index = section->m_args[i];
+            if( index.m_left == nullptr && index.m_step == nullptr ) {
+                if( index.m_right == nullptr ||
+                    !is_simple_section_subscript(index.m_right) ) {
+                    return false;
+                }
+            } else if( index.m_left == nullptr || index.m_right == nullptr ||
+                index.m_step == nullptr ||
+                !is_simple_section_subscript(index.m_left) ||
+                !is_simple_section_subscript(index.m_right) ||
+                !is_simple_section_subscript(index.m_step) ) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // The subscripts of a section are evaluated before the assignment, so
+    // neither the assignment nor the loop that carries it out changes them.
+    void evaluate_section_subscripts_once(ASR::ArraySection_t* section) {
+        for( size_t i = 0; i < section->n_args; i++ ) {
+            ASR::array_index_t& index = section->m_args[i];
+            for( ASR::expr_t** subscript: {&index.m_left, &index.m_right, &index.m_step} ) {
+                if( *subscript != nullptr && !is_invariant_section_subscript(*subscript) ) {
+                    *subscript = create_and_declare_temporary_variable_for_scalar(
+                        *subscript, "_array_section_subscript_", al, current_body,
+                        current_scope, exprs_with_target);
+                }
+            }
+        }
+    }
+
     void visit_Assignment(const ASR::Assignment_t &x) {
         ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
         ASR::expr_t* lhs_array_var = nullptr;
         if( ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ) {
             lhs_array_var = ASRUtils::extract_array_variable(x.m_target);
         }
-        if( ASR::is_a<ASR::ArraySection_t>(*x.m_target) ||
+        if( is_section_assigned_through_base(x) ) {
+            ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
+            ASRUtils::extract_indices(x.m_target, m_args, n_args);
+            evaluate_section_subscripts_once(section);
+            // The value is prepared exactly as for a pointer to the section.
+            exprs_with_target[x.m_value] = std::make_pair(x.m_target, targetType::GeneratedTargetPointerForArraySection);
+        } else if( ASR::is_a<ASR::ArraySection_t>(*x.m_target) ||
             ASR::is_a<ASR::ArrayItem_t>(*x.m_target) ) {
             ASRUtils::extract_indices(x.m_target, m_args, n_args);
             bool is_assignment_target_array_section_item = replacer.is_assignment_target_array_section_item;
