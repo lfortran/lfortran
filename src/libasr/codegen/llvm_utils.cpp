@@ -473,7 +473,8 @@ namespace LCompilers {
         call_args.insert(call_args.end(), args.begin(), args.end());
         for (const RuntimeLabel &label : labels) {
             label_spans.emplace_back();
-            info_key += std::string(1, '\0') + (label.primary ? "1" : "0") + label.message;
+            info_key += std::string(1, '\0') + (label.primary ? "1" : "0")
+                + std::to_string(label.spans.size()) + std::string(1, '\0') + label.message;
             for (const diag::Span &span : label.spans) {
                 SpanLineCol s;
                 lm.pos_to_linecol(lm.output_to_input_pos(span.loc.first, false), s.start_l, s.start_c, infile);

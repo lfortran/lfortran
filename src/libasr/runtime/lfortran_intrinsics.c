@@ -4514,27 +4514,19 @@ static char* runtime_error_format(const char *format, va_list *args) {
             break;
         }
         runtime_error_buffer_append(&buf, p, (size_t)(pct - p));
-        // Copy the conversion spec, replacing each '*' by its int argument
-        char spec[64];
-        size_t n = 0;
-        const char *q = pct;
-        spec[n++] = *q++;
-        while (*q && strchr("-+ #0'123456789.*hljztL", *q) && n < sizeof(spec) - 16) {
-            if (*q == '*') {
-                n += (size_t)snprintf(spec + n, sizeof(spec) - n, "%d", va_arg(*args, int));
-            } else {
-                spec[n++] = *q;
-            }
-            q++;
-        }
-        if (!*q) {
+        // The compiler emits conversions with standard flags, width,
+        // precision and length modifiers; '*' widths are not supported
+        const char *length = pct + 1 + strspn(pct + 1, "-+ #0123456789.");
+        const char *q = length + strspn(length, "hljztL");
+        char spec[32];
+        size_t n = (size_t)(q - pct) + 1;
+        if (!*q || n >= sizeof(spec)) {
             runtime_error_buffer_append(&buf, pct, strlen(pct));
             break;
         }
-        char conversion = *q++;
-        spec[n++] = conversion;
+        memcpy(spec, pct, n);
         spec[n] = '\0';
-        const char *length = pct + 1 + strspn(pct + 1, "-+ #0'123456789.*");
+        char conversion = *q++;
         bool is_long = length[0] == 'l' && length[1] != 'l';
         bool is_long_long = length[0] == 'l' && length[1] == 'l';
         switch (conversion) {

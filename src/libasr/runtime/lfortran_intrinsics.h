@@ -483,7 +483,7 @@ typedef struct Span {
 } Span;
 
 typedef struct lfortran_runtime_error_label {
-    bool primary;
+    uint8_t primary; // 1 for the primary label
     const char *message; // format string
     const Span *spans;
     uint32_t n_spans;
