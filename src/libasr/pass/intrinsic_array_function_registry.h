@@ -6561,7 +6561,7 @@ namespace Pack {
     }
 
     static inline ASR::expr_t *eval_Pack(Allocator & al,
-        const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         ASRBuilder builder(al, loc);
         ASR::expr_t *array = args[0], *mask = args[1], *vector = nullptr;
         if (args.size() > 2) {
@@ -6609,9 +6609,6 @@ namespace Pack {
                     values.push_back(EXPR(ASR::make_RealConstant_t(al, loc, it, real64)));
                 }
                 return builder.ArrayConstant(values, extract_type(return_type), false);
-            } else {
-                append_error(diag, "The `pack` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
         } else if (ASRUtils::is_integer(*type_a)) {
             if (kind == 1) {
@@ -6662,9 +6659,6 @@ namespace Pack {
                     values.push_back(EXPR(ASR::make_IntegerConstant_t(al, loc, it, int64)));
                 }
                 return builder.ArrayConstant(values, extract_type(return_type), false);
-            } else {
-                append_error(diag, "The `pack` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
         } else if (ASRUtils::is_logical(*type_a)) {
             std::vector<bool> a(dim_array), c(dim_vector), res;
@@ -6703,14 +6697,9 @@ namespace Pack {
                     values.push_back(EXPR(ASR::make_ComplexConstant_t(al, loc, it.first, it.second, type_get_past_array(return_type))));
                 }
                 return builder.ArrayConstant(values, extract_type(return_type), false);
-            } else {
-                append_error(diag, "The `pack` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
-        } else {
-            append_error(diag, "The `pack` intrinsic doesn't handle type " + ASRUtils::get_type_code(type_a) + " yet", loc);
-            return nullptr;
         }
+        // Other types and kinds are not folded at compile time.
         return nullptr;
     }
 
@@ -6982,7 +6971,7 @@ namespace Unpack {
     }
 
     static inline ASR::expr_t *eval_Unpack(Allocator & al,
-        const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         ASR::expr_t * vector= args[0], *mask = args[1], *field = args[2];
         ASR::ttype_t *type_vector = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(vector)));
         ASR::ttype_t *type_mask = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(mask)));
@@ -7025,9 +7014,6 @@ namespace Unpack {
                     }
                 }
                 return EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, values.p, values.n, return_type, ASR::arraystorageType::ColMajor));
-            } else {
-                append_error(diag, "The `unpack` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
         } else if (ASRUtils::is_integer(*type_a)) {
             if (kind == 4) {
@@ -7058,9 +7044,6 @@ namespace Unpack {
                     }
                 }
                 return EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, values.p, values.n, return_type, ASR::arraystorageType::ColMajor));
-            } else {
-                append_error(diag, "The `unpack` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
         } else if (ASRUtils::is_logical(*type_a)) {
             std::vector<bool> a(dim_vector), c(dim_mask);
@@ -7109,13 +7092,9 @@ namespace Unpack {
                     }
                 }
                 return EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, values.p, values.n, return_type, ASR::arraystorageType::ColMajor));
-            } else {
-                append_error(diag, "The `unpack` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
-        } else {
-            append_error(diag, "The `unpack` intrinsic doesn't handle type " + ASRUtils::get_type_code(type_a) + " yet", loc);
         }
+        // Other types and kinds are not folded at compile time.
         return nullptr;
     }
 
@@ -7335,7 +7314,7 @@ namespace DotProduct {
     }
 
     static inline ASR::expr_t *eval_DotProduct(Allocator & al,
-        const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         ASR::expr_t *vector_a = args[0], *vector_b = args[1];
         ASR::ttype_t *type_vector_a = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(vector_a)));
         ASR::ttype_t* type_a = ASRUtils::type_get_past_array(type_vector_a);
@@ -7366,9 +7345,6 @@ namespace DotProduct {
                 populate_vector(al, a, b, vector_a, vector_b, dim);
                 double result = std::inner_product(a.begin(), a.end(), b.begin(), 0.0);
                 return ASRUtils::make_RealConstant_util(al, loc, result, return_type);
-            } else {
-                append_error(diag, "The `dot_product` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
         } else if (ASRUtils::is_integer(*type_a)) {
             if (kind == 4) {
@@ -7381,9 +7357,6 @@ namespace DotProduct {
                 populate_vector(al, a, b, vector_a, vector_b, dim);
                 int64_t result = std::inner_product(a.begin(), a.end(), b.begin(), 0);
                 return make_ConstantWithType(make_IntegerConstant_t, result, return_type, loc);
-            } else {
-                append_error(diag, "The `dot_product` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
         } else if (ASRUtils::is_logical(*type_a)) {
             std::vector<bool> a(dim), b(dim);
@@ -7412,14 +7385,9 @@ namespace DotProduct {
                     result.second += a[i].first * b[i].second + ((-a[i].second)* b[i].first);
                 }
                 return EXPR(make_ComplexConstant_t(al, loc, result.first, result.second, return_type));
-            } else {
-                append_error(diag, "The `dot_product` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
-        } else {
-            append_error(diag, "The `dot_product` intrinsic doesn't handle type " + ASRUtils::get_type_code(type_a) + " yet", loc);
-            return nullptr;
         }
+        // Other types and kinds are not folded at compile time.
         return nullptr;
     }
 
