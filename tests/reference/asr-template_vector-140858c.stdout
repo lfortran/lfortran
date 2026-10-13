@@ -54,8 +54,9 @@
                                                     7
                                                     1_intvector_elements
                                                     8 elements
-                                                    intvector
-                                                    []
+                                                    template_vector_m
+                                                    [main
+                                                    intvector]
                                                     elements
                                                     Public
                                                 ),
@@ -79,8 +80,9 @@
                                                                     9
                                                                     1_intvector_elements
                                                                     8 elements
-                                                                    intvector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [main
+                                                                    intvector]
                                                                     elements
                                                                     Public
                                                                 ),
@@ -89,8 +91,9 @@
                                                                     9
                                                                     1_intvector_resize
                                                                     8 resize
-                                                                    intvector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [main
+                                                                    intvector]
                                                                     resize
                                                                     Public
                                                                 ),
@@ -99,8 +102,9 @@
                                                                     9
                                                                     1_intvector_sz
                                                                     8 sz
-                                                                    intvector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [main
+                                                                    intvector]
                                                                     sz
                                                                     Public
                                                                 ),
@@ -292,8 +296,9 @@
                                                                     10
                                                                     1_intvector_sz
                                                                     8 sz
-                                                                    intvector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [main
+                                                                    intvector]
                                                                     sz
                                                                     Public
                                                                 ),
@@ -862,8 +867,9 @@
                                                                     5
                                                                     1_vector_elements
                                                                     4 elements
-                                                                    vector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [vector_t
+                                                                    vector]
                                                                     elements
                                                                     Public
                                                                 ),
@@ -882,8 +888,9 @@
                                                                     5
                                                                     1_vector_sz
                                                                     4 sz
-                                                                    vector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [vector_t
+                                                                    vector]
                                                                     sz
                                                                     Public
                                                                 ),
@@ -1117,8 +1124,9 @@
                                                                     6
                                                                     1_vector_elements
                                                                     4 elements
-                                                                    vector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [vector_t
+                                                                    vector]
                                                                     elements
                                                                     Public
                                                                 ),
@@ -1127,8 +1135,9 @@
                                                                     6
                                                                     1_vector_sz
                                                                     4 sz
-                                                                    vector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [vector_t
+                                                                    vector]
                                                                     sz
                                                                     Public
                                                                 ),
