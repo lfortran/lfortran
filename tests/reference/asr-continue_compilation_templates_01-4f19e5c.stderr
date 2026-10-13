@@ -1675,3 +1675,21 @@ semantic error: Function 'p' not found (not user defined nor intrinsic)
      |
 2784 |             deferred_iface_call_g = p(x)  ! {Error} Function 'p' not found
      |                                     ^^^^ 
+
+semantic error: Operator `-` undefined for the type in the expression `-t[:]`
+    --> tests/errors/continue_compilation_templates_01.f90:2811:13
+     |
+2811 |         y = -x  ! {Error} Operator `-` undefined for the type in the expression `-t[:]`
+     |             ^^ 
+
+semantic error: Operator `+` undefined for the type in the expression `+t`
+    --> tests/errors/continue_compilation_templates_01.f90:2824:13
+     |
+2824 |         y = +x  ! {Error} Operator `+` undefined for the type in the expression `+t`
+     |             ^^ 
+
+semantic error: Operator `+` undefined for the type in the expression `+t[:]`
+    --> tests/errors/continue_compilation_templates_01.f90:2836:13
+     |
+2836 |         y = +x  ! {Error} Operator `+` undefined for the type in the expression `+t[:]`
+     |             ^^ 

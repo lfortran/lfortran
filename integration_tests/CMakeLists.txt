@@ -1959,6 +1959,8 @@ RUN(NAME intrinsics_488 LABELS gfortran llvm) # dot_product of descriptor intege
 RUN(NAME intrinsics_489 LABELS gfortran llvm) 
 RUN(NAME intrinsics_490 LABELS gfortran llvm) # get_command status is 0 on success, -1 on truncation (#690)
 RUN(NAME intrinsics_491 LABELS llvm EXTRAFILES intrinsics_491c.c) # get_command status is positive when called from a C main (#690); GFortran gives 0
+RUN(NAME intrinsics_492 LABELS gfortran llvm fortran) # spread of a constant rank>1 array is not rejected as an invalid dim
+RUN(NAME intrinsics_493 LABELS gfortran llvm) # dot_product/pack/unpack of kind=1/2 constant arrays are not rejected
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
@@ -2518,6 +2520,8 @@ RUN(NAME operator_overloading_39 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME operator_overloading_40 LABELS gfortran llvm)
 RUN(NAME operator_overloading_41 LABELS gfortran llvm)
 RUN(NAME operator_overloading_42 LABELS gfortran llvm)
+RUN(NAME operator_overloading_43 LABELS gfortran llvm)
+RUN(NAME operator_overloading_44 LABELS gfortran llvm)
 RUN(NAME operator_overloading_45 LABELS gfortran llvm)
 
 RUN(NAME custom_unary_operator_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3819,6 +3823,7 @@ RUN(NAME template_deferred_proc_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_deferred_subroutine_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_deferred_subroutine_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_deferred_type_attr_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_character_len_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_deferred_const_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_deferred_const_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_deferred_const_03 LABELS llvm llvm_wasm llvm_wasm_emcc)
@@ -3873,6 +3878,8 @@ RUN(NAME template_struct_03 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_struct_04 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_struct_05 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_struct_06 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_struct_default_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_struct_default_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_vector LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_simple_01 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME template_simple_02 LABELS llvm llvm_wasm llvm_wasm_emcc wasm)
@@ -3886,6 +3893,8 @@ RUN(NAME template_commutative LABELS llvm llvm_wasm llvm_wasm_emcc)             
 RUN(NAME template_intrinsic_func_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_intrinsic_func_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_intrinsic_op_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_intrinsic_op_02 LABELS llvm)
+RUN(NAME template_intrinsic_op_03 LABELS llvm)
 RUN(NAME template_defined_op_01 LABELS llvm)
 RUN(NAME template_operator_scope_01 LABELS llvm)
 RUN(NAME template_operator_scope_02 LABELS llvm)
@@ -3938,6 +3947,7 @@ RUN(NAME template_derived_result_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_struct_deferred_dim_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_struct_deferred_dim_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_struct_member_name_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_struct_component_import_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_merge_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_access_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_inline_case_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
@@ -3957,6 +3967,8 @@ RUN(NAME template_nested_contained_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_nested_deferred_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_requirement_abstract_interface_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_local_param_dim_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_local_type_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_local_type_02 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRAFILES template_local_type_02_mod.f90)
 RUN(NAME template_struct_dependency_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_require_intrinsic_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_reshape_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
@@ -3967,6 +3979,8 @@ RUN(NAME template_proc_component_01 LABELS llvm)
 RUN(NAME template_proc_component_02 LABELS llvm)
 RUN(NAME template_submodule_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_unary_minus_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_unary_minus_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME template_unary_plus_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME statement1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -4800,6 +4814,10 @@ RUN(NAME cpp_pre_17 LABELS gfortran llvm
 RUN(NAME cpp_pre_18 LABELS gfortran llvm
     EXTRA_ARGS --cpp
     GFORTRAN_ARGS -cpp)
+
+RUN(NAME cpp_pre_19 LABELS gfortran llvm
+    EXTRA_ARGS --cpp --fixed-form
+    GFORTRAN_ARGS -cpp -ffixed-form)
 
 RUN(NAME dabs_01 LABELS gfortran llvmImplicit)
 

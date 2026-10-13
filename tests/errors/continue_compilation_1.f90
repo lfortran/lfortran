@@ -663,8 +663,8 @@ program continue_compilation_1
         implicit none
         type(MyClass) :: tt
         print *, -tt
+        print *, +tt
     end subroutine
-
 
 
 

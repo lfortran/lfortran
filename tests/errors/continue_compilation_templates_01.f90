@@ -2798,3 +2798,41 @@ contains
         x = f(x)
     end subroutine
 end module
+
+! A unary `-` on an array of a deferred type also needs a user-defined
+! `operator(-)` for that deferred type (#13657).
+module continue_compilation_templates_01_unary_minus_array
+    implicit none
+contains
+    template subroutine unary_minus_array_s{t}(x, y)
+        deferred type :: t
+        type(t), intent(in) :: x(:)
+        type(t), intent(out) :: y(:)
+        y = -x  ! {Error} Operator `-` undefined for the type in the expression `-t[:]`
+    end subroutine
+end module
+
+! A unary `+` on a value of a deferred type needs a user-defined `operator(+)`
+! whose dummy has that deferred type (#14730).
+module continue_compilation_templates_01_unary_plus
+    implicit none
+contains
+    template subroutine unary_plus_s{t}(x, y)
+        deferred type :: t
+        type(t), intent(in) :: x
+        type(t), intent(out) :: y
+        y = +x  ! {Error} Operator `+` undefined for the type in the expression `+t`
+    end subroutine
+end module
+
+! The same holds for an array of a deferred type (#14730).
+module continue_compilation_templates_01_unary_plus_array
+    implicit none
+contains
+    template subroutine unary_plus_array_s{t}(x, y)
+        deferred type :: t
+        type(t), intent(in) :: x(:)
+        type(t), intent(out) :: y(:)
+        y = +x  ! {Error} Operator `+` undefined for the type in the expression `+t[:]`
+    end subroutine
+end module
