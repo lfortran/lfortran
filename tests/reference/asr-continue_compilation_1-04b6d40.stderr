@@ -2374,11 +2374,11 @@ semantic error: Variable 'k' is not declared
 681 |         do k = 1, 3
     |            ^ 'k' is undeclared
 
-semantic error: Expected logical expression in if statement, but recieved logical[:] instead
+semantic error: Expected logical expression in if statement, but recieved logical(4)[:] instead
    --> tests/errors/continue_compilation_1.f90:692:13
     |
 692 |         if (abs(arr1)(1) /= 2471095) error stop
-    |             ^^^^^^^^^^^^^^^^^^^^^^^ logical[:] expression, expected logical
+    |             ^^^^^^^^^^^^^^^^^^^^^^^ logical(4)[:] expression, expected logical
 
 semantic error: Character intrinsic 'len' with class(*) argument must be inside 'type is (character(len=*))' guard
    --> tests/errors/continue_compilation_1.f90:700:22
@@ -2678,7 +2678,7 @@ semantic error: the arms of a conditional expression must have the same type and
     --> tests/errors/continue_compilation_1.f90:1045:24
      |
 1045 |         l = ( .true. ? l4 : l8 )  ! {Error} the arms of a conditional expression must have the same type and kind
-     |                        ^^   ^^ type mismatch (logical(kind=4) and logical(kind=8))
+     |                        ^^   ^^ type mismatch (logical(4) and logical(8))
 
 semantic error: the arms of a conditional expression must have the same rank
     --> tests/errors/continue_compilation_1.f90:1052:29
@@ -2702,7 +2702,7 @@ semantic error: the condition of a conditional expression must be scalar
     --> tests/errors/continue_compilation_1.f90:1081:20
      |
 1081 |         print *, ( m ? a : b )  ! {Error} the condition of a conditional expression must be scalar
-     |                    ^ this condition is logical[:]
+     |                    ^ this condition is logical(4)[:]
      |
 1081 |         print *, ( m ? a : b )  ! {Error} the condition of a conditional expression must be scalar
      |                    ~ help: use `merge` to select elementwise with an array mask
