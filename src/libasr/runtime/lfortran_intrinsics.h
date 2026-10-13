@@ -109,7 +109,6 @@ LFORTRAN_API double _lfortran_random();
 LFORTRAN_API int _lfortran_randrange(int lower, int upper);
 LFORTRAN_API int _lfortran_random_int(int lower, int upper);
 LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, int32_t str_kind, const fchar* end, uint32_t end_len);
-LFORTRAN_API char* _lcompilers_snprintf_alloc(lfortran_allocator_t* al, const char* format, ...);
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...);
 LFORTRAN_API void _lfortran_complex_add_32(struct _lfortran_complex_32* a,
         struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result);
@@ -483,14 +482,24 @@ typedef struct Span {
     uint32_t last_l, last_c;
 } Span;
 
-typedef struct Label {
+typedef struct lfortran_runtime_error_label {
     bool primary;
-    char *message;
-    Span *spans;
+    const char *message; // format string
+    const Span *spans;
     uint32_t n_spans;
-} Label;
+} lfortran_runtime_error_label;
 
-LFORTRAN_API void _lcompilers_runtime_error(lfortran_allocator_t* al, Label *labels, uint32_t n_labels, const char* format, ...);
+// Constant description of one runtime check, emitted by the compiler
+typedef struct lfortran_runtime_error_info {
+    const char *message; // format string
+    const lfortran_runtime_error_label *labels;
+    uint32_t n_labels;
+} lfortran_runtime_error_info;
+
+// Prints the runtime error described by `info` and exits with status 1.
+// The variadic arguments are those of `info->message` followed by those of
+// each label's message, in order.
+LFORTRAN_API void _lcompilers_runtime_error_exit(const lfortran_runtime_error_info *info, ...);
 
 // IOSTAT error codes for namelist operations
 #define LFORTRAN_IOSTAT_NML_FORMATTED_FILE_REQUIRED 5001  // Binary file (formatted required)

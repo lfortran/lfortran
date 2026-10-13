@@ -413,6 +413,123 @@ namespace LCompilers {
     }
     void LLVMUtils::set_module(llvm::Module* module_) {
         module = module_;
+        runtime_error_strings.clear();
+        runtime_error_infos.clear();
+    }
+
+    llvm::Constant* LLVMUtils::get_runtime_error_string(const std::string &str) {
+        auto it = runtime_error_strings.find(str);
+        if (it != runtime_error_strings.end()) {
+            return it->second;
+        }
+        llvm::Constant* str_ptr = LCompilers::create_global_string_ptr(
+            context, *module, *builder, str);
+        runtime_error_strings[str] = str_ptr;
+        return str_ptr;
+    }
+
+    void LLVMUtils::generate_runtime_error(llvm::Value* cond, const std::string &message,
+            const std::vector<RuntimeLabel> &labels, std::string &infile,
+            LocationManager& lm, const std::vector<llvm::Value*> &args) {
+        llvm::Type* i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
+        llvm::Type* i32 = llvm::Type::getInt32Ty(context);
+        // These mirror `Span`, `lfortran_runtime_error_label` and
+        // `lfortran_runtime_error_info` in lfortran_intrinsics.h
+        llvm::StructType* span_type = llvm::StructType::get(context,
+            {i8_ptr, i32, i32, i32, i32});
+        llvm::StructType* label_type = llvm::StructType::get(context,
+            {llvm::Type::getInt8Ty(context), i8_ptr, span_type->getPointerTo(), i32});
+        llvm::StructType* info_type = llvm::StructType::get(context,
+            {i8_ptr, label_type->getPointerTo(), i32});
+
+        llvm::Function *fn = builder->GetInsertBlock()->getParent();
+        llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
+        llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+        builder->CreateCondBr(cond, thenBB, mergeBB);
+        builder->SetInsertPoint(thenBB);
+
+        auto create_constant_array = [&](llvm::StructType* element_type,
+                const std::vector<llvm::Constant*> &elements) -> llvm::Constant* {
+            if (elements.empty()) {
+                return llvm::ConstantPointerNull::get(element_type->getPointerTo());
+            }
+            llvm::ArrayType* array_type = llvm::ArrayType::get(element_type, elements.size());
+            llvm::GlobalVariable* array = new llvm::GlobalVariable(*module, array_type,
+                true, llvm::GlobalValue::PrivateLinkage,
+                llvm::ConstantArray::get(array_type, elements));
+            array->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+            return llvm::ConstantExpr::getBitCast(array, element_type->getPointerTo());
+        };
+
+        struct SpanLineCol {
+            std::string filename;
+            uint32_t start_l, start_c, last_l, last_c;
+        };
+        std::vector<std::vector<SpanLineCol>> label_spans;
+        // Identical runtime errors (e.g. repeated checks of one expression)
+        // share their constant data
+        std::string info_key = message;
+        std::vector<llvm::Value*> call_args = {nullptr};
+        call_args.insert(call_args.end(), args.begin(), args.end());
+        for (const RuntimeLabel &label : labels) {
+            label_spans.emplace_back();
+            info_key += std::string(1, '\0') + (label.primary ? "1" : "0") + label.message;
+            for (const diag::Span &span : label.spans) {
+                SpanLineCol s;
+                lm.pos_to_linecol(lm.output_to_input_pos(span.loc.first, false), s.start_l, s.start_c, infile);
+                lm.pos_to_linecol(lm.output_to_input_pos(span.loc.last, false), s.last_l, s.last_c, infile);
+                s.filename = infile;
+                info_key += std::string(1, '\0') + s.filename + ":" + std::to_string(s.start_l)
+                    + ":" + std::to_string(s.start_c) + ":" + std::to_string(s.last_l)
+                    + ":" + std::to_string(s.last_c);
+                label_spans.back().push_back(s);
+            }
+            call_args.insert(call_args.end(), label.args.begin(), label.args.end());
+        }
+
+        llvm::Constant*& info = runtime_error_infos[info_key];
+        if (!info) {
+            std::vector<llvm::Constant*> label_values;
+            for (size_t i = 0; i < labels.size(); i++) {
+                std::vector<llvm::Constant*> span_values;
+                for (const SpanLineCol &s : label_spans[i]) {
+                    span_values.push_back(llvm::ConstantStruct::get(span_type, {
+                        get_runtime_error_string(s.filename),
+                        llvm::ConstantInt::get(i32, s.start_l),
+                        llvm::ConstantInt::get(i32, s.start_c),
+                        llvm::ConstantInt::get(i32, s.last_l),
+                        llvm::ConstantInt::get(i32, s.last_c)}));
+                }
+                label_values.push_back(llvm::ConstantStruct::get(label_type, {
+                    llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), labels[i].primary),
+                    get_runtime_error_string(labels[i].message),
+                    create_constant_array(span_type, span_values),
+                    llvm::ConstantInt::get(i32, span_values.size())}));
+            }
+            llvm::GlobalVariable* info_global = new llvm::GlobalVariable(*module, info_type,
+                true, llvm::GlobalValue::PrivateLinkage,
+                llvm::ConstantStruct::get(info_type, {
+                    get_runtime_error_string(message),
+                    create_constant_array(label_type, label_values),
+                    llvm::ConstantInt::get(i32, labels.size())}));
+            info_global->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+            info = llvm::ConstantExpr::getBitCast(info_global, i8_ptr);
+        }
+        call_args[0] = info;
+
+        llvm::Function* error_fn = module->getFunction("_lcompilers_runtime_error_exit");
+        if (!error_fn) {
+            llvm::FunctionType* error_fn_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), {i8_ptr}, true);
+            error_fn = llvm::Function::Create(error_fn_type,
+                llvm::Function::ExternalLinkage, "_lcompilers_runtime_error_exit", module);
+            error_fn->addFnAttr(llvm::Attribute::NoReturn);
+            error_fn->addFnAttr(llvm::Attribute::NoUnwind);
+            error_fn->addFnAttr(llvm::Attribute::Cold);
+        }
+        builder->CreateCall(error_fn, call_args);
+        builder->CreateUnreachable();
+        start_new_block(mergeBB);
     }
     std::string LLVMUtils::get_llvm_type_as_string(llvm::Type* type){
         return LLVM::get_type_as_string(type);

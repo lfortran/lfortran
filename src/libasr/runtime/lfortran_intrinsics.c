@@ -4449,28 +4449,153 @@ static void print_label_span(const Span *span, bool is_primary,
     internal_free(line_text);
 }
 
-LFORTRAN_API void _lcompilers_runtime_error(lfortran_allocator_t* al, Label *labels, uint32_t n_labels, const char* format, ...)
-{
+typedef struct runtime_error_buffer {
+    char *data;
+    size_t len;
+    size_t cap;
+} runtime_error_buffer;
+
+static void runtime_error_buffer_reserve(runtime_error_buffer *buf, size_t extra) {
+    if (buf->len + extra + 1 <= buf->cap) {
+        return;
+    }
+    size_t cap = buf->cap > 0 ? buf->cap : 64;
+    while (cap < buf->len + extra + 1) {
+        cap *= 2;
+    }
+    char *data = (char*)internal_realloc(buf->data, cap);
+    if (!data) {
+        fprintf(stderr, "runtime error: out of memory\n");
+        exit(1);
+    }
+    buf->data = data;
+    buf->cap = cap;
+}
+
+static void runtime_error_buffer_append(runtime_error_buffer *buf,
+        const char *str, size_t n) {
+    runtime_error_buffer_reserve(buf, n);
+    memcpy(buf->data + buf->len, str, n);
+    buf->len += n;
+    buf->data[buf->len] = '\0';
+}
+
+// Appends one conversion `spec` (e.g. "%5d") formatted with its argument.
+static void runtime_error_buffer_appendf(runtime_error_buffer *buf,
+        const char *spec, ...) {
     va_list args;
-    va_start(args, format);
+    va_start(args, spec);
     va_list args_copy;
     va_copy(args_copy, args);
-    int needed = vsnprintf(NULL, 0, format, args_copy);
+    int needed = vsnprintf(NULL, 0, spec, args_copy);
     va_end(args_copy);
-    if (needed < 0) {
-        vfprintf(stderr, format, args);
-        fflush(stderr);
-        va_end(args);
-        return;
+    if (needed > 0) {
+        runtime_error_buffer_reserve(buf, (size_t)needed);
+        vsnprintf(buf->data + buf->len, (size_t)needed + 1, spec, args);
+        buf->len += (size_t)needed;
     }
-    char *error_msg = (char*)internal_malloc((size_t)needed + 1);
-    if (!error_msg) {
-        vfprintf(stderr, format, args);
-        fflush(stderr);
-        va_end(args);
-        return;
+    va_end(args);
+}
+
+/*
+ * Formats `format` like vsnprintf, but consumes from `*args` only the
+ * arguments of its own conversions, so several format strings can share one
+ * argument list. The caller frees the result.
+ */
+static char* runtime_error_format(const char *format, va_list *args) {
+    runtime_error_buffer buf = {NULL, 0, 0};
+    runtime_error_buffer_reserve(&buf, 0);
+    buf.data[0] = '\0';
+    const char *p = format ? format : "";
+    while (*p) {
+        const char *pct = strchr(p, '%');
+        if (!pct) {
+            runtime_error_buffer_append(&buf, p, strlen(p));
+            break;
+        }
+        runtime_error_buffer_append(&buf, p, (size_t)(pct - p));
+        // Copy the conversion spec, replacing each '*' by its int argument
+        char spec[64];
+        size_t n = 0;
+        const char *q = pct;
+        spec[n++] = *q++;
+        while (*q && strchr("-+ #0'123456789.*hljztL", *q) && n < sizeof(spec) - 16) {
+            if (*q == '*') {
+                n += (size_t)snprintf(spec + n, sizeof(spec) - n, "%d", va_arg(*args, int));
+            } else {
+                spec[n++] = *q;
+            }
+            q++;
+        }
+        if (!*q) {
+            runtime_error_buffer_append(&buf, pct, strlen(pct));
+            break;
+        }
+        char conversion = *q++;
+        spec[n++] = conversion;
+        spec[n] = '\0';
+        const char *length = pct + 1 + strspn(pct + 1, "-+ #0'123456789.*");
+        bool is_long = length[0] == 'l' && length[1] != 'l';
+        bool is_long_long = length[0] == 'l' && length[1] == 'l';
+        switch (conversion) {
+            case 'd': case 'i': case 'c':
+            case 'u': case 'o': case 'x': case 'X':
+                if (is_long_long) {
+                    runtime_error_buffer_appendf(&buf, spec, va_arg(*args, long long));
+                } else if (is_long) {
+                    runtime_error_buffer_appendf(&buf, spec, va_arg(*args, long));
+                } else if (length[0] == 'j') {
+                    runtime_error_buffer_appendf(&buf, spec, va_arg(*args, intmax_t));
+                } else if (length[0] == 'z') {
+                    runtime_error_buffer_appendf(&buf, spec, va_arg(*args, size_t));
+                } else if (length[0] == 't') {
+                    runtime_error_buffer_appendf(&buf, spec, va_arg(*args, ptrdiff_t));
+                } else {
+                    runtime_error_buffer_appendf(&buf, spec, va_arg(*args, int));
+                }
+                break;
+            case 'f': case 'F': case 'e': case 'E':
+            case 'g': case 'G': case 'a': case 'A':
+                if (length[0] == 'L') {
+                    runtime_error_buffer_appendf(&buf, spec, va_arg(*args, long double));
+                } else {
+                    runtime_error_buffer_appendf(&buf, spec, va_arg(*args, double));
+                }
+                break;
+            case 's':
+                runtime_error_buffer_appendf(&buf, spec, va_arg(*args, const char*));
+                break;
+            case 'p':
+                runtime_error_buffer_appendf(&buf, spec, va_arg(*args, void*));
+                break;
+            case '%':
+                runtime_error_buffer_append(&buf, "%", 1);
+                break;
+            default:
+                runtime_error_buffer_append(&buf, pct, (size_t)(q - pct));
+                break;
+        }
+        p = q;
     }
-    vsnprintf(error_msg, (size_t)needed + 1, format, args);
+    return buf.data;
+}
+
+LFORTRAN_API void _lcompilers_runtime_error_exit(const lfortran_runtime_error_info *info, ...)
+{
+    va_list args;
+    va_start(args, info);
+    char *error_msg = runtime_error_format(info->message, &args);
+    char **label_msgs = NULL;
+    if (info->n_labels > 0) {
+        label_msgs = (char**)internal_malloc(info->n_labels * sizeof(char*));
+        if (!label_msgs) {
+            fprintf(stderr, "runtime error: out of memory\n");
+            exit(1);
+        }
+    }
+    for (uint32_t i = 0; i < info->n_labels; i++) {
+        label_msgs[i] = runtime_error_format(info->labels[i].message, &args);
+    }
     va_end(args);
 
     bool use_colors = _lfortran_use_runtime_colors;
@@ -4479,79 +4604,43 @@ LFORTRAN_API void _lcompilers_runtime_error(lfortran_allocator_t* al, Label *lab
     const char *color_bold_red = use_colors ? "\033[0;31;1m" : "";
     const char *color_bold_blue = use_colors ? "\033[0;34;1m" : "";
 
-    if (n_labels == 0) {
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, error_msg, color_reset);
-        fflush(stderr);
-        internal_free(error_msg);
-        return;
-    }
+    fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+            color_bold_red, color_reset, color_bold, error_msg, color_reset);
 
-    Label *primary_label = NULL;
-    for (uint32_t i = 0; i < n_labels; i++) {
-        if (labels[i].primary) {
-            primary_label = &labels[i];
+    const lfortran_runtime_error_label *primary_label = NULL;
+    for (uint32_t i = 0; i < info->n_labels; i++) {
+        if (info->labels[i].primary) {
+            primary_label = &info->labels[i];
             break;
         }
     }
 
-    if (!primary_label || primary_label->n_spans == 0) {
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, error_msg, color_reset);
-        fflush(stderr);
-        internal_free(error_msg);
-        return;
-    }
+    if (primary_label && primary_label->n_spans > 0) {
+        const Span *first_span = &primary_label->spans[0];
+        const char *filename = first_span->filename ? first_span->filename : "unknown";
 
-    fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-            color_bold_red, color_reset, color_bold, error_msg, color_reset);
+        int width = runtime_line_num_width(first_span->start_l);
+        fprintf(stderr, "%*s%s-->%s %s:%u:%u\n",
+                width, "", color_bold_blue, color_reset,
+                filename, first_span->start_l, first_span->start_c);
 
-    Span *first_span = &primary_label->spans[0];
-    const char *filename = first_span->filename ? first_span->filename : "unknown";
-
-    int width = runtime_line_num_width(first_span->start_l);
-    fprintf(stderr, "%*s%s-->%s %s:%u:%u\n",
-            width, "", color_bold_blue, color_reset, 
-            filename, first_span->start_l, first_span->start_c);
-
-    for (uint32_t i = 0; i < n_labels; i++) {
-        Label *label = &labels[i];
-        for (uint32_t j = 0; j < label->n_spans; j++) {
-            print_label_span(&label->spans[j], label->primary, 
-                           label->message, use_colors);
-            if (label->message != NULL)
-                ALLOCATOR_DEALLOC(al, label->message);
-            label->message = NULL;
+        for (uint32_t i = 0; i < info->n_labels; i++) {
+            const lfortran_runtime_error_label *label = &info->labels[i];
+            for (uint32_t j = 0; j < label->n_spans; j++) {
+                // The label message is printed only under its first span
+                print_label_span(&label->spans[j], label->primary,
+                               j == 0 ? label_msgs[i] : NULL, use_colors);
+            }
         }
     }
 
     fflush(stderr);
+    for (uint32_t i = 0; i < info->n_labels; i++) {
+        internal_free(label_msgs[i]);
+    }
+    internal_free(label_msgs);
     internal_free(error_msg);
-}
-
-LFORTRAN_API char* _lcompilers_snprintf_alloc(lfortran_allocator_t* al, const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-    va_list args_copy;
-    va_copy(args_copy, args);
-    int needed = vsnprintf(NULL, 0, format, args_copy);
-    va_end(args_copy);
-    if (needed < 0) {
-        vfprintf(stderr, format, args);
-        fflush(stderr);
-        va_end(args);
-        return NULL;
-    }
-    char *formatted = (char*)ALLOCATOR_ALLOC(al, (int64_t)needed + 1);
-    if (!formatted) {
-        vfprintf(stderr, format, args);
-        fflush(stderr);
-        va_end(args);
-        return NULL;
-    }
-    vsnprintf(formatted, (size_t)needed + 1, format, args);
-    va_end(args);
-    return formatted;
+    exit(1);
 }
 
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...)
