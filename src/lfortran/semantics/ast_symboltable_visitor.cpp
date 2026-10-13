@@ -1140,6 +1140,33 @@ public:
         return found;
     }
 
+    // Completes the interface blocks and procedure declarations of a
+    // specification part once all of its declarations have been visited: a
+    // generic interface can name a specific procedure declared after it.
+    void finalize_interfaces() {
+        // Build : Functions --> GenericProcedure(Interface) -> funcCall expression to GenericProcedure.
+        add_generic_procedures();
+        evaluate_postponed_calls_to_genericProcedure();
+        resolve_proc_pointer_placeholders();
+        resolve_pending_proc_ptr_inits();
+        for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
+             ASR::symbol_t *current_sym = current_scope->resolve_symbol(name);
+             if (current_sym == placeholder_sym) {
+                 diag.add(diag::Diagnostic(
+                    "Interface '" + name + "' is referenced but not defined",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("Referenced here", {placeholder_sym->base.loc})
+                    }));
+             }
+        }
+        pending_proc_placeholders.clear();
+        try {
+            add_class_procedures();
+        } catch (SemanticAbort &e) {
+            if ( !compiler_options.continue_compilation ) throw e;
+        }
+    }
+
     void visit_Program(const AST::Program_t &x) {
         // Check for multiple program units in the same file 
         program_count++;
@@ -1304,27 +1331,7 @@ public:
             throw SemanticAbort();
         }
         handle_save();
-        // Build : Functions --> GenericProcedure(Interface) -> funcCall expression to GenericProcedure.
-        add_generic_procedures();
-        evaluate_postponed_calls_to_genericProcedure();
-        resolve_proc_pointer_placeholders();
-        resolve_pending_proc_ptr_inits();
-        for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
-             ASR::symbol_t *current_sym = current_scope->resolve_symbol(name);
-             if (current_sym == placeholder_sym) {
-                 diag.add(diag::Diagnostic(
-                    "Interface '" + name + "' is referenced but not defined",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("Referenced here", {placeholder_sym->base.loc})
-                    }));
-             }
-        }
-        pending_proc_placeholders.clear();
-        try {
-            add_class_procedures();
-        } catch (SemanticAbort &e) {
-            if ( !compiler_options.continue_compilation ) throw e;
-        }
+        finalize_interfaces();
         try {
             add_assignment_procedures();
         } catch (SemanticAbort &e) {
@@ -2151,6 +2158,8 @@ public:
         if (subroutine_has_alternate_returns) {
             current_procedure_args.push_back("__lfortran_alt_ret");
         }
+        std::string current_procedure_result_copy = current_procedure_result;
+        current_procedure_result.clear();
         // Restored on exit: the enclosing procedure (the host of an internal
         // procedure or of an interface body) keeps its own ABI.
         ASR::abiType current_procedure_abi_type_copy = current_procedure_abi_type;
@@ -2559,6 +2568,7 @@ public:
            in nested functions, and also in callback.f90 test, but it may not
            matter since we would have already checked the intent */
         current_procedure_args.clear();
+        current_procedure_result = current_procedure_result_copy;
         current_procedure_abi_type = current_procedure_abi_type_copy;
 
         // print_implicit_dictionary(implicit_dictionary);
@@ -2767,6 +2777,15 @@ public:
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             current_procedure_args.push_back(to_lower(arg));
+        }
+        std::string current_procedure_result_copy = current_procedure_result;
+        if (x.m_return_var == nullptr) {
+            current_procedure_result = sym_name;
+        } else if (AST::is_a<AST::Name_t>(*x.m_return_var)) {
+            current_procedure_result = to_lower(
+                AST::down_cast<AST::Name_t>(x.m_return_var)->m_id);
+        } else {
+            current_procedure_result.clear();
         }
 
         // Determine the ABI (Source or BindC for now). Restored on exit: the
@@ -3432,6 +3451,7 @@ public:
             current_scope = parent_scope;
         }
         current_procedure_args.clear();
+        current_procedure_result = current_procedure_result_copy;
         current_procedure_abi_type = current_procedure_abi_type_copy;
         current_symbol = -1;
         // print_implicit_dictionary(implicit_dictionary);
@@ -7009,6 +7029,47 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
     }
     ASR::asr_t *unit = v.tmp;
     return unit;
+}
+
+BlockInterfaceVisitor::BlockInterfaceVisitor(Allocator &al, SymbolTable *block_scope,
+        diag::Diagnostics &diagnostics, CompilerOptions &compiler_options,
+        std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
+        std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping,
+        std::map<uint64_t, std::vector<std::string>> &explicit_intrinsic_procedures_mapping,
+        std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
+        std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
+        std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
+        std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
+        std::map<uint32_t, std::vector<ASR::stmt_t*>> &data_structure,
+        LCompilers::LocationManager &lm)
+    : v(std::make_unique<SymbolTableVisitor>(al, block_scope, diagnostics,
+        compiler_options, implicit_mapping, external_procedures_mapping,
+        explicit_intrinsic_procedures_mapping, instantiate_types,
+        instantiate_symbols, entry_functions, entry_function_arguments_mapping,
+        data_structure, lm))
+{
+    v->global_scope = block_scope;
+    while (v->global_scope->parent != nullptr) {
+        v->global_scope = v->global_scope->parent;
+    }
+}
+
+BlockInterfaceVisitor::~BlockInterfaceVisitor() = default;
+
+void BlockInterfaceVisitor::visit_Interface(const AST::Interface_t &x)
+{
+    v->visit_Interface(x);
+}
+
+void BlockInterfaceVisitor::finalize(Allocator &al, SetChar &module_dependencies,
+        std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> &construct_variable_pointers)
+{
+    v->finalize_interfaces();
+    for (size_t i = 0; i < v->current_module_dependencies.size(); i++) {
+        module_dependencies.push_back(al, v->current_module_dependencies[i]);
+    }
+    construct_variable_pointers.insert(construct_variable_pointers.end(),
+        v->construct_variable_pointers.begin(), v->construct_variable_pointers.end());
 }
 
 } // namespace LCompilers::LFortran

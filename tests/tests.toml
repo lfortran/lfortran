@@ -3397,6 +3397,10 @@ cpp = true
 wat = true
 
 [[test]]
+filename = "errors/wasm_external_procedure.f90"
+wat = true
+
+[[test]]
 filename = "errors/write_internal_file_c.f90"
 c = true
 
@@ -3460,6 +3464,10 @@ semantics_only_cc = true
 
 [[test]]
 filename = "errors/continue_compilation_external_procedure.f90"
+semantics_only_cc = true
+
+[[test]]
+filename = "errors/continue_compilation_block_interface.f90"
 semantics_only_cc = true
 
 [[test]]
