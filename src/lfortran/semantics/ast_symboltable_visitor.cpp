@@ -49,6 +49,21 @@ public:
             class_deferred_procedures.swap(v.class_deferred_procedures);
         }
     };
+    // The same for the generic bindings of the derived types of a template,
+    // which are added in the template's scope.
+    struct GenericClassProcedureScope {
+        SymbolTableVisitor &v;
+        std::map<std::string, std::map<std::string,
+            std::vector<std::string>>> generic_class_procedures;
+
+        GenericClassProcedureScope(SymbolTableVisitor &v_) : v(v_) {
+            generic_class_procedures.swap(v.generic_class_procedures);
+        }
+
+        ~GenericClassProcedureScope() {
+            generic_class_procedures.swap(v.generic_class_procedures);
+        }
+    };
     // A statement that declares a deferred argument is only valid in a scoping
     // unit that has a deferred-argument list -- a requirement, a template or a
     // templated procedure -- and may only declare one of those arguments. That
@@ -5861,6 +5876,11 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
+        // The type-bound procedures and generic bindings of the derived types
+        // declared in the template are added in the template's scope; those
+        // of the host's types are added once the host is complete.
+        ClassProcedureScope class_procedure_scope(*this);
+        GenericClassProcedureScope generic_class_procedure_scope(*this);
 
         std::vector<std::string> deferred_args;
         for (size_t i=0; i<x.n_namelist; i++) {
@@ -5931,6 +5951,7 @@ public:
 
         add_overloaded_procedures();
         add_class_procedures();
+        add_generic_class_procedures();
         try {
             add_assignment_procedures();
         } catch (SemanticAbort &e) {
@@ -5946,8 +5967,6 @@ public:
         SymbolTable *template_scope = current_scope;
         current_scope = parent_scope;
 
-        // needs to rebuild the context prior to visiting template
-        class_procedures.clear();
         dflt_access = dflt_access_copy;
         is_template = false;
         // The specification part of the template itself, checked once the
