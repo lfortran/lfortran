@@ -2862,6 +2862,11 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
             }
             ASR::symbol_t *a_name = curr_scope->get_symbol(matched_subrout_name);
             ASR::symbol_t *proc_owner = ASRUtils::get_asr_owner(proc);
+            if( a_name != nullptr && ASRUtils::symbol_get_past_external(a_name) != proc ) {
+                // The name is taken by another procedure, so add the name of the owner.
+                matched_subrout_name = subrout_name + "@" + ASRUtils::symbol_name(proc_owner) + "@~assign";
+                a_name = curr_scope->get_symbol(matched_subrout_name);
+            }
             if( a_name == nullptr && matched_subrout_name == subrout_name &&
                     !(proc_owner && (ASR::is_a<ASR::Module_t>(*proc_owner) ||
                                      ASR::is_a<ASR::Struct_t>(*proc_owner))) ) {
