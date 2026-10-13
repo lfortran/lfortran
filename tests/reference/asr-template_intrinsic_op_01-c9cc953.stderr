@@ -1,11 +1,23 @@
 semantic error: the instantiation argument 'operator(+)' for 'op' requires a deferred function
-  --> tests/errors/template_intrinsic_op_01.f90:36:23
+  --> tests/errors/template_intrinsic_op_01.f90:58:23
    |
-36 |     instantiate sub_t{operator(+)}, only: run_add => run  ! {Error} the instantiation argument 'operator(+)' for 'op' requires a deferred function
+58 |     instantiate sub_t{operator(+)}, only: run_add => run  ! {Error} the instantiation argument 'operator(+)' for 'op' requires a deferred function
    |                       ^^^^^^^^^^^ 
 
 semantic error: the instantiation argument 'operator(-)' for 'op' requires a deferred function
-  --> tests/errors/template_intrinsic_op_01.f90:39:20
+  --> tests/errors/template_intrinsic_op_01.f90:61:20
    |
-39 |     call apply_sub{operator(-)}(x, 2.0)  ! {Error} the instantiation argument 'operator(-)' for 'op' requires a deferred function
+61 |     call apply_sub{operator(-)}(x, 2.0)  ! {Error} the instantiation argument 'operator(-)' for 'op' requires a deferred function
    |                    ^^^^^^^^^^^ 
+
+semantic error: the instantiation argument 'operator(-)' for 'op' requires a deferred function
+  --> tests/errors/template_intrinsic_op_01.f90:62:21
+   |
+62 |     call apply_sub1{operator(-)}(x)  ! {Error} the instantiation argument 'operator(-)' for 'op' requires a deferred function
+   |                     ^^^^^^^^^^^ 
+
+semantic error: the intrinsic operator `.not.` cannot be applied to the argument of 'op', of type real(4)
+  --> tests/errors/template_intrinsic_op_01.f90:63:20
+   |
+63 |     print *, apply{operator(.not.)}(2.0)  ! {Error} the intrinsic operator `.not.` cannot be applied to the argument of 'op', of type real(4)
+   |                    ^^^^^^^^^^^^^^^ 

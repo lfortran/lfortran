@@ -27997,12 +27997,13 @@ public:
 
     // Bind the deferred procedure `param_sym` of a template to the intrinsic
     // operator `op` passed as an instantiation argument, e.g. `operator(+)`.
-    // A specific procedure of a user-defined operator of that name that
-    // matches the interface of the deferred procedure is used if there is
-    // one; otherwise a function applying the intrinsic operator is generated
-    // in `op_scope`, the scope that receives the other symbols generated for
-    // the instantiation. `loc` is the instantiation and `arg_loc` the
-    // operator argument.
+    // `+`, `-` and `.not.` are unary operators for a deferred function of one
+    // argument; otherwise the operator is binary. A specific procedure of a
+    // user-defined operator of that name that matches the interface of the
+    // deferred procedure is used if there is one; otherwise a function
+    // applying the intrinsic operator is generated in `op_scope`, the scope
+    // that receives the other symbols generated for the instantiation. `loc`
+    // is the instantiation and `arg_loc` the operator argument.
     void bind_intrinsic_op_arg(AST::intrinsicopType op,
             const std::string &param, ASR::symbol_t *param_sym,
             std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &type_subs,
@@ -28024,6 +28025,8 @@ public:
             throw SemanticAbort();
         }
         ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(param_sym);
+        bool is_unary = f->n_args == 1
+            && (op == AST::PLUS || op == AST::MINUS || op == AST::NOT);
         ASR::binopType binop = ASR::Add;
         ASR::cmpopType cmpop = ASR::Eq;
         bool is_binop = false;
@@ -28051,6 +28054,14 @@ public:
                 cmpop = ASR::Gt; op_name = "~gt"; break;
             case (AST::GTE):
                 cmpop = ASR::GtE; op_name = "~gte"; break;
+            case (AST::NOT):
+                if (is_unary) {
+                    op_name = "~not";
+                    break;
+                }
+                diag.add(Diagnostic("Unsupported binary operator",
+                    Level::Error, Stage::Semantic, {Label("", {arg_loc})}));
+                throw SemanticAbort();
             default:
                 diag.add(Diagnostic("Unsupported binary operator",
                     Level::Error, Stage::Semantic, {Label("", {arg_loc})}));
@@ -28073,7 +28084,7 @@ public:
             }
         }
 
-        if (f->n_args != 2) {
+        if (!is_unary && f->n_args != 2) {
             diag.add(Diagnostic("The restriction " + std::string(f->m_name)
                 + " does not have 2 parameters", Level::Error, Stage::Semantic,
                 {Label("", {loc})}));
@@ -28100,7 +28111,44 @@ public:
 
         ASR::ttype_t *return_type = nullptr;
         ASR::expr_t *value = nullptr;
-        if (is_binop) {
+        if (is_unary) {
+            ASR::expr_t *operand = args[0];
+            ASR::ttype_t *arg_type = ASRUtils::expr_type(operand);
+            bool applies = op == AST::NOT ? ASRUtils::is_logical(*arg_type)
+                : (ASRUtils::is_integer(*arg_type) || ASRUtils::is_real(*arg_type)
+                    || ASRUtils::is_complex(*arg_type));
+            if (!applies) {
+                diag.add(Diagnostic("the intrinsic operator `" + op_spelling.at(op)
+                    + "` cannot be applied to the argument of '"
+                    + std::string(f->m_name) + "', of type "
+                    + ASRUtils::type_to_str_fortran_symbol(arg_type, nullptr, true),
+                    Level::Error, Stage::Semantic, {Label("", {arg_loc})}));
+                throw SemanticAbort();
+            }
+            value = operand;
+            if (op == AST::NOT) {
+                value = ASRUtils::EXPR(ASR::make_LogicalNot_t(al, loc, operand,
+                    arg_type, nullptr));
+            } else if (op == AST::MINUS) {
+                if (ASRUtils::is_integer(*arg_type)) {
+                    value = ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc,
+                        operand, arg_type, nullptr));
+                } else if (ASRUtils::is_real(*arg_type)) {
+                    value = ASRUtils::EXPR(ASR::make_RealUnaryMinus_t(al, loc,
+                        operand, arg_type, nullptr));
+                } else {
+                    value = ASRUtils::EXPR(ASR::make_ComplexUnaryMinus_t(al, loc,
+                        operand, arg_type, nullptr));
+                }
+            }
+            return_type = ASRUtils::duplicate_type(al,
+                ASRUtils::subs_expr_type(type_subs, f->m_return_var));
+            if (!ASRUtils::check_equal_type(arg_type, return_type,
+                    f->m_args[0], f->m_return_var)) {
+                ImplicitCastRules::set_converted_value(al, loc, &value,
+                    arg_type, return_type, diag);
+            }
+        } else if (is_binop) {
             ASR::expr_t *left = args[0];
             ASR::expr_t *right = args[1];
             ASR::ttype_t *left_type = ASRUtils::expr_type(left);
