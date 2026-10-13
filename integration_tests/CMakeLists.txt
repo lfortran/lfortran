@@ -1999,6 +1999,7 @@ RUN(NAME parameter_19 LABELS gfortran llvm)
 RUN(NAME parameter_20 LABELS gfortran llvm)
 RUN(NAME parameter_21 LABELS gfortran llvm)
 RUN(NAME parameter_22 LABELS gfortran llvm)
+RUN(NAME parameter_23 LABELS gfortran llvm c)
 
 RUN(NAME fortuno_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
