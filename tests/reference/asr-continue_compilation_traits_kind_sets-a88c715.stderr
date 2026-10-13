@@ -60,6 +60,12 @@ semantic error: a scoping unit cannot access both the intrinsic and a nonintrins
 161 |     use, intrinsic :: generics, only: Theirs => INumeric
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: character type-set members of nonconstant length are not implemented yet
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:300:9
+    |
+300 |         character(len=:)
+    |         ^^^^^^^^^^^^^^^^ 
+
 semantic error: operator '+' is not available for type-set member logical(1)
   --> tests/errors/continue_compilation_traits_kind_sets.f90:35:13
    |
@@ -125,3 +131,21 @@ semantic error: a logical condition is not available for type-set member integer
     |
 244 |             if (x(i)) n = n + 1
     |                 ^^^^ 
+
+semantic error: character(len=1, kind=4) is not a member of inline type set {character(len=1) :: t} of generic 'first'
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:263:18
+    |
+263 |         letter = first(letters)
+    |                  ^^^^^^^^^^^^^^ 
+
+semantic error: a character generic type argument requires a constant length
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:280:18
+    |
+280 |         print *, first(words)
+    |                  ^^^^^^^^^^^^ 
+
+semantic error: operator '//' is not implemented for type-set member character(len=*)
+   --> tests/errors/continue_compilation_traits_kind_sets.f90:292:17
+    |
+292 |         n = len(x // y)
+    |                 ^^^^^^ 

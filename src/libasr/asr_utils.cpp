@@ -7929,6 +7929,30 @@ bool type_argument_types_equal(ASR::ttype_t *a, ASR::ttype_t *b)
         a_length == b_length;
 }
 
+bool is_type_set_length_wildcard(ASR::ttype_t *type)
+{
+    return type && ASR::is_a<ASR::String_t>(*type) &&
+        ASR::down_cast<ASR::String_t>(type)->m_len_kind ==
+            ASR::string_length_kindType::AssumedLength;
+}
+
+bool type_set_members_equal(ASR::ttype_t *a, ASR::ttype_t *b)
+{
+    if (is_type_set_length_wildcard(a) || is_type_set_length_wildcard(b)) {
+        return is_type_set_length_wildcard(a) && is_type_set_length_wildcard(b) &&
+            types_equal(a, b, nullptr, nullptr);
+    }
+    return type_argument_types_equal(a, b);
+}
+
+bool type_set_member_admits(ASR::ttype_t *member, ASR::ttype_t *type)
+{
+    if (!is_type_set_length_wildcard(member)) return type_argument_types_equal(member, type);
+    int64_t length;
+    return type && ASR::is_a<ASR::String_t>(*type) &&
+        types_equal(member, type, nullptr, nullptr) && constant_string_length(type, length);
+}
+
 bool constant_string_length(ASR::ttype_t *type, int64_t &length)
 {
     auto *string = ASR::down_cast<ASR::String_t>(extract_type(type));
@@ -8015,7 +8039,7 @@ std::string trait_generic_requirement_mismatch(const ASR::Template_t &message,
                 bool same = true;
                 for (size_t k = 0; same && k < trait->n_member_types; k++) {
                     same = left[j]->m_member_types[k] && trait->m_member_types[k] &&
-                        type_argument_types_equal(left[j]->m_member_types[k],
+                        type_set_members_equal(left[j]->m_member_types[k],
                             trait->m_member_types[k]);
                 }
                 found = same;

@@ -4276,10 +4276,23 @@ public:
             AST::decl_attribute_t **members, size_t count, std::string name) {
         Vec<ASR::ttype_t*> member_types;
         member_types.reserve(al, count);
-        // A member is its complete type: kind and, for character, length.
+        // A member is its complete type: kind and, for character, length. A
+        // length wildcard is the one member of its kind and any length, so
+        // it absorbs the members of its kind and a constant length, wherever
+        // they are written.
         auto add_member = [&](ASR::ttype_t *type) {
             for (auto *member : member_types) {
-                if (ASRUtils::type_argument_types_equal(member, type)) return;
+                if (ASRUtils::type_set_members_equal(member, type) ||
+                        ASRUtils::type_set_member_admits(member, type)) return;
+            }
+            if (ASRUtils::is_type_set_length_wildcard(type)) {
+                size_t kept = 0;
+                for (size_t i = 0; i < member_types.size(); i++) {
+                    if (!ASRUtils::type_set_member_admits(type, member_types[i])) {
+                        member_types.p[kept++] = member_types[i];
+                    }
+                }
+                member_types.n = kept;
             }
             member_types.push_back(al, type);
         };
@@ -4289,6 +4302,12 @@ public:
                     members[j]->base.loc);
             }
             auto *attribute = AST::down_cast<AST::AttrType_t>(members[j]);
+            if (attribute->m_type == AST::decl_typeType::TypeCharacter) {
+                for (auto *type : character_type_set_members(*attribute, name)) {
+                    add_member(type);
+                }
+                continue;
+            }
             if (auto category = type_set_kind_wildcard(*attribute)) {
                 // `real(*)`, or `real(kind=*)`, is the union of the real
                 // types of every kind that this implementation supports.
@@ -4308,17 +4327,11 @@ public:
             ASR::ttype_t *type = determine_type(attribute->base.base.loc,
                 name, members[j], false, false, dims, nullptr,
                 declaration, current_procedure_abi_type);
-            int64_t length = 0;
             if (ASR::is_a<ASR::StructType_t>(*type)) {
                 trait_error("derived types as type-set members are not implemented yet",
                     attribute->base.base.loc);
-            } else if (ASR::is_a<ASR::String_t>(*type) &&
-                    !ASRUtils::constant_string_length(type, length)) {
-                trait_error("character type-set members of nonconstant length are not "
-                    "implemented yet", attribute->base.base.loc);
             } else if (!ASR::is_a<ASR::Integer_t>(*type) && !ASR::is_a<ASR::Real_t>(*type) &&
-                    !ASR::is_a<ASR::Complex_t>(*type) && !ASR::is_a<ASR::Logical_t>(*type) &&
-                    !ASR::is_a<ASR::String_t>(*type)) {
+                    !ASR::is_a<ASR::Complex_t>(*type) && !ASR::is_a<ASR::Logical_t>(*type)) {
                 trait_error("this type-set member is not implemented yet",
                     attribute->base.base.loc);
             }
@@ -4327,9 +4340,63 @@ public:
         return member_types;
     }
 
+    // The members that a character type-set member stands for. Its length is
+    // its first positional or its `len=` type parameter, as in a declaration,
+    // and 1 without one. A length of `*`, also written `character*(*)`, is
+    // the length wildcard: the one member of its kind and any length. A kind
+    // of `*` stands for every kind that this implementation supports
+    // (ASRUtils::supported_kinds), as for the other intrinsic types.
+    std::vector<ASR::ttype_t*> character_type_set_members(AST::AttrType_t &member,
+            std::string &name) {
+        const Location &loc = member.base.base.loc;
+        Vec<AST::kind_item_t> items;
+        items.reserve(al, member.n_kind);
+        bool kind_wildcard = false;
+        for (size_t k = 0; k < member.n_kind; k++) {
+            const auto &item = member.m_kind[k];
+            std::string id = item.m_id ? to_lower(item.m_id) : "";
+            if (item.m_type == AST::kind_item_typeType::Star &&
+                    (id == "kind" || (id.empty() && k == 1))) {
+                kind_wildcard = true;
+                continue;
+            }
+            items.push_back(al, item);
+        }
+        ASR::ttype_t *type = nullptr;
+        if (member.m_sym == AST::DoubleAsterisk) {
+            type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+                ASR::string_length_kindType::AssumedLength,
+                ASR::string_physical_typeType::DescriptorString));
+        } else {
+            AST::AttrType_t declared = member;
+            declared.m_kind = items.size() ? items.p : nullptr;
+            declared.n_kind = items.size();
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 0);
+            ASR::symbol_t *declaration = nullptr;
+            type = determine_type(loc, name, &declared.base, false, false, dims,
+                nullptr, declaration, current_procedure_abi_type);
+        }
+        int64_t length = 0;
+        if (!ASRUtils::is_type_set_length_wildcard(type) &&
+                !ASRUtils::constant_string_length(type, length)) {
+            trait_error("character type-set members of nonconstant length are not "
+                "implemented yet", loc);
+        }
+        if (!kind_wildcard) return {type};
+        std::vector<ASR::ttype_t*> types;
+        for (int64_t kind : ASRUtils::supported_kinds(ASR::ttypeType::String)) {
+            auto *copy = ASRUtils::duplicate_type(al, type);
+            ASR::down_cast<ASR::String_t>(copy)->m_kind = kind;
+            types.push_back(copy);
+        }
+        return types;
+    }
+
     // The type of a type-set member written with a kind wildcard,
     // `integer(*)`, `real(kind=*)`, `complex(*)` or `logical(*)`; none
-    // without a wildcard. For character, `*` is the length, not the kind.
+    // without a wildcard. Character members are resolved by
+    // character_type_set_members.
     std::optional<ASR::ttypeType> type_set_kind_wildcard(const AST::AttrType_t &member) {
         const AST::kind_item_t *wildcard = nullptr;
         for (size_t k = 0; k < member.n_kind; k++) {
@@ -4338,13 +4405,6 @@ public:
             }
         }
         if (!wildcard) return std::nullopt;
-        if (member.m_type == AST::decl_typeType::TypeCharacter) {
-            if (wildcard->m_id && to_lower(wildcard->m_id) == "kind") {
-                trait_error("character kind wildcards in type sets are not implemented yet",
-                    wildcard->loc);
-            }
-            return std::nullopt;
-        }
         if (member.m_type != AST::decl_typeType::TypeInteger &&
                 member.m_type != AST::decl_typeType::TypeReal &&
                 member.m_type != AST::decl_typeType::TypeComplex &&

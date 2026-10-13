@@ -684,20 +684,24 @@ static inline int extract_kind_from_ttype_t(const ASR::ttype_t* type) {
 }
 
 // The kind type parameter values that this implementation supports for an
-// intrinsic numeric or logical type, in increasing order: the values of
-// ISO_FORTRAN_ENV's INTEGER_KINDS, REAL_KINDS and LOGICAL_KINDS, and for
+// intrinsic type, in increasing order: the values of ISO_FORTRAN_ENV's
+// INTEGER_KINDS, REAL_KINDS, LOGICAL_KINDS and CHARACTER_KINDS, and for
 // complex the real kinds that also have a complex type. Other types have none.
+// Declarations also accept character kind 4 (ISO_10646), which is not one of
+// CHARACTER_KINDS: its values are not compared correctly yet.
 static inline const std::vector<int64_t> &supported_kinds(ASR::ttypeType type) {
     static const std::vector<int64_t> integer_kinds = {1, 2, 4, 8};
     static const std::vector<int64_t> logical_kinds = {1, 2, 4, 8};
     static const std::vector<int64_t> real_kinds = {4, 8, 16};
     static const std::vector<int64_t> complex_kinds = {4, 8};
+    static const std::vector<int64_t> character_kinds = {1};
     static const std::vector<int64_t> none;
     switch (type) {
         case ASR::ttypeType::Integer: return integer_kinds;
         case ASR::ttypeType::Logical: return logical_kinds;
         case ASR::ttypeType::Real: return real_kinds;
         case ASR::ttypeType::Complex: return complex_kinds;
+        case ASR::ttypeType::String: return character_kinds;
         default: return none;
     }
 }
@@ -1477,18 +1481,22 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
         case ASR::ttypeType::String: {
             if (show_kind) {
                 ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(t);
-                std::string res = "character";
+                std::string parameters;
                 if (str_t->m_len_kind == ASR::string_length_kindType::AssumedLength) {
-                    res += "(len=*)";
+                    parameters = "len=*";
                 } else if (str_t->m_len_kind == ASR::string_length_kindType::DeferredLength) {
-                    res += "(len=:)";
+                    parameters = "len=:";
                 } else if (str_t->m_len) {
                     if (ASR::is_a<ASR::IntegerConstant_t>(*str_t->m_len)) {
                         ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(str_t->m_len);
-                        res += "(len=" + std::to_string(ic->m_n) + ")";
+                        parameters = "len=" + std::to_string(ic->m_n);
                     }
                 }
-                return res;
+                if (str_t->m_kind != 1) {
+                    parameters += (parameters.empty() ? "kind=" : ", kind=") +
+                        std::to_string(str_t->m_kind);
+                }
+                return parameters.empty() ? "character" : "character(" + parameters + ")";
             }
             return "string";
         }
@@ -11233,6 +11241,16 @@ bool trait_type_argument_equal(const std::pair<ASR::ttype_t*, ASR::symbol_t*> &l
 // Whether two intrinsic types are the same type argument: equal types and,
 // for character, equal constant lengths.
 bool type_argument_types_equal(ASR::ttype_t *a, ASR::ttype_t *b);
+// Whether `type` is the character length wildcard of a type set,
+// `character(len=*)`: the one member of its kind and any length.
+bool is_type_set_length_wildcard(ASR::ttype_t *type);
+// Whether two type-set members are the same member: equal type arguments, or
+// length wildcards of the same kind.
+bool type_set_members_equal(ASR::ttype_t *a, ASR::ttype_t *b);
+// Whether the type argument `type` belongs to the type-set member `member`:
+// it is that type argument, or a character of a constant length of the kind
+// of a length wildcard.
+bool type_set_member_admits(ASR::ttype_t *member, ASR::ttype_t *type);
 // The length of a character type when it is a constant expression.
 bool constant_string_length(ASR::ttype_t *type, int64_t &length);
 // Why `requirement` is not `message` with fresh binders, nominally equivalent

@@ -1293,6 +1293,37 @@ public:
             ASRUtils::is_supported_character_kind(ASRUtils::extract_kind_from_ttype_t(type)));
     }
 
+    // A type-set member: a concrete scalar intrinsic type, or the character
+    // length wildcard of a kind.
+    static bool type_set_member_type(ASR::ttype_t *type) {
+        return type_set_intrinsic_type(type) || (ASRUtils::is_type_set_length_wildcard(type) &&
+            !ASR::down_cast<ASR::String_t>(type)->m_len &&
+            ASRUtils::is_supported_character_kind(ASRUtils::extract_kind_from_ttype_t(type)));
+    }
+
+    // Whether `type`, of a dummy of `witness`, is that of a length wildcard
+    // `member`: its kind and an assumed length, which the
+    // string_length_arguments pass makes the dummy's hidden length.
+    bool length_wildcard_dummy_type(const Function_t &witness, ASR::ttype_t *type,
+            ASR::ttype_t *member) const {
+        if (!ASRUtils::is_type_set_length_wildcard(member) || !type ||
+                !ASR::is_a<ASR::String_t>(*type) ||
+                !ASRUtils::types_equal(type, member, nullptr, nullptr)) return false;
+        auto *string = ASR::down_cast<ASR::String_t>(type);
+        if (string->m_len_kind == ASR::string_length_kindType::AssumedLength) {
+            return !string->m_len;
+        }
+        if (!check_string_length_arguments ||
+                string->m_len_kind != ASR::string_length_kindType::ExpressionLength ||
+                !string->m_len || !ASR::is_a<Var_t>(*string->m_len)) return false;
+        auto *length = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<Var_t>(string->m_len)->m_v);
+        for (const auto &hidden : hidden_string_lengths(witness)) {
+            if (hidden.second == length) return true;
+        }
+        return false;
+    }
+
     void visit_Trait(const Trait_t &x) {
         SymbolTable *parent_symtab = current_symtab;
         current_symtab = x.m_symtab;
@@ -1353,15 +1384,18 @@ public:
                 "An intrinsic type set must be nonempty and have no nominal methods or parents");
             for (size_t i = 0; i < x.n_member_types; i++) {
                 auto *type = x.m_member_types[i];
-                require_id(type_set_intrinsic_type(type),
+                require_id(type_set_member_type(type),
                     "asr.verify.trait.intrinsic_member",
-                    "An intrinsic type-set member must be a concrete scalar intrinsic type");
+                    "An intrinsic type-set member must be a concrete scalar intrinsic type "
+                    "or a character length wildcard");
                 visit_ttype(*type);
                 for (size_t j = 0; j < i; j++) {
-                    require_id(!ASRUtils::type_argument_types_equal(
-                            type, x.m_member_types[j]),
+                    require_id(!ASRUtils::type_set_members_equal(type, x.m_member_types[j]) &&
+                            !ASRUtils::type_set_member_admits(type, x.m_member_types[j]) &&
+                            !ASRUtils::type_set_member_admits(x.m_member_types[j], type),
                         "asr.verify.trait.unique_member",
-                        "Type-set members must be unique");
+                        "Type-set members must be unique, and a length wildcard is the only "
+                        "member of its kind");
                 }
             }
         }
@@ -1691,7 +1725,7 @@ public:
                 const auto &proof = requirement.m_witnesses[j];
                 size_t index = trait.n_member_types;
                 for (size_t k = 0; k < trait.n_member_types; k++) {
-                    if (proof.m_member_type && ASRUtils::type_argument_types_equal(
+                    if (proof.m_member_type && ASRUtils::type_set_members_equal(
                             proof.m_member_type, trait.m_member_types[k])) index = k;
                 }
                 require_id(index != trait.n_member_types,
@@ -1724,7 +1758,9 @@ public:
                         "Capability witness locals must be concrete variables");
                     auto *variable = ASR::down_cast<ASR::Variable_t>(entry.second);
                     require_id(variable->m_type &&
-                            type_set_intrinsic_type(variable->m_type) &&
+                            (type_set_intrinsic_type(variable->m_type) ||
+                                length_wildcard_dummy_type(*witness, variable->m_type,
+                                    proof.m_member_type)) &&
                             !variable->m_symbolic_value && !variable->m_value &&
                             variable->m_storage == ASR::storage_typeType::Default &&
                             variable->m_presence == ASR::presenceType::Required,
@@ -1746,7 +1782,9 @@ public:
                         witness->m_return_var : witness->m_args[k]);
                     auto *expected = ASR::is_a<ASR::TypeParameter_t>(*abstract) ?
                         proof.m_member_type : abstract;
-                    require_id(ASRUtils::type_argument_types_equal(concrete, expected),
+                    require_id(ASRUtils::type_argument_types_equal(concrete, expected) ||
+                            (k < n_operands &&
+                                length_wildcard_dummy_type(*witness, concrete, expected)),
                         "asr.verify.type_set.witness_type",
                         "Witness arguments and result must have the substituted category and kind");
                 }

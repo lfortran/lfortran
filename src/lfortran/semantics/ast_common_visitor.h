@@ -13246,6 +13246,7 @@ public:
                 }
                 check_runtime_trait_without_associated_types(*trait, loc);
                 check_trait_runtime_view(*trait, loc);
+                check_runtime_trait_length_wildcards(*trait, loc);
                 auto *contract = ASRUtils::trait_runtime_contract(v);
                 if (!contract) {
                     std::string reason = trait_runtime_contract_obstacle(
@@ -24392,6 +24393,12 @@ public:
             }
             std::string witness_name = scope->get_unique_name(
                 name + "_witness_" + std::to_string(i));
+            if (ASR::is_a<ASR::TypeSetConcat_t>(*operation) &&
+                    ASRUtils::is_type_set_length_wildcard(member)) {
+                // The length of the result depends on the operands' lengths.
+                trait_call_error("operator '//' is not implemented for type-set member " +
+                    ASRUtils::type_to_str_fortran_symbol(member, nullptr, true), loc);
+            }
             auto *witness = type_set_signature(scope, witness_name, concrete_args, member, false, loc);
             ASR::asr_t *expression = nullptr;
             // A detached lookup scope ensures intrinsic capability checking
@@ -25239,6 +25246,30 @@ public:
         return scope;
     }
 
+    // A view has one closed slot for each member of a type set of a generic
+    // message; a character length wildcard is one member of every length,
+    // for which there is no finite set of slots.
+    void check_runtime_trait_length_wildcards(const ASR::Trait_t &trait,
+            const Location &loc) {
+        for (auto *member : checked_trait_hierarchy(trait, loc).members) {
+            auto *method = ASRUtils::trait_method_function(member);
+            auto *generic = method ? ASRUtils::trait_method_template(*method) : nullptr;
+            for (size_t i = 0; generic && i < generic->n_args; i++) {
+                auto *set = ASRUtils::trait_parameter_type_set(
+                    generic->m_symtab->get_symbol(generic->m_args[i]));
+                for (size_t j = 0; set && j < set->n_member_types; j++) {
+                    if (ASRUtils::is_type_set_length_wildcard(set->m_member_types[j])) {
+                        trait_call_error("runtime dispatch of trait method '" +
+                            ASRUtils::trait_member_display_name(member) +
+                            "' over the character length wildcard " +
+                            ASRUtils::type_to_str_fortran_symbol(set->m_member_types[j],
+                                nullptr, true) + " is not implemented yet", loc);
+                    }
+                }
+            }
+        }
+    }
+
     // A runtime view dispatches the messages of its trait. A trait whose
     // operator requirements or messages refer to the implementing type, the
     // associated type `itself`, has none; an initializer requirement, whose
@@ -25269,6 +25300,7 @@ public:
             }
             check_runtime_trait_without_associated_types(*trait, loc);
             check_trait_runtime_view(*trait, loc);
+            check_runtime_trait_length_wildcards(*trait, loc);
             traits.push_back(symbol);
         }
         traits = ASRUtils::normalized_trait_requirements(traits);
@@ -27885,8 +27917,19 @@ public:
                     ASR::ttype_t *type = types.at(parameter).first;
                     bool member = false;
                     for (size_t i = 0; i < trait->n_member_types; i++) {
-                        if (ASRUtils::type_argument_types_equal(type,
-                                trait->m_member_types[i])) member = true;
+                        if (ASRUtils::type_set_member_admits(trait->m_member_types[i],
+                                type)) member = true;
+                        // A length wildcard admits each constant length as
+                        // its own type argument (TD-21).
+                        int64_t length;
+                        if (ASRUtils::is_type_set_length_wildcard(trait->m_member_types[i]) &&
+                                ASR::is_a<ASR::String_t>(*type) &&
+                                ASRUtils::types_equal(trait->m_member_types[i], type,
+                                    nullptr, nullptr) &&
+                                !ASRUtils::constant_string_length(type, length)) {
+                            trait_call_error("a character generic type argument requires a "
+                                "constant length", loc);
+                        }
                     }
                     if (!member) {
                         std::string description = "type-set trait '" +
@@ -29233,7 +29276,7 @@ public:
                     ASR::symbol_t *witness = nullptr;
                     for (size_t j = 0; j < requirement.n_witnesses; j++) {
                         const auto &proof = requirement.m_witnesses[j];
-                        if (ASRUtils::type_argument_types_equal(proof.m_member_type,
+                        if (ASRUtils::type_set_member_admits(proof.m_member_type,
                                 actual.first)) witness = proof.m_procedure;
                     }
                     LCOMPILERS_ASSERT(witness);

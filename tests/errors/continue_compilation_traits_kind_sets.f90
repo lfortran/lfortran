@@ -245,3 +245,58 @@ contains
         end do
     end function count_true
 end module cc_traits_kind_sets_mixed_condition
+
+! E19: character(kind=*) stands for CHARACTER_KINDS, which does not include
+! kind 4 (ISO_10646).
+module cc_traits_kind_sets_character_kind
+    implicit none
+contains
+    function first{character(kind=*) :: T}(x) result(r)
+        type(T), intent(in) :: x(:)
+        type(T)             :: r
+        r = x(1)
+    end function first
+
+    subroutine use_first(letters)
+        character(kind=4), intent(in) :: letters(:)
+        character(kind=4)             :: letter
+        letter = first(letters)
+    end subroutine use_first
+end module cc_traits_kind_sets_character_kind
+
+! E20: a length wildcard admits each constant length as its own type
+! argument, so an actual of assumed length is not one.
+module cc_traits_kind_sets_assumed_length
+    implicit none
+contains
+    function first{character(*) :: T}(x) result(r)
+        type(T), intent(in) :: x(:)
+        type(T)             :: r
+        r = x(1)
+    end function first
+
+    subroutine use_first(words)
+        character(len=*), intent(in) :: words(:)
+        print *, first(words)
+    end subroutine use_first
+end module cc_traits_kind_sets_assumed_length
+
+! E21: the length of a concatenation of length wildcard values depends on the
+! values.
+module cc_traits_kind_sets_wildcard_concat
+    implicit none
+contains
+    function joined_length{character(len=*) :: T}(x, y) result(n)
+        type(T), intent(in) :: x, y
+        integer             :: n
+        n = len(x // y)
+    end function joined_length
+end module cc_traits_kind_sets_wildcard_concat
+
+! E22: a character member of deferred length is not implemented yet.
+module cc_traits_kind_sets_deferred_length
+    implicit none
+    abstract interface :: IDeferred
+        character(len=:)
+    end interface IDeferred
+end module cc_traits_kind_sets_deferred_length

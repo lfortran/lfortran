@@ -1235,21 +1235,39 @@ part of the member, as it is part of a character type argument (TD-21 of the
 [decisions record](traits-decisions.md)): `character(len=3)` and
 `character(len=5)` are two members with their own specializations, and a
 `character(len=4)` value belongs to neither. A member written `character`
-without a length is `character(len=1)`, as in a declaration. Character
-members of assumed (`character(*)`), deferred (`character(len=:)`) or
-nonconstant length and the character kind wildcard `character(kind=*)` are
-diagnosed as not implemented, and so is a closed runtime slot of a character
-member. `traits_type_sets_01` and `traits_type_sets_02` cover logical and
-character members, and `traits_type_sets_03` reads such sets and their
-generics from a separately compiled module.
+without a length is `character(len=1)`, as in a declaration. A closed runtime
+slot of a character member is diagnosed as not implemented.
+`traits_type_sets_01` and `traits_type_sets_02` cover logical and character
+members, and `traits_type_sets_03` reads such sets and their generics from a
+separately compiled module.
+
+A member of assumed length, `character(*)`, `character(len=*)` or
+`character*(*)`, is the length wildcard: the one member of its kind that
+admits character values of every constant length (TD-34). Each length is
+still its own type argument with its own specialization (TD-21), so a generic
+over `character(*)` called with `character(len=3)` and `character(len=7)`
+arrays is specialized twice, and an argument whose length is not a constant,
+such as an assumed-length dummy, is diagnosed: a character generic type
+argument requires a constant length. The wildcard absorbs the members of its
+kind and a constant length, so `character(len=3) | character(*)` is
+`character(*)`. A generic over it is checked once, against the wildcard: its
+operations are those of every length, the comparisons, while `//`, whose
+result length depends on its operands, is not implemented for it. A runtime
+view of a message over such a set is diagnosed as not implemented. Members of
+deferred (`character(len=:)`) or nonconstant length remain diagnosed as not
+implemented. `traits_type_sets_04` covers named and inline sets with the
+length and kind wildcards, specializations of several lengths, inferred,
+explicit and forwarded type arguments and static dispatch, read from a
+separately compiled module.
 
 ### Kind wildcards
 
 A member written with a kind wildcard, `integer(*)`, `real(kind=*)`,
-`complex(*)` or `logical(*)`, is the union of that type with every kind that
-this implementation supports: the kinds of `ISO_FORTRAN_ENV`'s `INTEGER_KINDS`
-(1, 2, 4, 8), `REAL_KINDS` (4, 8, 16) and `LOGICAL_KINDS` (1, 2, 4, 8), and the
-real kinds that have a complex type (4, 8). The proposal's
+`complex(*)`, `logical(*)` or `character(kind=*)`, is the union of that type
+with every kind that this implementation supports: the kinds of
+`ISO_FORTRAN_ENV`'s `INTEGER_KINDS` (1, 2, 4, 8), `REAL_KINDS` (4, 8, 16),
+`LOGICAL_KINDS` (1, 2, 4, 8) and `CHARACTER_KINDS` (1), and the real kinds
+that have a complex type (4, 8). The proposal's
 
 ```fortran
 abstract interface :: INumeric
@@ -1267,9 +1285,15 @@ ordered. `ASRUtils::supported_kinds` is the one list of these kinds, which
 declarations also check. `real(10)`, the `C_LONG_DOUBLE` kind, is accepted in
 declarations for C interoperability but is not one of `REAL_KINDS`, so
 `real(*)` does not include it; it can still be written as an explicit member.
-In a character member, `*` is the length (`character(*)` is
-`character(len=*)`), not the kind; character members of assumed length and
-`character(kind=*)` are not implemented. `traits_kind_sets_01` calls every
+In a character member, a first positional `*` is the length (`character(*)`
+is `character(len=*)`, the length wildcard), and `character(kind=*)`, or a
+second positional `*`, is the kind wildcard, with the member's length: 1
+without one, as in `character(kind=*)`, or any length in
+`character(len=*, kind=*)`. Declarations also accept character kind 4
+(`selected_char_kind('ISO_10646')`), which is not one of `CHARACTER_KINDS`:
+the relational operators give wrong results for its values, so
+`character(kind=*)` does not include it, and it can still be written as an
+explicit member. `traits_kind_sets_01` calls every
 member statically and through closed runtime slots of separately compiled
 modules, except `real(16)`, which `traits_kind_sets_02` calls: CI does not run
 it with LLVM 7 and 8, which miscompile `real(16)` operations.

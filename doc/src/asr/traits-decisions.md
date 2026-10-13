@@ -142,6 +142,8 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-12 | Static-only providers outside the runtime subset (`ocp.f90`) | **Preserve static use; diagnose only a requested runtime use**; reject such providers at definition time for now | TD-16 |
 | 2026-10-12 | Existing standard constructor interfaces (`interface MyType`) as implementations of initializer requirements | **Allow matching standard constructor interfaces as initializer implementations**; require an explicit `initial ::` binding | TD-33 |
 | 2026-10-13 | Scope of the `intent(inout)` improvement for trait-object arguments: whether calls such as `call object%increment()`, whose implementation modifies its receiver, should be added now (revising TD-10) | **Finish INOUT borrowing; keep trait methods read-only for now**; also implement mutating trait methods and agree on explicit effect syntax next | TD-35, TD-10 |
+| 2026-10-13 | A type-set member written `character` without a length | **Exactly `character(len=1)`, matching ordinary declarations**; a member admitting every length | TD-34 |
+| 2026-10-13 | A type-set member of assumed length, `character(*)` | **Admit any length; implement length-wildcard support**; keep diagnosing it as not implemented | TD-34 |
 
 ### Instructions given without an option form
 
@@ -878,11 +880,14 @@ specification action, that is, what the paper should say.
   `REAL_KINDS`, so `real(*)` leaves it out, while declarations and explicit
   members can still name it. LFortran has no `complex(16)`, so `complex(*)`
   lacks the complex type of `real(16)`. Since 2026-10-13 (TD-34),
-  `logical(*)` stands for `LOGICAL_KINDS` (1, 2, 4, 8). In a character member
-  `*` is the length (`character(*)` is `character(len=*)`), and
-  `character(kind=*)` is not implemented: `CHARACTER_KINDS` lists only kind 1,
-  while declarations also accept kind 4, an inconsistency like that of
-  `real(10)`. inline-17 is accepted with this list.
+  `logical(*)` stands for `LOGICAL_KINDS` (1, 2, 4, 8) and `character(kind=*)`
+  for `CHARACTER_KINDS` (1), with the member's length. In a character member a
+  first positional `*` is the length (`character(*)` is `character(len=*)`,
+  the length wildcard of TD-34). Declarations also accept character kind 4,
+  which `CHARACTER_KINDS` lacks, an inconsistency like that of `real(10)`, and
+  relational operators give wrong results for kind-4 values, so
+  `character(kind=*)` leaves it out while explicit members can still name it.
+  inline-17 is accepted with this list.
 - **Specification action.** Define the member set of a wildcard, for example as
   the kinds listed in `INTEGER_KINDS`, `REAL_KINDS` and similar constants of
   `ISO_FORTRAN_ENV`, and say whether code checked against a wildcard set must
@@ -994,7 +999,10 @@ specification action, that is, what the paper should say.
   `Vector{character(len=2)}` is another instance. Nonconstant and deferred
   lengths are diagnosed as a limit of the prototype. The same identity applies
   to the character members of type sets (TD-34): `character(len=3)` and
-  `character(len=5)` are different members with different specializations.
+  `character(len=5)` are different members with different specializations, and
+  a length wildcard member admits each constant length as its own type
+  argument with its own specialization. An actual of nonconstant or assumed
+  length is diagnosed for a length wildcard too.
 - **Implementation status.** Implemented.
 - **Specification action.** Say whether length (and other) type parameters are
   part of a type argument, and whether assumed or deferred lengths can be type
@@ -1076,8 +1084,8 @@ specification action, that is, what the paper should say.
 
 #### TD-34: Type sets of every intrinsic type
 
-- **Status:** Approved prototype option (scope); implementation choices; open
-  question (character members).
+- **Status:** Approved prototype options (scope; the meaning of `character` and
+  `character(*)` members); implementation choices (the rest).
 - **What the paper says.** A type set is a union of types whose operations are
   the intersection of their members' operations (lines 1760-1802). Its
   examples have integer, real and complex members, and its wildcards name "all
@@ -1090,26 +1098,40 @@ specification action, that is, what the paper should say.
   `static.f90` whose `class(IAverager)` view returns the member type: it was
   rejected because closed runtime slots did not return complex results
   (TD-15).
-- **Current rules (implementation choices, not asked).**
+- **Options presented (2026-10-13).** Two questions about character members,
+  which the coordinating agent put to the maintainer: whether a member written
+  `character` is **exactly `character(len=1)`, matching ordinary
+  declarations**, or admits every length; and whether a member of assumed
+  length, `character(*)`, should **admit any length, with length-wildcard
+  support implemented**, or stay diagnosed as not implemented. The chosen
+  options are in bold.
+- **Current rules.**
   - Members can be of any intrinsic category with a supported kind; a
-    derived-type member is diagnosed as not implemented. `logical(*)` is a kind
-    wildcard (TD-17).
+    derived-type member is diagnosed as not implemented. `logical(*)` and
+    `character(kind=*)` are kind wildcards (TD-17).
   - The operations are those of TD-23: logical members provide `.and.`,
     `.or.`, `.eqv.`, `.neqv.`, conditions and `T(x)` from a logical value, but
     no `==`; character members provide the comparisons and `//`, and no
     conversion. A set of integer and logical members has no operator at all.
   - A character member's constant length is part of the member, as for type
-    arguments (TD-21). A member written `character` is `character(len=1)`,
-    as in a declaration. Members of assumed, deferred or nonconstant length,
-    `character(kind=*)`, and closed runtime slots of character members are
-    diagnosed as not implemented.
-- **Open.** Whether a member written `character` should rather admit every
-  length, whether `character(*)` (`character(len=*)`) should be a length
-  wildcard, whose type arguments would each fix a length (TD-21) and which
-  closed runtime slots could not enumerate, and the kinds of
-  `character(kind=*)`. None of these has been decided by the maintainer; the
-  current rules keep the declaration meaning of each spelling and diagnose
-  the rest as limits of the prototype.
+    arguments (TD-21). A member written `character` is `character(len=1)`, as
+    in a declaration (chosen).
+  - A member of assumed length, `character(*)`, `character(len=*)` or
+    `character*(*)`, is the length wildcard of its kind (chosen): it admits
+    character values of every constant length of that kind, each its own type
+    argument with its own specialization (TD-21), and it absorbs the
+    constant-length members of its kind. Its operations are those of every
+    length, the comparisons (an implementation choice).
+  - Closed runtime slots of character members are not implemented yet (TD-15).
+  - Limits of the prototype, diagnosed as not implemented rather than language
+    rules: members of deferred or nonconstant length; for a length wildcard,
+    actuals of nonconstant or assumed length (TD-21), `//`, whose result length
+    depends on its operands, and runtime views of its messages, which would
+    need a slot per length.
+- **Open.** Derived-type members, which the instruction excludes from the
+  prototype; whether actuals of nonconstant length could be type arguments of
+  a length wildcard; and how runtime views would dispatch over one. None of
+  these has been decided by the maintainer.
 - **Implementation status.** Implemented as described, with complex results of
   closed runtime slots and of ordinary runtime messages; the maintainer's
   averaging program runs for both of its averaging methods.
@@ -1377,7 +1399,7 @@ names the entries with the details.
 | OQ-18 | Whether a sealed type can be abstract. A commented-out sentence of the paper source (lines 1515-1517) says it cannot; the prototype rejects the combination. | -- |
 | OQ-19 | Whether the new words are reserved and where they are recognized. | TD-03 |
 | OQ-20 | Which restrictions are normative. `sect:restrictions` states that type sets and traits with associated types are generic constraints only "presently (i.e. in the framework of a prototype implementation of this proposal)" (lines 1977-1983). A specification should separate permanent rules from limits of a first implementation; the temporary limits recorded here must not become implicit prohibitions. | TD-24 to TD-27 |
-| OQ-21 | Logical, character and derived-type members of type sets: character length and kind in membership, length wildcards, and whether processor extensions add operations. | TD-34 |
+| OQ-21 | Members of type sets: derived-type members, the kinds of `character(kind=*)` (TD-17), type arguments of nonconstant length and runtime dispatch for length wildcards, and whether processor extensions add operations. | TD-17, TD-34 |
 
 ## Questions that do not affect the language
 
