@@ -2299,9 +2299,9 @@ public:
     // for a templated procedure, whose Template symbol is built before its
     // specification part. The nesting is therefore tracked explicitly, with a
     // guard that restores the enclosing value even when a diagnostic aborts the
-    // visit. `is_template` is deliberately not reused: it is not restored on
-    // exit, so it reads false again in the scoping units that follow a nested
-    // template.
+    // visit. `is_template` is deliberately not reused: the body visitor does
+    // not restore it on exit, so there it reads false again in the scoping
+    // units that follow a nested template.
     bool in_template_definition = false;
     // The deferred-argument list of the requirement, template or templated
     // procedure being visited, and the name of that scoping unit. Only the

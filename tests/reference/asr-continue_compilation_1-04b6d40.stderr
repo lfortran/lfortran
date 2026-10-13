@@ -640,6 +640,16 @@ semantic error: Derived type 't_recovery' not declared
 1165 |       class(t_recovery), intent(in) :: self
      |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Dummy argument 'self' not defined
+    --> tests/errors/continue_compilation_1.f90:1164:5 - 1168:20
+     |
+1164 |        pure function foo(self, x) result(res)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1168 |        end function foo
+     | ...^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: 'binding_outside_module_proc' must be a module procedure or an external procedure with an explicit interface
     --> tests/errors/continue_compilation_1.f90:1201:9
      |

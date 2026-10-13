@@ -216,6 +216,13 @@ program continue_compilation_3
         print *, size(bpe)
         bpe = d
     end subroutine
+    integer function f1_prog_13216(a) result(r)
+        type(nosuchtype_13216), intent(in) :: a
+        r = 1
+    end function
+    integer function f2_prog_13216() result(r)
+        r = undefined_program_host_13216
+    end function
         
 end program
 
@@ -379,3 +386,92 @@ contains
         print *, arr
     end subroutine
 end module
+
+module cc_function_decl_error_13216
+    implicit none
+contains
+    integer function f1_13216() result(r)
+        type(nosuchtype_13216) :: x
+        r = 1
+    end function
+    integer function f2_13216() result(r)
+        r = undefined_variable_13216
+    end function
+    integer function f3_13216(a) result(r)
+        type(nosuchtype_13216), intent(in) :: a
+        r = 3
+    end function
+    integer function f4_13216() result(r)
+        r = undefined_variable2_13216
+    end function
+end module
+
+module cc_function_host_13216
+    implicit none
+contains
+    integer function host_f_13216() result(r)
+        r = inner2_f_13216()
+    contains
+        integer function inner1_f_13216(a) result(q)
+            type(nosuchtype_13216), intent(in) :: a
+            q = 1
+        end function
+        integer function inner2_f_13216() result(q)
+            q = undefined_function_host_13216
+        end function
+    end function
+    integer function after_f_13216() result(r)
+        r = undefined_after_function_host_13216
+    end function
+end module
+
+module cc_module_procedure_host_13216
+    implicit none
+    interface
+        module subroutine mp_13216()
+        end subroutine
+    end interface
+end module
+
+submodule (cc_module_procedure_host_13216) cc_module_procedure_host_s_13216
+contains
+    module procedure mp_13216
+        call helper_mp_13216()
+    contains
+        subroutine bad_mp_13216()
+            implicit real (a-z)
+        end subroutine
+        subroutine helper_mp_13216()
+            print *, undefined_module_procedure_host_13216
+        end subroutine
+    end procedure
+    subroutine after_mp_13216()
+        print *, undefined_after_module_procedure_host_13216
+    end subroutine
+end submodule
+
+subroutine s_13758(x) bind(c)
+    use iso_c_binding, only: c_int
+    implicit none
+    integer(c_int), value, optional :: x
+contains
+    subroutine inner_13758()
+        implicit real (a-z)
+    end subroutine
+    subroutine inner2_13758()
+        print *, undefined_subroutine_host_13758
+    end subroutine
+end subroutine
+
+integer function tf1_13216(a) result(r)
+    type(nosuchtype_toplevel_13216), intent(in) :: a
+    r = 1
+end function
+
+integer function tf2_13216() result(r)
+    r = undefined_toplevel_function_13216
+end function
+
+subroutine ts_13216()
+    print *, undefined_toplevel_subroutine_13216
+end subroutine
