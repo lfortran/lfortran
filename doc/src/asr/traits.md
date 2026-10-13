@@ -388,7 +388,8 @@ the procedure it names. Overriding such a binding in an extension, or
 overriding an ordinary binding with a generic procedure, is therefore
 diagnosed as not implemented yet; extensions inherit it unchanged, and their
 ordinary overrides keep dynamic dispatch. Generic derived types are
-described in their own section.
+described in their own section. A type declared in a BLOCK construct cannot
+adopt traits yet; `continue_compilation_traits_02` diagnoses it.
 
 The byte-exact, module-only paper examples `extends_parent.f90` and
 `abstract_new.f90` are registered through `traits_type_adoption.py` in normal

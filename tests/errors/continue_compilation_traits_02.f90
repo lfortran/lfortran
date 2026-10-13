@@ -319,3 +319,15 @@ contains
         x = y
     end subroutine
 end program
+
+module traits_component_body_error_block_adoption
+    use traits_component_body_error_types
+contains
+    subroutine local_type()
+        block
+            type, implements(IValue) :: Local
+                integer :: n = 1
+            end type
+        end block
+    end subroutine
+end module

@@ -100,6 +100,22 @@ semantic error: runtime trait temporary with unchecked dynamic lifecycle effects
 189 |         count_reshaped = size(reshape(x, [size(x)]))
     |                               ^^^^^^^^^^^^^^^^^^^^^ 
 
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+   --> tests/errors/continue_compilation_traits_02.f90:328:19
+    |
+328 |             type, implements(IValue) :: Local
+    |                   ^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: trait adoption currently requires a nonparameterized type in a module or main program
+   --> tests/errors/continue_compilation_traits_02.f90:328:13 - 330:21
+    |
+328 |                type, implements(IValue) :: Local
+    |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+330 |                end type
+    | ...^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Call to impure procedure 'overwrite' is not allowed inside a PURE procedure
    --> tests/errors/continue_compilation_traits_02.f90:166:9
     |
