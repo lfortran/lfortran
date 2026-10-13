@@ -64,6 +64,22 @@ public:
             generic_class_procedures.swap(v.generic_class_procedures);
         }
     };
+    // The procedures given to procedure pointer components of a host that
+    // cannot be checked yet are checked once the host is complete. A nested
+    // template resolves its own before then, so this guard sets the host's
+    // aside for the duration of the template and puts them back afterwards.
+    struct DeferredProcedureComponentValueScope {
+        SymbolTableVisitor &v;
+        std::vector<DeferredProcedureComponentValue> values;
+
+        DeferredProcedureComponentValueScope(SymbolTableVisitor &v_) : v(v_) {
+            values.swap(v.deferred_procedure_component_values);
+        }
+
+        ~DeferredProcedureComponentValueScope() {
+            values.swap(v.deferred_procedure_component_values);
+        }
+    };
     // A statement that declares a deferred argument is only valid in a scoping
     // unit that has a deferred-argument list -- a requirement, a template or a
     // templated procedure -- and may only declare one of those arguments. That
@@ -6174,6 +6190,7 @@ public:
         // of the host's types are added once the host is complete.
         ClassProcedureScope class_procedure_scope(*this);
         GenericClassProcedureScope generic_class_procedure_scope(*this);
+        DeferredProcedureComponentValueScope deferred_component_value_scope(*this);
 
         std::vector<std::string> deferred_args;
         for (size_t i=0; i<x.n_namelist; i++) {

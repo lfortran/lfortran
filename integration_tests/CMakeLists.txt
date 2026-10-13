@@ -1447,6 +1447,8 @@ RUN(NAME procedure_pointer_34 LABELS llvm)
 # `table` gives it `a` before `a` is defined, which it reports as a procedure
 # used as an actual argument without an explicit interface or EXTERNAL
 RUN(NAME procedure_pointer_33 LABELS llvm)
+# Templates are not supported by GFortran
+RUN(NAME procedure_pointer_35 LABELS llvm)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 

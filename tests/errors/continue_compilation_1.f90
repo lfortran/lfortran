@@ -2626,3 +2626,31 @@ contains
     subroutine cc1_pclim_sub()
     end subroutine cc1_pclim_sub
 end module cc1_proc_component_later_interface_mismatch_mod
+
+! A template between such a procedure and the end of the module does not
+! discard the check.
+module cc1_proc_component_later_interface_template_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_sub, cc1_pclim_known_func
+    implicit none
+    type :: cc1_pclt_func_t
+        procedure(cc1_pclt_func), pointer, nopass :: pf => null()
+    end type
+    type :: cc1_pclt_sub_t
+        procedure(cc1_pclt_sub), pointer, nopass :: pf => null()
+    end type
+    type(cc1_pclt_sub_t) :: cc1_pclt_s1 = cc1_pclt_sub_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    template cc1_pclt_unused {t}
+        deferred type :: t
+    contains
+        subroutine cc1_pclt_noop(x)
+            type(t), intent(in) :: x
+        end subroutine cc1_pclt_noop
+    end template
+    type(cc1_pclt_func_t) :: cc1_pclt_s2 = cc1_pclt_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+contains
+    integer function cc1_pclt_func()
+        cc1_pclt_func = 0
+    end function cc1_pclt_func
+    subroutine cc1_pclt_sub()
+    end subroutine cc1_pclt_sub
+end module cc1_proc_component_later_interface_template_mod
