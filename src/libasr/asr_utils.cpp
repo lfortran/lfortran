@@ -3128,6 +3128,22 @@ ASR::symbol_t* resolve_struct_assign_symbol(ASR::expr_t* expression) {
         ASRUtils::symbol_get_past_external(struct_sym)));
 }
 
+// Returns the binding with the name of `binding` that the declared type of `dt` has or inherits.
+static ASR::StructMethodDeclaration_t* binding_in_declared_type(
+        ASR::StructMethodDeclaration_t* binding, ASR::expr_t* dt) {
+    ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(dt);
+    while (struct_sym != nullptr) {
+        ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(struct_sym));
+        ASR::symbol_t* sym = st->m_symtab->get_symbol(binding->m_name);
+        if (sym != nullptr && ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+            return ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+        }
+        struct_sym = st->m_parent;
+    }
+    return binding;
+}
+
 bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                SymbolTable* curr_scope, ASR::asr_t*& asr,
                                Allocator &al, const Location& loc,
@@ -3172,6 +3188,10 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                 case ASR::symbolType::StructMethodDeclaration: {
                     ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
                     ASR::symbol_t* proc_func = class_proc->m_proc;
+                    if (expr_dt && !ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(expr_dt)))) {
+                        // The object is not polymorphic, so its declared type selects the binding.
+                        proc_func = binding_in_declared_type(class_proc, expr_dt)->m_proc;
+                    }
                     process_overloaded_assignment_function(proc_func, target, value, target_type,
                         value_type, found, al, target->base.loc, value->base.loc, curr_scope,
                         current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
