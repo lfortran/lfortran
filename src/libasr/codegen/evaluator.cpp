@@ -528,8 +528,9 @@ using CodeGenOptLevel = llvm::CodeGenOpt::Level;
 #endif
 
 // Machine code generation follows clang and flang: the default mode is -O0,
-// whose CodeGenOpt::None selects the fast instruction selector and register
-// allocator, and `--fast` is -O3. The default mode runs no IR optimizations.
+// which selects the -O0 instruction selector (FastISel or GlobalISel) and the
+// fast register allocator, and `--fast` is -O3. The default mode runs no IR
+// optimizations.
 CodeGenOptLevel codegen_opt_level(bool fast)
 {
     return fast ? CodeGenOptLevel::Aggressive : CodeGenOptLevel::None;
@@ -1178,13 +1179,9 @@ void WasmLFortranExecutor::add_module(std::unique_ptr<LLVMModule> lm, int eval_c
     llvm::TargetOptions TO;
     std::unique_ptr<llvm::TargetMachine> TM(
 #if LLVM_VERSION_MAJOR >= 21
-        Target->createTargetMachine(llvm::Triple(triple), "", "", TO,
-            llvm::Reloc::Model::PIC_, RM_OPTIONAL_TYPE<llvm::CodeModel::Model>(),
-            codegen_opt_level(false))
+        Target->createTargetMachine(llvm::Triple(triple), "", "", TO, llvm::Reloc::Model::PIC_)
 #else
-        Target->createTargetMachine(triple, "", "", TO,
-            llvm::Reloc::Model::PIC_, RM_OPTIONAL_TYPE<llvm::CodeModel::Model>(),
-            codegen_opt_level(false))
+        Target->createTargetMachine(triple, "", "", TO, llvm::Reloc::Model::PIC_)
 #endif
     );
     mod->setTargetTriple(llvm::Triple(triple));
