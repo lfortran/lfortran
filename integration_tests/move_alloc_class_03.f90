@@ -1,4 +1,5 @@
 module move_alloc_class_03_m
+    use iso_c_binding, only: c_int
     implicit none
     type :: base
         integer :: x = 1
@@ -6,6 +7,39 @@ module move_alloc_class_03_m
     type, extends(base) :: child
         integer :: y = 2
     end type
+    type, bind(c) :: bc
+        integer(c_int) :: k
+    end type
+    type :: sq
+        sequence
+        integer :: k
+    end type
+    type(bc), allocatable :: gbc
+    type(sq), allocatable :: gsq
+contains
+    ! Separate definitions of a BIND(C) or SEQUENCE type with the same name
+    ! and components are the same type (F2018 7.5.2.4)
+    subroutine move_same_type()
+        type, bind(c) :: bc
+            integer(c_int) :: k
+        end type
+        type :: sq
+            sequence
+            integer :: k
+        end type
+        type(bc), allocatable :: lbc
+        type(sq), allocatable :: lsq
+        allocate(gbc)
+        gbc%k = 7
+        call move_alloc(gbc, lbc)
+        if (allocated(gbc) .or. .not. allocated(lbc)) error stop 26
+        if (lbc%k /= 7) error stop 27
+        allocate(gsq)
+        gsq%k = 8
+        call move_alloc(gsq, lsq)
+        if (allocated(gsq) .or. .not. allocated(lsq)) error stop 28
+        if (lsq%k /= 8) error stop 29
+    end subroutine
 end module
 
 program move_alloc_class_03
@@ -104,5 +138,7 @@ program move_alloc_class_03
     if (allocated(r)) error stop 23
     if (any(shape(s) /= [2, 3])) error stop 24
     if (any(s /= 1.5d0)) error stop 25
+
+    call move_same_type()
     print *, "ok"
 end program
