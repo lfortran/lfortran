@@ -672,7 +672,7 @@ class BitCastArrayVisitor: public ASR::CallReplacerOnExpressionsVisitor<BitCastA
 // `target`, so that the shape check of an assignment compares each of them
 // with the target in every dimension.
 static bool have_same_rank(ASR::expr_t* target, const Vec<ASR::expr_t*>& components) {
-    size_t rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(target));
+    int rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(target));
     if (components.size() == 0) {
         return false;
     }
