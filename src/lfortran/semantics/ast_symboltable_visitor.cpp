@@ -3946,6 +3946,32 @@ public:
                 }
                 AST::InterfaceProc_t *proc
                     = AST::down_cast<AST::InterfaceProc_t>(x.m_items[i]);
+                // The deferred procedure that an interface body declares is a
+                // deferred argument, so its name must be one of the deferred
+                // arguments of the scoping unit (C1622 for the equivalent
+                // DEFERRED PROCEDURE statement). With continued compilation the
+                // body is skipped, so that the rest of the enclosing unit is
+                // still checked.
+                std::string proc_name;
+                if (AST::is_a<AST::Subroutine_t>(*proc->m_proc)) {
+                    proc_name = to_lower(AST::down_cast<AST::Subroutine_t>(
+                        proc->m_proc)->m_name);
+                } else if (AST::is_a<AST::Function_t>(*proc->m_proc)) {
+                    proc_name = to_lower(AST::down_cast<AST::Function_t>(
+                        proc->m_proc)->m_name);
+                }
+                if (std::find(deferred_args.begin(), deferred_args.end(),
+                        proc_name) == deferred_args.end()) {
+                    diag.add(diag::Diagnostic(
+                        "'" + proc_name + "' is not a deferred argument of '"
+                        + deferred_args_owner + "'",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {proc->m_proc->base.loc})}));
+                    if (!compiler_options.continue_compilation) {
+                        throw SemanticAbort();
+                    }
+                    continue;
+                }
                 // Unlike an ordinary interface body, this declares a deferred
                 // procedure, so it is visited the same way as the subprogram
                 // that a requirement currently uses to declare one: with
