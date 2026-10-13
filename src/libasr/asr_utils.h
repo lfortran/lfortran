@@ -5502,6 +5502,49 @@ inline int extract_kind_str(char* m_n, char *&kind_str) {
     return 4;
 }
 
+// True if `v` is a deferred constant, i.e. a named constant that is a
+// deferred argument of a template, templated procedure or requirement. The
+// symbol owning the scope that declares it is only created once its
+// specification part has been visited, so it cannot be looked up while the
+// template is being defined. A deferred argument is declared like a dummy
+// argument of that scoping unit, though, which a named constant otherwise
+// cannot be.
+static inline bool is_deferred_constant(const ASR::Variable_t* v) {
+    return v->m_storage == ASR::storage_typeType::Parameter
+        && v->m_intent == ASR::intentType::Unspecified
+        && v->m_value == nullptr && v->m_symbolic_value == nullptr;
+}
+
+// True if the named constant `v` has no value because its initializer uses a
+// deferred constant, directly or through other such named constants.
+bool depends_on_deferred_constant(const ASR::Variable_t* v);
+
+// A deferred constant, or a named constant initialized with one, has no value
+// until its template is instantiated, and a symbolic kind is not supported
+// yet. With --continue-compilation, a named constant whose initializer is
+// invalid has no value either.
+template <typename SemanticAbort>
+[[noreturn]] inline void report_valueless_kind_parameter(
+        const ASR::Variable_t* kind_variable, const Location& loc,
+        diag::Diagnostics &diag) {
+    std::string name = kind_variable->m_name;
+    std::string message;
+    std::string label = "`" + name + "` has no value until the template is instantiated";
+    if (is_deferred_constant(kind_variable)) {
+        message = "using a deferred constant as a kind parameter is not supported yet";
+    } else if (depends_on_deferred_constant(kind_variable)) {
+        message = "using a named constant that depends on a deferred constant "
+            "as a kind parameter is not supported yet";
+    } else {
+        message = "the kind parameter `" + name + "` is not a constant expression";
+        label = "";
+    }
+    diag.add(diag::Diagnostic(message,
+        diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label(label, {loc})}));
+    throw SemanticAbort();
+}
+
 // this function only extract's the 'kind' and raises an error when it's of
 // inappropriate type (e.g. float), but doesn't ensure 'kind' is appropriate
 // for whose kind it is
@@ -5523,7 +5566,10 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc, diag::Diagn
                 return ASRUtils::extract_kind_from_ttype_t(kind_variable->m_type);
             } else if( kind_variable->m_storage == ASR::storage_typeType::Parameter ) {
                 if( kind_variable->m_type->type == ASR::ttypeType::Integer ) {
-                    LCOMPILERS_ASSERT( kind_variable->m_value != nullptr );
+                    if( kind_variable->m_value == nullptr ) {
+                        report_valueless_kind_parameter<SemanticAbort>(
+                            kind_variable, loc, diag);
+                    }
                     return ASR::down_cast<ASR::IntegerConstant_t>(kind_variable->m_value)->m_n;
                 } else {
                     diag.add(diag::Diagnostic(

@@ -25138,7 +25138,9 @@ public:
                     if (v) {
                         const ASR::symbol_t *v3 = ASRUtils::symbol_get_past_external(v);
                         if (ASR::is_a<ASR::Variable_t>(*v3) &&
-                            !ASR::down_cast<ASR::Variable_t>(v3)->m_value) {
+                            !ASR::down_cast<ASR::Variable_t>(v3)->m_value &&
+                            ASR::down_cast<ASR::Variable_t>(v3)->m_storage !=
+                                ASR::storage_typeType::Parameter) {
                             scope = scope->parent;
                             v = nullptr;
                             continue;
@@ -25159,9 +25161,8 @@ public:
                                 throw SemanticAbort();
                             }
                         } else {
-                            diag.add(Diagnostic("Variable '" + var_name + "' is not constant",
-                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                            throw SemanticAbort();
+                            ASRUtils::report_valueless_kind_parameter<SemanticAbort>(
+                                v2, x.base.base.loc, diag);
                         }
                     } else {
                         diag.add(Diagnostic("Symbol '" + var_name + "' is not a variable",
@@ -25196,7 +25197,9 @@ public:
                     if (v) {
                         const ASR::symbol_t *v3 = ASRUtils::symbol_get_past_external(v);
                         if (ASR::is_a<ASR::Variable_t>(*v3) &&
-                            !ASR::down_cast<ASR::Variable_t>(v3)->m_value) {
+                            !ASR::down_cast<ASR::Variable_t>(v3)->m_value &&
+                            ASR::down_cast<ASR::Variable_t>(v3)->m_storage !=
+                                ASR::storage_typeType::Parameter) {
                             scope = scope->parent;
                             v = nullptr;
                             continue;
@@ -25217,9 +25220,8 @@ public:
                                 throw SemanticAbort();
                             }
                         } else {
-                            diag.add(Diagnostic("Variable '" + var_name + "' is not constant",
-                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                            throw SemanticAbort();
+                            ASRUtils::report_valueless_kind_parameter<SemanticAbort>(
+                                v2, x.base.base.loc, diag);
                         }
                     } else {
                         diag.add(Diagnostic("Symbol '" + var_name + "' is not a variable",
@@ -25462,7 +25464,9 @@ public:
                     if (v) {
                         const ASR::symbol_t *v3 = ASRUtils::symbol_get_past_external(v);
                         if (ASR::is_a<ASR::Variable_t>(*v3) &&
-                            !ASR::down_cast<ASR::Variable_t>(v3)->m_value) {
+                            !ASR::down_cast<ASR::Variable_t>(v3)->m_value &&
+                            ASR::down_cast<ASR::Variable_t>(v3)->m_storage !=
+                                ASR::storage_typeType::Parameter) {
                             scope = scope->parent;
                             v = nullptr;
                             continue;
@@ -25483,9 +25487,8 @@ public:
                                 throw SemanticAbort();
                             }
                         } else {
-                            diag.add(Diagnostic("Variable '" + var_name + "' is not constant",
-                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                            throw SemanticAbort();
+                            ASRUtils::report_valueless_kind_parameter<SemanticAbort>(
+                                v2, x.base.base.loc, diag);
                         }
                     } else {
                         diag.add(Diagnostic("Symbol '" + var_name + "' is not a variable",
@@ -25530,7 +25533,9 @@ public:
                 if (v) {
                     const ASR::symbol_t *v3 = ASRUtils::symbol_get_past_external(v);
                     if (ASR::is_a<ASR::Variable_t>(*v3) &&
-                        !ASR::down_cast<ASR::Variable_t>(v3)->m_value) {
+                        !ASR::down_cast<ASR::Variable_t>(v3)->m_value &&
+                        ASR::down_cast<ASR::Variable_t>(v3)->m_storage !=
+                            ASR::storage_typeType::Parameter) {
                         scope = scope->parent;
                         v = nullptr;
                         continue;
@@ -25551,9 +25556,8 @@ public:
                             throw SemanticAbort();
                         }
                     } else {
-                        diag.add(Diagnostic("Variable '" + var_name + "' is not constant",
-                            Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                        throw SemanticAbort();
+                        ASRUtils::report_valueless_kind_parameter<SemanticAbort>(
+                            v2, x.base.base.loc, diag);
                     }
                 } else {
                     diag.add(Diagnostic("Symbol '" + var_name + "' is not a variable",
