@@ -2731,8 +2731,13 @@ void set_string_length(Serialization_Info* s_info){
         s_info->current_arg_info.current_string_len = 
             transform_string_size_into_int(s_info);
     } else {
-        if(s_info->current_element_type == CHAR_PTR_TYPE ||
-            s_info->current_element_type == STRING_DESCRIPTOR_TYPE ) return; // Array. length already set (Consumed from array of lengths).
+        // Empty arrays have no descriptor to inspect.
+        if (!stack_empty(s_info->array_sizes_stack) &&
+            get_stack_top(s_info->array_sizes_stack) == 0) return;
+        if (!stack_empty(s_info->array_sizes_stack) &&
+            get_stack_top(s_info->array_sizes_stack) > 0 &&
+            (s_info->current_element_type == CHAR_PTR_TYPE ||
+             s_info->current_element_type == STRING_DESCRIPTOR_TYPE)) return; // Character array has a shared element length.
             ASSERT_MSG(s_info->current_element_type != CHAR_PTR_TYPE,
                     "ICE:%s\n","Not supported -- Can't deduce length for CCHAR");
             s_info->current_arg_info.current_string_len = 

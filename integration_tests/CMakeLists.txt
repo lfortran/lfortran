@@ -1350,6 +1350,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
 endif()
 RUN(NAME format_114 LABELS gfortran llvm)
 RUN(NAME format_115 LABELS gfortran llvm)
+RUN(NAME format_116 LABELS gfortran llvm)
 RUN(NAME format_117 LABELS gfortran llvm)
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
