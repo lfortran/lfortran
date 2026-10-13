@@ -2138,7 +2138,7 @@ end subroutine intent_list_assignment_error
 subroutine intent_list_non_dummy_error(x)
     implicit none
     integer :: x, y
-    intent(in) :: x, y  ! {Error} Intent attribute can only be applied to procedure arguments
+    intent(in) :: x, y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'intent_list_non_dummy_error'
 end subroutine intent_list_non_dummy_error
 
 subroutine intent_in_bound_before_decl_error(a, nz)
@@ -2519,3 +2519,9 @@ contains
         later_binding_get1 = 1
     end function
 end module
+
+subroutine non_dummy_intent_statement(x)
+    implicit none
+    integer :: x, y
+    intent(in) :: y  ! {Error} 'y' has an intent attribute but is not a dummy argument of 'non_dummy_intent_statement'
+end subroutine non_dummy_intent_statement

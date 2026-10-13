@@ -140,6 +140,19 @@ public:
             v.scoping_unit_kind = enclosing;
         }
     };
+    struct ProcedureNameScope {
+        SymbolTableVisitor &v;
+        std::string enclosing;
+
+        ProcedureNameScope(SymbolTableVisitor &v_, const std::string &name)
+                : v(v_), enclosing(v_.current_procedure_name) {
+            v.current_procedure_name = name;
+        }
+
+        ~ProcedureNameScope() {
+            v.current_procedure_name = enclosing;
+        }
+    };
     ScopingUnitKind scoping_unit_kind = ScopingUnitKind::Other;
     // Tracks whether an IMPLICIT NONE statement is in effect in the scoping
     // unit being visited. A scoping unit without IMPLICIT statements keeps
@@ -1470,6 +1483,7 @@ public:
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
 
+        ProcedureNameScope procedure_name_scope(*this, function_name);
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
 
@@ -1665,6 +1679,7 @@ public:
         current_function_dependencies = current_function_dependencies_copy;
         external_procedures = copy_external_procedure;
         current_procedure_args.clear();
+        current_procedure_name.clear();
     }
 
     template <typename T>
@@ -2067,6 +2082,7 @@ public:
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
         std::string sym_name = to_lower(x.m_name);
+        ProcedureNameScope procedure_name_scope(*this, sym_name);
 
         SymbolTable *grandparent_scope = current_scope;
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
@@ -2294,7 +2310,9 @@ public:
             default_storage_save = false;
             std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
+            std::string current_procedure_name_copy = current_procedure_name;
             current_procedure_args.clear();
+            current_procedure_name.clear();
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
@@ -2302,6 +2320,7 @@ public:
             }
             implicit_dictionary = implicit_dictionary_copy;
             current_procedure_args = current_procedure_args_copy;
+            current_procedure_name = current_procedure_name_copy;
             default_storage_save = current_storage_save;
         }
         visit_later_interface_decls(later_interface_decls);
@@ -2576,6 +2595,7 @@ public:
            in nested functions, and also in callback.f90 test, but it may not
            matter since we would have already checked the intent */
         current_procedure_args.clear();
+        current_procedure_name.clear();
         current_procedure_result = current_procedure_result_copy;
         current_procedure_abi_type = current_procedure_abi_type_copy;
 
@@ -2694,6 +2714,7 @@ public:
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
         std::string sym_name = to_lower(x.m_name);
+        ProcedureNameScope procedure_name_scope(*this, sym_name);
 
         SymbolTable *grandparent_scope = current_scope;
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
@@ -3243,13 +3264,16 @@ public:
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
             std::vector<std::string> current_procedure_args_copy = current_procedure_args;
+            std::string current_procedure_name_copy = current_procedure_name;
             current_procedure_args.clear();
+            current_procedure_name.clear();
             try {
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
             current_procedure_args = current_procedure_args_copy;
+            current_procedure_name = current_procedure_name_copy;
             default_storage_save = current_storage_save;
         }
 
@@ -3459,6 +3483,7 @@ public:
             current_scope = parent_scope;
         }
         current_procedure_args.clear();
+        current_procedure_name.clear();
         current_procedure_result = current_procedure_result_copy;
         current_procedure_abi_type = current_procedure_abi_type_copy;
         current_symbol = -1;
@@ -3732,11 +3757,13 @@ public:
         bool old_is_interface = is_interface;
         bool old_in_Subroutine = in_Subroutine;
         std::vector<std::string> old_procedure_args = current_procedure_args;
+        std::string old_procedure_name = current_procedure_name;
         is_interface = true;
         visit_program_unit(*x.m_proc);
         is_interface = old_is_interface;
         in_Subroutine = old_in_Subroutine;
         current_procedure_args = old_procedure_args;
+        current_procedure_name = old_procedure_name;
         // An `optional :: q` statement that precedes the interface body of
         // the dummy procedure `q` is recorded in assgnd_presence; apply it
         // now that `q` has been declared.
@@ -5796,6 +5823,7 @@ public:
 
         current_scope = parent_scope;
         current_procedure_args.clear();
+        current_procedure_name.clear();
     }
 
     void visit_Require(const AST::Require_t &x) {
