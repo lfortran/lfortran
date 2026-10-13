@@ -606,3 +606,15 @@ semantic error: Operator `**` undefined for the types in the expression `logical
     |
 269 |     print *, c ** a  ! {Error} Operator `**` undefined for the types in the expression `logical(8) ** logical(4)`
     |              ^^^^^^ 
+
+semantic error: Operator `+` undefined for the types in the expression `cc3_kind_t + integer(4)`
+   --> tests/errors/continue_compilation_3.f90:299:18
+    |
+299 |         print *, x + 1  ! {Error} Operator `+` undefined for the types in the expression `cc3_kind_t + integer(4)`
+    |                  ^^^^^ 
+
+semantic error: Operands of comparison operator '==' are not comparable: cc3_kind_t == real
+   --> tests/errors/continue_compilation_3.f90:300:18
+    |
+300 |         print *, x == 1.0  ! {Error} Operands of comparison operator '==' are not comparable: cc3_kind_t == real
+    |                  ^^^^^^^^ 
