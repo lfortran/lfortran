@@ -4356,12 +4356,40 @@ public:
         return in_bounds;
     }
 
+    // Whether a DATA object is held in a procedure's initialized SAVE storage.
+    bool data_object_has_saved_initializer(ASR::expr_t* object) {
+        if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
+            return data_object_has_saved_initializer(
+                ASR::down_cast<ASR::ArrayItem_t>(object)->m_v);
+        }
+        if (ASR::is_a<ASR::StringSection_t>(*object)) {
+            return data_object_has_saved_initializer(
+                ASR::down_cast<ASR::StringSection_t>(object)->m_arg);
+        }
+        ASR::Variable_t* v = ASRUtils::expr_to_variable_or_null(object);
+        if (!v) return false;
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(&v->base);
+        return owner && ASR::is_a<ASR::Function_t>(*owner)
+            && v->m_storage == ASR::storage_typeType::Save
+            && v->m_symbolic_value != nullptr && v->m_common_block == nullptr;
+    }
+
     // Gives `v` the initial value `value` that a DATA statement specifies.
     // When `v` is in a common block, the view of the block gives initial
     // values to its storage from then on.
     void set_data_initial_value(ASR::Variable_t* v, ASR::expr_t* value) {
         v->m_value = value;
         v->m_symbolic_value = value;
+        // DATA gives a local variable static lifetime, just like declaration
+        // initialization. COMMON storage and derived-type members are owned
+        // by their enclosing objects instead.
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(&v->base);
+        if (owner && ASR::is_a<ASR::Function_t>(*owner)
+                && v->m_intent == ASR::intentType::Local
+                && v->m_common_block == nullptr
+                && v->m_storage == ASR::storage_typeType::Default) {
+            v->m_storage = ASR::storage_typeType::Save;
+        }
         SetChar var_deps_vec;
         var_deps_vec.reserve(al, 1);
         ASRUtils::collect_variable_dependencies(al, var_deps_vec, v->m_type,
@@ -4462,6 +4490,7 @@ public:
                                 body.p, body.size(), arr_type,
                                 ASR::arraystorageType::ColMajor));
                         set_data_initial_value(v2, arr_const);
+                        if (data_object_has_saved_initializer(object)) return;
                     }
                 }
                 ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
@@ -5022,6 +5051,16 @@ public:
                             collected_indices->push_back(al, indices_valid ? flat : (int64_t)-1);
                         }
                     } else {
+                        ASR::symbol_t* owner = ASRUtils::get_asr_owner(array_item_expr->m_v);
+                        if (owner && ASR::is_a<ASR::Function_t>(*owner)
+                                && set_data_array_element_value(array_item_expr,
+                                [&](ASR::expr_t* /*previous*/) {
+                                    return ASRUtils::expr_value(value);
+                                }, data_stmt.base.base.loc)
+                                && data_object_has_saved_initializer(
+                                    &array_item_expr->base)) {
+                            continue;
+                        }
                         ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item_expr);
                         ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
                         ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
@@ -5395,6 +5434,7 @@ public:
             // as it causes issues in LLVM codegen - rely on assignment instead
             if (!ASR::is_a<ASR::Pointer_t>(*v2->m_type)) {
                 set_data_initial_value(v2, symbolic_expr);
+                if (data_object_has_saved_initializer(object)) return;
             }
         } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
             // This is the following case:
@@ -5403,17 +5443,21 @@ public:
             // i.e., x(2) = 2.
             // Additionally, update the variable's m_value so that compile-time
             // initialization (e.g. in BLOCK DATA) works correctly.
-            set_data_array_element_value(ASR::down_cast<ASR::ArrayItem_t>(object),
+            if (set_data_array_element_value(ASR::down_cast<ASR::ArrayItem_t>(object),
                 [&](ASR::expr_t* /*previous*/) { return symbolic_expr; },
-                x.base.base.loc);
+                x.base.base.loc) && data_object_has_saved_initializer(object)) {
+                return;
+            }
         } else if (ASR::is_a<ASR::StringSection_t>(*object)) {
             // This is the following case:
             // s(2:3) / 'ab' /
             // As for an array item, the characters are given both by an
             // assignment and in the initial value of the whole variable.
-            if (!set_data_substring_value(
+            if (set_data_substring_value(
                     ASR::down_cast<ASR::StringSection_t>(object),
-                    symbolic_expr, x.base.base.loc) && in_block_data) {
+                    symbolic_expr, x.base.base.loc)) {
+                if (data_object_has_saved_initializer(object)) return;
+            } else if (in_block_data) {
                 diag.add(Diagnostic(
                     "a DATA statement of a BLOCK DATA program unit can only "
                     "initialize a substring with constant bounds of a "
