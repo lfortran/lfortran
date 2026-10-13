@@ -4314,34 +4314,40 @@ public:
         }
     }
 
-    // Builds each operator in the scope of its interface blocks (such as a
-    // procedure, whose dummy procedures can be its specific procedures);
-    // blocks for the same operator in different scopes declare different
-    // operators.
+    // The specific procedures of one operator, grouped by the scope of the
+    // interface block that names them, in the order the scopes were seen.
+    std::vector<std::pair<SymbolTable*, std::vector<std::pair<std::string, Location>>>>
+            group_specifics_by_scope(const std::vector<GenericSpecific> &specifics) {
+        std::vector<std::pair<SymbolTable*,
+            std::vector<std::pair<std::string, Location>>>> groups;
+        for (auto &specific : specifics) {
+            auto it = std::find_if(groups.begin(), groups.end(),
+                [&](const auto &group) { return group.first == specific.scope; });
+            if (it == groups.end()) {
+                groups.push_back({specific.scope, {}});
+                it = groups.end() - 1;
+            }
+            it->second.push_back({specific.name, specific.loc});
+        }
+        return groups;
+    }
+
+    // Builds the pending operators, both intrinsic (`operator(+)`) and
+    // defined (`operator(.op.)`). They are pending until the end of the
+    // enclosing module, program or template, so this includes the interface
+    // blocks of its procedures. Blocks for the same operator in different scopes declare
+    // different operators, so each operator is built in the scope of its
+    // blocks, where their specific procedures are resolved (such as a
+    // procedure's dummy procedures).
     void add_overloaded_procedures() {
         SymbolTable *current_scope_copy = current_scope;
         for (auto *op_procs : {&overloaded_op_procs, &defined_op_procs}) {
-            for (auto &proc : *op_procs) {
-                std::vector<std::pair<SymbolTable*,
-                    std::vector<std::pair<std::string, Location>>>> scopes;
-                for (auto &specific : proc.second) {
-                    auto it = std::find_if(scopes.begin(), scopes.end(),
-                        [&](const std::pair<SymbolTable*,
-                                std::vector<std::pair<std::string, Location>>> &s) {
-                            return s.first == specific.scope;
-                        });
-                    if (it == scopes.end()) {
-                        scopes.push_back({specific.scope,
-                            {{specific.name, specific.loc}}});
-                    } else {
-                        it->second.push_back({specific.name, specific.loc});
-                    }
-                }
-                for (auto &scope : scopes) {
-                    current_scope = scope.first;
-                    std::pair<const std::string, std::vector<std::pair<std::string, Location>>>
-                        proc_ = {proc.first, scope.second};
-                    add_custom_operator(proc_, ASR::accessType::Public);
+            for (auto &[op, specifics] : *op_procs) {
+                for (auto &[scope, procs] : group_specifics_by_scope(specifics)) {
+                    current_scope = scope;
+                    std::pair<const std::string,
+                        std::vector<std::pair<std::string, Location>>> scope_procs = {op, procs};
+                    add_custom_operator(scope_procs, ASR::accessType::Public);
                 }
             }
             op_procs->clear();
