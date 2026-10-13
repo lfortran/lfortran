@@ -305,6 +305,88 @@ public:
         }
     }
 
+    // Checks that depend only on the target of an assignment, not its value.
+    void check_assignment_target(ASR::expr_t* target,
+            const Location& assignment_loc) {
+        check_assignment_to_constant_variable(
+            extract_assignment_base_symbol(target), assignment_loc);
+        // A complex part (`z%re = y`) is assigned through its complex base.
+        ASR::expr_t *lhs = target;
+        if (ASR::is_a<ASR::Cast_t>(*lhs) && ASR::down_cast<ASR::Cast_t>(lhs)->m_kind
+                == ASR::cast_kindType::ComplexToReal) {
+            lhs = ASR::down_cast<ASR::Cast_t>(lhs)->m_arg;
+        } else if (ASR::is_a<ASR::ComplexRe_t>(*lhs)) {
+            lhs = ASR::down_cast<ASR::ComplexRe_t>(lhs)->m_arg;
+        } else if (ASR::is_a<ASR::ComplexIm_t>(*lhs)) {
+            lhs = ASR::down_cast<ASR::ComplexIm_t>(lhs)->m_arg;
+        }
+        bool is_valid_lhs = (
+            lhs->type == ASR::exprType::Var ||
+            lhs->type == ASR::exprType::ArrayItem ||
+            lhs->type == ASR::exprType::ArraySection ||
+            lhs->type == ASR::exprType::ArrayPhysicalCast ||
+            lhs->type == ASR::exprType::StringSection ||
+            lhs->type == ASR::exprType::StringItem ||
+            lhs->type == ASR::exprType::StructInstanceMember ||
+            lhs->type == ASR::exprType::UnionInstanceMember ||
+            lhs->type == ASR::exprType::ComplexRe ||
+            lhs->type == ASR::exprType::ComplexIm ||
+            lhs->type == ASR::exprType::CoarrayRef
+        );
+        is_valid_lhs = is_valid_lhs || (lhs->type == ASR::exprType::Cast &&
+            (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(lhs))) ||
+             ASR::down_cast<ASR::Cast_t>(lhs)->m_kind == ASR::cast_kindType::ClassToIntrinsic));
+        // Allow function calls on LHS if they return a POINTER
+        if (!is_valid_lhs && lhs->type == ASR::exprType::FunctionCall) {
+            ASR::ttype_t* lhs_type = ASRUtils::expr_type(lhs);
+            if (ASRUtils::is_pointer(lhs_type)) {
+                is_valid_lhs = true;
+            }
+        }
+        if (!is_valid_lhs) {
+            diag.add(Diagnostic(
+                "The LHS of assignment can only be a variable or an array reference",
+                Level::Error, Stage::Semantic, {
+                    Label("",{assignment_loc})
+                }));
+            throw SemanticAbort();
+        }
+        if (!ASR::is_a<ASR::Var_t>(*target)) {
+            return;
+        }
+        ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(target)->m_v;
+        if (std::find(do_loop_variables.begin(), do_loop_variables.end(), sym)
+                != do_loop_variables.end()) {
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+            diag.add(Diagnostic(
+                "Assignment to loop variable `" + to_lower(std::string(v->m_name)) + "` is not allowed",
+                Level::Error, Stage::Semantic, {
+                    Label("",{target->base.loc})
+                }));
+            throw SemanticAbort();
+        }
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (v->m_intent == ASR::intentType::In) {
+                diag.add(Diagnostic(
+                    "Cannot assign to an intent(in) variable `" + std::string(v->m_name) + "`",
+                    Level::Error, Stage::Semantic, {
+                        Label("",{target->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
+        if (ASR::is_a<ASR::Function_t>(*sym)
+                && ASR::down_cast<ASR::Function_t>(sym)->m_return_var == nullptr) {
+            diag.add(Diagnostic(
+                "Assignment to subroutine is not allowed",
+                Level::Error, Stage::Semantic, {
+                    Label("",{target->base.loc})
+                }));
+            throw SemanticAbort();
+        }
+    }
+
     void mark_IO_side_effect() {
         current_function_deterministic = false;
         current_function_side_effect_free = false;
@@ -3127,9 +3209,11 @@ public:
                 std::string s_name = ASRUtils::symbol_name(s);
                 // A derived type is instantiated under its own name too, and
                 // the bodies of its type-bound procedures are instantiated
-                // with it.
-                if ((ASR::is_a<ASR::Function_t>(*s) || ASR::is_a<ASR::Struct_t>(*s))
-                        && !ASRUtils::is_template_arg(sym, s_name)) {
+                // with it, as are the procedures that the declaration of a
+                // named constant calls.
+                if (((ASR::is_a<ASR::Function_t>(*s) || ASR::is_a<ASR::Struct_t>(*s))
+                            && !ASRUtils::is_template_arg(sym, s_name))
+                        || is_template_named_constant(s, template_sym)) {
                     ASR::symbol_t *new_s = current_scope->resolve_symbol(s_name);
                     if (new_s == nullptr) {
                         continue;
@@ -7205,6 +7289,8 @@ public:
                 infer_type_and_declare(target_name, x.m_value);
             }
         }
+        SetChar current_function_dependencies_copy = current_function_dependencies;
+        SetChar current_module_dependencies_copy = current_module_dependencies;
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = ASRUtils::EXPR(tmp);
 
@@ -7303,18 +7389,17 @@ public:
         if (rhs_is_null_intrinsic) {
             current_variable_type_ = ASRUtils::expr_type(target);
         }
-        SetChar current_function_dependencies_copy = current_function_dependencies;
-        SetChar current_module_dependencies_copy = current_module_dependencies;
         try {
             this->visit_expr(*x.m_value);
         } catch (const SemanticAbort &e) {
             if (!compiler_options.continue_compilation) throw e;
-            if (is_template || is_requirement || is_current_procedure_templated ||
-                    ASRUtils::is_owned_by_template(current_scope)) {
-                current_function_dependencies = current_function_dependencies_copy;
-                current_module_dependencies = current_module_dependencies_copy;
-                tmp = nullptr;
-            }
+            // `tmp` may still hold a subexpression of the invalid value, so
+            // skip the assignment, reporting only errors in its target.
+            current_variable_type_ = temp_current_variable_type_;
+            current_function_dependencies = current_function_dependencies_copy;
+            current_module_dependencies = current_module_dependencies_copy;
+            check_assignment_target(target, x.base.base.loc);
+            throw e;
         }
         current_variable_type_ = temp_current_variable_type_;
         if (tmp == nullptr) {
@@ -7347,47 +7432,13 @@ public:
             }
         }
         ASR::stmt_t *overloaded_stmt = nullptr;
-        check_assignment_to_constant_variable(extract_assignment_base_symbol(target),
-            x.base.base.loc);
+        check_assignment_target(target, x.base.base.loc);
         if (ASR::is_a<ASR::Var_t>(*target)) {
-            ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(target);
-            ASR::symbol_t *sym = var->m_v;
-            if (do_loop_variables.size() > 0 && std::find(do_loop_variables.begin(), do_loop_variables.end(), sym) != do_loop_variables.end()) {
-                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-                std::string var_name = std::string(v->m_name);
-                diag.add(Diagnostic(
-                    "Assignment to loop variable `" + std::string(to_lower(var_name)) +"` is not allowed",
-                    Level::Error, Stage::Semantic, {
-                        Label("",{target->base.loc})
-                    }));
-                throw SemanticAbort();
-            }
-            if (ASR::is_a<ASR::Variable_t>(*sym)){
-                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-                ASR::intentType intent = v->m_intent;
-                if (intent == ASR::intentType::In) {
-                    diag.add(Diagnostic(
-                        "Cannot assign to an intent(in) variable `" + std::string(v->m_name) + "`",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{target->base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
-            }
-            if (ASR::is_a<ASR::Function_t>(*sym)){
-                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
-                if (fn->m_return_var != nullptr) {
-                    // Assigning to a function name (or ENTRY name inside a
-                    // FUNCTION) sets the return value.
-                    target = fn->m_return_var;
-                } else {
-                    diag.add(Diagnostic(
-                        "Assignment to subroutine is not allowed",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{target->base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
+            ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(target)->m_v;
+            if (ASR::is_a<ASR::Function_t>(*sym)) {
+                // Assigning to a function name (or ENTRY name inside a
+                // FUNCTION) sets the return value.
+                target = ASR::down_cast<ASR::Function_t>(sym)->m_return_var;
             }
         }
         if( ASRUtils::use_overloaded_assignment(target, value,
@@ -7481,40 +7532,6 @@ public:
             ASR::expr_t* cmplx = ASRUtils::EXPR(ASR::make_ComplexConstructor_t(al,
                 loc, re, y, ASRUtils::expr_type(target), nullptr));
             value = cmplx;
-        }
-        bool is_valid_lhs = (
-            target->type == ASR::exprType::Var ||
-            target->type == ASR::exprType::ArrayItem ||
-            target->type == ASR::exprType::ArraySection ||
-            target->type == ASR::exprType::ArrayPhysicalCast ||
-            target->type == ASR::exprType::StringSection ||
-            target->type == ASR::exprType::StringItem ||
-            target->type == ASR::exprType::StructInstanceMember ||
-            target->type == ASR::exprType::UnionInstanceMember ||
-            target->type == ASR::exprType::ComplexRe ||
-            target->type == ASR::exprType::ComplexIm ||
-            target->type == ASR::exprType::CoarrayRef
-        );
-
-        is_valid_lhs = is_valid_lhs || (target->type == ASR::exprType::Cast &&
-            (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(target))) ||
-             ASR::down_cast<ASR::Cast_t>(target)->m_kind == ASR::cast_kindType::ClassToIntrinsic));
-
-        // Allow function calls on LHS if they return a POINTER
-        if (!is_valid_lhs && target->type == ASR::exprType::FunctionCall) {
-            ASR::ttype_t* target_type = ASRUtils::expr_type(target);
-            if (ASRUtils::is_pointer(target_type)) {
-                is_valid_lhs = true;
-            }
-        }
-
-        if (!is_valid_lhs) {
-            diag.add(Diagnostic(
-                "The LHS of assignment can only be a variable or an array reference",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
         }
 
         ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));

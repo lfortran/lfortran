@@ -8698,6 +8698,45 @@ static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
     return is_allocatable(type) || is_pointer(type);
 }
 
+// Whether an Assignment with move_allocation can transfer the allocation of
+// `value` to `target`: both are allocatable descriptor arrays, or both are
+// allocatable noncharacter scalars and `target` is type compatible with
+// `value` (F2018 16.9.137), so that the object keeps its representation.
+static inline bool is_move_allocation_pair(ASR::expr_t* target,
+        ASR::expr_t* value) {
+    ASR::ttype_t* target_type = expr_type(target);
+    ASR::ttype_t* value_type = expr_type(value);
+    if (!is_allocatable(target_type) || !is_allocatable(value_type)) {
+        return false;
+    }
+    if (is_array(target_type) || is_array(value_type)) {
+        return is_array(target_type) && is_array(value_type) &&
+            extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray &&
+            extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray;
+    }
+    if (is_character(*target_type) || is_character(*value_type)) {
+        return false;
+    }
+    ASR::ttype_t* target_el_type = extract_type(target_type);
+    ASR::ttype_t* value_el_type = extract_type(value_type);
+    if (is_class_type(target_el_type)) {
+        return is_unlimited_polymorphic_type(target_el_type) ||
+            (ASR::is_a<ASR::StructType_t>(*value_el_type) &&
+             check_class_assignment_compatibility(target, value));
+    }
+    if (is_class_type(value_el_type)) {
+        return false;
+    }
+    if (ASR::is_a<ASR::StructType_t>(*target_el_type) ||
+            ASR::is_a<ASR::StructType_t>(*value_el_type)) {
+        return ASR::is_a<ASR::StructType_t>(*target_el_type) &&
+            ASR::is_a<ASR::StructType_t>(*value_el_type) &&
+            symbol_get_past_external(get_struct_sym_from_struct_expr(target)) ==
+            symbol_get_past_external(get_struct_sym_from_struct_expr(value));
+    }
+    return check_equal_type(target_el_type, value_el_type, target, value);
+}
+
 // Reports whether a value of the derived type `st` has a constant byte
 // representation, i.e. whether every one of its components is stored inline
 // in the type. An allocatable or a pointer component holds an array
@@ -9246,6 +9285,76 @@ inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, ASR::ArrayConstant_
 inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, const ASR::ArrayConstant_t &x, int i) {
     ASR::ttype_t* type = ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(x.m_type));
     return fetch_ArrayConstant_value_helper(al, x.base.base.loc, x.m_data, type, i);
+}
+
+// The compile-time value of the element `array(indices)`, or nullptr unless
+// `array` has a constant value and every index is a constant subscript
+// within its bounds.
+inline ASR::expr_t* fold_ArrayItem_value(Allocator &al, ASR::expr_t* array,
+        ASR::array_index_t* indices, size_t n_indices) {
+    if (n_indices == 0) {
+        return nullptr;
+    }
+    ASR::expr_t* base_value = ASRUtils::expr_value(array);
+    if (base_value == nullptr &&
+            ASR::is_a<ASR::StructInstanceMember_t>(*array)) {
+        ASR::StructInstanceMember_t* member_expr =
+            ASR::down_cast<ASR::StructInstanceMember_t>(array);
+        base_value = ASRUtils::get_struct_member_value_from_constant(
+            ASRUtils::expr_value(member_expr->m_v),
+            member_expr->m_m);
+    }
+    if (base_value == nullptr || !ASR::is_a<ASR::ArrayConstant_t>(*base_value)) {
+        return nullptr;
+    }
+    ASR::ArrayConstant_t* array_constant =
+        ASR::down_cast<ASR::ArrayConstant_t>(base_value);
+    ASR::dimension_t* dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+        ASRUtils::expr_type(array), dims);
+    if (n_dims != n_indices) {
+        return nullptr;
+    }
+    int64_t flat_index = 0;
+    int64_t stride = 1;
+    for (size_t i = 0; i < n_indices; i++) {
+        if (indices[i].m_left != nullptr
+                || indices[i].m_step != nullptr
+                || indices[i].m_right == nullptr) {
+            return nullptr;
+        }
+        ASR::expr_t* index_value =
+            ASRUtils::expr_value(indices[i].m_right);
+        if (index_value == nullptr ||
+                !ASR::is_a<ASR::IntegerConstant_t>(*index_value)) {
+            return nullptr;
+        }
+        int64_t lower_bound = 1;
+        if (dims[i].m_start) {
+            ASR::expr_t* lb_value =
+                ASRUtils::expr_value(dims[i].m_start);
+            if (lb_value &&
+                    !ASRUtils::extract_value(lb_value, lower_bound)) {
+                return nullptr;
+            }
+        }
+        int64_t length = 0;
+        if (dims[i].m_length == nullptr ||
+                !ASRUtils::extract_value(dims[i].m_length, length)) {
+            return nullptr;
+        }
+        int64_t index = ASR::down_cast<ASR::IntegerConstant_t>(
+            index_value)->m_n - lower_bound;
+        flat_index += index * stride;
+        stride *= length;
+    }
+    size_t index_unsigned = flat_index;
+    if (flat_index < 0 || index_unsigned >= (size_t)
+            ASRUtils::get_fixed_size_of_array(array_constant->m_type)) {
+        return nullptr;
+    }
+    return ASRUtils::fetch_ArrayConstant_value(al, array_constant,
+        index_unsigned);
 }
 
 template<typename T>

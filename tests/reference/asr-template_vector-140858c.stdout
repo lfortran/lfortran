@@ -291,6 +291,17 @@
                                                     (SymbolTable
                                                         10
                                                         {
+                                                            1_intvector_elements:
+                                                                (ExternalSymbol
+                                                                    10
+                                                                    1_intvector_elements
+                                                                    8 elements
+                                                                    template_vector_m
+                                                                    [main
+                                                                    intvector]
+                                                                    elements
+                                                                    Public
+                                                                ),
                                                             1_intvector_sz:
                                                                 (ExternalSymbol
                                                                     10
@@ -448,7 +459,7 @@
                                                                 Allocated
                                                                 [(StructInstanceMember
                                                                     (Var 10 this)
-                                                                    7 1_intvector_elements
+                                                                    10 1_intvector_elements
                                                                     (Allocatable
                                                                         (Array
                                                                             (Integer 4)
@@ -470,7 +481,7 @@
                                                         [(Allocate
                                                             [((StructInstanceMember
                                                                 (Var 10 this)
-                                                                7 1_intvector_elements
+                                                                10 1_intvector_elements
                                                                 (Allocatable
                                                                     (Array
                                                                         (Integer 4)
@@ -553,7 +564,7 @@
                                                             (ArrayItem
                                                                 (StructInstanceMember
                                                                     (Var 10 this)
-                                                                    7 1_intvector_elements
+                                                                    10 1_intvector_elements
                                                                     (Allocatable
                                                                         (Array
                                                                             (Integer 4)
@@ -581,7 +592,7 @@
                                                     (Allocate
                                                         [((StructInstanceMember
                                                             (Var 10 this)
-                                                            7 1_intvector_elements
+                                                            10 1_intvector_elements
                                                             (Allocatable
                                                                 (Array
                                                                     (Integer 4)
@@ -607,7 +618,7 @@
                                                         (ArraySection
                                                             (StructInstanceMember
                                                                 (Var 10 this)
-                                                                7 1_intvector_elements
+                                                                10 1_intvector_elements
                                                                 (Allocatable
                                                                     (Array
                                                                         (Integer 4)

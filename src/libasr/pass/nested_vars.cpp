@@ -278,6 +278,11 @@ public:
         cur_func_sym = cur_func_sym_copy;
     }
 
+    // A template, e.g. the copy of a nested template in the procedure that
+    // instantiates the enclosing one, is not code: only its instantiations
+    // are, and they have their own variables.
+    void visit_Template(const ASR::Template_t &/*x*/) {}
+
     void visit_Module(const ASR::Module_t &x) {
         SymbolTable* current_scope_copy = current_scope;
         current_scope = x.m_symtab;

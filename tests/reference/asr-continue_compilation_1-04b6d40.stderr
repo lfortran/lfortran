@@ -628,17 +628,17 @@ semantic error: Symbol 'undeclared_proc' not declared
 640 |         module procedure undeclared_proc  ! {Error} Symbol 'undeclared_proc' not declared
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Derived type 't_recovery' not declared
-    --> tests/errors/continue_compilation_1.f90:1165:7
-     |
-1165 |       class(t_recovery), intent(in) :: self
-     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
 semantic error: Symbol 'bad_op' not declared
    --> tests/errors/continue_compilation_1.f90:288:9
     |
 288 |         module procedure bad_op
     |         ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Derived type 't_recovery' not declared
+    --> tests/errors/continue_compilation_1.f90:1165:7
+     |
+1165 |       class(t_recovery), intent(in) :: self
+     |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: 'binding_outside_module_proc' must be a module procedure or an external procedure with an explicit interface
     --> tests/errors/continue_compilation_1.f90:1201:9
@@ -1135,6 +1135,18 @@ semantic error: using the internal procedure 'tan', which is defined later, as a
      |
 2540 |     procedure(tan) :: f  ! {Error} using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
      |     ^^^^^^^^^^^^^^ 
+
+semantic error: Type bound procedure 'get' of 'child' overriding the binding of the same name in 'base' must return i32, not r32
+    --> tests/errors/continue_compilation_1.f90:2565:13
+     |
+2565 |             procedure, nopass :: get => later_binding_get2  ! {Error} Type bound procedure 'get' of 'child' overriding the binding of the same name in 'base' must return i32, not r32
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Type bound procedure 'get' of 'grandchild' overriding the binding of the same name in 'base' must return i32, not r32
+    --> tests/errors/continue_compilation_1.f90:2574:17
+     |
+2574 |                 procedure, nopass :: get => later_binding_get2  ! {Error} Type bound procedure 'get' of 'grandchild' overriding the binding of the same name in 'base' must return i32, not r32
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
@@ -1907,12 +1919,6 @@ semantic error: `shape` array in reshape intrinsic should be of constant size
 499 |     matrix = reshape(source, shape_, pad=[0])
     |                              ^^^^^^ not a constant size array
 
-semantic error: Incompatible ranks 2 and 1 in assignment
-   --> tests/errors/continue_compilation_1.f90:499:5
-    |
-499 |     matrix = reshape(source, shape_, pad=[0])
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
 semantic error: Complex variable 'c' only has %re, %im, and %kind members, not 'mymember'
    --> tests/errors/continue_compilation_1.f90:504:14
     |
@@ -2242,13 +2248,13 @@ semantic error: `rec` must be of type, Integer
 606 |     write(10, rec=2.5) y
     |     ^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: `bad` is not defined or imported
+semantic error: No matching procedure found for defined operator `.bad.` with operand type integer(4)
    --> tests/errors/continue_compilation_1.f90:609:13
     |
 609 |     bad_x = .bad. 10
     |             ^^^^^^^^ 
 
-semantic error: `op` is not defined or imported
+semantic error: No matching procedure found for defined operator `.op.` with operand types integer(4) and integer(4)
    --> tests/errors/continue_compilation_1.f90:610:13
     |
 610 |     bad_x = 5 .op. 3
@@ -2259,12 +2265,6 @@ semantic error: Operands of comparison operator '==' are not comparable: ieee_cl
     |
 612 |     b = (ieee_cls == ieee_quiet_nan)
     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
-semantic error: Type mismatch in assignment, the types must be compatible
-   --> tests/errors/continue_compilation_1.f90:612:5
-    |
-612 |     b = (ieee_cls == ieee_quiet_nan)
-    |     ^                ^^^^^^^^^^^^^^ type mismatch (integer[:] and ieee_class_type)
 
 semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_1.f90:617:5
@@ -3117,23 +3117,11 @@ semantic error: type mismatch in structure constructor: value of type payload_t 
 1629 |     a = cptr_component_t(payload)  ! {Error} type mismatch in structure constructor: value of type type(payload_t) cannot be the value of component 'p' of type type(c_ptr)
      |                          ^^^^^^^ 
 
-semantic error: Type mismatch in assignment, the types must be compatible
-    --> tests/errors/continue_compilation_1.f90:1629:5
-     |
-1629 |     a = cptr_component_t(payload)  ! {Error} type mismatch in structure constructor: value of type type(payload_t) cannot be the value of component 'p' of type type(c_ptr)
-     |     ^                    ^^^^^^^ type mismatch (cptr_component_t and payload_t)
-
 semantic error: type mismatch in structure constructor: value of type integer(4) cannot be the value of component 'p' of type type(c_ptr)
     --> tests/errors/continue_compilation_1.f90:1630:26
      |
 1630 |     a = cptr_component_t(1)  ! {Error} type mismatch in structure constructor: value of type integer(4) cannot be the value of component 'p' of type type(c_ptr)
      |                          ^ 
-
-semantic error: Type mismatch in assignment, the types must be compatible
-    --> tests/errors/continue_compilation_1.f90:1630:5
-     |
-1630 |     a = cptr_component_t(1)  ! {Error} type mismatch in structure constructor: value of type integer(4) cannot be the value of component 'p' of type type(c_ptr)
-     |     ^                    ^ type mismatch (cptr_component_t and integer)
 
 semantic error: Type mismatch in argument `x`: expected `integer(4)` but got `type(c_funptr)`
     --> tests/errors/continue_compilation_1.f90:1637:24

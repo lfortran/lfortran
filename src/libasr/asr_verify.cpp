@@ -809,23 +809,11 @@ public:
                 "Reallocation of non allocatable variable is not allowed");
         }
         if (x.m_move_allocation) {
-            ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
-            ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
-
-            bool is_target_allocatable_array = ASRUtils::is_array(target_type) &&
-                                            ASRUtils::is_allocatable(target_type) &&
-                                            ASRUtils::extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray;
-
-            bool is_value_allocatable_array = ASRUtils::is_array(value_type) &&
-                                            ASRUtils::is_allocatable(value_type) &&
-                                            ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray;
-
-            require_id(is_target_allocatable_array,
-                "asr.verify.assignment.move_target_allocatable_array",
-                "Move assignment target must be an allocatable array");
-            require_id(is_value_allocatable_array,
-                "asr.verify.assignment.move_value_allocatable_array",
-                "Move assignment value must be an allocatable array");
+            require_id(ASRUtils::is_move_allocation_pair(x.m_target, x.m_value),
+                "asr.verify.assignment.move_allocatable_operands",
+                "Move assignment target and value must both be allocatable "
+                "arrays, or both be allocatable noncharacter scalars with a "
+                "target type compatible with the value");
         }
         BaseWalkVisitor<VerifyVisitor>::visit_Assignment(x);
     }
