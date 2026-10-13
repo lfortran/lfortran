@@ -31,6 +31,7 @@ typedef enum {
 
 #if defined(_WIN32)
 #  include <winsock2.h>
+#  include <windows.h>
 #  include <io.h>
 #  define ftruncate _chsize_s
 #else
@@ -5970,9 +5971,24 @@ LFORTRAN_API float _lfortran_s_cpu_time() {
 
 // system_time -----------------------------------------------------------------
 
+#if defined(_WIN32)
+static bool _lfortran_windows_performance_clock(int64_t *count, int64_t *rate) {
+    LARGE_INTEGER counter, frequency;
+    if (!QueryPerformanceFrequency(&frequency) || frequency.QuadPart <= 0 ||
+            !QueryPerformanceCounter(&counter) || counter.QuadPart < 0) {
+        return false;
+    }
+    // Keep native ticks: scaling a long-running counter can overflow.
+    *count = counter.QuadPart;
+    *rate = frequency.QuadPart;
+    return true;
+}
+#endif
+
 LFORTRAN_API int32_t _lfortran_i32sys_clock_count() {
 #if defined(_WIN32)
-    return - INT_MAX;
+    // Milliseconds, wrapping from COUNT_MAX to zero without signed overflow.
+    return (int32_t)(GetTickCount64() % ((uint64_t)INT_MAX + 1));
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
@@ -5987,7 +6003,7 @@ LFORTRAN_API int32_t _lfortran_i32sys_clock_count() {
 
 LFORTRAN_API int32_t _lfortran_i32sys_clock_count_rate() {
 #if defined(_WIN32)
-    return - INT_MAX;
+    return 1000;
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
@@ -6000,7 +6016,7 @@ LFORTRAN_API int32_t _lfortran_i32sys_clock_count_rate() {
 
 LFORTRAN_API int32_t _lfortran_i32sys_clock_count_max() {
 #if defined(_WIN32)
-    return 0;
+    return INT_MAX;
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
@@ -6013,7 +6029,11 @@ LFORTRAN_API int32_t _lfortran_i32sys_clock_count_max() {
 
 LFORTRAN_API uint64_t _lfortran_i64sys_clock_count() {
 #if defined(_WIN32)
-    return 0;
+    int64_t count, rate;
+    if (_lfortran_windows_performance_clock(&count, &rate)) {
+        return (uint64_t)count;
+    }
+    return -LLONG_MAX;
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
@@ -6026,7 +6046,8 @@ LFORTRAN_API uint64_t _lfortran_i64sys_clock_count() {
 
 LFORTRAN_API int64_t _lfortran_i64sys_clock_count_rate() {
 #if defined(_WIN32)
-    return 0;
+    int64_t count, rate;
+    return _lfortran_windows_performance_clock(&count, &rate) ? rate : 0;
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
@@ -6041,7 +6062,8 @@ LFORTRAN_API int64_t _lfortran_i64sys_clock_count_rate() {
 
 LFORTRAN_API int64_t _lfortran_i64sys_clock_count_max() {
 #if defined(_WIN32)
-    return 0;
+    int64_t count, rate;
+    return _lfortran_windows_performance_clock(&count, &rate) ? LLONG_MAX : 0;
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
@@ -6054,7 +6076,7 @@ LFORTRAN_API int64_t _lfortran_i64sys_clock_count_max() {
 
 LFORTRAN_API float _lfortran_i32r32sys_clock_count_rate() {
 #if defined(_WIN32)
-    return 0;
+    return (float)_lfortran_i32sys_clock_count_rate();
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
@@ -6067,7 +6089,7 @@ LFORTRAN_API float _lfortran_i32r32sys_clock_count_rate() {
 
 LFORTRAN_API double _lfortran_i64r64sys_clock_count_rate() {
 #if defined(_WIN32)
-    return 0;
+    return (double)_lfortran_i64sys_clock_count_rate();
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
