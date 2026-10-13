@@ -71,7 +71,8 @@ class CompileTimeValueReplacer: public ASR::BaseExprReplacer<CompileTimeValueRep
         ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_expr(x);
 
         ASR::expr_t* compile_time_value = ASRUtils::expr_value(x);
-        if( compile_time_value == nullptr ) {
+        if( compile_time_value == nullptr ||
+                ASRUtils::struct_constant_names_procedure(compile_time_value) ) {
             return ;
         }
 

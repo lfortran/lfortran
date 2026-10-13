@@ -2754,3 +2754,47 @@ module continue_compilation_templates_01_unary_minus_mismatch
         end subroutine
     end template
 end module
+
+! Every interface body of a deferred interface declares a deferred procedure,
+! so its name must be a deferred argument of the template, templated
+! subprogram or requirement (#13465).
+module continue_compilation_templates_01_deferred_iface_name
+    implicit none
+    template deferred_iface_name_t {f}
+        deferred interface
+            integer function f(y)
+                integer, intent(in) :: y
+            end function
+            integer function g(y)  ! {Error} 'g' is not a deferred argument of 'deferred_iface_name_t'
+                integer, intent(in) :: y
+            end function
+        end interface
+    end template
+
+    template deferred_iface_call_t {a_t}
+        deferred type :: a_t
+        deferred interface
+            function p(x)  ! {Error} 'p' is not a deferred argument of 'deferred_iface_call_t'
+                type(a_t) :: x, p
+            end function
+        end interface
+    contains
+        function deferred_iface_call_g(x)
+            type(a_t) :: x, deferred_iface_call_g
+            deferred_iface_call_g = p(x)  ! {Error} Function 'p' not found
+        end function
+    end template
+contains
+    template subroutine deferred_iface_name_s{f}(x)
+        deferred interface
+            integer function f(y)
+                integer, intent(in) :: y
+            end function
+            integer function g(y)  ! {Error} 'g' is not a deferred argument of 'deferred_iface_name_s'
+                integer, intent(in) :: y
+            end function
+        end interface
+        integer, intent(inout) :: x
+        x = f(x)
+    end subroutine
+end module

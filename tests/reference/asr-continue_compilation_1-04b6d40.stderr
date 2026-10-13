@@ -1112,16 +1112,28 @@ semantic error: Procedure declarations without an explicit interface (procedure(
 2423 |     procedure(complex) :: h  ! {Error} Procedure declarations without an explicit interface (procedure()) are not yet supported. Please use procedure(interface_name) or declare an interface block.
      |     ^^^^^^^^^^^^^^^^^^ 
 
-semantic error: using the internal procedure 'cos', which is defined later, as a procedure interface is not supported yet
-    --> tests/errors/continue_compilation_1.f90:2433:9
+semantic error: Variable 'cc1_pcut_nosuch' is not declared
+    --> tests/errors/continue_compilation_1.f90:2437:49
      |
-2433 |         procedure(cos) :: f  ! {Error} using the internal procedure 'cos', which is defined later, as a procedure interface is not supported yet
+2437 |     type(cc1_pcut_t) :: cc1_pcut_s = cc1_pcut_t(cc1_pcut_nosuch)  ! {Error} Variable 'cc1_pcut_nosuch' is not declared
+     |                                                 ^^^^^^^^^^^^^^^ 'cc1_pcut_nosuch' is undeclared
+
+semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    --> tests/errors/continue_compilation_1.f90:2454:49
+     |
+2454 |     type(cc1_pcfm_t) :: cc1_pcfm_s = cc1_pcfm_t(cc1_pcfm_f)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+     |                                                 ^^^^^^^^^^ 
+
+semantic error: using the internal procedure 'cos', which is defined later, as a procedure interface is not supported yet
+    --> tests/errors/continue_compilation_1.f90:2468:9
+     |
+2468 |         procedure(cos) :: f  ! {Error} using the internal procedure 'cos', which is defined later, as a procedure interface is not supported yet
      |         ^^^^^^^^^^^^^^ 
 
 semantic error: using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
-    --> tests/errors/continue_compilation_1.f90:2444:5
+    --> tests/errors/continue_compilation_1.f90:2479:5
      |
-2444 |     procedure(tan) :: f  ! {Error} using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
+2479 |     procedure(tan) :: f  ! {Error} using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
      |     ^^^^^^^^^^^^^^ 
 
 semantic error: Restriction type mismatch with provided function argument
@@ -2362,11 +2374,11 @@ semantic error: Variable 'k' is not declared
 681 |         do k = 1, 3
     |            ^ 'k' is undeclared
 
-semantic error: Expected logical expression in if statement, but recieved logical[:] instead
+semantic error: Expected logical expression in if statement, but recieved logical(4)[:] instead
    --> tests/errors/continue_compilation_1.f90:692:13
     |
 692 |         if (abs(arr1)(1) /= 2471095) error stop
-    |             ^^^^^^^^^^^^^^^^^^^^^^^ logical[:] expression, expected logical
+    |             ^^^^^^^^^^^^^^^^^^^^^^^ logical(4)[:] expression, expected logical
 
 semantic error: Character intrinsic 'len' with class(*) argument must be inside 'type is (character(len=*))' guard
    --> tests/errors/continue_compilation_1.f90:700:22
@@ -2666,7 +2678,7 @@ semantic error: the arms of a conditional expression must have the same type and
     --> tests/errors/continue_compilation_1.f90:1045:24
      |
 1045 |         l = ( .true. ? l4 : l8 )  ! {Error} the arms of a conditional expression must have the same type and kind
-     |                        ^^   ^^ type mismatch (logical(kind=4) and logical(kind=8))
+     |                        ^^   ^^ type mismatch (logical(4) and logical(8))
 
 semantic error: the arms of a conditional expression must have the same rank
     --> tests/errors/continue_compilation_1.f90:1052:29
@@ -2690,7 +2702,7 @@ semantic error: the condition of a conditional expression must be scalar
     --> tests/errors/continue_compilation_1.f90:1081:20
      |
 1081 |         print *, ( m ? a : b )  ! {Error} the condition of a conditional expression must be scalar
-     |                    ^ this condition is logical[:]
+     |                    ^ this condition is logical(4)[:]
      |
 1081 |         print *, ( m ? a : b )  ! {Error} the condition of a conditional expression must be scalar
      |                    ~ help: use `merge` to select elementwise with an array mask

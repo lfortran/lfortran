@@ -100,7 +100,7 @@ semantic error: Argument `t` with intent(in) passed to a dummy argument with mod
 229 |         call t(1)%append(4)
     |         ^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Type mismatch in argument `item`: expected `integer(4)` but got `logical`.
+semantic error: Type mismatch in argument `item`: expected `integer(4)` but got `logical(4)`.
    --> tests/errors/continue_compilation_traits_associated.f90:255:23
     |
 255 |     i = k%count_after(.true.)
