@@ -337,6 +337,7 @@ only once, redirect to a log file and then examine the log file.
   use 4 spaces for indentation
 - Names: lower_snake_case files; concise CMake target names.
 - No commented-out code.
+- Comments: write them in plain English (see "Commit & Pull Request Guidelines").
 - No new C/C++ macros. Use constexpr, templates, or inline functions.
 - Error messages: lowercase, show explicit kinds (e.g., integer(4) vs integer(8)),
   never expose internal ASR node names to users.
@@ -533,4 +534,9 @@ and the distinction between capability tests and application validation.
 - Do not commit generated artifacts, large binaries, or local configs.
 - Use Draft PRs while iterating; click “Ready for review” only when satisfied.
 - Use plain Markdown in PR descriptions (no escaped `\n`). Keep it clean, minimal, and follow simple headings (Summary, Scope, Verification, Rationale).
+- Write in plain English wherever a person reads the text: code comments,
+  commit messages, PR descriptions, issue reports, and review replies. Use
+  short, common words and short, direct sentences that say what changes and
+  where. Avoid fancy words, figures of speech, and clever phrasing; if a
+  simpler word says the same thing, use it.
 - Before marking ready: ensure Quick checks is green and include local test evidence.
