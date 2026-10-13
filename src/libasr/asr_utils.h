@@ -8683,6 +8683,23 @@ static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
     return is_allocatable(type) || is_pointer(type);
 }
 
+// Whether an Assignment with move_allocation can transfer the allocation of
+// a `value` of type `value_type` to a `target` of type `target_type`: both
+// are allocatable descriptor arrays, or both are allocatable noncharacter
+// scalars.
+static inline bool is_move_allocation_pair(ASR::ttype_t* target_type,
+        ASR::ttype_t* value_type) {
+    if (!is_allocatable(target_type) || !is_allocatable(value_type)) {
+        return false;
+    }
+    if (is_array(target_type) || is_array(value_type)) {
+        return is_array(target_type) && is_array(value_type) &&
+            extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray &&
+            extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray;
+    }
+    return !is_character(*target_type) && !is_character(*value_type);
+}
+
 // Reports whether a value of the derived type `st` has a constant byte
 // representation, i.e. whether every one of its components is stored inline
 // in the type. An allocatable or a pointer component holds an array

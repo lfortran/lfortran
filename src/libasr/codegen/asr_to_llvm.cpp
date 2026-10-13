@@ -633,6 +633,61 @@ private:
         return value;
     }
 
+    // Moves the allocation of the allocated allocatable scalar `value_expr`
+    // to the unallocated allocatable scalar `target_expr`: the pointer to
+    // the object is transferred and `value_expr` becomes unallocated, so the
+    // object is neither copied nor finalized. A nonpolymorphic object moved
+    // to a polymorphic target is wrapped in a new class wrapper whose vptr
+    // records the declared type of `value_expr`.
+    void move_scalar_allocation(ASR::expr_t* target_expr, ASR::expr_t* value_expr) {
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target_expr);
+        ASR::ttype_t* value_type = ASRUtils::expr_type(value_expr);
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        visit_expr(*target_expr);
+        llvm::Value* target = tmp;
+        visit_expr(*value_expr);
+        llvm::Value* value = tmp;
+        ptr_loads = ptr_loads_copy;
+        llvm::Type* target_ptr_type = llvm_utils->get_type_from_ttype_t_util(
+            target_expr, target_type, module.get());
+        llvm::Type* value_ptr_type = llvm_utils->get_type_from_ttype_t_util(
+            value_expr, value_type, module.get());
+        llvm::Value* data = llvm_utils->CreateLoad2(value_ptr_type, value);
+        ASR::ttype_t* value_el_type = ASRUtils::extract_type(value_type);
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(target_type)) &&
+                !ASRUtils::is_class_type(value_el_type)) {
+            llvm::Type* wrapper_type = llvm_utils->get_type_from_ttype_t_util(
+                target_expr, ASRUtils::type_get_past_allocatable(target_type),
+                module.get());
+            llvm::DataLayout data_layout(module->getDataLayout());
+            llvm::Value* wrapper = builder->CreateBitCast(
+                LLVMArrUtils::lfortran_malloc(context, *module, *builder,
+                    llvm::ConstantInt::get(llvm_utils->getIntType(8),
+                        data_layout.getTypeAllocSize(wrapper_type))),
+                wrapper_type->getPointerTo());
+            if (ASR::is_a<ASR::StructType_t>(*value_el_type)) {
+                struct_api->store_class_vptr(
+                    ASRUtils::get_struct_sym_from_struct_expr(value_expr),
+                    wrapper, module.get());
+            } else {
+                struct_api->store_intrinsic_type_vptr(value_el_type,
+                    ASRUtils::extract_kind_from_ttype_t(value_el_type),
+                    wrapper, module.get());
+            }
+            builder->CreateStore(
+                builder->CreateBitCast(data,
+                    llvm::cast<llvm::StructType>(wrapper_type)->getElementType(1)),
+                llvm_utils->create_gep2(wrapper_type, wrapper, 1));
+            data = builder->CreateBitCast(wrapper, target_ptr_type);
+        } else {
+            data = builder->CreateBitCast(data, target_ptr_type);
+        }
+        builder->CreateStore(data, target);
+        builder->CreateStore(llvm::ConstantPointerNull::get(
+            llvm::cast<llvm::PointerType>(value_ptr_type)), value);
+    }
+
 public:
     diag::Diagnostics &diag;
     llvm::LLVMContext &context;
@@ -13521,6 +13576,11 @@ public:
     void visit_Assignment(const ASR::Assignment_t &x) {
         DeallocateStringsScope _scope(this);
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
+
+        if (x.m_move_allocation && !ASRUtils::is_array(ASRUtils::expr_type(x.m_target))) {
+            move_scalar_allocation(x.m_target, x.m_value);
+            return;
+        }
 
         if (ASR::is_a<ASR::BitCast_t>(*x.m_value)) {
             ASR::BitCast_t* bc = ASR::down_cast<ASR::BitCast_t>(x.m_value);
