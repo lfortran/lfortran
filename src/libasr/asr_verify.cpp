@@ -858,7 +858,9 @@ public:
                     ASRUtils::get_type_code(assign_target_type),
                 x.m_value->base.loc);
         }
+        // The types of a move assignment are checked with its operands below.
         if (check_external && !diagnostics.has_error() && x.m_overloaded == nullptr
+                && !x.m_move_allocation
                 && assign_target_type && assign_value_type) {
             verify_struct_assignment(x, assign_target_type, assign_value_type);
         }
