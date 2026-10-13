@@ -1472,7 +1472,7 @@ namespace MoveAlloc {
         // The allocation is transferred, not copied: the object is neither
         // finalized nor deallocated, and pointers associated with `from`
         // become associated with `to` (F2018 16.9.137).
-        if (ASRUtils::is_move_allocation_pair(arg_types[1], arg_types[0])) {
+        if (ASRUtils::is_move_allocation_pair(args[1], args[0])) {
             ASR::stmt_t* move_assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
                 al, loc, args[1], args[0], nullptr, false, true));
             if_body.push_back(move_assign);

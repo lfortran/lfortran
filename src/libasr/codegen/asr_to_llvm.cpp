@@ -591,23 +591,13 @@ private:
         }, [](){});
     }
 
-    // The data of a polymorphic array descriptor is a single class wrapper
-    // {vptr, data*}, while a nonpolymorphic array descriptor points to the
-    // elements directly. To move the allocation of a nonpolymorphic array
-    // into a polymorphic one, wrap the source's elements in a new class
-    // wrapper whose vptr records the source's declared type, store it into
-    // the source descriptor viewed with the polymorphic descriptor type, and
-    // return that view so that it can be moved like a polymorphic source.
-    llvm::Value* wrap_array_data_for_polymorphic_move(ASR::expr_t* value_expr,
-            llvm::Type* value_array_type, llvm::Value* value,
-            llvm::Type* target_array_type, llvm::Type* wrapper_type) {
+    // Returns a new heap class wrapper {vptr, data*} of type `wrapper_type`
+    // for the nonpolymorphic object `data` of `value_expr`, whose vptr
+    // records the declared type of `value_expr`.
+    llvm::Value* create_class_wrapper(ASR::expr_t* value_expr,
+            llvm::Type* wrapper_type, llvm::Value* data) {
         ASR::ttype_t* value_el_asr_type = ASRUtils::extract_type(
             ASRUtils::expr_type(value_expr));
-        llvm::Type* value_el_type = llvm_utils->get_el_type(
-            value_expr, value_el_asr_type, module.get());
-        llvm::Value* value_data = llvm_utils->CreateLoad2(
-            value_el_type->getPointerTo(),
-            arr_descr->get_pointer_to_data(value_array_type, value));
         llvm::DataLayout data_layout(module->getDataLayout());
         llvm::Value* wrapper = builder->CreateBitCast(
             LLVMArrUtils::lfortran_malloc(context, *module, *builder,
@@ -624,9 +614,29 @@ private:
                 wrapper, module.get());
         }
         builder->CreateStore(
-            builder->CreateBitCast(value_data,
+            builder->CreateBitCast(data,
                 llvm::cast<llvm::StructType>(wrapper_type)->getElementType(1)),
             llvm_utils->create_gep2(wrapper_type, wrapper, 1));
+        return wrapper;
+    }
+
+    // The data of a polymorphic array descriptor is a single class wrapper
+    // {vptr, data*}, while a nonpolymorphic array descriptor points to the
+    // elements directly. To move the allocation of a nonpolymorphic array
+    // into a polymorphic one, wrap the source's elements in a new class
+    // wrapper whose vptr records the source's declared type, store it into
+    // the source descriptor viewed with the polymorphic descriptor type, and
+    // return that view so that it can be moved like a polymorphic source.
+    llvm::Value* wrap_array_data_for_polymorphic_move(ASR::expr_t* value_expr,
+            llvm::Type* value_array_type, llvm::Value* value,
+            llvm::Type* target_array_type, llvm::Type* wrapper_type) {
+        llvm::Type* value_el_type = llvm_utils->get_el_type(value_expr,
+            ASRUtils::extract_type(ASRUtils::expr_type(value_expr)), module.get());
+        llvm::Value* value_data = llvm_utils->CreateLoad2(
+            value_el_type->getPointerTo(),
+            arr_descr->get_pointer_to_data(value_array_type, value));
+        llvm::Value* wrapper = create_class_wrapper(value_expr, wrapper_type,
+            value_data);
         value = builder->CreateBitCast(value, target_array_type->getPointerTo());
         builder->CreateStore(wrapper,
             arr_descr->get_pointer_to_data(target_array_type, value));
@@ -637,8 +647,9 @@ private:
     // to the unallocated allocatable scalar `target_expr`: the pointer to
     // the object is transferred and `value_expr` becomes unallocated, so the
     // object is neither copied nor finalized. A nonpolymorphic object moved
-    // to a polymorphic target is wrapped in a new class wrapper whose vptr
-    // records the declared type of `value_expr`.
+    // to a polymorphic target is wrapped in a new class wrapper. Otherwise
+    // both are nonpolymorphic of the same type, or both are polymorphic,
+    // whose class wrappers have the same layout.
     void move_scalar_allocation(ASR::expr_t* target_expr, ASR::expr_t* value_expr) {
         ASR::ttype_t* target_type = ASRUtils::expr_type(target_expr);
         ASR::ttype_t* value_type = ASRUtils::expr_type(value_expr);
@@ -654,36 +665,16 @@ private:
         llvm::Type* value_ptr_type = llvm_utils->get_type_from_ttype_t_util(
             value_expr, value_type, module.get());
         llvm::Value* data = llvm_utils->CreateLoad2(value_ptr_type, value);
-        ASR::ttype_t* value_el_type = ASRUtils::extract_type(value_type);
-        if (ASRUtils::is_class_type(ASRUtils::extract_type(target_type)) &&
-                !ASRUtils::is_class_type(value_el_type)) {
-            llvm::Type* wrapper_type = llvm_utils->get_type_from_ttype_t_util(
-                target_expr, ASRUtils::type_get_past_allocatable(target_type),
-                module.get());
-            llvm::DataLayout data_layout(module->getDataLayout());
-            llvm::Value* wrapper = builder->CreateBitCast(
-                LLVMArrUtils::lfortran_malloc(context, *module, *builder,
-                    llvm::ConstantInt::get(llvm_utils->getIntType(8),
-                        data_layout.getTypeAllocSize(wrapper_type))),
-                wrapper_type->getPointerTo());
-            if (ASR::is_a<ASR::StructType_t>(*value_el_type)) {
-                struct_api->store_class_vptr(
-                    ASRUtils::get_struct_sym_from_struct_expr(value_expr),
-                    wrapper, module.get());
-            } else {
-                struct_api->store_intrinsic_type_vptr(value_el_type,
-                    ASRUtils::extract_kind_from_ttype_t(value_el_type),
-                    wrapper, module.get());
-            }
-            builder->CreateStore(
-                builder->CreateBitCast(data,
-                    llvm::cast<llvm::StructType>(wrapper_type)->getElementType(1)),
-                llvm_utils->create_gep2(wrapper_type, wrapper, 1));
-            data = builder->CreateBitCast(wrapper, target_ptr_type);
-        } else {
-            data = builder->CreateBitCast(data, target_ptr_type);
+        bool is_target_class = ASRUtils::is_class_type(ASRUtils::extract_type(target_type));
+        bool is_value_class = ASRUtils::is_class_type(ASRUtils::extract_type(value_type));
+        LCOMPILERS_ASSERT(is_target_class || !is_value_class);
+        if (is_target_class && !is_value_class) {
+            data = create_class_wrapper(value_expr,
+                llvm_utils->get_type_from_ttype_t_util(target_expr,
+                    ASRUtils::type_get_past_allocatable(target_type), module.get()),
+                data);
         }
-        builder->CreateStore(data, target);
+        builder->CreateStore(builder->CreateBitCast(data, target_ptr_type), target);
         builder->CreateStore(llvm::ConstantPointerNull::get(
             llvm::cast<llvm::PointerType>(value_ptr_type)), value);
     }
