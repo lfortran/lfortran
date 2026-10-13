@@ -706,11 +706,31 @@ semantic error: deferred type 't' is not extensible, so it cannot be used in a c
 1147 |                 class(t), intent(in) :: x  ! {Error} deferred type 't' is not extensible, so it cannot be used in a class declaration
      |                 ^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Dummy argument 'x' not defined
+    --> tests/errors/continue_compilation_templates_01.f90:1146:13 - 1149:24
+     |
+1146 |                function f(x) result(z)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1149 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: deferred type 't' is abstract, so it cannot be used in a type declaration
     --> tests/errors/continue_compilation_templates_01.f90:1157:17
      |
 1157 |                 type(t), intent(in) :: x  ! {Error} deferred type 't' is abstract, so it cannot be used in a type declaration
      |                 ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'x' not defined
+    --> tests/errors/continue_compilation_templates_01.f90:1156:13 - 1159:24
+     |
+1156 |                function f(x) result(z)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1159 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: deferred type 't' is extensible, so its instantiation argument must be an extensible derived type, not integer
     --> tests/errors/continue_compilation_templates_01.f90:1194:35
@@ -1537,6 +1557,12 @@ semantic error: the instantiation argument for 't' is an expression, but 't' is 
      |
 2192 |         call inline_const_arg{2}(y)  ! {Error} the instantiation argument for 't' is an expression, but 't' is not a deferred constant
      |                               ^ 
+
+semantic error: Function 'g1' not found (not user defined nor intrinsic)
+    --> tests/errors/continue_compilation_templates_01.f90:2229:17
+     |
+2229 |             r = g1()
+     |                 ^^^^ 
 
 semantic error: Type mismatch in assignment, the types must be compatible
     --> tests/errors/continue_compilation_templates_01.f90:2303:9
