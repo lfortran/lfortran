@@ -178,6 +178,14 @@ TEST_CASE("LLVM code generation optimization level") {
     LCompilers::LLVMEvaluator fast_evaluator(fast_options);
     CHECK(fast_evaluator.get_target_machine().getOptLevel()
         == CodeGenOptLevel::Aggressive);
+
+#ifdef HAVE_TARGET_WASM
+    // WebAssembly needs register coloring to keep functions within the
+    // engines' limit on the number of locals.
+    LCompilers::LLVMEvaluator wasm_evaluator("wasm32-unknown-wasi");
+    CHECK(wasm_evaluator.get_target_machine().getOptLevel()
+        == CodeGenOptLevel::Default);
+#endif
 }
 
 TEST_CASE("llvm 1") {

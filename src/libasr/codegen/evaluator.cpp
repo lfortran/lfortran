@@ -527,13 +527,28 @@ using CodeGenOptLevel = llvm::CodeGenOptLevel;
 using CodeGenOptLevel = llvm::CodeGenOpt::Level;
 #endif
 
+bool is_wasm_triple(const llvm::Triple &triple)
+{
+    return triple.getArch() == llvm::Triple::wasm32
+        || triple.getArch() == llvm::Triple::wasm64;
+}
+
 // Machine code generation follows clang and flang: the default mode is -O0,
 // which selects the -O0 instruction selector (FastISel or GlobalISel) and the
 // fast register allocator, and `--fast` is -O3. The default mode runs no IR
 // optimizations.
-CodeGenOptLevel codegen_opt_level(bool fast)
+CodeGenOptLevel codegen_opt_level(const LLVMTargetConfig &config)
 {
-    return fast ? CodeGenOptLevel::Aggressive : CodeGenOptLevel::None;
+    if (config.fast) {
+        return CodeGenOptLevel::Aggressive;
+    }
+    // At -O0 the WebAssembly backend skips register stackification and
+    // coloring, so every virtual register becomes a separate local, and large
+    // functions exceed the 50000 locals per function that engines accept.
+    if (is_wasm_triple(llvm::Triple(config.triple))) {
+        return CodeGenOptLevel::Default;
+    }
+    return CodeGenOptLevel::None;
 }
 
 std::unique_ptr<llvm::TargetMachine> create_target_machine(
@@ -548,8 +563,7 @@ std::unique_ptr<llvm::TargetMachine> create_target_machine(
     // the WebAssembly backend lowers a call through a pointer that was just
     // loaded with a function's address as a direct `call` with a GOT
     // relocation, which produces an invalid module.
-    bool is_wasm = triple.getArch() == llvm::Triple::wasm32
-        || triple.getArch() == llvm::Triple::wasm64;
+    bool is_wasm = is_wasm_triple(triple);
     RM_OPTIONAL_TYPE<llvm::Reloc::Model> relocation_model
         = is_wasm ? llvm::Reloc::Model::Static : llvm::Reloc::Model::PIC_;
     RM_OPTIONAL_TYPE<llvm::CodeModel::Model> code_model;
@@ -560,7 +574,7 @@ std::unique_ptr<llvm::TargetMachine> create_target_machine(
         config.triple,
 #endif
         config.cpu, config.features, options, relocation_model, code_model,
-        codegen_opt_level(config.fast));
+        codegen_opt_level(config));
     if (!machine) {
         throw LCompilersException("could not create target machine for '"
             + config.triple + "'");
@@ -795,7 +809,7 @@ LLVMEvaluator::LLVMEvaluator(LLVMTargetConfig target_config_)
 
     // For some reason the JIT requires a different TargetMachine
     jit = cantFail(llvm::orc::KaleidoscopeJIT::Create(
-        codegen_opt_level(target_config.fast)));
+        codegen_opt_level(target_config)));
 
     _lfortran_stan(0.5);
 }
