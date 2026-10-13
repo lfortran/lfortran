@@ -1,0 +1,63 @@
+semantic error: a specification expression in an interface body that references a variable of the enclosing BLOCK construct is not supported yet in this form
+  --> tests/errors/continue_compilation_block_interface.f90:17:45
+   |
+17 |                 integer, intent(inout) :: a(v%n)
+   |                                             ^^^ 'v' is a variable of the enclosing BLOCK construct
+
+semantic error: Dummy argument 'a' not defined
+  --> tests/errors/continue_compilation_block_interface.f90:15:13 - 18:42
+   |
+15 |                subroutine component_bound(a)
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+18 |                end subroutine component_bound
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a specification expression in an interface body that references a variable of the enclosing BLOCK construct is not supported yet in this form
+  --> tests/errors/continue_compilation_block_interface.f90:21:45
+   |
+21 |                 integer, intent(inout) :: a(n:n+2)
+   |                                             ^ 'n' is a variable of the enclosing BLOCK construct
+
+semantic error: Dummy argument 'a' not defined
+  --> tests/errors/continue_compilation_block_interface.f90:19:13 - 22:38
+   |
+19 |                subroutine lower_bound(a)
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+22 |                end subroutine lower_bound
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a specification expression in an interface body that references a variable of the enclosing BLOCK construct is not supported yet in this form
+  --> tests/errors/continue_compilation_block_interface.f90:25:45
+   |
+25 |                 integer, intent(inout) :: a(k)
+   |                                             ^ 'k' is a variable of the enclosing BLOCK construct
+
+semantic error: Dummy argument 'a' not defined
+  --> tests/errors/continue_compilation_block_interface.f90:23:13 - 26:44
+   |
+23 |                subroutine allocatable_bound(a)
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+26 |                end subroutine allocatable_bound
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a specification expression in an interface body that references a variable of the enclosing BLOCK construct is not supported yet in this form
+  --> tests/errors/continue_compilation_block_interface.f90:29:31
+   |
+29 |                 character(len=max(n, 1)) :: c
+   |                               ^^^^^^^^^ 'n' is a variable of the enclosing BLOCK construct
+
+semantic error: Return type not specified
+  --> tests/errors/continue_compilation_block_interface.f90:27:13 - 30:41
+   |
+27 |                function intrinsic_length() result(c)
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+30 |                end function intrinsic_length
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

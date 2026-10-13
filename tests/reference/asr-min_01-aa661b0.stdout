@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             int_inp2:
                                 (Variable
@@ -54,6 +55,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             output_amin0:
                                 (Variable
@@ -78,6 +80,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             output_amin1:
                                 (Variable
@@ -102,6 +105,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             output_dmin1:
                                 (Variable
@@ -126,6 +130,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             output_min:
                                 (Variable
@@ -150,6 +155,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             output_min0:
                                 (Variable
@@ -174,6 +180,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             output_min1:
                                 (Variable
@@ -198,6 +205,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             output_min_different_kinds:
                                 (Variable
@@ -222,6 +230,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             real_inp1:
                                 (Variable
@@ -246,6 +255,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             real_inp2:
                                 (Variable
@@ -270,6 +280,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             real_inp3:
                                 (Variable
@@ -294,6 +305,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             real_inp4:
                                 (Variable
@@ -318,6 +330,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             real_inp5:
                                 (Variable
@@ -342,6 +355,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             real_inp6:
                                 (Variable
@@ -366,6 +380,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     min_min

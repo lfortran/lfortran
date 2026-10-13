@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             dp:
                                 (ExternalSymbol
@@ -68,6 +69,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             r1:
                                 (Variable
@@ -92,6 +94,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             r2:
                                 (Variable
@@ -116,6 +119,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -140,6 +144,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     intrinsics_03

@@ -27,7 +27,7 @@ define i32 @__module_nested_04_a_b(i32* %x) {
   %y = alloca i32, align 4
   %yy = alloca float, align 4
   store float 0x401A666660000000, float* %yy, align 4
-  %0 = load i32, i32* %x, align 4
+  %0 = load i32, i32* %x, align 1
   store i32 %0, i32* %y, align 4
   %1 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %1, i32 3, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
@@ -122,7 +122,7 @@ free_nonnull5:                                    ; preds = %free_done3
   br label %free_done6
 
 free_done6:                                       ; preds = %free_nonnull5, %free_done3
-  %34 = load i32, i32* %z, align 4
+  %34 = load i32, i32* %z, align 1
   store i32 %34, i32* %c, align 4
   br label %return
 

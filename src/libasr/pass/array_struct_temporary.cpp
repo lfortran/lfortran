@@ -181,6 +181,11 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
 
     }
 
+    // LEN of a character array is a scalar; its argument is not an operand.
+    void visit_StringLen(const ASR::StringLen_t& /*x*/) {
+
+    }
+
 };
 
 ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
@@ -456,6 +461,16 @@ void set_allocation_size_elemental_function(
     // Set len_allocate_expr ( e.g. `allocate(character(5) :: arr(10))` )
     if( ASRUtils::is_character(*ASRUtils::expr_type(first_array_arg)) ) {
         ASRUtils::ASRBuilder b(al, loc);
+        if constexpr (std::is_same_v<T, ASR::IntrinsicElementalFunction_t>) {
+            // The result of a concatenation is longer than its first operand.
+            if( elemental_function->m_intrinsic_id == static_cast<int64_t>(
+                    ASRUtils::IntrinsicElementalFunctions::StringConcat) ) {
+                len_allocate_expr = ASRUtils::StringConcat::get_safe_string_len(al, loc,
+                    &elemental_function->base,
+                    elemental_function->m_type, b);
+                return;
+            }
+        }
         len_allocate_expr = b.StringLen(first_array_arg);
     }
 }
@@ -1583,6 +1598,35 @@ bool is_temporary_needed(ASR::expr_t* value) {
         && is_non_empty_fixed_size_array;
 }
 
+class ContainsFunctionReference:
+    public ASR::BaseWalkVisitor<ContainsFunctionReference> {
+    public:
+
+    bool found = false;
+
+    ContainsFunctionReference() {
+        visit_compile_time_value = false;
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        if (x.m_value == nullptr) {
+            found = true;
+        }
+    }
+
+    void visit_ttype(const ASR::ttype_t& /*x*/) {}
+};
+
+// Whether evaluating `value` references a function at run time.
+bool contains_function_reference(ASR::expr_t* value) {
+    if (value == nullptr) {
+        return false;
+    }
+    ContainsFunctionReference check;
+    check.visit_expr(*value);
+    return check.found;
+}
+
 // Returns true if `value` is the null pointer constant and its type is an
 // array of rank >= 1, i.e. a value which is represented by an array
 // descriptor rather than by a plain address.
@@ -1634,6 +1678,26 @@ bool is_common_symbol_present_in_lhs_and_rhs(Allocator &al, ASR::expr_t* lhs, AS
         }
     }
 
+    return false;
+}
+
+// Whether `rhs` can refer to the storage of `lhs`: it names an array of
+// `lhs`, or an array pointer, which includes an array associate name such as
+// `q` in `select type (q => u)`.
+bool can_rhs_refer_to_lhs(Allocator &al, ASR::expr_t* lhs, ASR::expr_t* rhs) {
+    if (is_common_symbol_present_in_lhs_and_rhs(al, lhs, rhs)) {
+        return true;
+    }
+    Vec<ASR::expr_t*> rhs_vars;
+    rhs_vars.reserve(al, 1);
+    ArrayVarCollector rhs_collector(al, rhs_vars);
+    rhs_collector.visit_expr(*rhs);
+    for( size_t i = 0; i < rhs_vars.size(); i++ ) {
+        ASR::symbol_t* sym = extract_symbol(rhs_vars[i]);
+        if( sym && ASRUtils::is_pointer(ASRUtils::symbol_type(sym)) ) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -2112,6 +2176,33 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                     xx.m_value = array_var_temporary;
                 }
             }
+        }
+        // F2018 10.2.1.3: the expression is evaluated before an allocated
+        // polymorphic variable of another shape or dynamic type is
+        // deallocated (array_op inserts the deallocation). A value that
+        // array_op would evaluate element by element after that
+        // deallocation, and that names the variable or an array pointer
+        // (such as an associate name), is evaluated into a temporary first,
+        // e.g. `v = g(v)` with an elemental `g`, `u = int(q) + 1` inside
+        // `select type (q => u)`, or `v = v(2:3)`. The result of a call to a
+        // non-elemental function is already a temporary.
+        ASR::ttype_t* target_type = ASRUtils::expr_type(xx.m_target);
+        ASR::ttype_t* value_type = ASRUtils::expr_type(xx.m_value);
+        ASR::expr_t* value = ASRUtils::get_past_array_physical_cast(xx.m_value);
+        if ((realloc_lhs || xx.m_realloc_lhs ||
+                ASR::is_a<ASR::StructInstanceMember_t>(*xx.m_target)) &&
+            ASRUtils::is_array(target_type) &&
+            ASRUtils::is_allocatable(target_type) &&
+            ASRUtils::is_class_type(ASRUtils::extract_type(target_type)) &&
+            ASRUtils::is_array(value_type) &&
+            !ASR::is_a<ASR::Var_t>(*value) &&
+            !(ASR::is_a<ASR::FunctionCall_t>(*value) &&
+              !ASRUtils::is_elemental(
+                  ASR::down_cast<ASR::FunctionCall_t>(value)->m_name)) &&
+            can_rhs_refer_to_lhs(al, xx.m_target, xx.m_value)) {
+            xx.m_value = create_and_allocate_temporary_variable_for_array(
+                value, "_assignment_", al, current_body, current_scope,
+                exprs_with_target);
         }
         // Handle struct-type RHS that aliases the LHS, e.g.:
         //   chain2%next = chain2
@@ -2753,6 +2844,34 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     // expression, which is evaluated element by element once lowered.
     bool in_array_context = false;
 
+    // Whether a scalar operand of such an expression that references a
+    // function is evaluated once, before the statement (see replace_expr).
+    // Not in a WHERE construct, whose temporaries all precede the construct
+    // while only its first mask expression is evaluated there, nor in the
+    // value of a defined assignment, which only its subroutine call
+    // evaluates.
+    bool evaluate_function_references_once = true;
+
+    // Whether the scalar operand `x` of an array expression is evaluated
+    // once into a variable. One of a derived type is not if it is
+    // polymorphic or finalized, since the variable would be one more entity
+    // of the type, nor if it references a function whose result is
+    // finalized, which is left in place (see replace_FunctionCall).
+    bool is_evaluated_once(ASR::expr_t* x) {
+        if (!evaluate_function_references_once ||
+                !contains_function_reference(x)) {
+            return false;
+        }
+        ASR::ttype_t* type = ASRUtils::extract_type(ASRUtils::expr_type(x));
+        if (!ASR::is_a<ASR::StructType_t>(*type)) {
+            return true;
+        }
+        return !ASRUtils::is_class_type(type) &&
+            !ASRUtils::contains_finalizable_function_reference(x) &&
+            !ASRUtils::struct_needs_finalization(
+                ASRUtils::get_struct_sym_from_struct_expr(x));
+    }
+
     // A reference to a function whose result is finalized after the statement
     // (F2018 7.5.6.3 p5) is left in place (see replace_FunctionCall), so that
     // subroutine_from_function returns the result into a variable that is
@@ -2763,6 +2882,11 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     // In an array expression, which the loop it becomes would evaluate once
     // per element, a scalar operand that contains such a reference is
     // evaluated once, before the statement, into a variable.
+    //
+    // So is a scalar operand that references any other function (see
+    // is_evaluated_once): the expression is evaluated once and its value is
+    // then used for every element (F2018 10.2.1.3, 10.1.4), so `a = f(4)`
+    // references f once, not once per element of a.
     void replace_expr(ASR::expr_t* x) {
         if (x == nullptr) {
             return;
@@ -2775,6 +2899,19 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             force_replace_current_expr_for_scalar(current_expr,
                 "_finalizable_result_", al, current_body, current_scope,
                 exprs_with_target);
+            return;
+        }
+        if (in_array_context && type != nullptr && !is_array_expr &&
+                is_evaluated_once(x)) {
+            if (ASRUtils::is_struct(*type)) {
+                force_replace_current_expr_for_struct(current_expr,
+                    "_scalar_operand_", al, current_body, current_scope,
+                    exprs_with_target);
+            } else {
+                force_replace_current_expr_for_scalar(current_expr,
+                    "_scalar_operand_", al, current_body, current_scope,
+                    exprs_with_target);
+            }
             return;
         }
         bool in_array_context_copy = in_array_context;
@@ -2858,7 +2995,11 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 // The function is invoked once per element: see replace_expr.
                 for (size_t i = 0; i < x->n_args; i++) {
                     if (ASRUtils::contains_finalizable_function_reference(
-                            x->m_args[i].m_value)) {
+                            x->m_args[i].m_value) ||
+                        (evaluate_function_references_once &&
+                            contains_function_reference(x->m_args[i].m_value) &&
+                            !ASRUtils::is_array(ASRUtils::expr_type(
+                                x->m_args[i].m_value)))) {
                         ASR::expr_t** current_expr_copy = current_expr;
                         current_expr = &x->m_args[i].m_value;
                         replace_expr(x->m_args[i].m_value);
@@ -3390,6 +3531,11 @@ class ReplaceExprWithTemporaryVisitor:
             inside_where = true;
             parent_body_for_where = current_body;
         }
+        // Only the first mask expression of the construct is evaluated
+        // before it, where the temporaries of the construct are.
+        bool evaluate_once_copy = replacer.evaluate_function_references_once;
+        replacer.evaluate_function_references_once =
+            evaluate_once_copy && !inside_where_copy;
         Vec<ASR::stmt_t*>* current_body_copy_ = current_body;
         current_body = parent_body_for_where;
         ASR::expr_t** current_expr_copy_86 = current_expr;
@@ -3400,9 +3546,11 @@ class ReplaceExprWithTemporaryVisitor:
         visit_expr(*x.m_test);
         current_body = current_body_copy_;
 
+        replacer.evaluate_function_references_once = false;
         ASR::Where_t& xx = const_cast<ASR::Where_t&>(x);
         transform_stmts(xx.m_body, xx.n_body);
         transform_stmts(xx.m_orelse, xx.n_orelse);
+        replacer.evaluate_function_references_once = evaluate_once_copy;
 
         if( !inside_where_copy ) {
             inside_where = false;
@@ -3466,7 +3614,11 @@ class ReplaceExprWithTemporaryVisitor:
         // A scalar value is assigned to each element of an array target.
         replacer.in_array_context = ASRUtils::is_array(
             ASRUtils::expr_type(x.m_target));
+        bool evaluate_once_copy = replacer.evaluate_function_references_once;
+        replacer.evaluate_function_references_once =
+            evaluate_once_copy && x.m_overloaded == nullptr;
         call_replacer();
+        replacer.evaluate_function_references_once = evaluate_once_copy;
         replacer.in_array_context = false;
         replacer.lhs_var = nullptr;
         bool is_assignment_target_array_section_item = ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) &&
@@ -3618,6 +3770,12 @@ class TransformVariableInitialiser:
     }
 
     void visit_Variable(const ASR::Variable_t &x) {
+        if (x.m_common_block != nullptr) {
+            // The initial value of a variable in a common block is the
+            // initial value of the block's static storage, which the view
+            // of the block gives.
+            return;
+        }
         ASR::expr_t* value = x.m_value ? x.m_value : x.m_symbolic_value;
         // TODO: StructType expressions aren't evaluated at compile time
         // currently, see: https://github.com/lfortran/lfortran/issues/4909
@@ -4072,6 +4230,8 @@ class VerifySimplifierASROutput:
             !(check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) &&
             !(check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) &&
+            // A variable in a common block keeps its static initial value.
+            x.m_common_block == nullptr &&
             !(x.m_storage == ASR::storage_typeType::Save && x.m_symbolic_value &&
                 ASRUtils::is_value_constant(x.m_symbolic_value)
             ) &&

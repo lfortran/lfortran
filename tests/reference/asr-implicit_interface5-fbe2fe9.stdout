@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -66,6 +67,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             driver:
                                 (Function
@@ -133,6 +135,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             driver~arg_1:
                                                 (Variable
@@ -163,6 +166,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     driver~fpcast
@@ -256,6 +260,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             n:
                                 (Variable
@@ -280,6 +285,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     implicit_interface5

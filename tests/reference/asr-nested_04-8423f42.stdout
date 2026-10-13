@@ -40,6 +40,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     nested_04
@@ -93,6 +94,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             c:
                                                 (Function
@@ -122,6 +124,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             z:
                                                                 (Variable
@@ -146,6 +149,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     c
@@ -235,6 +239,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             y:
                                                 (Variable
@@ -259,6 +264,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             yy:
                                                 (Variable
@@ -283,6 +289,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     b

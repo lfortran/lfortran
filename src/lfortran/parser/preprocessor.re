@@ -333,8 +333,10 @@ int parse_bexpr(unsigned char *string_start, unsigned char *&cur, const cpp_symt
 }
 
 Result<std::string> CPreprocessor::run(const std::string &input, LocationManager &lm,
-        cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics) const {
+        cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics,
+        bool macro_expansion) const {
     LCOMPILERS_ASSERT(input[input.size()] == '\0');
+    bool fixed_form_comments = compiler_options.fixed_form && !macro_expansion;
     unsigned char *string_start=(unsigned char*)(&input[0]);
     unsigned char *cur = string_start;
     std::string output;
@@ -350,6 +352,16 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
         unsigned char *tok = cur;
         unsigned char *mar;
         unsigned char *t1, *t2, *t3, *t4;
+        if (fixed_form_comments && (cur == string_start || cur[-1] == '\n')
+                && (*cur == 'c' || *cur == 'C' || *cur == '*')) {
+            // Fixed-form comment line: copy it verbatim, so that quotes in
+            // it do not start a string literal
+            while (*cur != '\n' && *cur != '\0') cur++;
+            if (*cur == '\n') cur++;
+            if (!branch_enabled) continue;
+            output.append(token(tok, cur));
+            continue;
+        }
         /*!stags:re2c format = 'unsigned char *@@;\n'; */
         /*!re2c
             re2c:define:YYCURSOR = cur;
@@ -741,7 +753,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                             std::string filename;
                             lm.pos_to_linecol(pos, line, col, filename);
                             lm_tmp.files.back().current_line = line;
-                            Result<std::string> res = run(expanded_args[i], lm_tmp, macro_definitions, diagnostics);
+                            Result<std::string> res = run(expanded_args[i], lm_tmp, macro_definitions, diagnostics, true);
                             if (res.ok) {
                                 expanded_args[i] = res.result;
                             } else {
@@ -783,7 +795,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                         lm.pos_to_linecol(pos, line, col, filename);
                         lm_tmp.files.back().current_line = line;
 
-                        Result<std::string> res = run(expansion2, lm_tmp, macro_definitions, diagnostics);
+                        Result<std::string> res = run(expansion2, lm_tmp, macro_definitions, diagnostics, true);
                         if (res.ok) {
                             expansion = res.result;
                         } else {

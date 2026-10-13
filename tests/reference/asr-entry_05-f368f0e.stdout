@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             ftol:
                                 (Variable
@@ -54,6 +55,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             n:
                                 (Variable
@@ -78,6 +80,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             r:
                                 (Variable
@@ -110,6 +113,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             reltol:
                                 (Variable
@@ -134,6 +138,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             zx:
                                 (Variable
@@ -158,6 +163,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     dstzr
@@ -235,6 +241,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             ftol:
                                 (Variable
@@ -259,6 +266,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             n:
                                 (Variable
@@ -283,6 +291,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             r:
                                 (Variable
@@ -313,6 +322,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             reltol:
                                 (Variable
@@ -337,6 +347,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             zx:
                                 (Variable
@@ -361,6 +372,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     dzror
@@ -436,6 +448,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             entry__lcompilers:
                                 (Variable
@@ -460,6 +473,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             ftol:
                                 (Function
@@ -489,6 +503,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             zx:
                                                 (Variable
@@ -513,6 +528,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     ftol
@@ -597,6 +613,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             r:
                                 (Variable
@@ -627,6 +644,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             reltol:
                                 (Variable
@@ -651,6 +669,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             zx:
                                 (Variable
@@ -675,6 +694,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     dzror_main__lcompilers
@@ -823,6 +843,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             r:
                                 (Variable
@@ -853,6 +874,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     entry_05

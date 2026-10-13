@@ -476,7 +476,7 @@ namespace GetCommand {
             command = string_holder
             deallocate(string_holder)
 
-            status = _lfortran_get_command_status()
+            status = _lfortran_get_command_status(len(command), length_to_allocate)
 
         */
         const int64_t ZERO = 0;
@@ -487,8 +487,8 @@ namespace GetCommand {
         int arg_idx = 0; // Tracks index (min = 0, max = 2)
 
         ASR::expr_t* length_to_allocate = nullptr;
-        // Create _lfortran_get_command_length interface + call it (required by both command and length)
-        if (has_command || has_length) {
+        // Create _lfortran_get_command_length interface + call it (required by command, length and status)
+        if (has_command || has_length || has_status) {
             ASR::symbol_t *get_length = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 0, int32);
             fn_symtab->add_symbol(c_func_name_2, get_length);
             dep.push_back(al, s2c(al, c_func_name_2));
@@ -528,10 +528,18 @@ namespace GetCommand {
 
         if (has_status) {
             fill_func_arg_sub("status", arg_types[arg_idx], Out);
-            ASR::symbol_t *get_status = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 0, arg_types[arg_idx]);
+            ASR::symbol_t *get_status = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 2, int32);
             fn_symtab->add_symbol(c_func_name_3, get_status);
             dep.push_back(al, s2c(al, c_func_name_3));
-            body.push_back(al, b.Assignment(args[arg_idx], b.Call(get_status, call_args, arg_types[arg_idx])));
+            // status is -1 if `command` is too short to hold the command, 0 otherwise
+            Vec<ASR::expr_t*> status_args; status_args.reserve(al, 2);
+            status_args.push_back(al, has_command ? b.StringLen(args[0]) : length_to_allocate);
+            status_args.push_back(al, length_to_allocate);
+            ASR::expr_t* status = b.Call(get_status, status_args, int32);
+            if (ASRUtils::extract_kind_from_ttype_t(arg_types[arg_idx]) != 4) {
+                status = b.i2i_t(status, arg_types[arg_idx]);
+            }
+            body.push_back(al, b.Assignment(args[arg_idx], status));
         }
 
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -1461,14 +1469,10 @@ namespace MoveAlloc {
 
         std::vector<ASR::stmt_t*> if_body;
 
-        bool is_allocatable_array_from = ASRUtils::is_array(arg_types[0]) &&
-            ASRUtils::is_allocatable(arg_types[0]) &&
-            ASRUtils::extract_physical_type(arg_types[0]) == ASR::array_physical_typeType::DescriptorArray;
-        bool is_allocatable_array_to = ASRUtils::is_array(arg_types[1]) &&
-            ASRUtils::is_allocatable(arg_types[1]) &&
-            ASRUtils::extract_physical_type(arg_types[1]) == ASR::array_physical_typeType::DescriptorArray;
-
-        if (is_allocatable_array_from && is_allocatable_array_to) {
+        // The allocation is transferred, not copied: the object is neither
+        // finalized nor deallocated, and pointers associated with `from`
+        // become associated with `to` (F2018 16.9.137).
+        if (ASRUtils::is_move_allocation_pair(args[1], args[0])) {
             ASR::stmt_t* move_assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
                 al, loc, args[1], args[0], nullptr, false, true));
             if_body.push_back(move_assign);

@@ -268,20 +268,26 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
             }
         }
 
+        // The procedures declared in a procedure, program or module,
+        // including in its BLOCK constructs
+        void transform_procedures_in_scope_and_constructs(SymbolTable *scope) {
+            ASRUtils::for_each_symbol_in_scope_and_constructs(scope, [&](ASR::symbol_t *sym) {
+                if (is_a<ASR::Function_t>(*sym)) {
+                    ASR::Function_t *s = down_cast<ASR::Function_t>(sym);
+                    if (is_optional_argument_present(s)) {
+                        transform_functions_with_optional_arguments(s);
+                    }
+                }
+            });
+        }
+
         void visit_Program(const ASR::Program_t &x) {
             // FIXME: this is a hack, we need to pass in a non-const `x`,
             // which requires to generate a TransformVisitor.
             ASR::Program_t &xx = const_cast<ASR::Program_t&>(x);
             current_scope = xx.m_symtab;
 
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);
-                    if (is_optional_argument_present(s)) {
-                        transform_functions_with_optional_arguments(s);
-                    }
-                }
-            }
+            transform_procedures_in_scope_and_constructs(x.m_symtab);
 
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::AssociateBlock_t>(*item.second)) {
@@ -305,14 +311,7 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
             ASR::Module_t &xx = const_cast<ASR::Module_t&>(x);
             current_scope = xx.m_symtab;
 
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);
-                    if (is_optional_argument_present(s)) {
-                        transform_functions_with_optional_arguments(s);
-                    }
-                }
-            }
+            transform_procedures_in_scope_and_constructs(x.m_symtab);
 
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::AssociateBlock_t>(*item.second)) {
@@ -333,14 +332,7 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
             ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
             current_scope = xx.m_symtab;
 
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);
-                    if (is_optional_argument_present(s)) {
-                        transform_functions_with_optional_arguments(s);
-                    }
-                }
-            }
+            transform_procedures_in_scope_and_constructs(x.m_symtab);
 
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::AssociateBlock_t>(*item.second)) {
@@ -447,10 +439,9 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(func_sym);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(v->m_type)));
         func_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
-        ASR::ttype_t* new_type = ASRUtils::TYPE(
-            ASRUtils::ExprStmtWithScopeDuplicator(al, scope).
-                duplicate_FunctionType(ASRUtils::get_FunctionType(
-                    ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration)))));
+        ASR::ttype_t* new_type = ASRUtils::import_procedure_type(al,
+            ASRUtils::ExprStmtDuplicator(al).duplicate_ttype(ASR::down_cast<ASR::Function_t>(
+                func_sym)->m_function_signature), v->m_parent_symtab);
         if (ASR::is_a<ASR::Pointer_t>(*v->m_type)) {
             new_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, v->base.base.loc, new_type));
         }

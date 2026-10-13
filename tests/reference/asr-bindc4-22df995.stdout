@@ -90,6 +90,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             j:
                                 (Variable
@@ -114,6 +115,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             newshape:
                                 (Variable
@@ -144,6 +146,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             queries:
                                 (Variable
@@ -170,6 +173,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             queries2:
                                 (Variable
@@ -206,6 +210,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -240,6 +245,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             xv:
                                 (Variable
@@ -272,6 +278,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             y:
                                 (Variable
@@ -306,6 +313,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             yv:
                                 (Variable
@@ -338,6 +346,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             zv:
                                 (Variable
@@ -368,6 +377,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     bindc4

@@ -70,6 +70,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             queries:
                                 (Variable
@@ -96,6 +97,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -122,6 +124,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             y:
                                 (Variable
@@ -146,6 +149,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     bindc3

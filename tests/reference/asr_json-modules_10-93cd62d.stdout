@@ -263,7 +263,8 @@
                                         "is_protected": false,
                                         "pass_attr": "NotMethod",
                                         "self_argument": [],
-                                        "codims": []
+                                        "codims": [],
+                                        "common_block": []
                                     },
                                     "loc": {
                                         "first": 38,

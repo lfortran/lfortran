@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             a2:
                                 (Variable
@@ -69,6 +70,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             a3:
                                 (Variable
@@ -108,6 +110,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             ar1:
                                 (Variable
@@ -155,6 +158,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             ar2:
                                 (Variable
@@ -202,6 +206,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             ar3:
                                 (Variable
@@ -290,6 +295,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             arr1:
                                 (Variable
@@ -342,6 +348,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             arr2:
                                 (Variable
@@ -417,6 +424,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             arr3:
                                 (Variable
@@ -510,6 +518,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             c1:
                                 (Variable
@@ -534,6 +543,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             c2:
                                 (Variable
@@ -558,6 +568,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i1:
                                 (Variable
@@ -582,6 +593,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i2:
                                 (Variable
@@ -606,6 +618,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i3:
                                 (Variable
@@ -630,6 +643,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i4:
                                 (Variable
@@ -654,6 +668,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             int16:
                                 (ExternalSymbol
@@ -698,6 +713,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             r2:
                                 (Variable
@@ -722,6 +738,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             ri3:
                                 (Variable
@@ -752,6 +769,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             ri4:
                                 (Variable
@@ -782,6 +800,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     intrinsics_30

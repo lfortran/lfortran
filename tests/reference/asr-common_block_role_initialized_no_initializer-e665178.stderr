@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.common_block.role]: CommonBlock 'common~zero' is Initialized, but none of its variables has an initializer
+  --> tests/asr/verify/common_block_role_initialized_no_initializer.asr:22:28
+   |
+22 |             "common~zero" (CommonBlock
+   |                            ^^^^^^^^^^^ failed here
