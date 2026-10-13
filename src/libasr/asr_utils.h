@@ -9355,6 +9355,100 @@ inline ASR::asr_t* make_ArrayConstant_t_util(Allocator &al,
         al, loc, n_data, data, array_type, storage_format);
 }
 
+// pad (with ' ') or trim character string 'value'
+inline ASR::expr_t* adjust_character_length(ASR::expr_t* value, int64_t lhs_len, int64_t rhs_len, const Location& loc, Allocator& al) {
+    value = ASRUtils::expr_value(value);
+    ASR::StringConstant_t* string_constant = ASR::down_cast<ASR::StringConstant_t>(value);
+    char* original_str = string_constant->m_s;
+    size_t new_length = static_cast<size_t>(lhs_len);
+    char* adjusted_str = al.allocate<char>(new_length + 1);
+
+    if (lhs_len < rhs_len) { // trim
+        std::memcpy(adjusted_str, original_str, new_length);
+    } else { // pad
+        std::memcpy(adjusted_str, original_str, rhs_len);
+        std::memset(adjusted_str + rhs_len, ' ', new_length - rhs_len);
+    }
+    adjusted_str[new_length] = '\0'; // null-terminate the string
+
+    ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_String_t(
+        al, loc, 1,
+        ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, loc, new_length, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::DescriptorString));
+
+    return ASRUtils::EXPR(ASR::make_StringConstant_t(
+        al, loc, adjusted_str, value_type));
+}
+
+inline ASR::expr_t* adjust_array_character_length(ASR::expr_t* value, int64_t lhs_len, int64_t rhs_len, Allocator& al) {
+    ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(value));
+    Vec<ASR::expr_t*> body;
+    size_t array_size = ASRUtils::get_fixed_size_of_array(array_constant->m_type);
+
+    body.reserve(al, array_size);
+
+    for (size_t i = 0; i < array_size; i++) {
+        ASR::expr_t* item = ASRUtils::fetch_ArrayConstant_value(al, array_constant, i);
+
+        if (ASR::is_a<ASR::ArrayConstant_t>(*item)) {
+            item = adjust_array_character_length(item, lhs_len, rhs_len,  al);
+        } else {
+            item = adjust_character_length(item, lhs_len, rhs_len, item->base.loc, al);
+        }
+
+        body.push_back(al, item);
+    }
+
+    {
+        ASR::String_t* str_t = ASRUtils::get_string_type(array_constant->m_type);
+        LCOMPILERS_ASSERT(ASRUtils::is_value_constant(str_t->m_len))
+        ASR::down_cast<ASR::IntegerConstant_t>(str_t->m_len)->m_n = lhs_len;
+    }
+    array_constant->m_data = ASRUtils::set_ArrayConstant_data(
+            body.p, body.size(), ASRUtils::extract_type(array_constant->m_type));
+    array_constant->m_n_data = ASRUtils::get_ArrayConstant_data_size(array_constant->m_type);
+
+    return value;
+}
+
+// Returns the character constant `value` (a scalar or an array) with its
+// length set to `len`, blank padded or truncated, as for
+// `character(len=3) :: c = "hi"`. Returns nullptr if the length is
+// already `len` or is not constant.
+inline ASR::expr_t* conform_character_constant_length(ASR::expr_t* value,
+        int64_t len, const Location& loc, Allocator& al) {
+    ASR::String_t* value_str = ASRUtils::get_string_type(ASRUtils::expr_type(value));
+    int64_t value_len = 0;
+    if (value_str == nullptr || value_str->m_len == nullptr
+            || !ASRUtils::extract_value(ASRUtils::expr_value(value_str->m_len), value_len)
+            || value_len == len) {
+        return nullptr;
+    }
+    if (ASR::is_a<ASR::StringConstant_t>(*value)) {
+        return adjust_character_length(value, len, value_len, loc, al);
+    }
+    if (!ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+        return nullptr;
+    }
+    ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
+    if (ASRUtils::get_fixed_size_of_array(array->m_type) < 0
+            || !ASR::is_a<ASR::Array_t>(*array->m_type)) {
+        return nullptr;
+    }
+    // `adjust_array_character_length` rewrites the constant and the
+    // length in its type in place, and `value` may be a named constant's
+    // value, so adjust a copy with its own length.
+    ASR::ttype_t* adjusted_type = ASRUtils::duplicate_type(al, array->m_type);
+    ASRUtils::get_string_type(adjusted_type)->m_len = ASRUtils::EXPR(
+        ASR::make_IntegerConstant_t(al, loc, value_len,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    ASR::expr_t* adjusted = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, loc,
+        array->m_data, adjusted_type, array->m_storage_format));
+    return adjust_array_character_length(adjusted, len, value_len, al);
+}
+
 inline void flatten_ArrayConstant_data(Allocator &al, Vec<ASR::expr_t*> &data, ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* a_type, int &curr_idx, ASR::ArrayConstant_t* x = nullptr) {
     if (x != nullptr) {
         // this is array constant, we have it's data available
