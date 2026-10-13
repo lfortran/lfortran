@@ -1442,6 +1442,10 @@ RUN(NAME procedure_pointer_29 LABELS llvm)
 RUN(NAME procedure_pointer_30 LABELS llvm)
 RUN(NAME procedure_pointer_31 LABELS llvm)
 RUN(NAME procedure_pointer_32 LABELS llvm)
+# GFortran also rejects the circular declarations of this dispatch table:
+# `table` gives it `a` before `a` is defined, which it reports as a procedure
+# used as an actual argument without an explicit interface or EXTERNAL
+RUN(NAME procedure_pointer_33 LABELS llvm)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
