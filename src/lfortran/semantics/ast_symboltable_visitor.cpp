@@ -1010,10 +1010,19 @@ public:
         visit_ModuleSubmoduleCommon<AST::Module_t, ASR::Module_t>(x);
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
+        // Every undefined procedure pointer component target is reported
+        // before compilation stops.
+        bool undefined_forward_target = false;
         for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
             // Check the module's symbol table
             ASR::symbol_t *current_sym = m->m_symtab->resolve_symbol(name);
-            if (current_sym == placeholder_sym) {
+            if (current_sym == placeholder_sym
+                    && forward_procedure_targets.count(placeholder_sym) > 0) {
+                diag.semantic_error_label("Variable '" + name
+                    + "' is not declared", {placeholder_sym->base.loc},
+                    "'" + name + "' is undeclared");
+                undefined_forward_target = true;
+            } else if (current_sym == placeholder_sym) {
                 diag.add(diag::Diagnostic(
                     "Interface '" + name + "' is referenced but not defined",
                     diag::Level::Error, diag::Stage::Semantic, {
@@ -1022,9 +1031,14 @@ public:
             }
         }
         pending_proc_placeholders.clear();
+        forward_procedure_targets.clear();
+        forward_procedure_target_uses.clear();
         in_module = false;
         if (compiler_options.implicit_typing) {
             implicit_stack.pop_back();
+        }
+        if (undefined_forward_target && !compiler_options.continue_compilation) {
+            throw SemanticAbort();
         }
     }
 
@@ -4841,6 +4855,25 @@ public:
                 x->m_v = it->second;
             }
         }
+
+        // An array constant of derived type holds its elements as
+        // expressions, such as structure constants that give a procedure
+        // pointer component a placeholder.
+        void replace_ArrayConstant(ASR::ArrayConstant_t *x) {
+            ASR::ttype_t* element_type = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable(x->m_type));
+            if (!ASR::is_a<ASR::StructType_t>(*element_type)) {
+                return;
+            }
+            ASR::expr_t** elements = static_cast<ASR::expr_t**>(x->m_data);
+            size_t n = (size_t) ASRUtils::get_fixed_size_of_array(x->m_type);
+            ASR::expr_t** current_expr_copy = current_expr;
+            for (size_t i = 0; i < n; i++) {
+                current_expr = &elements[i];
+                replace_expr(elements[i]);
+            }
+            current_expr = current_expr_copy;
+        }
     };
 
     // A procedure pointer `null()` in an initializer, such as a constructor
@@ -4884,6 +4917,24 @@ public:
         if (!placeholder_to_real.empty()) {
             PlaceholderVarReplacer replacer(placeholder_to_real);
             replace_placeholder_in_initializers(current_scope, replacer);
+        }
+        // A procedure given to a procedure pointer component before its
+        // definition is checked against the component as the structure
+        // constructor checks a procedure defined earlier. Every mismatch is
+        // reported before compilation stops.
+        bool forward_target_mismatch = false;
+        for (auto &use : forward_procedure_target_uses) {
+            auto it = placeholder_to_real.find(use.placeholder);
+            if (it == placeholder_to_real.end()) continue;
+            ASR::expr_t* target = ASRUtils::EXPR(
+                ASR::make_Var_t(al, use.loc, it->second));
+            if (!procedure_component_value_matches(use.member, target)) {
+                forward_target_mismatch = true;
+            }
+        }
+        forward_procedure_target_uses.clear();
+        if (forward_target_mismatch && !compiler_options.continue_compilation) {
+            throw SemanticAbort();
         }
         for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
             ASR::symbol_t *real_sym = current_scope->resolve_symbol(name);

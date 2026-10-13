@@ -731,6 +731,7 @@ public:
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
     int64_t global_array_count;
+    int64_t global_struct_count = 0;
     int64_t null_array_descriptor_count;
     int64_t global_deep_count;
 
@@ -6124,6 +6125,17 @@ public:
                 }
             }
             tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
+        } else if (llvm::isa<llvm::Constant>(tmp)
+                && ASRUtils::is_pointer(member->m_type)) {
+            // A pointer component, such as the procedure pointer called by
+            // `call c%p()`, is read through its storage, as for a variable.
+            // A named constant of derived type is lowered to its value, so
+            // give that value storage.
+            llvm::Constant* value = llvm::cast<llvm::Constant>(tmp);
+            llvm::GlobalVariable* storage = new llvm::GlobalVariable(*module,
+                value->getType(), true, llvm::GlobalValue::PrivateLinkage,
+                value, "global_struct_" + std::to_string(global_struct_count++));
+            tmp = llvm_utils->create_gep2(value->getType(), storage, member_idx);
         } else {
             if (llvm::isa<llvm::Constant>(tmp)) {
                 tmp = llvm::cast<llvm::Constant>(tmp)->getAggregateElement(member_idx);

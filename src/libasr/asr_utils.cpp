@@ -1984,6 +1984,28 @@ Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> find_and_load_submodu
     return submodules_collector;
 }
 
+bool struct_constant_names_procedure(ASR::expr_t* value) {
+    if (value == nullptr || !ASR::is_a<ASR::StructConstant_t>(*value)) {
+        return false;
+    }
+    ASR::StructConstant_t* sc = ASR::down_cast<ASR::StructConstant_t>(value);
+    for (size_t i = 0; i < sc->n_args; i++) {
+        ASR::expr_t* arg = sc->m_args[i].m_value;
+        if (arg == nullptr) {
+            continue;
+        }
+        if (ASR::is_a<ASR::Var_t>(*arg) && ASR::is_a<ASR::Function_t>(
+                *ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(arg)->m_v))) {
+            return true;
+        }
+        if (struct_constant_names_procedure(arg)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 ASR::expr_t* get_struct_member_value_from_constant(ASR::expr_t* value,
                             ASR::symbol_t* member) {
     if (value == nullptr) {

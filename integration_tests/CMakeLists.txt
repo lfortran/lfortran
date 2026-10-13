@@ -1429,6 +1429,13 @@ RUN(NAME procedure_pointer_25 LABELS gfortran llvm EXTRA_ARGS --implicit-interfa
 RUN(NAME procedure_pointer_26 LABELS gfortran llvm EXTRAFILES procedure_pointer_26_mod.f90 EXTRA_ARGS --implicit-interface)
 RUN(NAME procedure_pointer_27 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_28 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
+# GFortran rejects a procedure as the value of a procedure pointer component
+# in a structure constructor that initializes a variable or named constant,
+# which the standard allows, so the following tests are llvm only
+RUN(NAME procedure_pointer_29 LABELS llvm)
+RUN(NAME procedure_pointer_30 LABELS llvm)
+RUN(NAME procedure_pointer_31 LABELS llvm)
+RUN(NAME procedure_pointer_32 LABELS llvm)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
