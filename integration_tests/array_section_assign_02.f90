@@ -16,7 +16,8 @@ real :: a(8, 3), b(8), c(0:7, -1:1), d(4, 3, 2), m(4, 2)
 real, allocatable :: e(:, :)
 real, pointer :: p(:, :)
 real, target :: t(3, 2)
-integer :: ia(3, 3), i, j, k
+integer :: i, j, k
+integer, target :: ia(3, 3)
 integer(8) :: i8
 complex :: z(2, 2)
 logical :: l(3, 2)
@@ -35,7 +36,7 @@ if (any(a(:, 1) /= b)) error stop
 if (any(a(:, 2) /= 2*b + 1)) error stop
 if (any(a(:, 3) /= -1)) error stop
 
-! The subscripts are evaluated before the assignment
+! Variable subscripts
 do i = 1, 3
     a(:, i) = i
 end do
@@ -69,7 +70,7 @@ a(:, 2) = a(:, 1) + a(:, 2)
 a(:, 3) = a(:, 2)
 if (any(a(:, 3) /= a(:, 2))) error stop
 
-! A subscript that is an element of the array assigned to
+! Subscripts that refer to the array assigned to
 ia = 0
 ia(1, 1) = 2
 ia(:, ia(1, 1)) = [5, 6, 7]
@@ -80,6 +81,18 @@ if (any(ia(2, :) /= [1, 2, 3])) error stop
 ia(ia(1, 3) - 2:ia(1, 3), 3) = [8, 9, 10]
 if (any(ia(:, 3) /= [8, 9, 10])) error stop
 if (any(ia(:, 1) /= [2, 1, 0])) error stop
+! The subscripts are evaluated before any element is defined, even when
+! they are associated with an element that is defined
+ia = 0
+ia(3, 3) = 3
+call reverse_column(ia, ia(3, 3))
+if (any(ia(:, 3) /= [3, 2, 1])) error stop
+if (any(ia(:, 1) /= 0)) error stop
+ia = 0
+ia(1, 1) = 2
+call fill_rows(ia, ia(1, 1))
+if (any(ia(1:2, :) /= 9)) error stop
+if (any(ia(3, :) /= 0)) error stop
 
 ! Other lower bounds, ranks and subscript kinds
 c = 0
@@ -116,4 +129,19 @@ l = .false.
 l(:, 2) = b(1:3) > 1.5
 if (any(l(:, 2) .neqv. [.false., .true., .true.])) error stop
 print *, "ok"
+
+contains
+
+subroutine reverse_column(x, n)
+integer, target :: x(:, :)
+integer, target :: n
+x(n:1:-1, n) = [1, 2, 3]
+end subroutine
+
+subroutine fill_rows(x, n)
+integer, target :: x(:, :)
+integer, target :: n
+x(1:n, 1:3) = 9
+end subroutine
+
 end program
