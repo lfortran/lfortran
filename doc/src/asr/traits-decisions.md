@@ -6,7 +6,7 @@ chosen, and where the proposal leaves room for more than one reading. Its
 purpose is to improve the proposal, so that independent compiler vendors can
 implement it without having to ask the same questions again.
 
-It is a living document. Last updated: 2026-10-12.
+It is a living document. Last updated: 2026-10-13.
 
 ## About this record
 
@@ -84,6 +84,9 @@ paper:
   (TD-07).
 - A receiver may be modified (`intent(inout)`) only by direct calls on concrete
   objects; generic trait calls and trait objects are read-only (TD-10).
+- A trait-object dummy argument can have `intent(inout)`: its object can then
+  be modified through concrete `SELECT TYPE` inspection or by forwarding it,
+  but the messages called through it stay read-only (TD-35).
 - Initializer requirements are checked as conformance obligations but are not
   dispatched through trait objects (TD-13). Besides `initial ::` procedures, a
   matching specific of a standard constructor interface named like the type
@@ -138,6 +141,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-12 | Initializer requirements in runtime views | **Check initializer conformance; omit constructors from runtime dispatch slots**; a different runtime-view design | TD-13 |
 | 2026-10-12 | Static-only providers outside the runtime subset (`ocp.f90`) | **Preserve static use; diagnose only a requested runtime use**; reject such providers at definition time for now | TD-16 |
 | 2026-10-12 | Existing standard constructor interfaces (`interface MyType`) as implementations of initializer requirements | **Allow matching standard constructor interfaces as initializer implementations**; require an explicit `initial ::` binding | TD-33 |
+| 2026-10-13 | Scope of the `intent(inout)` improvement for trait-object arguments: whether calls such as `call object%increment()`, whose implementation modifies its receiver, should be added now (revising TD-10) | **Finish INOUT borrowing; keep trait methods read-only for now**; also implement mutating trait methods and agree on explicit effect syntax next | TD-35, TD-10 |
 
 ### Instructions given without an option form
 
@@ -149,6 +153,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-09 | Rejected implicitly importing other modules when compiling a main program, asked for alternatives closer to existing Fortran (accepting a deviation from the paper), asked to file them as an issue, and chose explicit provider `USE` to unblock `printy.f90`. | TD-07 |
 | 2026-10-09 | Every paper example must get a working test; missing boilerplate may be added; design questions must be asked. | TD-04, TD-31 |
 | 2026-10-09 | Supplied the updated proposal sources (commit `5163a026`), whose `traits.tex` is identical to the paper used here. | TD-04, TD-32 |
+| 2026-10-13 | Asked to get `intent(inout)` working for trait-object arguments of procedures, expecting more such corner cases because the proposal does not spell them out, and to be asked before any recorded decision changes. | TD-35 |
 
 ## Entries
 
@@ -535,8 +540,9 @@ specification action, that is, what the paper should say.
 
 #### TD-10: Receiver effects
 
-- **Status:** Approved semantic decision, in two steps; mutation through
-  generic code and trait objects remains an open question.
+- **Status:** Approved semantic decision, in two steps, kept when revisited
+  on 2026-10-13 (TD-35); mutation through generic code and trait objects
+  remains an open question.
 - **Why the paper is not tight.** Messages carry no receiver (lines 1098-1116),
   so a trait cannot say whether a message may modify its receiver. In
   `vector.f90`, the message `append(item)` is implemented by
@@ -556,6 +562,15 @@ specification action, that is, what the paper should say.
   trait paths (chosen); design explicit mutating-message syntax for generic and
   runtime use and approve an edit of the example; keep the strict read-only
   rule and defer Vector.
+- **Revisited (2026-10-13, TD-35).** With `intent(inout)` trait-object dummies
+  implemented, the question was whether calls such as `call object%increment()`,
+  whose implementation modifies its receiver, should be added now. It
+  recommended declaring the receiver effect explicitly on each message, with
+  the syntax to be agreed first, rather than inferring it from the selected
+  implementation. The maintainer chose to keep trait methods read-only for now,
+  so the consequences below are unchanged. The object of an `intent(inout)`
+  trait-object dummy can still be modified through concrete `SELECT TYPE`
+  inspection (TD-11) or by forwarding it.
 - **Consequences.**
   - An implementation may take its receiver with `intent(inout)`. Such a
     binding serves direct calls on concrete objects under the ordinary Fortran
@@ -679,6 +694,71 @@ specification action, that is, what the paper should say.
 - **Implementation status.** Implemented.
 - **Specification action.** None identified: ordinary Fortran function-result
   semantics apply.
+
+#### TD-35: INTENT of trait-object dummy arguments
+
+- **Status:** Approved semantic decision for the borrowing described in the
+  question: the actual's storage is kept, its object is modified through
+  concrete `SELECT TYPE` inspection or forwarding, and messages stay read-only;
+  TD-10 is unchanged. Which actual arguments are accepted follows the ordinary
+  Fortran rules (implementation choice). `intent(out)`, omitted INTENT,
+  OPTIONAL and VALUE trait-object dummies were not asked about and remain
+  implementation limits.
+- **What the paper says.** Trait objects must be allocatable, pointers, or
+  "arguments of a procedure", in accordance with present `CLASS` objects
+  (lines 1643-1650). Its only trait-object dummy argument is
+  `class(IPrintable), intent(in) :: printer` (line 1631).
+- **Why it is not tight.** The paper does not say which INTENTs a trait-object
+  dummy may have, which actual arguments an `intent(inout)` or `intent(out)`
+  one accepts, or what such a dummy may modify when messages carry no receiver
+  effect (TD-10). The prototype required `intent(in)` for a dummy that is
+  neither allocatable nor a pointer, as an implementation limit.
+- **Question (2026-10-13).** The maintainer asked to get `intent(inout)` working
+  for trait-object arguments of procedures, expecting further corner cases
+  that the proposal does not spell out, and to be asked before any recorded
+  decision changes. Allocatable and pointer trait-object dummies already had
+  all intents.
+- **Options presented (2026-10-13).** The question described the basic
+  borrowing implemented locally: an `intent(inout)` dummy keeps the actual
+  object's storage and permits mutation through concrete `SELECT TYPE`
+  inspection or forwarding, while trait methods stay read-only. It asked
+  whether calls of implementations that modify their receiver should be added
+  now, which revises TD-10, and recommended an explicit receiver effect on each
+  message, with its syntax to be agreed before implementing it. Options:
+  finish INOUT borrowing and keep trait methods read-only for now (chosen);
+  also implement mutating trait methods and agree on explicit effect syntax
+  next.
+- **Choice.** Finish INOUT borrowing; keep trait methods read-only for now.
+- **Consequences.**
+  - An `intent(inout)` trait-object dummy designates the object of its actual
+    argument, which must be definable under the ordinary Fortran rules: a
+    variable, a component or element of a definable object, an allocated
+    owner that is not `intent(in)`, a pointer's target (also through an
+    `intent(in)` pointer dummy, which protects only the association), another
+    `intent(inout)` dummy, or the associate name of a definable selector.
+    Named constants, structure constructors, function results, parenthesized
+    designators such as `(x)`, and `intent(in)` objects and their parts are
+    rejected.
+  - The dummy keeps the actual's address, dynamic type and selected
+    implementations. Nothing is copied in or out, finalized or rebound, also
+    when it is weakened to a parent or to a member of a combination (TD-12).
+    It cannot be assigned, allocated, deallocated or reassociated.
+  - The object is modified through concrete `SELECT TYPE` inspection (TD-11) or
+    by forwarding the dummy. Messages called through it stay read-only, so a
+    type whose conformance has an `intent(inout)` receiver binding cannot be
+    passed to it either (TD-10).
+  - As for other nonpointer dummies, a pure function cannot have an
+    `intent(inout)` trait-object dummy; a pure subroutine can.
+- **Implementation status.** Implemented for scalar trait objects. `intent(out)`,
+  omitted INTENT, OPTIONAL and VALUE trait-object dummies that are neither
+  allocatable nor pointers are diagnosed as not implemented; these are
+  temporary limits, not proposed language rules.
+- **Specification action.** State that a trait-object dummy follows the rules
+  for nonallocatable, nonpointer polymorphic dummies, including which actual
+  arguments it accepts. Specify `intent(out)` (finalization and default
+  initialization of the dynamic type on entry) and omitted INTENT, and relate
+  the INTENT of a trait-object dummy to the receiver effects of messages
+  (OQ-04).
 
 ### D. Generic procedures, methods and type sets
 
@@ -1214,7 +1294,7 @@ names the entries with the details.
 | OQ-01 | Visibility and coherence of conformances: explicit provider `USE`, importing the trait only, an ownership rule with globally unique conformances, or named conformances; `ONLY`, renaming, re-export and conflicts; identical rules for combined and separate compilation. | TD-07, TD-08 |
 | OQ-02 | The exact rule for an implementation matching a message: attributes, dummy names for keyword arguments, more general implementations. | TD-06 |
 | OQ-03 | Composition: identity of requirements, overloads across parents, agreement of intrinsic acknowledgements. Overloaded requirements that coincide after substituting `itself`, such as `operator(*)` with `(itself, itself)` and `(itself, integer)` when the implementing type is `integer`. How an elemental and a non-elemental requirement that both accept a call are resolved (standard generic resolution prefers the non-elemental one; the prototype currently reports an ambiguity). | TD-05 |
-| OQ-04 | Whether a message may modify its receiver, how this is declared, and what generic code and trait objects may assume; pointer, allocatable and `intent(out)` receivers. | TD-10 |
+| OQ-04 | Whether a message may modify its receiver, how this is declared, and what generic code and trait objects may assume; pointer, allocatable and `intent(out)` receivers; the INTENTs of trait-object dummy arguments. | TD-10, TD-35 |
 | OQ-05 | Initializer requirements and trait objects. Which procedures implement an initializer requirement: `initial ::` procedures and matching standard constructor interfaces are approved for the prototype (TD-33); whether the implicit structure constructor can is open. | TD-13, TD-33 |
 | OQ-06 | Trait objects: conversions and combinations; `SELECT TYPE`, including dynamic conformance queries; arrays of trait objects (homogeneous like `CLASS` arrays or not); pointer components and results. | TD-11, TD-12 |
 | OQ-07 | Associated types: inference, one type per conformance, constraints on associated types, projection syntax, use as generic constraints. | TD-20 |

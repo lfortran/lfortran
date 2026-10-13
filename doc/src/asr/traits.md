@@ -1550,7 +1550,7 @@ with an `intent(inout)` receiver binding still has no runtime witness, so a
 value of such a type cannot be passed to an `intent(inout)` view either. A
 PURE subroutine can have an `intent(inout)` view dummy; a PURE function cannot
 (C1592). `intent(out)` and omitted intents remain unsupported implementation
-limits.
+limits (TD-35).
 
 The private same-build/target LLVM borrowed representation is a stack descriptor
 containing concrete CLASS metadata, the original payload address, a concrete
