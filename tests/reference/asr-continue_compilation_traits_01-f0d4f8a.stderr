@@ -384,12 +384,6 @@ semantic error: Dummy argument 'object' not defined
 1915 |        end subroutine
      | ...^^^^^^^^^^^^^^^^^^ 
 
-semantic error: runtime trait dummies currently require intent(in) without optional or value
-    --> tests/errors/continue_compilation_traits_01.f90:1927:41
-     |
-1927 |         class(IValue), intent(inout) :: object
-     |                                         ^^^^^^ 
-
 semantic error: 'imissing' is not a visible trait
     --> tests/errors/continue_compilation_traits_01.f90:1999:9
      |
@@ -428,28 +422,22 @@ semantic error: Dummy argument 'object' not defined
 2047 |        end subroutine
      | ...^^^^^^^^^^^^^^^^^^ 
 
-semantic error: runtime trait dummies currently require intent(in) without optional or value
+semantic error: runtime trait dummies currently require intent(in) or intent(inout) without optional or value
     --> tests/errors/continue_compilation_traits_01.f90:2091:38
      |
 2091 |         class(IValue), intent(in) :: object
      |                                      ^^^^^^ 
 
-semantic error: runtime trait dummies currently require intent(in) without optional or value
+semantic error: runtime trait dummies currently require intent(in) or intent(inout) without optional or value
     --> tests/errors/continue_compilation_traits_01.f90:2095:38
      |
 2095 |         class(IValue), intent(in) :: object
      |                                      ^^^^^^ 
 
-semantic error: runtime trait dummies currently require intent(in) without optional or value
+semantic error: runtime trait dummies currently require intent(in) or intent(inout) without optional or value
     --> tests/errors/continue_compilation_traits_01.f90:2101:26
      |
 2101 |         class(IValue) :: object
-     |                          ^^^^^^ 
-
-semantic error: runtime trait dummies currently require intent(in) without optional or value
-    --> tests/errors/continue_compilation_traits_01.f90:2105:26
-     |
-2105 |         class(IValue) :: object
      |                          ^^^^^^ 
 
 semantic error: runtime trait dummies cannot have saved or initialized storage
@@ -464,7 +452,7 @@ semantic error: Cannot set dimension for variable of non-numerical type
 2118 |         dimension :: object(2)
      |         ^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: runtime trait dummies currently require intent(in) without optional or value
+semantic error: runtime trait dummies currently require intent(in) or intent(inout) without optional or value
     --> tests/errors/continue_compilation_traits_01.f90:2121:26
      |
 2121 |         class(IValue) :: object

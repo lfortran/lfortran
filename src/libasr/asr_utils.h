@@ -2357,6 +2357,19 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
             return is_modifiable_actual_argument_expr(
                 ASR::down_cast<ASR::TraitRecover_t>(a_value)->m_value);
         }
+        // A borrowed trait view designates the payload of its source.
+        case ASR::exprType::TraitPack: {
+            return is_modifiable_actual_argument_expr(
+                ASR::down_cast<ASR::TraitPack_t>(a_value)->m_payload);
+        }
+        case ASR::exprType::TraitBorrow: {
+            return is_modifiable_actual_argument_expr(
+                ASR::down_cast<ASR::TraitBorrow_t>(a_value)->m_owner);
+        }
+        case ASR::exprType::TraitProject: {
+            return is_modifiable_actual_argument_expr(
+                ASR::down_cast<ASR::TraitProject_t>(a_value)->m_view);
+        }
         case ASR::exprType::ComplexRe: {
             ASR::ComplexRe_t* re = ASR::down_cast<ASR::ComplexRe_t>(a_value);
             return is_modifiable_actual_argument_expr(re->m_arg);

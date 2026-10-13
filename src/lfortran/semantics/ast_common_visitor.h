@@ -27079,7 +27079,11 @@ public:
             }
             return;
         }
-        make_runtime_trait_view(actual, target, true);
+        // An intent(inout) view designates its actual's payload, which must
+        // be definable; only a read-only view may borrow a value.
+        bool defining = ASRUtils::EXPR2VAR(dummy)->m_intent == ASR::intentType::InOut;
+        if (defining) check_definable_actual(actual);
+        make_runtime_trait_view(actual, target, !defining);
     }
 
     void check_association_definable(ASR::expr_t *expression) {

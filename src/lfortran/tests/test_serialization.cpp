@@ -2606,6 +2606,17 @@ TEST_CASE("Runtime trait ASR round trips and checked borrowing") {
         ASRUtils::EXPR2VAR(observe->m_args[0])->m_intent = ASR::intentType::Local;
         rejects("asr.verify.trait_view.borrowed_storage");
     }
+    SUBCASE("a defining view borrows definable storage") {
+        ASRUtils::EXPR2VAR(function("forward")->m_args[0])->m_intent = ASR::intentType::InOut;
+        ASRUtils::EXPR2VAR(function("construct")->m_args[0])->m_intent = ASR::intentType::InOut;
+        LCompilers::diag::Diagnostics valid;
+        CHECK(LCompilers::asr_verify(*result.result, true, valid));
+        INFO(valid.render2());
+    }
+    SUBCASE("a defining view cannot borrow a read-only payload") {
+        ASRUtils::EXPR2VAR(function("forward")->m_args[0])->m_intent = ASR::intentType::InOut;
+        rejects("asr.verify.trait_view.definable_actual");
+    }
     SUBCASE("binding has wrong result signature") {
         auto *proc = function("read_value");
         auto *type = ASRUtils::TYPE(ASR::make_Real_t(al, proc->base.base.loc, 4));

@@ -7082,6 +7082,8 @@ ASR::expr_t *association_value(const ASR::Variable_t &variable) {
 
 static ASR::expr_t *association_source(ASR::expr_t *value) {
     switch (value->type) {
+        case ASR::exprType::TraitPack:
+            return ASR::down_cast<ASR::TraitPack_t>(value)->m_payload;
         case ASR::exprType::TraitBorrow:
             return ASR::down_cast<ASR::TraitBorrow_t>(value)->m_owner;
         case ASR::exprType::TraitProject:

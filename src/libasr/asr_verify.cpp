@@ -4892,7 +4892,7 @@ public:
             }
             bool borrowed = ASR::is_a<TraitObjectType_t>(*x.m_type) &&
                 dummy && x.m_storage == storage_typeType::Default &&
-                x.m_intent == intentType::In;
+                (x.m_intent == intentType::In || x.m_intent == intentType::InOut);
             bool slot = ASRUtils::is_trait_owner(x.m_type) && dummy &&
                 x.m_storage == storage_typeType::Default &&
                 ASRUtils::is_arg_dummy(x.m_intent);
@@ -4942,8 +4942,8 @@ public:
                     ((!x.m_symbolic_value && !x.m_value) || null_initialized) &&
                     !x.m_type_declaration && !x.n_codims,
                 "asr.verify.trait_view.borrowed_storage",
-                "Trait storage must be a required read-only view, a scalar allocatable slot/result, "
-                "or an initially unallocated local owner");
+                "Trait storage must be a required intent(in) or intent(inout) view, a scalar "
+                "allocatable slot/result, or an initially unallocated local owner");
             if (slot || result || (pointer && dummy)) {
                 auto *signature = ASRUtils::get_FunctionType(function);
                 require_id(signature->m_abi != abiType::BindC &&
@@ -6212,6 +6212,14 @@ public:
                     if (pointer && callee_param->m_intent != intentType::In) {
                         verify_trait_pointer(passed_arg_expr, passed_arg_expr->base.loc, true);
                     }
+                    // A defining borrowed view designates its actual's
+                    // payload and never borrows a value.
+                    require_with_loc_id(!check_external || slot || pointer ||
+                            callee_param->m_intent != intentType::InOut ||
+                            ASRUtils::association_is_definable(passed_arg_expr),
+                        "asr.verify.trait_view.definable_actual",
+                        "An intent(inout) borrowed trait view requires a definable payload",
+                        passed_arg_expr->base.loc);
                 }
                 // Derived type arguments are skipped for the same reason
                 // as in the signature check above, and this also covers a

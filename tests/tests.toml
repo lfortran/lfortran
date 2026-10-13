@@ -5990,6 +5990,10 @@ filename = "errors/continue_compilation_traits_associated.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/continue_compilation_traits_inout.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/continue_compilation_traits_ocp.f90"
 semantics_only_cc = true
 

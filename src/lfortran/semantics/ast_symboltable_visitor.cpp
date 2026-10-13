@@ -1286,11 +1286,12 @@ public:
             } else if (pointer && dummy->m_intent == ASR::intentType::Out &&
                     ASRUtils::get_FunctionType(function)->m_pure) {
                 message = "an intent(out) dummy of a pure procedure cannot be polymorphic";
-            } else if (!slot && !pointer && (dummy->m_intent != ASR::intentType::In ||
+            } else if (!slot && !pointer && ((dummy->m_intent != ASR::intentType::In &&
+                        dummy->m_intent != ASR::intentType::InOut) ||
                     dummy->m_presence != ASR::presenceType::Required ||
                     dummy->m_value_attr)) {
-                message = "runtime trait dummies currently require intent(in) "
-                    "without optional or value";
+                message = "runtime trait dummies currently require intent(in) or "
+                    "intent(inout) without optional or value";
             }
             if (!message.empty()) {
                 diag.semantic_error_label(message, {dummy->base.base.loc}, "");

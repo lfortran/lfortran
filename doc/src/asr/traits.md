@@ -1381,9 +1381,11 @@ Such a binding serves direct calls on concrete objects only, under the ordinary
 Fortran rules: the passed object of a type-bound call whose passed-object dummy
 has `intent(out)` or `intent(inout)` must be definable, so an `intent(in)` dummy,
 a part of one, a named constant or an associate name of a constant selector is
-diagnosed. Generic trait calls and runtime views stay read-only: selecting a
-mutating binding for a constraint's requirement, or forming a runtime view of a
-conformance with one, is diagnosed. Pointer and allocatable receivers remain
+diagnosed. Generic trait calls and calls through runtime views stay read-only:
+selecting a mutating binding for a constraint's requirement, or forming a
+runtime view of a conformance with one, is diagnosed. The payload of an
+`intent(inout)` view dummy is modified only through concrete inspection (see
+"Borrowed runtime dispatch"). Pointer and allocatable receivers remain
 unsupported. The effect is not new ASR state: it is the intent of the
 binding's passed-object dummy (`ASRUtils::trait_binding_mutates_receiver`), and
 the verifier admits `intent(inout)` receivers only outside runtime witnesses and
@@ -1466,7 +1468,8 @@ empty sections reach the implementation without a copy. Normal argument
 intents, kinds, keyword names, and the ordinary Fortran calling convention
 apply. BIND(C) contracts
 or implementations remain available statically but do not provide runtime
-dispatch in this slice. Runtime views are read-only: a conformance that
+dispatch in this slice. Messages called through runtime views are read-only,
+even through an `intent(inout)` view: a conformance that
 implements a slot with an `intent(inout)` receiver has no runtime witness, and
 forming such a view is diagnosed (PAPER-D07).
 Named non-first PASS and NOPASS are supported. NOPASS still dynamically
@@ -1490,13 +1493,14 @@ type bound to a character type has a hidden length that its message lacks, and
 a trailing explicit `integer(8), value, intent(in)` dummy is never taken for one
 (`traits_associated_06`).
 
-Bare borrowed view dummies require explicit `intent(in)` and cannot be pointer,
-allocatable, optional, or VALUE. A separate `intent(in) :: object` statement
+Bare borrowed view dummies require explicit `intent(in)` or `intent(inout)` and
+cannot be pointer, allocatable, optional, or VALUE. A separate INTENT statement
 is equivalent to an inline INTENT attribute; eligibility is checked on the
 completed procedure interface. Saved or initialized borrowed view storage is not
 supported. A structure constructor or a concrete nonallocatable, nonpointer
-function result can be borrowed as an ordinary or generic procedure's view
-actual for the duration of that call; existing result storage and its lifetime
+function result can be borrowed as an ordinary or generic procedure's
+`intent(in)` view actual for the duration of that call; existing result storage
+and its lifetime
 are unchanged. A named constant, or a component of one, is such a value
 rather than storage: it is borrowed as the structure constructor of its value,
 derived from the named constant itself (`traits_runtime_borrow_03`). A named
@@ -1523,6 +1527,30 @@ Universal traits with supported open scalar or closed type-set generic methods
 have runtime contracts; other generic signatures are diagnosed as not
 implemented. Type-set traits remain constraint-only.
 
+An `intent(inout)` view dummy designates the payload of its actual, which must
+be definable under the ordinary Fortran rules: a concrete variable, a component
+or an array element of a definable object, an allocated owner that is not
+`intent(in)`, a pointer's target, another `intent(inout)` view, or the associate
+name of a definable selector. A named constant, a structure constructor, a
+function result, and an `intent(in)` object, view or owner, or a part of one,
+are diagnosed. The view borrows the original payload address and selected
+witness exactly as an `intent(in)` view does, including when it is weakened to
+a parent or a member of a combination: nothing is copied in or out, finalized
+or rebound. The view is neither an owner nor a pointer, so assigning,
+allocating, deallocating, pointer-associating or nullifying it, and passing it
+to an allocatable or defining pointer dummy, are diagnosed; the dynamic type of
+the payload and its selected implementations cannot change. The payload is
+modified through concrete SELECT TYPE inspection, whose associate name is
+definable for an `intent(inout)` selector, and by forwarding the view to
+another `intent(inout)` view or, after inspection, to an ordinary dummy.
+Messages called through the view stay read-only (PAPER-D07): a conformance
+with an `intent(inout)` receiver binding still has no runtime witness, so a
+value of such a type cannot be passed to an `intent(inout)` view either.
+`intent(out)` and omitted intents remain unsupported. An `intent(in)` pointer
+dummy cannot yet be passed to an `intent(inout)` view, because of the general
+LFortran limitation
+[lfortran/lfortran#14252](https://github.com/lfortran/lfortran/issues/14252).
+
 The private same-build/target LLVM borrowed representation is a stack descriptor
 containing concrete CLASS metadata, the original payload address, a concrete
 lifecycle pointer, and independently selected inline method slots. Concrete inheritance and storage are
@@ -1536,7 +1564,13 @@ type names or structural equality. No cross-version or cross-DSO ABI is promised
 `traits_runtime_01`, `traits_runtime_03`, `traits_runtime_scalar_01`, and
 `traits_runtime_borrow_01` and `traits_runtime_borrow_02` exercise execution,
 PASS/NOPASS, ordinary scalar
-arguments, identity, and borrowing lifetime. `traits_runtime_separate_01.py`
+arguments, identity, and borrowing lifetime. `traits_runtime_borrow_04` checks
+`intent(inout)` views of each kind of definable actual at their original
+addresses with exact FINAL counts, against the standard CLASS counterpart
+`traits_runtime_borrow_04_oracle`; `_05` checks their forwarding, projections,
+definable associations, named non-first PASS, NOPASS, keywords, procedure
+dummies and pointers, generic resolution and PURE subroutines; and
+`continue_compilation_traits_inout` the diagnostics. `traits_runtime_separate_01.py`
 compiles the contract-only consumer before both providers in fresh processes,
 checks unresolved ASR and indirect LLVM calls, and links/runs with an unchanged
 provider archive. It is registered in CTest in normal and fast configurations.
@@ -2075,7 +2109,8 @@ does. It has TARGET only when its selector is a variable with TARGET or POINTER.
 not. Allocation-slot actuals, pointer reassociation, and `nullify(concrete)` are
 invalid. The name preserves source definability: a nonpointer INTENT(IN) borrowed
 selector and an expression selector cannot be modified, including through
-components, defining actual arguments, nested inspection, or input statements.
+components, defining actual arguments, nested inspection, or input statements;
+an INTENT(INOUT) borrowed selector can.
 Defining I/O specifiers are included: `INQUIRE` outputs (including `IOLENGTH`),
 `IOSTAT`, `IOMSG`, `SIZE`, `ID` on data transfers, and `NEWUNIT`. Internal-file
 output and I/O implied-do indices also require definable associations.

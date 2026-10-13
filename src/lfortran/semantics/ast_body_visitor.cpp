@@ -4808,6 +4808,10 @@ public:
                 trait_call_error("a select type associate name is neither allocatable nor a pointer",
                     tmp_expr->base.loc);
             }
+            if (ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::expr_type(tmp_expr))) {
+                trait_call_error("runtime trait deallocation requires a scalar allocatable owner",
+                    tmp_expr->base.loc);
+            }
             if (x.n_keywords && ASR::is_a<ASR::TraitObjectType_t>(
                     *ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr)))) {
                 trait_call_error("runtime trait deallocation with stat, errmsg or other "
