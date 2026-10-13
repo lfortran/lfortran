@@ -2654,3 +2654,42 @@ contains
     subroutine cc1_pclt_sub()
     end subroutine cc1_pclt_sub
 end module cc1_proc_component_later_interface_template_mod
+
+! A procedure given in a template to a procedure pointer component whose
+! interface is a module procedure defined later in the host must match that
+! interface, whether the template or the host declares the component.
+module cc1_proc_component_template_host_interface_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_sub, cc1_pclim_known_func
+    implicit none
+    type :: cc1_pcth_sub_t
+        procedure(cc1_pcth_sub), pointer, nopass :: pf => null()
+    end type
+    template cc1_pcth_tmpl {t}
+        deferred type :: t
+        type :: cc1_pcth_func_t
+            procedure(cc1_pcth_func), pointer, nopass :: pf => null()
+        end type
+        type :: cc1_pcth_never_t
+            procedure(cc1_pcth_never), pointer, nopass :: pf => null()  ! {Error} Interface 'cc1_pcth_never' is referenced but not defined
+        end type
+        type(cc1_pcth_sub_t), parameter :: cc1_pcth_c1 = cc1_pcth_sub_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+        type(cc1_pcth_func_t), parameter :: cc1_pcth_c2 = cc1_pcth_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+    contains
+        subroutine cc1_pcth_noop(x)
+            type(t), intent(in) :: x
+        end subroutine cc1_pcth_noop
+    end template
+    template cc1_pcth_unused {t}
+        deferred type :: t
+    contains
+        subroutine cc1_pcth_noop2(x)
+            type(t), intent(in) :: x
+        end subroutine cc1_pcth_noop2
+    end template
+contains
+    integer function cc1_pcth_func()
+        cc1_pcth_func = 0
+    end function cc1_pcth_func
+    subroutine cc1_pcth_sub()
+    end subroutine cc1_pcth_sub
+end module cc1_proc_component_template_host_interface_mod

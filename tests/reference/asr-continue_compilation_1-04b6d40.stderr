@@ -1206,6 +1206,24 @@ semantic error: type mismatch in structure constructor: value of type FunctionTy
 2649 |     type(cc1_pclt_func_t) :: cc1_pclt_s2 = cc1_pclt_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
      |                                                            ^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    --> tests/errors/continue_compilation_1.f90:2675:73
+     |
+2675 |         type(cc1_pcth_sub_t), parameter :: cc1_pcth_c1 = cc1_pcth_sub_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+     |                                                                         ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+    --> tests/errors/continue_compilation_1.f90:2676:75
+     |
+2676 |         type(cc1_pcth_func_t), parameter :: cc1_pcth_c2 = cc1_pcth_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+     |                                                                           ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Interface 'cc1_pcth_never' is referenced but not defined
+    --> tests/errors/continue_compilation_1.f90:2673:13
+     |
+2673 |             procedure(cc1_pcth_never), pointer, nopass :: pf => null()  ! {Error} Interface 'cc1_pcth_never' is referenced but not defined
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
