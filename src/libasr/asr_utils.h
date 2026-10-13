@@ -8045,6 +8045,11 @@ bool fold_logical_binop(ASR::logicalbinopType op, bool left, bool right,
 // initialized with an expression of one.
 bool reads_valueless_parameter(ASR::expr_t* e);
 
+// True if `e` reads the value of a variable that is not a named constant, so
+// that it is not a constant expression even once every named constant has a
+// value. Inquiries about a variable, e.g. `size(a)`, do not read its value.
+bool reads_variable_value(ASR::expr_t* e);
+
 static inline ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::expr_t* start, ASR::expr_t* end) {
     ASR::expr_t* start_value = nullptr;
     ASR::expr_t* end_value = nullptr;

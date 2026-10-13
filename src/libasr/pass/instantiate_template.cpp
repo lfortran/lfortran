@@ -1456,8 +1456,19 @@ public:
         size_t n_diagnostics = diagnostics ? diagnostics->diagnostics.size() : 0;
         ASR::expr_t *new_symbolic_value = duplicate_expr(x->m_symbolic_value);
         ASR::expr_t *new_value = duplicate_expr(x->m_value);
+        ASR::expr_t *new_array = broadcast_initializer(new_symbolic_value, new_type);
+        if (new_array) {
+            new_symbolic_value = new_array;
+            new_value = new_array;
+        }
+        // A component default initializer that uses a deferred constant,
+        // e.g. `integer :: b = n*2`, also has a value in the instantiation.
+        bool is_component_default = ASRUtils::get_asr_owner(&x->base) != nullptr
+            && ASR::is_a<ASR::Struct_t>(*ASRUtils::get_asr_owner(&x->base))
+            && ASRUtils::reads_valueless_parameter(x->m_symbolic_value);
         if (new_value == nullptr && new_symbolic_value
-                && x->m_storage == ASR::storage_typeType::Parameter) {
+                && (x->m_storage == ASR::storage_typeType::Parameter
+                    || is_component_default)) {
             new_value = ASRUtils::expr_value(new_symbolic_value);
             // An initializer that still uses a deferred constant, of a
             // nested template in its copy or of an enclosing template that
@@ -1468,9 +1479,11 @@ public:
                     && !ASRUtils::reads_valueless_parameter(new_symbolic_value)) {
                 // The semantics accept only initializers that the operations
                 // above evaluate, so this is not expected; report it rather
-                // than leave the named constant without a value.
+                // than leave the initializer without a value.
                 diagnostics->add(diag::Diagnostic(
-                    "initialization of named constant `" + std::string(x->m_name)
+                    "initialization of "
+                    + std::string(is_component_default ? "component" : "named constant")
+                    + " `" + std::string(x->m_name)
                     + "` does not reduce to a compile time constant in this"
                     " instantiation",
                     diag::Level::Error, diag::Stage::Semantic, {
@@ -1493,6 +1506,24 @@ public:
         v->n_dependencies = variable_dependencies_vec.size();
 
         return s;
+    }
+
+    // The frontend broadcasts a scalar initializer of an array whose extents
+    // or value depend on a deferred constant, e.g. `integer :: b(n) = 1`.
+    // In the instantiation it is the array constant of type `type`, as the
+    // frontend makes it for the same declaration outside a template.
+    ASR::expr_t* broadcast_initializer(ASR::expr_t* init, ASR::ttype_t* type) {
+        if (init == nullptr || !ASR::is_a<ASR::ArrayBroadcast_t>(*init)) {
+            return nullptr;
+        }
+        ASR::expr_t* element = ASRUtils::expr_value(
+            ASR::down_cast<ASR::ArrayBroadcast_t>(init)->m_array);
+        if (element == nullptr || ASRUtils::is_array(ASRUtils::expr_type(element))
+                || ASRUtils::is_struct(*ASRUtils::expr_type(element))) {
+            return nullptr;
+        }
+        return ASRUtils::broadcast_scalar_constant_to_array(al,
+            init->base.loc, element, type);
     }
 
     // Substituting a deferred constant can turn an expression of the
@@ -1876,11 +1907,30 @@ public:
                     return var_sym;
                 }
             }
+            // The scope of a derived type holds only its members, so a
+            // component default initializer, e.g. `k = n + size(v)`, refers
+            // to the variable through the scope that declares the type. The
+            // reference is private: it must not be exported by a module
+            // that instantiates the template.
+            SymbolTable* scope = target_scope;
+            while (scope->parent != nullptr && scope->asr_owner != nullptr
+                    && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)
+                    && ASR::is_a<ASR::Struct_t>(
+                        *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
+                scope = scope->parent;
+            }
+            ASR::symbol_t* existing = scope->get_symbol(x->m_name);
+            if (existing != nullptr
+                    && ASRUtils::symbol_get_past_external(existing) == var_sym) {
+                return existing;
+            }
+            std::string name = existing == nullptr ? std::string(x->m_name)
+                : scope->get_unique_name("__asr_" + std::string(x->m_name), false);
             ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(host);
             ASR::symbol_t* e = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                al, x->base.base.loc, target_scope, x->m_name, var_sym,
-                module->m_name, nullptr, 0, x->m_name, x->m_access));
-            target_scope->add_symbol(x->m_name, e);
+                al, x->base.base.loc, scope, s2c(al, name), var_sym,
+                module->m_name, nullptr, 0, x->m_name, ASR::accessType::Private));
+            scope->add_symbol(name, e);
             return e;
         }
         // Any other host, e.g. a main program, is reachable by host

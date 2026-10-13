@@ -6444,3 +6444,11 @@ asr = true
 [[test]]
 filename = "../integration_tests/character_35.f90"
 ast_f90 = true
+
+[[test]]
+filename = "errors/template_component_default_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_component_default_02.f90"
+asr = true
