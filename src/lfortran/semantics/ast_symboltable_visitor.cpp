@@ -629,9 +629,13 @@ public:
             try {
                 visit_ast(*x.m_items[i]);
                 if (t == AST::astType::program_unit) {
-                    // An external procedure has no host to build its generic interfaces.
+                    // An external procedure has no host to build its generic
+                    // interfaces, or to define the procedures its procedure
+                    // placeholders stand for.
                     add_generic_procedures();
                     evaluate_postponed_calls_to_genericProcedure();
+                    resolve_proc_pointer_placeholders();
+                    report_unresolved_proc_placeholders();
                 }
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
@@ -640,6 +644,8 @@ public:
                 postponed_genericProcedure_calls_vec.clear();
                 // An aborted program unit can leave its scope current.
                 current_scope = global_scope;
+                pending_proc_placeholders.clear();
+                deferred_procedure_component_values.clear();
             }
         }
         if (!global_declarations.empty()) {
@@ -1109,16 +1115,15 @@ public:
     void visit_Module(const AST::Module_t &x) {
         in_module = true;
         visit_ModuleSubmoduleCommon<AST::Module_t, ASR::Module_t>(x);
-        ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(tmp);
-        ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
         // Every undefined procedure pointer component target is reported
         // before compilation stops.
         bool undefined_forward_target = false;
-        for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
-            if (!is_unresolved_proc_placeholder(m->m_symtab, name,
-                    placeholder_sym)) {
+        for (auto &pending : pending_proc_placeholders) {
+            if (proc_placeholder_target(pending) != nullptr) {
                 continue;
             }
+            const std::string &name = pending.name;
+            ASR::symbol_t *placeholder_sym = pending.placeholder;
             if (forward_procedure_targets.count(placeholder_sym) > 0) {
                 diag.semantic_error_label("Variable '" + name
                     + "' is not declared", {placeholder_sym->base.loc},
@@ -1153,6 +1158,7 @@ public:
             parent_name = to_lower(x.m_id);
         }
         visit_ModuleSubmoduleCommon<AST::Submodule_t, ASR::Module_t>(x, parent_name);
+        pending_proc_placeholders.clear();
         deferred_procedure_component_values.clear();
         in_submodule = false;
     }
@@ -1228,6 +1234,22 @@ public:
         return found;
     }
 
+    // Reports each procedure placeholder that no procedure replaced once
+    // the scoping unit that declares it is complete.
+    void report_unresolved_proc_placeholders() {
+        for (auto &pending : pending_proc_placeholders) {
+             if (proc_placeholder_target(pending) == nullptr) {
+                 diag.add(diag::Diagnostic(
+                    "Interface '" + pending.name + "' is referenced but not defined",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("Referenced here", {pending.placeholder->base.loc})
+                    }));
+             }
+        }
+        pending_proc_placeholders.clear();
+        deferred_procedure_component_values.clear();
+    }
+
     // Completes the interface blocks and procedure declarations of a
     // specification part once all of its declarations have been visited: a
     // generic interface can name a specific procedure declared after it.
@@ -1238,18 +1260,7 @@ public:
         evaluate_postponed_calls_to_genericProcedure();
         resolve_proc_pointer_placeholders();
         resolve_pending_proc_ptr_inits();
-        for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
-             if (is_unresolved_proc_placeholder(current_scope, name,
-                     placeholder_sym)) {
-                 diag.add(diag::Diagnostic(
-                    "Interface '" + name + "' is referenced but not defined",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("Referenced here", {placeholder_sym->base.loc})
-                    }));
-             }
-        }
-        pending_proc_placeholders.clear();
-        deferred_procedure_component_values.clear();
+        report_unresolved_proc_placeholders();
         try {
             add_class_procedures();
         } catch (SemanticAbort &e) {
@@ -5136,14 +5147,38 @@ public:
         }
     };
 
-    // A procedure pointer `null()` in an initializer, such as a constructor
-    // argument or a component default filled into a constructor, refers to
-    // the interface of its component. If the interface is a procedure
-    // defined later, that is the placeholder, so refer to the procedure in
-    // the initializers of `scope` and its nested scopes instead. All
-    // placeholders are replaced in a single walk.
-    void replace_placeholder_in_initializers(SymbolTable *scope,
+    // Makes `var`, a procedure pointer or dummy procedure declared with the
+    // interface of a placeholder of `placeholder_to_real`, take the
+    // interface of the procedure that replaces the placeholder instead.
+    // Returns whether it did.
+    bool replace_placeholder_interface(ASR::Variable_t *var,
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &placeholder_to_real) {
+        auto it = placeholder_to_real.find(var->m_type_declaration);
+        if (it == placeholder_to_real.end()) return false;
+        ASR::ttype_t *real_func_type = ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(it->second))->m_function_signature;
+        var->m_type_declaration = it->second;
+        if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
+            var->m_type = ASRUtils::TYPE(
+                ASR::make_Pointer_t(al, var->base.base.loc, real_func_type));
+        } else {
+            var->m_type = real_func_type;
+        }
+        return true;
+    }
+
+    // Makes everything in `scope` and in every scope nested in it, such as
+    // a derived type, procedure, BLOCK or template, refer to the procedures
+    // that replace the placeholders of `replacer` instead: a procedure
+    // pointer or dummy procedure declared with the interface of one takes
+    // the procedure's interface, as does the signature of a procedure with
+    // such a dummy. A procedure pointer `null()` in an initializer, such as
+    // a constructor argument or a component default filled into a
+    // constructor, refers to the interface of its component, and so to the
+    // procedure instead. All placeholders are replaced in a single walk.
+    void replace_placeholder_references(SymbolTable *scope,
             PlaceholderVarReplacer &replacer) {
+        std::set<ASR::Variable_t*> replaced_interfaces;
         for (auto &[sym_name, sym] : scope->get_scope()) {
             if (replacer.placeholder_to_real.count(sym) > 0) continue;
             if (ASR::is_a<ASR::Variable_t>(*sym)) {
@@ -5152,146 +5187,95 @@ public:
                 replacer.replace_expr(var->m_symbolic_value);
                 replacer.current_expr = &var->m_value;
                 replacer.replace_expr(var->m_value);
-            } else if (ASR::is_a<ASR::Struct_t>(*sym)) {
-                replace_placeholder_in_initializers(
-                    ASR::down_cast<ASR::Struct_t>(sym)->m_symtab, replacer);
-            } else if (ASR::is_a<ASR::Function_t>(*sym)) {
-                replace_placeholder_in_initializers(
-                    ASR::down_cast<ASR::Function_t>(sym)->m_symtab, replacer);
-            } else if (ASR::is_a<ASR::Template_t>(*sym)) {
-                replace_placeholder_in_initializers(
-                    ASR::down_cast<ASR::Template_t>(sym)->m_symtab, replacer);
+                if (replace_placeholder_interface(var, replacer.placeholder_to_real)) {
+                    replaced_interfaces.insert(var);
+                }
+            } else if (SymbolTable *nested = ASRUtils::symbol_symtab(sym)) {
+                replace_placeholder_references(nested, replacer);
             }
         }
-    }
-
-    // Makes the procedure pointers and procedure dummies of `scope` declared
-    // with the interface `placeholder` refer to the procedure `real_sym` of
-    // type `real_func_type` instead, including those of the templates of
-    // `scope`, which can take their interface from a procedure of the host.
-    void replace_placeholder_in_declarations(SymbolTable *scope,
-            ASR::symbol_t *placeholder, ASR::symbol_t *real_sym,
-            ASR::ttype_t *real_func_type) {
-        for (auto &[sym_name, sym] : scope->get_scope()) {
-            if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-                if (var->m_type_declaration == placeholder) {
-                    var->m_type_declaration = real_sym;
-                    if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
-                        var->m_type = ASRUtils::TYPE(
-                            ASR::make_Pointer_t(al, var->base.base.loc, real_func_type));
-                    } else {
-                        var->m_type = real_func_type;
-                    }
-                }
-            }
-            if (ASR::is_a<ASR::Struct_t>(*sym)) {
-                ASR::Struct_t* struct_def = ASR::down_cast<ASR::Struct_t>(sym);
-                for (auto &[var_name, var_sym] : struct_def->m_symtab->get_scope()) {
-                    if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
-                        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(var_sym);
-                        if (var->m_type_declaration == placeholder) {
-                            var->m_type_declaration = real_sym;
-                            if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
-                                var->m_type = ASRUtils::TYPE(
-                                    ASR::make_Pointer_t(al, var->base.base.loc, real_func_type));
-                            } else {
-                                var->m_type = real_func_type;
-                            }
-                        }
-                    }
-                }
-            }
-            if (ASR::is_a<ASR::Function_t>(*sym)) {
-                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(sym);
-                ASR::FunctionType_t* func_ft = ASR::down_cast<ASR::FunctionType_t>(
-                    func->m_function_signature);
-                for (size_t i = 0; i < func->n_args; i++) {
-                    if (!ASR::is_a<ASR::Var_t>(*func->m_args[i])) continue;
-                    ASR::symbol_t* arg_sym = ASR::down_cast<ASR::Var_t>(
-                        func->m_args[i])->m_v;
-                    if (!ASR::is_a<ASR::Variable_t>(*arg_sym)) continue;
-                    ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(arg_sym);
-                    if (var->m_type_declaration == placeholder) {
-                        var->m_type_declaration = real_sym;
-                        var->m_type = real_func_type;
-                        if (i < func_ft->n_arg_types) {
-                            func_ft->m_arg_types[i] = real_func_type;
-                        }
-                    }
-                }
-            }
-            if (ASR::is_a<ASR::Template_t>(*sym)) {
-                replace_placeholder_in_declarations(
-                    ASR::down_cast<ASR::Template_t>(sym)->m_symtab, placeholder,
-                    real_sym, real_func_type);
-            }
-        }
-    }
-
-    // The template nested within `host` whose specification part or
-    // procedure declared the procedure placeholder `placeholder`, if any.
-    static SymbolTable *proc_placeholder_template_scope(
-            ASR::symbol_t *placeholder, SymbolTable *host) {
-        SymbolTable *scope
-            = ASR::down_cast<ASR::Function_t>(placeholder)->m_symtab->parent;
-        if (scope == host || scope->asr_owner == nullptr
+        if (replaced_interfaces.empty() || scope->asr_owner == nullptr
                 || !ASR::is_a<ASR::symbol_t>(*scope->asr_owner)
-                || !ASR::is_a<ASR::Template_t>(
+                || !ASR::is_a<ASR::Function_t>(
                     *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
-            return nullptr;
+            return;
         }
-        for (SymbolTable *s = scope->parent; s; s = s->parent) {
-            if (s == host) return scope;
+        ASR::Function_t *func = ASR::down_cast<ASR::Function_t>(
+            ASR::down_cast<ASR::symbol_t>(scope->asr_owner));
+        ASR::FunctionType_t *func_ft = ASR::down_cast<ASR::FunctionType_t>(
+            func->m_function_signature);
+        for (size_t i = 0; i < func->n_args && i < func_ft->n_arg_types; i++) {
+            ASR::Variable_t *arg = ASRUtils::expr_to_variable_or_null(
+                func->m_args[i]);
+            if (arg && replaced_interfaces.count(arg) > 0) {
+                func_ft->m_arg_types[i] = arg->m_type;
+            }
+        }
+    }
+
+    // The scope that holds the procedure placeholder `placeholder`, and so
+    // every declaration that has referenced it: the scope that looks the
+    // procedure up, or its host.
+    static SymbolTable *proc_placeholder_scope(ASR::symbol_t *placeholder) {
+        return ASR::down_cast<ASR::Function_t>(placeholder)->m_symtab->parent;
+    }
+
+    // The procedure that the placeholder `pending` stands for, if it is
+    // defined yet: its name as seen from the scope looking it up, where
+    // placeholders hide it until they are replaced.
+    ASR::symbol_t *proc_placeholder_target(const ProcPlaceholder &pending) {
+        for (SymbolTable *s = pending.scope; s; s = s->parent) {
+            ASR::symbol_t *sym = s->get_symbol(pending.name);
+            if (sym && !is_pending_proc_placeholder(sym)) return sym;
         }
         return nullptr;
-    }
-
-    // Whether no procedure has replaced the placeholder `placeholder` for
-    // the procedure `name` once `scope` is complete. A placeholder declared
-    // in a template of `scope` stands for a procedure of the template or of
-    // `scope`, so it is looked up from the template.
-    bool is_unresolved_proc_placeholder(SymbolTable *scope,
-            const std::string &name, ASR::symbol_t *placeholder) {
-        SymbolTable *template_scope = proc_placeholder_template_scope(
-            placeholder, scope);
-        SymbolTable *lookup_scope = template_scope ? template_scope : scope;
-        return lookup_scope->resolve_symbol(name) == placeholder;
     }
 
     void resolve_proc_pointer_placeholders() {
         // After all interfaces/functions have been processed, update
         // m_type_declaration and m_type for procedure pointer variables
         // inside structs and function parameters that still reference
-        // a placeholder Function_t.
+        // a placeholder Function_t. A placeholder is replaced by the
+        // procedure that the scope looking it up has once it, or a host of
+        // it, defines the procedure; until then it stays pending.
         std::map<ASR::symbol_t*, ASR::symbol_t*> placeholder_to_real;
-        for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
-            ASR::symbol_t *real_sym = current_scope->resolve_symbol(name);
-            if (!real_sym || real_sym == placeholder_sym) continue;
-            if (!ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(real_sym))) continue;
-            placeholder_to_real[placeholder_sym] = real_sym;
+        std::vector<ProcPlaceholder> unresolved_placeholders;
+        // The scopes holding the references to the replaced placeholders.
+        std::set<SymbolTable*> scopes;
+        for (auto &pending : pending_proc_placeholders) {
+            ASR::symbol_t *real_sym = proc_placeholder_target(pending);
+            if (real_sym == nullptr || !ASR::is_a<ASR::Function_t>(
+                    *ASRUtils::symbol_get_past_external(real_sym))) {
+                unresolved_placeholders.push_back(pending);
+                continue;
+            }
+            placeholder_to_real[pending.placeholder] = real_sym;
+            // The global scope holds only program units, so only the
+            // scope looking the procedure up refers to a placeholder there.
+            SymbolTable *scope = proc_placeholder_scope(pending.placeholder);
+            scopes.insert(scope->parent ? scope : pending.scope);
         }
         if (!placeholder_to_real.empty()) {
             PlaceholderVarReplacer replacer(placeholder_to_real);
-            replace_placeholder_in_initializers(current_scope, replacer);
-        }
-        for (auto &[name, placeholder_sym] : pending_proc_placeholders) {
-            auto it = placeholder_to_real.find(placeholder_sym);
-            if (it == placeholder_to_real.end()) continue;
-            ASR::symbol_t *real_sym = it->second;
-            ASR::Function_t *real_func = ASR::down_cast<ASR::Function_t>(
-                ASRUtils::symbol_get_past_external(real_sym));
-            replace_placeholder_in_declarations(current_scope, placeholder_sym,
-                real_sym, real_func->m_function_signature);
-            // A placeholder declared in a template for a procedure of the
-            // host no longer hides the procedure from the template.
-            SymbolTable *template_scope = proc_placeholder_template_scope(
-                placeholder_sym, current_scope);
-            if (template_scope
-                    && template_scope->get_symbol(name) == placeholder_sym) {
-                template_scope->erase_symbol(name);
+            for (SymbolTable *scope : scopes) {
+                bool nested = false;
+                for (SymbolTable *s = scope->parent; s && !nested; s = s->parent) {
+                    nested = scopes.count(s) > 0;
+                }
+                if (!nested) {
+                    replace_placeholder_references(scope, replacer);
+                }
             }
         }
+        // A replaced placeholder no longer hides the procedure.
+        for (auto &pending : pending_proc_placeholders) {
+            if (placeholder_to_real.count(pending.placeholder) == 0) continue;
+            SymbolTable *scope = proc_placeholder_scope(pending.placeholder);
+            if (scope->get_symbol(pending.name) == pending.placeholder) {
+                scope->erase_symbol(pending.name);
+            }
+        }
+        pending_proc_placeholders = std::move(unresolved_placeholders);
         // A procedure given to a procedure pointer component before the
         // procedure or the component's interface is defined is checked
         // against the component as the structure constructor checks one

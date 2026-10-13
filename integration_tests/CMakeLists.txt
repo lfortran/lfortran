@@ -1449,6 +1449,10 @@ RUN(NAME procedure_pointer_34 LABELS llvm)
 RUN(NAME procedure_pointer_33 LABELS llvm)
 # Templates are not supported by GFortran
 RUN(NAME procedure_pointer_35 LABELS llvm)
+RUN(NAME procedure_pointer_36 LABELS gfortran llvm)
+# Templates are not supported by GFortran, and it takes the host's `later`
+# instead of the internal procedure `later` of `shadowed`
+RUN(NAME procedure_pointer_37 LABELS llvm)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 

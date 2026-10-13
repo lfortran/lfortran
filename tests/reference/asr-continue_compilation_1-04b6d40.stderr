@@ -1224,6 +1224,30 @@ semantic error: Interface 'cc1_pcth_never' is referenced but not defined
 2673 |             procedure(cc1_pcth_never), pointer, nopass :: pf => null()  ! {Error} Interface 'cc1_pcth_never' is referenced but not defined
      |             ^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
 
+semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    --> tests/errors/continue_compilation_1.f90:2712:79
+     |
+2712 |             type(cc1_pcll_tmpl_t), parameter :: cc1_pcll_c1 = cc1_pcll_tmpl_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+     |                                                                               ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    --> tests/errors/continue_compilation_1.f90:2725:69
+     |
+2725 |             type(cc1_pcll_t), parameter :: cc1_pcll_c2 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+     |                                                                     ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    --> tests/errors/continue_compilation_1.f90:2732:65
+     |
+2732 |         type(cc1_pcll_t), parameter :: cc1_pcll_c3 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+     |                                                                 ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Interface 'cc1_pcll_never' is referenced but not defined
+    --> tests/errors/continue_compilation_1.f90:2723:17
+     |
+2723 |                 procedure(cc1_pcll_never), pointer, nopass :: pf => null()  ! {Error} Interface 'cc1_pcll_never' is referenced but not defined
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

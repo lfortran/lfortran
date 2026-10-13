@@ -2503,7 +2503,19 @@ public:
     // which has to run whatever the mask selects belongs there rather than in
     // the masked body.
     Vec<ASR::stmt_t*>* body_enclosing_where = nullptr;
-    std::vector<std::pair<std::string, ASR::symbol_t*>> pending_proc_placeholders;
+    // A procedure named as an interface or given to a procedure pointer
+    // component before its definition is declared as a placeholder
+    // procedure until the procedure is known, see
+    // `resolve_proc_pointer_placeholders()`.
+    struct ProcPlaceholder {
+        std::string name;
+        ASR::symbol_t* placeholder;
+        // The scope in which the declaration referencing the procedure
+        // looks `name` up: that of the declaration, or the host of the
+        // derived type of a component.
+        SymbolTable* scope;
+    };
+    std::vector<ProcPlaceholder> pending_proc_placeholders;
     // The placeholders in `pending_proc_placeholders` that stand for a
     // procedure given to a procedure pointer component before its
     // definition, see `declare_forward_procedure_target()`.
@@ -6593,7 +6605,7 @@ public:
     bool is_pending_proc_placeholder(ASR::symbol_t *s) {
         s = ASRUtils::symbol_get_past_external(s);
         for (auto &placeholder : pending_proc_placeholders) {
-            if (ASRUtils::symbol_get_past_external(placeholder.second) == s) {
+            if (ASRUtils::symbol_get_past_external(placeholder.placeholder) == s) {
                 return true;
             }
         }
@@ -10482,8 +10494,8 @@ public:
                             for (auto &pending_placeholder : pending_proc_placeholders) {
                                 ASR::symbol_t *pending_underlying =
                                     ASRUtils::symbol_get_past_external(
-                                        pending_placeholder.second);
-                                if (pending_placeholder.first == init_name &&
+                                        pending_placeholder.placeholder);
+                                if (pending_placeholder.name == init_name &&
                                         pending_underlying == init_sym_underlying) {
                                     is_pending_placeholder = true;
                                     break;
@@ -13564,7 +13576,8 @@ public:
                     
                     parent_scope->add_symbol(func_name, placeholder); 
                     v = placeholder;
-                    pending_proc_placeholders.push_back({func_name, placeholder});
+                    pending_proc_placeholders.push_back({func_name, placeholder,
+                        is_derived_type ? parent_scope : current_scope});
                 }
                 type_declaration = v;
                 v = ASRUtils::symbol_get_past_external(v);
@@ -14167,7 +14180,7 @@ public:
                 nullptr, ASR::accessType::Public, false, false, nullptr,
                 nullptr, nullptr));
         current_scope->add_symbol(name, placeholder);
-        pending_proc_placeholders.push_back({name, placeholder});
+        pending_proc_placeholders.push_back({name, placeholder, current_scope});
         forward_procedure_targets.insert(placeholder);
         deferred_procedure_component_values.push_back(
             {placeholder, member_var, value->base.loc});
