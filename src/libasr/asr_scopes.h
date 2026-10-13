@@ -18,6 +18,10 @@ namespace ASR {
 struct SymbolTable {
     private:
     std::map<std::string, ASR::symbol_t*> scope;
+    // The lowest counter `get_unique_name` may append to a name, as all
+    // the lower ones are taken. Cleared when a symbol is erased, which can
+    // free a lower one.
+    std::map<std::string, int> unique_name_counter;
 
     public:
     SymbolTable *parent;
@@ -76,6 +80,7 @@ struct SymbolTable {
         //auto it = scope.find(to_lower(name));
         LCOMPILERS_ASSERT(scope.find(name) != scope.end())
         scope.erase(name);
+        unique_name_counter.clear();
     }
 
     // Add a new symbol that did not exist before
