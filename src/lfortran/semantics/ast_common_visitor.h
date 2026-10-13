@@ -3431,6 +3431,23 @@ public:
                 return is_named_constant_expr(
                     ASR::down_cast<ASR::Cast_t>(expr)->m_arg);
             }
+            case ASR::exprType::ArrayItem: {
+                // An element of a named constant array
+                ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(expr);
+                if (!is_named_constant_expr(item->m_v)) {
+                    return false;
+                }
+                for (size_t i = 0; i < item->n_args; i++) {
+                    ASR::expr_t* parts[3] = {item->m_args[i].m_left,
+                        item->m_args[i].m_right, item->m_args[i].m_step};
+                    for (ASR::expr_t* part: parts) {
+                        if (part != nullptr && !is_named_constant_expr(part)) {
+                            return false;
+                        }
+                    }
+                }
+                return true;
+            }
             case ASR::exprType::IntrinsicElementalFunction: {
                 ASR::IntrinsicElementalFunction_t* func =
                     ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expr);
@@ -17649,69 +17666,8 @@ public:
         } else {
             validate_fixed_size_array_index_bounds(expr, indices.p,
                 indices.size(), loc);
-            ASR::expr_t* array_item_value = nullptr;
-            if (indices.size() > 0) {
-                ASR::expr_t* base_value = ASRUtils::expr_value(expr);
-                if (base_value == nullptr &&
-                        ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
-                    ASR::StructInstanceMember_t* member_expr =
-                        ASR::down_cast<ASR::StructInstanceMember_t>(expr);
-                    base_value = ASRUtils::get_struct_member_value_from_constant(
-                        ASRUtils::expr_value(member_expr->m_v),
-                        member_expr->m_m);
-                }
-                if (base_value && ASR::is_a<ASR::ArrayConstant_t>(*base_value)) {
-                    ASR::ArrayConstant_t* array_constant =
-                        ASR::down_cast<ASR::ArrayConstant_t>(base_value);
-                    ASR::dimension_t* dims = nullptr;
-                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
-                        ASRUtils::expr_type(expr), dims);
-                    int64_t flat_index = 0;
-                    int64_t stride = 1;
-                    bool can_fold = (n_dims == indices.size());
-                    for (size_t i = 0; can_fold && i < indices.size(); i++) {
-                        if (indices[i].m_left != nullptr
-                                || indices[i].m_step != nullptr
-                                || indices[i].m_right == nullptr) {
-                            can_fold = false;
-                            break;
-                        }
-                        ASR::expr_t* index_value =
-                            ASRUtils::expr_value(indices[i].m_right);
-                        if (index_value == nullptr ||
-                                !ASR::is_a<ASR::IntegerConstant_t>(*index_value)) {
-                            can_fold = false;
-                            break;
-                        }
-                        int64_t lower_bound = 1;
-                        if (dims[i].m_start) {
-                            ASR::expr_t* lb_value =
-                                ASRUtils::expr_value(dims[i].m_start);
-                            if (lb_value &&
-                                    !ASRUtils::extract_value(lb_value, lower_bound)) {
-                                can_fold = false;
-                                break;
-                            }
-                        }
-                        int64_t length = 0;
-                        if (dims[i].m_length == nullptr ||
-                                !ASRUtils::extract_value(dims[i].m_length, length)) {
-                            can_fold = false;
-                            break;
-                        }
-                        int64_t index = ASR::down_cast<ASR::IntegerConstant_t>(
-                            index_value)->m_n - lower_bound;
-                        flat_index += index * stride;
-                        stride *= length;
-                    }
-                    size_t index_unsigned = flat_index;
-                    if (can_fold && flat_index >= 0 && index_unsigned < (size_t)
-                            ASRUtils::get_fixed_size_of_array(array_constant->m_type)) {
-                        array_item_value = ASRUtils::fetch_ArrayConstant_value(
-                            al, array_constant, index_unsigned);
-                    }
-                }
-            }
+            ASR::expr_t* array_item_value = ASRUtils::fold_ArrayItem_value(
+                al, expr, indices.p, indices.size());
             array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc, expr, indices.p,
                 indices.size(), ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(expr))),
                 ASR::arraystorageType::ColMajor, array_item_value);

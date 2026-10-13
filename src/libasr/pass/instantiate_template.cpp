@@ -1789,6 +1789,56 @@ public:
             x->m_overload_id, type, value);
     }
 
+    // An element of a named constant array of the template, such as
+    // `arr(2)` with `arr = [n, 2*n]`, has a value once the array has one.
+    ASR::asr_t* duplicate_ArrayItem(ASR::ArrayItem_t* x) {
+        ASR::asr_t* item = BaseExprStmtDuplicator<SymbolInstantiator>::duplicate_ArrayItem(x);
+        ASR::ArrayItem_t* new_item = ASR::down_cast2<ASR::ArrayItem_t>(item);
+        if (new_item->m_value == nullptr) {
+            new_item->m_value = ASRUtils::fold_ArrayItem_value(al,
+                new_item->m_v, new_item->m_args, new_item->n_args);
+            if (new_item->m_value == nullptr) {
+                report_out_of_bounds_index(new_item);
+            }
+        }
+        return item;
+    }
+
+    // A subscript of a named constant array that becomes constant only in
+    // the instantiation, e.g. `arr(n)`, may be out of bounds; report it like
+    // the frontend does for a constant subscript.
+    void report_out_of_bounds_index(ASR::ArrayItem_t* x) {
+        ASR::expr_t* array_value = ASRUtils::expr_value(x->m_v);
+        if (array_value == nullptr
+                || !ASR::is_a<ASR::ArrayConstant_t>(*array_value)) {
+            return;
+        }
+        ASR::dimension_t* dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(x->m_v), dims);
+        for (size_t i = 0; i < std::min(n_dims, x->n_args); i++) {
+            int64_t idx = 0, lb = 1, len = 0;
+            if (x->m_args[i].m_left != nullptr || x->m_args[i].m_step != nullptr
+                    || x->m_args[i].m_right == nullptr
+                    || !ASRUtils::extract_value(
+                        ASRUtils::expr_value(x->m_args[i].m_right), idx)
+                    || (dims[i].m_start != nullptr && !ASRUtils::extract_value(
+                        ASRUtils::expr_value(dims[i].m_start), lb))
+                    || dims[i].m_length == nullptr
+                    || !ASRUtils::extract_value(
+                        ASRUtils::expr_value(dims[i].m_length), len)) {
+                continue;
+            }
+            if (idx < lb || idx > lb + len - 1) {
+                report_error("Array index " + std::to_string(idx)
+                    + " is out of bounds (" + std::to_string(lb) + " to "
+                    + std::to_string(lb + len - 1) + ") in dimension "
+                    + std::to_string(i + 1), x->base.base.loc);
+                return;
+            }
+        }
+    }
+
     // An array constructor of a deferred constant, e.g. `[n, 2*n]`, becomes
     // an array constant once its elements are.
     ASR::asr_t* duplicate_ArrayConstructor(ASR::ArrayConstructor_t* x) {
