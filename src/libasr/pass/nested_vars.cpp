@@ -545,6 +545,45 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         return false;
     }
 
+    // A module cannot refer into a program, so move the program's type into
+    // the context module and import it back into the program under its own
+    // name. The program types it depends on through its parent or its
+    // components are moved with it, otherwise the copy would still refer
+    // into the program.
+    ASR::symbol_t *move_program_struct(ASR::symbol_t *struct_sym,
+            const std::string &module_name) {
+        std::string struct_name = ASRUtils::symbol_name(struct_sym);
+        ASR::symbol_t *moved = current_scope->get_symbol(struct_name);
+        if (moved != nullptr) {
+            return moved;
+        }
+        SymbolTable *program_scope = ASRUtils::symbol_parent_symtab(struct_sym);
+        ASRUtils::SymbolDuplicator sd(al);
+        sd.duplicate_symbol(struct_sym, current_scope);
+        program_scope->erase_symbol(struct_name);
+        moved = current_scope->get_symbol(struct_name);
+        moved_program_structs[struct_sym] = make_external_symbol(al,
+            program_scope, moved, struct_name, module_name, struct_name,
+            ASR::accessType::Public);
+
+        ASR::Struct_t *struct_t = ASR::down_cast<ASR::Struct_t>(struct_sym);
+        std::vector<ASR::symbol_t*> dependencies;
+        dependencies.push_back(struct_t->m_parent);
+        for (auto &item: struct_t->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                dependencies.push_back(ASR::down_cast<ASR::Variable_t>(
+                    item.second)->m_type_declaration);
+            }
+        }
+        for (ASR::symbol_t *dep: dependencies) {
+            if (dep != nullptr && ASR::is_a<ASR::Struct_t>(*dep) &&
+                    ASRUtils::symbol_parent_symtab(dep) == program_scope) {
+                move_program_struct(dep, module_name);
+            }
+        }
+        return moved;
+    }
+
     void create_context_modules(const ASR::TranslationUnit_t &x) {
         current_scope = x.m_symtab;
         SymbolTable* current_scope_copy = current_scope;
@@ -669,24 +708,8 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                 m_derived_type_or_class_type = ASR::down_cast<ASR::symbol_t>(fn);
                                 current_scope->add_symbol(fn_name, m_derived_type_or_class_type);
                             } else {
-                                // A module cannot refer into a program, so
-                                // move the program's type into the context
-                                // module and import it back into the program
-                                // under its own name.
-                                std::string struct_name = ASRUtils::symbol_name(
-                                    derived_type_or_class_type);
-                                SymbolTable* program_scope = ASRUtils::symbol_parent_symtab(
-                                    derived_type_or_class_type);
-                                ASRUtils::SymbolDuplicator sd(al);
-                                sd.duplicate_symbol(derived_type_or_class_type, current_scope);
-                                program_scope->erase_symbol(struct_name);
-                                m_derived_type_or_class_type = current_scope->get_symbol(
-                                    struct_name);
-                                moved_program_structs[derived_type_or_class_type] =
-                                    make_external_symbol(al, program_scope,
-                                        m_derived_type_or_class_type, struct_name,
-                                        module_name, struct_name,
-                                        ASR::accessType::Public);
+                                m_derived_type_or_class_type = move_program_struct(
+                                    derived_type_or_class_type, module_name);
                             }
                         }
                         if (ASR::is_a<ASR::StructType_t>(*var_type_)) {
