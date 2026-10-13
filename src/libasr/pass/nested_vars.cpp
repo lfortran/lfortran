@@ -1502,6 +1502,45 @@ public:
         PassUtils::PassVisitor<AssignNestedVars>::visit_Assignment(x);
     }
 
+    bool calls_nested_procedure(ASR::expr_t *expr) {
+        bool calls_present_copy = calls_present;
+        calls_present = false;
+        visit_expr(*expr);
+        std::swap(calls_present, calls_present_copy);
+        return calls_present_copy;
+    }
+
+    void hoist_loop_bound(ASR::expr_t *&bound, std::vector<ASR::stmt_t*> &stmts) {
+        if (bound == nullptr || !calls_nested_procedure(bound)) {
+            return;
+        }
+        std::string name = current_scope->get_unique_name("__libasr_created_loop_bound");
+        ASR::stmt_t *assign = nullptr;
+        bound = PassUtils::create_auxiliary_variable_for_expr(bound, name, al,
+            current_scope, assign);
+        stmts.push_back(assign);
+    }
+
+    // A bound of loop `i` that calls a nested procedure gets a statement of its own
+    void split_loop_header(ASR::stmt_t **&m_body, size_t &n_body, size_t i) {
+        std::vector<ASR::stmt_t*> stmts;
+        if (ASR::is_a<ASR::DoLoop_t>(*m_body[i])) {
+            ASR::do_loop_head_t &head = ASR::down_cast<ASR::DoLoop_t>(m_body[i])->m_head;
+            hoist_loop_bound(head.m_start, stmts);
+            hoist_loop_bound(head.m_end, stmts);
+            hoist_loop_bound(head.m_increment, stmts);
+        }
+        if (stmts.empty()) {
+            return;
+        }
+        stmts.insert(stmts.begin(), m_body, m_body + i);
+        stmts.insert(stmts.end(), m_body + i, m_body + n_body);
+        Vec<ASR::stmt_t*> body;
+        body.from_pointer_n_copy(al, stmts.data(), stmts.size());
+        m_body = body.p;
+        n_body = body.size();
+    }
+
     void transform_stmts(ASR::stmt_t **&m_body, size_t &n_body) {
         Vec<ASR::stmt_t*> body;
         body.reserve(al, n_body);
@@ -1509,6 +1548,9 @@ public:
         std::vector<ASR::stmt_t*> loop_end_syncs;
         HostToContextVarDuplicator ctx_duplicator(al);
         for (size_t i=0; i<n_body; i++) {
+            if (nesting_map.find(cur_func_sym) != nesting_map.end()) {
+                split_loop_header(m_body, n_body, i);
+            }
             calls_present = false;
             calls_in_loop_condition = false;
             bool is_do_loop_sync = false;
