@@ -5147,20 +5147,113 @@ public:
         }
     };
 
-    // Makes `var`, a procedure pointer or dummy procedure declared with the
-    // interface of a placeholder of `placeholder_to_real`, take the
-    // interface of the procedure that replaces the placeholder instead,
-    // imported into the scope of `var` as a declaration naming the
-    // procedure imports it. Returns whether it did.
-    bool replace_placeholder_interface(ASR::Variable_t *var,
-            const std::map<ASR::symbol_t*, ASR::symbol_t*> &placeholder_to_real) {
-        auto it = placeholder_to_real.find(var->m_type_declaration);
-        if (it == placeholder_to_real.end()) return false;
+    // The procedure pointers, dummy procedures and procedures of the scopes
+    // in which placeholders are replaced, see
+    // `complete_procedure_interfaces()`.
+    struct ProcedureInterfaceCompletion {
+        const std::map<ASR::symbol_t*, ASR::symbol_t*> &placeholder_to_real;
+        // In the order of the walk of the scopes.
+        std::vector<ASR::Variable_t*> declarations;
+        std::vector<ASR::Function_t*> procedures;
+        // The declarations whose interface, and the procedures whose
+        // signature, includes the interface of a replaced placeholder,
+        // directly or through the interface of a dummy procedure or result.
+        std::set<ASR::Variable_t*> stale_declarations;
+        std::set<ASR::Function_t*> stale_procedures;
+        std::set<ASR::Variable_t*> completed_declarations;
+        std::set<ASR::Function_t*> completed_procedures;
+
+        ProcedureInterfaceCompletion(
+                const std::map<ASR::symbol_t*, ASR::symbol_t*> &placeholder_to_real_)
+            : placeholder_to_real(placeholder_to_real_) {}
+
+        // The procedure whose interface `var` is declared with, if it is a
+        // procedure pointer or dummy procedure.
+        ASR::Function_t *interface_of(ASR::Variable_t *var) const {
+            ASR::symbol_t *iface = var->m_type_declaration;
+            if (iface == nullptr || !ASR::is_a<ASR::FunctionType_t>(
+                    *ASRUtils::type_get_past_pointer(var->m_type))) {
+                return nullptr;
+            }
+            auto it = placeholder_to_real.find(iface);
+            if (it != placeholder_to_real.end()) iface = it->second;
+            iface = ASRUtils::symbol_get_past_external(iface);
+            return iface && ASR::is_a<ASR::Function_t>(*iface)
+                ? ASR::down_cast<ASR::Function_t>(iface) : nullptr;
+        }
+
+        // The dummy arguments and result of `func` that its signature has
+        // the types of, with their positions; the result has position
+        // `func->n_args`.
+        static std::vector<std::pair<size_t, ASR::Variable_t*>>
+                signature_variables(ASR::Function_t *func) {
+            std::vector<std::pair<size_t, ASR::Variable_t*>> vars;
+            for (size_t i = 0; i < func->n_args; i++) {
+                if (ASR::Variable_t *arg = ASRUtils::expr_to_variable_or_null(
+                        func->m_args[i])) {
+                    vars.push_back({i, arg});
+                }
+            }
+            if (func->m_return_var) {
+                if (ASR::Variable_t *result = ASRUtils::expr_to_variable_or_null(
+                        func->m_return_var)) {
+                    vars.push_back({func->n_args, result});
+                }
+            }
+            return vars;
+        }
+
+        void find_stale() {
+            for (ASR::Variable_t *var : declarations) {
+                if (placeholder_to_real.count(var->m_type_declaration) > 0) {
+                    stale_declarations.insert(var);
+                }
+            }
+            bool changed = true;
+            while (changed) {
+                changed = false;
+                for (ASR::Function_t *func : procedures) {
+                    if (stale_procedures.count(func) > 0) continue;
+                    for (auto &item : signature_variables(func)) {
+                        if (stale_declarations.count(item.second) > 0) {
+                            stale_procedures.insert(func);
+                            changed = true;
+                            break;
+                        }
+                    }
+                }
+                for (ASR::Variable_t *var : declarations) {
+                    if (stale_declarations.count(var) == 0
+                            && stale_procedures.count(interface_of(var)) > 0) {
+                        stale_declarations.insert(var);
+                        changed = true;
+                    }
+                }
+            }
+        }
+    };
+
+    // Makes `var`, a procedure pointer or dummy procedure whose interface
+    // includes that of a replaced placeholder, take the completed
+    // interface of the procedure it is declared with, imported into the
+    // scope of `var` as a declaration naming the procedure imports it. That
+    // interface is completed first, so that a copy made by the import does
+    // not keep the placeholder interface of one of its dummy procedures.
+    void complete_procedure_declaration(ASR::Variable_t *var,
+            ProcedureInterfaceCompletion &c) {
+        if (c.stale_declarations.count(var) == 0
+                || !c.completed_declarations.insert(var).second) {
+            return;
+        }
+        ASR::Function_t *iface = c.interface_of(var);
+        auto it = c.placeholder_to_real.find(var->m_type_declaration);
+        if (it != c.placeholder_to_real.end()) {
+            var->m_type_declaration = ASRUtils::import_type_declaration(al,
+                it->second, var->m_parent_symtab);
+        }
+        complete_procedure_signature(iface, c);
         ASR::ttype_t *real_func_type = ASRUtils::import_procedure_type(al,
-            ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
-                it->second))->m_function_signature, var->m_parent_symtab);
-        var->m_type_declaration = ASRUtils::import_type_declaration(al,
-            it->second, var->m_parent_symtab);
+            iface->m_function_signature, var->m_parent_symtab);
         if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
             var->m_type = ASRUtils::TYPE(
                 ASR::make_Pointer_t(al, var->base.base.loc, real_func_type));
@@ -5174,22 +5267,50 @@ public:
                     = var->m_type;
             }
         }
-        return true;
+    }
+
+    // Makes the signature of `func` take the completed types of its dummy
+    // procedures and result whose interface includes that of a replaced
+    // placeholder. A procedure reached again while its own signature is
+    // being completed, through a cycle of interfaces, is left as it is.
+    void complete_procedure_signature(ASR::Function_t *func,
+            ProcedureInterfaceCompletion &c) {
+        if (c.stale_procedures.count(func) == 0
+                || !c.completed_procedures.insert(func).second) {
+            return;
+        }
+        ASR::FunctionType_t *func_ft = ASR::down_cast<ASR::FunctionType_t>(
+            func->m_function_signature);
+        for (auto &[i, var] : c.signature_variables(func)) {
+            if (c.stale_declarations.count(var) == 0) continue;
+            complete_procedure_declaration(var, c);
+            if (i < func->n_args) {
+                if (i < func_ft->n_arg_types) {
+                    func_ft->m_arg_types[i] = var->m_type;
+                }
+            } else {
+                func_ft->m_return_var_type = var->m_type;
+            }
+        }
     }
 
     // Makes everything in `scope` and in every scope nested in it, such as
     // a derived type, procedure, BLOCK or template, refer to the procedures
-    // that replace the placeholders of `replacer` instead: a procedure
-    // pointer or dummy procedure declared with the interface of one takes
-    // the procedure's interface, imported into its scope, as does the
-    // signature of a procedure with such a dummy or result. A procedure
+    // that replace the placeholders of `replacer` instead. A procedure
     // pointer `null()` in an initializer, such as a constructor argument or
     // a component default filled into a constructor, refers to the
-    // interface of its component, and so to the procedure instead. All
-    // placeholders are replaced in a single walk.
+    // interface of its component, and so to the procedure instead. Collects
+    // the procedure pointers, dummy procedures and procedures of the scopes
+    // in `c`, whose interfaces are completed once all scopes are walked.
     void replace_placeholder_references(SymbolTable *scope,
-            PlaceholderVarReplacer &replacer) {
-        std::set<ASR::Variable_t*> replaced_interfaces;
+            PlaceholderVarReplacer &replacer, ProcedureInterfaceCompletion &c) {
+        if (scope->asr_owner != nullptr
+                && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)
+                && ASR::is_a<ASR::Function_t>(
+                    *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
+            c.procedures.push_back(ASR::down_cast<ASR::Function_t>(
+                ASR::down_cast<ASR::symbol_t>(scope->asr_owner)));
+        }
         for (auto &[sym_name, sym] : scope->get_scope()) {
             if (replacer.placeholder_to_real.count(sym) > 0) continue;
             if (ASR::is_a<ASR::Variable_t>(*sym)) {
@@ -5198,34 +5319,30 @@ public:
                 replacer.replace_expr(var->m_symbolic_value);
                 replacer.current_expr = &var->m_value;
                 replacer.replace_expr(var->m_value);
-                if (replace_placeholder_interface(var, replacer.placeholder_to_real)) {
-                    replaced_interfaces.insert(var);
+                if (c.interface_of(var) != nullptr) {
+                    c.declarations.push_back(var);
                 }
             } else if (SymbolTable *nested = ASRUtils::symbol_symtab(sym)) {
-                replace_placeholder_references(nested, replacer);
+                replace_placeholder_references(nested, replacer, c);
             }
         }
-        if (replaced_interfaces.empty() || scope->asr_owner == nullptr
-                || !ASR::is_a<ASR::symbol_t>(*scope->asr_owner)
-                || !ASR::is_a<ASR::Function_t>(
-                    *ASR::down_cast<ASR::symbol_t>(scope->asr_owner))) {
-            return;
+    }
+
+    // Completes the interfaces of the procedure pointers, dummy procedures
+    // and procedures collected in `c`: a procedure pointer or dummy
+    // procedure declared with the interface of a placeholder takes that of
+    // the procedure replacing it, as does the signature of a procedure with
+    // such a dummy or result. So does each declaration, and each signature,
+    // that includes such an interface through that of another procedure.
+    // Each procedure's signature is completed before it is imported, so the
+    // result does not depend on the order of the scopes.
+    void complete_procedure_interfaces(ProcedureInterfaceCompletion &c) {
+        c.find_stale();
+        for (ASR::Function_t *func : c.procedures) {
+            complete_procedure_signature(func, c);
         }
-        ASR::Function_t *func = ASR::down_cast<ASR::Function_t>(
-            ASR::down_cast<ASR::symbol_t>(scope->asr_owner));
-        ASR::FunctionType_t *func_ft = ASR::down_cast<ASR::FunctionType_t>(
-            func->m_function_signature);
-        for (size_t i = 0; i < func->n_args && i < func_ft->n_arg_types; i++) {
-            ASR::Variable_t *arg = ASRUtils::expr_to_variable_or_null(
-                func->m_args[i]);
-            if (arg && replaced_interfaces.count(arg) > 0) {
-                func_ft->m_arg_types[i] = arg->m_type;
-            }
-        }
-        ASR::Variable_t *result = func->m_return_var
-            ? ASRUtils::expr_to_variable_or_null(func->m_return_var) : nullptr;
-        if (result && replaced_interfaces.count(result) > 0) {
-            func_ft->m_return_var_type = result->m_type;
+        for (ASR::Variable_t *var : c.declarations) {
+            complete_procedure_declaration(var, c);
         }
     }
 
@@ -5256,8 +5373,9 @@ public:
         // it, defines the procedure; until then it stays pending.
         std::map<ASR::symbol_t*, ASR::symbol_t*> placeholder_to_real;
         std::vector<ProcPlaceholder> unresolved_placeholders;
-        // The scopes holding the references to the replaced placeholders.
-        std::set<SymbolTable*> scopes;
+        // The scopes holding the references to the replaced placeholders,
+        // in the order of `pending_proc_placeholders`.
+        std::vector<SymbolTable*> scopes;
         for (auto &pending : pending_proc_placeholders) {
             ASR::symbol_t *real_sym = proc_placeholder_target(pending);
             if (real_sym == nullptr || !ASR::is_a<ASR::Function_t>(
@@ -5269,7 +5387,10 @@ public:
             // The global scope holds only program units, so only the
             // scope looking the procedure up refers to a placeholder there.
             SymbolTable *scope = proc_placeholder_scope(pending.placeholder);
-            scopes.insert(scope->parent ? scope : pending.scope);
+            scope = scope->parent ? scope : pending.scope;
+            if (std::find(scopes.begin(), scopes.end(), scope) == scopes.end()) {
+                scopes.push_back(scope);
+            }
         }
         // A replaced placeholder no longer hides the procedure, also from
         // the declarations importing the procedure's interface below.
@@ -5282,15 +5403,18 @@ public:
         }
         if (!placeholder_to_real.empty()) {
             PlaceholderVarReplacer replacer(placeholder_to_real);
+            ProcedureInterfaceCompletion completion(placeholder_to_real);
             for (SymbolTable *scope : scopes) {
                 bool nested = false;
                 for (SymbolTable *s = scope->parent; s && !nested; s = s->parent) {
-                    nested = scopes.count(s) > 0;
+                    nested = std::find(scopes.begin(), scopes.end(), s)
+                        != scopes.end();
                 }
                 if (!nested) {
-                    replace_placeholder_references(scope, replacer);
+                    replace_placeholder_references(scope, replacer, completion);
                 }
             }
+            complete_procedure_interfaces(completion);
         }
         pending_proc_placeholders = std::move(unresolved_placeholders);
         // A procedure given to a procedure pointer component before the

@@ -1454,6 +1454,7 @@ RUN(NAME procedure_pointer_36 LABELS gfortran llvm)
 # instead of the internal procedure `later` of `shadowed`
 RUN(NAME procedure_pointer_37 LABELS llvm)
 RUN(NAME procedure_pointer_38 LABELS gfortran llvm)
+RUN(NAME procedure_pointer_39 LABELS gfortran llvm)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
