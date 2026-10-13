@@ -770,10 +770,12 @@ the proposal accepts for type sets; a stale separately compiled provider is
 diagnosed rather than specialized by a client. Unsupported forms remain
 diagnosed as not implemented: messages mixing closed and open binders, generic
 subroutine messages, and member signatures outside the runtime slot surface
-(scalar arguments, read-only assumed-shape numeric or logical arrays, and
-scalar integer, real, complex or logical results; a character member is
-outside it). A kind wildcard contributes one slot per supported kind, so a
-message over `integer(*) | real(*) | complex(*)` has nine slots.
+(scalar arguments, read-only assumed-shape numeric, logical or constant-length
+character arrays, and scalar integer, real, complex, logical or
+constant-length character results). A kind wildcard contributes one slot per
+supported kind, so a message over `integer(*) | real(*) | complex(*)` has nine
+slots. A character length wildcard would need one slot per length, so a view
+of a message over a set with one is diagnosed as not implemented.
 `class(INumeric)` remains invalid: a type-set trait is not a runtime view.
 
 A complex result crosses a slot with the platform's convention for the results
@@ -782,6 +784,15 @@ function does, and the call through the slot converts it back exactly as an
 ordinary call does (`CreateCallUtil` and
 `LLVMUtils::complex_function_return_abi_to_internal`), including the hidden
 result argument of `complex(8)` on Windows.
+
+A character result crosses a slot like the result of an ordinary character
+function: the `subroutine_from_function` pass makes it the last argument of
+the slot's interface, of the witness adapters and provider entries that fill
+the slot and of every call through it, which becomes a `TraitSubroutineCall`
+passing a variable for the result. Character member arguments and results get
+hidden lengths from `string_length_arguments` as any other character dummy
+does. The verifier compares a lowered slot, member entry or binding with its
+message's declared arguments and result.
 
 `traits_runtime_numeric_01` covers `nopass`, named non-first `pass`, static
 recursion inside an entry, lengths 0 through 9, strided, reversed and 2-D
@@ -805,7 +816,9 @@ first, hides its sources and modules, and checks that the contract-only
 consumer and late driver contain no provider names, entries or witnesses while
 reaching every member in both selection orders; its `--case complex` does so
 for the `integer | complex(real32) | complex(real64)` providers of
-`traits_runtime_numeric_separate_02`.
+`traits_runtime_numeric_separate_02`, and its `--case character` for the
+`character(len=3) | character(len=5)` providers and ordinary messages with
+character results of `traits_runtime_character_separate_01`.
 Standard-Fortran oracles with matching check counts accompany the first two
 tests, `traits_runtime_numeric_04` and the gate.
 
@@ -1235,11 +1248,12 @@ part of the member, as it is part of a character type argument (TD-21 of the
 [decisions record](traits-decisions.md)): `character(len=3)` and
 `character(len=5)` are two members with their own specializations, and a
 `character(len=4)` value belongs to neither. A member written `character`
-without a length is `character(len=1)`, as in a declaration. A closed runtime
-slot of a character member is diagnosed as not implemented.
-`traits_type_sets_01` and `traits_type_sets_02` cover logical and character
-members, and `traits_type_sets_03` reads such sets and their generics from a
-separately compiled module.
+without a length is `character(len=1)`, as in a declaration. Each
+constant-length member has its own closed runtime slots (see Closed numeric
+runtime generic methods). `traits_type_sets_01` and
+`traits_type_sets_02` cover logical and character members, and
+`traits_type_sets_03` reads such sets and their generics from a separately
+compiled module.
 
 A member of assumed length, `character(*)`, `character(len=*)` or
 `character*(*)`, is the length wildcard: the one member of its kind that
@@ -1546,12 +1560,13 @@ Fortran inspection preserves experimental trait declarations and implementations
 Executable Fortran output leaves this compile-only metadata as comments and
 continues to reject actual runtime views with an explicit backend diagnostic.
 
-Supported methods are functions with scalar integer, real, complex or logical
-results, and subroutines. Arguments are scalar integer, real, complex, logical,
-character, or nonpolymorphic derived-type values, or read-only, required,
-nonallocatable, nonpointer assumed-shape arrays of an intrinsic numeric or
-logical type. Array descriptors pass by reference, so strided, reversed and
-empty sections reach the implementation without a copy. Normal argument
+Supported methods are functions with scalar integer, real, complex, logical
+or constant-length character results, and subroutines. Arguments are scalar
+integer, real, complex, logical, character, or nonpolymorphic derived-type
+values, or read-only, required, nonallocatable, nonpointer assumed-shape arrays
+of an intrinsic numeric or logical type or of character of a constant length.
+Array descriptors pass by reference, so strided, reversed and empty sections
+reach the implementation without a copy. Normal argument
 intents, kinds, keyword names, and the ordinary Fortran calling convention
 apply. BIND(C) contracts
 or implementations remain available statically but do not provide runtime
@@ -1568,6 +1583,9 @@ attributes. A binding may be PURE even when its contract does not require it.
 Character arguments use the ordinary data-pointer and trailing hidden-length
 calling convention. The shared `string_length_arguments` pass lowers trait
 declarations, normalized slots, witness adapters, and generic entries together.
+A constant-length character result is the last argument that
+`subroutine_from_function` makes of it, in the slots, adapters and entries
+alike, while trait declarations keep their results.
 Erased operation wrappers forward the hidden lengths as part of the selected
 calling convention; impure calls in character actuals are evaluated once.
 `traits_runtime_character_01` checks these paths across module compilation,

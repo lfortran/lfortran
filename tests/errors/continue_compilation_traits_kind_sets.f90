@@ -82,11 +82,12 @@ contains
     end subroutine double_it
 end module cc_traits_kind_sets_long_double
 
-! E07: closed runtime slots of character members are not implemented yet.
+! E07: a character length wildcard would need a closed runtime slot for every
+! length.
 module cc_traits_kind_sets_character_slot
     implicit none
     abstract interface :: ICode
-        character(len=3) | character(len=5)
+        character(len=3) | character(*)
     end interface ICode
 
     abstract interface :: IPick

@@ -2199,6 +2199,60 @@ public:
         return procedure;
     }
 
+    // `procedure`, which has the signature of `message` after `offset`
+    // leading arguments, such as a runtime slot, as `message` declares it,
+    // once the lowering passes have changed `procedure`: subroutine_from_function
+    // makes a character result its last explicit dummy, and
+    // string_length_arguments appends a hidden length for each character
+    // dummy passed with one, which a closed member type gives `procedure`
+    // but not its generic message. The form keeps the explicit dummies and
+    // the hidden lengths that `message` has as well, and has the lowered
+    // result as its result.
+    struct TraitDeclaredForm {
+        Function_t procedure{};
+        std::vector<expr_t*> args;
+    };
+
+    bool trait_declared_form(const Function_t &message, const Function_t &procedure,
+            size_t offset, TraitDeclaredForm &form) const {
+        size_t n_message = explicit_argument_count(message);
+        size_t n_procedure = explicit_argument_count(procedure);
+        expr_t *result = procedure.m_return_var;
+        if (message.m_return_var && !result && n_procedure == n_message + offset + 1) {
+            result = procedure.m_args[--n_procedure];
+            auto *lowered = result && ASR::is_a<Var_t>(*result)
+                ? ASRUtils::symbol_get_past_external(ASR::down_cast<Var_t>(result)->m_v)
+                : nullptr;
+            if (!lowered || !ASR::is_a<Variable_t>(*lowered) ||
+                    ASR::down_cast<Variable_t>(lowered)->m_intent != intentType::Out ||
+                    !ASRUtils::is_character(*ASR::down_cast<Variable_t>(lowered)->m_type)) {
+                return false;
+            }
+        }
+        if (n_procedure != n_message + offset) return false;
+        auto message_lengths = hidden_string_lengths(message);
+        auto procedure_lengths = hidden_string_lengths(procedure);
+        if (message_lengths.size() != message.n_args - n_message) return false;
+        form.args.assign(procedure.m_args, procedure.m_args + n_procedure);
+        for (const auto &length : message_lengths) {
+            auto other = procedure_lengths.find(length.first + offset);
+            if (other == procedure_lengths.end()) return false;
+            for (size_t i = n_procedure; i < procedure.n_args; i++) {
+                auto *arg = procedure.m_args[i];
+                if (arg && ASR::is_a<Var_t>(*arg) && ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<Var_t>(arg)->m_v) == other->second) {
+                    form.args.push_back(arg);
+                }
+            }
+        }
+        if (form.args.size() != message.n_args + offset) return false;
+        form.procedure = procedure;
+        form.procedure.m_args = form.args.data();
+        form.procedure.n_args = form.args.size();
+        form.procedure.m_return_var = result;
+        return true;
+    }
+
     Function_t *verify_runtime_trait_slot(const TraitRuntimeContract_t &contract,
             size_t index, const Location &loc) {
         require_with_loc_id(index < contract.n_slots && contract.m_slots,
@@ -2234,9 +2288,11 @@ public:
             if (generic && slot.n_type_arguments) {
                 verify_runtime_trait_procedure(slot.m_origins[i], loc,
                     "asr.verify.trait_contract.origin");
+                TraitDeclaredForm form;
                 require_with_loc_id(ASRUtils::runtime_trait_method_supported(*method) &&
-                        ASRUtils::trait_member_signature_matches(*method, *procedure,
-                            slot.m_type_arguments, slot.n_type_arguments, 1),
+                        trait_declared_form(*method, *procedure, 1, form) &&
+                        ASRUtils::trait_member_signature_matches(*method,
+                            form.procedure, slot.m_type_arguments, slot.n_type_arguments, 1),
                     "asr.verify.trait_contract.member_signature",
                     "A member slot must instantiate its message at exactly its type arguments", loc);
             } else if (generic) {
@@ -2705,7 +2761,11 @@ public:
                         "Runtime slot origins must follow the canonical trait hierarchy");
                     auto *method = ASRUtils::trait_method_function(origin);
                     if (!ASRUtils::trait_method_template(*method)) {
-                        auto mismatch = ASRUtils::trait_method_mismatch(*method, *procedure, 0, 1);
+                        TraitDeclaredForm form;
+                        auto mismatch = trait_declared_form(*method, *procedure, 1, form)
+                            ? ASRUtils::trait_method_mismatch(*method, form.procedure, 0, 1)
+                            : ASRUtils::TraitMethodMismatch{ASRUtils::TraitMethodDifference::Arguments,
+                                "argument counts differ"};
                         require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
                             "asr.verify.trait_contract.signature",
                             "A runtime slot must preserve its message signature: " + mismatch.message);
@@ -2740,9 +2800,11 @@ public:
         require_id(declared,
             "asr.verify.trait_erasure.member",
             "A member entry must instantiate a declared member of each closed binder");
+        TraitDeclaredForm form;
         require_id(ASRUtils::symbol_parent_symtab(&entry.base) == current_symtab &&
                 ASRUtils::get_FunctionType(entry)->m_deftype == deftypeType::Implementation &&
-                ASRUtils::trait_member_signature_matches(original, entry,
+                trait_declared_form(original, entry, 0, form) &&
+                ASRUtils::trait_member_signature_matches(original, form.procedure,
                     members.data(), members.size()),
             "asr.verify.trait_erasure.member_signature",
             "A member entry must preserve its template's signature at exactly its members");
@@ -3132,9 +3194,12 @@ public:
         size_t ordinary = n_required + (binding.m_is_nopass ? 0 : 1);
         // subroutine_from_function makes an aggregate result of a static
         // binding's procedure its last explicit argument, while the message
-        // keeps its result, of type `itself` or an associated type.
-        ASR::expr_t *lowered_result = !runtime && required->m_return_var &&
-            !procedure->m_return_var && n_procedure == ordinary + 1
+        // keeps its result, of type `itself` or an associated type. A
+        // runtime binding's procedure has such a result only of a character
+        // type, which its slot passes the same way.
+        ASR::expr_t *lowered_result = required->m_return_var &&
+            !procedure->m_return_var && n_procedure == ordinary + 1 &&
+            (!runtime || ASRUtils::is_character(*typed_expr_type(required->m_return_var)))
             ? procedure->m_args[--n_procedure] : nullptr;
         ASR::expr_t *result = lowered_result ? lowered_result : procedure->m_return_var;
         size_t receiver = n_procedure;

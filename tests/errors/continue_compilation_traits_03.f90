@@ -84,23 +84,6 @@ contains
     end function
 end module
 
-module traits_numeric_runtime_boundary_character
-    implicit none
-    abstract interface :: ICharacterMember
-        integer | character(len=4)
-    end interface ICharacterMember
-    abstract interface :: ICharacterSum
-        function sum{ICharacterMember :: T}(x) result(s)
-            type(T), intent(in) :: x(:)
-            type(T)             :: s
-        end function sum
-    end interface ICharacterSum
-contains
-    subroutine use_character(summer)
-        class(ICharacterSum), intent(in) :: summer
-    end subroutine
-end module
-
 module traits_numeric_runtime_boundary_mixed
     use traits_numeric_runtime_boundary_contracts, only: INumeric
     implicit none
@@ -146,7 +129,8 @@ module traits_numeric_runtime_boundary_surface
         end function count
     end interface IAllocatableArray
     abstract interface :: ICharacterResult
-        character(len=4) function name()
+        function name() result(r)
+            character(len=:), allocatable :: r
         end function name
     end interface ICharacterResult
 contains

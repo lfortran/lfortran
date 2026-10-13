@@ -11,6 +11,10 @@ complex: the same flow for the closed integer | complex(real32) |
 complex(real64) type set and an ordinary message with complex results, so
 that results of all three return conventions cross the frozen boundary.
 
+character: the same flow for the closed character(len=3) | character(len=5)
+type set and ordinary messages with character results, which the provider's
+entries and adapters, and the clients' slot calls, pass as a last argument.
+
 protocol: the provider of generic messages over the open INumeric protocol
 is frozen the same way before any derived or real(real32) conformance
 exists. A late module then adds Rational and real(real32) conformances, each
@@ -30,6 +34,7 @@ import time
 
 NUMERIC_GENERICS = ["hidden_simple_sum", "hidden_pairwise_sum",
                     "hidden_scaled_sum", "hidden_average"]
+CHARACTER_GENERICS = ["hidden_min_pick", "hidden_pairwise_pick", "hidden_reverse_pick"]
 PROTOCOL_GENERICS = ["open_simple_sum", "open_reverse_sum", "open_pairwise_sum",
                      "open_average"]
 # The LLVM result types of the member entries and slot calls: complex(real32)
@@ -38,6 +43,8 @@ I32 = r"i32"
 DOUBLE = r"double"
 COMPLEX32 = r"(?:<2 x float>|%complex_4|\{ float, float \})"
 COMPLEX64 = r"(?:%complex_8|\{ double, double \})"
+# A character result is the last argument of the entries and slot calls.
+VOID = r"void"
 CASES = {
     "numeric": {
         "prefix": "traits_runtime_numeric_separate_01",
@@ -61,6 +68,17 @@ CASES = {
         "members": {"i32": I32, "complex32": COMPLEX32, "complex64": COMPLEX64},
         "contracts": ["isum", "iaverager", "iphase"],
         "summary": "complex separate: frozen provider, contract-only consumer, 162 checks passed",
+    },
+    "character": {
+        "prefix": "traits_runtime_character_separate_01",
+        "generics": CHARACTER_GENERICS,
+        "names": CHARACTER_GENERICS + [
+            "hidden_label", "hidden_first_letter", "hiddenmin", "hiddenpairwise",
+            "hiddenreverse", "hiddenlabel", "traits_runtime_character_separate_01_provider_m"],
+        "witnesses": 4,
+        "members": {"character3": VOID, "character5": VOID},
+        "contracts": ["ipick", "ilabel"],
+        "summary": "character separate: frozen provider, contract-only consumer, 105 checks passed",
     },
     "protocol": {
         "prefix": "traits_protocol_separate_01",
@@ -399,12 +417,12 @@ def main():
             "one provider entry per generic and member"
         symbols = run("provider-symbols", ["nm", provider])
         for name in case["generics"]:
-            entries = []
-            for head in re.finditer(rf"(?m)^define [^@\n]*?@[^(\n]*__trait_erasure_"
-                                    rf"{name}[^(\n]*_entry\(", llvm):
-                entries += [member for member, result in members.items()
-                            if re.match(rf"define [^@\n]*?{result} @", head[0])]
-            assert sorted(entries) == sorted(members), (name, entries)
+            heads = [head[0] for head in re.finditer(
+                rf"(?m)^define [^@\n]*?@[^(\n]*__trait_erasure_{name}[^(\n]*_entry\(", llvm)]
+            assert len(heads) == len(members), (name, heads)
+            for member, result in members.items():
+                assert any(re.match(rf"define [^@\n]*?{result} @", head) for head in heads), \
+                    (name, member, heads)
             assert len(re.findall(rf"(?m)^\S* *[Tt] \S*__trait_erasure_{name}\S*_entry$",
                                   symbols)) == len(members), (name, symbols)
             assert "__instantiated_" + name not in semantic, "the provider owns its member entries"

@@ -6914,9 +6914,19 @@ ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implement
     return nullptr;
 }
 
+// A character type of a constant length, which crosses a runtime slot with
+// the ordinary character calling convention.
+static bool runtime_trait_character(ASR::ttype_t *type)
+{
+    int64_t length;
+    return type && ASR::is_a<ASR::String_t>(*type) && constant_string_length(type, length);
+}
+
 // The runtime slot surface of a concrete signature, or of a closed generic
 // signature with each binder replaced by its member: scalar arguments, read-only
-// assumed-shape numeric or logical arrays, and scalar numeric or logical results.
+// assumed-shape numeric, logical or constant-length character arrays, and scalar
+// numeric, logical or constant-length character results. A length wildcard
+// member has no finite set of slots.
 static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
         const std::map<std::string, ASR::ttype_t*> &members)
 {
@@ -6930,7 +6940,8 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
         if (is_array(result) || is_allocatable(result) || is_pointer(result)) return false;
         result = member(result);
         if (!result || !(ASR::is_a<ASR::Integer_t>(*result) || ASR::is_a<ASR::Real_t>(*result) ||
-                ASR::is_a<ASR::Complex_t>(*result) || ASR::is_a<ASR::Logical_t>(*result))) {
+                ASR::is_a<ASR::Complex_t>(*result) || ASR::is_a<ASR::Logical_t>(*result) ||
+                runtime_trait_character(result))) {
             return false;
         }
     }
@@ -6945,7 +6956,7 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
             if (array->m_physical_type != ASR::array_physical_typeType::DescriptorArray ||
                     !element || !(ASR::is_a<ASR::Integer_t>(*element) ||
                         ASR::is_a<ASR::Real_t>(*element) || ASR::is_a<ASR::Complex_t>(*element) ||
-                        ASR::is_a<ASR::Logical_t>(*element)) ||
+                        ASR::is_a<ASR::Logical_t>(*element) || runtime_trait_character(element)) ||
                     arg->m_intent != ASR::intentType::In ||
                     arg->m_presence != ASR::presenceType::Required ||
                     arg->m_value_attr || arg->m_target_attr || arg->m_is_volatile ||
@@ -6956,8 +6967,9 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
             continue;
         }
         auto *type = member(arg->m_type);
-        // A character member of a closed slot is not implemented yet.
-        if (type && type != arg->m_type && ASR::is_a<ASR::String_t>(*type)) return false;
+        // A closed slot exists only for a member of a constant length.
+        if (type && type != arg->m_type && ASR::is_a<ASR::String_t>(*type) &&
+                !runtime_trait_character(type)) return false;
         if (!type || !(ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type)
                 || ASR::is_a<ASR::Complex_t>(*type) || ASR::is_a<ASR::Logical_t>(*type)
                 || ASR::is_a<ASR::String_t>(*type)

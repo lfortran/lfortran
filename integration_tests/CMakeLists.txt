@@ -4245,6 +4245,11 @@ RUN(NAME traits_runtime_numeric_separate_02 LABELS llvm llvm2 NO_STD_F23 ISOLATE
     EXTRAFILES traits_runtime_numeric_separate_02_contracts.f90
         traits_runtime_numeric_separate_02_provider.f90
         traits_runtime_numeric_separate_02_consumer.f90)
+RUN(NAME traits_runtime_character_separate_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_character_separate_01_contracts.f90
+        traits_runtime_character_separate_01_provider.f90
+        traits_runtime_character_separate_01_consumer.f90)
 RUN(NAME traits_runtime_promote_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_pure_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)

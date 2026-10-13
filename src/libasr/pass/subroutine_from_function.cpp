@@ -88,6 +88,25 @@ public:
                     this->visit_Variable(*down_cast<ASR::Variable_t>(a.second));
                 }
             }
+            visit_trait_runtime_procedures(*x.m_symtab);
+        }
+
+        // The interfaces of runtime trait slots, the adapters of the
+        // witnesses that fill them and the provider entries the adapters
+        // call are transformed like any other function, so that a call
+        // through a slot (see replace_TraitFunctionCall) passes a result
+        // that is not primitive, a character result, as its last argument.
+        void visit_trait_runtime_procedures(const SymbolTable &symtab) {
+            for (auto &a : symtab.get_scope()) {
+                if (!ASR::is_a<ASR::TraitRuntimeContract_t>(*a.second) &&
+                        !ASR::is_a<ASR::TraitWitness_t>(*a.second) &&
+                        !ASR::is_a<ASR::TraitErasure_t>(*a.second)) continue;
+                for (auto &b : ASRUtils::symbol_symtab(a.second)->get_scope()) {
+                    if (ASR::is_a<ASR::Function_t>(*b.second)) {
+                        this->visit_Function(*down_cast<ASR::Function_t>(b.second));
+                    }
+                }
+            }
         }
 
         // The result became the last dummy argument, with intent(out). A
@@ -142,6 +161,7 @@ public:
                     this->visit_Variable(*down_cast<ASR::Variable_t>(str_sym_pair.second));
                 }
             }
+            visit_trait_runtime_procedures(*x.m_symtab);
         }
 
         void visit_Module(const ASR::Module_t &x) {
@@ -158,6 +178,7 @@ public:
                     this->visit_Variable(*down_cast<ASR::Variable_t>(a.second));
                 }
             }
+            visit_trait_runtime_procedures(*x.m_symtab);
         }
 
         // The procedures of a template are transformed like any others:
@@ -824,6 +845,29 @@ public :
             *current_expr = result_var;
             pass_result.push_back(al, subrout_call);
         }
+    }
+
+    // A call through a runtime trait slot whose interface became a
+    // subroutine passes the variable for its result as the last argument,
+    // like a call of any other such function (see replace_FunctionCall).
+    // Only a character result of a constant length crosses a slot this way,
+    // so the variable needs no allocation.
+    void replace_TraitFunctionCall(ASR::TraitFunctionCall_t* x) {
+        traverse_functionCall_args(x->m_args, x->n_args);
+        ASR::Function_t* slot = ASRUtils::get_function(x->m_name);
+        if (!slot || Function__TO__ReturnType_MAP_.count(slot) == 0) return;
+        LCOMPILERS_ASSERT(ASRUtils::is_string_only(x->m_type) &&
+            !ASRUtils::is_allocatable_or_pointer(x->m_type));
+        ASR::expr_t* result_var = PassUtils::create_var(result_counter++,
+            "return_slot", x->base.base.loc, ASRUtils::duplicate_type(al, x->m_type),
+            al, current_scope, nullptr);
+        Vec<ASR::call_arg_t> args;
+        args.reserve(al, x->n_args + 1);
+        args.from_pointer_n_copy(al, x->m_args, x->n_args);
+        args.push_back(al, {result_var->base.loc, result_var});
+        pass_result.push_back(al, ASRUtils::STMT(ASR::make_TraitSubroutineCall_t(al,
+            x->base.base.loc, x->m_name, x->m_slot, args.p, args.size())));
+        *current_expr = result_var;
     }
 };
 class ReplaceFunctionCallWithSubroutineCallVisitor:

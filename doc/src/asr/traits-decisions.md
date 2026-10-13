@@ -792,8 +792,11 @@ specification action, that is, what the paper should say.
   accepted. Since 2026-10-13 (TD-34) member slots also return complex
   results, which the maintainer's averaging program over
   `integer | real | complex` needs; they use the platform's convention for
-  complex function results, like ordinary calls. Slots of character members
-  are not implemented yet.
+  complex function results, like ordinary calls. Members and ordinary
+  messages also take and return character values of a constant length, with
+  the ordinary hidden lengths and the result passed as a last argument. A
+  character length wildcard (TD-34) would need a slot per length, so a view of
+  a message over a set with one is diagnosed as not implemented.
 - **Specification action.** State the dispatch semantics of generic methods on
   trait objects (static type argument, dynamic provider) explicitly, and leave
   the mechanism to processors.
@@ -1122,7 +1125,8 @@ specification action, that is, what the paper should say.
     argument with its own specialization (TD-21), and it absorbs the
     constant-length members of its kind. Its operations are those of every
     length, the comparisons (an implementation choice).
-  - Closed runtime slots of character members are not implemented yet (TD-15).
+  - Closed runtime slots of constant-length members take and return character
+    values (TD-15).
   - Limits of the prototype, diagnosed as not implemented rather than language
     rules: members of deferred or nonconstant length; for a length wildcard,
     actuals of nonconstant or assumed length (TD-21), `//`, whose result length
@@ -1132,9 +1136,10 @@ specification action, that is, what the paper should say.
   prototype; whether actuals of nonconstant length could be type arguments of
   a length wildcard; and how runtime views would dispatch over one. None of
   these has been decided by the maintainer.
-- **Implementation status.** Implemented as described, with complex results of
-  closed runtime slots and of ordinary runtime messages; the maintainer's
-  averaging program runs for both of its averaging methods.
+- **Implementation status.** Implemented as described, with complex and
+  constant-length character results of closed runtime slots and of ordinary
+  runtime messages; the maintainer's averaging program runs for both of its
+  averaging methods.
 - **Specification action.** Say which intrinsic types (and whether derived
   types) can be members, how kind and character length take part in
   membership, whether there are length wildcards, and that the operations of a
