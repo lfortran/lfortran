@@ -26867,6 +26867,13 @@ public:
     // context: it must be definable. The target of a pointer is definable
     // even when the pointer is not.
     void check_definable_actual(ASR::expr_t *object) {
+        if (parenthesized_designators.count(object)) {
+            diag.add(diag::Diagnostic("Non-variable expression in variable definition "
+                "context (actual argument to INTENT = OUT/INOUT)",
+                diag::Level::Error, diag::Stage::Semantic,
+                {diag::Label("", {object->base.loc})}));
+            throw SemanticAbort();
+        }
         bool through_pointer = false;
         for (ASR::expr_t *part = object; part; ) {
             if (ASR::is_a<ASR::StructInstanceMember_t>(*part)) {
@@ -32341,8 +32348,20 @@ public:
                                             compiler_options, diag);
     }
 
+    // Designators written in parentheses. `(x)` is an expression, not a
+    // variable, although visit_Parenthesis drops the parentheses.
+    std::set<const ASR::expr_t*> parenthesized_designators;
+
     void visit_Parenthesis(const AST::Parenthesis_t &x) {
         this->visit_expr(*x.m_operand);
+        if (tmp && ASR::is_a<ASR::expr_t>(*tmp)) {
+            ASR::expr_t *operand = ASRUtils::EXPR(tmp);
+            if (ASR::is_a<ASR::Var_t>(*operand) ||
+                    ASR::is_a<ASR::StructInstanceMember_t>(*operand) ||
+                    ASR::is_a<ASR::ArrayItem_t>(*operand)) {
+                parenthesized_designators.insert(operand);
+            }
+        }
     }
 
     // A conditional expression is a primary (R1001), but 10.1.11 and 10.1.12

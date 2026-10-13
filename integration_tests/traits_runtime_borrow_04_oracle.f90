@@ -1,7 +1,9 @@
 ! Standard Fortran counterpart of traits_runtime_borrow_04: an intent(inout)
 ! nonallocatable, nonpointer CLASS dummy designates its actual's storage, is
 ! modified through SELECT TYPE and observed at its original address, and
-! borrowing finalizes nothing.
+! borrowing finalizes nothing. The intent(in) pointer dummies of the trait
+! test are omitted: LFortran still rejects that ordinary CLASS call
+! (lfortran/lfortran#14252).
 module traits_runtime_borrow_04_oracle_m
     use iso_c_binding, only: c_ptr, c_loc, c_associated
     implicit none

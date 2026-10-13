@@ -20,6 +20,12 @@ semantic error: runtime trait dummies currently require intent(in) or intent(ino
 143 |         class(IValue) :: object
     |                          ^^^^^^ 
 
+semantic error: Dummy argument 'object' of pure function must have INTENT(IN) or VALUE attribute
+   --> tests/errors/continue_compilation_traits_inout.f90:154:41
+    |
+154 |         class(IValue), intent(inout) :: object
+    |                                         ^^^^^^ 
+
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
   --> tests/errors/continue_compilation_traits_inout.f90:57:19
    |
@@ -133,3 +139,15 @@ semantic error: a defining runtime trait pointer dummy requires a pointer actual
     |
 137 |         call take_pointer(object)
     |                           ^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   --> tests/errors/continue_compilation_traits_inout.f90:147:20
+    |
+147 |         call bump((c))
+    |                    ^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   --> tests/errors/continue_compilation_traits_inout.f90:151:20
+    |
+151 |         call bump((object))
+    |                    ^^^^^^ 

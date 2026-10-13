@@ -1286,6 +1286,11 @@ public:
             } else if (pointer && dummy->m_intent == ASR::intentType::Out &&
                     ASRUtils::get_FunctionType(function)->m_pure) {
                 message = "an intent(out) dummy of a pure procedure cannot be polymorphic";
+            } else if (!slot && !pointer && dummy->m_intent == ASR::intentType::InOut &&
+                    function.m_return_var && ASRUtils::get_FunctionType(function)->m_pure) {
+                // C1592: a nonpointer dummy of a pure function.
+                message = "Dummy argument '" + std::string(dummy->m_name) +
+                    "' of pure function must have INTENT(IN) or VALUE attribute";
             } else if (!slot && !pointer && ((dummy->m_intent != ASR::intentType::In &&
                         dummy->m_intent != ASR::intentType::InOut) ||
                     dummy->m_presence != ASR::presenceType::Required ||

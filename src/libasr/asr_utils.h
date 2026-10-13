@@ -10004,8 +10004,14 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
                 if (passed_var->m_intent == ASR::intentType::In) {
                     if (i < f->n_args) {
                         ASR::Variable_t* callee_param = ASRUtils::EXPR2VAR(f->m_args[i]);
-                        if (callee_param->m_intent == ASR::intentType::Out ||
-                            callee_param->m_intent == ASR::intentType::InOut) {
+                        // A borrowed trait view of a pointer designates its
+                        // target, which INTENT(IN) does not protect; the
+                        // trait argument association checks the target.
+                        bool borrows_target = ASRUtils::is_pointer(passed_var->m_type) &&
+                            ASR::is_a<ASR::TraitObjectType_t>(*callee_param->m_type);
+                        if (!borrows_target &&
+                            (callee_param->m_intent == ASR::intentType::Out ||
+                             callee_param->m_intent == ASR::intentType::InOut)) {
                             diag.add(diag::Diagnostic(
                                 "Argument `" + std::string(passed_var->m_name) +
                                 "` with intent(in) passed to a dummy argument with modifying intent",

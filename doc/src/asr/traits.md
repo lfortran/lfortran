@@ -1530,10 +1530,12 @@ implemented. Type-set traits remain constraint-only.
 An `intent(inout)` view dummy designates the payload of its actual, which must
 be definable under the ordinary Fortran rules: a concrete variable, a component
 or an array element of a definable object, an allocated owner that is not
-`intent(in)`, a pointer's target, another `intent(inout)` view, or the associate
-name of a definable selector. A named constant, a structure constructor, a
-function result, and an `intent(in)` object, view or owner, or a part of one,
-are diagnosed. The view borrows the original payload address and selected
+`intent(in)`, a pointer's target (also through an `intent(in)` pointer dummy,
+which protects only the association), another `intent(inout)` view, or the
+associate name of a definable selector. A named constant, a structure
+constructor, a function result, a parenthesized designator such as `(x)`, and an
+`intent(in)` object, view or owner, or a part of one, are diagnosed. The view
+borrows the original payload address and selected
 witness exactly as an `intent(in)` view does, including when it is weakened to
 a parent or a member of a combination: nothing is copied in or out, finalized
 or rebound. The view is neither an owner nor a pointer, so assigning,
@@ -1545,11 +1547,10 @@ definable for an `intent(inout)` selector, and by forwarding the view to
 another `intent(inout)` view or, after inspection, to an ordinary dummy.
 Messages called through the view stay read-only (PAPER-D07): a conformance
 with an `intent(inout)` receiver binding still has no runtime witness, so a
-value of such a type cannot be passed to an `intent(inout)` view either.
-`intent(out)` and omitted intents remain unsupported. An `intent(in)` pointer
-dummy cannot yet be passed to an `intent(inout)` view, because of the general
-LFortran limitation
-[lfortran/lfortran#14252](https://github.com/lfortran/lfortran/issues/14252).
+value of such a type cannot be passed to an `intent(inout)` view either. A
+PURE subroutine can have an `intent(inout)` view dummy; a PURE function cannot
+(C1592). `intent(out)` and omitted intents remain unsupported implementation
+limits.
 
 The private same-build/target LLVM borrowed representation is a stack descriptor
 containing concrete CLASS metadata, the original payload address, a concrete
@@ -1569,8 +1570,10 @@ arguments, identity, and borrowing lifetime. `traits_runtime_borrow_04` checks
 addresses with exact FINAL counts, against the standard CLASS counterpart
 `traits_runtime_borrow_04_oracle`; `_05` checks their forwarding, projections,
 definable associations, named non-first PASS, NOPASS, keywords, procedure
-dummies and pointers, generic resolution and PURE subroutines; and
-`continue_compilation_traits_inout` the diagnostics. `traits_runtime_separate_01.py`
+dummies and pointers, generic resolution and PURE subroutines; the
+contract-only consumer of `traits_runtime_inspection_separate_01` modifies
+pointer targets and owners through an `intent(inout)` combination view; and
+`continue_compilation_traits_inout` checks the diagnostics. `traits_runtime_separate_01.py`
 compiles the contract-only consumer before both providers in fresh processes,
 checks unresolved ASR and indirect LLVM calls, and links/runs with an unchanged
 provider archive. It is registered in CTest in normal and fast configurations.

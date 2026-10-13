@@ -24,6 +24,16 @@ contains
         end select
         if (view%value() /= n .or. view%label() /= 101 * choice) error stop 7
     end subroutine
+    subroutine bump_borrow(view, by)
+        class(ILabel + IValue), intent(inout) :: view
+        integer, intent(in) :: by
+        select type (concrete => view)
+        class is (Root)
+            concrete%n = concrete%n + by
+        class default
+            error stop 27
+        end select
+    end subroutine
     subroutine exercise(choice)
         integer, intent(in) :: choice
         class(IRich), pointer :: selected, other_view
@@ -66,6 +76,9 @@ contains
         end select
         if (combination%value() /= 59 .or. parent%value() /= 43) error stop 15
         call check_borrow(reverse, choice, 43)
+        call bump_borrow(reverse, 1)
+        call check_borrow(reverse, choice, 44)
+        call bump_borrow(reverse, -1)
         select type (concrete => combination)
         type is (Other)
             error stop 16
@@ -87,6 +100,9 @@ contains
             concrete%n = 72
         end select
         call check_borrow(owner, choice, 72)
+        call bump_borrow(owner, 1)
+        call check_borrow(owner, choice, 73)
+        call bump_borrow(owner, -1)
         allocate(copy, source=owner)
         if (copy%value() /= 72 .or. copy%label() /= 101 * choice) error stop 22
         deallocate(owner, copy)

@@ -142,4 +142,16 @@ contains
     subroutine unspecified_view(object)
         class(IValue) :: object
     end subroutine
+    subroutine from_parenthesized(c)
+        type(Cell), intent(inout) :: c
+        call bump((c))
+    end subroutine
+    subroutine from_parenthesized_view(object)
+        class(IValue), intent(inout) :: object
+        call bump((object))
+    end subroutine
+    pure integer function pure_function_view(object)
+        class(IValue), intent(inout) :: object
+        pure_function_view = 0
+    end function
 end module

@@ -1,6 +1,7 @@
 ! An intent(inout) borrowed trait view designates its actual's payload: a
 ! concrete variable, a component, an array element, an allocated owner, an
-! owner component or a pointer target. The callee modifies that payload
+! owner component or a pointer target, also through an intent(in) pointer
+! dummy. The callee modifies that payload
 ! through concrete SELECT TYPE inspection and observes it through a read-only
 ! message at its original address. Borrowing copies, finalizes and rebinds
 ! nothing.
@@ -59,6 +60,17 @@ contains
         integer, intent(in) :: by
         call bump(view, by)
     end subroutine
+    ! INTENT(IN) protects the pointer association, not the target.
+    subroutine through_readonly_pointer(view, by)
+        class(IValue), pointer, intent(in) :: view
+        integer, intent(in) :: by
+        call bump(view, by)
+    end subroutine
+    subroutine through_concrete_pointer(payload, by)
+        type(Cell), pointer, intent(in) :: payload
+        integer, intent(in) :: by
+        call bump(payload, by)
+    end subroutine
 end module
 
 program traits_runtime_borrow_04
@@ -68,6 +80,7 @@ program traits_runtime_borrow_04
     type(Holder), target :: h
     class(IValue), allocatable, target :: owner
     class(IValue), pointer :: view
+    type(Cell), pointer :: payload
     c%n = 1
     expected = c_loc(c%n)
     call bump(c, 2)
@@ -96,6 +109,11 @@ program traits_runtime_borrow_04
     expected = c_loc(c%n)
     call through_pointer(view, 100)
     if (c%n /= 103 .or. c%data(1) /= 100) error stop 15
+    call through_readonly_pointer(view, 1000)
+    if (c%n /= 1103 .or. c%data(1) /= 1000) error stop 18
+    payload => c
+    call through_concrete_pointer(payload, 10000)
+    if (c%n /= 11103 .or. c%data(1) /= 10000) error stop 19
     if (finalized /= 0) error stop 16
     deallocate(owner, h%item)
     if (finalized /= 2) error stop 17
