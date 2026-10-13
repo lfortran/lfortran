@@ -176,6 +176,31 @@ public:
             v.in_template_definition = enclosing;
         }
     };
+    // Operator interfaces are collected while the specification part of a
+    // scoping unit is visited and become CustomOperator symbols of that unit
+    // once it is complete. A requirement, a template or a templated procedure
+    // adds the operators it declares to its own scope, so this guard sets the
+    // host's pending operators (intrinsic and defined) aside while it is
+    // visited and puts them back afterwards.
+    struct OperatorProcedureScope {
+        SymbolTableVisitor &v;
+        bool active;
+        std::map<std::string, std::vector<std::pair<std::string, Location>>> overloaded_op_procs;
+        std::map<std::string, std::vector<std::pair<std::string, Location>>> defined_op_procs;
+
+        OperatorProcedureScope(SymbolTableVisitor &v_, bool active_=true)
+                : v(v_), active(active_) {
+            if (!active) return;
+            overloaded_op_procs.swap(v.overloaded_op_procs);
+            defined_op_procs.swap(v.defined_op_procs);
+        }
+
+        ~OperatorProcedureScope() {
+            if (!active) return;
+            overloaded_op_procs.swap(v.overloaded_op_procs);
+            defined_op_procs.swap(v.defined_op_procs);
+        }
+    };
     SymbolTable *global_scope;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
     std::map<std::string, std::vector<std::pair<std::string, Location>>> overloaded_op_procs;
@@ -2657,7 +2682,7 @@ public:
         // this procedure (possibly an interface body) has been processed.
         std::map<std::string, ASR::presenceType> saved_assgnd_presence = assgnd_presence;
         assgnd_presence.clear();
-        std::map<std::string, std::vector<std::pair<std::string, Location>>> ext_overloaded_op_procs;
+        OperatorProcedureScope operator_procedure_scope(*this, x.n_temp_args > 0);
         std::set<std::string> deferred_ifaces = deferred_procedure_interfaces(
             x.m_items, x.n_items);
 
@@ -2670,10 +2695,6 @@ public:
                 current_procedure_args.push_back(to_lower(x.m_temp_args[i]));
                 temp_args.push_back(al, s2c(al, to_lower(x.m_temp_args[i])));
             }
-            for (auto &proc: overloaded_op_procs) {
-                ext_overloaded_op_procs[proc.first] = proc.second;
-            }
-            overloaded_op_procs.clear();
 
             Vec<ASR::require_instantiation_t*> reqs;
             reqs.reserve(al, x.n_items);
@@ -3377,9 +3398,6 @@ public:
         }
         if (x.n_temp_args > 0) {
             add_overloaded_procedures();
-            for (auto &proc: ext_overloaded_op_procs) {
-                overloaded_op_procs[proc.first] = proc.second;
-            }
             current_scope = grandparent_scope;
         } else {
             current_scope = parent_scope;
@@ -5418,11 +5436,7 @@ public:
             current_procedure_args.push_back(arg);
         }
 
-        std::map<std::string, std::vector<std::pair<std::string, Location>>> requirement_op_procs;
-        for (auto &proc: overloaded_op_procs) {
-            requirement_op_procs[proc.first] = proc.second;
-        }
-        overloaded_op_procs.clear();
+        OperatorProcedureScope operator_procedure_scope(*this);
 
         Vec<ASR::require_instantiation_t*> reqs;
         reqs.reserve(al, x.n_items);
@@ -5510,9 +5524,6 @@ public:
         }
 
         add_overloaded_procedures();
-        for (auto &proc: requirement_op_procs) {
-            overloaded_op_procs[proc.first] = proc.second;
-        }
 
         ASR::asr_t *req = ASR::make_Requirement_t(al, x.base.base.loc,
             current_scope, s2c(al, to_lower(x.m_name)), args.p, args.size(),
@@ -5780,11 +5791,7 @@ public:
             current_procedure_args.push_back(deferred_args.back());
         }
 
-        std::map<std::string, std::vector<std::pair<std::string, Location>>> ext_overloaded_op_procs;
-        for (auto &proc: overloaded_op_procs) {
-            ext_overloaded_op_procs[proc.first] = proc.second;
-        }
-        overloaded_op_procs.clear();
+        OperatorProcedureScope operator_procedure_scope(*this);
         std::vector<std::pair<std::string, Location>> ext_assgn_proc_names_locations
             = assgn_proc_names_locations;
         assgn_proc_names_locations.clear();
@@ -5853,9 +5860,6 @@ public:
             if (!compiler_options.continue_compilation) throw;
         }
 
-        for (auto &proc: ext_overloaded_op_procs) {
-            overloaded_op_procs[proc.first] = proc.second;
-        }
         assgn_proc_names_locations = ext_assgn_proc_names_locations;
 
         ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
