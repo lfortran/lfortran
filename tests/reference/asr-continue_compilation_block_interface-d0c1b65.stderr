@@ -51,3 +51,13 @@ semantic error: a specification expression in an interface body that references 
    |
 29 |                 character(len=max(n, 1)) :: c
    |                               ^^^^^^^^^ 'n' is a variable of the enclosing BLOCK construct
+
+semantic error: Return type not specified
+  --> tests/errors/continue_compilation_block_interface.f90:27:13 - 30:41
+   |
+27 |                function intrinsic_length() result(c)
+   |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+30 |                end function intrinsic_length
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

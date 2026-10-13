@@ -1469,14 +1469,10 @@ namespace MoveAlloc {
 
         std::vector<ASR::stmt_t*> if_body;
 
-        bool is_allocatable_array_from = ASRUtils::is_array(arg_types[0]) &&
-            ASRUtils::is_allocatable(arg_types[0]) &&
-            ASRUtils::extract_physical_type(arg_types[0]) == ASR::array_physical_typeType::DescriptorArray;
-        bool is_allocatable_array_to = ASRUtils::is_array(arg_types[1]) &&
-            ASRUtils::is_allocatable(arg_types[1]) &&
-            ASRUtils::extract_physical_type(arg_types[1]) == ASR::array_physical_typeType::DescriptorArray;
-
-        if (is_allocatable_array_from && is_allocatable_array_to) {
+        // The allocation is transferred, not copied: the object is neither
+        // finalized nor deallocated, and pointers associated with `from`
+        // become associated with `to` (F2018 16.9.137).
+        if (ASRUtils::is_move_allocation_pair(args[1], args[0])) {
             ASR::stmt_t* move_assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
                 al, loc, args[1], args[0], nullptr, false, true));
             if_body.push_back(move_assign);

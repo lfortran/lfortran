@@ -508,16 +508,8 @@ class FixMoveAssignment: public ASR::CallReplacerOnExpressionsVisitor<FixMoveAss
         void visit_Assignment(const ASR::Assignment_t& x) {
             ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
 
-            ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
-            ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
-            bool is_target_allocatable_array = ASRUtils::is_array(target_type) &&
-                                            ASRUtils::is_allocatable(target_type) &&
-                                            ASRUtils::extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray;
-            bool is_value_allocatable_array = ASRUtils::is_array(value_type) &&
-                                            ASRUtils::is_allocatable(value_type) &&
-                                            ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray;
-
-            if (x.m_move_allocation && (!is_target_allocatable_array || !is_value_allocatable_array)) {
+            if (x.m_move_allocation &&
+                    !ASRUtils::is_move_allocation_pair(x.m_target, x.m_value)) {
                 xx.m_move_allocation = false;
             }
         }

@@ -3664,7 +3664,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     SetChar& current_module_dependencies,
                     const std::function<void (const std::string &, const Location &)> err);
 
-bool use_overloaded_unary_minus(ASR::expr_t* operand,
+bool use_overloaded_unary_op(ASR::expr_t* operand, const std::string& op_name,
     SymbolTable* curr_scope, ASR::asr_t*& asr, Allocator &al,
     const Location& loc, SetChar& current_function_dependencies,
     SetChar& current_module_dependencies,
@@ -6449,6 +6449,16 @@ inline bool can_pass_class_argument(ASR::expr_t* param_expr, ASR::expr_t* passed
     return check_class_assignment_compatibility(param_expr, passed_arg);
 }
 
+// An unlimited polymorphic value is type compatible only with an unlimited
+// polymorphic variable or dummy argument, although `types_equal` accepts it
+// on either side.
+inline bool is_unlimited_polymorphic_to_specific_type(ASR::ttype_t* variable_type,
+        ASR::ttype_t* value_type) {
+    return is_unlimited_polymorphic_type(value_type) &&
+        !is_unlimited_polymorphic_type(variable_type) &&
+        !is_type_parameter(*type_get_past_allocatable_pointer(variable_type));
+}
+
 static inline bool is_elemental(ASR::symbol_t* x) {
     ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(x);
     if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)) {
@@ -8045,6 +8055,11 @@ bool fold_logical_binop(ASR::logicalbinopType op, bool left, bool right,
 // initialized with an expression of one.
 bool reads_valueless_parameter(ASR::expr_t* e);
 
+// True if `e` reads the value of a variable that is not a named constant, so
+// that it is not a constant expression even once every named constant has a
+// value. Inquiries about a variable, e.g. `size(a)`, do not read its value.
+bool reads_variable_value(ASR::expr_t* e);
+
 static inline ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::expr_t* start, ASR::expr_t* end) {
     ASR::expr_t* start_value = nullptr;
     ASR::expr_t* end_value = nullptr;
@@ -8683,6 +8698,45 @@ static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
     return is_allocatable(type) || is_pointer(type);
 }
 
+// Whether an Assignment with move_allocation can transfer the allocation of
+// `value` to `target`: both are allocatable descriptor arrays, or both are
+// allocatable noncharacter scalars and `target` is type compatible with
+// `value` (F2018 16.9.137), so that the object keeps its representation.
+static inline bool is_move_allocation_pair(ASR::expr_t* target,
+        ASR::expr_t* value) {
+    ASR::ttype_t* target_type = expr_type(target);
+    ASR::ttype_t* value_type = expr_type(value);
+    if (!is_allocatable(target_type) || !is_allocatable(value_type)) {
+        return false;
+    }
+    if (is_array(target_type) || is_array(value_type)) {
+        return is_array(target_type) && is_array(value_type) &&
+            extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray &&
+            extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray;
+    }
+    if (is_character(*target_type) || is_character(*value_type)) {
+        return false;
+    }
+    ASR::ttype_t* target_el_type = extract_type(target_type);
+    ASR::ttype_t* value_el_type = extract_type(value_type);
+    if (is_class_type(target_el_type)) {
+        return is_unlimited_polymorphic_type(target_el_type) ||
+            (ASR::is_a<ASR::StructType_t>(*value_el_type) &&
+             check_class_assignment_compatibility(target, value));
+    }
+    if (is_class_type(value_el_type)) {
+        return false;
+    }
+    if (ASR::is_a<ASR::StructType_t>(*target_el_type) ||
+            ASR::is_a<ASR::StructType_t>(*value_el_type)) {
+        return ASR::is_a<ASR::StructType_t>(*target_el_type) &&
+            ASR::is_a<ASR::StructType_t>(*value_el_type) &&
+            symbol_get_past_external(get_struct_sym_from_struct_expr(target)) ==
+            symbol_get_past_external(get_struct_sym_from_struct_expr(value));
+    }
+    return check_equal_type(target_el_type, value_el_type, target, value);
+}
+
 // Reports whether a value of the derived type `st` has a constant byte
 // representation, i.e. whether every one of its components is stored inline
 // in the type. An allocatable or a pointer component holds an array
@@ -9233,6 +9287,76 @@ inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, const ASR::ArrayCon
     return fetch_ArrayConstant_value_helper(al, x.base.base.loc, x.m_data, type, i);
 }
 
+// The compile-time value of the element `array(indices)`, or nullptr unless
+// `array` has a constant value and every index is a constant subscript
+// within its bounds.
+inline ASR::expr_t* fold_ArrayItem_value(Allocator &al, ASR::expr_t* array,
+        ASR::array_index_t* indices, size_t n_indices) {
+    if (n_indices == 0) {
+        return nullptr;
+    }
+    ASR::expr_t* base_value = ASRUtils::expr_value(array);
+    if (base_value == nullptr &&
+            ASR::is_a<ASR::StructInstanceMember_t>(*array)) {
+        ASR::StructInstanceMember_t* member_expr =
+            ASR::down_cast<ASR::StructInstanceMember_t>(array);
+        base_value = ASRUtils::get_struct_member_value_from_constant(
+            ASRUtils::expr_value(member_expr->m_v),
+            member_expr->m_m);
+    }
+    if (base_value == nullptr || !ASR::is_a<ASR::ArrayConstant_t>(*base_value)) {
+        return nullptr;
+    }
+    ASR::ArrayConstant_t* array_constant =
+        ASR::down_cast<ASR::ArrayConstant_t>(base_value);
+    ASR::dimension_t* dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+        ASRUtils::expr_type(array), dims);
+    if (n_dims != n_indices) {
+        return nullptr;
+    }
+    int64_t flat_index = 0;
+    int64_t stride = 1;
+    for (size_t i = 0; i < n_indices; i++) {
+        if (indices[i].m_left != nullptr
+                || indices[i].m_step != nullptr
+                || indices[i].m_right == nullptr) {
+            return nullptr;
+        }
+        ASR::expr_t* index_value =
+            ASRUtils::expr_value(indices[i].m_right);
+        if (index_value == nullptr ||
+                !ASR::is_a<ASR::IntegerConstant_t>(*index_value)) {
+            return nullptr;
+        }
+        int64_t lower_bound = 1;
+        if (dims[i].m_start) {
+            ASR::expr_t* lb_value =
+                ASRUtils::expr_value(dims[i].m_start);
+            if (lb_value &&
+                    !ASRUtils::extract_value(lb_value, lower_bound)) {
+                return nullptr;
+            }
+        }
+        int64_t length = 0;
+        if (dims[i].m_length == nullptr ||
+                !ASRUtils::extract_value(dims[i].m_length, length)) {
+            return nullptr;
+        }
+        int64_t index = ASR::down_cast<ASR::IntegerConstant_t>(
+            index_value)->m_n - lower_bound;
+        flat_index += index * stride;
+        stride *= length;
+    }
+    size_t index_unsigned = flat_index;
+    if (flat_index < 0 || index_unsigned >= (size_t)
+            ASRUtils::get_fixed_size_of_array(array_constant->m_type)) {
+        return nullptr;
+    }
+    return ASRUtils::fetch_ArrayConstant_value(al, array_constant,
+        index_unsigned);
+}
+
 template<typename T>
 T* set_data_int(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
@@ -9382,6 +9506,100 @@ inline ASR::asr_t* make_ArrayConstant_t_util(Allocator &al,
     LCOMPILERS_ASSERT(n_data == 0 || data != nullptr);
     return ASR::make_ArrayConstant_t(
         al, loc, n_data, data, array_type, storage_format);
+}
+
+// pad (with ' ') or trim character string 'value'
+inline ASR::expr_t* adjust_character_length(ASR::expr_t* value, int64_t lhs_len, int64_t rhs_len, const Location& loc, Allocator& al) {
+    value = ASRUtils::expr_value(value);
+    ASR::StringConstant_t* string_constant = ASR::down_cast<ASR::StringConstant_t>(value);
+    char* original_str = string_constant->m_s;
+    size_t new_length = static_cast<size_t>(lhs_len);
+    char* adjusted_str = al.allocate<char>(new_length + 1);
+
+    if (lhs_len < rhs_len) { // trim
+        std::memcpy(adjusted_str, original_str, new_length);
+    } else { // pad
+        std::memcpy(adjusted_str, original_str, rhs_len);
+        std::memset(adjusted_str + rhs_len, ' ', new_length - rhs_len);
+    }
+    adjusted_str[new_length] = '\0'; // null-terminate the string
+
+    ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_String_t(
+        al, loc, 1,
+        ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, loc, new_length, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::DescriptorString));
+
+    return ASRUtils::EXPR(ASR::make_StringConstant_t(
+        al, loc, adjusted_str, value_type));
+}
+
+inline ASR::expr_t* adjust_array_character_length(ASR::expr_t* value, int64_t lhs_len, int64_t rhs_len, Allocator& al) {
+    ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(value));
+    Vec<ASR::expr_t*> body;
+    size_t array_size = ASRUtils::get_fixed_size_of_array(array_constant->m_type);
+
+    body.reserve(al, array_size);
+
+    for (size_t i = 0; i < array_size; i++) {
+        ASR::expr_t* item = ASRUtils::fetch_ArrayConstant_value(al, array_constant, i);
+
+        if (ASR::is_a<ASR::ArrayConstant_t>(*item)) {
+            item = adjust_array_character_length(item, lhs_len, rhs_len,  al);
+        } else {
+            item = adjust_character_length(item, lhs_len, rhs_len, item->base.loc, al);
+        }
+
+        body.push_back(al, item);
+    }
+
+    {
+        ASR::String_t* str_t = ASRUtils::get_string_type(array_constant->m_type);
+        LCOMPILERS_ASSERT(ASRUtils::is_value_constant(str_t->m_len))
+        ASR::down_cast<ASR::IntegerConstant_t>(str_t->m_len)->m_n = lhs_len;
+    }
+    array_constant->m_data = ASRUtils::set_ArrayConstant_data(
+            body.p, body.size(), ASRUtils::extract_type(array_constant->m_type));
+    array_constant->m_n_data = ASRUtils::get_ArrayConstant_data_size(array_constant->m_type);
+
+    return value;
+}
+
+// Returns the character constant `value` (a scalar or an array) with its
+// length set to `len`, blank padded or truncated, as for
+// `character(len=3) :: c = "hi"`. Returns nullptr if the length is
+// already `len` or is not constant.
+inline ASR::expr_t* conform_character_constant_length(ASR::expr_t* value,
+        int64_t len, const Location& loc, Allocator& al) {
+    ASR::String_t* value_str = ASRUtils::get_string_type(ASRUtils::expr_type(value));
+    int64_t value_len = 0;
+    if (value_str == nullptr || value_str->m_len == nullptr
+            || !ASRUtils::extract_value(ASRUtils::expr_value(value_str->m_len), value_len)
+            || value_len == len) {
+        return nullptr;
+    }
+    if (ASR::is_a<ASR::StringConstant_t>(*value)) {
+        return adjust_character_length(value, len, value_len, loc, al);
+    }
+    if (!ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+        return nullptr;
+    }
+    ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
+    if (ASRUtils::get_fixed_size_of_array(array->m_type) < 0
+            || !ASR::is_a<ASR::Array_t>(*array->m_type)) {
+        return nullptr;
+    }
+    // `adjust_array_character_length` rewrites the constant and the
+    // length in its type in place, and `value` may be a named constant's
+    // value, so adjust a copy with its own length.
+    ASR::ttype_t* adjusted_type = ASRUtils::duplicate_type(al, array->m_type);
+    ASRUtils::get_string_type(adjusted_type)->m_len = ASRUtils::EXPR(
+        ASR::make_IntegerConstant_t(al, loc, value_len,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    ASR::expr_t* adjusted = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, loc,
+        array->m_data, adjusted_type, array->m_storage_format));
+    return adjust_array_character_length(adjusted, len, value_len, al);
 }
 
 inline void flatten_ArrayConstant_data(Allocator &al, Vec<ASR::expr_t*> &data, ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* a_type, int &curr_idx, ASR::ArrayConstant_t* x = nullptr) {

@@ -2798,3 +2798,89 @@ contains
         x = f(x)
     end subroutine
 end module
+
+! A unary `-` on an array of a deferred type also needs a user-defined
+! `operator(-)` for that deferred type (#13657).
+module continue_compilation_templates_01_unary_minus_array
+    implicit none
+contains
+    template subroutine unary_minus_array_s{t}(x, y)
+        deferred type :: t
+        type(t), intent(in) :: x(:)
+        type(t), intent(out) :: y(:)
+        y = -x  ! {Error} Operator `-` undefined for the type in the expression `-t[:]`
+    end subroutine
+end module
+
+! A unary `+` on a value of a deferred type needs a user-defined `operator(+)`
+! whose dummy has that deferred type (#14730).
+module continue_compilation_templates_01_unary_plus
+    implicit none
+contains
+    template subroutine unary_plus_s{t}(x, y)
+        deferred type :: t
+        type(t), intent(in) :: x
+        type(t), intent(out) :: y
+        y = +x  ! {Error} Operator `+` undefined for the type in the expression `+t`
+    end subroutine
+end module
+
+! The same holds for an array of a deferred type (#14730).
+module continue_compilation_templates_01_unary_plus_array
+    implicit none
+contains
+    template subroutine unary_plus_array_s{t}(x, y)
+        deferred type :: t
+        type(t), intent(in) :: x(:)
+        type(t), intent(out) :: y(:)
+        y = +x  ! {Error} Operator `+` undefined for the type in the expression `+t[:]`
+    end subroutine
+end module
+
+! An INSTANTIATE statement without an only-list defines the named constants
+! of the template too.
+module continue_compilation_templates_01_const_clash
+    implicit none
+    template const_clash_t {n}
+        deferred integer, parameter :: n
+        integer, parameter :: const_k = n*2
+    end template
+contains
+    subroutine const_clash_proc()
+        integer, parameter :: const_k = 1
+        instantiate const_clash_t {3}  ! {Error} the instantiation of template 'const_clash_t' defines 'const_k', which is already declared in this scope
+        print *, const_k
+    end subroutine
+end module
+
+! A subscript of a named constant array that becomes constant only in the
+! instantiation is checked against the bounds of the array (#14765).
+module continue_compilation_templates_01_item_oob
+    implicit none
+    template item_oob_t {n}
+        deferred integer, parameter :: n
+        integer, parameter :: item_arr(2) = [n, 2*n]
+        type :: item_w
+            integer :: b(item_arr(n))  ! {Error} Array index 3 is out of bounds (1 to 2) in dimension 1
+        end type
+    end template
+contains
+    subroutine use_item_oob()
+        instantiate item_oob_t {3}, only: item_w3 => item_w
+    end subroutine
+end module
+
+! template_save_shadow_1
+! C1610: a local of a template procedure named like a deferred constant hides
+! it, and is a local like any other, so it cannot have the SAVE attribute.
+module template_save_shadow_1_m
+    implicit none
+    template save_shadow_tmpl {n}
+        deferred integer, parameter :: n
+    contains
+        integer function f() result(r)
+            integer, save :: n = 7  ! {Error} variable 'n' in a template or templated procedure cannot have the save attribute
+            r = n
+        end function
+    end template
+end module

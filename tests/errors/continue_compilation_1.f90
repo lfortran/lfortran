@@ -663,8 +663,8 @@ program continue_compilation_1
         implicit none
         type(MyClass) :: tt
         print *, -tt
+        print *, +tt
     end subroutine
-
 
 
 
@@ -2502,3 +2502,38 @@ contains
         tan = 0
     end function tan
 end function later_internal_function_interface_error
+
+! A binding of a type declared in a module procedure to a module procedure
+! defined later is added after the bindings of its extensions, which are still
+! checked against it.
+module later_binding_override_error_m
+    implicit none
+contains
+    real function later_binding_get2()
+        later_binding_get2 = 2
+    end function
+    integer function later_binding_h()
+        type :: base
+        contains
+            procedure, nopass :: get => later_binding_get1
+        end type
+        type, extends(base) :: child
+        contains
+            procedure, nopass :: get => later_binding_get2  ! {Error} Type bound procedure 'get' of 'child' overriding the binding of the same name in 'base' must return i32, not r32
+        end type
+        type, extends(base) :: mid
+        end type
+        later_binding_h = later_binding_inner()
+    contains
+        integer function later_binding_inner()
+            type, extends(mid) :: grandchild
+            contains
+                procedure, nopass :: get => later_binding_get2  ! {Error} Type bound procedure 'get' of 'grandchild' overriding the binding of the same name in 'base' must return i32, not r32
+            end type
+            later_binding_inner = 0
+        end function
+    end function
+    integer function later_binding_get1()
+        later_binding_get1 = 1
+    end function
+end module

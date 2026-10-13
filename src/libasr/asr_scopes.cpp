@@ -136,10 +136,19 @@ std::string SymbolTable::get_unique_name(const std::string &name, bool use_uniqu
     if( use_unique_id && !lcompilers_unique_ID_separate_compilation.empty()) {
         unique_name += "_" + lcompilers_unique_ID_separate_compilation;
     }
-    int counter = 1;
+    if (scope.find(unique_name) == scope.end()) {
+        return unique_name;
+    }
+    // Start from the counter where the previous search for `name` stopped,
+    // so that creating many symbols with the same name is not quadratic.
+    int &counter = unique_name_counter[name];
+    if (counter == 0) {
+        counter = 1;
+    }
+    unique_name = name + std::to_string(counter);
     while (scope.find(unique_name) != scope.end()) {
-        unique_name = name + std::to_string(counter);
         counter++;
+        unique_name = name + std::to_string(counter);
     }
     return unique_name;
 }

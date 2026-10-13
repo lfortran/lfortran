@@ -199,6 +199,13 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                ),
+                                                            ~eq:
+                                                                (CustomOperator
+                                                                    13
+                                                                    ~eq
+                                                                    [10 equal]
+                                                                    Public
                                                                 )
                                                         })
                                                     commutative_p
@@ -248,7 +255,7 @@
                                                             ()
                                                             (FunctionCall
                                                                 10 equal
-                                                                10 ~eq
+                                                                13 ~eq
                                                                 [((FunctionCall
                                                                     10 bin
                                                                     ()
@@ -414,13 +421,6 @@
                                                     ()
                                                     []
                                                     ()
-                                                ),
-                                            ~eq:
-                                                (CustomOperator
-                                                    10
-                                                    ~eq
-                                                    [10 equal]
-                                                    Public
                                                 )
                                         })
                                     alt_commutative_prop
@@ -657,6 +657,13 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                ),
+                                                            ~eq:
+                                                                (CustomOperator
+                                                                    9
+                                                                    ~eq
+                                                                    [6 equal]
+                                                                    Public
                                                                 )
                                                         })
                                                     commutative_p
@@ -722,7 +729,7 @@
                                                             ()
                                                             (FunctionCall
                                                                 6 equal
-                                                                6 ~eq
+                                                                9 ~eq
                                                                 [((FunctionCall
                                                                     6 bin
                                                                     ()
@@ -916,13 +923,6 @@
                                                     ()
                                                     []
                                                     ()
-                                                ),
-                                            ~eq:
-                                                (CustomOperator
-                                                    6
-                                                    ~eq
-                                                    [6 equal]
-                                                    Public
                                                 )
                                         })
                                     commutative_prop
@@ -2020,7 +2020,7 @@
                                         .false.
                                         .false.
                                         []
-                                        .true.
+                                        .false.
                                         Host
                                     )
                                     []
@@ -2140,7 +2140,7 @@
                                         .false.
                                         .false.
                                         []
-                                        .true.
+                                        .false.
                                         Host
                                     )
                                     []
@@ -2260,7 +2260,7 @@
                                         .false.
                                         .false.
                                         []
-                                        .true.
+                                        .false.
                                         Host
                                     )
                                     []
@@ -2380,7 +2380,7 @@
                                         .false.
                                         .false.
                                         []
-                                        .true.
+                                        .false.
                                         Host
                                     )
                                     []
@@ -2500,7 +2500,7 @@
                                         .false.
                                         .false.
                                         []
-                                        .true.
+                                        .false.
                                         Host
                                     )
                                     []
@@ -2620,7 +2620,7 @@
                                         .false.
                                         .false.
                                         []
-                                        .true.
+                                        .false.
                                         Host
                                     )
                                     []
@@ -2740,7 +2740,7 @@
                                         .false.
                                         .false.
                                         []
-                                        .true.
+                                        .false.
                                         Host
                                     )
                                     []
@@ -2860,7 +2860,7 @@
                                         .false.
                                         .false.
                                         []
-                                        .true.
+                                        .false.
                                         Host
                                     )
                                     []
