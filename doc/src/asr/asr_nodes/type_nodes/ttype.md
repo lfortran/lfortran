@@ -17,7 +17,8 @@ ttype
     | Set(ttype type)
     | List(ttype type)
     | Tuple(ttype* type)
-    | StructType(ttype* data_member_types, ttype* member_function_types, bool is_cstruct, bool is_unlimited_polymorphic)
+    | StructType(ttype* data_member_types, ttype* member_function_types, bool is_cstruct, bool is_unlimited_polymorphic,
+    type_parameter* len_parameters)
     | EnumType(symbol enum_type)
     | UnionType(ttype* data_member_types)
     | Dict(ttype key_type, ttype value_type)

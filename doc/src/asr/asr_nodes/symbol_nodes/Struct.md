@@ -12,7 +12,8 @@ Struct(symbol_table symtab, identifier name, ttype struct_signature,
     identifier* member_functions, abi abi, access access,
     bool is_packed, bool is_abstract, bool is_sequence,
     call_arg* initializers, expr? alignment, symbol? parent,
-    identifier* kind_params)
+    identifier* kind_params, identifier* len_params,
+    identifier* parameter_order, bool is_pdt_template)
 ```
 
 ### Arguments
@@ -34,6 +35,9 @@ Struct(symbol_table symtab, identifier name, ttype struct_signature,
 | `alignment` | an explicit alignment in bytes, or `nil`. |
 | `parent` | the type this one extends, or `nil`. |
 | `kind_params` | the names of the kind type parameters of the type. |
+| `len_params` | the names of the length type parameters. |
+| `parameter_order` | the KIND and LEN parameter names in source order. |
+| `is_pdt_template` | whether this definition is an unspecialized parameterized type template. |
 
 ### Return values
 

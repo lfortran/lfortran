@@ -64,6 +64,7 @@ has no `value` member of its own, because it is one.
     :member_function_types []
     :is_cstruct false
     :is_unlimited_polymorphic false
+    :len_parameters []
   )
 )
 ```

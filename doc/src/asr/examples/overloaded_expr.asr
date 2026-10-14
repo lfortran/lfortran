@@ -48,6 +48,7 @@
                 :member_function_types []
                 :is_cstruct false
                 :is_unlimited_polymorphic false
+                :len_parameters []
               )
               :dependencies []
               :members [
@@ -63,6 +64,9 @@
               :alignment nil
               :parent nil
               :kind_params []
+              :len_params []
+              :parameter_order []
+              :is_pdt_template false
             )
             "vec_add" (Function
               :symtab (SymbolTable
@@ -85,6 +89,7 @@
                       :member_function_types []
                       :is_cstruct false
                       :is_unlimited_polymorphic false
+                      :len_parameters []
                     )
                     :type_declaration (SymbolRef 1 "vec")
                     :abi :Source
@@ -118,6 +123,7 @@
                       :member_function_types []
                       :is_cstruct false
                       :is_unlimited_polymorphic false
+                      :len_parameters []
                     )
                     :type_declaration (SymbolRef 1 "vec")
                     :abi :Source
@@ -151,6 +157,7 @@
                       :member_function_types []
                       :is_cstruct false
                       :is_unlimited_polymorphic false
+                      :len_parameters []
                     )
                     :type_declaration (SymbolRef 1 "vec")
                     :abi :Source
@@ -181,6 +188,7 @@
                     :member_function_types []
                     :is_cstruct false
                     :is_unlimited_polymorphic false
+                    :len_parameters []
                   )
                   (StructType
                     :data_member_types [
@@ -191,6 +199,7 @@
                     :member_function_types []
                     :is_cstruct false
                     :is_unlimited_polymorphic false
+                    :len_parameters []
                   )
                 ]
                 :return_var_type (StructType
@@ -202,6 +211,7 @@
                   :member_function_types []
                   :is_cstruct false
                   :is_unlimited_polymorphic false
+                  :len_parameters []
                 )
                 :abi :Source
                 :deftype :Implementation
@@ -254,6 +264,7 @@
                       :member_function_types []
                       :is_cstruct false
                       :is_unlimited_polymorphic false
+                      :len_parameters []
                     )
                     :type_declaration (SymbolRef 1 "vec")
                     :abi :Source
@@ -287,6 +298,7 @@
                       :member_function_types []
                       :is_cstruct false
                       :is_unlimited_polymorphic false
+                      :len_parameters []
                     )
                     :type_declaration (SymbolRef 1 "vec")
                     :abi :Source
@@ -320,6 +332,7 @@
                       :member_function_types []
                       :is_cstruct false
                       :is_unlimited_polymorphic false
+                      :len_parameters []
                     )
                     :type_declaration (SymbolRef 1 "vec")
                     :abi :Source
@@ -350,6 +363,7 @@
                     :member_function_types []
                     :is_cstruct false
                     :is_unlimited_polymorphic false
+                    :len_parameters []
                   )
                   (StructType
                     :data_member_types [
@@ -360,6 +374,7 @@
                     :member_function_types []
                     :is_cstruct false
                     :is_unlimited_polymorphic false
+                    :len_parameters []
                   )
                 ]
                 :return_var_type (StructType
@@ -371,6 +386,7 @@
                   :member_function_types []
                   :is_cstruct false
                   :is_unlimited_polymorphic false
+                  :len_parameters []
                 )
                 :abi :Source
                 :deftype :Implementation
@@ -423,6 +439,7 @@
                       :member_function_types []
                       :is_cstruct false
                       :is_unlimited_polymorphic false
+                      :len_parameters []
                     )
                     :type_declaration (SymbolRef 1 "vec")
                     :abi :Source
@@ -456,6 +473,7 @@
                       :member_function_types []
                       :is_cstruct false
                       :is_unlimited_polymorphic false
+                      :len_parameters []
                     )
                     :type_declaration (SymbolRef 1 "vec")
                     :abi :Source
@@ -512,6 +530,7 @@
                     :member_function_types []
                     :is_cstruct false
                     :is_unlimited_polymorphic false
+                    :len_parameters []
                   )
                   (StructType
                     :data_member_types [
@@ -522,6 +541,7 @@
                     :member_function_types []
                     :is_cstruct false
                     :is_unlimited_polymorphic false
+                    :len_parameters []
                   )
                 ]
                 :return_var_type (Logical
@@ -578,6 +598,7 @@
                       :member_function_types []
                       :is_cstruct false
                       :is_unlimited_polymorphic false
+                      :len_parameters []
                     )
                     :type_declaration (SymbolRef 1 "vec")
                     :abi :Source
@@ -611,6 +632,7 @@
                       :member_function_types []
                       :is_cstruct false
                       :is_unlimited_polymorphic false
+                      :len_parameters []
                     )
                     :type_declaration (SymbolRef 1 "vec")
                     :abi :Source
@@ -641,6 +663,7 @@
                     :member_function_types []
                     :is_cstruct false
                     :is_unlimited_polymorphic false
+                    :len_parameters []
                   )
                 ]
                 :return_var_type (StructType
@@ -652,6 +675,7 @@
                   :member_function_types []
                   :is_cstruct false
                   :is_unlimited_polymorphic false
+                  :len_parameters []
                 )
                 :abi :Source
                 :deftype :Implementation
@@ -701,6 +725,7 @@
                       :member_function_types []
                       :is_cstruct false
                       :is_unlimited_polymorphic false
+                      :len_parameters []
                     )
                     :type_declaration (SymbolRef 1 "vec")
                     :abi :Source
@@ -801,6 +826,7 @@
                     :member_function_types []
                     :is_cstruct false
                     :is_unlimited_polymorphic false
+                    :len_parameters []
                   )
                   (String
                     :kind 1
@@ -922,6 +948,7 @@
                 :member_function_types []
                 :is_cstruct false
                 :is_unlimited_polymorphic false
+                :len_parameters []
               )
               :type_declaration (SymbolRef 8 "vec")
               :abi :Source
@@ -955,6 +982,7 @@
                 :member_function_types []
                 :is_cstruct false
                 :is_unlimited_polymorphic false
+                :len_parameters []
               )
               :type_declaration (SymbolRef 8 "vec")
               :abi :Source
@@ -1088,6 +1116,7 @@
                 :member_function_types []
                 :is_cstruct false
                 :is_unlimited_polymorphic false
+                :len_parameters []
               )
               :value nil
               :overloaded (FunctionCall
@@ -1114,6 +1143,7 @@
                   :member_function_types []
                   :is_cstruct false
                   :is_unlimited_polymorphic false
+                  :len_parameters []
                 )
                 :value nil
                 :dt nil
@@ -1182,6 +1212,7 @@
                 :member_function_types []
                 :is_cstruct false
                 :is_unlimited_polymorphic false
+                :len_parameters []
               )
               :value nil
               :overloaded (FunctionCall
@@ -1203,6 +1234,7 @@
                   :member_function_types []
                   :is_cstruct false
                   :is_unlimited_polymorphic false
+                  :len_parameters []
                 )
                 :value nil
                 :dt nil
@@ -1233,6 +1265,7 @@
                 :member_function_types []
                 :is_cstruct false
                 :is_unlimited_polymorphic false
+                :len_parameters []
               )
               :value nil
               :overloaded (FunctionCall
@@ -1259,6 +1292,7 @@
                   :member_function_types []
                   :is_cstruct false
                   :is_unlimited_polymorphic false
+                  :len_parameters []
                 )
                 :value nil
                 :dt nil

@@ -66,6 +66,7 @@ default initialisers.
     :member_function_types []
     :is_cstruct false
     :is_unlimited_polymorphic false
+    :len_parameters []
   )
   :value nil
 )

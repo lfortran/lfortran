@@ -8,7 +8,8 @@ The type of a derived type object.
 
 ```text
 StructType(ttype* data_member_types, ttype* member_function_types,
-    bool is_cstruct, bool is_unlimited_polymorphic)
+    bool is_cstruct, bool is_unlimited_polymorphic,
+    type_parameter* len_parameters)
 ```
 
 ### Arguments
@@ -19,6 +20,7 @@ StructType(ttype* data_member_types, ttype* member_function_types,
 | `member_function_types` | the types of the type-bound procedures. |
 | `is_cstruct` | `true` for a type that must be laid out the way C would lay it out, as for `bind(c)`. |
 | `is_unlimited_polymorphic` | `true` for `class(*)`, which may hold a value of any type. |
+| `len_parameters` | the LEN actual values and their explicit, assumed or deferred states, in the definition's `len_params` order. |
 
 ### Return values
 
@@ -52,6 +54,7 @@ type is a run time property, and
   :member_function_types []
   :is_cstruct false
   :is_unlimited_polymorphic false
+  :len_parameters []
 )
 ```
 

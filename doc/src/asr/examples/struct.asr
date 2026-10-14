@@ -77,6 +77,7 @@
                 :member_function_types []
                 :is_cstruct false
                 :is_unlimited_polymorphic false
+                :len_parameters []
               )
               :dependencies []
               :members [
@@ -93,6 +94,9 @@
               :alignment nil
               :parent nil
               :kind_params []
+              :len_params []
+              :parameter_order []
+              :is_pdt_template false
             )
           }
         )

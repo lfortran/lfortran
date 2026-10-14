@@ -58,6 +58,7 @@
                 :member_function_types []
                 :is_cstruct false
                 :is_unlimited_polymorphic false
+                :len_parameters []
               )
               :dependencies []
               :members [
@@ -75,6 +76,9 @@
               :alignment nil
               :parent nil
               :kind_params []
+              :len_params []
+              :parameter_order []
+              :is_pdt_template false
             )
             "circle_area" (Function
               :symtab (SymbolTable
@@ -123,6 +127,7 @@
                       :member_function_types []
                       :is_cstruct false
                       :is_unlimited_polymorphic false
+                      :len_parameters []
                     )
                     :type_declaration (SymbolRef 1 "circle")
                     :abi :Source
@@ -153,6 +158,7 @@
                     :member_function_types []
                     :is_cstruct false
                     :is_unlimited_polymorphic false
+                    :len_parameters []
                   )
                 ]
                 :return_var_type (Real

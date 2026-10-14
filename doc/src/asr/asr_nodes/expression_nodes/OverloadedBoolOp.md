@@ -52,6 +52,7 @@ call that implements it.
     :member_function_types []
     :is_cstruct false
     :is_unlimited_polymorphic false
+    :len_parameters []
   )
   :value nil
   :overloaded (FunctionCall
@@ -78,6 +79,7 @@ call that implements it.
       :member_function_types []
       :is_cstruct false
       :is_unlimited_polymorphic false
+      :len_parameters []
     )
     :value nil
     :dt nil

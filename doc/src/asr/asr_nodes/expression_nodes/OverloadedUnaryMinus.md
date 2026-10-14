@@ -45,6 +45,7 @@ The value of the expression.
     :member_function_types []
     :is_cstruct false
     :is_unlimited_polymorphic false
+    :len_parameters []
   )
   :value nil
   :overloaded (FunctionCall
@@ -66,6 +67,7 @@ The value of the expression.
       :member_function_types []
       :is_cstruct false
       :is_unlimited_polymorphic false
+      :len_parameters []
     )
     :value nil
     :dt nil

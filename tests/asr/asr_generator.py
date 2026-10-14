@@ -440,14 +440,14 @@ def class_type():
     """The type of a `class(...)` entity; the symbol lives in the variable."""
     return (
         "(StructType :data_member_types [] :member_function_types [] "
-        ":is_cstruct false :is_unlimited_polymorphic false)"
+        ":is_cstruct false :is_unlimited_polymorphic false :len_parameters [])"
     )
 
 
 def struct_signature():
     return (
         "(StructType :data_member_types [] :member_function_types [] "
-        ":is_cstruct true :is_unlimited_polymorphic false)"
+        ":is_cstruct true :is_unlimited_polymorphic false :len_parameters [])"
     )
 
 
@@ -469,7 +469,7 @@ def struct(symtab_id, name, methods, parent=None, abstract=False):
         f":members [] :member_functions [] :abi :Source :access :Public "
         f":is_packed false :is_abstract {'true' if abstract else 'false'} "
         f":is_sequence false :initializers [] :alignment nil "
-        f":parent {parent or 'nil'} :kind_params [])"
+        f":parent {parent or 'nil'} :kind_params [] :len_params [] :parameter_order [] :is_pdt_template false)"
     )
 
 
@@ -1462,7 +1462,7 @@ def invalid_procedure_argument_type(_rng):
 def invalid_struct_member_of_other_type(_rng):
     struct_type = ("(StructType :data_member_types [(Integer :kind 4)] "
                    ":member_function_types [] :is_cstruct true "
-                   ":is_unlimited_polymorphic false)")
+                   ":is_unlimited_polymorphic false :len_parameters [])")
     module_symbols = {
         "base": struct(
             BASE_STRUCT_SYMTAB, "base",
@@ -1555,7 +1555,7 @@ def invalid_deferred_binding_not_overridden(_rng):
 def invalid_abstract_type_variable(_rng):
     struct_type = ("(StructType :data_member_types [] "
                    ":member_function_types [] :is_cstruct true "
-                   ":is_unlimited_polymorphic false)")
+                   ":is_unlimited_polymorphic false :len_parameters [])")
     return module_unit(
         {"base": struct(BASE_STRUCT_SYMTAB, "base", {}, abstract=True)},
         {"base": external_symbol(
@@ -1625,7 +1625,7 @@ CALL_SITE_BUILDERS = [
 def invalid_select_type_unrelated_guard(_rng):
     struct_type = ("(StructType :data_member_types [] "
                    ":member_function_types [] :is_cstruct false "
-                   ":is_unlimited_polymorphic false)")
+                   ":is_unlimited_polymorphic false :len_parameters [])")
     module_symbols = {
         "base": struct(BASE_STRUCT_SYMTAB, "base", {}),
         "other": struct(DERIVED_STRUCT_SYMTAB, "other", {}),
@@ -1656,10 +1656,10 @@ def invalid_select_type_unrelated_guard(_rng):
 def invalid_allocate_unrelated_type(_rng):
     struct_type = ("(StructType :data_member_types [] "
                    ":member_function_types [] :is_cstruct false "
-                   ":is_unlimited_polymorphic false)")
+                   ":is_unlimited_polymorphic false :len_parameters [])")
     concrete_type = ("(StructType :data_member_types [] "
                      ":member_function_types [] :is_cstruct true "
-                     ":is_unlimited_polymorphic false)")
+                     ":is_unlimited_polymorphic false :len_parameters [])")
     module_symbols = {
         "base": struct(BASE_STRUCT_SYMTAB, "base", {}),
         "other": struct(DERIVED_STRUCT_SYMTAB, "other", {}),

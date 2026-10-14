@@ -290,7 +290,9 @@ class LengthParameterInitializer : public ASR::BaseWalkVisitor<LengthParameterIn
         Vec<ASR::stmt_t*> body;
         body.reserve(al, n_statements);
         for (const auto& name : ASRUtils::determine_variable_declaration_order(scope)) {
-            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(scope->get_symbol(name));
+            ASR::symbol_t* symbol = scope->get_symbol(name);
+            if (!ASR::is_a<ASR::Variable_t>(*symbol)) continue;
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(symbol);
             ASR::ttype_t* type = ASRUtils::extract_type(variable->m_type);
             if (!ASR::is_a<ASR::StructType_t>(*type) || !variable->m_type_declaration
                     || (variable->m_intent != ASR::intentType::Local
