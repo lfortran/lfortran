@@ -4478,6 +4478,14 @@ RUN(NAME traits_generics_module_04 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes
     EXTRAFILES traits_generics_module_01_sums.f90 traits_generics_module_01_ops.f90
         traits_generics_module_03_plain.f90)
+RUN(NAME traits_receiver_intent_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_receiver_intent_01_oracle LABELS gfortran llvm)
+RUN(NAME traits_receiver_intent_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_receiver_intent_02_oracle LABELS gfortran llvm)
+RUN(NAME traits_receiver_intent_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_receiver_intent_03_oracle LABELS gfortran llvm)
+RUN(NAME traits_receiver_intent_04 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_receiver_intent_04_oracle LABELS gfortran llvm)
 RUN(NAME template_require_order_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_end_name_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_instantiate_kwargs_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
