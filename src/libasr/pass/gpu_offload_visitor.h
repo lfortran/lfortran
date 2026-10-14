@@ -460,6 +460,9 @@ public:
 
     void retarget_local_extents(SymbolTable *scope);
 
+    void retarget_declaration_calls(SymbolTable *scope,
+        SymbolTable &kernel_scope);
+
     void remap_associate_to_own_scope(ASR::AssociateBlock_t *ab);
 
     void remap_block_to_own_scope(ASR::Block_t *block);
