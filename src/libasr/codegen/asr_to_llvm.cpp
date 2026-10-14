@@ -777,6 +777,9 @@ public:
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
     int64_t global_array_count;
+    // Read-only globals holding the values of local named constant arrays,
+    // keyed by their (uniqued) initializer, so that equal constants share one.
+    std::map<llvm::Constant*, llvm::GlobalVariable*> named_array_constant_globals;
     int64_t global_struct_count = 0;
     int64_t null_array_descriptor_count;
     int64_t global_deep_count;
@@ -6502,6 +6505,46 @@ public:
             [](llvm::Constant* elem) { return elem->isNullValue(); });
     }
 
+    // A local named constant (parameter) array of intrinsic numeric or
+    // logical type is never written, so its value is laid out once as
+    // read-only static data and read in place, rather than copied to the
+    // stack on every entry. Equal constants share one global. Returns the
+    // global, or nullptr if `v` does not qualify.
+    template<typename T>
+    llvm::GlobalVariable* get_named_array_constant_global(const T& x,
+            ASR::Variable_t* v, llvm::Type* type) {
+        if (v->m_storage != ASR::storage_typeType::Parameter ||
+                v->m_is_volatile || v->m_value == nullptr ||
+                !ASR::is_a<ASR::ArrayConstant_t>(*v->m_value) ||
+                !ASR::is_a<ASR::Array_t>(*v->m_type) ||
+                ASRUtils::extract_physical_type(v->m_type) !=
+                    ASR::array_physical_typeType::FixedSizeArray) {
+            return nullptr;
+        }
+        ASR::ttype_t* el_type = ASRUtils::type_get_past_array(v->m_type);
+        int kind = ASRUtils::extract_kind_from_ttype_t(el_type);
+        if (!(ASR::is_a<ASR::Integer_t>(*el_type) ||
+                ASR::is_a<ASR::Logical_t>(*el_type) ||
+                ((ASR::is_a<ASR::Real_t>(*el_type) ||
+                    ASR::is_a<ASR::Complex_t>(*el_type)) &&
+                    (kind == 4 || kind == 8)))) {
+            return nullptr;
+        }
+        LCOMPILERS_ASSERT(type->isArrayTy());
+        llvm::Constant* init = get_const_array(v->m_value, type->getArrayElementType());
+        LCOMPILERS_ASSERT(init->getType() == type);
+        auto it = named_array_constant_globals.find(init);
+        if (it != named_array_constant_globals.end()) {
+            return it->second;
+        }
+        llvm::GlobalVariable* global = new llvm::GlobalVariable(*module, type,
+            true, llvm::GlobalValue::PrivateLinkage, init,
+            save_variable_global_prefix(x) + "." + v->m_name);
+        global->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+        named_array_constant_globals[init] = global;
+        return global;
+    }
+
     bool is_parameter_designator(ASR::expr_t* expr) {
         while (expr != nullptr) {
             if (ASR::is_a<ASR::Var_t>(*expr)) {
@@ -9686,6 +9729,7 @@ public:
                 ptr_loads = ptr_loads_copy;
             }
             llvm::Value *ptr = nullptr;
+            bool is_named_array_constant_global = false;
             // Allocate the variable
             if( is_array_of_strings &&
                     (v->m_storage == ASR::Save || v->m_storage == ASR::Parameter) &&
@@ -9739,6 +9783,10 @@ public:
                     ptr = llvm_utils->create_string(ASRUtils::get_string_type(v->m_type), v->m_name);
                     setup_string(ptr, v->m_type);
                 }
+            } else if (llvm::GlobalVariable* constant_global =
+                    get_named_array_constant_global(x, v, type)) {
+                ptr = constant_global;
+                is_named_array_constant_global = true;
             } else { // Alloca for rest of types (not its internals if exist).
                 if (v->m_storage == ASR::storage_typeType::Save) {
                     std::string parent_function_name = save_variable_global_prefix(x);
@@ -10067,8 +10115,9 @@ public:
             }
             if( init_expr != nullptr && !is_list && !is_dict && !is_tuple && !is_set) {
                 target_var = ptr;
-                if (save_struct_initialized) {
-                    // Already stored inside the one-time guard above
+                if (save_struct_initialized || is_named_array_constant_global) {
+                    // Already initialized: inside the one-time guard above,
+                    // or by the static initializer of the constant global
                 } else if ((v->m_storage == ASR::Save   ||
                     v->m_storage == ASR::Parameter)
                     &&
