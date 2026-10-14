@@ -11940,6 +11940,13 @@ bool intent_out_reset_holds(const SymbolTable &scope);
 // Whether that pass records `type` when it records the derived types of the
 // translation unit whose scope is `unit`.
 bool intent_out_reset_recorded(const ASR::Struct_t &type, const SymbolTable &unit);
+// Whether `type` is defined at the top level, or in a module, of a
+// translation unit that the one whose scope is `unit` extends: an earlier
+// cell of an interactive session, whose scope is an ancestor of `unit`. Code
+// generation for `unit` can describe an object of such a type at run time,
+// so the pass records the type in `unit` itself; the earlier unit's own
+// records were made after its scope was handed on, and are not part of it.
+bool intent_out_reset_earlier_unit_type(const ASR::Struct_t &type, const SymbolTable &unit);
 
 } // namespace ASRUtils
 

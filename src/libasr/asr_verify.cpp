@@ -5075,17 +5075,36 @@ public:
                 current_symtab->get_symbol(std::string(x.m_name)) == &x.base,
             "asr.verify.intent_out_reset.scope",
             "An intent(out) reset must be a symbol of the scope it names as its own");
-        ASR::symbol_t *type = x.m_type_declaration;
-        require_id(type != nullptr && ASR::is_a<Struct_t>(*type) &&
-                ASRUtils::symbol_parent_symtab(type) == x.m_parent_symtab,
-            "asr.verify.intent_out_reset.type",
-            "An intent(out) reset must name a derived type of its own scope");
-        if (type == nullptr || !ASR::is_a<Struct_t>(*type)) return;
+        // The type is one of the record's own scope or, in the scope of a
+        // translation unit, one of an earlier unit that it extends, named by
+        // itself or by an import of the unit.
+        auto unit_scope = [](const SymbolTable *scope) {
+            return scope->asr_owner && ASR::is_a<unit_t>(*scope->asr_owner);
+        };
+        ASR::symbol_t *declaration = x.m_type_declaration;
+        ASR::symbol_t *type = declaration ? ASRUtils::symbol_get_past_external(declaration)
+            : nullptr;
+        bool own = false;
+        if (type != nullptr && ASR::is_a<Struct_t>(*type)) {
+            bool earlier = unit_scope(x.m_parent_symtab) &&
+                ASRUtils::intent_out_reset_earlier_unit_type(
+                    *ASR::down_cast<Struct_t>(type), *x.m_parent_symtab);
+            SymbolTable *defined = ASRUtils::symbol_parent_symtab(type);
+            own = declaration == type
+                ? defined == x.m_parent_symtab || (earlier && unit_scope(defined))
+                : ASRUtils::symbol_parent_symtab(declaration) == x.m_parent_symtab &&
+                    earlier;
+        }
+        require_id(own, "asr.verify.intent_out_reset.type",
+            "An intent(out) reset must name a derived type of its own scope, or of "
+            "an earlier translation unit that the unit of the reset extends");
+        if (!own) return;
         auto *structure = ASR::down_cast<Struct_t>(type);
         size_t records = 0;
         for (const auto &entry : x.m_parent_symtab->get_scope()) {
             records += ASR::is_a<IntentOutReset_t>(*entry.second) &&
-                ASR::down_cast<IntentOutReset_t>(entry.second)->m_type_declaration == type;
+                ASRUtils::symbol_get_past_external(ASR::down_cast<IntentOutReset_t>(
+                    entry.second)->m_type_declaration) == type;
         }
         require_id(records == 1, "asr.verify.intent_out_reset.unique",
             "Derived type '" + std::string(structure->m_name) +

@@ -1141,20 +1141,21 @@ public:
 
 
 // The procedure of an IntentOutReset record: `subroutine name(object)` with
-// `type(T), intent(out) :: object`, in `scope`, the scope of T, whose body
-// resets the object as the start of any procedure with such a dummy does.
-// The visitor below knows it from its record and does not add the same
-// statements to it again.
+// `type(T), intent(out) :: object`, in `parent`, the scope of the record,
+// where `declaration` names T, whose body resets the object as the start of
+// any procedure with such a dummy does. The visitor below knows it from its
+// record and does not add the same statements to it again.
 static ASR::Function_t *make_intent_out_reset_procedure(Allocator &al,
-        ASR::Struct_t *type, SymbolTable *parent, const std::string &name) {
+        ASR::Struct_t *type, ASR::symbol_t *declaration, SymbolTable *parent,
+        const std::string &name) {
     const Location &loc = type->base.base.loc;
     SymbolTable *scope = al.make_new<SymbolTable>(parent);
     ASR::symbol_t *object = ASR::down_cast<ASR::symbol_t>(
         ASRUtils::make_Variable_t_util(al, loc, scope, s2c(al, "object"),
             nullptr, 0, ASR::intentType::Out, nullptr, nullptr,
             ASR::storage_typeType::Default,
-            ASRUtils::make_StructType_t_util(al, loc, &type->base, true),
-            &type->base, ASR::abiType::Source, ASR::accessType::Public,
+            ASRUtils::make_StructType_t_util(al, loc, declaration, true),
+            declaration, ASR::abiType::Source, ASR::accessType::Public,
             ASR::presenceType::Required, false));
     scope->add_symbol("object", object);
     ASR::expr_t *entity = ASRUtils::EXPR(ASR::make_Var_t(al, loc, object));
@@ -1178,8 +1179,10 @@ static ASR::Function_t *make_intent_out_reset_procedure(Allocator &al,
 // or not the unit has a polymorphic dummy of them, because a code generator
 // can describe any of them at run time and another unit can pass such an
 // object to a polymorphic intent(out) dummy. Generic definitions, traits and
-// interface bodies have no objects of their own types. A type that already
-// has a record keeps it.
+// interface bodies have no objects of their own types. The unit of an
+// interactive cell records the types of the earlier cells as well (see
+// ASRUtils::intent_out_reset_earlier_unit_type). A type that already has a
+// record keeps it.
 class IntentOutResetRecorder {
     Allocator &al;
     // Procedure names are unique in the unit, not only in their scopes, so
@@ -1199,7 +1202,9 @@ class IntentOutResetRecorder {
         return name;
     }
 
-    void record_type(SymbolTable *scope, ASR::Struct_t *type) {
+    // `declaration` names `type` in `scope`.
+    void record_type(SymbolTable *scope, ASR::Struct_t *type,
+            ASR::symbol_t *declaration) {
         if (ASRUtils::is_unlimited_polymorphic_type(type) ||
                 !recorded[scope].insert(&type->base).second) return;
         std::string type_name = type->m_name;
@@ -1207,8 +1212,8 @@ class IntentOutResetRecorder {
         if (!type->m_is_abstract && ASRUtils::struct_intent_out_reset_has_effect(*type)) {
             std::string name = unique_name(scope, "__libasr_intent_out_reset_" + type_name,
                 &procedure_names);
-            ASR::Function_t *function = make_intent_out_reset_procedure(al, type, scope,
-                name);
+            ASR::Function_t *function = make_intent_out_reset_procedure(al, type,
+                declaration, scope, name);
             scope->add_symbol(name, &function->base);
             procedure = &function->base;
             procedures.insert(function);
@@ -1216,7 +1221,31 @@ class IntentOutResetRecorder {
         std::string name = unique_name(scope,
             "__libasr_intent_out_reset_record_" + type_name, nullptr);
         scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(ASR::make_IntentOutReset_t(
-            al, type->base.base.loc, scope, s2c(al, name), &type->base, procedure)));
+            al, type->base.base.loc, scope, s2c(al, name), declaration, procedure)));
+    }
+
+    // The symbol of the unit scope `unit` that names `type`, a type of a
+    // module of an earlier unit: an import of it into `unit`, which is made
+    // when there is none. Its name is one no other symbol of `unit` or of
+    // the scopes around it has, so that it hides nothing.
+    ASR::symbol_t *import_earlier_type(SymbolTable *unit, ASR::Struct_t *type,
+            ASR::Module_t *module) {
+        for (const auto &entry : unit->get_scope()) {
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*entry.second) &&
+                    ASRUtils::symbol_get_past_external(entry.second) == &type->base) {
+                return entry.second;
+            }
+        }
+        std::string name = std::string(type->m_name) + "@" + module->m_name;
+        for (int i = 1; unit->resolve_symbol(name) != nullptr; i++) {
+            name = std::string(type->m_name) + "@" + module->m_name + "_" +
+                std::to_string(i);
+        }
+        ASR::symbol_t *imported = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+            al, type->base.base.loc, unit, s2c(al, name), &type->base,
+            module->m_name, nullptr, 0, type->m_name, ASR::accessType::Private));
+        unit->add_symbol(name, imported);
+        return imported;
     }
 
 public:
@@ -1255,13 +1284,39 @@ public:
         for (ASR::symbol_t *symbol : symbols) {
             if (ASR::is_a<ASR::Struct_t>(*symbol)) {
                 if (ASRUtils::intent_out_reset_holds(*scope)) {
-                    record_type(scope, ASR::down_cast<ASR::Struct_t>(symbol));
+                    record_type(scope, ASR::down_cast<ASR::Struct_t>(symbol), symbol);
                 }
                 continue;
             }
             SymbolTable *nested = ASRUtils::symbol_symtab(symbol);
             if (nested && nested->parent == scope && ASRUtils::intent_out_reset_walks(*nested)) {
                 record(nested);
+            }
+        }
+    }
+
+    // Records in the unit scope `unit` the types of the units it extends.
+    void record_earlier_units(SymbolTable *unit) {
+        for (SymbolTable *earlier = unit->parent; earlier != nullptr;
+                earlier = earlier->parent) {
+            if (!earlier->asr_owner || !ASR::is_a<ASR::unit_t>(*earlier->asr_owner)) {
+                continue;
+            }
+            for (const auto &entry : earlier->get_scope()) {
+                if (ASR::is_a<ASR::Struct_t>(*entry.second)) {
+                    record_type(unit, ASR::down_cast<ASR::Struct_t>(entry.second),
+                        entry.second);
+                    continue;
+                }
+                if (!ASR::is_a<ASR::Module_t>(*entry.second)) continue;
+                auto *module = ASR::down_cast<ASR::Module_t>(entry.second);
+                for (const auto &item : module->m_symtab->get_scope()) {
+                    if (!ASR::is_a<ASR::Struct_t>(*item.second)) continue;
+                    auto *type = ASR::down_cast<ASR::Struct_t>(item.second);
+                    if (ASRUtils::is_unlimited_polymorphic_type(type) ||
+                            recorded[unit].count(item.second)) continue;
+                    record_type(unit, type, import_earlier_type(unit, type, module));
+                }
             }
         }
     }
@@ -1278,6 +1333,7 @@ void pass_intent_out_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
     recorder.collect(unit.m_symtab);
     if (pass_options.dynamic_intent_out_reset) {
         recorder.record(unit.m_symtab);
+        recorder.record_earlier_units(unit.m_symtab);
     }
     // Deallocate intent(out) allocatable arguments at function entry
     IntentOutDeallocateVisitor iod(al);

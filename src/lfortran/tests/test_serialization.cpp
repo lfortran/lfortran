@@ -10703,6 +10703,87 @@ end program
     }
 }
 
+TEST_CASE("Intent(out) resets of a unit record the types of the units it extends") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    // An interactive cell is a translation unit whose scope is a child of the
+    // scopes of the earlier cells.
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    options.interactive = true;
+    LCompilers::LocationManager lm;
+    auto unit_of = [&](const std::string &source, LCompilers::SymbolTable *scope) {
+        auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+        REQUIRE(parsed.ok);
+        auto result = LCompilers::LFortran::ast_to_asr(
+            al, *parsed.result, diagnostics, scope, false, options, lm);
+        INFO(diagnostics.render2());
+        REQUIRE(result.ok);
+        return result.result;
+    };
+    ASR::TranslationUnit_t *earlier = unit_of(R"(module earlier_m
+implicit none
+type :: counted
+    integer :: n = 7
+    integer, allocatable :: data(:)
+end type
+end module
+)", nullptr);
+    auto *scope = al.make_new<LCompilers::SymbolTable>(earlier->m_symtab);
+    ASR::TranslationUnit_t *unit = unit_of(R"(program later
+use earlier_m
+implicit none
+type(counted) :: c
+c%n = 1
+print *, c%n
+end program
+)", scope);
+    options.po.dynamic_intent_out_reset = true;
+    LCompilers::pass_intent_out_deallocate(al, *unit, options.po);
+    CHECK(LCompilers::asr_verify(*unit, true, diagnostics));
+    auto *module = ASR::down_cast<ASR::Module_t>(earlier->m_symtab->get_symbol("earlier_m"));
+    ASR::symbol_t *counted = module->m_symtab->get_symbol("counted");
+    // The earlier unit's type is recorded in the unit's own scope, through
+    // an import of the unit, and its procedure deallocates the allocatable
+    // component.
+    ASR::IntentOutReset_t *reset = nullptr;
+    for (const auto &entry : unit->m_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::IntentOutReset_t>(*entry.second)) continue;
+        auto *record = ASR::down_cast<ASR::IntentOutReset_t>(entry.second);
+        if (ASRUtils::symbol_get_past_external(record->m_type_declaration) == counted) {
+            CHECK(reset == nullptr);
+            reset = record;
+        }
+    }
+    REQUIRE(reset != nullptr);
+    CHECK(ASR::is_a<ASR::ExternalSymbol_t>(*reset->m_type_declaration));
+    CHECK(ASRUtils::symbol_parent_symtab(reset->m_type_declaration) == unit->m_symtab);
+    REQUIRE(reset->m_procedure != nullptr);
+    CHECK(ASR::down_cast<ASR::Function_t>(reset->m_procedure)->n_body > 0);
+    CHECK(ASRUtils::intent_out_reset_recorded(*ASR::down_cast<ASR::Struct_t>(counted),
+        *unit->m_symtab));
+    // Nowhere else: not in a program of the unit, nor without the import.
+    auto *program = ASR::down_cast<ASR::Program_t>(unit->m_symtab->get_symbol("later"));
+    auto rejects = [&](LCompilers::SymbolTable *owner, ASR::symbol_t *declaration) {
+        std::string name = owner->get_unique_name("misplaced_record");
+        owner->add_symbol(name, ASR::down_cast<ASR::symbol_t>(ASR::make_IntentOutReset_t(
+            al, reset->base.base.loc, owner, LCompilers::s2c(al, name), declaration,
+            nullptr)));
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*unit, true, invalid));
+        bool found = false;
+        for (const auto &diagnostic : invalid.diagnostics) {
+            found |= diagnostic.code == "asr.verify.intent_out_reset.type";
+        }
+        CHECK(found);
+        owner->erase_symbol(name);
+    };
+    rejects(program->m_symtab, program->m_symtab->get_symbol("counted"));
+    unit->m_symtab->erase_symbol(reset->m_name);
+    rejects(unit->m_symtab, counted);
+}
+
 TEST_CASE("Topological sorting string") {
     std::map<std::string, std::vector<std::string>> deps;
     // A depends on B

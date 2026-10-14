@@ -2468,7 +2468,7 @@ public:
             if (ASR::is_a<ASR::IntentOutReset_t>(*item.second)) {
                 auto *reset = ASR::down_cast<ASR::IntentOutReset_t>(item.second);
                 intent_out_resets[ASR::down_cast<ASR::Struct_t>(
-                    reset->m_type_declaration)] = reset;
+                    ASRUtils::symbol_get_past_external(reset->m_type_declaration))] = reset;
                 if (reset->m_procedure) {
                     intent_out_reset_procedures.insert(
                         ASR::down_cast<ASR::Function_t>(reset->m_procedure));
@@ -2494,9 +2494,8 @@ public:
                 throw LCompilersException("Internal error: derived type '" +
                     std::string(type->m_name) + "' has no intent(out) reset record");
             }
-            // The pass did not run (a custom pass list), or the type belongs
-            // to an earlier interactive cell, whose records this unit does
-            // not hold: nothing resets the object from its dynamic type.
+            // The pass did not run (a custom pass list): nothing resets the
+            // object from its dynamic type.
             return nullptr;
         }
         if (found->second->m_procedure == nullptr) return nullptr;

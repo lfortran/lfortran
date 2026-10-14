@@ -2941,3 +2941,128 @@ a%data = 4
     CHECK(r.result.i32 == 15);
 }
 #endif
+
+// Calling a procedure of an earlier cell that takes a polymorphic argument
+// hangs on Windows (https://github.com/lfortran/lfortran/issues/12494).
+#if !defined(_WIN32)
+TEST_CASE("FortranEvaluator intent(out) reset from a dynamic type of an earlier cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // A polymorphic intent(out) dummy is reset from the dynamic type of its
+    // object: final subroutine, deallocation and default initialization of
+    // the extension, which is an earlier cell's type wherever a cell can
+    // name it. `make` describes an `ext` at run time in the cell that
+    // declares the types; later cells describe one again, and an `ext2`, an
+    // `ext3` and a `bare` (whose reset has no effect) for the first time.
+    CHECK(e.evaluate2(R"(module mreset
+implicit none
+integer :: finals = 0
+type :: base
+    integer :: n = 7
+end type
+type, extends(base) :: ext
+    integer :: extra = 11
+    integer, allocatable :: data(:)
+contains
+    final :: ext_final
+end type
+type :: bare
+    integer :: k
+end type
+class(base), allocatable :: saved
+contains
+subroutine ext_final(self)
+    type(ext), intent(inout) :: self
+    finals = finals + 1
+end subroutine
+subroutine reset(x)
+    class(base), intent(out) :: x
+end subroutine
+subroutine reset_bare(x)
+    class(bare), intent(out) :: x
+    x%k = 5
+end subroutine
+subroutine make()
+    type(ext) :: object
+    object%n = 1
+    object%extra = 2
+    allocate(object%data(3))
+    allocate(saved, source=object)
+end subroutine
+integer function code(x)
+    class(base), intent(in) :: x
+    code = 100 * x%n
+    select type (x)
+    type is (ext)
+        code = code + x%extra
+        if (allocated(x%data)) code = -code
+    end select
+end function
+end module
+)").ok);
+    // An object described at run time by the earlier cell.
+    CHECK(e.evaluate2(R"(use mreset
+call make()
+call reset(saved)
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("code(saved)");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 711);
+    // An object of the same type described by this cell.
+    // A top-level ALLOCATE is taken for a function call, as NULLIFY is
+    // (#13455).
+    CHECK(e.evaluate2(R"(type(ext) :: a
+a%n = 1
+a%extra = 2
+if (.not. allocated(a%data)) allocate(a%data(3))
+call reset(a)
+)").ok);
+    r = e.evaluate2("code(a)");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 711);
+    r = e.evaluate2("finals");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 3);
+    // An extension declared by a later cell, reset in the next.
+    CHECK(e.evaluate2(R"(module mreset2
+use mreset, only: base
+implicit none
+type, extends(base) :: ext2
+    integer :: more = 13
+end type
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(use mreset2
+type(ext2) :: c
+c%n = 1
+c%more = 2
+call reset(c)
+)").ok);
+    r = e.evaluate2("c%n * 100 + c%more");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 713);
+    // An extension declared at the top level of a cell.
+    CHECK(e.evaluate2(R"(type, extends(base) :: ext3
+    integer :: last = 17
+end type
+)").ok);
+    CHECK(e.evaluate2(R"(type(ext3) :: d
+d%n = 1
+d%last = 2
+call reset(d)
+)").ok);
+    r = e.evaluate2("d%n * 100 + d%last");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 717);
+    // A type whose reset has no effect.
+    CHECK(e.evaluate2(R"(type(bare) :: b
+b%k = 1
+call reset_bare(b)
+)").ok);
+    r = e.evaluate2("b%k");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 5);
+}
+#endif

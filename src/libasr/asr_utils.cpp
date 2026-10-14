@@ -9512,9 +9512,25 @@ bool intent_out_reset_recorded(const ASR::Struct_t &type, const SymbolTable &uni
             is_unlimited_polymorphic_type(const_cast<ASR::Struct_t*>(&type))) {
         return false;
     }
+    if (intent_out_reset_earlier_unit_type(type, unit)) return true;
     for (const SymbolTable *s = scope; s != nullptr; s = s->parent) {
         if (s == &unit) return true;
         if (!intent_out_reset_walks(*s)) return false;
+    }
+    return false;
+}
+
+bool intent_out_reset_earlier_unit_type(const ASR::Struct_t &type, const SymbolTable &unit)
+{
+    const SymbolTable *scope = type.m_symtab->parent;
+    const ASR::symbol_t *owner = scope ? scope_owner_symbol(*scope) : nullptr;
+    if (owner && ASR::is_a<ASR::Module_t>(*owner)) scope = scope->parent;
+    if (!scope || !scope->asr_owner || !ASR::is_a<ASR::unit_t>(*scope->asr_owner) ||
+            is_unlimited_polymorphic_type(const_cast<ASR::Struct_t*>(&type))) {
+        return false;
+    }
+    for (const SymbolTable *s = unit.parent; s != nullptr; s = s->parent) {
+        if (s == scope) return true;
     }
     return false;
 }

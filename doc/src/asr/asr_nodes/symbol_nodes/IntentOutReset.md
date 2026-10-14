@@ -12,7 +12,10 @@ IntentOutReset(symbol_table parent_symtab, identifier name,
     symbol type_declaration, symbol? procedure)
 ```
 
-`type_declaration` is a `Struct` of the same scope. An object of exactly that
+`type_declaration` is a `Struct` of the same scope, or, in the scope of a
+translation unit that extends earlier ones (a cell of an interactive session),
+a `Struct` of an earlier unit's own scope or an import into the unit of a
+`Struct` of one of its modules. An object of exactly that
 type that becomes a nonpointer, nonallocatable `intent(out)` dummy argument is
 finalized, has its allocatable components deallocated and is default
 initialized on entry to the procedure (F2018 7.5.6.3, 8.5.10). `procedure`
@@ -30,10 +33,14 @@ of the modules it uses, of its programs, procedures with a body, `BLOCK`
 constructs and generic instances, whether or not the unit has a polymorphic
 dummy of them, because another unit can pass an object of the type to one.
 Generic definitions, traits and interface bodies have no objects of their own
-types and are not recorded. A type that already has a record keeps it, and
-the pass knows a reset procedure by its record. The records are made before
-the procedures are visited, so the procedures take part in dependencies,
-verification and the passes after it like any other procedure.
+types and are not recorded. A cell of an interactive session also records, in
+its own scope, every derived type of the earlier cells and of their modules:
+it can describe an object of one at run time, and the earlier cells handed on
+their scopes before their own records were made. A type that already has a
+record keeps it, and the pass knows a reset procedure by its record. The
+records are made before the procedures are visited, so the procedures take
+part in dependencies, verification and the passes after it like any other
+procedure.
 
 The LLVM code generator sets that option and resets a scalar polymorphic
 `intent(out)` dummy (other than `class(*)`) from its dynamic type: on entry it
@@ -44,7 +51,7 @@ the record has none. A derived type that the pass records but that has no
 record when its vtable is built is an internal error.
 
 Verification checks that the record names a derived type of its own scope,
-that each type has one record, that the procedure is present exactly when the
-reset of a type that is not abstract has an effect, and that the procedure is
-a private subroutine of the same scope with the one `intent(out)` dummy of
-exactly that type.
+or of an earlier unit as above, that each type has one record, that the
+procedure is present exactly when the reset of a type that is not abstract has
+an effect, and that the procedure is a private subroutine of the same scope
+with the one `intent(out)` dummy of exactly that type.
