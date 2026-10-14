@@ -11567,14 +11567,43 @@ static inline char* read_line(char *buf, int size, InputSource *inputSource)
 
     switch (inputSource->inputMethod) {
     case INPUT_FILE: {
-        while (i < size - 1) {
-            int c = read_character(inputSource);
-            if (c == EOF) break;
-            buf[i++] = (char)c;
-            if (c == '\n') break;
+        char *ret = fgets(buf, size, inputSource->file);
+#if defined(__EMSCRIPTEN__)
+        // A failed first read here is not necessarily end of file: when
+        // stdin is served one line per read() (interactive use), the
+        // previous record's line delivery can end exactly where this
+        // read starts, and the 0-byte read latches a spurious EOF.
+        // Retry once with a clean slate; genuine EOF fails the retry
+        // too, so termination still works.
+        if (ret == NULL && inputSource->file == stdin) {
+            clearerr(inputSource->file);
+            ret = fgets(buf, size, inputSource->file);
         }
-        if (i == 0) return NULL;
-        buf[i] = '\0';
+#endif
+        if (ret == NULL) {
+            return NULL;
+        }
+        size_t n = strlen(buf);
+        // CRLF is one external sequential/stream record terminator.
+        // A lone CR remains data, as do characters in direct files.
+        if (inputSource->access_id != 2 && n > 0) {
+            if (n >= 2 && buf[n - 1] == '\n' && buf[n - 2] == '\r') {
+                buf[n - 2] = '\n';
+                buf[--n] = '\0';
+            } else if (buf[n - 1] == '\r') {
+                // The LF may follow just past the end of the buffer.
+                int next = fgetc(inputSource->file);
+                if (next == '\n') {
+                    buf[n - 1] = '\n';
+                } else if (next != EOF) {
+                    ungetc(next, inputSource->file);
+                }
+            }
+        }
+        // Keep record-local cursor in sync for T/TL/TR editing.
+        // Count only non-newline chars consumed from current record.
+        char *nl = (char*)memchr(buf, '\n', n);
+        inputSource->pos_in_record += (long)(nl ? (size_t)(nl - buf) : n);
         if (inputSource->record_length >= 0 &&
                 inputSource->pos_in_record > inputSource->record_length) {
             inputSource->pos_in_record = inputSource->record_length;

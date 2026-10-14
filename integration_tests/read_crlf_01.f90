@@ -55,6 +55,13 @@ program read_crlf_01
         if (ios /= 0 .or. line /= '2.5     ') error stop 11
 
         rewind(unit)
+        ! The CR ends the field's buffer and the LF lies just past it.
+        read(unit, '(a4)', iostat=ios) line
+        if (ios /= 0 .or. line /= '1.5     ') error stop 21
+        read(unit, '(a)', iostat=ios) line
+        if (ios /= 0 .or. line /= '2.5     ') error stop 22
+
+        rewind(unit)
         ! Slash and format reversion advance over the whole terminator.
         read(unit, '(f8.1,/,f8.1)', iostat=ios) values
         if (ios /= 0 .or. any(values /= [1.5_8, 2.5_8])) error stop 12
