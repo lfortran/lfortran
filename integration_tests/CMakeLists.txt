@@ -5523,6 +5523,9 @@ RUN(NAME move_alloc_finalize_01 LABELS gfortran llvm)
 RUN(NAME array_section_assign_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_section_assign_02 LABELS gfortran llvm)
 RUN(NAME array_section_assign_03 LABELS gfortran llvm)
+RUN(NAME array_section_assign_04 LABELS gfortran llvm)
+RUN(NAME array_section_assign_05 FILE array_section_assign_04 LABELS llvm
+    EXTRA_ARGS --descriptor-index-64)
 
 RUN(NAME intent_out_array_01 LABELS gfortran llvm)
 RUN(NAME intent_out_allocatable_component_dealloc LABELS gfortran llvm)

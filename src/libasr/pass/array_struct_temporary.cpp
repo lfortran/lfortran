@@ -3685,11 +3685,20 @@ class ReplaceExprWithTemporaryVisitor:
                     return false;
                 }
             } else if( index.m_left == nullptr || index.m_right == nullptr ||
-                index.m_step == nullptr ||
-                !is_simple_section_subscript(index.m_left) ||
-                !is_simple_section_subscript(index.m_right) ||
-                !is_simple_section_subscript(index.m_step) ) {
+                index.m_step == nullptr ) {
                 return false;
+            } else {
+                // array_op converts a triplet to the loop index kind, which
+                // is integer(4) by default, and checks the shape against an
+                // integer(4) size of the section; neither holds every value
+                // of a wider subscript, which the pointer path handles.
+                for( ASR::expr_t* subscript: {index.m_left, index.m_right, index.m_step} ) {
+                    if( !is_simple_section_subscript(subscript) ||
+                        ASRUtils::extract_kind_from_ttype_t(
+                            ASRUtils::expr_type(subscript)) > 4 ) {
+                        return false;
+                    }
+                }
             }
         }
         return true;
