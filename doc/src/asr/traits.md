@@ -18,20 +18,14 @@ function results, persistent nonowning scalar pointer views, and concrete
 
 ## Declaring a contract
 
-Explicit receivers were approved on 2026-10-14 (TD-36 of the
-[decisions record](traits-decisions.md)): a message will declare its receiver
-as a `type(itself)` dummy marked with PASS, for example
-`type(itself), intent(in), pass :: self`, with any name, position and ordinary
-INTENT, and a message without one will have no receiver. They are being
-implemented. Until then, the compiler accepts the receiver-free messages
-described below, and the receiver rules in this document are those of the
-current prototype.
-
-A named abstract interface describes messages without a passed-object argument:
+A named abstract interface describes messages. A message that acts on an
+object of the implementing type declares that object, its receiver, as a
+`type(itself)` dummy with the PASS attribute:
 
 ```fortran
 abstract interface :: IValue
-    function get_value() result(res)
+    function get_value(self) result(res)
+        type(itself), intent(in), pass :: self
         integer :: res
     end function get_value
 end interface IValue
@@ -49,7 +43,8 @@ implements IValue :: Box
 end implements Box
 ```
 
-The implementation includes the ordinary Fortran receiver:
+The implementation's ordinary Fortran passed object takes the receiver's
+place:
 
 ```fortran
 function box_value(self) result(res)
@@ -64,6 +59,87 @@ must explicitly implement the trait. Import the module containing an
 implementation before using its conformance. An `ONLY` import of a type retains
 the public conformance records exported for that type by the explicitly used
 module. It does not make implementations in unrelated, unseen modules visible.
+
+### Receivers
+
+Explicit receivers were approved on 2026-10-14 and are being implemented; this
+section and the examples of this document describe the approved rules.
+
+A receiver is declared, never inferred (TD-36 of the
+[decisions record](traits-decisions.md)): a message has one exactly when one
+of its dummies is a scalar, nonpointer, nonallocatable, non-VALUE
+`type(itself)` dummy with a bare PASS attribute. That dummy may have any name
+and any position. Two such dummies, PASS on another dummy or on a result, and
+PASS(name) or NOPASS on a dummy are diagnosed; an OPTIONAL, TARGET or VOLATILE
+receiver is not implemented yet. A message without a receiver is receiverless.
+Another `type(itself)` dummy, without PASS, is an ordinary argument of the
+implementing type, not a second receiver; in a message it is not implemented
+yet.
+
+The receiver's INTENT has its ordinary Fortran meaning:
+
+- `intent(in)`: the message only reads its receiver, so any object can be
+  the receiver, including a named constant, the associate name of an
+  expression or an `intent(in)` view.
+- `intent(inout)`: the message may read and define its receiver, so the
+  object must be definable.
+- `intent(out)`: the object must be definable and becomes undefined on entry.
+  The implementation finalizes it, deallocates its allocatable components and
+  applies its default initialization once, before its body, as for any
+  `intent(out)` passed object. The object keeps its address, its allocation
+  and its dynamic type, and a trait view of it keeps the implementations
+  selected when the view was formed. As for any polymorphic `intent(out)`
+  dummy in this compiler, an implementation inherited by an extension resets
+  only the components of its declared type when the object is of the
+  extension, a known limitation of the ordinary `intent(out)` lowering.
+- no INTENT: as for any dummy without INTENT, a call does not require a
+  definable object, and nothing is reset on entry; the implementation may
+  define the receiver only when the object is definable.
+
+So one trait can declare a getter with an `intent(in)` receiver and a mutator
+with an `intent(inout)` receiver. A read-only view can hold any implementing
+value and call the getter; calling the mutator through it is diagnosed, under
+the same rule that rejects an `intent(in)` actual argument of an
+`intent(inout)` dummy. Whether a procedure is a function or a subroutine does
+not decide whether it mutates its receiver, and there is no mutating keyword.
+
+A message with a receiver is bound with PASS or PASS(name). The passed object
+of the implementation may have another name and position than the receiver,
+and its INTENT must be exactly the receiver's: `intent(in)`, `intent(inout)`,
+`intent(out)`, or none for none. The other dummies correspond in order to the
+message's other dummies. A receiverless message is bound with NOPASS, or with
+a `static` binding; its implementation has no passed object, and a call
+through a trait object still selects the implementation from that object's
+witness. A NOPASS or `static` binding of a message with a receiver, and a PASS
+binding of a receiverless message, are diagnosed. A call uses the dummy names
+of the message as keywords; the receiver is the object before `%`, never an
+actual argument. Messages with the same name in combined traits must agree on
+whether they have a receiver and on its INTENT, while the names and positions
+of their receivers may differ. Initializer and operator requirements have no
+receiver. PURE messages follow the ordinary PURE rules: a PURE procedure calls
+only PURE messages, and the implementation of a PURE function message has an
+`intent(in)` passed object.
+
+The receiver is the source dummy whose PASS attribute is recorded in its
+`Variable` (`ASRUtils::trait_message_receiver`). It is unrelated to the
+private dispatch-context argument that the compiler gives a receiverless
+message in its internal signature (see "Compiler representation").
+
+`traits_receiver_intent_01` to `_07` and their standard-Fortran oracles check
+getters and mutators through direct calls, components, array elements,
+views, owners, pointers and constrained type parameters (`_01`), receiver
+names and positions, independent passed-object positions and keywords
+(`_02`), `intent(out)` finalization, deallocation and default initialization
+once (`_03`), receivers without INTENT (`_04`), PURE messages (`_05`), trait
+inheritance, weakened views and combinations (`_06`) and runtime generic
+messages over a closed type set and an open protocol (`_07`).
+`traits_receiver_intent_08` checks that `pass`, `nopass` and `itself` stay
+ordinary names in standard Fortran. The separately compiled
+`traits_receiver_intent_separate_01` and its native gate
+`traits_runtime_separate_01.py --receivers` reach two independently compiled
+providers from a consumer compiled against the trait alone, and
+`continue_compilation_traits_receiver_01` and `_02` check the declaration,
+binding and call diagnostics.
 
 ## User-defined initializer bindings
 
@@ -162,9 +238,10 @@ diagnosed. Neither has a receiver. A requirement is identified by its operation
 and signature, not by a name: a child trait can add an overload of an operator
 that its parent requires, and equal requirements in a trait hierarchy are bound
 to the same procedure.
-`type(itself)` in an ordinary message is not implemented yet. Like a trait
-with associated types, a trait with an operator requirement is only a generic
-constraint, not a runtime `class(...)` view.
+`type(itself)` in a message, other than its receiver, is not implemented
+yet. Like a trait with associated types, a trait with an operator requirement
+is only a generic constraint, not a runtime `class(...)` view; a receiver
+alone does not make a trait one.
 
 A trait whose only requirements without a receiver are initializers, such as
 the paper's `ICastable`, its child `IAdmissible` or the combination
@@ -270,7 +347,8 @@ An implementation can add ordinary messages to a scalar `integer`, `real`,
 module real64_module
     use iso_fortran_env, only: real64
     abstract interface :: IPrintable
-        subroutine output()
+        subroutine output(self)
+            type(itself), intent(in), pass :: self
         end subroutine
     end interface
     implements IPrintable :: real(real64)
@@ -315,8 +393,11 @@ not also cover `real(4)` or `integer(8)`. Kind selectors use ordinary Fortran
 constant resolution, including imported kind parameters; an explicitly typed
 `END IMPLEMENTS` must name the same resolved type. PASS, named non-first PASS,
 NOPASS and static trait-constrained generic calls reuse the derived-type
-conformance and specialization machinery. Receiver dummies remain read-only,
-nonpointer and nonallocatable. Intrinsic operations are not redefined.
+conformance and specialization machinery. The receiver of an intrinsic type is
+the scalar variable before `%`, with the receiver's INTENT: a message with an
+`intent(inout)` or `intent(out)` receiver needs a definable variable. Passed
+objects remain nonpointer and nonallocatable. Intrinsic operations are not
+redefined.
 
 This slice supports direct scalar-variable receivers and static generic
 specialization. Character targets, kind wildcards, array receiver calls and
@@ -345,8 +426,8 @@ end function
 It permits an exact `TYPE(Box)` passed-object dummy instead of requiring
 `CLASS(Box)`. A sealed type may itself extend a nonsealed type, but it cannot
 also be abstract. Ordinary visibility and binding/override rules still apply.
-Trait receivers are read-only unless a binding mutates its receiver for direct
-calls only (see "Associated types and receiver effects").
+A binding's passed object has the INTENT of its message's receiver (see
+"Receivers").
 Calling a nonpolymorphic sealed receiver through scalar `CLASS(Box)` storage
 uses an explicit `ClassToStruct` receiver in ASR. The call retains the original
 payload rather than passing a polymorphic wrapper to a concrete procedure.
@@ -403,25 +484,25 @@ described in their own section. A type declared in a BLOCK construct cannot
 adopt traits yet; `continue_compilation_traits_02` diagnoses it.
 
 The module-only paper examples `extends_parent.f90` and `abstract_new.f90`,
-unchanged except for their recorded TD-36 explicit receivers, are registered through `traits_type_adoption.py` in normal
-and fast native CTests. They are verified and compiled to objects, **not run**:
-their illustrative output-method bodies do not define output values.
-`traits_type_adoption_01` and `_02` supply defined-output controls for dispatch,
-layout, overrides, lifetime, ordinary deferred bindings, and separate modules.
-`_03` checks concrete sealed receivers through ordinary polymorphic dummies,
-pointers and owners, including a non-first named passed object.
-`_04` checks separate ancestor-slot dispatch, pure/optional and named-PASS
-forwarding, unchanged static/runtime conformance, and absence of extra FINAL
-calls. `_05` checks exactly-once receiver and ordinary-argument OUT cleanup,
-allocatable slots, and dummy-dependent array bounds.
-The standard-Fortran oracles test the corresponding storage and dispatch
-behavior with GFortran and LFortran. The dispatch work also repairs the ordinary
-non-first-PASS paths that previously failed in the preserved baseline, rather
-than excluding those controls from LLVM.
-`traits_paper_type_adoption/simple_sum.f90` preserves
-only the first two modules of the paper's `mixed.f90`, establishing its
-sealed/type-adoption prerequisite, not acceptance of the full OO program.
-Fixture hashes and extraction provenance are recorded beside those files.
+unchanged except for their recorded TD-36 explicit receivers, are registered
+through `traits_type_adoption.py` in normal and fast native CTests. They are
+verified and compiled to objects, **not run**: their illustrative output-method
+bodies do not define output values. `traits_type_adoption_01` and `_02` supply
+defined-output controls for dispatch, layout, overrides, lifetime, ordinary
+deferred bindings, and separate modules. `_03` checks concrete sealed receivers
+through ordinary polymorphic dummies, pointers and owners, including a
+non-first named passed object. `_04` checks separate ancestor-slot dispatch,
+pure/optional and named-PASS forwarding, unchanged static/runtime conformance,
+and absence of extra FINAL calls. `_05` checks exactly-once receiver and
+ordinary-argument OUT cleanup, allocatable slots, and dummy-dependent array
+bounds. The standard-Fortran oracles test the corresponding storage and
+dispatch behavior with GFortran and LFortran. The dispatch work also repairs
+the ordinary non-first-PASS paths that previously failed in the preserved
+baseline, rather than excluding those controls from LLVM.
+`traits_paper_type_adoption/simple_sum.f90` preserves only the first two
+modules of the paper's `mixed.f90`, establishing its sealed/type-adoption
+prerequisite, not acceptance of the full OO program. Fixture hashes and
+extraction provenance are recorded beside those files.
 
 ## Constraining a generic procedure
 
@@ -496,14 +577,14 @@ The paper's 35 core inline listings are accounted for in
 `integration_tests/traits_paper_inline/provenance.json`. Each fixture is the
 listing byte for byte, or with recorded adaptations (completed ellipses,
 explicit trait imports, approved errata and initialization, and the TD-36
-explicit receivers) whose reversal reproduces the listing's hash. `traits_paper_inline.py` checks this record in
-the normal and fast `test_paper_inline` CTests: declarations are compiled to
-verified ASR and objects, and programs are run and checked. All 35 are
-accepted: the driver checks 33, and inline-25 and inline-28 remain accepted
-by `traits_paper_manual_values.f90`. A listing that needed a missing feature
-would be reported with its blocker instead of being compiled.
-The self-checking programs are also `traits_paper_inline_NN` integration
-tests.
+explicit receivers) whose reversal reproduces the listing's hash.
+`traits_paper_inline.py` checks this record in the normal and fast
+`test_paper_inline` CTests: declarations are compiled to verified ASR and
+objects, and programs are run and checked. All 35 are accepted: the driver
+checks 33, and inline-25 and inline-28 remain accepted by
+`traits_paper_manual_values.f90`. A listing that needed a missing feature would
+be reported with its blocker instead of being compiled. The self-checking
+programs are also `traits_paper_inline_NN` integration tests.
 
 ## Generic messages
 
@@ -511,7 +592,8 @@ A trait message may use the same constrained generic-procedure syntax:
 
 ```fortran
 abstract interface :: IAlgorithm
-    function apply{IValue :: T}(object) result(r)
+    function apply{IValue :: T}(self, object) result(r)
+        type(itself), intent(in), pass :: self
         type(T), intent(in) :: object
         integer :: r
     end function
@@ -525,8 +607,9 @@ Binder positions remain distinct even when their constraints are identical.
 The implementation body is checked at definition time, including when unused.
 
 Direct concrete `object%apply(value)` and `object%apply{ValueType}(value)` calls
-reuse ordinary static generic specialization. Both `nopass` and a named
-passed-object argument are supported; the latter need not be the first dummy.
+reuse ordinary static generic specialization. A message with a receiver is
+bound with a named passed-object argument, which need not be the first dummy,
+and a receiverless message with `nopass`.
 See `integration_tests/traits_generic_method_01.f90` for alpha-renamed,
 inherited/coalesced generic messages and static calls to the same implementation.
 
@@ -628,9 +711,10 @@ supplied operations without knowing the argument's size, fields, or concrete
 declaration. The view owns neither the payload nor a copy of it.
 
 Provider selection and argument conformance selection are independent.
-`nopass` omits a concrete receiver argument, not dynamic provider selection.
-An ordinary passed-object implementation also works, including a named receiver
-in a non-first dummy position. Generic slots compose with existing named parent
+A receiverless message bound with `nopass` has no receiver argument, but its
+provider is still selected dynamically. A receiver may have any name, position
+and INTENT, and so may the passed object of its implementation; the generic
+arguments stay read-only. Generic slots compose with existing named parent
 and anonymous `class(A+B)` views and their verified projection maps; neither
 provider state nor the generic argument is assumed to be receiver zero.
 
@@ -676,8 +760,8 @@ The current erased subset deliberately excludes:
   ancestor constraints retain their nominal meaning. This does **not** limit
   combinations of the algorithm's runtime view.
 - Generic messages inside another generic type parameter's constraint,
-  constraints by traits with associated types, mutable-message syntax and
-  unrestricted generic results.
+  constraints by traits with associated types and unrestricted generic
+  results.
 - Finite intrinsic type sets as a replacement for the universal nominal domain.
   Binders constrained only by type sets use closed member slots instead (see
   below); a message mixing both kinds of binder is not implemented.
@@ -723,7 +807,8 @@ abstract interface :: INumeric
 end interface INumeric
 
 abstract interface :: ISum
-    function sum{INumeric :: T}(x) result(s)
+    function sum{INumeric :: T}(self, x) result(s)
+        type(itself), intent(in), pass :: self
         type(T), intent(in) :: x(:)
         type(T) :: s
     end function sum
@@ -808,8 +893,9 @@ hidden lengths from `string_length_arguments` as any other character dummy
 does. The verifier compares a lowered slot, member entry or binding with its
 message's declared arguments and result.
 
-`traits_runtime_numeric_01` covers `nopass`, named non-first `pass`, static
-recursion inside an entry, lengths 0 through 9, strided, reversed and 2-D
+`traits_runtime_numeric_01` covers first and named non-first passed objects,
+a receiverless ordinary message bound with `nopass`, static recursion inside
+an entry, lengths 0 through 9, strided, reversed and 2-D
 sections, inferred and explicit type arguments, a generic consumer and an
 ordinary runtime array contiguity probe with its ordinary-call control.
 `traits_runtime_numeric_02` reproduces the `mixed.f90` structure with nested
@@ -817,7 +903,8 @@ pairwise providers, a scaled leaf, exact recursive leaf counts and owner
 copies. `traits_runtime_numeric_03` loads a separately compiled provider of a
 two-binder message (one slot per member pair), ordinary runtime messages with
 complex 2-D, lower-bound and real arrays and real and logical results, and
-generic procedures borrowing constructor values and function results.
+generic procedures borrowing constructor values and function results, and
+binds its receiverless `sum` with `nopass`.
 `traits_runtime_numeric_04` is a user's averaging program over
 `integer | real | complex` with both simple and recursive pairwise generic
 providers, whose `class(IAverager)` view returns default complex averages.
@@ -854,14 +941,15 @@ abstract interface :: INumeric
 end interface INumeric
 
 abstract interface :: ISum
-    function sum{INumeric :: T}(x) result(s)
+    function sum{INumeric :: T}(self, x) result(s)
+        type(itself), intent(in), pass :: self
         type(T), intent(in) :: x(:)
         type(T) :: s
     end function sum
 end interface ISum
 ```
 
-Such a protocol is not a runtime view: its requirements have no receiver, so
+Such a protocol is not a runtime view, since it has operator requirements:
 `class(INumeric)` is diagnosed. Instead, a binder of a runtime generic message
 constrained by exactly one protocol trait is erased, and every call passes the
 conformance dictionary of its type argument (design option C, per-call
@@ -890,9 +978,11 @@ assumed-shape dummies, scalar locals and a scalar result are supported;
 arrays keep their bounds, strides (in bytes), sections, reversed strides and
 empty extents, and a result is written to storage the caller provides. Values
 are copied bitwise, so only plain numeric, logical and derived types of such
-components (without allocatable, pointer or finalized parts) have dictionaries,
-and dictionaries never modify a receiver. A conformance without a dictionary,
-for example of a type with an allocatable component or declared outside a
+components (without allocatable, pointer or finalized parts) have dictionaries.
+A dictionary slot of a message with a receiver passes the erased receiver by
+address with the message's INTENT, so a message can modify erased storage of
+the body in place. A conformance without a dictionary, for example of a type
+with an allocatable component or declared outside a
 module, keeps its static uses; its runtime use is diagnosed with the reason.
 
 The body of a runtime generic message may only:
@@ -935,32 +1025,32 @@ or allocated temporaries, and an erased actual meets only an erased dummy.
 
 A protocol whose requirements a dictionary cannot pass has no dictionaries,
 but its conformances and generic procedures keep working statically. That
-is the case for a generic requirement, a `type(itself)` argument that is an
-array or not a required `intent(in)` scalar, and a `type(itself)` array or
-allocatable result. A runtime view of a trait whose message is constrained
-by such a protocol is diagnosed with the reason. The dictionary of a binder
-is the one of the protocol constraining it, so forwarding the binder of a
-derived protocol (`IField`, extending `INumeric`) to a callee that requires
-a different protocol (`INumeric`) is outside the erased subset too; the same
-forwarding is supported statically, where the conformance provides each
-protocol's dictionary. A binder constrained by several traits and a
-polymorphic actual argument for an erased dummy are not implemented yet
+is the case for a generic requirement, a `type(itself)` argument other than a
+receiver that is an array or not a required `intent(in)` scalar, and a
+`type(itself)` array or allocatable result. A runtime view of a trait whose
+message is constrained by such a protocol is diagnosed with the reason. The
+dictionary of a binder is the one of the protocol constraining it, so
+forwarding the binder of a derived protocol (`IField`, extending `INumeric`) to
+a callee that requires a different protocol (`INumeric`) is outside the erased
+subset too; the same forwarding is supported statically, where the conformance
+provides each protocol's dictionary. A binder constrained by several traits and
+a polymorphic actual argument for an erased dummy are not implemented yet
 either.
 
 `traits_paper_ocp` runs the paper program, with its approved
 `use intrinsics` and its recorded TD-36 receivers, for both choices in normal
-and fast modes and rejects it without that `use`; its split native gate freezes all five library modules
-before compiling `main` and checks that each algorithm library has one open
-entry and `intrinsics` owns the dictionaries `main` references.
-`traits_protocol_separate_01` freezes
-and hides a provider of `ISum` and `IAverager` before any derived or
-`real(real32)` conformance exists; `traits_runtime_numeric_separate_01.py
---case protocol` then compiles a late module adding `Rational` and
-`real(real32)` with their own dictionaries and a driver, checks that the
-provider has one open entry per generic message and the clients no provider
-names, entries or bodies, and runs 75 checks over `integer`, `real(real64)`,
-`real(real32)` and `Rational` arrays, including empty arrays, recursive
-sections, a reversed strided section and forwarded type parameters.
+and fast modes and rejects it without that `use`; its split native gate freezes
+all five library modules before compiling `main` and checks that each algorithm
+library has one open entry and `intrinsics` owns the dictionaries `main`
+references. `traits_protocol_separate_01` freezes and hides a provider of
+`ISum` and `IAverager` before any derived or `real(real32)` conformance exists;
+`traits_runtime_numeric_separate_01.py --case protocol` then compiles a late
+module adding `Rational` and `real(real32)` with their own dictionaries and a
+driver, checks that the provider has one open entry per generic message and the
+clients no provider names, entries or bodies, and runs 75 checks over
+`integer`, `real(real64)`, `real(real32)` and `Rational` arrays, including
+empty arrays, recursive sections, a reversed strided section and forwarded type
+parameters.
 
 ## Generic derived types
 
@@ -1101,7 +1191,8 @@ A trait can inherit the requirements of other traits and add its own:
 
 ```fortran
 abstract interface, extends(IValue) :: ILabeled
-    function get_label() result(label)
+    function get_label(self) result(label)
+        type(itself), intent(in), pass :: self
         integer :: label
     end function get_label
 end interface ILabeled
@@ -1349,7 +1440,8 @@ The proposal's predefined constraints come from an intrinsic module:
 module user_code
    use, intrinsic :: generics, only: INumeric
    abstract interface :: ISum
-      function sum{INumeric :: T}(x) result(s)
+      function sum{INumeric :: T}(self, x) result(s)
+         type(itself), intent(in), pass :: self
          type(T), intent(in) :: x(:)
          type(T)             :: s
       end function sum
@@ -1449,7 +1541,8 @@ infers from the bindings of the messages that use it (paper sections
 ```fortran
 abstract interface :: IAppendable
     type :: Element
-    subroutine append(item)
+    subroutine append(self, item)
+        type(itself), intent(inout), pass :: self
         type(Element), intent(in) :: item
     end subroutine append
 end interface IAppendable
@@ -1497,20 +1590,22 @@ of intrinsic types and of derived types whose components can be transferred
 print as usual, and so do types whose defined input/output is for another
 transfer (`traits_associated_04`, `traits_associated_05`).
 
-PAPER-D07 lets an implementation take its receiver with `intent(inout)`.
-Such a binding serves direct calls on concrete objects only, under the ordinary
-Fortran rules: the passed object of a type-bound call whose passed-object dummy
-has `intent(out)` or `intent(inout)` must be definable, so an `intent(in)` dummy,
-a part of one, a named constant or an associate name of a constant selector is
-diagnosed. Generic trait calls and calls through runtime views stay read-only:
-selecting a mutating binding for a constraint's requirement, or forming a
-runtime view of a conformance with one, is diagnosed. The payload of an
-`intent(inout)` view dummy is modified only through concrete inspection (see
-"Borrowed runtime dispatch"). Pointer and allocatable receivers remain
-unsupported. The effect is not new ASR state: it is the intent of the
-binding's passed-object dummy (`ASRUtils::trait_binding_mutates_receiver`), and
-the verifier admits `intent(inout)` receivers only outside runtime witnesses and
-rejects mutating evidence of generic type arguments.
+A message's effect on its receiver is the receiver's declared INTENT (TD-36,
+replacing the earlier PAPER-D07 and TD-10 rules, under which a mutating
+binding served direct concrete calls only). `append` above declares an
+`intent(inout)` receiver, and its bindings take their passed objects with
+`intent(inout)`. Every call checks its receiver under the ordinary Fortran
+rules, whatever path dispatches it: a direct call, a generic call through a
+constrained type parameter, or a call through a runtime view, an owner, a
+pointer, a projection or an association. The object passed as an
+`intent(inout)` or `intent(out)` receiver must be definable, so an `intent(in)`
+dummy, view or owner, a part of one, a named constant, a structure constructor,
+a function result, a parenthesized expression and an associate name of a
+nondefinable selector are diagnosed; an `intent(in)` pointer dummy protects
+only its association, so its target can be the receiver. Pointer and
+allocatable receivers remain unsupported. The verifier checks that each
+binding's passed-object INTENT is its message's receiver INTENT, and that each
+runtime slot and adapter passes the receiver as its origins require.
 
 The paper's `vector.f90` (`traits_paper_vector`, its oracle and the
 `test_paper_functional_{normal,fast}` and `test_paper_separate_vector_{normal,fast}`
@@ -1521,14 +1616,16 @@ CTests), whose `append` message declares its `intent(inout)` receiver
 unconstrained storage, `traits_associated_02` mutating appends through
 variables, an `intent(inout)` dummy and a nested instance, `traits_associated_03`
 direct mutation through a universal trait next to its read-only views and
-generic calls, and `continue_compilation_traits_associated` the diagnostics.
+generic calls, and `continue_compilation_traits_associated` the diagnostics;
+the `traits_receiver_intent` tests (see "Receivers") call mutating messages
+through views and constrained type parameters.
 
 ## Current boundaries
 
 The static implementation covers module-scoped trait declarations, inheritance
-and composition, ordinary function/subroutine signatures, read-only scalar
-receivers with `intent(in)` (and `intent(inout)` receivers for direct concrete
-calls), declared associated types, named `pass`, and `nopass`.
+and composition, ordinary function/subroutine signatures, explicit scalar
+receivers with `intent(in)`, `intent(inout)`, `intent(out)` or no INTENT,
+declared associated types, named `pass`, and `nopass`.
 Traits are enabled by default and produce a portability warning. GFortran does
 not accept this extension; separate standard-Fortran oracle tests cover the
 equivalent concrete computations.
@@ -1540,17 +1637,18 @@ The dependent-signature declaration fixtures have ASR reference coverage through
 oracle checks the concrete computations through the default compilation pipeline.
 
 The broader proposal is not yet implemented. In particular, pointer trait
-results, mutating generic or runtime trait calls, associated-type projections
-in generic code, unrestricted intrinsic capabilities,
-generic derived types beyond the boundaries described in their section, runtime
-views over operator requirements, runtime generic methods outside the erased
-subset of open protocols,
-and unrestricted generic-method signatures are separate implementation stages.
-Existing `:=` inferred assignment is a different extension and is not required
-to use static traits; in a generic body it also declares a variable of a type
-parameter from a value of that type (`traits_infer_01`).
-Forwarding that mixes concrete and deferred type arguments, or crosses nested
-or shadowed generic-binder scopes, is not implemented yet.
+results, pointer, allocatable, OPTIONAL, TARGET and VOLATILE receivers,
+`type(itself)` arguments of messages other than their receivers,
+associated-type projections in generic code, unrestricted intrinsic
+capabilities, generic derived types beyond the boundaries described in their
+section, runtime views over operator requirements, runtime generic methods
+outside the erased subset of open protocols, and unrestricted generic-method
+signatures are separate implementation stages. Existing `:=` inferred
+assignment is a different extension and is not required to use static traits;
+in a generic body it also declares a variable of a type parameter from a value
+of that type (`traits_infer_01`). Forwarding that mixes concrete and deferred
+type arguments, or crosses nested or shadowed generic-binder scopes, is not
+implemented yet.
 
 ## Borrowed runtime dispatch
 
@@ -1591,10 +1689,12 @@ reach the implementation without a copy. Normal argument
 intents, kinds, keyword names, and the ordinary Fortran calling convention
 apply. BIND(C) contracts
 or implementations remain available statically but do not provide runtime
-dispatch in this slice. Messages called through runtime views are read-only,
-even through an `intent(inout)` view: a conformance that
-implements a slot with an `intent(inout)` receiver has no runtime witness, and
-forming such a view is diagnosed (PAPER-D07).
+dispatch in this slice. A message called through a view receives the view's
+payload as its receiver: an `intent(in)` view calls messages whose receivers
+are `intent(in)` or have no INTENT, and an `intent(inout)` view also those
+whose receivers are `intent(inout)` or `intent(out)` (see "Receivers"). A slot
+passes the payload's address; only the provider's implementation resets an
+`intent(out)` receiver, and the adapters that fill the slot never repeat it.
 Named non-first PASS and NOPASS are supported. NOPASS still dynamically
 selects the implementation from the witness.
 Dynamic calls obey the contract's PURE attribute: a PURE consumer cannot call
@@ -1668,15 +1768,14 @@ or rebound. The view is neither an owner nor a pointer, so assigning,
 allocating, deallocating, pointer-associating or nullifying it, and passing it
 to an allocatable or defining pointer dummy, are diagnosed; the dynamic type of
 the payload and its selected implementations cannot change. The payload is
-modified through concrete SELECT TYPE inspection, whose associate name is
+modified by the view's messages with `intent(inout)` or `intent(out)`
+receivers, through concrete SELECT TYPE inspection, whose associate name is
 definable for an `intent(inout)` selector, and by forwarding the view to
-another `intent(inout)` view or, after inspection, to an ordinary dummy.
-Messages called through the view stay read-only (PAPER-D07): a conformance
-with an `intent(inout)` receiver binding still has no runtime witness, so a
-value of such a type cannot be passed to an `intent(inout)` view either. A
+another `intent(inout)` view or, after inspection, to an ordinary dummy. A
 PURE subroutine can have an `intent(inout)` view dummy; a PURE function cannot
-(C1592). `intent(out)` and omitted intents remain unsupported implementation
-limits (TD-35).
+(C1592). `intent(out)` and omitted intents of view dummies remain unsupported
+implementation limits (TD-35); they are unrelated to the INTENT of a
+message's receiver.
 
 The private same-build/target LLVM borrowed representation is a stack descriptor
 containing concrete CLASS metadata, the original payload address, a concrete
@@ -1808,7 +1907,7 @@ and non-Fortran-ABI trait results are not implemented because their dynamic
 lifecycle effects and calling conventions have not been established.
 
 Trait arrays, pointer results, general ASSOCIATE
-views, `move_alloc`, and mutable receivers remain
+views and `move_alloc` remain
 unsupported. Allocation currently accepts one object and one concrete
 type/SOURCE/MOLD choice, without STAT, ERRMSG or other options; unsupported
 options are rejected rather than ignored. Allocation failure terminates, including
@@ -2260,7 +2359,7 @@ before any matching/default decision, even when the construct has no default.
 
 A trait name in TYPE IS or CLASS IS is diagnosed: inspection is not an
 unrelated-interface conformance query. Intrinsic guards, runtime trait arrays,
-pointer components, pointer results, unrestricted generic methods, and mutation-message syntax are
+pointer components, pointer results and unrestricted generic methods are
 not added by this scalar slice. Parameterized implementation declarations remain
 part of the separate generic-derived-type work; inspection reuses the existing
 concrete kind-specialized metadata rather than introducing another type system.
@@ -2290,8 +2389,9 @@ tests or their required diagnostics.
 Three ASR symbol kinds preserve the semantic distinction from templates:
 
 - `Trait` explicitly distinguishes universal contracts from intrinsic type
-  sets. It owns receiver-independent `Function` or generic `Template`
-  signatures and parent references for
+  sets. It owns the source `Function` or generic `Template` signatures of its
+  messages, whose receiver is the dummy `Variable` with `pass_attr` `Pass`
+  (`ASRUtils::trait_message_receiver`), and parent references for
   universal traits, or a finite list of concrete numeric member types. An
   inline set is a private `Trait` owned by its defining `Template`, referenced
   by exactly one binder's `TraitConstraint` there. This structural ownership,
@@ -2311,10 +2411,13 @@ layouts, or LLVM types.
 
 Constrained generic procedures use the existing `Template` carrier and shared
 type/symbol substitution and body-instantiation machinery. A normalized
-requirement has a receiver argument in its internal signature; source trait
-signatures do not. Its complete function type is rebuilt from the normalized
-arguments and result, so dependent character lengths and array bounds use
-`FunctionParam` indices that include the prepended receiver. Declaration copying
+requirement has its receiver as the first argument of its internal signature:
+normalization moves the declared receiver there, typed as the constrained
+binder, and keeps the order of the other dummies; a receiverless message gets
+a private dispatch-context argument there instead, which is not a receiver.
+Its complete function type is rebuilt from the normalized arguments and
+result, so dependent character lengths and array bounds use `FunctionParam`
+indices of the normalized order. Declaration copying
 remaps dependent bounds and initializers after all local declarations exist;
 dummy spelling and symbol-table iteration order do not affect the copied
 references. Host-associated declarations and uncopied nominal types retain
@@ -2338,17 +2441,17 @@ functions being exported by producer objects.
 
 A constraint's requirement for a generic message is a generic requirement: a
 `Template` owned by the constrained generic, whose fresh binders carry the
-message's nominally equivalent constraints and whose function is the message
-with the constrained receiver prepended. Fresh compiler names cannot capture a
-binder of the enclosing generic. Each tuple of method type arguments the body
-uses is published, like a numeric restriction, as one more requirement of the
-same member: a bodyless specialization of that function whose copies of the
-binder declarations record the type arguments. Calls in the body name that
-specialization. Specialization binds the generic requirement's evidence once;
-each published specialization then selects either a static adapter to the
-bound generic implementation specialized for the substituted type arguments,
-or, when forwarding, the same specialization of the caller's generic
-requirement, published there in the binding worklist. Because the
+message's nominally equivalent constraints and whose function is the
+normalized message, with the constrained receiver first. Fresh compiler names
+cannot capture a binder of the enclosing generic. Each tuple of method type
+arguments the body uses is published, like a numeric restriction, as one more
+requirement of the same member: a bodyless specialization of that function
+whose copies of the binder declarations record the type arguments. Calls in the
+body name that specialization. Specialization binds the generic requirement's
+evidence once; each published specialization then selects either a static
+adapter to the bound generic implementation specialized for the substituted
+type arguments, or, when forwarding, the same specialization of the caller's
+generic requirement, published there in the binding worklist. Because the
 specializations are part of the serialized constraint, a separately compiled
 generic is instantiated without its body being reanalyzed. Verification checks
 that a generic requirement copies its message, that each specialization matches
