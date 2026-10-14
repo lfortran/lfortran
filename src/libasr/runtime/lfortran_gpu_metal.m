@@ -214,9 +214,13 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     [commandBuffer commit];
     [commandBuffer waitUntilCompleted];
 
+    // A kernel that faulted or was stopped by the watchdog has not computed
+    // its results, so the program cannot go on with what is in the buffers;
+    // the CUDA runtime exits in this case too.
     if ([commandBuffer error]) {
         fprintf(stderr, "lfortran_gpu_launch: GPU execution error: %s\n",
                 [[[commandBuffer error] localizedDescription] UTF8String]);
+        exit(1);
     }
 
     // Copy results back from Metal buffers to host memory
@@ -236,6 +240,7 @@ void lfortran_gpu_sync(lfortran_gpu_ctx* ctx) {
     if ([ctx->last_command_buffer error]) {
         fprintf(stderr, "lfortran_gpu_sync: GPU execution error: %s\n",
                 [[[ctx->last_command_buffer error] localizedDescription] UTF8String]);
+        exit(1);
     }
 
     ctx->last_command_buffer = nil;
