@@ -207,7 +207,7 @@
                                 (Integer 4)
                                 ColMajor
                                 ()
-                                .false.
+                                .true.
                             )
                             (Var 2 a)
                             ()
@@ -229,7 +229,7 @@
                                 (Integer 4)
                                 ColMajor
                                 ()
-                                .false.
+                                .true.
                             )
                             (Var 2 b)
                             ()
@@ -251,7 +251,7 @@
                                 (Integer 4)
                                 ColMajor
                                 ()
-                                .false.
+                                .true.
                             )
                             (Var 2 c)
                             ()
@@ -373,7 +373,7 @@
                                         (Integer 4)
                                         ColMajor
                                         ()
-                                        .false.
+                                        .true.
                                     )
                                     NotEq
                                     (ArrayItem
@@ -384,7 +384,7 @@
                                         (Integer 4)
                                         ColMajor
                                         ()
-                                        .false.
+                                        .true.
                                     )
                                     (Logical 4)
                                     ()
@@ -399,7 +399,7 @@
                                         (Integer 4)
                                         ColMajor
                                         ()
-                                        .false.
+                                        .true.
                                     )
                                     NotEq
                                     (ArrayItem
@@ -410,7 +410,7 @@
                                         (Integer 4)
                                         ColMajor
                                         ()
-                                        .false.
+                                        .true.
                                     )
                                     (Logical 4)
                                     ()
@@ -428,7 +428,7 @@
                                     (Integer 4)
                                     ColMajor
                                     ()
-                                    .false.
+                                    .true.
                                 )
                                 NotEq
                                 (ArrayItem
@@ -439,7 +439,7 @@
                                     (Integer 4)
                                     ColMajor
                                     ()
-                                    .false.
+                                    .true.
                                 )
                                 (Logical 4)
                                 ()
@@ -465,7 +465,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
-                                        .false.
+                                        .true.
                                     )
                                     NotEq
                                     (Var 2 a)
@@ -482,7 +482,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
-                                        .false.
+                                        .true.
                                     )
                                     NotEq
                                     (Var 2 b)
@@ -502,7 +502,7 @@
                                     (Real 4)
                                     ColMajor
                                     ()
-                                    .false.
+                                    .true.
                                 )
                                 NotEq
                                 (Var 2 c)

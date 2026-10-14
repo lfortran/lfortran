@@ -4276,37 +4276,51 @@ public:
         return true;
     }
 
-    void validate_fixed_size_array_index_bounds(ASR::expr_t* array,
+    // Reports a constant subscript of `array` that lies outside the constant
+    // bounds of its dimension. Returns whether every subscript is known to be
+    // within the bounds: all are constants and the array is neither
+    // allocatable nor a pointer and has constant bounds, which are then those
+    // of its declaration.
+    bool validate_fixed_size_array_index_bounds(ASR::expr_t* array,
             ASR::array_index_t* args, size_t n_args, const Location& loc) {
         if (_processing_common_block_object) {
-            return;
+            return false;
         }
+        ASR::ttype_t* array_type = ASRUtils::expr_type(array);
         ASR::ttype_t* arr_type = ASRUtils::type_get_past_pointer(
-            ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(array)));
+            ASRUtils::type_get_past_allocatable(array_type));
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(arr_type, m_dims);
+        bool in_bounds = n_dims > 0 && n_dims == n_args &&
+            !ASRUtils::is_allocatable(array_type) &&
+            !ASRUtils::is_pointer(array_type);
         for (size_t i = 0; i < std::min(n_dims, n_args); i++) {
             if (args[i].m_left != nullptr || args[i].m_step != nullptr) {
+                in_bounds = false;
                 continue;
             }
             ASR::expr_t* idx_expr = args[i].m_right;
             if (idx_expr == nullptr) {
+                in_bounds = false;
                 continue;
             }
             ASR::expr_t* idx_value = ASRUtils::expr_value(idx_expr);
             int64_t idx = 0;
             if (idx_value && ASRUtils::extract_value(idx_value, idx)) {
                 int64_t lb = 1;
+                bool lb_known = false;
                 if (m_dims[i].m_start) {
                     ASR::expr_t* start_val = ASRUtils::expr_value(m_dims[i].m_start);
                     if (start_val) {
-                        ASRUtils::extract_value(start_val, lb);
+                        lb_known = ASRUtils::extract_value(start_val, lb);
                     }
                 }
+                bool ub_known = false;
                 if (m_dims[i].m_length) {
                     ASR::expr_t* len_val = ASRUtils::expr_value(m_dims[i].m_length);
                     int64_t len = 0;
                     if (len_val && ASRUtils::extract_value(len_val, len)) {
+                        ub_known = true;
                         int64_t ub = lb + len - 1;
                         if (idx < lb || idx > ub) {
                             diag.add(Diagnostic(
@@ -4319,8 +4333,12 @@ public:
                         }
                     }
                 }
+                in_bounds = in_bounds && lb_known && ub_known;
+            } else {
+                in_bounds = false;
             }
         }
+        return in_bounds;
     }
 
     // Gives `v` the initial value `value` that a DATA statement specifies.
@@ -14942,6 +14960,7 @@ public:
         // A compile time value folded out of a single element of the base
         // describes one element, not the array this reference denotes.
         array_item->m_value = nullptr;
+        array_item->m_in_bounds = false;
     }
 
     ASR::asr_t* create_ArrayRef(const Location &loc, AST::fnarg_t* m_args,
@@ -15354,12 +15373,13 @@ public:
                         Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
                 }
-                validate_fixed_size_array_index_bounds(v_Var, args.p,
-                    args.size(), loc);
+                bool in_bounds = validate_fixed_size_array_index_bounds(
+                    v_Var, args.p, args.size(), loc);
                 ASR::expr_t* array_item = ASRUtils::EXPR(
                     ASRUtils::make_ArrayItem_t_util(al, loc,
                         v_Var, args.p, args.size(), final_type,
-                        ASR::arraystorageType::ColMajor, arr_ref_val));
+                        ASR::arraystorageType::ColMajor, arr_ref_val,
+                        in_bounds));
                 give_struct_member_item_shape_of_base(array_item);
                 return (ASR::asr_t*) array_item;
             }
@@ -17773,13 +17793,13 @@ public:
             array_item_node = ASR::make_ArraySection_t(al, loc, expr, indices.p,
                 indices.size(), array_section_type, nullptr);
         } else {
-            validate_fixed_size_array_index_bounds(expr, indices.p,
-                indices.size(), loc);
+            bool in_bounds = validate_fixed_size_array_index_bounds(expr,
+                indices.p, indices.size(), loc);
             ASR::expr_t* array_item_value = ASRUtils::fold_ArrayItem_value(
                 al, expr, indices.p, indices.size());
             array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc, expr, indices.p,
                 indices.size(), ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(expr))),
-                ASR::arraystorageType::ColMajor, array_item_value);
+                ASR::arraystorageType::ColMajor, array_item_value, in_bounds);
         }
     }
 
