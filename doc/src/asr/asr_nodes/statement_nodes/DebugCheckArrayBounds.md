@@ -30,6 +30,9 @@ bounds checking is enabled, and it is never produced by a frontend. It fails
 at run time with a diagnostic naming the mismatching extents rather than
 writing out of bounds. It is omitted when the extents of the target and of
 all operands are compile-time constants and equal, since it cannot fail then.
+The extents of a section are compile-time constants when the start, end and
+stride of each of its subscript triplets are, as for `a(:, i)` with `a` of
+constant bounds.
 
 After it, every operand has the extent of the target in every dimension. The
 element references of the loop that implements the assignment rely on that

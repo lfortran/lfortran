@@ -527,6 +527,17 @@ ASR::expr_t* at(Vec<ASR::expr_t*>& vec, int64_t index) {
     return vec[index];
 }
 
+// Whether an expression has a section of an array among its operands.
+class ArraySectionFinder: public ASR::BaseWalkVisitor<ArraySectionFinder> {
+    public:
+
+    bool found = false;
+
+    void visit_ArraySection(const ASR::ArraySection_t& /*x*/) {
+        found = true;
+    }
+};
+
 // Collect the array expressions which should be of the same size
 class CollectComponentsFromElementalExpr: public ASR::BaseWalkVisitor<CollectComponentsFromElementalExpr> {
 private:
@@ -685,6 +696,31 @@ static bool have_same_rank(ASR::expr_t* target, const Vec<ASR::expr_t*>& compone
     return true;
 }
 
+// The extents of a section whose subscript triplets have compile-time
+// start, end and stride, such as `a(:, i)` of an array `a` with constant
+// bounds.
+static bool get_compile_time_section_extents(ASR::ArraySection_t* section,
+        std::vector<int64_t>& extents) {
+    extents.clear();
+    for (size_t i = 0; i < section->n_args; i++) {
+        ASR::array_index_t& index = section->m_args[i];
+        if (index.m_left == nullptr && index.m_step == nullptr) {
+            continue;
+        }
+        int64_t start = 0, end = 0, step = 0;
+        if (index.m_left == nullptr || index.m_right == nullptr ||
+                index.m_step == nullptr ||
+                !ASRUtils::extract_value(ASRUtils::expr_value(index.m_left), start) ||
+                !ASRUtils::extract_value(ASRUtils::expr_value(index.m_right), end) ||
+                !ASRUtils::extract_value(ASRUtils::expr_value(index.m_step), step) ||
+                step == 0) {
+            return false;
+        }
+        extents.push_back(std::max<int64_t>((end - start + step) / step, 0));
+    }
+    return true;
+}
+
 static bool get_compile_time_extents(ASR::expr_t* expr, std::vector<int64_t>& extents) {
     ASR::dimension_t* dims = nullptr;
     size_t rank = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(expr), dims);
@@ -693,6 +729,10 @@ static bool get_compile_time_extents(ASR::expr_t* expr, std::vector<int64_t>& ex
         int64_t extent = 0;
         if (dims[i].m_length == nullptr ||
                 !ASRUtils::extract_value(dims[i].m_length, extent)) {
+            if (ASR::is_a<ASR::ArraySection_t>(*expr)) {
+                return get_compile_time_section_extents(
+                    ASR::down_cast<ASR::ArraySection_t>(expr), extents);
+            }
             return false;
         }
         extents.push_back(extent);
@@ -1046,12 +1086,234 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             if( index_var == nullptr ) {
                 continue;
             }
-            ASR::expr_t* lbound = PassUtils::get_bound(vars_expr[i],
-                loop_depth + 1, "lbound", al, get_index_kind());
+            ASR::expr_t* lbound = nullptr;
+            ASR::expr_t* ubound = nullptr;
+            ASR::expr_t* step = nullptr;
+            get_loop_bounds(vars_expr[i], loop_depth, lbound, ubound, step);
             ASR::stmt_t* set_index_var = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
                 al, loc, index_var, lbound, nullptr, false, false));
             dest_vec.push_back(al, set_index_var);
         }
+    }
+
+    ASR::expr_t* to_index_kind(ASR::expr_t* expr) {
+        if( ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(expr)) ==
+                get_index_kind() ) {
+            return expr;
+        }
+        ASRUtils::ASRBuilder builder(al, expr->base.loc);
+        return builder.i2i_t(expr, get_index_type(expr->base.loc));
+    }
+
+    static bool is_scalar_subscript(const ASR::array_index_t& index) {
+        return index.m_left == nullptr && index.m_step == nullptr;
+    }
+
+    // The bounds and step that dimension `dim` (0-based) of the array `var`
+    // is traversed with: those of its subscript triplet for a section, which
+    // is indexed through its base array, and its own bounds otherwise.
+    // `step` is nullptr for a unit step.
+    void get_loop_bounds(ASR::expr_t* var, size_t dim, ASR::expr_t*& start,
+            ASR::expr_t*& end, ASR::expr_t*& step) {
+        step = nullptr;
+        if( !ASR::is_a<ASR::ArraySection_t>(*var) ) {
+            start = PassUtils::get_bound(var, dim + 1, "lbound", al, get_index_kind());
+            end = PassUtils::get_bound(var, dim + 1, "ubound", al, get_index_kind());
+            return ;
+        }
+        ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(var);
+        size_t arg = 0;
+        for( size_t rank_dim = 0; arg < section->n_args; arg++ ) {
+            if( !is_scalar_subscript(section->m_args[arg]) ) {
+                if( rank_dim == dim ) {
+                    break;
+                }
+                rank_dim++;
+            }
+        }
+        LCOMPILERS_ASSERT(arg < section->n_args);
+        ASR::array_index_t& triplet = section->m_args[arg];
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        start = triplet.m_left ? to_index_kind(duplicator.duplicate_expr(triplet.m_left))
+            : PassUtils::get_bound(section->m_v, arg + 1, "lbound", al, get_index_kind());
+        end = triplet.m_right ? to_index_kind(duplicator.duplicate_expr(triplet.m_right))
+            : PassUtils::get_bound(section->m_v, arg + 1, "ubound", al, get_index_kind());
+        int64_t step_value = 0;
+        if( triplet.m_step != nullptr && !(ASRUtils::extract_value(
+                ASRUtils::expr_value(triplet.m_step), step_value) && step_value == 1) ) {
+            step = to_index_kind(duplicator.duplicate_expr(triplet.m_step));
+        }
+    }
+
+    // Whether `subscript` of dimension `dim` (0-based) of the array `v` is
+    // known not to lie beyond its bound `bound` of that dimension: below the
+    // lower bound for `LBound`, above the upper one for `UBound`.
+    static bool is_subscript_within_bound(ASR::expr_t* v, size_t dim,
+            ASR::expr_t* subscript, ASR::arrayboundType bound) {
+        if( ASR::is_a<ASR::ArrayBound_t>(*subscript) ) {
+            ASR::ArrayBound_t* array_bound = ASR::down_cast<ASR::ArrayBound_t>(subscript);
+            int64_t bound_dim = 0;
+            if( array_bound->m_bound == bound && array_bound->m_dim != nullptr &&
+                ASR::is_a<ASR::Var_t>(*array_bound->m_v) && ASR::is_a<ASR::Var_t>(*v) &&
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(array_bound->m_v)->m_v) ==
+                ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(v)->m_v) &&
+                ASRUtils::extract_value(ASRUtils::expr_value(array_bound->m_dim), bound_dim) &&
+                bound_dim == static_cast<int64_t>(dim) + 1 ) {
+                return true;
+            }
+        }
+        ASR::dimension_t* dims = nullptr;
+        size_t rank = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(v), dims);
+        int64_t value = 0, start = 0, length = 0;
+        if( dim >= rank || dims[dim].m_start == nullptr || dims[dim].m_length == nullptr ||
+            !ASRUtils::extract_value(ASRUtils::expr_value(subscript), value) ||
+            !ASRUtils::extract_value(ASRUtils::expr_value(dims[dim].m_start), start) ||
+            !ASRUtils::extract_value(ASRUtils::expr_value(dims[dim].m_length), length) ) {
+            return false;
+        }
+        return bound == ASR::arrayboundType::LBound ? value >= start
+            : value <= start + length - 1;
+    }
+
+    // Whether evaluating `subscript` once more has no effect: a constant, a
+    // variable or a bound of an array variable.
+    static bool can_reevaluate_subscript(ASR::expr_t* subscript) {
+        return ASRUtils::is_value_constant(ASRUtils::expr_value(subscript)) ||
+            ASR::is_a<ASR::Var_t>(*subscript) ||
+            (ASR::is_a<ASR::ArrayBound_t>(*subscript) && ASR::is_a<ASR::Var_t>(
+                *ASR::down_cast<ASR::ArrayBound_t>(subscript)->m_v));
+    }
+
+    // Whether every element of the base array that the loops over the
+    // triplets of the section target `section` reference is within its
+    // bounds. The subscripts that the loop over a triplet runs through lie
+    // between its start and its end, so it suffices that its end is known
+    // to be within the bounds and that the subscripts of the first element
+    // referenced, its starts and the scalar subscripts, are. With bounds
+    // checking, those not known at compile time are checked once, before
+    // the loops, by referencing that element if the section is not empty
+    // and its elements are of intrinsic numeric or logical type.
+    bool is_section_traversal_in_bounds(ASR::ArraySection_t* section,
+            const Location& loc) {
+        ASRUtils::ASRBuilder b(al, loc);
+        bool check_first_element = false;
+        ASR::expr_t* is_not_empty = nullptr;
+        for( size_t i = 0; i < section->n_args; i++ ) {
+            ASR::array_index_t& index = section->m_args[i];
+            if( is_scalar_subscript(index) ) {
+                if( index.m_right == nullptr ) {
+                    return false;
+                }
+                check_first_element = check_first_element ||
+                    !is_subscript_within_bound(section->m_v, i, index.m_right,
+                        ASR::arrayboundType::LBound) ||
+                    !is_subscript_within_bound(section->m_v, i, index.m_right,
+                        ASR::arrayboundType::UBound);
+                continue;
+            }
+            int64_t step = 0;
+            if( index.m_left == nullptr || index.m_right == nullptr ||
+                index.m_step == nullptr ||
+                !ASRUtils::extract_value(ASRUtils::expr_value(index.m_step), step) ||
+                step == 0 ) {
+                return false;
+            }
+            ASR::arrayboundType start_bound = step > 0 ?
+                ASR::arrayboundType::LBound : ASR::arrayboundType::UBound;
+            ASR::arrayboundType end_bound = step > 0 ?
+                ASR::arrayboundType::UBound : ASR::arrayboundType::LBound;
+            if( !is_subscript_within_bound(section->m_v, i, index.m_right, end_bound) ) {
+                return false;
+            }
+            check_first_element = check_first_element ||
+                !is_subscript_within_bound(section->m_v, i, index.m_left, start_bound);
+            int64_t start = 0, end = 0;
+            if( ASRUtils::extract_value(ASRUtils::expr_value(index.m_left), start) &&
+                ASRUtils::extract_value(ASRUtils::expr_value(index.m_right), end) ) {
+                if( step > 0 ? start > end : start < end ) {
+                    // The section is empty, no element is referenced
+                    return true;
+                }
+                continue;
+            }
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            ASR::expr_t* start_expr = duplicator.duplicate_expr(index.m_left);
+            ASR::expr_t* end_expr = duplicator.duplicate_expr(index.m_right);
+            ASR::expr_t* is_dim_not_empty = step > 0 ? b.LtE(start_expr, end_expr)
+                : b.GtE(start_expr, end_expr);
+            is_not_empty = is_not_empty ? b.And(is_not_empty, is_dim_not_empty)
+                : is_dim_not_empty;
+        }
+        if( !check_first_element ) {
+            return true;
+        }
+        ASR::ttype_t* element_type = ASRUtils::extract_type(section->m_type);
+        if( !bounds_checking || !(ASR::is_a<ASR::Integer_t>(*element_type) ||
+                ASR::is_a<ASR::UnsignedInteger_t>(*element_type) ||
+                ASR::is_a<ASR::Real_t>(*element_type) ||
+                ASR::is_a<ASR::Complex_t>(*element_type) ||
+                ASR::is_a<ASR::Logical_t>(*element_type)) ) {
+            return false;
+        }
+        for( size_t i = 0; i < section->n_args; i++ ) {
+            ASR::array_index_t& index = section->m_args[i];
+            if( !can_reevaluate_subscript(index.m_right) ||
+                (index.m_left != nullptr && !can_reevaluate_subscript(index.m_left)) ) {
+                return false;
+            }
+        }
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        Vec<ASR::array_index_t> args;
+        args.reserve(al, section->n_args);
+        for( size_t i = 0; i < section->n_args; i++ ) {
+            ASR::array_index_t arg;
+            arg.loc = loc;
+            arg.m_left = nullptr;
+            arg.m_step = nullptr;
+            arg.m_right = duplicator.duplicate_expr(is_scalar_subscript(section->m_args[i]) ?
+                section->m_args[i].m_right : section->m_args[i].m_left);
+            args.push_back(al, arg);
+        }
+        ASR::expr_t* first_element = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al,
+            loc, section->m_v, args.p, args.size(), element_type,
+            ASR::arraystorageType::ColMajor, nullptr, false));
+        std::string name = current_scope->get_unique_name("__libasr_section_first_element_");
+        ASR::symbol_t* temp = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+            al, loc, current_scope, s2c(al, name), nullptr, 0, ASR::intentType::Local,
+            nullptr, nullptr, ASR::storage_typeType::Default,
+            ASRUtils::duplicate_type(al, element_type), nullptr, ASR::abiType::Source,
+            ASR::accessType::Public, ASR::presenceType::Required, false));
+        current_scope->add_symbol(name, temp);
+        ASR::stmt_t* check = b.Assignment(ASRUtils::EXPR(ASR::make_Var_t(al, loc, temp)),
+            first_element);
+        if( is_not_empty != nullptr ) {
+            check = b.If(is_not_empty, {check}, {});
+        }
+        pass_result.push_back(al, check);
+        return true;
+    }
+
+    // The element of the base array of `section` that the loop indices
+    // `indices` select, one index for each subscript triplet.
+    ASR::expr_t* index_section_through_base(ASR::ArraySection_t* section,
+            Vec<ASR::expr_t*>& indices, const Location& loc, bool in_bounds) {
+        Vec<ASR::array_index_t> args;
+        args.reserve(al, section->n_args);
+        size_t k = 0;
+        for( size_t i = 0; i < section->n_args; i++ ) {
+            ASR::array_index_t arg;
+            arg.loc = loc;
+            arg.m_left = nullptr;
+            arg.m_step = nullptr;
+            arg.m_right = is_scalar_subscript(section->m_args[i]) ?
+                section->m_args[i].m_right : indices[k++];
+            args.push_back(al, arg);
+        }
+        return ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
+            section->m_v, args.p, args.size(),
+            ASRUtils::extract_type(section->m_type),
+            ASR::arraystorageType::ColMajor, nullptr, in_bounds));
     }
 
     enum IndexType {
@@ -1387,8 +1649,29 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 (i == var_with_maxrank || is_conforming(i));
         }
 
+        // The index of a section, which runs over the elements of its base
+        // array the section selects, advances by the stride of the section.
+        std::unordered_map<ASR::expr_t*, ASR::expr_t*> index2step;
         for( size_t i = 0; i < vars.size(); i++ ) {
             if (var_ranks[i] == 0) continue;
+            if (ASR::is_a<ASR::ArraySection_t>(*vars_expr[i])) {
+                for( size_t j = 0; j < var_ranks[i]; j++ ) {
+                    ASR::expr_t *start = nullptr, *end = nullptr, *step = nullptr;
+                    get_loop_bounds(vars_expr[i], j, start, end, step);
+                    if (step != nullptr) {
+                        index2step[var2indices[i][j]] = step;
+                    }
+                }
+                ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(
+                    vars_expr[i]);
+                // The loops run over the triplets of the section only if it
+                // drives them
+                bool section_in_bounds = i == var_with_maxrank &&
+                    is_section_traversal_in_bounds(section, loc);
+                *vars[i] = index_section_through_base(section, var2indices[i], loc,
+                    section_in_bounds);
+                continue;
+            }
             Vec<ASR::array_index_t> indices;
             indices.reserve(al, var_ranks[i]);
             for( size_t j = 0; j < var_ranks[i]; j++ ) {
@@ -1431,18 +1714,15 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         ASR::do_loop_head_t do_loop_head;
         do_loop_head.loc = loc;
         do_loop_head.m_v = var2indices[var_with_maxrank].p[0];
-        do_loop_head.m_start = PassUtils::get_bound(vars_expr[var_with_maxrank],
-            1, "lbound", al, get_index_kind());
-        do_loop_head.m_end = PassUtils::get_bound(vars_expr[var_with_maxrank],
-            1, "ubound", al, get_index_kind());
-        do_loop_head.m_increment = nullptr;
+        get_loop_bounds(vars_expr[var_with_maxrank], 0, do_loop_head.m_start,
+            do_loop_head.m_end, do_loop_head.m_increment);
         Vec<ASR::stmt_t*> parent_do_loop_body; parent_do_loop_body.reserve(al, 1);
         Vec<ASR::stmt_t*> do_loop_body; do_loop_body.reserve(al, 1);
         set_index_variables(var2indices, vars_expr, var_with_maxrank,
                             0, parent_do_loop_body, loc);
         do_loop_body.push_back(al, const_cast<ASR::stmt_t*>(&(x.base)));
         increment_index_variables(var2indices, var_with_maxrank, 0,
-                                  do_loop_body, loc);
+                                  do_loop_body, loc, &index2step);
         ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
             do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
         parent_do_loop_body.push_back(al, do_loop);
@@ -1453,15 +1733,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             set_index_variables(var2indices, vars_expr, var_with_maxrank,
                                 i, parent_do_loop_body, loc);
             increment_index_variables(var2indices, var_with_maxrank, i,
-                                      do_loop_body, loc);
+                                      do_loop_body, loc, &index2step);
             ASR::do_loop_head_t do_loop_head;
             do_loop_head.loc = loc;
             do_loop_head.m_v = var2indices[var_with_maxrank].p[i];
-            do_loop_head.m_start = PassUtils::get_bound(
-                vars_expr[var_with_maxrank], i + 1, "lbound", al, get_index_kind());
-            do_loop_head.m_end = PassUtils::get_bound(
-                vars_expr[var_with_maxrank], i + 1, "ubound", al, get_index_kind());
-            do_loop_head.m_increment = nullptr;
+            get_loop_bounds(vars_expr[var_with_maxrank], i, do_loop_head.m_start,
+                do_loop_head.m_end, do_loop_head.m_increment);
             ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
                 do_loop_head, do_loop_body.p, do_loop_body.size(), nullptr, 0));
             parent_do_loop_body.push_back(al, do_loop);
@@ -2487,8 +2764,25 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASR::is_a<ASR::ArrayItem_t>(*expr) && \
             ASRUtils::is_array_indexed_with_array_indices( \
                 ASR::down_cast<ASR::ArrayItem_t>(expr))))
+        // A section target with scalar and triplet subscripts only, such as
+        // `a(:, i)`, is assigned element by element through its base array
+        // in the general loop below, once every section in the value has
+        // been replaced by a temporary.
+        bool is_target_section_indexed_through_base = false;
+        if( ASR::is_a<ASR::ArraySection_t>(*xx.m_target) &&
+            !ASRUtils::is_array_indexed_with_array_indices(
+                ASR::down_cast<ASR::ArraySection_t>(xx.m_target)) &&
+            !ASR::is_a<ASR::BitCast_t>(*xx.m_value) &&
+            !is_array_indexed_with_array_indices_check(xx.m_value) &&
+            !call_replace_on_expr(xx.m_value->type) &&
+            !ASR::is_a<ASR::ImpliedDoLoop_t>(*xx.m_value) ) {
+            ArraySectionFinder value_section_finder;
+            value_section_finder.visit_expr(*xx.m_value);
+            is_target_section_indexed_through_base = !value_section_finder.found;
+        }
         if( ( is_array_indexed_with_array_indices_check(xx.m_value) ) ||
-            ( is_array_indexed_with_array_indices_check(xx.m_target) ) ) {
+            ( is_array_indexed_with_array_indices_check(xx.m_target) &&
+              !is_target_section_indexed_through_base ) ) {
             // For an allocatable LHS that needs (re)allocation, emit
             // an explicit ReAlloc using the value's per-dimension sizes
             // (computed from the vector subscripts / section bounds)
@@ -2568,7 +2862,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         vars.reserve(al, 1);
         ArrayVarAddressCollector var_collector_target(al, vars);
         var_collector_target.current_expr = const_cast<ASR::expr_t**>(&(xx.m_target));
-        if (!is_target_assumed_rank) {
+        if (is_target_section_indexed_through_base) {
+            vars.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_target)));
+        } else if (!is_target_assumed_rank) {
             var_collector_target.call_replacer();
         } else {
             vars.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_target)));
