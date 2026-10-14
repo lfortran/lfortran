@@ -172,7 +172,12 @@ generates the device source. It never falls back to the CPU:
   written over the actual arguments of that call. Up the chain of calls
   this ends in the kernel, where the array is a per-thread workspace like
   any other (see the previous point). The extents may read the arguments of
-  the procedure and named constants. A procedure with such a local that
+  the procedure and named constants, and are written as they are on entry
+  to the procedure: a name it binds once (an associate name, a scalar
+  assigned once) stands for what it is bound to, the extent of a section
+  for the extents of its ranges, and a function without side effects is
+  called with arguments of that kind (`allocate(a(maxval(n)))` with
+  `associate (n => self%nodes_)`). A procedure with such a local that
   calls itself, directly or not, would need one array per level of the
   recursion, and is an error, and so is an extent that reads anything else
   ("workspace ... cannot be sized on the host"). A call that is the whole
@@ -371,6 +376,6 @@ them; it does not yet.
   component that is handed to the kernel whole (see the open questions).
 * Purity of procedures called from `do concurrent` is not enforced.
 * A run-time sized local of a procedure the loop calls cannot be sized yet
-  when its extent calls a function (`maxval(n)`), or reads the index of a
-  `do` loop of the procedure (`n(l)` in `do l = 1, m`), even when the host
-  could work out the largest value before the launch.
+  when its extent reads the index of a `do` loop of the procedure (`n(l)`
+  in `do l = 1, m`), even when the host could work out the largest value
+  before the launch.

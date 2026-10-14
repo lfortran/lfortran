@@ -1119,6 +1119,43 @@ inline std::set<ASR::Function_t*> gpu_callees(ASR::stmt_t **body,
     return ASRUtils::get_called_functions(body, n_body, procedure_values);
 }
 
+// The functions the extents of the arrays of a scope call, and of the
+// BLOCK and ASSOCIATE scopes inside it: an array of device code sized by
+// `maxval(n)` has the routine shared lowering gives the intrinsic in its
+// type, which the device evaluates for the array's extent.
+inline void gpu_type_callees(SymbolTable *scope,
+        std::set<ASR::Function_t*> &callees) {
+    struct Collector : ASR::BaseWalkVisitor<Collector> {
+        std::set<ASR::Function_t*> &callees;
+        explicit Collector(std::set<ASR::Function_t*> &callees)
+            : callees(callees) {}
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(
+                x.m_name);
+            if (callee) callee = ASRUtils::symbol_get_past_StructMethodDeclaration(
+                callee);
+            if (callee && ASR::is_a<ASR::Function_t>(*callee)) {
+                callees.insert(ASR::down_cast<ASR::Function_t>(callee));
+            }
+            ASR::BaseWalkVisitor<Collector>::visit_FunctionCall(x);
+        }
+    };
+    Collector collector(callees);
+    for (auto &item : scope->get_scope()) {
+        ASR::symbol_t *sym = item.second;
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            collector.visit_ttype(*ASR::down_cast<ASR::Variable_t>(sym)
+                ->m_type);
+        } else if (ASR::is_a<ASR::Block_t>(*sym)) {
+            gpu_type_callees(ASR::down_cast<ASR::Block_t>(sym)->m_symtab,
+                callees);
+        } else if (ASR::is_a<ASR::AssociateBlock_t>(*sym)) {
+            gpu_type_callees(ASR::down_cast<ASR::AssociateBlock_t>(sym)
+                ->m_symtab, callees);
+        }
+    }
+}
+
 // Counts the writes to one scalar in a statement list, keeping the value of
 // the last one. A name written exactly once stands for that value
 // everywhere.

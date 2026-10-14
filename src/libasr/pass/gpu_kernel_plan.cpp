@@ -656,8 +656,10 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
             return false;
         }
         active.insert(function);
-        for (ASR::Function_t *callee : gpu_callees(function->m_body,
-                function->n_body, true)) {
+        std::set<ASR::Function_t*> callees = gpu_callees(function->m_body,
+            function->n_body, true);
+        gpu_type_callees(function->m_symtab, callees);
+        for (ASR::Function_t *callee : callees) {
             if (callee == function) continue;
             if (!close_graph(callee)) return false;
         }
