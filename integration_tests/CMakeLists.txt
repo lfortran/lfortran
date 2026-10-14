@@ -5547,6 +5547,7 @@ RUN(NAME array_section_assign_04 LABELS gfortran llvm)
 RUN(NAME array_section_assign_05 FILE array_section_assign_04 LABELS llvm
     EXTRA_ARGS --descriptor-index-64)
 RUN(NAME array_section_assign_06 LABELS gfortran llvm)
+RUN(NAME array_section_assign_07 LABELS gfortran llvm EXTRA_ARGS -g GFORTRAN_ARGS -g)
 RUN(NAME array_item_in_bounds_01 LABELS gfortran llvm)
 RUN(NAME array_item_in_bounds_02 LABELS gfortran)
 

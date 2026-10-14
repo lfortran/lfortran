@@ -20,7 +20,7 @@ set(LFORTRAN_SMOKE_TESTS
     array_01_pack array_02_pack array_01_transfer array_02_transfer
     array_bound_1 array_bound_2 array_bound_3
     array_constructor_02 array_constructor_03
-    array_section_27 matmul_01 matmul_02
+    array_section_27 array_section_assign_07 matmul_01 matmul_02
     sum_01 any_01 where_01 where_02
     assumed_rank_01 assumed_rank_02 select_rank_01 select_rank_02
 
