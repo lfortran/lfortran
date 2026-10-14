@@ -5488,15 +5488,8 @@ public:
             ASR::symbol_t *proc_past = ASRUtils::symbol_get_past_external(proc_sym);
             if (!ASR::is_a<ASR::Function_t>(*proc_past)
                     && !ASR::is_a<ASR::Variable_t>(*proc_past)) {
-                std::string sym_type = ASRUtils::symbol_type_name(*proc_past);
-                diag.add(diag::Diagnostic(
-                    "Symbol '" + item.proc_name + "' must be a variable or a procedure",
-                    diag::Level::Error, diag::Stage::Semantic, {
-                        diag::Label("cannot use a '" + sym_type + "' as a variable",
-                            {item.loc}),
-                        diag::Label("'" + item.proc_name + "' declared as a '"
-                            + sym_type + "' here", {proc_past->base.loc}, false),
-                    }));
+                report_not_variable_or_procedure(item.proc_name, item.loc,
+                    proc_past);
                 init_mismatch = true;
                 continue;
             }

@@ -3074,13 +3074,7 @@ public:
             }
             return v_var;
         } else {
-            std::string sym_type = ASRUtils::symbol_type_name(*vpast);
-            diag.diagnostics.push_back(diag::Diagnostic(
-                "Symbol '" + var_name + "' must be a variable or a procedure",
-                diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("cannot use a '" + sym_type + "' as a variable", {loc}),
-                    diag::Label("'" + var_name + "' declared as a '" + sym_type + "' here", {vpast->base.loc}, false),
-                }));
+            report_not_variable_or_procedure(var_name, loc, vpast);
             throw SemanticAbort();
         }
     }
@@ -6649,6 +6643,20 @@ public:
                 Label("", {init_expr->base.loc})
             }));
         return false;
+    }
+
+    // Reports that `name`, used at `loc` as a variable or a procedure, is
+    // the symbol `sym` (past any external symbol), which is neither.
+    void report_not_variable_or_procedure(const std::string &name,
+            const Location &loc, ASR::symbol_t *sym) {
+        std::string sym_type = ASRUtils::symbol_type_name(*sym);
+        diag.add(Diagnostic(
+            "Symbol '" + name + "' must be a variable or a procedure",
+            Level::Error, Stage::Semantic, {
+                Label("cannot use a '" + sym_type + "' as a variable", {loc}),
+                Label("'" + name + "' declared as a '" + sym_type + "' here",
+                    {sym->base.loc}, false),
+            }));
     }
 
     // Declares `sym` as an external procedure with the explicit interface of
@@ -10547,10 +10555,12 @@ public:
                                 }
                             }
                         }
-                        // An interface that is a module procedure defined
-                        // later is a placeholder until the module defines
-                        // it, so a procedure target is checked against it
-                        // only then. Any other target is checked now.
+                        // An interface that is a procedure or an interface
+                        // body defined later in the module is a placeholder
+                        // until the module defines it, so a procedure target
+                        // is checked against it only then. Any other target
+                        // is checked now. Components are excluded: their
+                        // known targets are bound directly below.
                         bool is_pending_interface = !is_derived_type
                             && init_sym
                             && ASR::is_a<ASR::Function_t>(
