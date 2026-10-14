@@ -2862,3 +2862,31 @@ end subroutine
     CHECK(r.result.i32 == 2);
 }
 #endif
+
+TEST_CASE("FortranEvaluator an inherited component of an earlier cell's extension") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // The copy of an extension names the copy of its parent type, so that a
+    // component it inherits belongs to a type a later cell can name.
+    CHECK(e.evaluate2(R"(module minherit
+implicit none
+type :: base
+    integer :: n = 7
+end type
+type, extends(base) :: ext
+    integer :: extra = 11
+end type
+end module
+)").ok);
+    CHECK(e.evaluate2(R"(use minherit
+type(ext) :: a
+a%n = 1
+a%extra = 2
+)").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(
+        "a%n * 100 + a%extra");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 102);
+}

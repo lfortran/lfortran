@@ -612,6 +612,19 @@ static void relink_copied_symbols(Allocator &al, SymbolTable *scope,
                 || ASR::is_a<ASR::Union_t>(*s)
                 || ASR::is_a<ASR::Block_t>(*s)
                 || ASR::is_a<ASR::AssociateBlock_t>(*s)) {
+            if (ASR::is_a<ASR::Struct_t>(*s)) {
+                // An extension names its parent type. Left pointing at the
+                // original, the components it inherits belong to a type no
+                // later cell can name, and a reference to one of them is
+                // not resolved.
+                ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(s);
+                ASR::symbol_t *copy = st->m_parent == nullptr ? nullptr
+                    : scope->resolve_symbol(ASRUtils::symbol_name(st->m_parent));
+                if (copy != nullptr && ASR::is_a<ASR::Struct_t>(
+                        *ASRUtils::symbol_get_past_external(copy))) {
+                    st->m_parent = copy;
+                }
+            }
             // Only the symbols that own a scope: asking any other kind for one
             // is an error, not an empty answer.
             relink_copied_symbols(al, ASRUtils::symbol_symtab(s), tu);
