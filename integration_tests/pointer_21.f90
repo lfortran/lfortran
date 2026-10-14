@@ -72,5 +72,6 @@ if (.not. associated(up, a)) error stop 15
 up => h%s
 if (.not. associated(up, h%s)) error stop 16
 
+deallocate(pp, h%ps)
 print *, "ok"
 end program

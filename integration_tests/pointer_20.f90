@@ -79,5 +79,6 @@ if (.not. associated(up, cb)) error stop 14
 nullify(iq)
 if (associated(iq, ib)) error stop 15
 
+deallocate(cp)
 print *, "ok"
 end program
