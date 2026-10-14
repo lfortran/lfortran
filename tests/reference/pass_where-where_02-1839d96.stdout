@@ -81,6 +81,7 @@
                             (Real 4)
                             ColMajor
                             ()
+                            .true.
                         )
                         (RealConstant
                             1.000000
@@ -99,6 +100,7 @@
                             (Real 4)
                             ColMajor
                             ()
+                            .true.
                         )
                         (RealConstant
                             2.000000
@@ -117,6 +119,7 @@
                             (Real 4)
                             ColMajor
                             ()
+                            .true.
                         )
                         (RealConstant
                             0.500000
@@ -135,6 +138,7 @@
                             (Real 4)
                             ColMajor
                             ()
+                            .true.
                         )
                         (RealConstant
                             3.500000
@@ -229,6 +233,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -269,6 +274,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant

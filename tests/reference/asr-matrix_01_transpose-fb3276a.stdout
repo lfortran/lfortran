@@ -544,6 +544,7 @@
                                         (Integer 4)
                                         ColMajor
                                         ()
+                                        .false.
                                     )
                                     NotEq
                                     (ArrayItem
@@ -557,6 +558,7 @@
                                         (Integer 4)
                                         ColMajor
                                         ()
+                                        .false.
                                     )
                                     (Logical 4)
                                     ()
@@ -754,6 +756,7 @@
                                                 (Real 4)
                                                 ColMajor
                                                 ()
+                                                .false.
                                             )
                                             Sub
                                             (ArrayItem
@@ -767,6 +770,7 @@
                                                 (Real 4)
                                                 ColMajor
                                                 ()
+                                                .false.
                                             )
                                             (Real 4)
                                             ()
@@ -976,6 +980,7 @@
                                                 (Real 8)
                                                 ColMajor
                                                 ()
+                                                .false.
                                             )
                                             Sub
                                             (ArrayItem
@@ -989,6 +994,7 @@
                                                 (Real 8)
                                                 ColMajor
                                                 ()
+                                                .false.
                                             )
                                             (Real 8)
                                             ()
@@ -1233,6 +1239,7 @@
                                                     (Complex 4)
                                                     ColMajor
                                                     ()
+                                                    .false.
                                                 )]
                                                 0
                                                 (Real 4)
@@ -1252,6 +1259,7 @@
                                                     (Complex 4)
                                                     ColMajor
                                                     ()
+                                                    .false.
                                                 )]
                                                 0
                                                 (Real 4)
@@ -1296,6 +1304,7 @@
                                                     (Complex 4)
                                                     ColMajor
                                                     ()
+                                                    .false.
                                                 )]
                                                 0
                                                 (Real 4)
@@ -1315,6 +1324,7 @@
                                                     (Complex 4)
                                                     ColMajor
                                                     ()
+                                                    .false.
                                                 )]
                                                 0
                                                 (Real 4)
@@ -1463,6 +1473,7 @@
                                         (Logical 4)
                                         ColMajor
                                         ()
+                                        .false.
                                     )
                                     NEqv
                                     (ArrayItem
@@ -1476,6 +1487,7 @@
                                         (Logical 4)
                                         ColMajor
                                         ()
+                                        .false.
                                     )
                                     (Logical 4)
                                     ()

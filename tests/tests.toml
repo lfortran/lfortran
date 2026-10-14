@@ -421,6 +421,10 @@ filename = "errors/generic_typed_external_subroutine_01.f90"
 asr_implicit_interface = true
 
 [[test]]
+filename = "errors/generic_function_no_match_01.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "errors/cpp1.f90"
 asr_preprocess = true
 
@@ -1163,6 +1167,26 @@ filename = "array15.f90"
 pass = "array_op"
 
 [[test]]
+filename = "array_op_in_bounds.f90"
+pass = "array_op"
+
+[[test]]
+filename = "../integration_tests/array_item_in_bounds_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/array_item_in_bounds_02.f90"
+asr = true
+
+[[test]]
+filename = "array_op_section_in_bounds.f90"
+pass = "array_struct_temporary,array_op"
+
+[[test]]
+filename = "array_op_section_parameter.f90"
+pass = "array_struct_temporary,array_op"
+
+[[test]]
 filename = "array16.f90"
 run = true
 
@@ -1889,6 +1913,10 @@ asr = true
 [[test]]
 filename = "../integration_tests/parameter_22.f90"
 semantics_only_cc = true
+
+[[test]]
+filename = "../integration_tests/parameter_25.f90"
+llvm = true
 
 # IntegerToReal
 [[test]]
@@ -3491,6 +3519,10 @@ filename = "errors/continue_compilation_simd.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/continue_compilation_initial_proc_target.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/namelist_implicit_type_01.f90"
 semantics_only_cc = true
 options = "--implicit-typing"
@@ -4766,6 +4798,14 @@ run = true
 
 [[test]]
 filename = "errors/array_bounds_check_17.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_18.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_19.f90"
 run = true
 
 [[test]]
@@ -6078,6 +6118,10 @@ asr = true
 
 [[test]]
 filename = "asr/verify/array_item_element_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/array_item_in_bounds_array.asr"
 asr = true
 
 [[test]]
