@@ -6512,3 +6512,8 @@ asr = true
 [[test]]
 filename = "errors/template_component_default_02.f90"
 asr = true
+
+[[test]]
+filename = "errors/system_clock_f23_01.f90"
+semantics_only_cc = true
+options = "--std=f23"
