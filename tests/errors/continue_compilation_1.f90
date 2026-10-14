@@ -2580,3 +2580,12 @@ contains
         later_binding_get1 = 1
     end function
 end module
+
+! A named constant whose initializer is not a constant expression has no
+! value; using it as a kind parameter does not concern templates.
+subroutine cc1_valueless_kind_parameter()
+    implicit none
+    integer :: n
+    integer, parameter :: k = n  ! {Error} Initialization of `k` must reduce to a compile time constant.
+    real(k) :: x  ! {Error} the kind parameter `k` is not a constant expression
+end subroutine cc1_valueless_kind_parameter
