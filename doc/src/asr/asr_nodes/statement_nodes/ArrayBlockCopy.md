@@ -40,6 +40,7 @@ first subscript, with a unit step and constant bounds, and which has as many
 elements as `value`. `array_op` inserts it only when the backend lowers it,
 which the LLVM backend does with a single `memcpy`; a function with many such
 assignments then compiles to straight-line code instead of one loop each.
+The passes run for `--show-asr` and `--dump-all-passes` keep the loop.
 
 With bounds checking, a backend checks the subscripts of `target` unless it is
 marked [in_bounds](../expression_nodes/ArrayItem.md), and `array_op` assigns

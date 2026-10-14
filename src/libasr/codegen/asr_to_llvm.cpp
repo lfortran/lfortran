@@ -15455,14 +15455,20 @@ public:
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr(*x.m_target);
-        ptr_loads = ptr_loads_copy;
         llvm::Value* target = tmp;
-        // Copy from the storage of the variable, as its elements are read,
-        // and not from a new copy of the value of a named constant
+        // Copy from the storage of the named constant, as its elements are
+        // read, rather than from a new copy of its value, unless it has no
+        // storage in this module (one from an earlier interactive cell)
         ASR::Variable_t* v = ASRUtils::EXPR2VAR(x.m_value);
         uint32_t h = get_hash((ASR::asr_t*)v);
-        llvm::Value* value = llvm_symtab[h];
-        LCOMPILERS_ASSERT(value != nullptr);
+        auto storage = llvm_symtab.find(h);
+        if (storage != llvm_symtab.end()) {
+            tmp = storage->second;
+        } else {
+            this->visit_expr(*x.m_value);
+        }
+        ptr_loads = ptr_loads_copy;
+        llvm::Value* value = tmp;
         llvm::Type* el_type = llvm_utils->get_el_type(x.m_value,
             ASRUtils::extract_type(v->m_type), module.get());
         uint64_t size = module->getDataLayout().getTypeAllocSize(el_type) *

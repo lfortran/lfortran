@@ -36,6 +36,8 @@ real, allocatable :: r(:, :)
 real, pointer :: p(:, :)
 real, target :: tgt(8, 4)
 integer, parameter :: ip(3) = [1, 2, 3]
+complex, parameter :: pz(2) = [(1., 2.), (3., 4.)]
+logical, parameter :: pl(3) = [.true., .false., .true.]
 integer :: i, j
 
 a = 0
@@ -64,10 +66,10 @@ if (any(v /= [0, 0, 7, 8, 9, 0])) error stop
 
 ! Complex and logical
 z = 0
-z(:, 2) = [(1., 2.), (3., 4.)]
+z(:, 2) = pz
 if (any(z(:, 1) /= 0) .or. z(1, 2) /= (1., 2.) .or. z(2, 2) /= (3., 4.)) error stop
 l = .false.
-l(:, 2) = [.true., .false., .true.]
+l(:, 2) = pl
 if (any(l(:, 1)) .or. .not. l(1, 2) .or. l(2, 2) .or. .not. l(3, 2)) error stop
 
 ! Character elements are assigned element by element
