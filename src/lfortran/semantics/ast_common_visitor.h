@@ -16446,7 +16446,7 @@ public:
             }
 
             bool is_function = true;
-            v = intrinsic_as_node(x, is_function);
+            v = intrinsic_as_node(x, is_function, true);
             if( !is_function ) {
                 return tmp;
             }
@@ -16629,7 +16629,7 @@ public:
                 }
 
                 bool is_function = true;
-                v = intrinsic_as_node(x, is_function);
+                v = intrinsic_as_node(x, is_function, true);
                 if( !is_function ) {
                     return tmp;
                 }
@@ -20734,7 +20734,8 @@ public:
     }
 
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
-                                     bool& is_function) {
+                                     bool& is_function,
+                                     bool unmatched_generic=false) {
         std::string var_name = to_lower(x.m_func);
         if (ASR::asr_t* result = handle_intrinsics_dble_float_dfloat_shifta(x, al)) {
             is_function = false;
@@ -20962,7 +20963,7 @@ public:
             }
             return nullptr;
         }
-        return resolve_intrinsic_function(x.base.base.loc, var_name);
+        return resolve_intrinsic_function(x.base.base.loc, var_name, unmatched_generic);
     }
 
     bool struct_has_descriptor_string_member(ASR::expr_t* expr) {
@@ -22874,15 +22875,10 @@ public:
                             return;
                         }
                         bool is_function = true;
-                        v = intrinsic_as_node(x, is_function);
+                        v = intrinsic_as_node(x, is_function, true);
                         if( !is_function ) {
                             return ;
                         }
-                    }
-                    if( v == nullptr ) {
-                        diag.add(Diagnostic("Unable to find a function to bind for generic procedure call, " + std::string(gp->m_name),
-                                            Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                        throw SemanticAbort();
                     }
                 }
             }
@@ -23192,15 +23188,20 @@ public:
     }
 
 
-    ASR::symbol_t* resolve_intrinsic_function(const Location &loc, const std::string &remote_sym) {
+    // `unmatched_generic`: `remote_sym` is a generic that none of its specific procedures matched
+    ASR::symbol_t* resolve_intrinsic_function(const Location &loc, const std::string &remote_sym,
+            bool unmatched_generic=false) {
         if (!intrinsic_procedures.is_intrinsic(remote_sym)) {
             check_hidden_derived_type_component_reference(loc, remote_sym);
-            if (compiler_options.implicit_interface) {
+            if (compiler_options.implicit_interface && !unmatched_generic) {
                 return nullptr;
             } else {
                 is_coarray_or_atomic(remote_sym, loc);
-                diag.add(Diagnostic("Function '" + remote_sym + "' not found"
-                    " (not user defined nor intrinsic)",
+                diag.add(Diagnostic(unmatched_generic
+                    ? "no specific procedure of the generic '" + remote_sym
+                        + "' matches the arguments"
+                    : "Function '" + remote_sym + "' not found"
+                        " (not user defined nor intrinsic)",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }

@@ -1,0 +1,5 @@
+semantic error: no specific procedure of the generic 'gen_res' matches the arguments
+  --> tests/errors/generic_function_no_match_01.f90:18:10
+   |
+18 | print *, gen_res(1)
+   |          ^^^^^^^^^^ 
