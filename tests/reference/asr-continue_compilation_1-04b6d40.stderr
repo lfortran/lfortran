@@ -1266,6 +1266,12 @@ semantic error: type mismatch in initialization: `FunctionType(return_type: inte
 2844 |     procedure(cc1_plia_real), pointer :: cc1_plim_p2 => cc1_plim_int  ! {Error} type mismatch in initialization: `FunctionType(return_type: integer)` cannot be assigned to `FunctionType(return_type: real) pointer`
      |                                                         ^^^^^^^^^^^^ 
 
+semantic error: Interface 'cc1_puim_nosuch' is referenced but not defined
+    --> tests/errors/continue_compilation_1.f90:2854:5
+     |
+2854 |     procedure(cc1_puim_nosuch), pointer :: cc1_puim_q => cc1_puim_g  ! {Error} Interface 'cc1_puim_nosuch' is referenced but not defined
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
