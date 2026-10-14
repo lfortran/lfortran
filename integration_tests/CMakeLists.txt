@@ -5486,6 +5486,7 @@ RUN(NAME separate_compilation_58 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_59 LABELS gfortran llvm EXTRAFILES separate_compilation_59a.f90 EXTRA_ARGS --separate-compilation) # module getter of an array bound called from another translation unit (#14415)
 RUN(NAME separate_compilation_60 LABELS gfortran llvm EXTRAFILES separate_compilation_60a.f90 separate_compilation_60b.f90 EXTRA_ARGS --separate-compilation) # pass-made helper of a loaded module in a module-only translation unit
 RUN(NAME separate_compilation_61 LABELS gfortran llvm EXTRAFILES separate_compilation_61a.f90 separate_compilation_61b.f90 EXTRA_ARGS --separate-compilation) # procedure-pointer component with a getter-bounded interface called from another translation unit (#14326)
+RUN(NAME separate_compilation_63 LABELS gfortran llvm EXTRAFILES separate_compilation_63a.f90 EXTRA_ARGS --separate-compilation) # named constant with a procedure-pointer component targeting an imported procedure (#14793)
 
 RUN(NAME no_explicit_return_type_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --implicit-typing)
