@@ -423,7 +423,17 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
         }
         code = &tmp;
     }
-    if (compiler_options.interactive) close_cell(*code, lm);
+    if (compiler_options.interactive) {
+        close_cell(*code, lm);
+    } else if (!lm.file_ends.empty()) {
+        // Parser locations use the transformed source's output positions.
+        // In particular, fixed-form INCLUDE expansion can make this longer
+        // than the original file. Keep the file boundary in the same
+        // coordinate space so subsequently loaded modfiles start after it.
+        uint32_t file_start = lm.file_ends.size() > 1
+            ? lm.file_ends[lm.file_ends.size() - 2] : 0;
+        lm.file_ends.back() = file_start + code->size();
+    }
     Result<LFortran::AST::TranslationUnit_t*>
         res = LFortran::parse(al, *code, diagnostics, compiler_options,
             compiler_options.interactive ? cell_start : 0);

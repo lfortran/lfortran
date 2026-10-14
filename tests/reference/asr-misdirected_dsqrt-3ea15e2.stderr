@@ -1,0 +1,5 @@
+semantic error: Argument 1 of dsqrt must be of double precision real type
+ --> tests/errors/dsqrt_kind_error_location/misdirected_dsqrt.f90:7:19
+  |
+7 |       rsw = rad * dsqrt(14.0/ng)
+  |                   ^^^^^^^^^^^^^^

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-misdirected_dsqrt-3ea15e2",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/dsqrt_kind_error_location/misdirected_dsqrt.f90",
+    "infile_hash": "9fb4bc09771a1e494ae780af6a388cf5e56fbd279cdaee2068edf3a2",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-misdirected_dsqrt-3ea15e2.stderr",
+    "stderr_hash": "d43a61e85101936ebc98b12100288f99544baecc4ea702d58bb77da6",
+    "returncode": 2
+}

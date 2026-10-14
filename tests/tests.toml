@@ -5370,6 +5370,12 @@ filename = "errors/iostat_constant_integer.f90"
 asr = true
 
 [[test]]
+filename = "errors/dsqrt_kind_error_location/misdirected_dsqrt.f90"
+asr = true
+options = "--fixed-form --std=legacy -Itests/errors/dsqrt_kind_error_location"
+extrafiles = "errors/dsqrt_kind_error_location/atommod.f"
+
+[[test]]
 filename = "character_parameter_padding_trimming.f90"
 asr = true
 
