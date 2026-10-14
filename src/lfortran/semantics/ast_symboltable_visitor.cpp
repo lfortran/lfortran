@@ -4580,18 +4580,18 @@ public:
     // An external procedure has no explicit interface outside its own subprogram.
     bool check_specific_explicit_interface(ASR::symbol_t *specific,
             const std::string &name, const Location &loc) {
-        if (!ASR::is_a<ASR::Function_t>(*specific)
-                || ASRUtils::symbol_parent_symtab(specific)->parent != nullptr
-                || is_enclosing_scope(
-                    ASR::down_cast<ASR::Function_t>(specific)->m_symtab,
-                    current_scope)) {
+        if (!ASR::is_a<ASR::Function_t>(*specific)) return true;
+        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(specific);
+        if (!ASRUtils::is_tu_scope(ASRUtils::symbol_parent_symtab(specific))
+                || is_enclosing_scope(f->m_symtab, current_scope)) {
             return true;
         }
         diag.add(Diagnostic(
-            "procedure '" + name + "' named in an interface block must have "
-            "an explicit interface",
+            "external procedure '" + name + "' needs an explicit interface "
+            "to be named in an interface block",
             Level::Error, Stage::Semantic, {
-                Label("", {loc})
+                Label("add an interface body for '" + name
+                    + "', or define it in a module", {loc})
             }));
         if (!compiler_options.continue_compilation) throw SemanticAbort();
         return false;
