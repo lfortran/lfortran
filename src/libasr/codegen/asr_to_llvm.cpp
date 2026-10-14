@@ -6518,31 +6518,23 @@ public:
                 !ASR::is_a<ASR::ArrayConstant_t>(*v->m_value) ||
                 !ASR::is_a<ASR::Array_t>(*v->m_type) ||
                 ASRUtils::extract_physical_type(v->m_type) !=
-                    ASR::array_physical_typeType::FixedSizeArray ||
-                !type->isArrayTy()) {
+                    ASR::array_physical_typeType::FixedSizeArray) {
             return nullptr;
         }
         ASR::ttype_t* el_type = ASRUtils::type_get_past_array(v->m_type);
-        ASR::ttype_t* value_el_type = ASRUtils::type_get_past_array(
-            ASRUtils::expr_type(v->m_value));
         int kind = ASRUtils::extract_kind_from_ttype_t(el_type);
-        bool supported = ASR::is_a<ASR::Integer_t>(*el_type) ||
-            ASR::is_a<ASR::Logical_t>(*el_type) ||
-            ((ASR::is_a<ASR::Real_t>(*el_type) ||
-                ASR::is_a<ASR::Complex_t>(*el_type)) && (kind == 4 || kind == 8));
-        if (!supported || el_type->type != value_el_type->type ||
-                kind != ASRUtils::extract_kind_from_ttype_t(value_el_type) ||
-                ASRUtils::get_fixed_size_of_array(v->m_type) !=
-                    ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(v->m_value))) {
+        if (!(ASR::is_a<ASR::Integer_t>(*el_type) ||
+                ASR::is_a<ASR::Logical_t>(*el_type) ||
+                ((ASR::is_a<ASR::Real_t>(*el_type) ||
+                    ASR::is_a<ASR::Complex_t>(*el_type)) &&
+                    (kind == 4 || kind == 8)))) {
             return nullptr;
         }
+        LCOMPILERS_ASSERT(type->isArrayTy());
         llvm::Constant* init = get_const_array(v->m_value, type->getArrayElementType());
-        if (init->getType() != type) {
-            return nullptr;
-        }
+        LCOMPILERS_ASSERT(init->getType() == type);
         auto it = named_array_constant_globals.find(init);
-        if (it != named_array_constant_globals.end() &&
-                it->second->getParent() == module.get()) {
+        if (it != named_array_constant_globals.end()) {
             return it->second;
         }
         llvm::GlobalVariable* global = new llvm::GlobalVariable(*module, type,

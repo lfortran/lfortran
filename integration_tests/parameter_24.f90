@@ -1,6 +1,7 @@
-! Local named constant arrays are read in place from static read-only data:
-! indexing, sections, whole-array and section actual arguments, host
-! association, recursion, equal constants and repeated array constructors.
+! Local named constant arrays, laid out as static read-only data: indexing
+! with runtime subscripts, sections with runtime bounds as actual arguments,
+! host association, recursion, equal constants, all intrinsic numeric and
+! logical kinds, and repeated array constructors.
 module parameter_24_mod
 implicit none
 real :: a(8, 4)
@@ -70,6 +71,9 @@ b(2:4) = ip_same(4:2:-1)
 if (any(b /= [1, -4, 3, -2, 5])) error stop 3
 if (total_explicit(5, ip) /= 3) error stop 4
 if (total_explicit(3, ip(2:4)) /= -3) error stop 5
+k = 2
+if (total_explicit(3, ip(k:k+2)) /= -3) error stop 21
+if (abs(total(c(k:8)) - 35.) > 0) error stop 22
 if (abs(total(c) - 36.) > 0) error stop 6
 if (abs(total(c(2:8:2)) - 20.) > 0) error stop 7
 
