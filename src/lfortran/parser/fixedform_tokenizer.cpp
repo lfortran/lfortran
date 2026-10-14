@@ -380,6 +380,14 @@ struct FixedFormRecursiveDescent {
         return (*cur == '\n' || *cur == ';');
     }
 
+    bool statement_has_assignment(unsigned char const *cur) const {
+        while (*cur != '\0' && *cur != '\n' && *cur != ';' && *cur != '!') {
+            if (*cur == '=') return true;
+            cur++;
+        }
+        return false;
+    }
+
     bool is_integer(const std::string &s) const {
         return !s.empty() && std::all_of(s.begin(), s.end(), [](char c) {
             // TODO: I think `c` can never be ' ', since we remove all
@@ -1197,9 +1205,8 @@ struct FixedFormRecursiveDescent {
             tokenize_line(cur);
             return true;
         }
-        if (next_is(cur, "endblock") && !next_is(cur, "endblockdata")) {
-            push_token_advance(cur, "endblock");
-            tokenize_line(cur);
+        if (next_is(cur, "endblock") && !statement_has_assignment(cur + 8)) {
+            lex_endblock_line(cur);
             return true;
         }
         // handle derived type tokenization
@@ -1746,6 +1753,24 @@ struct FixedFormRecursiveDescent {
         next_line(cur);
     }
 
+    void lex_endblock_line(unsigned char *&cur) {
+        push_token_advance(cur, "endblock");
+        unsigned char *name_start = cur;
+        if (try_name(cur)) {
+            std::string name = tostr(name_start, cur);
+            push_token_no_advance_token(name_start, name, TK_NAME);
+            t.cur = cur;
+        }
+        if (*cur == ';') {
+            tokenize_line(cur);
+            return;
+        }
+        if (*cur == '\n') {
+            push_token_no_advance(cur, "\n");
+        }
+        next_line(cur);
+    }
+
     void lex_do_regular(unsigned char *&cur) {
         while (true) {
             int64_t l = eat_label(cur);
@@ -2092,7 +2117,10 @@ struct FixedFormRecursiveDescent {
         push_token_advance(cur, "block");
         push_token_advance(cur, "data");
         tokenize_line(cur);
-        while(lex_body_statement(cur));
+        while (!next_is(cur, "endblockdata")
+                || statement_has_assignment(cur + 11)) {
+            if (!lex_body_statement(cur)) break;
+        }
         if (next_is(cur, "endblockdata")) {
             push_token_advance(cur, "endblockdata");
             tokenize_line(cur);
