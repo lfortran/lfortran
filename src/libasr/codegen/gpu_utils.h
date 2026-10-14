@@ -1666,13 +1666,37 @@ inline GpuExtent gpu_derive_extent(ASR::expr_t *e,
     }
     if (ASR::is_a<ASR::ArrayBound_t>(*v)) {
         ASR::ArrayBound_t *bd = ASR::down_cast<ASR::ArrayBound_t>(v);
-        if (gpu_designator_is_host_readable(bd->m_v, scope)) {
+        ASR::expr_t *array = bd->m_v;
+        // A bound of a name bound to an array, as `size` of one is above:
+        // an ASSOCIATE name, or the pointer shared lowering binds to a
+        // section it hands to a routine. A section's bounds run from 1 to
+        // its extent.
+        if (ASR::is_a<ASR::Var_t>(*array)) {
+            ASR::expr_t *bound = gpu_local_array_binding(
+                ASR::down_cast<ASR::Var_t>(array)->m_v, scope.body,
+                scope.n_body);
+            if (bound != nullptr) {
+                array = bound;
+                std::vector<ASR::array_index_t*> ranges =
+                    gpu_section_extent_ranges(array, bd->m_dim);
+                if (ranges.size() == 1) {
+                    if (bd->m_bound == ASR::arrayboundType::LBound) {
+                        return gpu_extent_literal(1);
+                    }
+                    GpuExtent out = gpu_derive_range_extent(ranges[0],
+                        scope, depth + 1);
+                    if (out.ok()) return out;
+                    return none;
+                }
+            }
+        }
+        if (gpu_designator_is_host_readable(array, scope)) {
             GpuExtent d = gpu_derive_extent(bd->m_dim, scope, depth);
             if (d.ok()) {
                 GpuExtent out;
                 out.kind = GpuExtentKind::Bound;
                 out.expr = v;
-                out.array = bd->m_v;
+                out.array = array;
                 out.dim = bd->m_dim;
                 out.bound = bd->m_bound;
                 out.children.push_back(std::move(d));
