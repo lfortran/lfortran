@@ -1,13 +1,17 @@
 ! Standard-Fortran counterpart of traits_receiver_intent_09.f90: Gauge2
-! extends Gauge, whose deferred binding reset takes a class(Gauge) passed
-! object with intent(out). Each call finalizes the object once for its dynamic
-! type, deallocates the allocatable components of Gauge2 and of its parent and
-! applies their default initialization before the body runs, through direct
-! calls, class(IReset) dummies, a pointer and an allocatable owner.
+! extends Gauge, which implements the deferred binding reset of IReset with a
+! class(Gauge) passed object with intent(out). Each call finalizes the object
+! once for its dynamic type (Gauge2's final subroutine, then its parent's),
+! deallocates the allocatable components of Gauge2 and of its parent and
+! applies their default initialization before the body runs, which checks the
+! order and counts of the finalizations on entry, through direct calls,
+! class(IReset) dummies, a pointer and an allocatable owner.
 module traits_receiver_intent_09_oracle_m
     use iso_c_binding, only: c_ptr, c_loc, c_associated, c_null_ptr
     implicit none
     integer :: finals = 0, finals2 = 0, entries = 0
+    ! Finalization order: Gauge2's final subroutine appends 2, Gauge's 1.
+    integer :: order = 0
     type(c_ptr) :: expected = c_null_ptr
     type, abstract :: IReset
     contains
@@ -48,6 +52,11 @@ contains
         class(Gauge), target, intent(out) :: self
         integer, intent(in) :: start
         type(c_ptr) :: actual
+        ! The object was finalized once, child before parent, before the body.
+        if (order /= 21 .or. finals /= 1 .or. finals2 /= 1) then
+            print '(a,3i4)', 'entry:', order, finals, finals2
+            error stop 89
+        end if
         actual = c_loc(self%n)
         if (c_associated(expected)) then
             if (.not. c_associated(actual, expected)) error stop 90
@@ -68,10 +77,12 @@ contains
     subroutine gauge_final(self)
         type(Gauge), intent(inout) :: self
         finals = finals + 1
+        order = 10 * order + 1
     end subroutine
     subroutine gauge2_final(self)
         type(Gauge2), intent(inout) :: self
         finals2 = finals2 + 1
+        order = 10 * order + 2
     end subroutine
     subroutine reset_view(x, start)
         class(IReset), intent(inout) :: x
@@ -86,10 +97,11 @@ contains
     subroutine expect(g, n)
         class(IReset), intent(in) :: g
         integer, intent(in) :: n
-        if (finals /= 1 .or. finals2 /= 1 .or. entries /= 1) then
-            print '(a,3i4)', 'counts:', finals, finals2, entries
+        if (order /= 21 .or. finals /= 1 .or. finals2 /= 1 .or. entries /= 1) then
+            print '(a,4i4)', 'counts:', order, finals, finals2, entries
             error stop 94
         end if
+        order = 0
         finals = 0
         finals2 = 0
         entries = 0
