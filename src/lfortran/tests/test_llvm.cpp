@@ -186,6 +186,19 @@ TEST_CASE("LLVM code generation optimization level") {
     CHECK(wasm_evaluator.get_target_machine().getOptLevel()
         == CodeGenOptLevel::Default);
 #endif
+
+#ifdef HAVE_TARGET_AARCH64
+    // At -O0 LLVM selects GlobalISel on AArch64, whose compile time is
+    // quadratic in the size of a basic block; the default mode uses FastISel
+    // as on x86-64.
+    for (const std::string triple: {"aarch64-unknown-linux-gnu",
+            "arm64-apple-macosx11.0.0"}) {
+        LCompilers::LLVMEvaluator aarch64_evaluator(triple);
+        const llvm::TargetMachine &tm = aarch64_evaluator.get_target_machine();
+        CHECK(tm.getOptLevel() == CodeGenOptLevel::None);
+        CHECK(!tm.Options.EnableGlobalISel);
+    }
+#endif
 }
 
 TEST_CASE("llvm 1") {
