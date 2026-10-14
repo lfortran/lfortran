@@ -4,7 +4,9 @@
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 #include <libasr/codegen/llvm_compat.h>
+#include <llvm/IR/Operator.h>
 #include <llvm/Support/raw_ostream.h>
+#include <llvm/Transforms/Utils/Local.h>
 
 namespace LCompilers {
 
@@ -12,8 +14,34 @@ namespace LCompilers {
 
         static bool memory_debug_enabled = false;
 
+        llvm::MaybeAlign known_underalignment(llvm::Type *type,
+                llvm::Value *address, const llvm::DataLayout &data_layout) {
+#if LLVM_VERSION_MAJOR >= 11
+            if (!type->isSized()) {
+                return llvm::MaybeAlign();
+            }
+            // Also for the address of a variable allocated here: it has the
+            // alignment of the variable's type, which need not be that of
+            // the type accessed through it.
+            llvm::Align known = llvm::getKnownAlignment(address, data_layout);
+            if (known >= data_layout.getABITypeAlign(type)) {
+                return llvm::MaybeAlign();
+            }
+            return known;
+#else
+            (void)type;
+            (void)address;
+            (void)data_layout;
+            return llvm::MaybeAlign();
+#endif
+        }
+
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y) {
             LCOMPILERS_ASSERT(y->getType()->isPointerTy());
+            if (llvm::MaybeAlign alignment = known_underalignment(x->getType(), y,
+                    builder.GetInsertBlock()->getModule()->getDataLayout())) {
+                return builder.CreateAlignedStore(x, y, alignment);
+            }
             return builder.CreateStore(x, y);
         }
 
@@ -385,6 +413,143 @@ namespace LCompilers {
     }
     void LLVMUtils::set_module(llvm::Module* module_) {
         module = module_;
+        runtime_error_strings.clear();
+        runtime_error_infos.clear();
+    }
+
+    llvm::Constant* LLVMUtils::get_runtime_error_string(const std::string &str) {
+        auto it = runtime_error_strings.find(str);
+        if (it != runtime_error_strings.end()) {
+            return it->second;
+        }
+        llvm::Constant* str_ptr = LCompilers::create_global_string_ptr(
+            context, *module, *builder, str);
+        runtime_error_strings[str] = str_ptr;
+        return str_ptr;
+    }
+
+    // Number of arguments consumed by a printf-style format string
+    [[maybe_unused]] static size_t count_format_arguments(const std::string &format) {
+        size_t n = 0;
+        for (size_t i = 0; i < format.size(); i++) {
+            if (format[i] == '%') {
+                if (i + 1 < format.size() && format[i + 1] == '%') {
+                    i++;
+                } else {
+                    n++;
+                }
+            }
+        }
+        return n;
+    }
+
+    void LLVMUtils::generate_runtime_error(llvm::Value* cond, const std::string &message,
+            const std::vector<RuntimeLabel> &labels, std::string &infile,
+            LocationManager& lm, const std::vector<llvm::Value*> &args) {
+        llvm::Type* i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
+        llvm::Type* i32 = llvm::Type::getInt32Ty(context);
+        // These mirror `Span`, `lfortran_runtime_error_label` and
+        // `lfortran_runtime_error_info` in lfortran_intrinsics.h
+        llvm::StructType* span_type = llvm::StructType::get(context,
+            {i8_ptr, i32, i32, i32, i32});
+        llvm::StructType* label_type = llvm::StructType::get(context,
+            {llvm::Type::getInt8Ty(context), i8_ptr, span_type->getPointerTo(), i32});
+        llvm::StructType* info_type = llvm::StructType::get(context,
+            {i8_ptr, label_type->getPointerTo(), i32});
+
+        llvm::Function *fn = builder->GetInsertBlock()->getParent();
+        llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
+        llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+        builder->CreateCondBr(cond, thenBB, mergeBB);
+        builder->SetInsertPoint(thenBB);
+
+        auto create_constant_array = [&](llvm::StructType* element_type,
+                const std::vector<llvm::Constant*> &elements) -> llvm::Constant* {
+            if (elements.empty()) {
+                return llvm::ConstantPointerNull::get(element_type->getPointerTo());
+            }
+            llvm::ArrayType* array_type = llvm::ArrayType::get(element_type, elements.size());
+            llvm::GlobalVariable* array = new llvm::GlobalVariable(*module, array_type,
+                true, llvm::GlobalValue::PrivateLinkage,
+                llvm::ConstantArray::get(array_type, elements));
+            array->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+            return llvm::ConstantExpr::getBitCast(array, element_type->getPointerTo());
+        };
+
+        struct SpanLineCol {
+            std::string filename;
+            uint32_t start_l, start_c, last_l, last_c;
+        };
+        std::vector<std::vector<SpanLineCol>> label_spans;
+        // Identical runtime errors (e.g. repeated checks of one expression)
+        // share their constant data
+        std::string info_key = message;
+        // All format arguments share one argument list, so each format
+        // string must receive exactly its own arguments
+        LCOMPILERS_ASSERT(count_format_arguments(message) == args.size());
+        std::vector<llvm::Value*> call_args = {nullptr};
+        call_args.insert(call_args.end(), args.begin(), args.end());
+        for (const RuntimeLabel &label : labels) {
+            LCOMPILERS_ASSERT(count_format_arguments(label.message) == label.args.size());
+            label_spans.emplace_back();
+            info_key += std::string(1, '\0') + (label.primary ? "1" : "0")
+                + std::to_string(label.spans.size()) + std::string(1, '\0') + label.message;
+            for (const diag::Span &span : label.spans) {
+                SpanLineCol s;
+                lm.pos_to_linecol(lm.output_to_input_pos(span.loc.first, false), s.start_l, s.start_c, infile);
+                lm.pos_to_linecol(lm.output_to_input_pos(span.loc.last, false), s.last_l, s.last_c, infile);
+                s.filename = infile;
+                info_key += std::string(1, '\0') + s.filename + ":" + std::to_string(s.start_l)
+                    + ":" + std::to_string(s.start_c) + ":" + std::to_string(s.last_l)
+                    + ":" + std::to_string(s.last_c);
+                label_spans.back().push_back(s);
+            }
+            call_args.insert(call_args.end(), label.args.begin(), label.args.end());
+        }
+
+        llvm::Constant*& info = runtime_error_infos[info_key];
+        if (!info) {
+            std::vector<llvm::Constant*> label_values;
+            for (size_t i = 0; i < labels.size(); i++) {
+                std::vector<llvm::Constant*> span_values;
+                for (const SpanLineCol &s : label_spans[i]) {
+                    span_values.push_back(llvm::ConstantStruct::get(span_type, {
+                        get_runtime_error_string(s.filename),
+                        llvm::ConstantInt::get(i32, s.start_l),
+                        llvm::ConstantInt::get(i32, s.start_c),
+                        llvm::ConstantInt::get(i32, s.last_l),
+                        llvm::ConstantInt::get(i32, s.last_c)}));
+                }
+                label_values.push_back(llvm::ConstantStruct::get(label_type, {
+                    llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), labels[i].primary),
+                    get_runtime_error_string(labels[i].message),
+                    create_constant_array(span_type, span_values),
+                    llvm::ConstantInt::get(i32, span_values.size())}));
+            }
+            llvm::GlobalVariable* info_global = new llvm::GlobalVariable(*module, info_type,
+                true, llvm::GlobalValue::PrivateLinkage,
+                llvm::ConstantStruct::get(info_type, {
+                    get_runtime_error_string(message),
+                    create_constant_array(label_type, label_values),
+                    llvm::ConstantInt::get(i32, labels.size())}));
+            info_global->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+            info = llvm::ConstantExpr::getBitCast(info_global, i8_ptr);
+        }
+        call_args[0] = info;
+
+        llvm::Function* error_fn = module->getFunction("_lcompilers_runtime_error_exit");
+        if (!error_fn) {
+            llvm::FunctionType* error_fn_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context), {i8_ptr}, true);
+            error_fn = llvm::Function::Create(error_fn_type,
+                llvm::Function::ExternalLinkage, "_lcompilers_runtime_error_exit", module);
+            error_fn->addFnAttr(llvm::Attribute::NoReturn);
+            error_fn->addFnAttr(llvm::Attribute::NoUnwind);
+            error_fn->addFnAttr(llvm::Attribute::Cold);
+        }
+        builder->CreateCall(error_fn, call_args);
+        builder->CreateUnreachable();
+        start_new_block(mergeBB);
     }
     std::string LLVMUtils::get_llvm_type_as_string(llvm::Type* type){
         return LLVM::get_type_as_string(type);
@@ -2041,6 +2206,10 @@ namespace LCompilers {
 
     llvm::Value *LLVMUtils::CreateLoad2([[maybe_unused]] llvm::Type *t, llvm::Value *x, bool is_volatile) {
 #if LLVM_VERSION_MAJOR >= 8
+        if (llvm::MaybeAlign alignment = LLVM::known_underalignment(t, x,
+                module->getDataLayout())) {
+            return builder->CreateAlignedLoad(t, x, alignment, is_volatile);
+        }
         return builder->CreateLoad(t, x, is_volatile);
 #else
         // LLVM 7 has no `CreateLoad(Type*, Value*, bool)` and `CreateLoad(x)`
@@ -3639,7 +3808,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             total_data_bytes, llvm::MaybeAlign());
 
         // Store data in wrapper's data field (field 1)
-        builder->CreateStore(data_mem,
+        builder->CreateStore(builder->CreateBitCast(data_mem,
+                class_type->getStructElementType(1)),
             create_gep2(class_type, wrapper, 1));
 
         // For string types, initialize each string descriptor.
@@ -3927,16 +4097,16 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         ensure_string_descriptor_on_heap(llvm_array_type, dest, llvm_str_desc_type);
                         ASR::String_t* str_t = ASR::down_cast<ASR::String_t>(
                             ASRUtils::extract_type(alloc_type->m_type));
-                        int64_t str_len;
-                        ASRUtils::extract_value(str_t->m_len, str_len);
-                        llvm::Value* num_elements = arr_api->get_array_size(llvm_array_type, src, nullptr, 4);
-                        llvm::Value* total_bytes = builder->CreateMul(
-                            builder->CreateSExtOrBitCast(num_elements, llvm::Type::getInt64Ty(context)),
-                            llvm::ConstantInt::get(context, llvm::APInt(64, str_len)));
                         // Get src string_descriptor and char data
                         llvm::Value* src_data_ptr = arr_api->get_pointer_to_data(llvm_array_type, src);
                         llvm::Value* src_str_desc = CreateLoad2(llvm_str_desc_type->getPointerTo(), src_data_ptr);
                         llvm::Value* src_char_ptr = CreateLoad2(i8_ptr, create_gep2(llvm_str_desc_type, src_str_desc, 0));
+                        // The element length is a run-time value for deferred length
+                        llvm::Value* str_len = get_string_length(str_t, src_str_desc);
+                        llvm::Value* num_elements = arr_api->get_array_size(llvm_array_type, src, nullptr, 4);
+                        llvm::Value* total_bytes = builder->CreateMul(
+                            builder->CreateSExtOrBitCast(num_elements, llvm::Type::getInt64Ty(context)),
+                            str_len);
                         // Reuse existing dest string_descriptor; allocate new char data and copy
                         llvm::Value* dest_data_ptr = arr_api->get_pointer_to_data(llvm_array_type, dest);
                         llvm::Value* dest_str_desc = CreateLoad2(llvm_str_desc_type->getPointerTo(), dest_data_ptr);
@@ -3948,7 +4118,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         // Update the existing dest string_descriptor with new char data and length
                         builder->CreateStore(builder->CreateBitCast(new_char_data, i8_ptr),
                             create_gep2(llvm_str_desc_type, dest_str_desc, 0));
-                        builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(64, str_len)),
+                        builder->CreateStore(str_len,
                             create_gep2(llvm_str_desc_type, dest_str_desc, 1));
                         // Fill the array details for offset, rank, dim using existing function
                         arr_api->fill_array_details(src_expr, src_expr, src, dest,
@@ -4243,29 +4413,6 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             return val->getType()->isIntegerTy() ?
                 builder->CreateSExt(val, target_type): builder->CreateFPExt(val, target_type);
         }
-    }
-
-    llvm::Value* LLVMUtils::apply_common_block_alias_cast(
-        llvm::Value* ptr,
-        ASR::expr_t* expr,
-        ASR::ttype_t* expected_type,
-        ASR::ttype_t* actual_type)
-    {
-    #if LLVM_VERSION_MAJOR < 15
-        llvm::Type* expected_llvm_type = get_type_from_ttype_t_util(
-            expr, expected_type, module);
-        llvm::Type* actual_llvm_type = get_type_from_ttype_t_util(
-            expr, actual_type, module);
-        
-        if (expected_llvm_type != actual_llvm_type) {
-            return builder->CreateBitCast(ptr, expected_llvm_type->getPointerTo());
-        }
-    #else
-        (void)expr;
-        (void)expected_type;
-        (void)actual_type;
-    #endif
-        return ptr;
     }
 
     LLVMList::LLVMList(llvm::LLVMContext& context_,
@@ -10589,6 +10736,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 builder->CreateAdd(r_val, llvm::ConstantInt::get(context, llvm::APInt(32, 1))), r);
         });
         llvm_utils->arr_api->set_rank(llvm_array_type, dest, n_dims);
+        builder->CreateStore(
+            llvm_utils->arr_api->get_offset(llvm_array_type, src),
+            llvm_utils->arr_api->get_offset(llvm_array_type, dest, false));
     }
 
     bool LLVMStruct::try_call_struct_defined_assignment(ASR::Struct_t* struct_t,

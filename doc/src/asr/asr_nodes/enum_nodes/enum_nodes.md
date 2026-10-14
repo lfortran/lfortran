@@ -15,6 +15,7 @@ arraystorage
 binop
 cmpop
 codimension_type
+common_block_role
 cptr_kind
 deferred_type_attr
 deftype

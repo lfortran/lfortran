@@ -12,6 +12,7 @@
 
 #include <llvm/Support/Casting.h>
 #include <llvm/Support/raw_ostream.h>
+#include <libasr/codegen/llvm_compat.h>
 #include <map>
 #include <set>
 #include <string>
@@ -204,6 +205,18 @@ class ASRToLLVMVisitor;
 
     namespace LLVM {
 
+        // The alignment that a load or store of `type` at `address` can
+        // claim when the address is not known to be as aligned as `type`:
+        // the alignment LLVM can prove for it. An address received from
+        // elsewhere, such as a dummy argument or a pointer, may be the
+        // address of a variable that EQUIVALENCE places at an offset the
+        // alignment of its type does not divide, so nothing more is claimed
+        // for it than what is known. Otherwise none, and the access claims
+        // the alignment of `type`.
+        llvm::MaybeAlign known_underalignment(llvm::Type *type,
+            llvm::Value *address, const llvm::DataLayout &data_layout);
+        // A store that claims only the alignment its address is known to
+        // have (known_underalignment).
         llvm::Value* CreateStore(llvm::IRBuilder<> &builder, llvm::Value *x, llvm::Value *y);
         void set_memory_debug(bool state);
         bool use_memory_debug();
@@ -342,6 +355,9 @@ class ASRToLLVMVisitor;
             LLVMSetInterface* set_api;
             LLVMArrUtils::Descriptor* arr_api;
             llvm::Module* module;
+            // Constant data of runtime errors, shared within `module`
+            std::unordered_map<std::string, llvm::Constant*> runtime_error_strings;
+            std::unordered_map<std::string, llvm::Constant*> runtime_error_infos;
             std::string& der_type_name;
             std::map<std::string, llvm::StructType*>& name2dertype;
             std::map<std::string, llvm::StructType*>& name2dercontext;
@@ -457,116 +473,27 @@ class ASRToLLVMVisitor;
                 }
             };
 
+            // Returns a constant string for a runtime error message or
+            // argument, shared by all runtime errors in the module
+            llvm::Constant* get_runtime_error_string(const std::string &str);
+
+            /*
+             * Branches on `cond` to a call of the runtime helper that formats
+             * and prints the error and exits. The message, labels and spans
+             * are emitted as constant data; only the format arguments (first
+             * those of `message`, then those of each label) are passed.
+             */
+            void generate_runtime_error(llvm::Value* cond, const std::string &message,
+                const std::vector<RuntimeLabel> &labels, std::string &infile,
+                LocationManager& lm, const std::vector<llvm::Value*> &args);
+
             template<typename... Args>
-            void generate_runtime_error(llvm::Value* cond, std::string message, std::vector<RuntimeLabel> labels, std::string &infile, LocationManager& lm, Args... args)
+            void generate_runtime_error(llvm::Value* cond, const std::string &message,
+                const std::vector<RuntimeLabel> &labels, std::string &infile,
+                LocationManager& lm, Args... args)
             {
-                llvm::Function *fn = builder->GetInsertBlock()->getParent();
-
-                llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
-                llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
-
-                builder->CreateCondBr(cond, thenBB, mergeBB);
-                builder->SetInsertPoint(thenBB); {
-                        llvm::Type *span_type = llvm::StructType::get(context, llvm::ArrayRef<llvm::Type *>({
-                            llvm::Type::getInt8Ty(context)->getPointerTo(),
-                            llvm::Type::getInt32Ty(context),
-                            llvm::Type::getInt32Ty(context),
-                            llvm::Type::getInt32Ty(context),
-                            llvm::Type::getInt32Ty(context),
-                        }));
-                        llvm::Type *label_type = llvm::StructType::get(context, llvm::ArrayRef<llvm::Type *>({
-                            llvm::Type::getInt1Ty(context),
-                            llvm::Type::getInt8Ty(context)->getPointerTo(),
-                            span_type->getPointerTo(),
-                            llvm::Type::getInt32Ty(context),
-                        }));
-                        llvm::Function* lcompilers_snprintf_fn = module->getFunction("_lcompilers_snprintf_alloc");
-                        if (!lcompilers_snprintf_fn) {
-                            llvm::FunctionType* snprintf_fn_type = llvm::FunctionType::get(
-                                llvm::Type::getInt8Ty(context)->getPointerTo(),
-                                {llvm::Type::getInt8Ty(context)->getPointerTo(),
-                                 llvm::Type::getInt8Ty(context)->getPointerTo()},
-                                true);
-                            lcompilers_snprintf_fn = llvm::Function::Create(snprintf_fn_type,
-                                llvm::Function::ExternalLinkage, "_lcompilers_snprintf_alloc", module);
-                        }
-
-                        // Allocate and populate labels and spans
-                        llvm::Type *label_arr_type = llvm::ArrayType::get(label_type, labels.size());
-                        llvm::Value *labels_v = builder->CreateAlloca(label_arr_type);
-                        for (size_t i = 0; i < labels.size(); i++) {
-                            llvm::Value *idx = llvm::ConstantInt::get(context, llvm::APInt(32, i));
-
-                            llvm::Type *span_arr_type = llvm::ArrayType::get(span_type, labels[i].spans.size());
-                            llvm::Value *spans_v = builder->CreateAlloca(span_arr_type);
-                            for (size_t j = 0; j < labels[i].spans.size(); j++) {
-                                llvm::Value *span_idx = llvm::ConstantInt::get(context, llvm::APInt(32, j));
-                                llvm::Value *span_j = LLVMUtils::CreateInBoundsGEP2(span_arr_type, spans_v, {llvm::ConstantInt::get(context, llvm::APInt(32, 0)), span_idx});
-
-                                uint32_t start_l, start_c, last_l, last_c;
-                                lm.pos_to_linecol(lm.output_to_input_pos(labels[i].spans[j].loc.first, false), start_l, start_c, infile);
-                                lm.pos_to_linecol(lm.output_to_input_pos(labels[i].spans[j].loc.last, false), last_l, last_c, infile);
-
-                                builder->CreateStore(LCompilers::create_global_string_ptr(context, *module, *builder, infile),
-                                        LLVMUtils::CreateGEP2(span_type, span_j, 0));
-                                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, start_l)),
-                                        LLVMUtils::CreateGEP2(span_type, span_j, 1));
-                                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, start_c)),
-                                        LLVMUtils::CreateGEP2(span_type, span_j, 2));
-                                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, last_l)),
-                                        LLVMUtils::CreateGEP2(span_type, span_j, 3));
-                                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, last_c)),
-                                        LLVMUtils::CreateGEP2(span_type, span_j, 4));
-                            }
-
-                            std::vector<llvm::Value*> snprintf_args;
-                            snprintf_args.push_back(get_allocator(module));
-                            snprintf_args.push_back(LCompilers::create_global_string_ptr(context, *module, *builder, labels[i].message));
-                            snprintf_args.insert(snprintf_args.end(), labels[i].args.begin(), labels[i].args.end());
-                            llvm::Value* formatted_message = builder->CreateCall(lcompilers_snprintf_fn, snprintf_args);
-
-                            llvm::Value *label_i = LLVMUtils::CreateInBoundsGEP2(label_arr_type, labels_v, {llvm::ConstantInt::get(context, llvm::APInt(32, 0)), idx});
-                            llvm::Value *span_arr = LLVMUtils::CreateGEP2(span_arr_type, spans_v, 0);
-                            llvm::Value *label_spans = LLVMUtils::CreateGEP2(label_type, label_i, 2);
-                            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(1, labels[i].primary)),
-                                    LLVMUtils::CreateGEP2(label_type, label_i, 0));
-                            builder->CreateStore(formatted_message,
-                                    LLVMUtils::CreateGEP2(label_type, label_i, 1));
-                            builder->CreateStore(span_arr, label_spans);
-                            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, labels[i].spans.size())),
-                                    LLVMUtils::CreateGEP2(label_type, label_i, 3));
-                        }
-
-
-                        llvm::Value* formatted_msg = create_global_string_ptr(context, *module, *builder, message);
-                        llvm::Function* print_error_fn = module->getFunction("_lcompilers_runtime_error");
-                        if (!print_error_fn) {
-                            llvm::FunctionType* error_fn_type = llvm::FunctionType::get(
-                                llvm::Type::getVoidTy(context),
-                                {llvm::Type::getInt8Ty(context)->getPointerTo(),
-                                 label_type->getPointerTo(), llvm::Type::getInt32Ty(context), llvm::Type::getInt8Ty(context)->getPointerTo()},
-                                true);
-                            print_error_fn = llvm::Function::Create(error_fn_type,
-                                llvm::Function::ExternalLinkage, "_lcompilers_runtime_error", module);
-                        }
-
-                        std::vector<llvm::Value*> vec = {get_allocator(module), LLVMUtils::CreateGEP2(label_arr_type, labels_v, 0), llvm::ConstantInt::get(context, llvm::APInt(32, labels.size())), formatted_msg, args...};
-                        builder->CreateCall(print_error_fn, vec);
-
-                        llvm::Function* exit_fn = module->getFunction("exit");
-                        if (!exit_fn) {
-                            llvm::FunctionType* exit_fn_type = llvm::FunctionType::get(
-                                llvm::Type::getVoidTy(context),
-                                {llvm::Type::getInt32Ty(context)},
-                                false);
-                            exit_fn = llvm::Function::Create(exit_fn_type,
-                                llvm::Function::ExternalLinkage, "exit", module);
-                        }
-
-                        builder->CreateCall(exit_fn, {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1)});
-                        builder->CreateUnreachable();
-                }
-                start_new_block(mergeBB);
+                generate_runtime_error(cond, message, labels, infile, lm,
+                    std::vector<llvm::Value*>{args...});
             }
             std::string get_llvm_type_as_string(llvm::Type* type);
             /*
@@ -992,8 +919,6 @@ class ASRToLLVMVisitor;
             // The `if_block` and `else_block` must generate one or more blocks. In
             // addition, the `if_block` must not be terminated, we terminate it
             // ourselves. The `else_block` can be either terminated or not.
-
-            llvm::Value* apply_common_block_alias_cast(llvm::Value* ptr, ASR::expr_t* expr,ASR::ttype_t* expected_type,ASR::ttype_t* actual_type);
 
             llvm::Value* to_i1(llvm::Value* cond) {
                 if (cond->getType()->isIntegerTy(1)) {
@@ -2596,6 +2521,11 @@ class ASRToLLVMVisitor;
 
         /// Check if the nature of the variable can't be finalized
         static bool not_finalizable_variable(ASR::Variable_t* const v){
+            // The storage of a common block outlives every scope that
+            // declares the block.
+            if (v->m_common_block != nullptr) {
+                return true;
+            }
             if (LLVM::is_struct_value_dummy_copied(*v)) {
                 return false;
             }
@@ -3383,7 +3313,7 @@ class ASRToLLVMVisitor;
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
                 bool use_defined_assignment = false, bool finalize_dest = true);
 
-            // Copy dimension descriptors and rank from src to dest array descriptor.
+            // Copy dimension descriptors, rank and offset from src to dest array descriptor.
             void copy_dimension_descriptors(
                 llvm::Type* llvm_array_type, llvm::Value* src, llvm::Value* dest,
                 llvm::Module* module);

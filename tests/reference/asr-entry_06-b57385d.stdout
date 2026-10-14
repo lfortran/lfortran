@@ -35,6 +35,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             w:
                                                 (Variable
@@ -65,6 +66,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     mvndfn
@@ -127,6 +129,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     entry_06
@@ -221,6 +224,32 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
+                                ),
+                            mvndnt:
+                                (Variable
+                                    2
+                                    mvndnt
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
                                 ),
                             w:
                                 (Variable
@@ -251,6 +280,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     mvndfn
@@ -277,19 +307,14 @@
                     )
                     [mvndfn_main__lcompilers]
                     [(Var 2 w)]
-                    [(Assignment
-                        (Var 2 mvndfn)
-                        (FunctionCall
-                            1 mvndfn_main__lcompilers
-                            1 mvndfn_main__lcompilers
-                            [((IntegerConstant 1 (Integer 4) Decimal))
-                            ((Var 2 w))]
-                            (Real 8)
-                            ()
-                            ()
-                        )
+                    [(SubroutineCall
+                        1 mvndfn_main__lcompilers
+                        1 mvndfn_main__lcompilers
+                        [((IntegerConstant 1 (Integer 4) Decimal))
+                        ((Var 2 mvndfn))
+                        ((Var 2 mvndfn))
+                        ((Var 2 w))]
                         ()
-                        .false.
                         .false.
                     )]
                     (Var 2 mvndfn)
@@ -326,13 +351,14 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             mvndfn:
                                 (Variable
                                     4
                                     mvndfn
                                     []
-                                    ReturnVar
+                                    Unspecified
                                     ()
                                     ()
                                     Default
@@ -350,18 +376,19 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
-                            mvndfn_main__lcompilers:
+                            mvndnt:
                                 (Variable
                                     4
-                                    mvndfn_main__lcompilers
+                                    mvndnt
                                     []
-                                    ReturnVar
+                                    Unspecified
                                     ()
                                     ()
                                     Default
                                     (Real 8)
-                                    4 mvndfn
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -374,6 +401,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             w:
                                 (Variable
@@ -404,11 +432,14 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     mvndfn_main__lcompilers
                     (FunctionType
                         [(Integer 4)
+                        (Real 8)
+                        (Real 8)
                         (Array
                             (Real 8)
                             [(()
@@ -416,7 +447,7 @@
                             UnboundedPointerArray
                             Global
                         )]
-                        (Real 8)
+                        ()
                         Source
                         Implementation
                         ()
@@ -431,6 +462,8 @@
                     )
                     []
                     [(Var 4 entry__lcompilers)
+                    (Var 4 mvndfn)
+                    (Var 4 mvndnt)
                     (Var 4 w)]
                     [(If
                         ()
@@ -475,6 +508,7 @@
                             (Real 8)
                             ColMajor
                             ()
+                            .false.
                         )
                         (RealConstant
                             10.900000
@@ -493,6 +527,7 @@
                             (Real 8)
                             ColMajor
                             ()
+                            .false.
                         )
                         (RealConstant
                             10.900000
@@ -516,6 +551,7 @@
                                         (Real 8)
                                         ColMajor
                                         ()
+                                        .false.
                                     )
                                     Sub
                                     (RealConstant
@@ -565,6 +601,7 @@
                                         (Real 8)
                                         ColMajor
                                         ()
+                                        .false.
                                     )
                                     Sub
                                     (RealConstant
@@ -601,7 +638,7 @@
                         []
                     )
                     (Assignment
-                        (Var 4 mvndfn_main__lcompilers)
+                        (Var 4 mvndfn)
                         (RealConstant
                             1.200000
                             (Real 8)
@@ -623,6 +660,7 @@
                             (Real 8)
                             ColMajor
                             ()
+                            .false.
                         )
                         (RealConstant
                             10.900000
@@ -641,6 +679,7 @@
                             (Real 8)
                             ColMajor
                             ()
+                            .false.
                         )
                         (RealConstant
                             10.900000
@@ -664,6 +703,7 @@
                                         (Real 8)
                                         ColMajor
                                         ()
+                                        .false.
                                     )
                                     Sub
                                     (RealConstant
@@ -713,6 +753,7 @@
                                         (Real 8)
                                         ColMajor
                                         ()
+                                        .false.
                                     )
                                     Sub
                                     (RealConstant
@@ -749,7 +790,7 @@
                         []
                     )
                     (Assignment
-                        (Var 4 mvndfn_main__lcompilers)
+                        (Var 4 mvndfn)
                         (RealConstant
                             1.200000
                             (Real 8)
@@ -758,7 +799,7 @@
                         .false.
                         .false.
                     )]
-                    (Var 4 mvndfn_main__lcompilers)
+                    ()
                     Public
                     .true.
                     .true.
@@ -774,7 +815,7 @@
                                     3
                                     mvndfn
                                     []
-                                    ReturnVar
+                                    Local
                                     ()
                                     ()
                                     Default
@@ -792,6 +833,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             mvndnt:
                                 (Variable
@@ -803,7 +845,7 @@
                                     ()
                                     Default
                                     (Real 8)
-                                    3 mvndfn
+                                    ()
                                     Source
                                     Public
                                     Required
@@ -816,6 +858,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             w:
                                 (Variable
@@ -848,6 +891,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     mvndnt
@@ -868,19 +912,28 @@
                     )
                     [mvndfn_main__lcompilers]
                     []
-                    [(Assignment
-                        (Var 3 mvndnt)
-                        (FunctionCall
-                            1 mvndfn_main__lcompilers
-                            1 mvndfn_main__lcompilers
-                            [((IntegerConstant 2 (Integer 4) Decimal))
-                            ((Var 3 w))]
-                            (Real 8)
+                    [(SubroutineCall
+                        1 mvndfn_main__lcompilers
+                        1 mvndfn_main__lcompilers
+                        [((IntegerConstant 2 (Integer 4) Decimal))
+                        ((Var 3 mvndnt))
+                        ((Var 3 mvndnt))
+                        ((ArrayPhysicalCast
+                            (Var 3 w)
+                            DescriptorArray
+                            UnboundedPointerArray
+                            (Pointer
+                                (Array
+                                    (Real 8)
+                                    [(()
+                                    ())]
+                                    UnboundedPointerArray
+                                    Global
+                                )
+                            )
                             ()
-                            ()
-                        )
+                        ))]
                         ()
-                        .false.
                         .false.
                     )]
                     (Var 3 mvndnt)

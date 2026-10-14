@@ -7,6 +7,7 @@
 #include <libasr/asr_pass_walk_visitor.h>
 
 #include <deque>
+#include <functional>
 
 namespace LCompilers {
 
@@ -124,6 +125,14 @@ namespace LCompilers {
         return global_scope;
     }
 
+    // Runs `instantiate` and marks every procedure it added to the
+    // translation unit's own scope Private. Such a procedure is a helper
+    // instantiated for calls in this translation unit only; another
+    // translation unit instantiates its own under the same name, so the
+    // helpers must not clash at link time.
+    void make_new_tu_functions_private(ASR::TranslationUnit_t &unit,
+        const std::function<void()> &instantiate);
+
 
         ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
             ASR::expr_t* a_target, ASR::expr_t* a_value,
@@ -207,6 +216,11 @@ namespace LCompilers {
         ASR::expr_t* create_auxiliary_variable(const Location& loc, std::string& name,
             Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type,
             ASR::intentType var_intent=ASR::intentType::Local, ASR::symbol_t* var_decl=nullptr, ASR::expr_t* var=nullptr);
+
+        bool is_nameable_array_constant(ASR::ArrayConstant_t* x);
+
+        ASR::expr_t* create_named_array_constant(Allocator& al,
+            ASR::ArrayConstant_t* x, SymbolTable* current_scope);
 
         ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
                              Allocator& al, ASR::TranslationUnit_t& unit, Location& loc,
@@ -660,7 +674,8 @@ namespace LCompilers {
                                 }
                                 temp_scope = temp_scope->parent;
                             }
-                            if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) {
+                            if (!ASRUtils::is_scope_between(ASRUtils::symbol_parent_symtab(x.m_name),
+                                    current_scope, temp_scope)) {
                                 function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
                             }
                         }
@@ -702,7 +717,8 @@ namespace LCompilers {
                                 }
                                 temp_scope = temp_scope->parent;
                             }
-                            if (temp_scope->get_counter() != ASRUtils::symbol_parent_symtab(x.m_name)->get_counter()) {
+                            if (!ASRUtils::is_scope_between(ASRUtils::symbol_parent_symtab(x.m_name),
+                                    current_scope, temp_scope)) {
                                 function_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
                             }
                         }

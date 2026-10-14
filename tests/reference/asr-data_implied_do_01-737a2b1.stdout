@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i:
                                 (Variable
@@ -60,6 +61,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     data_implied_do_01
@@ -73,6 +75,7 @@
                             (Real 4)
                             ColMajor
                             ()
+                            .false.
                         )
                         (RealConstant
                             1.000000
@@ -91,6 +94,7 @@
                             (Real 4)
                             ColMajor
                             ()
+                            .false.
                         )
                         (RealConstant
                             2.000000
@@ -109,6 +113,7 @@
                             (Real 4)
                             ColMajor
                             ()
+                            .false.
                         )
                         (RealConstant
                             0.000000
@@ -127,6 +132,7 @@
                             (Real 4)
                             ColMajor
                             ()
+                            .false.
                         )
                         (RealConstant
                             0.000000
@@ -145,6 +151,7 @@
                             (Real 4)
                             ColMajor
                             ()
+                            .false.
                         )
                         (RealConstant
                             0.000000
@@ -179,6 +186,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -219,6 +227,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -259,6 +268,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -299,6 +309,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -339,6 +350,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant

@@ -625,7 +625,7 @@ inline ASR::expr_t* gpu_reduction_slot(Allocator &al, const Location &loc,
     return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
         ASRUtils::EXPR(ASR::make_Var_t(al, loc, buffer)),
         args.p, args.n, ASRUtils::duplicate_type(al, scalar_type),
-        ASR::arraystorageType::ColMajor, nullptr));
+        ASR::arraystorageType::ColMajor, nullptr, false));
 }
 
 } // namespace LCompilers

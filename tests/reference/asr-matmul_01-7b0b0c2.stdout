@@ -40,6 +40,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -74,6 +75,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             c:
                                 (Variable
@@ -108,6 +110,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             c2:
                                 (Variable
@@ -142,6 +145,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             dp:
                                 (Variable
@@ -175,6 +179,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             err:
                                 (Variable
@@ -199,6 +204,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             fma_clock:
                                 (Variable
@@ -223,6 +229,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             freq:
                                 (Variable
@@ -247,6 +254,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             ghz:
                                 (Variable
@@ -271,6 +279,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i:
                                 (Variable
@@ -295,6 +304,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             iter:
                                 (Variable
@@ -319,6 +329,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             matmul1:
                                 (ExternalSymbol
@@ -363,6 +374,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             n:
                                 (Variable
@@ -387,6 +399,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             percent_peak:
                                 (Variable
@@ -411,6 +424,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             t:
                                 (Variable
@@ -435,6 +449,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             t1:
                                 (Variable
@@ -459,6 +474,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             t2:
                                 (Variable
@@ -483,6 +499,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     matmul_01
@@ -1562,6 +1579,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             a0:
                                                 (Variable
@@ -1592,6 +1610,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             a1:
                                                 (Variable
@@ -1622,6 +1641,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             a2:
                                                 (Variable
@@ -1652,6 +1672,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             a3:
                                                 (Variable
@@ -1682,6 +1703,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             a4:
                                                 (Variable
@@ -1712,6 +1734,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             a5:
                                                 (Variable
@@ -1742,6 +1765,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             b:
                                                 (Variable
@@ -1774,6 +1798,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             c:
                                                 (Variable
@@ -1806,6 +1831,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             i1:
                                                 (Variable
@@ -1830,6 +1856,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             k:
                                                 (Variable
@@ -1854,6 +1881,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             s1:
                                                 (Variable
@@ -1878,6 +1906,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             u00:
                                                 (Variable
@@ -1908,6 +1937,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             u01:
                                                 (Variable
@@ -1938,6 +1968,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             u10:
                                                 (Variable
@@ -1968,6 +1999,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             u11:
                                                 (Variable
@@ -1998,6 +2030,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             u20:
                                                 (Variable
@@ -2028,6 +2061,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             u21:
                                                 (Variable
@@ -2058,6 +2092,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             u30:
                                                 (Variable
@@ -2088,6 +2123,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             u31:
                                                 (Variable
@@ -2118,6 +2154,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             u40:
                                                 (Variable
@@ -2148,6 +2185,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             u41:
                                                 (Variable
@@ -2178,6 +2216,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             u50:
                                                 (Variable
@@ -2208,6 +2247,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             u51:
                                                 (Variable
@@ -2238,6 +2278,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -2262,6 +2303,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             y:
                                                 (Variable
@@ -2286,6 +2328,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     kernel2
@@ -2837,6 +2880,7 @@
                                                         (Real 4)
                                                         ColMajor
                                                         ()
+                                                        .false.
                                                     )
                                                     (ArrayConstant
                                                         4
@@ -3007,6 +3051,7 @@
                                                         (Real 4)
                                                         ColMajor
                                                         ()
+                                                        .false.
                                                     )
                                                     (ArrayConstant
                                                         4
@@ -3177,6 +3222,7 @@
                                                         (Real 4)
                                                         ColMajor
                                                         ()
+                                                        .false.
                                                     )
                                                     (ArrayConstant
                                                         4
@@ -3347,6 +3393,7 @@
                                                         (Real 4)
                                                         ColMajor
                                                         ()
+                                                        .false.
                                                     )
                                                     (ArrayConstant
                                                         4
@@ -3517,6 +3564,7 @@
                                                         (Real 4)
                                                         ColMajor
                                                         ()
+                                                        .false.
                                                     )
                                                     (ArrayConstant
                                                         4
@@ -3687,6 +3735,7 @@
                                                         (Real 4)
                                                         ColMajor
                                                         ()
+                                                        .false.
                                                     )
                                                     (ArrayConstant
                                                         4
@@ -4336,6 +4385,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             b:
                                                 (Variable
@@ -4368,6 +4418,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             c:
                                                 (Variable
@@ -4400,6 +4451,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             i:
                                                 (Variable
@@ -4424,6 +4476,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             j:
                                                 (Variable
@@ -4448,6 +4501,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             k:
                                                 (Variable
@@ -4472,6 +4526,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             n:
                                                 (Variable
@@ -4496,6 +4551,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     matmul1
@@ -4627,6 +4683,7 @@
                                                         (Real 4)
                                                         ColMajor
                                                         ()
+                                                        .false.
                                                     )
                                                     (RealBinOp
                                                         (ArrayItem
@@ -4640,6 +4697,7 @@
                                                             (Real 4)
                                                             ColMajor
                                                             ()
+                                                            .false.
                                                         )
                                                         Add
                                                         (RealBinOp
@@ -4654,6 +4712,7 @@
                                                                 (Real 4)
                                                                 ColMajor
                                                                 ()
+                                                                .false.
                                                             )
                                                             Mul
                                                             (ArrayItem
@@ -4667,6 +4726,7 @@
                                                                 (Real 4)
                                                                 ColMajor
                                                                 ()
+                                                                .false.
                                                             )
                                                             (Real 4)
                                                             ()
@@ -4726,6 +4786,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             b:
                                                 (Variable
@@ -4758,6 +4819,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             c:
                                                 (Variable
@@ -4790,6 +4852,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             i1:
                                                 (Variable
@@ -4814,6 +4877,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             i2:
                                                 (Variable
@@ -4838,6 +4902,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             i3:
                                                 (Variable
@@ -4862,6 +4927,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             n:
                                                 (Variable
@@ -4886,6 +4952,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             s1:
                                                 (Variable
@@ -4910,6 +4977,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             s2:
                                                 (Variable
@@ -4934,6 +5002,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             s3:
                                                 (Variable
@@ -4958,6 +5027,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -4982,6 +5052,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             y:
                                                 (Variable
@@ -5006,6 +5077,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     matmul2

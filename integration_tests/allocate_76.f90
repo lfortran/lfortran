@@ -1,68 +1,37 @@
-module allocate_76_mod
+module allocate_76_util
     implicit none
-    integer, parameter :: wp = selected_real_kind(15)
-end module
+contains
+    subroutine set_alloc(xx, yy)
+        real, intent(in) :: xx(:)
+        real, allocatable, intent(out) :: yy(:)
+
+        if (allocated(yy)) error stop
+        allocate(yy(size(xx)))
+        yy = xx
+    end subroutine set_alloc
+
+    subroutine select_vec(iuse, xx)
+        integer, intent(in) :: iuse(:)
+        real, allocatable, intent(inout) :: xx(:)
+
+        ! Parentheses supply an independent input value before output deallocation.
+        call set_alloc((xx(iuse)), xx)
+    end subroutine select_vec
+end module allocate_76_util
 
 program allocate_76
-    ! A typed allocation takes its kind from a constant expression, not
-    ! only from an integer literal
-    use allocate_76_mod, only: wp
+    use allocate_76_util
     implicit none
-    integer, parameter :: dp = kind(1.d0), ik = 8
-    class(*), allocatable :: x, a(:)
+    real, allocatable :: x(:)
+    integer :: i
 
-    allocate(real(dp) :: x)
-    select type (x)
-    type is (real(8))
-        x = 1.0_8 / 3
-        if (abs(x - 1.0_8 / 3) > 1e-15_8) error stop
-    class default
-        error stop
-    end select
-    deallocate(x)
+    allocate(x(3))
+    do i = 1, 3
+        x(i) = 10 * real(i)
+    end do
+    call select_vec([1, 3], x)
 
-    allocate(real(kind=dp) :: x)
-    select type (x)
-    type is (real(8))
-    class default
-        error stop
-    end select
-    deallocate(x)
-
-    allocate(integer(ik) :: x)
-    select type (x)
-    type is (integer(8))
-        x = 2_8**40
-        if (x /= 1099511627776_8) error stop
-    class default
-        error stop
-    end select
-    deallocate(x)
-
-    allocate(complex(kind(1.d0)) :: x)
-    select type (x)
-    type is (complex(8))
-    class default
-        error stop
-    end select
-    deallocate(x)
-
-    allocate(logical(kind=ik) :: x)
-    select type (x)
-    type is (logical(8))
-    class default
-        error stop
-    end select
-    deallocate(x)
-
-    allocate(real(wp) :: a(3))
-    select type (a)
-    type is (real(8))
-        a = 1.5_8
-        if (size(a) /= 3) error stop
-        if (any(a /= 1.5_8)) error stop
-    class default
-        error stop
-    end select
-    print *, "ok"
-end program
+    if (.not. allocated(x)) error stop
+    if (size(x) /= 2) error stop
+    if (any(x /= [10.0, 30.0])) error stop
+end program allocate_76

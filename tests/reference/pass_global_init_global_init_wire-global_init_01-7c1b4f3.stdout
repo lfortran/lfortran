@@ -61,6 +61,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             __lfortran_global_init_global_init_01_a:
                                                 (ExternalSymbol
@@ -242,6 +243,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             leaf:
                                 (ExternalSymbol
@@ -288,6 +290,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     global_init_01
@@ -331,6 +334,7 @@
                                         )
                                         ColMajor
                                         ()
+                                        .false.
                                     )
                                     6 1_leaf_h
                                     (Integer 4)
@@ -364,6 +368,7 @@
                                         )
                                         ColMajor
                                         ()
+                                        .false.
                                     )
                                     6 1_leaf_tag
                                     (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -408,6 +413,7 @@
                                         )
                                         ColMajor
                                         ()
+                                        .false.
                                     )
                                     6 1_leaf_h
                                     (Integer 4)
@@ -441,6 +447,7 @@
                                         )
                                         ColMajor
                                         ()
+                                        .false.
                                     )
                                     6 1_leaf_tag
                                     (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -477,6 +484,7 @@
                                 )
                                 ColMajor
                                 ()
+                                .true.
                             )
                             6 1_leaf_h
                             (Integer 4)
@@ -503,6 +511,7 @@
                                 )
                                 ColMajor
                                 ()
+                                .true.
                             )
                             6 1_leaf_tag
                             (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -534,6 +543,7 @@
                                     )
                                     ColMajor
                                     ()
+                                    .true.
                                 )
                                 6 1_leaf_h
                                 (Integer 4)
@@ -567,6 +577,7 @@
                                     )
                                     ColMajor
                                     ()
+                                    .true.
                                 )
                                 6 1_leaf_tag
                                 (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
@@ -601,6 +612,7 @@
                                 )
                                 ColMajor
                                 ()
+                                .true.
                             )
                             6 1_leaf_h
                             (Integer 4)
@@ -629,6 +641,7 @@
                                     )
                                     ColMajor
                                     ()
+                                    .true.
                                 )
                                 6 1_leaf_h
                                 (Integer 4)
@@ -691,6 +704,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     __lfortran_global_init_global_init_01_a
@@ -820,6 +834,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             leaf:
                                 (Struct
@@ -849,6 +864,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             tag:
                                                 (Variable
@@ -879,6 +895,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     leaf
@@ -951,6 +968,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     __lfortran_global_init_global_init_01_b
@@ -1090,6 +1108,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             check_a:
                                 (Function
@@ -1139,6 +1158,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     check_a
@@ -1183,6 +1203,7 @@
                                                         )
                                                         ColMajor
                                                         ()
+                                                        .false.
                                                     )
                                                     5 1_leaf_h
                                                     (Integer 4)
@@ -1216,6 +1237,7 @@
                                                         )
                                                         ColMajor
                                                         ()
+                                                        .false.
                                                     )
                                                     5 1_leaf_tag
                                                     (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)

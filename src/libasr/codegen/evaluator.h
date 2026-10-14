@@ -108,6 +108,9 @@ public:
     const LLVMTargetConfig &get_target_config() const {
         return target_config;
     }
+    const llvm::TargetMachine &get_target_machine() const {
+        return *TM;
+    }
     static void print_targets();
     static std::string get_default_target_triple();
 

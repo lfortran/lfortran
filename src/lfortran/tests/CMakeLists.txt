@@ -151,6 +151,11 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
     find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
     if (LFORTRAN_TEST_PYTHON)
         add_test(
+            NAME test_dwarf_convert
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_CURRENT_SOURCE_DIR}/test_dwarf_convert.py
+        )
+        add_test(
             NAME test_asr_text_edn_conformance
             COMMAND ${LFORTRAN_TEST_PYTHON}
                 ${CMAKE_SOURCE_DIR}/tests/asr/check_edn.py
@@ -220,6 +225,16 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 --llvm ${CMAKE_SOURCE_DIR}/src/libasr/codegen/asr_to_llvm.cpp
                 --manifest ${CMAKE_SOURCE_DIR}/tests/asr/llvm_constructor_coverage.toml
         )
+        # The prompt is driven through a pipe on the other platforms only;
+        # this test has not been run on Windows.
+        if (NOT WIN32)
+            add_test(
+                NAME test_repl
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
+                    --lfortran $<TARGET_FILE:lfortran>
+            )
+        endif()
     endif()
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"

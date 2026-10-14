@@ -102,6 +102,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             iomsg:
                                                 (Variable
@@ -126,6 +127,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             iostat:
                                                 (Variable
@@ -150,6 +152,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             iotype:
                                                 (Variable
@@ -174,6 +177,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             pfmt:
                                                 (Variable
@@ -198,6 +202,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             unit:
                                                 (Variable
@@ -222,6 +227,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             vlist:
                                                 (Variable
@@ -252,6 +258,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     pwf
@@ -333,6 +340,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             iomsg:
                                                 (Variable
@@ -357,6 +365,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             iostat:
                                                 (Variable
@@ -381,6 +390,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             unit:
                                                 (Variable
@@ -405,6 +415,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     pwunf

@@ -170,7 +170,7 @@ def array_item(table, name, indices, element):
         for index in indices)
     return (
         f"(ArrayItem :v {var(table, name)} :args [{entries}] "
-        f":type {type_of(element)} :storage_format :ColMajor :value nil)"
+        f":type {type_of(element)} :storage_format :ColMajor :value nil :in_bounds false)"
     )
 
 
@@ -196,7 +196,7 @@ def variable(table, name, declaration, intent="Local", presence="Required",
         f":presence :{presence} :value_attr false :target_attr false "
         f":contiguous_attr false :bindc_name nil :is_volatile false "
         f":is_protected false :pass_attr :NotMethod :self_argument nil "
-        f":codims [])"
+        f":codims [] :common_block nil)"
     )
 
 

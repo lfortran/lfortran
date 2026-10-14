@@ -6195,10 +6195,10 @@ namespace StringConcat {
             ASRBuilder b(al, loc);
             ASR::String_t* s1 = get_string_type(args[0]);
             ASR::String_t* s2 = get_string_type(args[1]);
-            if(is_value_constant(s1->m_len) && is_value_constant(s2->m_len)){
-                int64_t s1_len, s2_len;
-                extract_value(s1->m_len, s1_len);
-                extract_value(s2->m_len, s2_len);
+            // A length can be a named constant without a value yet, e.g.
+            // one that depends on a deferred constant of a template.
+            int64_t s1_len, s2_len;
+            if (extract_value(s1->m_len, s1_len) && extract_value(s2->m_len, s2_len)) {
                 return_type = b.String(b.i64(s1_len + s2_len), ASR::ExpressionLength,
                     ASR::DescriptorString, char_kind);
             } else {
@@ -6232,7 +6232,11 @@ namespace StringConcat {
             ASR::expr_t* expr, ASR::ttype_t* expr_type, ASRBuilder& b) {
         ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(expr_type));
         if (str_type->m_len) {
-            return b.i2i_t(str_type->m_len, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
+            // Copy the length, so that later rewrites of the returned
+            // expression do not modify the type it was taken from.
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            return b.i2i_t(duplicator.duplicate_expr(str_type->m_len),
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
         }
         // For deferred-length strings, check if expr is a StringConcat.
         // If so, recursively compute the length to avoid embedding the

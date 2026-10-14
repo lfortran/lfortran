@@ -264,12 +264,23 @@ jobs:
       scope: quick
 
   # Preserve the public check names when moving these jobs out of the shared workflow.
+  # The two LLVM WASM backends run in parallel jobs: the Emscripten pass alone
+  # takes about as long as the WASI pass plus building the compiler, because
+  # every emcc link runs Emscripten's JavaScript compiler.
   test_llvm_wasm:
-    name: Compiler compatibility / Test LLVM 19 WASM (ubuntu-latest)
+    name: Compiler compatibility / Test LLVM 19 WASM${{ matrix.suffix }} (ubuntu-latest)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     permissions:
       contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - backend: llvm_wasm
+            suffix: ""
+          - backend: llvm_wasm_emcc
+            suffix: " Emscripten"
     steps:
       - uses: actions/checkout@v7
         with:
@@ -295,8 +306,9 @@ jobs:
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-ubuntu-latest-19
-          save: ${{ github.ref == 'refs/heads/main' }}
+          key: ${{ github.job }}-ubuntu-latest-19-o2
+          # Both jobs build the same compiler; one copy of the cache is enough.
+          save: ${{ github.ref == 'refs/heads/main' && matrix.backend == 'llvm_wasm' }}
 
       - name: Install libunwind
         run: micromamba install -y -n lf libunwind=1.7.2
@@ -343,8 +355,14 @@ jobs:
             export EMSDK_PATH=$HOME/ext/emsdk
             export CXXFLAGS="-Werror -D_GLIBCXX_ASSERTIONS"
             ./build0.sh
+            # A Debug build (assertions and per-pass ASR verification, no
+            # NDEBUG) compiled with -O2, like Quick's LLVM 11 compiler: each
+            # test spends about half as long in LFortran. See that job for
+            # -Wno-mismatched-new-delete.
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
+              "-DCMAKE_CXX_FLAGS_DEBUG=-Wall -Wextra -O2 -Wno-mismatched-new-delete" \
+              "-DCMAKE_C_FLAGS_DEBUG=-O2" \
               -DWITH_LLVM=yes \
               -DWITH_LSP=yes \
               -DWITH_TARGET_WASM=yes \
@@ -358,6 +376,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test unit tests
+        if: matrix.backend == 'llvm_wasm'
         shell: bash -e -l {0}
         run: ctest --output-on-failure
 
@@ -369,7 +388,7 @@ jobs:
             export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
             export WASMTIME_NEW_CLI=0
             cd integration_tests
-            ./run_tests.py -b llvm_wasm llvm_wasm_emcc
+            ./run_tests.py -b ${{ matrix.backend }}
 
   test_without_llvm:
     name: Compiler compatibility / Test without LLVM Backend

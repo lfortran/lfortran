@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -66,6 +67,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             same:
                                 (ExternalSymbol
@@ -118,21 +120,7 @@
                             ))]
                             (Array
                                 (String 1 (StringLen
-                                    (ArrayItem
-                                        (Var 4 a)
-                                        [(()
-                                        (ArrayBound
-                                            (Var 4 a)
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            (Integer 4)
-                                            LBound
-                                            ()
-                                        )
-                                        ())]
-                                        (String 1 () AssumedLength DescriptorString)
-                                        ColMajor
-                                        ()
-                                    )
+                                    (Var 4 a)
                                     (Integer 4)
                                     ()
                                 ) ExpressionLength DescriptorString)
@@ -176,6 +164,7 @@
                                 (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (StringConstant
@@ -201,6 +190,7 @@
                                 (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (StringConstant
@@ -219,135 +209,40 @@
                         ()
                         (IntegerCompare
                             (StringLen
-                                (ArrayItem
-                                    (FunctionCall
-                                        4 same
-                                        ()
-                                        [((ArrayPhysicalCast
-                                            (Var 4 a)
-                                            PointerArray
-                                            DescriptorArray
-                                            (Array
-                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (IntegerConstant 2 (Integer 4) Decimal))]
-                                                DescriptorArray
-                                                Global
-                                            )
-                                            ()
-                                        ))]
+                                (FunctionCall
+                                    4 same
+                                    ()
+                                    [((ArrayPhysicalCast
+                                        (Var 4 a)
+                                        PointerArray
+                                        DescriptorArray
                                         (Array
-                                            (String 1 (StringLen
-                                                (ArrayItem
-                                                    (Var 4 a)
-                                                    [(()
-                                                    (ArrayBound
-                                                        (Var 4 a)
-                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Integer 4)
-                                                        LBound
-                                                        ()
-                                                    )
-                                                    ())]
-                                                    (String 1 () AssumedLength DescriptorString)
-                                                    ColMajor
-                                                    ()
-                                                )
-                                                (Integer 4)
-                                                ()
-                                            ) ExpressionLength DescriptorString)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
-                                            (IntegerBinOp
-                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                Mul
-                                                (IntegerConstant 2 (Integer 4) Decimal)
-                                                (Integer 4)
-                                                ()
-                                            ))]
-                                            PointerArray
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            DescriptorArray
                                             Global
                                         )
                                         ()
-                                        ()
-                                    )
-                                    [(()
-                                    (ArrayBound
-                                        (FunctionCall
-                                            4 same
-                                            ()
-                                            [((ArrayPhysicalCast
-                                                (Var 4 a)
-                                                PointerArray
-                                                DescriptorArray
-                                                (Array
-                                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                                    (IntegerConstant 2 (Integer 4) Decimal))]
-                                                    DescriptorArray
-                                                    Global
-                                                )
-                                                ()
-                                            ))]
-                                            (Array
-                                                (String 1 (StringLen
-                                                    (ArrayItem
-                                                        (Var 4 a)
-                                                        [(()
-                                                        (ArrayBound
-                                                            (Var 4 a)
-                                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                                            (Integer 4)
-                                                            LBound
-                                                            ()
-                                                        )
-                                                        ())]
-                                                        (String 1 () AssumedLength DescriptorString)
-                                                        ColMajor
-                                                        ()
-                                                    )
-                                                    (Integer 4)
-                                                    ()
-                                                ) ExpressionLength DescriptorString)
-                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (IntegerBinOp
-                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                    Mul
-                                                    (IntegerConstant 2 (Integer 4) Decimal)
-                                                    (Integer 4)
-                                                    ()
-                                                ))]
-                                                PointerArray
-                                                Global
-                                            )
-                                            ()
-                                            ()
-                                        )
-                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Integer 4)
-                                        LBound
-                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                    )
-                                    ())]
-                                    (String 1 (StringLen
-                                        (ArrayItem
+                                    ))]
+                                    (Array
+                                        (String 1 (StringLen
                                             (Var 4 a)
-                                            [(()
-                                            (ArrayBound
-                                                (Var 4 a)
-                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                (Integer 4)
-                                                LBound
-                                                ()
-                                            )
-                                            ())]
-                                            (String 1 () AssumedLength DescriptorString)
-                                            ColMajor
+                                            (Integer 4)
                                             ()
-                                        )
-                                        (Integer 4)
-                                        ()
-                                    ) ExpressionLength DescriptorString)
-                                    ColMajor
+                                        ) ExpressionLength DescriptorString)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerBinOp
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            Mul
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        ))]
+                                        PointerArray
+                                        Global
+                                    )
+                                    ()
                                     ()
                                 )
                                 (Integer 4)
@@ -404,6 +299,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             yy:
                                                 (Variable
@@ -416,21 +312,7 @@
                                                     Default
                                                     (Array
                                                         (String 1 (StringLen
-                                                            (ArrayItem
-                                                                (Var 3 xx)
-                                                                [(()
-                                                                (ArrayBound
-                                                                    (Var 3 xx)
-                                                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                                                    (Integer 4)
-                                                                    LBound
-                                                                    ()
-                                                                )
-                                                                ())]
-                                                                (String 1 () AssumedLength DescriptorString)
-                                                                ColMajor
-                                                                ()
-                                                            )
+                                                            (Var 3 xx)
                                                             (Integer 4)
                                                             ()
                                                         ) ExpressionLength DescriptorString)
@@ -457,6 +339,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     same
@@ -470,39 +353,15 @@
                                         )]
                                         (Array
                                             (String 1 (StringLen
-                                                (ArrayItem
-                                                    (FunctionParam
-                                                        0
-                                                        (Array
-                                                            (String 1 () AssumedLength DescriptorString)
-                                                            [(()
-                                                            ())]
-                                                            DescriptorArray
-                                                            Global
-                                                        )
-                                                        ()
+                                                (FunctionParam
+                                                    0
+                                                    (Array
+                                                        (String 1 () AssumedLength DescriptorString)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                        Global
                                                     )
-                                                    [(()
-                                                    (ArrayBound
-                                                        (FunctionParam
-                                                            0
-                                                            (Array
-                                                                (String 1 () AssumedLength DescriptorString)
-                                                                [(()
-                                                                ())]
-                                                                DescriptorArray
-                                                                Global
-                                                            )
-                                                            ()
-                                                        )
-                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Integer 4)
-                                                        LBound
-                                                        ()
-                                                    )
-                                                    ())]
-                                                    (String 1 () AssumedLength DescriptorString)
-                                                    ColMajor
                                                     ()
                                                 )
                                                 (Integer 4)
