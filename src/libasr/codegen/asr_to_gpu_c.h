@@ -2229,6 +2229,62 @@ public:
         }
     }
 
+    // The tables above are keyed by name, so an entry about a variable a
+    // block declares holds only while that block is emitted, as the
+    // declaration the block emits does. Two blocks may declare variables of
+    // one name -- a routine inlined twice brings two copies of its locals --
+    // and an entry the first left behind would describe the second's
+    // variable; a variable of the block may also hide one of the same name
+    // outside it, whose entries return once the block is closed.
+    class BlockNameScope {
+        ASRToGpuCVisitor &v;
+        SymbolTable *block;
+        std::vector<std::pair<std::map<std::string, std::string>*,
+            std::map<std::string, std::string>>> hidden;
+
+        std::vector<std::map<std::string, std::string>*> tables() {
+            return {&v.func_array_size_params, &v.func_array_data_params};
+        }
+
+        // Whether `key` describes a variable `block` declares: its name,
+        // "var.member" for a component of it, either with the mark of one
+        // dimension.
+        bool declared_in_block(const std::string &key) const {
+            std::string base = key.substr(0, key.find('.'));
+            std::string array;
+            size_t d = 0;
+            if (dim_size_key_parts(base, array, d)) base = array;
+            return block->get_symbol(base) != nullptr;
+        }
+
+        std::map<std::string, std::string> take_block_entries(
+                std::map<std::string, std::string> &table) const {
+            std::map<std::string, std::string> taken;
+            for (auto it = table.begin(); it != table.end();) {
+                if (declared_in_block(it->first)) {
+                    taken.insert(*it);
+                    it = table.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+            return taken;
+        }
+    public:
+        BlockNameScope(ASRToGpuCVisitor &v, SymbolTable *block)
+                : v(v), block(block) {
+            for (auto *table : tables()) {
+                hidden.push_back({table, take_block_entries(*table)});
+            }
+        }
+        ~BlockNameScope() {
+            for (auto &h : hidden) {
+                take_block_entries(*h.first);
+                h.first->insert(h.second.begin(), h.second.end());
+            }
+        }
+    };
+
     // Name of the kernel/function parameter holding that extent.
     static std::string struct_member_dim_param(const std::string &var_name,
             const std::string &mem_name, size_t d) {
@@ -4012,6 +4068,7 @@ public:
                 ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(stmt);
                 ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
                 GpuEmissionScope emission_scope(active_scope, block->m_symtab);
+                BlockNameScope block_names(*this, block->m_symtab);
                 src << get_indent() << "{\n";
                 indent_level++;
                 for (ASR::Variable_t *v : gpu_scope_declaration_order(
@@ -4077,6 +4134,7 @@ public:
                 ASR::AssociateBlock_t *ab =
                     ASR::down_cast<ASR::AssociateBlock_t>(abc->m_m);
                 GpuEmissionScope emission_scope(active_scope, ab->m_symtab);
+                BlockNameScope block_names(*this, ab->m_symtab);
                 src << get_indent() << "{\n";
                 indent_level++;
                 for (ASR::Variable_t *v : gpu_scope_declaration_order(
