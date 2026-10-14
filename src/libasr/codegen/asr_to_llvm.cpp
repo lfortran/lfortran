@@ -15450,6 +15450,27 @@ public:
         }
     }
 
+    void visit_ArrayBlockCopy(const ASR::ArrayBlockCopy_t &x) {
+        if (compiler_options.emit_debug_info) debug_emit_loc(x);
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr(*x.m_target);
+        ptr_loads = ptr_loads_copy;
+        llvm::Value* target = tmp;
+        // Copy from the storage of the variable, as its elements are read,
+        // and not from a new copy of the value of a named constant
+        ASR::Variable_t* v = ASRUtils::EXPR2VAR(x.m_value);
+        uint32_t h = get_hash((ASR::asr_t*)v);
+        llvm::Value* value = llvm_symtab[h];
+        LCOMPILERS_ASSERT(value != nullptr);
+        llvm::Type* el_type = llvm_utils->get_el_type(x.m_value,
+            ASRUtils::extract_type(v->m_type), module.get());
+        uint64_t size = module->getDataLayout().getTypeAllocSize(el_type) *
+            ASRUtils::get_fixed_size_of_array(v->m_type);
+        builder->CreateMemCpy(target, llvm::MaybeAlign(), value,
+            llvm::MaybeAlign(), size);
+    }
+
     void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t &x) {
         if (compiler_options.po.bounds_checking) {
             Vec<ASR::expr_t*> components;
@@ -30287,6 +30308,9 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     co.po.run_fun = run_fn;
     co.po.always_run = false;
     co.po.skip_optimization_func_instantiation = skip_optimization_func_instantiation;
+    // The GPU code generators emit device kernels from the ASR after the
+    // passes and do not lower ArrayBlockCopy.
+    co.po.array_block_copy = co.gpu_backend.empty();
     pass_manager.rtlib = co.rtlib;
     auto t1 = std::chrono::high_resolution_clock::now();
     // A pass reports a hard error by adding it to the diagnostics, so the

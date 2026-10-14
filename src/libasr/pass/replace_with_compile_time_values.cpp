@@ -124,6 +124,11 @@ class ExprVisitor: public ASR::CallReplacerOnExpressionsVisitor<ExprVisitor> {
         visit_ExprMethod(x, &ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_StringItem);
     }
 
+    void visit_ArrayBlockCopy(const ASR::ArrayBlockCopy_t& x) {
+        // The value is copied from the storage of its named constant
+        visit_ExprMethod(x, &ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_ArrayBlockCopy);
+    }
+
     void visit_Assignment(const ASR::Assignment_t& x) {
         // Don't replace the assignment target with its compile-time value
         // (e.g., ch(5:5) should not become "4" when used as an assignment target)

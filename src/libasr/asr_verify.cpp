@@ -2214,6 +2214,52 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_DebugCheckArrayBounds(x);
     }
 
+    void visit_ArrayBlockCopy(const ASR::ArrayBlockCopy_t& x) {
+        require_id(ASR::is_a<ASR::ArrayItem_t>(*x.m_target),
+            "asr.verify.array_block_copy.target_element",
+            "ArrayBlockCopy::m_target must be an array element");
+        require_id(ASR::is_a<ASR::Var_t>(*x.m_value),
+            "asr.verify.array_block_copy.value_variable",
+            "ArrayBlockCopy::m_value must be a named constant");
+        if (check_external && !diagnostics.has_error()) {
+            // A named constant cannot overlap the target
+            ASR::symbol_t* value_sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(x.m_value)->m_v);
+            require_id(ASR::is_a<ASR::Variable_t>(*value_sym) &&
+                ASR::down_cast<ASR::Variable_t>(value_sym)->m_storage ==
+                    ASR::storage_typeType::Parameter,
+                "asr.verify.array_block_copy.value_variable",
+                "ArrayBlockCopy::m_value must be a named constant");
+        }
+        if (check_external && !diagnostics.has_error()) {
+            ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+            ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
+            ASR::ttype_t* element_type = ASRUtils::extract_type(value_type);
+            require_id(!ASRUtils::is_array(target_type) &&
+                ASRUtils::is_contiguous_array_storage(ASRUtils::expr_type(
+                    ASR::down_cast<ASR::ArrayItem_t>(x.m_target)->m_v)),
+                "asr.verify.array_block_copy.contiguous_target",
+                "ArrayBlockCopy::m_target must be a single element of an "
+                "array whose elements are stored contiguously");
+            require_id(ASRUtils::is_fixed_size_array(value_type) &&
+                ASRUtils::extract_physical_type(value_type) ==
+                    ASR::array_physical_typeType::FixedSizeArray,
+                "asr.verify.array_block_copy.constant_size_value",
+                "ArrayBlockCopy::m_value must be an array of constant size");
+            require_id((ASR::is_a<ASR::Integer_t>(*element_type) ||
+                    ASR::is_a<ASR::UnsignedInteger_t>(*element_type) ||
+                    ASR::is_a<ASR::Real_t>(*element_type) ||
+                    ASR::is_a<ASR::Complex_t>(*element_type) ||
+                    ASR::is_a<ASR::Logical_t>(*element_type)) &&
+                ASRUtils::check_equal_type(target_type, element_type,
+                    nullptr, nullptr),
+                "asr.verify.array_block_copy.element_type",
+                "ArrayBlockCopy::m_value must have elements of intrinsic "
+                "numeric or logical type, the type of m_target");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_ArrayBlockCopy(x);
+    }
+
     void visit_ArraySection(const ArraySection_t &x) {
         require(
             ASR::is_a<ASR::Array_t>(*x.m_type),

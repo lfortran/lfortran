@@ -115,6 +115,7 @@ stmt
     | Expr(expr expression)
     | GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size, call_arg* args)
     | GpuSync()
+    | ArrayBlockCopy(expr target, expr value)
 
 expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)

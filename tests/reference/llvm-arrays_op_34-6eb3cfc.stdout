@@ -1,0 +1,279 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+target datalayout = "..."
+
+%string_descriptor = type { i8*, i64 }
+
+@arrays_op_34.__libasr_array_constant_ = private unnamed_addr constant [4 x float] [float 1.000000e+00, float 2.000000e+00, float 3.000000e+00, float 4.000000e+00]
+@arrays_op_34.__libasr_array_constant_1 = private unnamed_addr constant [2 x float] [float 5.000000e+00, float 6.000000e+00]
+@0 = private unnamed_addr constant [2 x i8] c"a\00", align 1
+@1 = private unnamed_addr constant [44 x i8] c"tests/../integration_tests/arrays_op_34.f90\00", align 1
+@2 = private unnamed_addr constant [1 x i8] zeroinitializer, align 1
+@3 = private unnamed_addr constant [1 x { i8*, i32, i32, i32, i32 }] [{ i8*, i32, i32, i32, i32 } { i8* getelementptr inbounds ([44 x i8], [44 x i8]* @1, i32 0, i32 0), i32 11, i32 1, i32 11, i32 7 }]
+@4 = private unnamed_addr constant [118 x i8] c"Runtime error: Array '%s' index out of bounds. Tried to access index %d of dimension %d, but valid range is %d to %d.\00", align 1
+@5 = private unnamed_addr constant [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }] [{ i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 } { i8 1, i8* getelementptr inbounds ([1 x i8], [1 x i8]* @2, i32 0, i32 0), { i8*, i32, i32, i32, i32 }* getelementptr inbounds ([1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* @3, i32 0, i32 0), i32 1 }]
+@6 = private unnamed_addr constant { i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 } { i8* getelementptr inbounds ([118 x i8], [118 x i8]* @4, i32 0, i32 0), { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* getelementptr inbounds ([1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* @5, i32 0, i32 0), i32 1 }
+@"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@7 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@8 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@9 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@10 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@11 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data = private constant [2 x i8] c"ok"
+@string_const = private global %string_descriptor { i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data, i32 0, i32 0), i64 2 }
+@12 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  %array_bound15 = alloca i32, align 4
+  %array_bound9 = alloca i32, align 4
+  %array_bound3 = alloca i32, align 4
+  %array_bound = alloca i32, align 4
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %__do_loop_end = alloca i32, align 4
+  %__do_loop_end1 = alloca i32, align 4
+  %__libasr_created__array_section_subscript_ = alloca i32, align 4
+  %__libasr_index_0_ = alloca i32, align 4
+  %__libasr_index_1_ = alloca i32, align 4
+  %a = alloca [12 x float], align 4
+  %i = alloca i32, align 4
+  br i1 false, label %then, label %else
+
+then:                                             ; preds = %.entry
+  store i32 4, i32* %array_bound, align 4
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  br i1 true, label %then1, label %else2
+
+then1:                                            ; preds = %else
+  store i32 3, i32* %array_bound, align 4
+  br label %ifcont
+
+else2:                                            ; preds = %else
+  br label %ifcont
+
+ifcont:                                           ; preds = %else2, %then1, %then
+  %2 = load i32, i32* %array_bound, align 4
+  store i32 %2, i32* %__do_loop_end, align 4
+  br i1 false, label %then4, label %else5
+
+then4:                                            ; preds = %ifcont
+  store i32 1, i32* %array_bound3, align 4
+  br label %ifcont8
+
+else5:                                            ; preds = %ifcont
+  br i1 true, label %then6, label %else7
+
+then6:                                            ; preds = %else5
+  store i32 1, i32* %array_bound3, align 4
+  br label %ifcont8
+
+else7:                                            ; preds = %else5
+  br label %ifcont8
+
+ifcont8:                                          ; preds = %else7, %then6, %then4
+  %3 = load i32, i32* %array_bound3, align 4
+  %4 = sub i32 %3, 1
+  store i32 %4, i32* %__libasr_index_1_, align 4
+  br label %loop.head
+
+loop.head:                                        ; preds = %loop.end, %ifcont8
+  %5 = load i32, i32* %__libasr_index_1_, align 4
+  %6 = add i32 %5, 1
+  %7 = load i32, i32* %__do_loop_end, align 4
+  %8 = icmp sle i32 %6, %7
+  br i1 %8, label %loop.body, label %loop.end23
+
+loop.body:                                        ; preds = %loop.head
+  %9 = load i32, i32* %__libasr_index_1_, align 4
+  %10 = add i32 %9, 1
+  store i32 %10, i32* %__libasr_index_1_, align 4
+  br i1 true, label %then10, label %else11
+
+then10:                                           ; preds = %loop.body
+  store i32 4, i32* %array_bound9, align 4
+  br label %ifcont14
+
+else11:                                           ; preds = %loop.body
+  br i1 false, label %then12, label %else13
+
+then12:                                           ; preds = %else11
+  store i32 3, i32* %array_bound9, align 4
+  br label %ifcont14
+
+else13:                                           ; preds = %else11
+  br label %ifcont14
+
+ifcont14:                                         ; preds = %else13, %then12, %then10
+  %11 = load i32, i32* %array_bound9, align 4
+  store i32 %11, i32* %__do_loop_end1, align 4
+  br i1 true, label %then16, label %else17
+
+then16:                                           ; preds = %ifcont14
+  store i32 1, i32* %array_bound15, align 4
+  br label %ifcont20
+
+else17:                                           ; preds = %ifcont14
+  br i1 false, label %then18, label %else19
+
+then18:                                           ; preds = %else17
+  store i32 1, i32* %array_bound15, align 4
+  br label %ifcont20
+
+else19:                                           ; preds = %else17
+  br label %ifcont20
+
+ifcont20:                                         ; preds = %else19, %then18, %then16
+  %12 = load i32, i32* %array_bound15, align 4
+  %13 = sub i32 %12, 1
+  store i32 %13, i32* %__libasr_index_0_, align 4
+  br label %loop.head21
+
+loop.head21:                                      ; preds = %loop.body22, %ifcont20
+  %14 = load i32, i32* %__libasr_index_0_, align 4
+  %15 = add i32 %14, 1
+  %16 = load i32, i32* %__do_loop_end1, align 4
+  %17 = icmp sle i32 %15, %16
+  br i1 %17, label %loop.body22, label %loop.end
+
+loop.body22:                                      ; preds = %loop.head21
+  %18 = load i32, i32* %__libasr_index_0_, align 4
+  %19 = add i32 %18, 1
+  store i32 %19, i32* %__libasr_index_0_, align 4
+  %20 = load i32, i32* %__libasr_index_0_, align 4
+  %21 = load i32, i32* %__libasr_index_1_, align 4
+  %22 = sext i32 %20 to i64
+  %23 = sub i64 %22, 1
+  %24 = mul i64 1, %23
+  %25 = add i64 0, %24
+  %26 = sext i32 %21 to i64
+  %27 = sub i64 %26, 1
+  %28 = mul i64 4, %27
+  %29 = add i64 %25, %28
+  %30 = getelementptr [12 x float], [12 x float]* %a, i32 0, i64 %29
+  store float 0.000000e+00, float* %30, align 4
+  br label %loop.head21
+
+loop.end:                                         ; preds = %loop.head21
+  br label %loop.head
+
+loop.end23:                                       ; preds = %loop.head
+  store i32 2, i32* %i, align 4
+  %31 = getelementptr [12 x float], [12 x float]* %a, i32 0, i64 0
+  %32 = bitcast float* %31 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %32, i8* bitcast ([4 x float]* @arrays_op_34.__libasr_array_constant_ to i8*), i64 16, i1 false)
+  %33 = load i32, i32* %i, align 4
+  store i32 %33, i32* %__libasr_created__array_section_subscript_, align 4
+  %34 = load i32, i32* %__libasr_created__array_section_subscript_, align 4
+  br i1 false, label %then24, label %ifcont25
+
+then24:                                           ; preds = %loop.end23
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @6 to i8*), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i64 1, i32 1, i64 1, i64 4)
+  unreachable
+
+ifcont25:                                         ; preds = %loop.end23
+  %35 = sext i32 %34 to i64
+  %36 = sub i64 %35, 1
+  %37 = mul i64 4, %36
+  %38 = add i64 0, %37
+  %39 = icmp slt i64 %35, 1
+  %40 = icmp sgt i64 %35, 3
+  %41 = or i1 %39, %40
+  br i1 %41, label %then26, label %ifcont27
+
+then26:                                           ; preds = %ifcont25
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @6 to i8*), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i64 %35, i32 2, i64 1, i64 3)
+  unreachable
+
+ifcont27:                                         ; preds = %ifcont25
+  %42 = getelementptr [12 x float], [12 x float]* %a, i32 0, i64 %38
+  %43 = bitcast float* %42 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %43, i8* bitcast ([4 x float]* @arrays_op_34.__libasr_array_constant_ to i8*), i64 16, i1 false)
+  %44 = getelementptr [12 x float], [12 x float]* %a, i32 0, i64 9
+  %45 = bitcast float* %44 to i8*
+  call void @llvm.memcpy.p0i8.p0i8.i64(i8* %45, i8* bitcast ([2 x float]* @arrays_op_34.__libasr_array_constant_1 to i8*), i64 8, i1 false)
+  %46 = getelementptr [12 x float], [12 x float]* %a, i32 0, i64 0
+  %47 = load float, float* %46, align 4
+  %48 = fcmp une float %47, 1.000000e+00
+  %49 = getelementptr [12 x float], [12 x float]* %a, i32 0, i64 3
+  %50 = load float, float* %49, align 4
+  %51 = fcmp une float %50, 4.000000e+00
+  %52 = or i1 %48, %51
+  %53 = getelementptr [12 x float], [12 x float]* %a, i32 0, i64 4
+  %54 = load float, float* %53, align 4
+  %55 = fcmp une float %54, 1.000000e+00
+  %56 = or i1 %52, %55
+  %57 = getelementptr [12 x float], [12 x float]* %a, i32 0, i64 7
+  %58 = load float, float* %57, align 4
+  %59 = fcmp une float %58, 4.000000e+00
+  %60 = or i1 %56, %59
+  br i1 %60, label %then28, label %else29
+
+then28:                                           ; preds = %ifcont27
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
+  call void @_lfortran_internal_alloc_finalize()
+  call void @exit(i32 1)
+  br label %ifcont30
+
+else29:                                           ; preds = %ifcont27
+  br label %ifcont30
+
+ifcont30:                                         ; preds = %else29, %then28
+  %61 = getelementptr [12 x float], [12 x float]* %a, i32 0, i64 8
+  %62 = load float, float* %61, align 4
+  %63 = fcmp une float %62, 0.000000e+00
+  %64 = getelementptr [12 x float], [12 x float]* %a, i32 0, i64 9
+  %65 = load float, float* %64, align 4
+  %66 = fcmp une float %65, 5.000000e+00
+  %67 = or i1 %63, %66
+  %68 = getelementptr [12 x float], [12 x float]* %a, i32 0, i64 10
+  %69 = load float, float* %68, align 4
+  %70 = fcmp une float %69, 6.000000e+00
+  %71 = or i1 %67, %70
+  %72 = getelementptr [12 x float], [12 x float]* %a, i32 0, i64 11
+  %73 = load float, float* %72, align 4
+  %74 = fcmp une float %73, 0.000000e+00
+  %75 = or i1 %71, %74
+  br i1 %75, label %then31, label %else32
+
+then31:                                           ; preds = %ifcont30
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @"ERROR STOP", i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
+  call void @_lfortran_internal_alloc_finalize()
+  call void @exit(i32 1)
+  br label %ifcont33
+
+else32:                                           ; preds = %ifcont30
+  br label %ifcont33
+
+ifcont33:                                         ; preds = %else32, %then31
+  %76 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @12, i32 0, i32 0), i8* %76, i32 2, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0), i32 1)
+  br label %return
+
+return:                                           ; preds = %ifcont33
+  br label %FINALIZE_SYMTABLE_arrays_op_34
+
+FINALIZE_SYMTABLE_arrays_op_34:                   ; preds = %return
+  call void @_lfortran_internal_alloc_finalize()
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, i8**)
+
+; Function Attrs: argmemonly nounwind willreturn
+declare void @llvm.memcpy.p0i8.p0i8.i64(i8* noalias nocapture writeonly, i8* noalias nocapture readonly, i64, i1 immarg) #0
+
+; Function Attrs: cold noreturn nounwind
+declare void @_lcompilers_runtime_error_exit(i8*, ...) #1
+
+declare void @_lcompilers_print_error(i8*, ...)
+
+declare void @_lfortran_internal_alloc_finalize()
+
+declare void @exit(i32)
+
+declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
+
+attributes #0 = { argmemonly nounwind willreturn }
+attributes #1 = { cold noreturn nounwind }

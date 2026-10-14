@@ -8750,6 +8750,27 @@ static inline bool is_allocatable(ASR::ttype_t* type) {
     return ASR::is_a<ASR::Allocatable_t>(*type);
 }
 
+/*
+    Whether the elements of an array of type `type` are always stored
+    contiguously, in array element order. A pointer may be associated with,
+    and an assumed-shape array may be passed, a strided section.
+*/
+static inline bool is_contiguous_array_storage(ASR::ttype_t* type) {
+    if( !ASRUtils::is_array(type) || ASRUtils::is_pointer(type) ) {
+        return false;
+    }
+    switch( ASRUtils::extract_physical_type(type) ) {
+        case ASR::array_physical_typeType::FixedSizeArray:
+        case ASR::array_physical_typeType::PointerArray:
+        case ASR::array_physical_typeType::UnboundedPointerArray:
+            return true;
+        case ASR::array_physical_typeType::DescriptorArray:
+            return ASRUtils::is_allocatable(type);
+        default:
+            return false;
+    }
+}
+
 static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
     return is_allocatable(type) || is_pointer(type);
 }

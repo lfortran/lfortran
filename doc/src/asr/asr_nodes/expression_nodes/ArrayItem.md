@@ -60,6 +60,9 @@ marked when the end of every triplet is known to lie within the bounds of
 element, the starts of the triplets and the scalar subscripts, are known to
 as well. With bounds checking, `array_op` checks the latter once instead,
 by referencing that element before the loops if the section is not empty.
+A section assigned a named constant may instead be assigned by an
+[ArrayBlockCopy](../statement_nodes/ArrayBlockCopy.md) without a loop, through
+a reference to its first element.
 
 ## Examples
 

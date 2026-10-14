@@ -8,6 +8,7 @@ the `body` of a program unit, of a construct, or of another statement.
 maxdepth: 1
 ---
 Allocate
+ArrayBlockCopy
 Assert
 Assign
 Assignment

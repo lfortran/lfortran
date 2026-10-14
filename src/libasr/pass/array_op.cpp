@@ -1294,6 +1294,100 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         return true;
     }
 
+    /*
+        Assigns the named constant `x.m_value` to the section target
+        `x.m_target` with a single ArrayBlockCopy instead of a loop over its
+        elements, if the section is a block of consecutive elements of the
+        size of the constant: its base array is stored contiguously, and its
+        only subscript triplet is the first subscript, with constant bounds
+        and a unit step. A named constant cannot overlap the target. With
+        bounds checking, the element that the block starts at is checked when
+        it is referenced, so the last element of the block has to be known to
+        be within the bounds.
+    */
+    bool assign_by_block_copy(const ASR::Assignment_t& x) {
+        if( !pass_options.array_block_copy || x.m_overloaded != nullptr ||
+            x.m_move_allocation || x.m_realloc_lhs ||
+            !ASR::is_a<ASR::ArraySection_t>(*x.m_target) ||
+            !ASR::is_a<ASR::Var_t>(*x.m_value) ) {
+            return false;
+        }
+        ASR::symbol_t* value_sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(x.m_value)->m_v);
+        if( !ASR::is_a<ASR::Variable_t>(*value_sym) ||
+            ASR::down_cast<ASR::Variable_t>(value_sym)->m_storage !=
+                ASR::storage_typeType::Parameter ) {
+            return false;
+        }
+        ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
+        ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
+        ASR::ttype_t* element_type = ASRUtils::extract_type(value_type);
+        int64_t size = ASRUtils::get_fixed_size_of_array(value_type);
+        if( ASRUtils::extract_n_dims_from_ttype(value_type) != 1 || size <= 0 ||
+            ASRUtils::extract_physical_type(value_type) !=
+                ASR::array_physical_typeType::FixedSizeArray ||
+            !(ASR::is_a<ASR::Integer_t>(*element_type) ||
+              ASR::is_a<ASR::UnsignedInteger_t>(*element_type) ||
+              ASR::is_a<ASR::Real_t>(*element_type) ||
+              ASR::is_a<ASR::Complex_t>(*element_type) ||
+              ASR::is_a<ASR::Logical_t>(*element_type)) ||
+            !ASRUtils::check_equal_type(ASRUtils::extract_type(section->m_type),
+                element_type, nullptr, nullptr) ||
+            !(ASR::is_a<ASR::Var_t>(*section->m_v) ||
+              ASR::is_a<ASR::StructInstanceMember_t>(*section->m_v)) ||
+            !ASRUtils::is_contiguous_array_storage(ASRUtils::expr_type(section->m_v)) ) {
+            return false;
+        }
+        ASR::array_index_t& triplet = section->m_args[0];
+        int64_t start = 0, end = 0, step = 1;
+        if( is_scalar_subscript(triplet) || triplet.m_left == nullptr ||
+            triplet.m_right == nullptr ||
+            !ASRUtils::extract_value(ASRUtils::expr_value(triplet.m_left), start) ||
+            !ASRUtils::extract_value(ASRUtils::expr_value(triplet.m_right), end) ||
+            (triplet.m_step != nullptr && !ASRUtils::extract_value(
+                ASRUtils::expr_value(triplet.m_step), step)) ||
+            step != 1 || end - start + 1 != size ) {
+            return false;
+        }
+        for( size_t i = 1; i < section->n_args; i++ ) {
+            ASR::array_index_t& index = section->m_args[i];
+            if( !is_scalar_subscript(index) || index.m_right == nullptr ||
+                ASRUtils::is_array(ASRUtils::expr_type(index.m_right)) ) {
+                return false;
+            }
+        }
+        if( bounds_checking && !is_subscript_within_bound(section->m_v, 0,
+                triplet.m_right, ASR::arrayboundType::UBound) ) {
+            return false;
+        }
+        const Location& loc = x.base.base.loc;
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        Vec<ASR::array_index_t> args;
+        args.reserve(al, section->n_args);
+        bool in_bounds = true;
+        for( size_t i = 0; i < section->n_args; i++ ) {
+            ASR::array_index_t arg;
+            arg.loc = loc;
+            arg.m_left = nullptr;
+            arg.m_step = nullptr;
+            arg.m_right = duplicator.duplicate_expr(i == 0 ? triplet.m_left
+                : section->m_args[i].m_right);
+            in_bounds = in_bounds &&
+                is_subscript_within_bound(section->m_v, i, arg.m_right,
+                    ASR::arrayboundType::LBound) &&
+                is_subscript_within_bound(section->m_v, i, arg.m_right,
+                    ASR::arrayboundType::UBound);
+            args.push_back(al, arg);
+        }
+        ASR::expr_t* first_element = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al,
+            loc, section->m_v, args.p, args.size(),
+            ASRUtils::extract_type(section->m_type),
+            ASR::arraystorageType::ColMajor, nullptr, in_bounds));
+        pass_result.push_back(al, ASRUtils::STMT(ASR::make_ArrayBlockCopy_t(al,
+            loc, first_element, x.m_value)));
+        return true;
+    }
+
     // The element of the base array of `section` that the loop indices
     // `indices` select, one index for each subscript triplet.
     ASR::expr_t* index_section_through_base(ASR::ArraySection_t* section,
@@ -2758,6 +2852,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             || ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(xx.m_value));
         xx.m_value = ASRUtils::get_past_array_broadcast(xx.m_value);
         const Location loc = x.base.base.loc;
+        if( assign_by_block_copy(x) ) {
+            return ;
+        }
 
         #define is_array_indexed_with_array_indices_check(expr) \
             (ASR::is_a<ASR::ArraySection_t>(*expr) || ( \
@@ -3015,6 +3112,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_target)));
         fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_value)));
         generate_loop(x, vars, fix_type_args, loc, nullptr, &conforming_operands);
+    }
+
+    void visit_ArrayBlockCopy(const ASR::ArrayBlockCopy_t& /*x*/) {
+        // Already a whole-array operation the backend lowers
     }
 
     void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t &x) {
