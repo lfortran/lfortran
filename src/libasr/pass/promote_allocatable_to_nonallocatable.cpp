@@ -60,6 +60,9 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
         }
 
         void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+            // An argument can itself ask whether an array is allocated,
+            // as in `call s(allocated(a))`.
+            ASR::CallReplacerOnExpressionsVisitor<IsAllocatedCalled>::visit_FunctionCall(x);
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(x.m_name);
             size_t n = std::min(x.n_args, func_type->n_arg_types);
             for( size_t i = 0; i < n; i++ ) {
@@ -75,6 +78,9 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
         }
 
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+            // An argument can itself ask whether an array is allocated,
+            // as in `call s(allocated(a))`.
+            ASR::CallReplacerOnExpressionsVisitor<IsAllocatedCalled>::visit_SubroutineCall(x);
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(x.m_name);
             size_t n = std::min(x.n_args, func_type->n_arg_types);
             for( size_t i = 0; i < n; i++ ) {
