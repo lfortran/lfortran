@@ -21,7 +21,7 @@
                                         100.000000
                                         (Real 8)
                                     )
-                                    Default
+                                    Save
                                     (Real 8)
                                     ()
                                     Source
@@ -52,7 +52,7 @@
                                         0.000000
                                         (Real 8)
                                     )
-                                    Default
+                                    Save
                                     (Real 8)
                                     ()
                                     Source
@@ -88,27 +88,7 @@
                     )
                     [b]
                     []
-                    [(Assignment
-                        (Var 3 factor)
-                        (RealConstant
-                            100.000000
-                            (Real 8)
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 3 zero)
-                        (RealConstant
-                            0.000000
-                            (Real 8)
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Print
+                    [(Print
                         (StringFormat
                             ()
                             [(StringConstant
