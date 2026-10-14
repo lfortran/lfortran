@@ -3193,9 +3193,13 @@ namespace Aint {
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
 
-        // Cast: Real -> Integer -> Real
-        // TODO: this approach doesn't work for numbers > i64_max
-        body.push_back(al, b.Assignment(result, b.i2r_t(b.r2i_t(args[0], int64), return_type)));
+        // int(a, 8) is undefined for |a| >= 2**63, inf and NaN; aint(a) is a itself there
+        body.push_back(al, b.If(b.Lt(b.CallIntrinsic(scope, {arg_types[0]}, {args[0]},
+                arg_types[0], 0, Abs::instantiate_Abs), b.f_t(9223372036854775808.0, arg_types[0])), {
+            b.Assignment(result, b.i2r_t(b.r2i_t(args[0], int64), return_type))
+        }, {
+            b.Assignment(result, b.r2r_t(args[0], return_type))
+        }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
