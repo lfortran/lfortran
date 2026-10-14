@@ -1115,6 +1115,7 @@ RUN(NAME pointer_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME pointer_18 LABELS gfortran llvm)
 RUN(NAME pointer_19 LABELS gfortran llvm)
 RUN(NAME pointer_20 LABELS gfortran llvm)
+RUN(NAME pointer_21 LABELS gfortran llvm)
 RUN(NAME pointer_section_01 LABELS gfortran llvm)
 RUN(NAME pointer_section_02 LABELS gfortran llvm)
 
