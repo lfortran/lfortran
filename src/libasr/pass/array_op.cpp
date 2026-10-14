@@ -1818,10 +1818,13 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             ASR::String_t* target_str = ASR::down_cast<ASR::String_t>(
                 ASRUtils::extract_type(target_type));
             ASRUtils::ExprStmtDuplicator d(al);
-            if (target_str->m_len_kind != ASR::string_length_kindType::DeferredLength
-                    && target_str->m_len != nullptr) {
+            if (target_str->m_len_kind != ASR::string_length_kindType::DeferredLength) {
                 int64_t target_len {};
-                if (ASRUtils::is_value_constant(target_str->m_len, target_len)) {
+                if (target_str->m_len == nullptr) {
+                    // An assumed-length target retains its runtime element length.
+                    realloc_str_len = ASRUtils::EXPR(ASR::make_StringLen_t(
+                        al, loc, d.duplicate_expr(target), int32, nullptr));
+                } else if (ASRUtils::is_value_constant(target_str->m_len, target_len)) {
                     realloc_str_len = builder.i32(target_len);
                 } else {
                     realloc_str_len = d.duplicate_expr(target_str->m_len);
@@ -1939,10 +1942,13 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             if (ASRUtils::is_character(*target_type)) {
                 ASR::String_t* target_str = ASR::down_cast<ASR::String_t>(
                     ASRUtils::extract_type(target_type));
-                if (target_str->m_len_kind != ASR::string_length_kindType::DeferredLength
-                        && target_str->m_len != nullptr) {
+                if (target_str->m_len_kind != ASR::string_length_kindType::DeferredLength) {
                     int64_t target_len {};
-                    if (ASRUtils::is_value_constant(target_str->m_len, target_len)) {
+                    if (target_str->m_len == nullptr) {
+                        // An assumed-length target retains its runtime element length.
+                        realloc_str_len = ASRUtils::EXPR(ASR::make_StringLen_t(
+                            al, loc, d.duplicate_expr(underlying_target), int32, nullptr));
+                    } else if (ASRUtils::is_value_constant(target_str->m_len, target_len)) {
                         realloc_str_len = builder.i32(target_len);
                     } else {
                         ASRUtils::ExprStmtDuplicator d2(al);
