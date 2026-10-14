@@ -10,11 +10,11 @@ target datalayout = "..."
 @_Name_point = private unnamed_addr constant [6 x i8] c"point\00", align 1
 @_Type_Info_4_defs5_point = linkonce_odr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([6 x i8], [6 x i8]* @_Name_point, i32 0, i32 0), i8* null, i8* null }, align 8
 @_Value_Lifecycle_4_defs5_point = linkonce_odr constant [2 x i8*] [i8* bitcast (void (i8*, i8*, i1, i1, i1)* @_value_copy_4_defs5_point to i8*), i8* bitcast (void (i8*)* @release_StructType__point_3_of_defs_for_UPoly to i8*)]
-@_VTable_4_defs5_point = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_4_defs5_point to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_4_defs5_point to i8*), i8* bitcast (void (i8*, i8*)* @_copy_4_defs5_point to i8*), i8* bitcast (void (i8**)* @_allocate_struct_4_defs5_point to i8*), i8* bitcast (void (i8*)* @finalize_StructType__point_3_of_defs_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__point_3_of_defs_for_UPoly to i8*), i8* null] }, align 8
+@_VTable_4_defs5_point = linkonce_odr unnamed_addr constant { [8 x i8*] } { [8 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_4_defs5_point to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_4_defs5_point to i8*), i8* bitcast (void (i8*, i8*)* @_copy_4_defs5_point to i8*), i8* bitcast (void (i8**)* @_allocate_struct_4_defs5_point to i8*), i8* bitcast (void (i8*)* @finalize_StructType__point_3_of_defs_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__point_3_of_defs_for_UPoly to i8*), i8* bitcast (void (i8*)* @__lfortran_intent_out_reset_4_defs5_point to i8*), i8* null] }, align 8
 @_Name_point2d = private unnamed_addr constant [8 x i8] c"point2d\00", align 1
 @_Type_Info_4_defs7_point2d = linkonce_odr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([8 x i8], [8 x i8]* @_Name_point2d, i32 0, i32 0), i8* inttoptr (i64 8 to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_4_defs5_point to i8*) }, align 8
 @_Value_Lifecycle_4_defs7_point2d = linkonce_odr constant [2 x i8*] [i8* bitcast (void (i8*, i8*, i1, i1, i1)* @_value_copy_4_defs7_point2d to i8*), i8* bitcast (void (i8*)* @release_StructType__point2d_5_of_defs_for_UPoly to i8*)]
-@_VTable_4_defs7_point2d = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_4_defs7_point2d to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_4_defs7_point2d to i8*), i8* bitcast (void (i8*, i8*)* @_copy_4_defs7_point2d to i8*), i8* bitcast (void (i8**)* @_allocate_struct_4_defs7_point2d to i8*), i8* bitcast (void (i8*)* @finalize_StructType__point2d_5_of_defs_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__point2d_5_of_defs_for_UPoly to i8*), i8* bitcast (float (%defs.point2d.5_class*)* @__module_defs_r2d to i8*)] }, align 8
+@_VTable_4_defs7_point2d = linkonce_odr unnamed_addr constant { [8 x i8*] } { [8 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_4_defs7_point2d to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_4_defs7_point2d to i8*), i8* bitcast (void (i8*, i8*)* @_copy_4_defs7_point2d to i8*), i8* bitcast (void (i8**)* @_allocate_struct_4_defs7_point2d to i8*), i8* bitcast (void (i8*)* @finalize_StructType__point2d_5_of_defs_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__point2d_5_of_defs_for_UPoly to i8*), i8* bitcast (void (i8*)* @__lfortran_intent_out_reset_4_defs7_point2d to i8*), i8* bitcast (float (%defs.point2d.5_class*)* @__module_defs_r2d to i8*)] }, align 8
 @"ERROR STOP" = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
@@ -82,7 +82,7 @@ else:                                             ; preds = %.entry
 ifcont:                                           ; preds = %else, %then
   %14 = load %defs.point.3_class*, %defs.point.3_class** %ptr, align 8
   %15 = bitcast %defs.point.3_class* %14 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_4_defs7_point2d, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %15, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [8 x i8*] }, { [8 x i8*] }* @_VTable_4_defs7_point2d, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %15, align 8
   %16 = getelementptr %defs.point.3_class, %defs.point.3_class* %14, i32 0, i32 1
   %17 = bitcast %defs.point2d.5* %p2d to %defs.point.3*
   store %defs.point.3* %17, %defs.point.3** %16, align 8
@@ -102,7 +102,7 @@ ifcont3:                                          ; preds = %else2, %then1
   %21 = select i1 %19, %defs.point.3_class* %3, %defs.point.3_class* null
   %22 = bitcast %defs.point.3_class* %21 to float (%defs.point.3_class*)***
   %23 = load float (%defs.point.3_class*)**, float (%defs.point.3_class*)*** %22, align 8
-  %24 = getelementptr inbounds float (%defs.point.3_class*)*, float (%defs.point.3_class*)** %23, i32 4
+  %24 = getelementptr inbounds float (%defs.point.3_class*)*, float (%defs.point.3_class*)** %23, i32 5
   %25 = load float (%defs.point.3_class*)*, float (%defs.point.3_class*)** %24, align 1
   %26 = call float %25(%defs.point.3_class* %21)
   store float %26, float* %res, align 4
@@ -224,7 +224,7 @@ entry:
   %4 = load i8*, i8** %0, align 1
   %5 = bitcast i8* %4 to %defs.point.3_class*
   %6 = bitcast %defs.point.3_class* %5 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_4_defs5_point, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [8 x i8*] }, { [8 x i8*] }* @_VTable_4_defs5_point, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
   %7 = getelementptr %defs.point.3_class, %defs.point.3_class* %5, i32 0, i32 1
   %8 = call i8* @_lfortran_get_default_allocator()
   %9 = bitcast { i8*, i8*, i8*, i8* }* %checked_allocator1 to i8*
@@ -239,6 +239,13 @@ entry:
 define internal void @finalize_StructType__point_3_of_defs_for_UPoly(i8* %0) {
 entry:
   %1 = bitcast i8* %0 to %defs.point.3*
+  ret void
+}
+
+define internal void @__lfortran_intent_out_reset_4_defs5_point(i8* %0) {
+entry:
+  %1 = bitcast i8* %0 to %defs.point.3*
+  call void @__lfortran_intent_out_reset_body_4_defs5_point(%defs.point.3* %1)
   ret void
 }
 
@@ -456,7 +463,7 @@ entry:
   %4 = load i8*, i8** %0, align 1
   %5 = bitcast i8* %4 to %defs.point2d.5_class*
   %6 = bitcast %defs.point2d.5_class* %5 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_4_defs7_point2d, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [8 x i8*] }, { [8 x i8*] }* @_VTable_4_defs7_point2d, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
   %7 = getelementptr %defs.point2d.5_class, %defs.point2d.5_class* %5, i32 0, i32 1
   %8 = call i8* @_lfortran_get_default_allocator()
   %9 = bitcast { i8*, i8*, i8*, i8* }* %checked_allocator1 to i8*
@@ -477,6 +484,13 @@ entry:
   ret void
 }
 
+define internal void @__lfortran_intent_out_reset_4_defs7_point2d(i8* %0) {
+entry:
+  %1 = bitcast i8* %0 to %defs.point2d.5*
+  call void @__lfortran_intent_out_reset_body_4_defs7_point2d(%defs.point2d.5* %1)
+  ret void
+}
+
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @_lfortran_internal_alloc_finalize()
@@ -484,6 +498,31 @@ declare void @_lfortran_internal_alloc_finalize()
 declare void @exit(i32)
 
 declare void @_lfortran_free_alloc(i8*, i8*)
+
+define internal void @__lfortran_intent_out_reset_body_4_defs7_point2d(%defs.point2d.5* %object) {
+.entry:
+  %0 = getelementptr %defs.point2d.5, %defs.point2d.5* %object, i32 0, i32 1
+  %1 = getelementptr %defs.point2d.5, %defs.point2d.5* %object, i32 0, i32 2
+  %2 = getelementptr %defs.point2d.5, %defs.point2d.5* %object, i32 0, i32 0
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE___lfortran_intent_out_reset_body_4_defs7_point2d
+
+FINALIZE_SYMTABLE___lfortran_intent_out_reset_body_4_defs7_point2d: ; preds = %return
+  ret void
+}
+
+define internal void @__lfortran_intent_out_reset_body_4_defs5_point(%defs.point.3* %object) {
+.entry:
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE___lfortran_intent_out_reset_body_4_defs5_point
+
+FINALIZE_SYMTABLE___lfortran_intent_out_reset_body_4_defs5_point: ; preds = %return
+  ret void
+}
 
 attributes #0 = { nounwind readnone speculatable willreturn }
 attributes #1 = { argmemonly nounwind willreturn writeonly }

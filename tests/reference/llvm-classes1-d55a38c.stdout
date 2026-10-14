@@ -9,7 +9,7 @@ target datalayout = "..."
 @_Name_base = private unnamed_addr constant [5 x i8] c"base\00", align 1
 @_Type_Info_2_xx4_base = linkonce_odr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([5 x i8], [5 x i8]* @_Name_base, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
 @_Value_Lifecycle_2_xx4_base = linkonce_odr constant [2 x i8*] [i8* bitcast (void (i8*, i8*, i1, i1, i1)* @_value_copy_2_xx4_base to i8*), i8* bitcast (void (i8*)* @release_StructType__base_3_of_xx_for_UPoly to i8*)]
-@_VTable_2_xx4_base = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_2_xx4_base to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_2_xx4_base to i8*), i8* bitcast (void (i8*, i8*)* @_copy_2_xx4_base to i8*), i8* bitcast (void (i8**)* @_allocate_struct_2_xx4_base to i8*), i8* bitcast (void (i8*)* @finalize_StructType__base_3_of_xx_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__base_3_of_xx_for_UPoly to i8*), i8* bitcast (void (%xx.base.3_class*)* @__module_xx_show_x to i8*)] }, align 8
+@_VTable_2_xx4_base = linkonce_odr unnamed_addr constant { [8 x i8*] } { [8 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_2_xx4_base to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_2_xx4_base to i8*), i8* bitcast (void (i8*, i8*)* @_copy_2_xx4_base to i8*), i8* bitcast (void (i8**)* @_allocate_struct_2_xx4_base to i8*), i8* bitcast (void (i8*)* @finalize_StructType__base_3_of_xx_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__base_3_of_xx_for_UPoly to i8*), i8* bitcast (void (i8*)* @__lfortran_intent_out_reset_2_xx4_base to i8*), i8* bitcast (void (%xx.base.3_class*)* @__module_xx_show_x to i8*)] }, align 8
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
@@ -43,7 +43,7 @@ define i32 @main(i32 %0, i8** %1) {
   %5 = getelementptr %xx.base.3, %xx.base.3* %b, i32 0, i32 0
   store i32 10, i32* %5, align 4
   %6 = getelementptr %xx.base.3_class, %xx.base.3_class* %3, i32 0, i32 0
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_2_xx4_base, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [8 x i8*] }, { [8 x i8*] }* @_VTable_2_xx4_base, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
   %7 = getelementptr %xx.base.3_class, %xx.base.3_class* %3, i32 0, i32 1
   store %xx.base.3* %b, %xx.base.3** %7, align 8
   call void @__module_xx_show_x(%xx.base.3_class* %3)
@@ -234,7 +234,7 @@ entry:
   %4 = load i8*, i8** %0, align 1
   %5 = bitcast i8* %4 to %xx.base.3_class*
   %6 = bitcast %xx.base.3_class* %5 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_2_xx4_base, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [8 x i8*] }, { [8 x i8*] }* @_VTable_2_xx4_base, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %6, align 8
   %7 = getelementptr %xx.base.3_class, %xx.base.3_class* %5, i32 0, i32 1
   %8 = call i8* @_lfortran_get_default_allocator()
   %9 = bitcast { i8*, i8*, i8*, i8* }* %checked_allocator1 to i8*
@@ -250,6 +250,13 @@ entry:
 define internal void @finalize_StructType__base_3_of_xx_for_UPoly(i8* %0) {
 entry:
   %1 = bitcast i8* %0 to %xx.base.3*
+  ret void
+}
+
+define internal void @__lfortran_intent_out_reset_2_xx4_base(i8* %0) {
+entry:
+  %1 = bitcast i8* %0 to %xx.base.3*
+  call void @__lfortran_intent_out_reset_body_2_xx4_base(%xx.base.3* %1)
   ret void
 }
 
@@ -273,6 +280,18 @@ declare void @_lcompilers_print_error(i8*, ...)
 declare void @_lfortran_internal_alloc_finalize()
 
 declare void @exit(i32)
+
+define internal void @__lfortran_intent_out_reset_body_2_xx4_base(%xx.base.3* %object) {
+.entry:
+  %0 = getelementptr %xx.base.3, %xx.base.3* %object, i32 0, i32 0
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE___lfortran_intent_out_reset_body_2_xx4_base
+
+FINALIZE_SYMTABLE___lfortran_intent_out_reset_body_2_xx4_base: ; preds = %return
+  ret void
+}
 
 attributes #0 = { "lcompilers.checked-allocation" }
 attributes #1 = { argmemonly nounwind willreturn writeonly }

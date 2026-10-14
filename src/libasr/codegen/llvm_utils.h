@@ -1199,6 +1199,11 @@ class ASRToLLVMVisitor;
         /// The vtable slot of the function that frees the memory of the object
         /// without calling final subroutines.
         static constexpr int vtable_free_slot = 3;
+        /// The vtable slot of the function that resets an object of the
+        /// dynamic type in place, as a nonpolymorphic intent(out) dummy of
+        /// that type is reset on entry to its procedure (F2018 7.5.6.3,
+        /// 8.5.10); null for an intrinsic type.
+        static constexpr int vtable_intent_out_reset_slot = 4;
 
         LLVMFinalize(ASRToLLVMVisitor &asr_to_llvm_visitor,
             std::unique_ptr<LLVMUtils> &llvm_utils, std::unique_ptr<llvm::IRBuilder<>> &builder, Allocator& al,
@@ -3419,6 +3424,9 @@ class ASRToLLVMVisitor;
             std::map<std::string, llvm::Constant*> intrinsic_type_vtab;
             std::map<std::string, llvm::Type*> intrinsic_type_vtabtype;
             std::map<ASR::symbol_t*, std::map<std::string, int64_t>> struct_vtab_function_offset;
+            // The function of a derived type's vtable_intent_out_reset_slot,
+            // which the code generator defines (ASRToLLVMVisitor).
+            std::function<llvm::Function*(ASR::Struct_t*)> intent_out_reset;
 
             LLVMStruct(llvm::LLVMContext& context_, LLVMUtils* llvm_utils,
                      llvm::IRBuilder<>* builder, std::map<uint64_t, llvm::Function*>& llvm_symtab_fn_,

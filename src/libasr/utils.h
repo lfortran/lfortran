@@ -35,6 +35,12 @@ struct PassOptions {
 
     int default_integer_kind = 4;
 
+    // The code generator resets a scalar, nonallocatable, nonpointer
+    // polymorphic (but not unlimited polymorphic) intent(out) dummy argument
+    // on entry from its dynamic type (F2018 7.5.6.3, 8.5.10), so the
+    // intent_out_deallocate pass leaves such a dummy to it.
+    bool dynamic_intent_out_reset = false;
+
     std::string run_fun; // for global_stmts pass
     // TODO: Convert to std::filesystem::path (also change find_and_load_module())
     std::string runtime_library_dir;

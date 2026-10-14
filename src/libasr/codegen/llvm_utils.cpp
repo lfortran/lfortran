@@ -10247,6 +10247,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         slots.push_back(llvm::ConstantExpr::getBitCast(finalize_function, llvm_utils->i8_ptr));
         LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_free_slot)
         slots.push_back(llvm::ConstantExpr::getBitCast(free_function, llvm_utils->i8_ptr));
+        LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 ==
+            LLVMFinalize::vtable_intent_out_reset_slot)
+        slots.push_back(llvm::ConstantPointerNull::get(
+            llvm::cast<llvm::PointerType>(llvm_utils->i8_ptr)));
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(llvm_utils->i8_ptr, slots.size());
         llvm::Constant *arrInit = llvm::ConstantArray::get(arrTy, slots);
@@ -10311,6 +10315,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         slots.push_back(llvm::ConstantExpr::getBitCast(finalize_function, llvm_utils->i8_ptr));
         LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 == LLVMFinalize::vtable_free_slot)
         slots.push_back(llvm::ConstantExpr::getBitCast(free_function, llvm_utils->i8_ptr));
+        LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 ==
+            LLVMFinalize::vtable_intent_out_reset_slot)
+        slots.push_back(intent_out_reset
+            ? llvm::ConstantExpr::getBitCast(intent_out_reset(struct_t), llvm_utils->i8_ptr)
+            : llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(llvm_utils->i8_ptr)));
         collect_vtable_function_impls(struct_sym, slots, module);
 
         llvm::ArrayType *arrTy = llvm::ArrayType::get(i8PtrTy, slots.size());

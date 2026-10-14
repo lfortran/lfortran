@@ -627,17 +627,23 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
     // Finalize the finalizable components of `struct_expr` (F2018 7.5.6.2,
     // step 2).  A component of derived type is an entity in its own right, so
     // the same sequence applies to it: its type's final subroutines first,
-    // then its own components.  Components inherited from a parent type are
-    // finalized too; the parent component itself is not, because its final
-    // subroutine takes the parent type and this pass cannot form a reference
-    // of that type.  `finalizable_component_struct_type` says which
-    // components this covers.
+    // then its own components.  `finalizable_component_struct_type` says
+    // which components this covers.
+    //
+    // For a scalar entity, `parent_component` also finalizes the parent
+    // component afterwards (step 3): an entity of the parent type, whose
+    // final subroutines run with it, followed by its own components and its
+    // own parent component.  Without it, as for the elements of an array
+    // entity, whose parent component is an array that this pass does not
+    // form, the inherited components are finalized with the entity's own
+    // and no final subroutine of a parent type is called.
     void emit_struct_component_finalize_stmts(
             ASR::expr_t* struct_expr,
             ASR::Struct_t* struct_type,
             SymbolTable* current_scope,
             const Location& loc,
-            Vec<ASR::stmt_t*>& out_stmts) {
+            Vec<ASR::stmt_t*>& out_stmts,
+            bool parent_component = false) {
         ASR::Struct_t* st = struct_type;
         while (st != nullptr) {
             for (auto& m : st->m_symtab->get_scope()) {
@@ -662,14 +668,26 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                 emit_final_calls(member_expr, m_struct, current_scope, loc,
                     out_stmts);
                 emit_struct_component_finalize_stmts(member_expr, m_struct,
-                    current_scope, loc, out_stmts);
+                    current_scope, loc, out_stmts, parent_component);
             }
-            if (st->m_parent != nullptr) {
-                st = ASR::down_cast<ASR::Struct_t>(
+            ASR::Struct_t* parent = st->m_parent == nullptr ? nullptr
+                : ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(st->m_parent));
-            } else {
-                st = nullptr;
+            if (parent_component && parent != nullptr) {
+                std::set<ASR::Struct_t*> visited;
+                if (struct_needs_finalization(parent, visited)) {
+                    ASR::expr_t* parent_expr = ASRUtils::EXPR(
+                        ASRUtils::getStructInstanceMember_t(al, loc,
+                            (ASR::asr_t*)struct_expr, &parent->base,
+                            &parent->base, current_scope));
+                    emit_final_calls(parent_expr, parent, current_scope, loc,
+                        out_stmts);
+                    emit_struct_component_finalize_stmts(parent_expr, parent,
+                        current_scope, loc, out_stmts, true);
+                }
+                break;
             }
+            st = parent;
         }
     }
 
@@ -781,6 +799,45 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
             loc, out_stmts);
     }
 
+    // The statements that reset `entity`, a present scalar intent(out) dummy
+    // argument of derived type `struct_type`, at the start of its procedure.
+    // Fortran 2018 7.5.6.3 p7: an actual argument corresponding to a
+    // nonpointer, nonallocatable `intent(out)` dummy is finalized when the
+    // procedure is invoked.  7.5.6.2 defines that as calling the type's own
+    // final subroutines, then finalizing its finalizable components and then
+    // its parent component, so a type without a final subroutine of its own
+    // still has work to do here.  Its allocatable components are then
+    // deallocated.  For a polymorphic dummy, only the declared type is known
+    // here, and neither its components nor its parent component are
+    // finalized.
+    void emit_struct_entry_stmts(ASR::expr_t* entity, ASR::Struct_t* struct_type,
+            bool is_polymorphic, SymbolTable* scope, const Location& loc,
+            ASR::ttype_t* logical_type, Vec<ASR::stmt_t*>& out_stmts) {
+        bool has_finalizer = struct_hierarchy_has_finalizer(struct_type);
+        Vec<ASR::stmt_t*> entry_stmts;
+        entry_stmts.reserve(al, 1);
+        if (has_finalizer) {
+            emit_final_calls(entity, struct_type, scope, loc, entry_stmts);
+        }
+        if (!is_polymorphic) {
+            emit_struct_component_finalize_stmts(entity, struct_type, scope,
+                loc, entry_stmts, true);
+        }
+        if (has_finalizer || entry_stmts.size() > 0) {
+            // Finalization leaves the dummy with whatever its final
+            // subroutines left behind, so its default initialization is
+            // applied afterwards (F2018 8.5.10).  A component that was
+            // finalized needs this as much as a dummy that was.
+            emit_struct_default_init_stmts(entity, struct_type, scope, loc,
+                entry_stmts);
+        }
+        for (size_t k = 0; k < entry_stmts.size(); k++) {
+            out_stmts.push_back(al, entry_stmts[k]);
+        }
+        emit_struct_cleanup_stmts(entity, struct_type, scope, loc,
+            logical_type, out_stmts);
+    }
+
     // Helper: Wrap statement in optional presence check if needed
     ASR::stmt_t* wrap_optional_check(Location loc, ASR::expr_t* var_expr,
                                       ASR::presenceType presence, ASR::stmt_t* stmt_to_wrap) {
@@ -809,7 +866,23 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
     }
 
 public:
+    // See PassOptions::dynamic_intent_out_reset.
+    bool dynamic_reset = false;
+
     IntentOutDeallocateVisitor(Allocator& al_) : al(al_) {}
+
+    // See make_intent_out_reset_procedure.
+    void emit_entity_intent_out_reset(ASR::expr_t *entity, SymbolTable *scope,
+            Vec<ASR::stmt_t*> &out_stmts) {
+        ASR::symbol_t* decl_sym = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(entity));
+        LCOMPILERS_ASSERT(decl_sym != nullptr &&
+            ASR::is_a<ASR::Struct_t>(*decl_sym));
+        const Location &loc = entity->base.loc;
+        emit_struct_entry_stmts(entity, ASR::down_cast<ASR::Struct_t>(decl_sym),
+            false, scope, loc, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)),
+            out_stmts);
+    }
 
     // What an intent(out) dummy of derived type gets on entry, less the
     // finalization; see initialize_function_result_on_entry.
@@ -961,50 +1034,23 @@ public:
                 // (If the struct itself is allocatable, we already handled it above)
                 ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(arg_var->m_type_declaration));
-
-                // Fortran 2018 7.5.6.3 p7: an actual argument corresponding
-                // to a nonpointer, nonallocatable `intent(out)` dummy is
-                // finalized when the procedure is invoked.  7.5.6.2 defines
-                // that as calling the type's own final subroutines and then
-                // finalizing its finalizable components, so a type without a
-                // final subroutine of its own still has work to do here.
-                bool has_finalizer =
-                    struct_hierarchy_has_finalizer(struct_type);
                 bool is_polymorphic = ASRUtils::is_class_type(
                     arg_var->m_type);
+                // Its reset follows the dynamic type, which the code
+                // generator dispatches on (see PassOptions).
+                if (is_polymorphic && dynamic_reset &&
+                        !ASRUtils::is_unlimited_polymorphic_type(struct_type)) {
+                    continue;
+                }
                 ASR::expr_t* var_expr = ASRUtils::EXPR(
                     ASR::make_Var_t(al, loc, arg_sym));
                 Vec<ASR::stmt_t*> entry_stmts;
                 entry_stmts.reserve(al, 1);
-                if (has_finalizer) {
-                    emit_final_calls(var_expr, struct_type, xx.m_symtab, loc,
-                        entry_stmts);
-                }
-                if (!is_polymorphic) {
-                    emit_struct_component_finalize_stmts(var_expr,
-                        struct_type, xx.m_symtab, loc, entry_stmts);
-                }
-                if (has_finalizer || entry_stmts.size() > 0) {
-                    // Finalization leaves the dummy with whatever its final
-                    // subroutines left behind, so its default initialization
-                    // is applied afterwards (F2018 8.5.10).  A component that
-                    // was finalized needs this as much as a dummy that was.
-                    emit_struct_default_init_stmts(var_expr, struct_type,
-                        xx.m_symtab, loc, entry_stmts);
-                }
+                emit_struct_entry_stmts(var_expr, struct_type, is_polymorphic,
+                    xx.m_symtab, loc, logical_type, entry_stmts);
                 for (size_t k = 0; k < entry_stmts.size(); k++) {
                     ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc,
                         var_expr, arg_var->m_presence, entry_stmts[k]);
-                    dealloc_stmts.push_back(al, wrapped_stmt);
-                }
-
-                Vec<ASR::stmt_t*> cleanup;
-                cleanup.reserve(al, 1);
-                emit_struct_cleanup_stmts(var_expr, struct_type, xx.m_symtab,
-                    loc, logical_type, cleanup);
-                for (size_t k = 0; k < cleanup.size(); k++) {
-                    ASR::stmt_t* wrapped_stmt = wrap_optional_check(loc,
-                        var_expr, arg_var->m_presence, cleanup[k]);
                     dealloc_stmts.push_back(al, wrapped_stmt);
                 }
             } else if (is_array_of_struct) {
@@ -1029,8 +1075,9 @@ public:
                 // dummy is initialized with the defaults of its declared
                 // type; the components that a dynamic extension type adds
                 // need the dynamic type, which this pass cannot see, and are
-                // left alone -- which is what a scalar polymorphic
-                // `intent(out)` dummy already does.
+                // left alone.  (A scalar polymorphic dummy is instead reset
+                // from its dynamic type by the code generator when
+                // PassOptions::dynamic_intent_out_reset is set.)
                 //
                 // 7.5.6.3 requires the dummy to be finalized before that, but
                 // which final procedures run is decided by the dynamic type,
@@ -1088,9 +1135,10 @@ public:
 
 
 void pass_intent_out_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
-                                const PassOptions &/*pass_options*/) {
+                                const PassOptions &pass_options) {
     // Deallocate intent(out) allocatable arguments at function entry
     IntentOutDeallocateVisitor iod(al);
+    iod.dynamic_reset = pass_options.dynamic_intent_out_reset;
     iod.visit_TranslationUnit(unit);
 
     PassUtils::UpdateDependenciesVisitor u(al);
@@ -1101,6 +1149,33 @@ void finalize_entity(Allocator &al, ASR::expr_t *entity, SymbolTable *scope,
                      Vec<ASR::stmt_t*> &out) {
     IntentOutDeallocateVisitor iod(al);
     iod.emit_entity_finalization(entity, scope, out);
+}
+
+ASR::Function_t *make_intent_out_reset_procedure(Allocator &al,
+        ASR::Struct_t *type, SymbolTable *parent, const std::string &name) {
+    const Location &loc = type->base.base.loc;
+    SymbolTable *scope = al.make_new<SymbolTable>(parent);
+    ASR::symbol_t *object = ASR::down_cast<ASR::symbol_t>(
+        ASRUtils::make_Variable_t_util(al, loc, scope, s2c(al, "object"),
+            nullptr, 0, ASR::intentType::Out, nullptr, nullptr,
+            ASR::storage_typeType::Default,
+            ASRUtils::make_StructType_t_util(al, loc, &type->base, true),
+            &type->base, ASR::abiType::Source, ASR::accessType::Public,
+            ASR::presenceType::Required, false));
+    scope->add_symbol("object", object);
+    ASR::expr_t *entity = ASRUtils::EXPR(ASR::make_Var_t(al, loc, object));
+    Vec<ASR::stmt_t*> body;
+    body.reserve(al, 1);
+    IntentOutDeallocateVisitor iod(al);
+    iod.emit_entity_intent_out_reset(entity, scope, body);
+    Vec<ASR::expr_t*> args;
+    args.reserve(al, 1);
+    args.push_back(al, entity);
+    return ASR::down_cast2<ASR::Function_t>(ASRUtils::make_Function_t_util(
+        al, loc, scope, s2c(al, name), nullptr, 0, args.p, args.size(),
+        body.p, body.size(), nullptr, ASR::abiType::Source,
+        ASR::accessType::Private, ASR::deftypeType::Implementation, nullptr,
+        false, false, false, false, false, nullptr, 0, false, false, false));
 }
 
 void initialize_function_result_on_entry(Allocator &al, ASR::Function_t &fn,

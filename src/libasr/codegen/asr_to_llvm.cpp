@@ -946,6 +946,9 @@ public:
         llvm_utils->tuple_api = tuple_api.get();
         llvm_utils->list_api = list_api.get();
         llvm_utils->struct_api = struct_api.get();
+        struct_api->intent_out_reset = [this](ASR::Struct_t *type) {
+            return declare_intent_out_reset(type);
+        };
         llvm_utils->dict_api = nullptr;
         llvm_utils->set_api = nullptr;
         llvm_utils->arr_api = arr_descr.get();
@@ -2428,8 +2431,83 @@ public:
         // lookup, exactly as with CUDA.
         emit_gpu_metal_source_registration(x);
 
+        define_intent_out_resets(x.m_symtab);
+
         LCOMPILERS_ASSERT_MSG(llvm_utils->stringFormat_return.all_clean(),
                         "`_lcompilers_string_format_fortran()` Return Not Freed");
+    }
+
+    // The intent(out) resets of derived types (LLVMFinalize::
+    // vtable_intent_out_reset_slot), declared when their vtables are built.
+    std::map<ASR::Struct_t*, llvm::Function*> intent_out_resets;
+    std::vector<ASR::Struct_t*> pending_intent_out_resets;
+
+    llvm::Function *declare_intent_out_reset(ASR::Struct_t *type) {
+        auto found = intent_out_resets.find(type);
+        if (found != intent_out_resets.end()) return found->second;
+        auto *function = llvm::Function::Create(
+            llvm::FunctionType::get(llvm::Type::getVoidTy(context), {llvm_utils->i8_ptr}, false),
+            llvm::Function::InternalLinkage,
+            "__lfortran_intent_out_reset_" + ASRUtils::nominal_symbol_name(&type->base),
+            module.get());
+        intent_out_resets[type] = function;
+        pending_intent_out_resets.push_back(type);
+        return function;
+    }
+
+    // Defines the declared resets once the translation unit is complete, so
+    // that no other procedure is being generated. Each forwards to the
+    // procedure the intent_out_deallocate pass builds for its type
+    // (make_intent_out_reset_procedure): the dynamic type's reset is exactly
+    // the one of a nonpolymorphic intent(out) dummy of that type.
+    void define_intent_out_resets(SymbolTable *global_scope) {
+        while (!pending_intent_out_resets.empty()) {
+            ASR::Struct_t *type = pending_intent_out_resets.back();
+            pending_intent_out_resets.pop_back();
+            std::string name = global_scope->get_unique_name(
+                "__lfortran_intent_out_reset_body_" + ASRUtils::nominal_symbol_name(&type->base));
+            ASR::Function_t *reset = make_intent_out_reset_procedure(al, type,
+                global_scope, name);
+            global_scope->add_symbol(name, &reset->base);
+            visit_Function(*reset);
+            uint32_t h = get_hash((ASR::asr_t*)reset);
+            llvm::Function *procedure = llvm_symtab_fn.at(h);
+            procedure->setLinkage(llvm::Function::InternalLinkage);
+            llvm::Function *entry = intent_out_resets.at(type);
+            auto saved_ip = builder->saveIP();
+            builder->SetInsertPoint(llvm::BasicBlock::Create(context, "entry", entry));
+            builder->CreateCall(procedure, {builder->CreateBitCast(&*entry->arg_begin(),
+                procedure->getFunctionType()->getParamType(0))});
+            builder->CreateRetVoid();
+            builder->restoreIP(saved_ip);
+        }
+    }
+
+    // Resets the polymorphic intent(out) dummy `wrapper`, a CLASS(T) wrapper
+    // {vtable, object}, on entry from its dynamic type, through the vtable.
+    // Nothing is done for an absent optional dummy.
+    void reset_intent_out_from_dynamic_type(llvm::Value *wrapper, ASR::Struct_t *declared) {
+        llvm::Type *class_type = llvm_utils->getClassType(declared, false);
+        llvm::Type *data_type = llvm_utils->getStructType(declared, module.get(), true);
+        llvm_utils->create_if_else(builder->CreateIsNotNull(wrapper), [&]() {
+            llvm::Value *data = llvm_utils->CreateLoad2(data_type,
+                llvm_utils->create_gep2(class_type, wrapper, 1));
+            llvm_utils->create_if_else(builder->CreateIsNotNull(data), [&]() {
+                llvm::Value *vtable = llvm_utils->CreateLoad2(llvm_utils->vptr_type,
+                    llvm_utils->create_gep2(class_type, wrapper, 0));
+                llvm::FunctionType *reset_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {llvm_utils->i8_ptr}, false);
+                llvm::FunctionType *slot_type = llvm::FunctionType::get(
+                    llvm::Type::getInt32Ty(context), {}, true);
+                llvm::Value *reset = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                    llvm_utils->CreateInBoundsGEP2(slot_type->getPointerTo(), vtable,
+                        {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                            LLVMFinalize::vtable_intent_out_reset_slot)}));
+                builder->CreateCall(reset_type,
+                    builder->CreateBitCast(reset, reset_type->getPointerTo()),
+                    {builder->CreateBitCast(data, llvm_utils->i8_ptr)});
+            }, [](){});
+        }, [](){});
     }
 
     // Run the translation unit's own startup initializer before main().
@@ -10862,7 +10940,15 @@ public:
                         ASR::down_cast<ASR::Variable_t>(sym.second)->m_type_declaration));
 
                 if (ASRUtils::is_class_type(symbol_type)) {
-                    allocate_array_members_of_struct(struct_sym, st_desc, ASR::down_cast<ASR::Variable_t>(sym.second)->m_type, true);
+                    if (compiler_options.po.dynamic_intent_out_reset &&
+                            !ASRUtils::is_unlimited_polymorphic_type(struct_sym)) {
+                        // The dynamic type decides what is finalized,
+                        // deallocated and default-initialized (see
+                        // PassOptions::dynamic_intent_out_reset).
+                        reset_intent_out_from_dynamic_type(st_desc, struct_sym);
+                    } else {
+                        allocate_array_members_of_struct(struct_sym, st_desc, ASR::down_cast<ASR::Variable_t>(sym.second)->m_type, true);
+                    }
                 } else {
                     allocate_array_members_of_struct(struct_sym, st_desc, ASR::down_cast<ASR::Variable_t>(sym.second)->m_type, true);
                 }
@@ -30928,6 +31014,9 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         CompilerOptions &co, const std::string &run_fn, const std::string &/*global_underscore*/,
         const std::string &infile, LocationManager &lm)
 {
+    // This code generator resets a polymorphic intent(out) dummy from its
+    // dynamic type through the vtable, so the passes leave such a dummy to it.
+    co.po.dynamic_intent_out_reset = true;
     ASRToLLVMVisitor v(al, context, infile, co, diagnostics, lm, target_config);
 
     std::vector<int64_t> skip_optimization_func_instantiation;
