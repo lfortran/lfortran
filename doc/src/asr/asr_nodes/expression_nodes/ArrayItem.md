@@ -48,6 +48,14 @@ of the target (the check is then omitted). With a runtime check the claim
 holds only because that check stops the program on a mismatch, so a backend
 that honors `in_bounds` must also implement `DebugCheckArrayBounds`.
 
+A section target such as `a(:, i)` is assigned through its base array, with
+the loops running over its subscript triplets. Its element references are
+marked when the end of every triplet is known to lie within the bounds of
+`a`, for example a bound of `a` itself, and the subscripts of the first
+element, the starts of the triplets and the scalar subscripts, are known to
+as well. With bounds checking, `array_op` checks the latter once instead,
+by referencing that element before the loops if the section is not empty.
+
 ## Examples
 
 ```clojure

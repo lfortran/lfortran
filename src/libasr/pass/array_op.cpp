@@ -1116,10 +1116,159 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         }
     }
 
+    // Whether `subscript` of dimension `dim` (0-based) of the array `v` is
+    // known not to lie beyond its bound `bound` of that dimension: below the
+    // lower bound for `LBound`, above the upper one for `UBound`.
+    static bool is_subscript_within_bound(ASR::expr_t* v, size_t dim,
+            ASR::expr_t* subscript, ASR::arrayboundType bound) {
+        if( ASR::is_a<ASR::ArrayBound_t>(*subscript) ) {
+            ASR::ArrayBound_t* array_bound = ASR::down_cast<ASR::ArrayBound_t>(subscript);
+            int64_t bound_dim = 0;
+            if( array_bound->m_bound == bound && array_bound->m_dim != nullptr &&
+                ASR::is_a<ASR::Var_t>(*array_bound->m_v) && ASR::is_a<ASR::Var_t>(*v) &&
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(array_bound->m_v)->m_v) ==
+                ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(v)->m_v) &&
+                ASRUtils::extract_value(ASRUtils::expr_value(array_bound->m_dim), bound_dim) &&
+                bound_dim == static_cast<int64_t>(dim) + 1 ) {
+                return true;
+            }
+        }
+        ASR::dimension_t* dims = nullptr;
+        size_t rank = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(v), dims);
+        int64_t value = 0, start = 0, length = 0;
+        if( dim >= rank || dims[dim].m_start == nullptr || dims[dim].m_length == nullptr ||
+            !ASRUtils::extract_value(ASRUtils::expr_value(subscript), value) ||
+            !ASRUtils::extract_value(ASRUtils::expr_value(dims[dim].m_start), start) ||
+            !ASRUtils::extract_value(ASRUtils::expr_value(dims[dim].m_length), length) ) {
+            return false;
+        }
+        return bound == ASR::arrayboundType::LBound ? value >= start
+            : value <= start + length - 1;
+    }
+
+    // Whether evaluating `subscript` once more has no effect: a constant, a
+    // variable or a bound of an array variable.
+    static bool can_reevaluate_subscript(ASR::expr_t* subscript) {
+        return ASRUtils::is_value_constant(ASRUtils::expr_value(subscript)) ||
+            ASR::is_a<ASR::Var_t>(*subscript) ||
+            (ASR::is_a<ASR::ArrayBound_t>(*subscript) && ASR::is_a<ASR::Var_t>(
+                *ASR::down_cast<ASR::ArrayBound_t>(subscript)->m_v));
+    }
+
+    // Whether every element of the base array that the loops over the
+    // triplets of the section target `section` reference is within its
+    // bounds. The subscripts that the loop over a triplet runs through lie
+    // between its start and its end, so it suffices that its end is known
+    // to be within the bounds and that the subscripts of the first element
+    // referenced, its starts and the scalar subscripts, are. With bounds
+    // checking, those not known at compile time are checked once, before
+    // the loops, by referencing that element if the section is not empty
+    // and its elements are of intrinsic numeric or logical type.
+    bool is_section_traversal_in_bounds(ASR::ArraySection_t* section,
+            const Location& loc) {
+        ASRUtils::ASRBuilder b(al, loc);
+        bool check_first_element = false;
+        ASR::expr_t* is_not_empty = nullptr;
+        for( size_t i = 0; i < section->n_args; i++ ) {
+            ASR::array_index_t& index = section->m_args[i];
+            if( is_scalar_subscript(index) ) {
+                if( index.m_right == nullptr ) {
+                    return false;
+                }
+                check_first_element = check_first_element ||
+                    !is_subscript_within_bound(section->m_v, i, index.m_right,
+                        ASR::arrayboundType::LBound) ||
+                    !is_subscript_within_bound(section->m_v, i, index.m_right,
+                        ASR::arrayboundType::UBound);
+                continue;
+            }
+            int64_t step = 0;
+            if( index.m_left == nullptr || index.m_right == nullptr ||
+                index.m_step == nullptr ||
+                !ASRUtils::extract_value(ASRUtils::expr_value(index.m_step), step) ||
+                step == 0 ) {
+                return false;
+            }
+            ASR::arrayboundType start_bound = step > 0 ?
+                ASR::arrayboundType::LBound : ASR::arrayboundType::UBound;
+            ASR::arrayboundType end_bound = step > 0 ?
+                ASR::arrayboundType::UBound : ASR::arrayboundType::LBound;
+            if( !is_subscript_within_bound(section->m_v, i, index.m_right, end_bound) ) {
+                return false;
+            }
+            check_first_element = check_first_element ||
+                !is_subscript_within_bound(section->m_v, i, index.m_left, start_bound);
+            int64_t start = 0, end = 0;
+            if( ASRUtils::extract_value(ASRUtils::expr_value(index.m_left), start) &&
+                ASRUtils::extract_value(ASRUtils::expr_value(index.m_right), end) ) {
+                if( step > 0 ? start > end : start < end ) {
+                    // The section is empty, no element is referenced
+                    return true;
+                }
+                continue;
+            }
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            ASR::expr_t* start_expr = duplicator.duplicate_expr(index.m_left);
+            ASR::expr_t* end_expr = duplicator.duplicate_expr(index.m_right);
+            ASR::expr_t* is_dim_not_empty = step > 0 ? b.LtE(start_expr, end_expr)
+                : b.GtE(start_expr, end_expr);
+            is_not_empty = is_not_empty ? b.And(is_not_empty, is_dim_not_empty)
+                : is_dim_not_empty;
+        }
+        if( !check_first_element ) {
+            return true;
+        }
+        ASR::ttype_t* element_type = ASRUtils::extract_type(section->m_type);
+        if( !bounds_checking || !(ASR::is_a<ASR::Integer_t>(*element_type) ||
+                ASR::is_a<ASR::UnsignedInteger_t>(*element_type) ||
+                ASR::is_a<ASR::Real_t>(*element_type) ||
+                ASR::is_a<ASR::Complex_t>(*element_type) ||
+                ASR::is_a<ASR::Logical_t>(*element_type)) ) {
+            return false;
+        }
+        for( size_t i = 0; i < section->n_args; i++ ) {
+            ASR::array_index_t& index = section->m_args[i];
+            if( !can_reevaluate_subscript(index.m_right) ||
+                (index.m_left != nullptr && !can_reevaluate_subscript(index.m_left)) ) {
+                return false;
+            }
+        }
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        Vec<ASR::array_index_t> args;
+        args.reserve(al, section->n_args);
+        for( size_t i = 0; i < section->n_args; i++ ) {
+            ASR::array_index_t arg;
+            arg.loc = loc;
+            arg.m_left = nullptr;
+            arg.m_step = nullptr;
+            arg.m_right = duplicator.duplicate_expr(is_scalar_subscript(section->m_args[i]) ?
+                section->m_args[i].m_right : section->m_args[i].m_left);
+            args.push_back(al, arg);
+        }
+        ASR::expr_t* first_element = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al,
+            loc, section->m_v, args.p, args.size(), element_type,
+            ASR::arraystorageType::ColMajor, nullptr, false));
+        std::string name = current_scope->get_unique_name("__libasr_section_first_element_");
+        ASR::symbol_t* temp = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+            al, loc, current_scope, s2c(al, name), nullptr, 0, ASR::intentType::Local,
+            nullptr, nullptr, ASR::storage_typeType::Default,
+            ASRUtils::duplicate_type(al, element_type), nullptr, ASR::abiType::Source,
+            ASR::accessType::Public, ASR::presenceType::Required, false));
+        current_scope->add_symbol(name, temp);
+        ASR::stmt_t* check = b.Assignment(ASRUtils::EXPR(ASR::make_Var_t(al, loc, temp)),
+            first_element);
+        if( is_not_empty != nullptr ) {
+            check = b.If(is_not_empty, {check}, {});
+        }
+        pass_result.push_back(al, check);
+        return true;
+    }
+
     // The element of the base array of `section` that the loop indices
     // `indices` select, one index for each subscript triplet.
     ASR::expr_t* index_section_through_base(ASR::ArraySection_t* section,
-            Vec<ASR::expr_t*>& indices, const Location& loc) {
+            Vec<ASR::expr_t*>& indices, const Location& loc, bool in_bounds) {
         Vec<ASR::array_index_t> args;
         args.reserve(al, section->n_args);
         size_t k = 0;
@@ -1135,7 +1284,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         return ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
             section->m_v, args.p, args.size(),
             ASRUtils::extract_type(section->m_type),
-            ASR::arraystorageType::ColMajor, nullptr));
+            ASR::arraystorageType::ColMajor, nullptr, in_bounds));
     }
 
     enum IndexType {
@@ -1484,8 +1633,14 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                         index2step[var2indices[i][j]] = step;
                     }
                 }
-                *vars[i] = index_section_through_base(ASR::down_cast<ASR::ArraySection_t>(
-                    vars_expr[i]), var2indices[i], loc);
+                ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(
+                    vars_expr[i]);
+                // The loops run over the triplets of the section only if it
+                // drives them
+                bool section_in_bounds = i == var_with_maxrank &&
+                    is_section_traversal_in_bounds(section, loc);
+                *vars[i] = index_section_through_base(section, var2indices[i], loc,
+                    section_in_bounds);
                 continue;
             }
             Vec<ASR::array_index_t> indices;
