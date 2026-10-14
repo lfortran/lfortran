@@ -6422,11 +6422,6 @@ static inline void list_dir_state_reset(struct UNIT_FILE *uf) {
     uf->lf_list_dir_null_remaining = 0;
 }
 
-LFORTRAN_API void _lfortran_set_child_io(int32_t unit_num, int32_t is_child) {
-    struct UNIT_FILE *uf = find_unit(unit_num);
-    if (uf) uf->lf_child_io_mode = is_child;
-}
-
 // Pre-connect standard Fortran units at program startup.
 // The Fortran standard requires INPUT_UNIT, OUTPUT_UNIT, ERROR_UNIT to be
 // pre-connected, but their values are processor-dependent. Units 5/6/0 are
@@ -6485,6 +6480,12 @@ static void _lfortran_init_standard_units(void) {
     unit_to_file[2].pad_mode = 1;
 
     last_index_used = 2;
+}
+
+LFORTRAN_API void _lfortran_set_child_io(int32_t unit_num, int32_t is_child) {
+    _lfortran_init_standard_units();
+    struct UNIT_FILE *uf = find_unit(unit_num);
+    if (uf) uf->lf_child_io_mode = is_child;
 }
 
 LFORTRAN_API void _lfortran_file_write_newline(int32_t unit_num) {
