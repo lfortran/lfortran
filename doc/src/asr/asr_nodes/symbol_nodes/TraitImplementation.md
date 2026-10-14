@@ -44,8 +44,8 @@ This record itself generates no runtime code in the static-traits subset.
 
 Scalar intrinsic conformances use the same record and binding checks, with
 exact intrinsic type/kind identity instead of a nominal declaration.
-Their receiver must have that exact type and be read-only, nonpointer and
-nonallocatable. They are available through explicitly imported provider
+Their receiver must have that exact type, be nonpointer and nonallocatable,
+and have the message receiver's intent like any other binding. They are available through explicitly imported provider
 evidence and use the shared static specializer. A null `type_declaration`
 does not authorize an intrinsic runtime payload; that ABI is not implemented.
 

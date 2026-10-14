@@ -17,7 +17,9 @@ binder, in binder order, of type `TraitDictionaryType(contract, parameter)`;
 it describes the size, initializer and operations of the values.
 
 Erased storage is restricted to read-only scalar and assumed-shape dummies,
-scalar locals and a scalar result. At a call, an erased dummy takes the type
+the receiver of a dictionary slot and its adapter, which is `intent(inout)`
+for an `intent(inout)` or `intent(out)` message receiver, scalar locals and a
+scalar result. At a call, an erased dummy takes the type
 that the call's dictionary actual for the same parameter describes: the
 implementation of a `TraitDictionaryValue`, the caller's erased type for a
 forwarded dictionary dummy, or the binder of a deferred dictionary. Types of

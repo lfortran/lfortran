@@ -13,7 +13,9 @@ TraitObjectType(symbol contract)
 
 `contract` references the canonical `TraitRuntimeContract`, through a visible
 symbol. Its slot interfaces describe all ordinary arguments and results.
-A bare view is a required, nonpointer, nonallocatable scalar `intent(in)` dummy.
+A bare view is a required, nonpointer, nonallocatable scalar `intent(in)` or
+`intent(inout)` dummy. Through an `intent(in)` view, only messages whose
+receiver is not `intent(inout)` or `intent(out)` can be called.
 `Allocatable(TraitObjectType)` instead denotes scalar owning storage: a local,
 saved, module or BLOCK variable, an allocatable dummy's caller-owned slot,
 or a scalar allocatable component of an ordinary derived type.

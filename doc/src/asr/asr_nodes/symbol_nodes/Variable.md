@@ -39,7 +39,7 @@ Variable(symbol_table parent_symtab, identifier name,
 | `bindc_name` | the linker name given by `bind(c, name=...)`. |
 | `is_volatile` | `true` for the `volatile` attribute: the value may change outside this code, so it must not be cached. |
 | `is_protected` | `true` for the `protected` attribute: the variable is readable but not writable outside its module. |
-| `pass_attr` | for a component holding a procedure pointer, whether the object is passed as an argument; `NotMethod` otherwise. |
+| `pass_attr` | for a component holding a procedure pointer, whether the object is passed as an argument; `Pass` for the receiver dummy of a trait message; `NotMethod` otherwise. |
 | `self_argument` | the name of the passed-object dummy argument, when `pass_attr` is `Pass`. |
 | `codims` | the codimensions of a coarray; empty for anything else. |
 | `common_block` | the [CommonBlock](CommonBlock.md) of the same symbol table whose storage the variable lives in, as one of its `members` or as the `variable` of one of its `associations`; `nil` for a variable with storage of its own. |

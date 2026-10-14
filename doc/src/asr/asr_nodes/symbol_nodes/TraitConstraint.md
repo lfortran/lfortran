@@ -30,7 +30,10 @@ None.
 ## Description
 
 The generic body can use only its declared requirements. A normalized
-procedure has an explicit first receiver argument of the deferred type.
+procedure has a first receiver argument of the deferred type: the message's
+receiver, moved there from any position with its intent and `Pass` marker, or
+for a receiverless message a new `intent(in)` dummy without the marker that
+only carries the dispatch. The other arguments keep their source order.
 Specialization substitutes a conformance witness for that procedure.
 The mappings cover the trait's transitive requirements. Identical callable
 contracts may share a normalized procedure, but their originating nominal
@@ -40,7 +43,7 @@ References to signatures in a trait's nested scope use canonical
 
 A generic message instead maps to a generic requirement: a `Template` in the
 same scope whose fresh binders keep the message's nominally equivalent
-constraints and whose function prepends the receiver. Each tuple of type
+constraints and whose function puts the receiver first in the same way. Each tuple of type
 arguments the body uses adds one more requirement for the same member: a
 bodyless specialization of that function, recording its type arguments in its
 copies of the binder declarations. Specialization binds the generic

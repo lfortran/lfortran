@@ -27,8 +27,9 @@ adapters, and `abi` is `ExternalUndefined` once the module is loaded.
 
 Values are copied bitwise, so only conformances whose type is a plain
 intrinsic numeric or logical type, or a derived type of such components and
-fixed-size arrays without finalization, have a dictionary; like every runtime
-view, a dictionary never modifies a receiver. A conformance outside a module
+fixed-size arrays without finalization, have a dictionary. An adapter modifies
+its erased receiver in place, through `TraitRecover`, exactly when its slot
+takes the receiver `intent(inout)`. A conformance outside a module
 has none either. Using such a conformance at runtime is diagnosed with the
 reason at the call.
 

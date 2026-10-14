@@ -14,8 +14,8 @@ trait_requirement = (symbol member, symbol procedure, trait_evidence* evidence)
 
 | Argument | Description |
 | --- | --- |
-| `member` | Canonical reference to a receiver-independent trait signature. |
-| `procedure` | Abstract procedure in the generic scope, with an explicit receiver prepended. |
+| `member` | Canonical reference to the trait's message signature, as declared. |
+| `procedure` | Abstract procedure in the generic scope, with the receiver first (see [TraitConstraint](../symbol_nodes/TraitConstraint.md)). |
 | `evidence` | For a specialization of a generic requirement with concrete type arguments, the conformance selected for each nominal constraint of the generic requirement; empty otherwise. |
 
 ### Return values

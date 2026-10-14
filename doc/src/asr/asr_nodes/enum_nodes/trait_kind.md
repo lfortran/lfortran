@@ -8,7 +8,8 @@
 trait_kind = UniversalTrait | IntrinsicTypeSet
 ```
 
-`UniversalTrait` describes nominal receiver-independent method requirements.
+`UniversalTrait` describes nominal method requirements, independent of any
+implementing type.
 It has no finite member types.
 
 `IntrinsicTypeSet` is a finite, nonempty set of concrete scalar intrinsic

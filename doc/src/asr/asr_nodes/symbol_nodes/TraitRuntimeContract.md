@@ -12,9 +12,16 @@ TraitRuntimeContract(symbol_table symtab, identifier name, symbol trait,
 ```
 
 The symbol owns a scope of normalized interface functions. Each function takes
-the same read-only trait view first, followed by the message's ordinary
-arguments. This convention applies even to `nopass` implementations: their
-selected adapter omits the receiver only in its final concrete call.
+the trait view first, in place of the message's receiver, followed by the
+message's other arguments in source order. The view is a private dispatch
+argument without the `Pass` marker. It is `intent(inout)` when the receiver is
+`intent(inout)` or `intent(out)`, and `intent(in)` otherwise, also for a
+receiver without INTENT and for a receiverless message. It is never
+`intent(out)`: the implementation that the selected adapter calls owns the
+finalization, deallocation and default initialization of an `intent(out)`
+receiver, so the adapter forwards it as `intent(inout)`. This convention
+applies even to `nopass` implementations: their selected adapter omits the
+receiver only in its final concrete call.
 
 Slots follow the canonical trait hierarchy, coalescing compatible same-name
 messages while retaining every nominal origin. Shared diamond origins occur

@@ -26,7 +26,11 @@ None.
 
 ## Description
 
-The receiver can occupy a non-first argument position. Static specialization
+A message with a receiver is bound to a passed-object procedure whose receiver
+has exactly the intent of the message's receiver, including none; a
+receiverless message is bound to a `nopass` procedure.
+The receiver can occupy a non-first argument position, independently of the
+position of the message's receiver. Static specialization
 uses this metadata to construct an ordinary typed procedure adapter instead
 of making the backend infer receiver positions.
 A universally generic message binds the trait's `Template` to the

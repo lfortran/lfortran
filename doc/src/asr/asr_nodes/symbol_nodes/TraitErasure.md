@@ -31,7 +31,8 @@ so clients reference the compiled entry rather than rebuilding it.
 The provider descriptor and each generic argument descriptor are independent.
 This metadata introduces no concrete type layout, ownership, finalization or
 runtime specialization cache. The initial subset is readonly scalar generic
-arguments and scalar integer results. Static-only backends may ignore the
+arguments and scalar integer results; the provider descriptor has the intent
+of a runtime slot's view. Static-only backends may ignore the
 owned runtime routines; executable runtime use requires LLVM support.
 
 A generic whose binders are all closed type-set traits instead has one member

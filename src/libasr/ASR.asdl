@@ -113,9 +113,9 @@ symbol
     -- statements in order, laid out one after another; `associations` place
     -- the other variables that EQUIVALENCE connects to the block.
     | CommonBlock(symbol_table parent_symtab, identifier name, identifier? block_name, identifier link_name, symbol* members, common_association* associations, abi abi, storage_type storage, common_block_role role)
-    -- operations are the members, in declaration order, that have no receiver:
-    -- initializer (TypeSetConversion) and operator requirements. Every other
-    -- member is an ordinary message.
+    -- operations are the members, in declaration order, that are initializer
+    -- (TypeSetConversion) and operator requirements. Every other member is an
+    -- ordinary message; its receiver, if any, is its dummy with pass_attr Pass.
     | Trait(symbol_table symtab, identifier name, symbol* parents, access access, trait_kind kind, ttype* member_types, trait_operation* operations)
     | TraitConstraint(symbol_table parent_symtab, identifier name, symbol parameter, symbol trait, trait_requirement* requirements, type_set_requirement* intrinsic_requirements)
     | TraitImplementation(symbol_table parent_symtab, identifier name, ttype implementing_type, symbol? type_declaration, symbol trait, trait_binding* bindings, access access)
@@ -124,8 +124,8 @@ symbol
     -- One checked template body, instantiated with explicit borrowed-view
     -- types and operation substitutions rather than concrete types.
     | TraitErasure(symbol_table symtab, identifier name, symbol generic, symbol procedure, trait_erased_parameter* parameters)
-    -- The open conformance layout of a protocol trait (one with requirements
-    -- that take no receiver): one slot per canonical requirement, whose
+    -- The open conformance layout of a protocol trait (one with initializer
+    -- or operator requirements): one slot per canonical requirement, whose
     -- procedure is the erased interface with the dictionary as first dummy.
     | TraitDictionaryContract(symbol_table symtab, identifier name, symbol trait, trait_slot* slots)
     -- The evidence of one conformance to a protocol trait, owned by the
@@ -497,8 +497,9 @@ type_set_witness
 type_set_requirement
     = (symbol procedure, type_set_operation operation, type_set_witness* witnesses)
 
--- A receiver-less requirement of a universal trait: `member` is the trait's
--- Function stating its signature, with `itself` for the implementing type.
+-- An initializer or operator requirement of a universal trait: `member` is
+-- the trait's Function stating its signature, with `itself` for the
+-- implementing type.
 trait_operation
     = (symbol member, type_set_operation operation)
 

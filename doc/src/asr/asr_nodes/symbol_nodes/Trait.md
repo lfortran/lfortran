@@ -30,7 +30,13 @@ None.
 ## Description
 
 A trait describes a contract, not an executable body or a derived-type layout.
-Its procedures have no passed-object dummy, but can have ordinary arguments.
+A message can declare one receiver: a dummy declared
+`type(itself), pass :: name`, of type `TypeParameter(itself)`, whose `Variable`
+has `pass_attr` `Pass`. The receiver can have any position and name, and any
+intent or none, with its ordinary Fortran meaning; nothing is inferred from a
+name, a position or an unmarked `type(itself)` dummy. A message without one is
+receiverless. Other `type(itself)` arguments and results of messages are not
+implemented yet.
 An ordinary message is a `Function`; a generic message is the existing
 `Template` with its principal interface function and scoped `TraitConstraint`
 binders. Equivalence compares binder positions and canonical nominal constraints,
@@ -43,10 +49,10 @@ Shared ancestors contribute each canonical member once.
 A universal trait can also require an initializer and intrinsic operators of
 the implementing type. Such a member is an ordinary interface `Function` of
 the trait's symbol table that has no receiver; its entry in `operations`
-records what it requires, and the member's name has no semantic meaning. The
-symbol table then also declares `itself`, a `Variable` of type
-`TypeParameter(itself)`, which these signatures use for the implementing
-type; it is not a member. An initializer returns `itself`; an operator
+records what it requires, and the member's name has no semantic meaning. When
+receivers or these signatures use the implementing type, the symbol table
+also declares `itself`, a `Variable` of type `TypeParameter(itself)`; it is
+not a member. An initializer returns `itself`; an operator
 requirement has two operands, at least one of them `itself`. Two
 requirements with the same operation and signature, `itself` standing for
 one type, are one requirement of a composed constraint, and one trait does
