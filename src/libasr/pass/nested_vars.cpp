@@ -26,7 +26,11 @@ static SymbolTable *get_host_scope(SymbolTable *scope) {
     return start;
 }
 
-static bool is_nested_call_symbol(SymbolTable *current_scope, ASR::symbol_t *sym) {
+// `program_interfaces` maps the copy of the interface of a program procedure
+// in a context module to that procedure: a procedure variable declared with
+// the copy is called like one declared with the procedure.
+static bool is_nested_call_symbol(SymbolTable *current_scope, ASR::symbol_t *sym,
+        const std::map<ASR::symbol_t*, ASR::symbol_t*> *program_interfaces = nullptr) {
     SymbolTable *host_scope = get_host_scope(current_scope);
     ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
     if (ASR::is_a<ASR::Function_t>(*s)) {
@@ -35,10 +39,16 @@ static bool is_nested_call_symbol(SymbolTable *current_scope, ASR::symbol_t *sym
     }
     if (ASR::is_a<ASR::Variable_t>(*s)) {
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
-        if (v->m_type_declaration &&
-            ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v->m_type_declaration))) {
-            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(
-                ASRUtils::symbol_get_past_external(v->m_type_declaration));
+        ASR::symbol_t *decl = v->m_type_declaration
+            ? ASRUtils::symbol_get_past_external(v->m_type_declaration) : nullptr;
+        if (decl && program_interfaces) {
+            auto it = program_interfaces->find(decl);
+            if (it != program_interfaces->end()) {
+                decl = it->second;
+            }
+        }
+        if (decl && ASR::is_a<ASR::Function_t>(*decl)) {
+            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(decl);
             return fn->m_symtab->parent == host_scope;
         }
     }
@@ -507,6 +517,11 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
     // A derived type declared in a program and moved into a context module
     // -> its ExternalSymbol left in the program
     std::map<ASR::symbol_t*, ASR::symbol_t*> moved_program_structs;
+    // (context module scope, procedure or imported symbol of a program)
+    // -> the symbol that stands for it in that context module
+    std::map<std::pair<SymbolTable*, ASR::symbol_t*>, ASR::symbol_t*> imported_program_symbols;
+    // Copy of the interface of a program procedure -> that procedure
+    std::map<ASR::symbol_t*, ASR::symbol_t*> program_procedure_interfaces;
 
     ReplaceNestedVisitor(Allocator& al_,
         std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &n_map) : al(al_),
@@ -548,6 +563,160 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             }
         }
         return false;
+    }
+
+    static bool is_program_symbol(ASR::symbol_t *sym) {
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(sym);
+        return owner != nullptr && ASR::is_a<ASR::Program_t>(*owner);
+    }
+
+    // The symbol through which the context module `scope` refers to `sym`,
+    // which a derived type or a procedure interface used in the module
+    // depends on. A module cannot refer into a program, so a symbol of a
+    // program is replaced by a symbol of the module.
+    ASR::symbol_t *import_dependency(ASR::symbol_t *sym, SymbolTable *scope,
+            const std::string &module_name) {
+        if (sym == nullptr || !is_program_symbol(sym)) {
+            return sym;
+        }
+        return import_program_symbol(sym, scope, module_name);
+    }
+
+    ASR::symbol_t *import_program_symbol(ASR::symbol_t *sym, SymbolTable *scope,
+            const std::string &module_name) {
+        auto moved = moved_program_structs.find(sym);
+        if (moved != moved_program_structs.end()) {
+            ASR::symbol_t *copy = ASRUtils::symbol_get_past_external(moved->second);
+            if (ASRUtils::symbol_parent_symtab(copy) == scope) {
+                return copy;
+            }
+            return resolve_or_create_external_symbol(al, scope, copy,
+                ASRUtils::symbol_name(ASRUtils::get_asr_owner(copy)));
+        }
+        auto imported = imported_program_symbols.find({scope, sym});
+        if (imported != imported_program_symbols.end()) {
+            return imported->second;
+        }
+        if (ASR::is_a<ASR::Struct_t>(*sym)) {
+            return move_program_struct(sym, scope, module_name);
+        } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+            return copy_program_procedure_interface(
+                ASR::down_cast<ASR::Function_t>(sym), scope, module_name);
+        } else if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+            ASR::ExternalSymbol_t *ext = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
+            std::string name = scope->get_unique_name(ext->m_name, false);
+            ASR::symbol_t *copy = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_ExternalSymbol_t(al, ext->base.base.loc, scope,
+                    s2c(al, name), ext->m_external, ext->m_module_name,
+                    ext->m_scope_names, ext->n_scope_names,
+                    ext->m_original_name, ext->m_access));
+            scope->add_symbol(name, copy);
+            imported_program_symbols[{scope, sym}] = copy;
+            return copy;
+        }
+        return sym;
+    }
+
+    // Move the derived type `sym` of a program into the context module
+    // `scope`, import it back into the program under its own name, and
+    // make the types and procedure interfaces it depends on available in
+    // the module.
+    ASR::symbol_t *move_program_struct(ASR::symbol_t *sym, SymbolTable *scope,
+            const std::string &module_name) {
+        std::string struct_name = ASRUtils::symbol_name(sym);
+        SymbolTable *program_scope = ASRUtils::symbol_parent_symtab(sym);
+        ASRUtils::SymbolDuplicator sd(al);
+        sd.duplicate_symbol(sym, scope);
+        program_scope->erase_symbol(struct_name);
+        ASR::symbol_t *copy = scope->get_symbol(struct_name);
+        moved_program_structs[sym] = make_external_symbol(al, program_scope,
+            copy, struct_name, module_name, struct_name,
+            ASR::accessType::Public);
+        ASR::Struct_t *struct_t = ASR::down_cast<ASR::Struct_t>(copy);
+        struct_t->m_parent = import_dependency(struct_t->m_parent, scope,
+            module_name);
+        for (auto &item: struct_t->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *component = ASR::down_cast<ASR::Variable_t>(
+                    item.second);
+                component->m_type_declaration = import_dependency(
+                    component->m_type_declaration, scope, module_name);
+            }
+        }
+        return copy;
+    }
+
+    // An interface in the context module `scope` for the procedure `fn` of a
+    // program: a copy of its dummy arguments and result, without its body,
+    // which may refer to the program.
+    ASR::symbol_t *copy_program_procedure_interface(ASR::Function_t *fn,
+            SymbolTable *scope, const std::string &module_name) {
+        SymbolTable *fn_symtab = al.make_new<SymbolTable>(scope);
+        ASRUtils::SymbolDuplicator sd(al);
+        std::vector<ASR::symbol_t*> dummies;
+        for (size_t i = 0; i < fn->n_args; i++) {
+            dummies.push_back(ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v);
+        }
+        if (fn->m_return_var) {
+            dummies.push_back(ASR::down_cast<ASR::Var_t>(fn->m_return_var)->m_v);
+        }
+        std::vector<std::pair<ASR::Variable_t*, ASR::Variable_t*>> variables;
+        for (ASR::symbol_t *dummy: dummies) {
+            sd.duplicate_symbol(dummy, fn_symtab);
+            ASR::symbol_t *copy = fn_symtab->get_symbol(ASRUtils::symbol_name(dummy));
+            if (copy == nullptr) {
+                return (ASR::symbol_t*) fn;
+            }
+            if (ASR::is_a<ASR::Variable_t>(*dummy) && ASR::is_a<ASR::Variable_t>(*copy)) {
+                variables.push_back({ASR::down_cast<ASR::Variable_t>(dummy),
+                    ASR::down_cast<ASR::Variable_t>(copy)});
+            }
+        }
+        sd.remap_local_references(variables, fn_symtab);
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, fn->n_args);
+        for (size_t i = 0; i < fn->n_args; i++) {
+            args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al,
+                fn->m_args[i]->base.loc, fn_symtab->get_symbol(
+                    ASRUtils::symbol_name(dummies[i])))));
+        }
+        ASR::expr_t *return_var = nullptr;
+        if (fn->m_return_var) {
+            return_var = ASRUtils::EXPR(ASR::make_Var_t(al,
+                fn->m_return_var->base.loc, fn_symtab->get_symbol(
+                    ASRUtils::symbol_name(dummies.back()))));
+        }
+        ASR::FunctionType_t *fn_type = ASRUtils::get_FunctionType(fn);
+        std::string name = scope->get_unique_name(fn->m_name, false);
+        ASR::symbol_t *iface = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Function_t_util(al, fn->base.base.loc, fn_symtab,
+                s2c(al, name), nullptr, 0, args.p, args.size(), nullptr, 0,
+                return_var, fn_type->m_abi, fn->m_access,
+                ASR::deftypeType::Interface, fn_type->m_bindc_name,
+                fn_type->m_elemental, fn_type->m_pure, fn_type->m_module,
+                fn_type->m_inline, fn_type->m_static, fn_type->m_restrictions,
+                fn_type->n_restrictions, fn_type->m_is_restriction,
+                fn->m_deterministic, fn->m_side_effect_free, nullptr, nullptr,
+                nullptr, fn_type->m_exec_space));
+        scope->add_symbol(name, iface);
+        imported_program_symbols[{scope, (ASR::symbol_t*) fn}] = iface;
+        program_procedure_interfaces[iface] = (ASR::symbol_t*) fn;
+        // The dummy arguments may be declared with symbols of the procedure
+        // itself (e.g. the interface of a dummy procedure, or a type it
+        // uses from a module) or of the program.
+        for (auto &pair: variables) {
+            ASR::symbol_t *decl = pair.second->m_type_declaration;
+            if (decl != nullptr &&
+                    ASRUtils::symbol_parent_symtab(decl) == fn->m_symtab) {
+                std::string decl_name = ASRUtils::symbol_name(decl);
+                sd.duplicate_symbol(decl, fn_symtab);
+                pair.second->m_type_declaration = fn_symtab->get_symbol(decl_name);
+            } else {
+                pair.second->m_type_declaration = import_dependency(decl,
+                    scope, module_name);
+            }
+        }
+        return iface;
     }
 
     void create_context_modules(const ASR::TranslationUnit_t &x) {
@@ -620,12 +789,11 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                             ASR::symbol_t* original = ASRUtils::symbol_get_past_external(type_decl);
                             ASR::symbol_t* owner_sym = ASRUtils::get_asr_owner(original);
                             if (ASR::is_a<ASR::Program_t>(*owner_sym)) {
-                                // Cannot create ExternalSymbol pointing into
-                                // a Program; duplicate the abstract interface
-                                // into the module scope instead.
-                                ASRUtils::SymbolDuplicator sd(al);
-                                sd.duplicate_symbol(original, current_scope);
-                                existing_td = current_scope->get_symbol(td_name);
+                                // A module cannot refer into a program, so
+                                // declare the variable with a copy of the
+                                // interface of the program's procedure.
+                                existing_td = import_program_symbol(original,
+                                    current_scope, module_name);
                             } else {
                                 std::string owner_name = std::string(ASRUtils::symbol_name(owner_sym));
                                 ASR::asr_t *ext = ASR::make_ExternalSymbol_t(
@@ -678,20 +846,9 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                 // move the program's type into the context
                                 // module and import it back into the program
                                 // under its own name.
-                                std::string struct_name = ASRUtils::symbol_name(
-                                    derived_type_or_class_type);
-                                SymbolTable* program_scope = ASRUtils::symbol_parent_symtab(
-                                    derived_type_or_class_type);
-                                ASRUtils::SymbolDuplicator sd(al);
-                                sd.duplicate_symbol(derived_type_or_class_type, current_scope);
-                                program_scope->erase_symbol(struct_name);
-                                m_derived_type_or_class_type = current_scope->get_symbol(
-                                    struct_name);
-                                moved_program_structs[derived_type_or_class_type] =
-                                    make_external_symbol(al, program_scope,
-                                        m_derived_type_or_class_type, struct_name,
-                                        module_name, struct_name,
-                                        ASR::accessType::Public);
+                                m_derived_type_or_class_type = import_program_symbol(
+                                    derived_type_or_class_type, current_scope,
+                                    module_name);
                             }
                         }
                         if (ASR::is_a<ASR::StructType_t>(*var_type_)) {
@@ -1006,7 +1163,8 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         bool is_in_call_copy = is_in_call;
-        is_in_call = is_nested_call_symbol(current_scope, x.m_name);
+        is_in_call = is_nested_call_symbol(current_scope, x.m_name,
+            &program_procedure_interfaces);
         ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
         if (nested_var_to_ext_var.find(x.m_name) != nested_var_to_ext_var.end()) {
             std::string m_name = nested_var_to_ext_var[x.m_name].first;
@@ -1055,7 +1213,8 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
         bool is_in_call_copy = is_in_call;
-        is_in_call = is_nested_call_symbol(current_scope, x.m_name);
+        is_in_call = is_nested_call_symbol(current_scope, x.m_name,
+            &program_procedure_interfaces);
         if (nested_var_to_ext_var.find(x.m_name) != nested_var_to_ext_var.end()) {
             std::string m_name = nested_var_to_ext_var[x.m_name].first;
             ASR::symbol_t *t = nested_var_to_ext_var[x.m_name].second;
@@ -1246,6 +1405,7 @@ public:
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nested_var_to_ext_var;
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nesting_map;
     std::map<ASR::symbol_t*, ASR::symbol_t*> &assumed_length_ctx_var_len;
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &program_procedure_interfaces;
     std::map<ASR::symbol_t*, ASR::symbol_t*> module_var_to_external;
 
     ASR::symbol_t *cur_func_sym = nullptr;
@@ -1284,7 +1444,8 @@ public:
         value = ASRUtils::get_past_array_physical_cast(value);
         if (value && ASR::is_a<ASR::Var_t>(*value)) {
             ASR::symbol_t* v = ASR::down_cast<ASR::Var_t>(value)->m_v;
-            return is_nested_call_symbol(current_scope, v);
+            return is_nested_call_symbol(current_scope, v,
+                &program_procedure_interfaces);
         }
         return false;
     }
@@ -1309,7 +1470,8 @@ public:
 
         if (ASR::is_a<ASR::Var_t>(*arg_expr)) {
             ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(arg_expr);
-            if (is_nested_call_symbol(current_scope, var->m_v) ||
+            if (is_nested_call_symbol(current_scope, var->m_v,
+                    &program_procedure_interfaces) ||
                 nested_proc_dispatch_hosts.find(get_root_host_symbol(arg_expr)) != nested_proc_dispatch_hosts.end()) {
                 calls_present = true;
             }
@@ -1319,9 +1481,10 @@ public:
     AssignNestedVars(Allocator &al_,
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nv,
     std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &nm,
-    std::map<ASR::symbol_t*, ASR::symbol_t*> &al_map) :
+    std::map<ASR::symbol_t*, ASR::symbol_t*> &al_map,
+    const std::map<ASR::symbol_t*, ASR::symbol_t*> &pi_map) :
     PassVisitor(al_, nullptr), nested_var_to_ext_var(nv), nesting_map(nm),
-    assumed_length_ctx_var_len(al_map) { }
+    assumed_length_ctx_var_len(al_map), program_procedure_interfaces(pi_map) { }
 
     void visit_Associate(const ASR::Associate_t &x) {
         record_nested_dispatch_host(x.m_target, x.m_value);
@@ -1746,7 +1909,8 @@ public:
                 is_nested_dispatch_call = true;
             }
         }
-        calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name)
+        calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name,
+            &program_procedure_interfaces)
             || is_nested_dispatch_call;
         for (size_t i=0; i<x.n_args; i++) {
             mark_nested_procedure_arg(x.m_args[i].m_value);
@@ -1771,7 +1935,8 @@ public:
                 is_nested_dispatch_call = true;
             }
         }
-        calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name)
+        calls_present = calls_present || is_nested_call_symbol(current_scope, x.m_name,
+            &program_procedure_interfaces)
             || is_nested_dispatch_call;
         for (size_t i=0; i<x.n_args; i++) {
             mark_nested_procedure_arg(x.m_args[i].m_value);
@@ -1952,7 +2117,7 @@ void pass_nested_vars(Allocator &al, ASR::TranslationUnit_t &unit,
     }
     w.visit_TranslationUnit(unit);
     AssignNestedVars z(al, w.nested_var_to_ext_var, w.nesting_map,
-        w.assumed_length_ctx_var_len);
+        w.assumed_length_ctx_var_len, w.program_procedure_interfaces);
     z.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor x(al);
     x.visit_TranslationUnit(unit);

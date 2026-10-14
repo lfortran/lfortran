@@ -398,11 +398,14 @@ public:
     // until then its name must not be taken to be an intrinsic procedure.
     // Neither is an internal procedure that its host defines later, except
     // in an interface body, which does not access its host. Every other
-    // name that the scoping units being visited do not declare can be.
+    // name that the scoping units being visited do not declare can be. A
+    // name declared only by the placeholder of a procedure interface, see
+    // `pending_proc_placeholders`, is not declared yet either.
     ProcedureDeclaredLater procedure_declared_later(const std::string &name) {
         for (ContainedProcedureScope *procedures = contained_procedure_scope;
                 procedures; procedures = procedures->enclosing) {
-            if (procedures->scope->get_symbol(name)) continue;
+            ASR::symbol_t *declared = procedures->scope->get_symbol(name);
+            if (declared && !is_pending_proc_placeholder(declared)) continue;
             if (procedures->is_module) {
                 if (procedures->find(name) || procedures->has_interface_body(name)) {
                     return ProcedureDeclaredLater::InModule;
@@ -412,6 +415,16 @@ public:
             }
         }
         return ProcedureDeclaredLater::No;
+    }
+
+    bool host_contains_procedure(SymbolTable *scope, const std::string &name) {
+        for (ContainedProcedureScope *procedures = contained_procedure_scope;
+                procedures; procedures = procedures->enclosing) {
+            if (procedures->scope == scope) {
+                return !procedures->is_module && procedures->find(name);
+            }
+        }
+        return false;
     }
 
     struct PendingInstantiationRestriction {

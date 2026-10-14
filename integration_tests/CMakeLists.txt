@@ -3359,6 +3359,8 @@ RUN(NAME nested_vars2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME nested_vars3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_vars_allocatable_call LABELS gfortran llvm)
 RUN(NAME nested_vars_20 LABELS gfortran llvm)
+RUN(NAME nested_vars_21 LABELS gfortran llvm)
+RUN(NAME nested_vars_22 LABELS gfortran llvm)
 
 RUN(NAME nbody LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -5493,6 +5495,8 @@ RUN(NAME proc_ptr_31 LABELS gfortran llvm)
 RUN(NAME proc_ptr_32 LABELS gfortran llvm)
 RUN(NAME proc_ptr_33 LABELS gfortran llvm)
 RUN(NAME proc_ptr_34 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface)
+RUN(NAME proc_ptr_35 LABELS gfortran llvm)
+RUN(NAME proc_ptr_36 LABELS llvm) # gfortran 13 at CI rejects procedure targets in initializer structure constructors
 RUN(NAME proc_ptr_nopass_02 LABELS gfortran llvm)
 RUN(NAME proc_ptr_nopass_03 LABELS gfortran llvm)
 RUN(NAME proc_ptr_nopass_04 LABELS gfortran llvm)
