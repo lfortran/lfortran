@@ -17,6 +17,7 @@
 "symbol.TraitErasure" = "helper:erased provider procedure emission"
 "symbol.TraitDictionaryContract" = "metadata"
 "symbol.TraitDictionary" = "helper:conformance dictionary emission"
+"symbol.IntentOutReset" = "helper:vtable intent(out) reset slot"
 "symbol.Namelist" = "helper:formatted I/O"
 
 "struct_generic.GenericTypeDefinition" = "non-executable"

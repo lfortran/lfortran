@@ -139,6 +139,11 @@ public:
         ASR::BaseWalkVisitor<CollectUnusedFunctionsVisitor>::visit_TraitSubroutineCall(x);
     }
 
+    // A code generator calls the procedure through the vtable of the type.
+    void visit_IntentOutReset(const ASR::IntentOutReset_t &x) {
+        if (x.m_procedure) retain_trait_procedure(x.m_procedure);
+    }
+
     void visit_ExternalSymbol(const ASR::ExternalSymbol_t &x) {
         if (ASR::is_a<ASR::Function_t>(*x.m_external)) {
             uint64_t h = get_hash((ASR::asr_t*)&x);

@@ -2,6 +2,8 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <set>
+#include <tuple>
 
 #include <libasr/bwriter.h>
 #include <libasr/serialization.h>
@@ -19,6 +21,7 @@
 #include <libasr/pass/function_result_scope.h>
 #include <libasr/pass/create_subroutine_from_function.h>
 #include <libasr/pass/intent_out_deallocate.h>
+#include <libasr/pass/unused_functions.h>
 #include <libasr/pass/promote_allocatable_to_nonallocatable.h>
 #include <libasr/utils.h>
 #include <lfortran/ast_to_src.h>
@@ -10452,6 +10455,234 @@ end module
             found |= diagnostic.code == "asr.verify.variable.pass_attr";
         }
         CHECK(found);
+    }
+}
+
+TEST_CASE("Intent(out) resets are recorded for every derived type of a unit") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module intent_out_resets_m
+implicit none
+type :: Bare
+    integer :: k
+end type
+type, abstract :: Shape
+    integer :: n = 7
+end type
+type, extends(Shape) :: Circle
+    real, allocatable :: radii(:)
+end type
+abstract interface :: IArea
+    function area(self) result(r)
+        type(itself), intent(in), pass :: self
+        real :: r
+    end function
+end interface
+type, sealed :: Square
+    real :: side = 1
+end type
+implements IArea :: Square
+    procedure, pass :: area => square_area
+end implements
+contains
+function square_area(self) result(r)
+    type(Square), intent(in) :: self
+    real :: r
+    r = self%side**2
+end function
+real function measure(v) result(r)
+    class(IArea), intent(in) :: v
+    r = v%area()
+end function
+subroutine local()
+    type :: Outer
+        integer :: m = 3
+    end type
+    type(Outer) :: x
+    block
+        type :: Inner
+            integer :: q = 4
+        end type
+        type(Inner) :: y
+        x%m = y%q
+    end block
+    block
+        type :: Inner
+            integer :: q = 5
+        end type
+        type(Inner) :: y
+        x%m = x%m + y%q
+    end block
+    print *, x%m
+end subroutine
+end module
+program intent_out_resets_p
+use intent_out_resets_m
+implicit none
+type :: Plain
+    integer :: z
+end type
+type(Plain) :: l
+type(Square) :: s
+l%z = 1
+print *, l%z, measure(s)
+end program
+)";
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    ASR::TranslationUnit_t *unit = result.result;
+    options.po.dynamic_intent_out_reset = true;
+    LCompilers::pass_intent_out_deallocate(al, *unit, options.po);
+    CHECK(LCompilers::asr_verify(*unit, true, diagnostics));
+    auto *module = ASR::down_cast<ASR::Module_t>(unit->m_symtab->get_symbol("intent_out_resets_m"));
+    auto *program = ASR::down_cast<ASR::Program_t>(unit->m_symtab->get_symbol("intent_out_resets_p"));
+    auto *local = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol("local"));
+    std::vector<ASR::Block_t*> blocks;
+    for (const auto &entry : local->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Block_t>(*entry.second)) {
+            blocks.push_back(ASR::down_cast<ASR::Block_t>(entry.second));
+        }
+    }
+    REQUIRE(blocks.size() == 2);
+    auto record = [](LCompilers::SymbolTable *scope, const char *type) {
+        ASR::IntentOutReset_t *found = nullptr;
+        size_t n = 0;
+        for (const auto &entry : scope->get_scope()) {
+            if (!ASR::is_a<ASR::IntentOutReset_t>(*entry.second)) continue;
+            auto *reset = ASR::down_cast<ASR::IntentOutReset_t>(entry.second);
+            if (std::string(ASRUtils::symbol_name(reset->m_type_declaration)) == type) {
+                found = reset;
+                n++;
+            }
+        }
+        CHECK(n == 1);
+        return found;
+    };
+    // Every derived type has one record in its own scope; one with an
+    // effect has a procedure. The sealed type is only ever behind a view,
+    // and the two types named Inner, of two BLOCKs of one procedure, have
+    // procedures of different names.
+    const std::tuple<LCompilers::SymbolTable*, const char*, bool> expected[] = {
+        {module->m_symtab, "bare", false}, {module->m_symtab, "shape", false},
+        {module->m_symtab, "circle", true}, {module->m_symtab, "square", true},
+        {local->m_symtab, "outer", true}, {blocks[0]->m_symtab, "inner", true},
+        {blocks[1]->m_symtab, "inner", true}, {program->m_symtab, "plain", false}};
+    std::set<std::string> names;
+    for (const auto &item : expected) {
+        INFO(std::get<1>(item));
+        ASR::IntentOutReset_t *reset = record(std::get<0>(item), std::get<1>(item));
+        REQUIRE(reset != nullptr);
+        CHECK((reset->m_procedure != nullptr) == std::get<2>(item));
+        if (!reset->m_procedure) continue;
+        auto *procedure = ASR::down_cast<ASR::Function_t>(reset->m_procedure);
+        CHECK(procedure->m_symtab->parent == std::get<0>(item));
+        REQUIRE(procedure->n_args == 1);
+        auto *object = ASRUtils::EXPR2VAR(procedure->m_args[0]);
+        CHECK(object->m_intent == ASR::intentType::Out);
+        CHECK(ASRUtils::symbol_get_past_external(object->m_type_declaration) ==
+            reset->m_type_declaration);
+        CHECK(names.insert(procedure->m_name).second);
+    }
+    // The reset deallocates the allocatable component of a Circle.
+    auto *circle = record(module->m_symtab, "circle");
+    CHECK(ASR::down_cast<ASR::Function_t>(circle->m_procedure)->n_body > 0);
+
+    SUBCASE("unused function removal keeps the procedures that only records name") {
+        LCompilers::PassOptions unused = options.po;
+        unused.always_run = true;
+        LCompilers::pass_unused_functions(al, *unit, unused);
+        CHECK(LCompilers::asr_verify(*unit, true, diagnostics));
+        for (const auto &item : expected) {
+            auto *reset = record(std::get<0>(item), std::get<1>(item));
+            if (!reset || !reset->m_procedure) continue;
+            CHECK(std::get<0>(item)->get_symbol(ASRUtils::symbol_name(reset->m_procedure)) ==
+                reset->m_procedure);
+        }
+    }
+
+    SUBCASE("records survive binary and text round trips") {
+        // The module on its own, as a module file holds it.
+        auto *module_scope = al.make_new<LCompilers::SymbolTable>(nullptr);
+        module_scope->add_symbol("intent_out_resets_m", &module->base);
+        LCompilers::SymbolTable *unit_scope = module->m_symtab->parent;
+        module->m_symtab->parent = module_scope;
+        auto *alone = ASR::down_cast2<ASR::TranslationUnit_t>(ASR::make_TranslationUnit_t(
+            al, module->base.base.loc, module_scope, nullptr, 0, nullptr));
+        std::string original = LCompilers::pickle(*alone);
+        std::string binary = LCompilers::serialize(*alone);
+        module->m_symtab->parent = unit_scope;
+        LCompilers::SymbolTable symtab(nullptr);
+        auto *loaded = ASR::down_cast2<ASR::TranslationUnit_t>(
+            LCompilers::deserialize_asr(al, binary, true, symtab, 0));
+        fix_external_symbols(*loaded, symtab);
+        CHECK(LCompilers::asr_verify(*loaded, true, diagnostics));
+        CHECK(original == LCompilers::pickle(*loaded));
+        auto *copy = ASR::down_cast<ASR::Module_t>(
+            loaded->m_symtab->get_symbol("intent_out_resets_m"));
+        auto *copied = record(copy->m_symtab, "circle");
+        REQUIRE(copied != nullptr);
+        CHECK(copied->m_procedure != nullptr);
+        CHECK(ASRUtils::symbol_parent_symtab(copied->m_type_declaration) == copy->m_symtab);
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            auto text = LCompilers::asr_to_text(*unit, text_options);
+            LCompilers::diag::Diagnostics text_diagnostics;
+            auto from_text = LCompilers::asr_from_text(al, text, "intent_out_resets.asr", lm,
+                text_diagnostics);
+            INFO(text_diagnostics.render2());
+            REQUIRE(from_text.ok);
+            CHECK(LCompilers::asr_verify(*from_text.result, true, text_diagnostics));
+            CHECK(text == LCompilers::asr_to_text(*from_text.result, text_options));
+        }
+    }
+    SUBCASE("a copied scope names the copies of its type and procedure") {
+        auto *scope = al.make_new<LCompilers::SymbolTable>(module->m_symtab);
+        ASRUtils::SymbolDuplicator duplicator(al);
+        duplicator.duplicate_SymbolTable(local->m_symtab, scope);
+        auto *copied = record(scope, "outer");
+        REQUIRE(copied != nullptr);
+        CHECK(copied->m_type_declaration == scope->get_symbol("outer"));
+        REQUIRE(copied->m_procedure != nullptr);
+        CHECK(ASRUtils::symbol_parent_symtab(copied->m_procedure) == scope);
+    }
+
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*unit, true, invalid));
+        INFO(invalid.render2());
+        bool found = false;
+        for (const auto &diagnostic : invalid.diagnostics) found |= diagnostic.code == code;
+        CHECK(found);
+    };
+    SUBCASE("a reset with an effect is not recorded as empty") {
+        circle->m_procedure = nullptr;
+        rejects("asr.verify.intent_out_reset.effect");
+    }
+    SUBCASE("an abstract type has no reset procedure") {
+        record(module->m_symtab, "shape")->m_procedure = circle->m_procedure;
+        rejects("asr.verify.intent_out_reset.effect");
+    }
+    SUBCASE("the procedure resets an intent(out) object of the type") {
+        auto *procedure = ASR::down_cast<ASR::Function_t>(circle->m_procedure);
+        ASRUtils::EXPR2VAR(procedure->m_args[0])->m_intent = ASR::intentType::InOut;
+        rejects("asr.verify.intent_out_reset.procedure");
+    }
+    SUBCASE("a type has one record") {
+        std::string name = module->m_symtab->get_unique_name("second_record");
+        module->m_symtab->add_symbol(name, ASR::down_cast<ASR::symbol_t>(
+            ASR::make_IntentOutReset_t(al, circle->base.base.loc, module->m_symtab,
+                LCompilers::s2c(al, name), circle->m_type_declaration, circle->m_procedure)));
+        rejects("asr.verify.intent_out_reset.unique");
     }
 }
 

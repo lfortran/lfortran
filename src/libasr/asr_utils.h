@@ -897,6 +897,7 @@ static inline std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::TraitErasure: return "TraitErasure";
         case ASR::symbolType::TraitDictionaryContract: return "TraitDictionaryContract";
         case ASR::symbolType::TraitDictionary: return "TraitDictionary";
+        case ASR::symbolType::IntentOutReset: return "IntentOutReset";
         case ASR::symbolType::AssociateBlock: return "AssociateBlock";
         case ASR::symbolType::Block: return "Block";
         case ASR::symbolType::Requirement: return "Requirement";
@@ -1160,6 +1161,8 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
         case ASR::symbolType::TraitDictionaryContract:
         case ASR::symbolType::TraitDictionary:
             return "! runtime trait evidence " + std::string(symbol_name(&s));
+        case ASR::symbolType::IntentOutReset:
+            return "! intent(out) reset " + std::string(symbol_name(&s));
         case ASR::symbolType::AssociateBlock: {
             const ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(&s);
             return "associate (" + std::string(ab->m_name) + ")";
@@ -1328,6 +1331,9 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         }
         case ASR::symbolType::TraitDictionary: {
             return ASR::down_cast<ASR::TraitDictionary_t>(f)->m_name;
+        }
+        case ASR::symbolType::IntentOutReset: {
+            return ASR::down_cast<ASR::IntentOutReset_t>(f)->m_name;
         }
         case ASR::symbolType::CustomOperator: {
             return ASR::down_cast<ASR::CustomOperator_t>(f)->m_name;
@@ -1825,6 +1831,9 @@ static inline std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t 
         case ASR::symbolType::TraitDictionaryContract:
             // Runtime dependencies belong to the specialized procedures.
             return std::make_pair(nullptr, size_t(0));
+        case ASR::symbolType::IntentOutReset:
+            // Its procedure has its own.
+            return std::make_pair(nullptr, size_t(0));
         case ASR::symbolType::TraitDictionary: {
             auto *dictionary = ASR::down_cast<ASR::TraitDictionary_t>(f);
             return std::make_pair(dictionary->m_dependencies, dictionary->n_dependencies);
@@ -1926,6 +1935,9 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::TraitDictionary: {
             return ASR::down_cast<ASR::TraitDictionary_t>(f)->m_symtab->parent;
         }
+        case ASR::symbolType::IntentOutReset: {
+            return ASR::down_cast<ASR::IntentOutReset_t>(f)->m_parent_symtab;
+        }
         case ASR::symbolType::CustomOperator: {
             return ASR::down_cast<ASR::CustomOperator_t>(f)->m_parent_symtab;
         }
@@ -2022,6 +2034,9 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
         }
         case ASR::symbolType::TraitDictionary: {
             return ASR::down_cast<ASR::TraitDictionary_t>(f)->m_symtab;
+        }
+        case ASR::symbolType::IntentOutReset: {
+            return nullptr;
         }
         case ASR::symbolType::AssociateBlock: {
             return ASR::down_cast<ASR::AssociateBlock_t>(f)->m_symtab;
@@ -7719,6 +7734,12 @@ class SymbolDuplicator {
                 new_symbol_name = common_block->m_name;
                 break;
             }
+            case ASR::symbolType::IntentOutReset: {
+                ASR::IntentOutReset_t* reset = ASR::down_cast<ASR::IntentOutReset_t>(symbol);
+                new_symbol = duplicate_IntentOutReset(reset, destination_symtab);
+                new_symbol_name = reset->m_name;
+                break;
+            }
             default: {
                 throw LCompilersException("Duplicating ASR::symbolType::" +
                         std::to_string(symbol->type) + " is not supported yet.");
@@ -7727,6 +7748,27 @@ class SymbolDuplicator {
         if( new_symbol ) {
             destination_symtab->add_symbol(new_symbol_name, new_symbol);
         }
+    }
+
+    // The copy names the copies of the type and of the procedure, both of
+    // the same scope, which are made first if the scope has not been copied
+    // that far yet.
+    ASR::symbol_t* duplicate_IntentOutReset(ASR::IntentOutReset_t* reset,
+        SymbolTable* destination_symtab) {
+        auto copy = [&](ASR::symbol_t* original) -> ASR::symbol_t* {
+            if (original == nullptr) return nullptr;
+            duplicate_symbol(original, destination_symtab);
+            return destination_symtab->get_symbol(ASRUtils::symbol_name(original));
+        };
+        ASR::symbol_t* type_declaration = copy(reset->m_type_declaration);
+        ASR::symbol_t* procedure = copy(reset->m_procedure);
+        if (type_declaration == nullptr ||
+                (reset->m_procedure != nullptr && procedure == nullptr)) {
+            return nullptr;
+        }
+        return ASR::down_cast<ASR::symbol_t>(ASR::make_IntentOutReset_t(al,
+            reset->base.base.loc, destination_symtab, reset->m_name,
+            type_declaration, procedure));
     }
 
     // A copied Variable has storage of its own: when it was in a common
@@ -11875,6 +11917,29 @@ std::string get_format_type_code(ASR::ttype_t* type);
 ASR::symbol_t *default_transfer_blocking_component(ASR::symbol_t *declaration,
     const std::function<bool(ASR::symbol_t*)> &defined = nullptr,
     bool *by_definition = nullptr);
+
+// Whether resetting an object of exactly the derived type `type` for a
+// nonpointer, nonallocatable intent(out) dummy argument can have an effect
+// (F2018 7.5.6.3, 8.5.10): the type or a parent type has a final subroutine,
+// or a component (also an inherited one) is allocatable, has a default
+// initialization, or is a nonpointer, nonpolymorphic object (or array) of a
+// derived type for which this holds. A record of the reset
+// (IntentOutReset) has a procedure exactly when this holds for a type that
+// is not abstract.
+bool struct_intent_out_reset_has_effect(const ASR::Struct_t &type);
+// The scopes in which the intent_out_deallocate pass records the derived
+// types of a translation unit (IntentOutReset): it walks the unit's scope
+// and those of its modules, programs, procedures with a body, BLOCK and
+// ASSOCIATE constructs and runtime trait evidence, and records each derived
+// type defined directly in the unit, a module, a program, a BLOCK or a
+// procedure with a body there, except the placeholder of an unlimited
+// polymorphic type. Generic definitions, traits and interface bodies have no
+// objects of their own types.
+bool intent_out_reset_walks(const SymbolTable &scope);
+bool intent_out_reset_holds(const SymbolTable &scope);
+// Whether that pass records `type` when it records the derived types of the
+// translation unit whose scope is `unit`.
+bool intent_out_reset_recorded(const ASR::Struct_t &type, const SymbolTable &unit);
 
 } // namespace ASRUtils
 

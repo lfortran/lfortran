@@ -29,11 +29,11 @@ target datalayout = "..."
 @_Name_fpm_build_settings = private unnamed_addr constant [19 x i8] c"fpm_build_settings\00", align 1
 @_Type_Info_22_modules_36_fpm_main_0118_fpm_build_settings = linkonce_odr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([19 x i8], [19 x i8]* @_Name_fpm_build_settings, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
 @_Value_Lifecycle_22_modules_36_fpm_main_0118_fpm_build_settings = linkonce_odr constant [2 x i8*] [i8* bitcast (void (i8*, i8*, i1, i1, i1)* @_value_copy_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast (void (i8*)* @release_StructType__fpm_build_settings_3_of_modules_36_fpm_main_01_for_UPoly to i8*)]
-@_VTable_22_modules_36_fpm_main_0118_fpm_build_settings = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast (void (i8*)* @finalize_StructType__fpm_build_settings_3_of_modules_36_fpm_main_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__fpm_build_settings_3_of_modules_36_fpm_main_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @__lfortran_intent_out_reset_22_modules_36_fpm_main_0118_fpm_build_settings to i8*)] }, align 8
+@_VTable_22_modules_36_fpm_main_0118_fpm_build_settings = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_22_modules_36_fpm_main_0118_fpm_build_settings to i8*), i8* bitcast (void (i8*)* @finalize_StructType__fpm_build_settings_3_of_modules_36_fpm_main_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__fpm_build_settings_3_of_modules_36_fpm_main_01_for_UPoly to i8*), i8* bitcast (void (%modules_36_fpm_main_01.fpm_build_settings.3*)* @__libasr_intent_out_reset_fpm_build_settings to i8*)] }, align 8
 @_Name_fpm_run_settings = private unnamed_addr constant [17 x i8] c"fpm_run_settings\00", align 1
 @_Type_Info_22_modules_36_fpm_main_0116_fpm_run_settings = linkonce_odr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([17 x i8], [17 x i8]* @_Name_fpm_run_settings, i32 0, i32 0), i8* inttoptr (i64 64 to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_22_modules_36_fpm_main_0118_fpm_build_settings to i8*) }, align 8
 @_Value_Lifecycle_22_modules_36_fpm_main_0116_fpm_run_settings = linkonce_odr constant [2 x i8*] [i8* bitcast (void (i8*, i8*, i1, i1, i1)* @_value_copy_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast (void (i8*)* @release_StructType__fpm_run_settings_4_of_modules_36_fpm_main_01_for_UPoly to i8*)]
-@_VTable_22_modules_36_fpm_main_0116_fpm_run_settings = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast (void (i8*)* @finalize_StructType__fpm_run_settings_4_of_modules_36_fpm_main_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__fpm_run_settings_4_of_modules_36_fpm_main_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @__lfortran_intent_out_reset_22_modules_36_fpm_main_0116_fpm_run_settings to i8*)] }, align 8
+@_VTable_22_modules_36_fpm_main_0116_fpm_run_settings = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast (void (i8*, i8*)* @_copy_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast (void (i8**)* @_allocate_struct_22_modules_36_fpm_main_0116_fpm_run_settings to i8*), i8* bitcast (void (i8*)* @finalize_StructType__fpm_run_settings_4_of_modules_36_fpm_main_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__fpm_run_settings_4_of_modules_36_fpm_main_01_for_UPoly to i8*), i8* bitcast (void (%modules_36_fpm_main_01.fpm_run_settings.4*)* @__libasr_intent_out_reset_fpm_run_settings to i8*)] }, align 8
 
 define internal i32 @_lcompilers_Any_4_1_0_logical____0(i32* %mask, i32* %__1mask) {
 .entry:
@@ -586,10 +586,16 @@ entry:
   ret void
 }
 
-define internal void @__lfortran_intent_out_reset_22_modules_36_fpm_main_0118_fpm_build_settings(i8* %0) {
-entry:
-  %1 = bitcast i8* %0 to %modules_36_fpm_main_01.fpm_build_settings.3*
-  call void @__lfortran_intent_out_reset_body_22_modules_36_fpm_main_0118_fpm_build_settings(%modules_36_fpm_main_01.fpm_build_settings.3* %1)
+define internal void @__libasr_intent_out_reset_fpm_build_settings(%modules_36_fpm_main_01.fpm_build_settings.3* %object) {
+.entry:
+  %0 = getelementptr %modules_36_fpm_main_01.fpm_build_settings.3, %modules_36_fpm_main_01.fpm_build_settings.3* %object, i32 0, i32 0
+  store i32 0, i32* %0, align 1
+  br label %return
+
+return:                                           ; preds = %.entry
+  br label %FINALIZE_SYMTABLE___libasr_intent_out_reset_fpm_build_settings
+
+FINALIZE_SYMTABLE___libasr_intent_out_reset_fpm_build_settings: ; preds = %return
   ret void
 }
 
@@ -1326,21 +1332,7 @@ ifcont:                                           ; preds = %else, %then
   ret void
 }
 
-define internal void @__lfortran_intent_out_reset_22_modules_36_fpm_main_0116_fpm_run_settings(i8* %0) {
-entry:
-  %1 = bitcast i8* %0 to %modules_36_fpm_main_01.fpm_run_settings.4*
-  call void @__lfortran_intent_out_reset_body_22_modules_36_fpm_main_0116_fpm_run_settings(%modules_36_fpm_main_01.fpm_run_settings.4* %1)
-  ret void
-}
-
-; Function Attrs: argmemonly nounwind willreturn
-declare void @llvm.memmove.p0i8.p0i8.i64(i8* nocapture, i8* nocapture readonly, i64, i1 immarg) #2
-
-declare void @_lfortran_strcpy_alloc(i8*, i8**, i64*, i8, i8, i8*, i64, i32)
-
-declare void @_lfortran_internal_alloc_finalize()
-
-define internal void @__lfortran_intent_out_reset_body_22_modules_36_fpm_main_0116_fpm_run_settings(%modules_36_fpm_main_01.fpm_run_settings.4* %object) {
+define internal void @__libasr_intent_out_reset_fpm_run_settings(%modules_36_fpm_main_01.fpm_run_settings.4* %object) {
 .entry:
   %0 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %object, i32 0, i32 2
   %1 = getelementptr %modules_36_fpm_main_01.fpm_run_settings.4, %modules_36_fpm_main_01.fpm_run_settings.4* %object, i32 0, i32 4
@@ -1352,24 +1344,18 @@ define internal void @__lfortran_intent_out_reset_body_22_modules_36_fpm_main_01
   br label %return
 
 return:                                           ; preds = %.entry
-  br label %FINALIZE_SYMTABLE___lfortran_intent_out_reset_body_22_modules_36_fpm_main_0116_fpm_run_settings
+  br label %FINALIZE_SYMTABLE___libasr_intent_out_reset_fpm_run_settings
 
-FINALIZE_SYMTABLE___lfortran_intent_out_reset_body_22_modules_36_fpm_main_0116_fpm_run_settings: ; preds = %return
+FINALIZE_SYMTABLE___libasr_intent_out_reset_fpm_run_settings: ; preds = %return
   ret void
 }
 
-define internal void @__lfortran_intent_out_reset_body_22_modules_36_fpm_main_0118_fpm_build_settings(%modules_36_fpm_main_01.fpm_build_settings.3* %object) {
-.entry:
-  %0 = getelementptr %modules_36_fpm_main_01.fpm_build_settings.3, %modules_36_fpm_main_01.fpm_build_settings.3* %object, i32 0, i32 0
-  store i32 0, i32* %0, align 1
-  br label %return
+; Function Attrs: argmemonly nounwind willreturn
+declare void @llvm.memmove.p0i8.p0i8.i64(i8* nocapture, i8* nocapture readonly, i64, i1 immarg) #2
 
-return:                                           ; preds = %.entry
-  br label %FINALIZE_SYMTABLE___lfortran_intent_out_reset_body_22_modules_36_fpm_main_0118_fpm_build_settings
+declare void @_lfortran_strcpy_alloc(i8*, i8**, i64*, i8, i8, i8*, i64, i32)
 
-FINALIZE_SYMTABLE___lfortran_intent_out_reset_body_22_modules_36_fpm_main_0118_fpm_build_settings: ; preds = %return
-  ret void
-}
+declare void @_lfortran_internal_alloc_finalize()
 
 attributes #0 = { "lcompilers.checked-allocation" }
 attributes #1 = { argmemonly nounwind willreturn writeonly }

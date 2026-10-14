@@ -18,7 +18,7 @@ target datalayout = "..."
 @_Name_mytype = private unnamed_addr constant [7 x i8] c"mytype\00", align 1
 @_Type_Info_38_module_call_subroutine_without_type_016_mytype = linkonce_odr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_mytype, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
 @_Value_Lifecycle_38_module_call_subroutine_without_type_016_mytype = linkonce_odr constant [2 x i8*] [i8* bitcast (void (i8*, i8*, i1, i1, i1)* @_value_copy_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8*)* @release_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly to i8*)]
-@_VTable_38_module_call_subroutine_without_type_016_mytype = linkonce_odr unnamed_addr constant { [8 x i8*] } { [8 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8*, i8*)* @_copy_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8**)* @_allocate_struct_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8*)* @finalize_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @__lfortran_intent_out_reset_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (%module_call_subroutine_without_type_01.mytype.3_class*)* @__module_module_call_subroutine_without_type_01_get_i to i8*)] }, align 8
+@_VTable_38_module_call_subroutine_without_type_016_mytype = linkonce_odr unnamed_addr constant { [8 x i8*] } { [8 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8*, i8*)* @_copy_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8**)* @_allocate_struct_38_module_call_subroutine_without_type_016_mytype to i8*), i8* bitcast (void (i8*)* @finalize_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly to i8*), i8* null, i8* bitcast (void (%module_call_subroutine_without_type_01.mytype.3_class*)* @__module_module_call_subroutine_without_type_01_get_i to i8*)] }, align 8
 @4 = private unnamed_addr constant [4 x i8] c"obj\00", align 1
 @5 = private unnamed_addr constant [63 x i8] c"tests/../integration_tests/call_subroutine_without_type_01.f90\00", align 1
 @6 = private unnamed_addr constant [22 x i8] c"'%s' unallocated here\00", align 1
@@ -431,13 +431,6 @@ entry:
   ret void
 }
 
-define internal void @__lfortran_intent_out_reset_38_module_call_subroutine_without_type_016_mytype(i8* %0) {
-entry:
-  %1 = bitcast i8* %0 to %module_call_subroutine_without_type_01.mytype.3*
-  call void @__lfortran_intent_out_reset_body_38_module_call_subroutine_without_type_016_mytype(%module_call_subroutine_without_type_01.mytype.3* %1)
-  ret void
-}
-
 declare void @_lcompilers_init_checked_allocator(i8*, i8*)
 
 declare i8* @_lcompilers_snprintf_alloc(i8*, i8*, ...)
@@ -508,18 +501,6 @@ is_allocated.else2:                               ; preds = %entry
   br label %is_allocated.ifcont3
 
 is_allocated.ifcont3:                             ; preds = %is_allocated.else2, %is_allocated.ifcont
-  ret void
-}
-
-define internal void @__lfortran_intent_out_reset_body_38_module_call_subroutine_without_type_016_mytype(%module_call_subroutine_without_type_01.mytype.3* %object) {
-.entry:
-  %0 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %object, i32 0, i32 0
-  br label %return
-
-return:                                           ; preds = %.entry
-  br label %FINALIZE_SYMTABLE___lfortran_intent_out_reset_body_38_module_call_subroutine_without_type_016_mytype
-
-FINALIZE_SYMTABLE___lfortran_intent_out_reset_body_38_module_call_subroutine_without_type_016_mytype: ; preds = %return
   ret void
 }
 

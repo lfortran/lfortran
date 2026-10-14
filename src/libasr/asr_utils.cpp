@@ -9428,6 +9428,97 @@ std::string get_format_type_code(ASR::ttype_t* type) {
     }
 }
 
+static bool intent_out_reset_has_effect(const ASR::Struct_t &type,
+    std::set<const ASR::Struct_t*> &visited)
+{
+    if (!visited.insert(&type).second) return false;
+    for (const ASR::Struct_t *level = &type; level != nullptr;
+            level = level->m_parent ? ASR::down_cast<ASR::Struct_t>(
+                symbol_get_past_external(level->m_parent)) : nullptr) {
+        if (level->n_member_functions > 0) return true;
+        for (const auto &entry : level->m_symtab->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*entry.second)) continue;
+            auto *component = ASR::down_cast<ASR::Variable_t>(entry.second);
+            if (component->m_symbolic_value || component->m_value ||
+                    is_allocatable(component->m_type)) return true;
+            if (is_pointer(component->m_type) || is_class_type(component->m_type) ||
+                    !ASR::is_a<ASR::StructType_t>(*type_get_past_array(component->m_type)) ||
+                    !component->m_type_declaration) continue;
+            ASR::symbol_t *declaration = symbol_get_past_external(
+                component->m_type_declaration);
+            if (ASR::is_a<ASR::Struct_t>(*declaration) && intent_out_reset_has_effect(
+                    *ASR::down_cast<ASR::Struct_t>(declaration), visited)) return true;
+        }
+    }
+    return false;
+}
+
+bool struct_intent_out_reset_has_effect(const ASR::Struct_t &type)
+{
+    std::set<const ASR::Struct_t*> visited;
+    return intent_out_reset_has_effect(type, visited);
+}
+
+static const ASR::symbol_t *scope_owner_symbol(const SymbolTable &scope)
+{
+    return scope.asr_owner && ASR::is_a<ASR::symbol_t>(*scope.asr_owner)
+        ? ASR::down_cast<ASR::symbol_t>(scope.asr_owner) : nullptr;
+}
+
+bool intent_out_reset_walks(const SymbolTable &scope)
+{
+    if (scope.asr_owner && ASR::is_a<ASR::unit_t>(*scope.asr_owner)) return true;
+    const ASR::symbol_t *owner = scope_owner_symbol(scope);
+    if (!owner) return false;
+    switch (owner->type) {
+        case ASR::symbolType::Function:
+            return get_FunctionType(ASR::down_cast<ASR::Function_t>(owner))->m_deftype !=
+                ASR::deftypeType::Interface;
+        case ASR::symbolType::Module:
+        case ASR::symbolType::Program:
+        case ASR::symbolType::Block:
+        case ASR::symbolType::AssociateBlock:
+        case ASR::symbolType::TraitWitness:
+        case ASR::symbolType::TraitErasure:
+        case ASR::symbolType::TraitDictionary:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool intent_out_reset_holds(const SymbolTable &scope)
+{
+    if (scope.asr_owner && ASR::is_a<ASR::unit_t>(*scope.asr_owner)) return true;
+    const ASR::symbol_t *owner = scope_owner_symbol(scope);
+    if (!owner) return false;
+    switch (owner->type) {
+        case ASR::symbolType::Function:
+            return get_FunctionType(ASR::down_cast<ASR::Function_t>(owner))->m_deftype !=
+                ASR::deftypeType::Interface;
+        case ASR::symbolType::Module:
+        case ASR::symbolType::Program:
+        case ASR::symbolType::Block:
+            return true;
+        default:
+            return false;
+    }
+}
+
+bool intent_out_reset_recorded(const ASR::Struct_t &type, const SymbolTable &unit)
+{
+    const SymbolTable *scope = type.m_symtab->parent;
+    if (!scope || !intent_out_reset_holds(*scope) ||
+            is_unlimited_polymorphic_type(const_cast<ASR::Struct_t*>(&type))) {
+        return false;
+    }
+    for (const SymbolTable *s = scope; s != nullptr; s = s->parent) {
+        if (s == &unit) return true;
+        if (!intent_out_reset_walks(*s)) return false;
+    }
+    return false;
+}
+
 //Initialize pointer to zero so that it can be initialized in first call to get_instance
 ASRUtils::LabelGenerator* ASRUtils::LabelGenerator::label_generator = nullptr;
 

@@ -5069,6 +5069,63 @@ public:
         visit_UserDefinedType(x);
     }
 
+    // See IntentOutReset in ASR.asdl.
+    void visit_IntentOutReset(const IntentOutReset_t &x) {
+        require_id(x.m_parent_symtab == current_symtab &&
+                current_symtab->get_symbol(std::string(x.m_name)) == &x.base,
+            "asr.verify.intent_out_reset.scope",
+            "An intent(out) reset must be a symbol of the scope it names as its own");
+        ASR::symbol_t *type = x.m_type_declaration;
+        require_id(type != nullptr && ASR::is_a<Struct_t>(*type) &&
+                ASRUtils::symbol_parent_symtab(type) == x.m_parent_symtab,
+            "asr.verify.intent_out_reset.type",
+            "An intent(out) reset must name a derived type of its own scope");
+        if (type == nullptr || !ASR::is_a<Struct_t>(*type)) return;
+        auto *structure = ASR::down_cast<Struct_t>(type);
+        size_t records = 0;
+        for (const auto &entry : x.m_parent_symtab->get_scope()) {
+            records += ASR::is_a<IntentOutReset_t>(*entry.second) &&
+                ASR::down_cast<IntentOutReset_t>(entry.second)->m_type_declaration == type;
+        }
+        require_id(records == 1, "asr.verify.intent_out_reset.unique",
+            "Derived type '" + std::string(structure->m_name) +
+            "' must have one intent(out) reset");
+        bool effect = !structure->m_is_abstract &&
+            ASRUtils::struct_intent_out_reset_has_effect(*structure);
+        require_id(effect == (x.m_procedure != nullptr),
+            "asr.verify.intent_out_reset.effect",
+            "The intent(out) reset of derived type '" + std::string(structure->m_name) +
+            "' must have a procedure exactly when resetting an object of the type "
+            "has an effect");
+        if (x.m_procedure == nullptr) return;
+        bool procedure = ASR::is_a<Function_t>(*x.m_procedure) &&
+            ASRUtils::symbol_parent_symtab(x.m_procedure) == x.m_parent_symtab;
+        if (procedure) {
+            auto *function = ASR::down_cast<Function_t>(x.m_procedure);
+            auto *signature = ASRUtils::get_FunctionType(function);
+            procedure = function->m_access == accessType::Private &&
+                signature->m_abi == abiType::Source &&
+                signature->m_deftype == deftypeType::Implementation &&
+                function->m_return_var == nullptr && function->n_args == 1 &&
+                function->m_args[0] != nullptr && ASR::is_a<Var_t>(*function->m_args[0]) &&
+                ASR::is_a<Variable_t>(*ASR::down_cast<Var_t>(function->m_args[0])->m_v);
+            if (procedure) {
+                auto *object = ASR::down_cast<Variable_t>(
+                    ASR::down_cast<Var_t>(function->m_args[0])->m_v);
+                procedure = object->m_intent == intentType::Out &&
+                    object->m_presence == presenceType::Required &&
+                    ASR::is_a<StructType_t>(*object->m_type) &&
+                    !ASRUtils::is_class_type(object->m_type) &&
+                    object->m_type_declaration != nullptr &&
+                    ASRUtils::symbol_get_past_external(object->m_type_declaration) == type;
+            }
+        }
+        require_id(procedure, "asr.verify.intent_out_reset.procedure",
+            "The procedure of the intent(out) reset of derived type '" +
+            std::string(structure->m_name) + "' must be a private subroutine of the "
+            "same scope whose only dummy is an intent(out) object of exactly that type");
+    }
+
     // Whether `function` is a signature that can mark an explicit receiver: a
     // message of a trait, also a generic one (a Template of the trait), or a
     // requirement that a trait constraint of its scope names, normalized from

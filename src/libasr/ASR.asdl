@@ -131,6 +131,18 @@ symbol
     -- The evidence of one conformance to a protocol trait, owned by the
     -- conformance's scope: procedures[i] implements contract slot i.
     | TraitDictionary(symbol_table symtab, identifier name, symbol contract, symbol implementation, symbol* procedures, identifier* dependencies, abi abi)
+    -- How an object of exactly the derived type type_declaration, a Struct of
+    -- the same scope, is reset when it becomes a nonpointer, nonallocatable
+    -- intent(out) dummy argument (F2018 7.5.6.3, 8.5.10): procedure, a
+    -- private subroutine of the same scope whose only dummy is such a
+    -- `type(T), intent(out)` object, does it in place. procedure is absent
+    -- when the reset has no effect (no final subroutine, allocatable component
+    -- or default initialization) or when no object has the type (it is
+    -- abstract). A code generator that resets a polymorphic dummy from its
+    -- dynamic type (PassOptions::dynamic_intent_out_reset) dispatches to these
+    -- procedures; the intent_out_deallocate pass records every derived type
+    -- of the unit for it.
+    | IntentOutReset(symbol_table parent_symtab, identifier name, symbol type_declaration, symbol? procedure)
 
 stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)

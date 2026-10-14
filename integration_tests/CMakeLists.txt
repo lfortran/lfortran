@@ -6080,6 +6080,10 @@ RUN(NAME intent_out_struct_member_no_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_module_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_nested_allocatable_01 LABELS gfortran llvm)
 RUN(NAME intent_out_array_structs_01 LABELS gfortran llvm)
+RUN(NAME intent_out_dynamic_type_01 LABELS gfortran llvm llvm2
+    EXTRA_ARGS --verify-all-passes
+    EXTRAFILES intent_out_dynamic_type_01_base.f90 intent_out_dynamic_type_01_ext.f90)
+RUN(NAME intent_out_dynamic_type_02 LABELS gfortran llvm EXTRA_ARGS --verify-all-passes)
 RUN(NAME intent_out_array_of_struct_dealloc LABELS gfortran llvm)
 RUN(NAME intent_out_array_default_init_01 LABELS gfortran llvm)
 RUN(NAME intent_out_array_default_init_02 LABELS gfortran llvm)

@@ -1134,24 +1134,12 @@ public:
 };
 
 
-void pass_intent_out_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
-                                const PassOptions &pass_options) {
-    // Deallocate intent(out) allocatable arguments at function entry
-    IntentOutDeallocateVisitor iod(al);
-    iod.dynamic_reset = pass_options.dynamic_intent_out_reset;
-    iod.visit_TranslationUnit(unit);
-
-    PassUtils::UpdateDependenciesVisitor u(al);
-    u.visit_TranslationUnit(unit);
-}
-
-void finalize_entity(Allocator &al, ASR::expr_t *entity, SymbolTable *scope,
-                     Vec<ASR::stmt_t*> &out) {
-    IntentOutDeallocateVisitor iod(al);
-    iod.emit_entity_finalization(entity, scope, out);
-}
-
-ASR::Function_t *make_intent_out_reset_procedure(Allocator &al,
+// The procedure of an IntentOutReset record: `subroutine name(object)` with
+// `type(T), intent(out) :: object`, in `scope`, the scope of T, whose body
+// resets the object as the start of any procedure with such a dummy does.
+// Its name marks it as compiler generated, so that the visitor below does not
+// add the same statements to it again.
+static ASR::Function_t *make_intent_out_reset_procedure(Allocator &al,
         ASR::Struct_t *type, SymbolTable *parent, const std::string &name) {
     const Location &loc = type->base.base.loc;
     SymbolTable *scope = al.make_new<SymbolTable>(parent);
@@ -1176,6 +1164,96 @@ ASR::Function_t *make_intent_out_reset_procedure(Allocator &al,
         body.p, body.size(), nullptr, ASR::abiType::Source,
         ASR::accessType::Private, ASR::deftypeType::Implementation, nullptr,
         false, false, false, false, false, nullptr, 0, false, false, false));
+}
+
+// Records the intent(out) reset (IntentOutReset) of every derived type of a
+// translation unit that can have objects: those of the unit itself, of the
+// modules it uses, of its procedures, BLOCKs and generic instances, whether
+// or not the unit has a polymorphic dummy of them, because a code generator
+// can describe any of them at run time and another unit can pass such an
+// object to a polymorphic intent(out) dummy. Generic definitions, traits and
+// interface bodies have no objects of their own types.
+class IntentOutResetRecorder {
+    Allocator &al;
+    // Procedure names are unique in the unit, not only in their scopes, so
+    // that two BLOCKs of one procedure never give a code generator the same
+    // name for two procedures.
+    std::set<std::string> procedure_names;
+
+    std::string unique_name(SymbolTable *scope, const std::string &stem,
+            std::set<std::string> *taken) {
+        std::string name = scope->get_unique_name(stem, false);
+        for (int i = 1; taken && taken->count(name); i++) {
+            name = scope->get_unique_name(stem + "_" + std::to_string(i), false);
+        }
+        if (taken) taken->insert(name);
+        return name;
+    }
+
+    void record_type(SymbolTable *scope, ASR::Struct_t *type) {
+        if (ASRUtils::is_unlimited_polymorphic_type(type)) return;
+        std::string type_name = type->m_name;
+        ASR::symbol_t *procedure = nullptr;
+        if (!type->m_is_abstract && ASRUtils::struct_intent_out_reset_has_effect(*type)) {
+            std::string name = unique_name(scope, "__libasr_intent_out_reset_" + type_name,
+                &procedure_names);
+            ASR::Function_t *function = make_intent_out_reset_procedure(al, type, scope,
+                name);
+            scope->add_symbol(name, &function->base);
+            procedure = &function->base;
+        }
+        std::string name = unique_name(scope,
+            "__libasr_intent_out_reset_record_" + type_name, nullptr);
+        scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(ASR::make_IntentOutReset_t(
+            al, type->base.base.loc, scope, s2c(al, name), &type->base, procedure)));
+    }
+
+public:
+    IntentOutResetRecorder(Allocator &al_) : al(al_) {}
+
+    void record(SymbolTable *scope) {
+        // The symbols are taken first, as records are added to the scope.
+        std::vector<ASR::symbol_t*> symbols;
+        for (const auto &entry : scope->get_scope()) symbols.push_back(entry.second);
+        for (ASR::symbol_t *symbol : symbols) {
+            if (ASR::is_a<ASR::Struct_t>(*symbol)) {
+                if (ASRUtils::intent_out_reset_holds(*scope)) {
+                    record_type(scope, ASR::down_cast<ASR::Struct_t>(symbol));
+                }
+                continue;
+            }
+            SymbolTable *nested = ASRUtils::symbol_symtab(symbol);
+            if (nested && nested->parent == scope && ASRUtils::intent_out_reset_walks(*nested)) {
+                record(nested);
+            }
+        }
+    }
+};
+
+void pass_intent_out_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
+                                const PassOptions &pass_options) {
+    // Each derived type's own reset, which the code generator dispatches to
+    // from the dynamic type of a polymorphic intent(out) dummy, is recorded
+    // before the procedures are visited, so that what follows (dependencies,
+    // verification and the passes after this one) treats its procedure like
+    // any other.
+    if (pass_options.dynamic_intent_out_reset) {
+        IntentOutResetRecorder recorder(al);
+        recorder.record(unit.m_symtab);
+    }
+    // Deallocate intent(out) allocatable arguments at function entry
+    IntentOutDeallocateVisitor iod(al);
+    iod.dynamic_reset = pass_options.dynamic_intent_out_reset;
+    iod.visit_TranslationUnit(unit);
+
+    PassUtils::UpdateDependenciesVisitor u(al);
+    u.visit_TranslationUnit(unit);
+}
+
+void finalize_entity(Allocator &al, ASR::expr_t *entity, SymbolTable *scope,
+                     Vec<ASR::stmt_t*> &out) {
+    IntentOutDeallocateVisitor iod(al);
+    iod.emit_entity_finalization(entity, scope, out);
 }
 
 void initialize_function_result_on_entry(Allocator &al, ASR::Function_t &fn,

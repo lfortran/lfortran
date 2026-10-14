@@ -31,21 +31,6 @@ namespace LCompilers {
     void finalize_entity(Allocator &al, ASR::expr_t *entity,
                          SymbolTable *scope, Vec<ASR::stmt_t*> &out);
 
-    // A private procedure `name`, `subroutine name(object)` with
-    // `type(T), intent(out) :: object` for the derived type `type`, in a new
-    // scope under `parent` (the caller adds the symbol). Its body is what
-    // this pass puts at the start of a procedure with such a dummy: the
-    // finalization of the object, the deallocation of its allocatable
-    // components and the part of its default initialization that follows
-    // finalization; the code generator applies the rest of the default
-    // initialization of an intent(out) dummy on entry. It resets an object
-    // of exactly that type, which a code generator dispatches to for a
-    // polymorphic intent(out) dummy of that dynamic type (see
-    // PassOptions::dynamic_intent_out_reset).
-    ASR::Function_t *make_intent_out_reset_procedure(Allocator &al,
-                         ASR::Struct_t *type, SymbolTable *parent,
-                         const std::string &name);
-
 } // namespace LCompilers
 
 #endif // LIBASR_PASS_INTENT_OUT_DEALLOCATE_H

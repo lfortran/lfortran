@@ -1202,7 +1202,9 @@ class ASRToLLVMVisitor;
         /// The vtable slot of the function that resets an object of the
         /// dynamic type in place, as a nonpolymorphic intent(out) dummy of
         /// that type is reset on entry to its procedure (F2018 7.5.6.3,
-        /// 8.5.10); null for an intrinsic type.
+        /// 8.5.10): the procedure of the type's IntentOutReset record, taking
+        /// the object's address; null for an intrinsic type and when the
+        /// reset has no effect.
         static constexpr int vtable_intent_out_reset_slot = 4;
 
         LLVMFinalize(ASRToLLVMVisitor &asr_to_llvm_visitor,
@@ -3425,7 +3427,8 @@ class ASRToLLVMVisitor;
             std::map<std::string, llvm::Type*> intrinsic_type_vtabtype;
             std::map<ASR::symbol_t*, std::map<std::string, int64_t>> struct_vtab_function_offset;
             // The function of a derived type's vtable_intent_out_reset_slot,
-            // which the code generator defines (ASRToLLVMVisitor).
+            // the procedure of its IntentOutReset record (ASRToLLVMVisitor),
+            // or nullptr when the slot is null.
             std::function<llvm::Function*(ASR::Struct_t*)> intent_out_reset;
 
             LLVMStruct(llvm::LLVMContext& context_, LLVMUtils* llvm_utils,

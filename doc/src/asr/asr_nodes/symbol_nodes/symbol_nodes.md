@@ -19,6 +19,7 @@ Enum
 ExternalSymbol
 Function
 GenericProcedure
+IntentOutReset
 Module
 Namelist
 Program

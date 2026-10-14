@@ -10317,8 +10317,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         slots.push_back(llvm::ConstantExpr::getBitCast(free_function, llvm_utils->i8_ptr));
         LCOMPILERS_ASSERT(static_cast<int>(slots.size()) - 2 ==
             LLVMFinalize::vtable_intent_out_reset_slot)
-        slots.push_back(intent_out_reset
-            ? llvm::ConstantExpr::getBitCast(intent_out_reset(struct_t), llvm_utils->i8_ptr)
+        llvm::Function* reset = intent_out_reset ? intent_out_reset(struct_t) : nullptr;
+        slots.push_back(reset
+            ? llvm::ConstantExpr::getBitCast(reset, llvm_utils->i8_ptr)
             : llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(llvm_utils->i8_ptr)));
         collect_vtable_function_impls(struct_sym, slots, module);
 

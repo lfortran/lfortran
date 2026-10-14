@@ -164,9 +164,15 @@ namespace LCompilers {
 
         void ran_pass(pass_function pass) {
             if (pass == &pass_string_length_arguments) string_lengths_added = true;
+            if (pass == &pass_intent_out_deallocate) intent_out_resets_recorded = true;
         }
 
         public:
+        // Whether the translation unit last processed has been through the
+        // intent_out_deallocate pass, which records the intent(out) reset of
+        // each of its derived types when PassOptions::dynamic_intent_out_reset
+        // is set (IntentOutReset).
+        bool intent_out_resets_recorded = false;
         // This should be removed after a refactor to `pass_manager.h` (This action should be done using more flexible function)
         std::vector<std::string> passes_to_skip_with_llvm;
         bool rtlib=false;
@@ -415,6 +421,7 @@ namespace LCompilers {
                           PassOptions& pass_options,
                           diag::Diagnostics &diagnostics) {
             string_lengths_added = false;
+            intent_out_resets_recorded = false;
             double cummulative_time_taken_by_passes_in_microseconds = 0.0;
             auto t1 = std::chrono::high_resolution_clock::now();
             if( !_user_defined_passes.empty() ) {

@@ -17,7 +17,7 @@ target datalayout = "..."
 @_Name_complextype = private unnamed_addr constant [12 x i8] c"complextype\00", align 1
 @_Type_Info_14_complex_module11_complextype = linkonce_odr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([12 x i8], [12 x i8]* @_Name_complextype, i32 0, i32 0), i8* inttoptr (i64 8 to i8*), i8* null }, align 8
 @_Value_Lifecycle_14_complex_module11_complextype = linkonce_odr constant [2 x i8*] [i8* bitcast (void (i8*, i8*, i1, i1, i1)* @_value_copy_14_complex_module11_complextype to i8*), i8* bitcast (void (i8*)* @release_StructType__complextype_3_of_complex_module_for_UPoly to i8*)]
-@_VTable_14_complex_module11_complextype = linkonce_odr unnamed_addr constant { [9 x i8*] } { [9 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_14_complex_module11_complextype to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_14_complex_module11_complextype to i8*), i8* bitcast (void (i8*, i8*)* @_copy_14_complex_module11_complextype to i8*), i8* bitcast (void (i8**)* @_allocate_struct_14_complex_module11_complextype to i8*), i8* bitcast (void (i8*)* @finalize_StructType__complextype_3_of_complex_module_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__complextype_3_of_complex_module_for_UPoly to i8*), i8* bitcast (void (i8*)* @__lfortran_intent_out_reset_14_complex_module11_complextype to i8*), i8* bitcast (void (%complex_module.complextype.3_class*, i32*, i32*, %complex_module.complextype.3*)* @__module_complex_module_integer_add_subrout to i8*), i8* bitcast (void (%complex_module.complextype.3_class*, float*, float*, %complex_module.complextype.3*)* @__module_complex_module_real_add_subrout to i8*)] }, align 8
+@_VTable_14_complex_module11_complextype = linkonce_odr unnamed_addr constant { [9 x i8*] } { [9 x i8*] [i8* bitcast ([2 x i8*]* @_Value_Lifecycle_14_complex_module11_complextype to i8*), i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_14_complex_module11_complextype to i8*), i8* bitcast (void (i8*, i8*)* @_copy_14_complex_module11_complextype to i8*), i8* bitcast (void (i8**)* @_allocate_struct_14_complex_module11_complextype to i8*), i8* bitcast (void (i8*)* @finalize_StructType__complextype_3_of_complex_module_for_UPoly to i8*), i8* bitcast (void (i8*)* @release_StructType__complextype_3_of_complex_module_for_UPoly to i8*), i8* null, i8* bitcast (void (%complex_module.complextype.3_class*, i32*, i32*, %complex_module.complextype.3*)* @__module_complex_module_integer_add_subrout to i8*), i8* bitcast (void (%complex_module.complextype.3_class*, float*, float*, %complex_module.complextype.3*)* @__module_complex_module_real_add_subrout to i8*)] }, align 8
 @4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [6 x i8] c"R4,R4\00", align 1
 @5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
@@ -493,13 +493,6 @@ entry:
   ret void
 }
 
-define internal void @__lfortran_intent_out_reset_14_complex_module11_complextype(i8* %0) {
-entry:
-  %1 = bitcast i8* %0 to %complex_module.complextype.3*
-  call void @__lfortran_intent_out_reset_body_14_complex_module11_complextype(%complex_module.complextype.3* %1)
-  ret void
-}
-
 declare i8* @_lfortran_malloc_alloc(i8*, i64)
 
 declare i8* @_lfortran_get_default_allocator()
@@ -518,19 +511,6 @@ declare void @_lcompilers_print_error(i8*, ...)
 declare void @_lfortran_internal_alloc_finalize()
 
 declare void @exit(i32)
-
-define internal void @__lfortran_intent_out_reset_body_14_complex_module11_complextype(%complex_module.complextype.3* %object) {
-.entry:
-  %0 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %object, i32 0, i32 1
-  %1 = getelementptr %complex_module.complextype.3, %complex_module.complextype.3* %object, i32 0, i32 0
-  br label %return
-
-return:                                           ; preds = %.entry
-  br label %FINALIZE_SYMTABLE___lfortran_intent_out_reset_body_14_complex_module11_complextype
-
-FINALIZE_SYMTABLE___lfortran_intent_out_reset_body_14_complex_module11_complextype: ; preds = %return
-  ret void
-}
 
 attributes #0 = { "lcompilers.checked-allocation" }
 attributes #1 = { argmemonly nounwind willreturn writeonly }

@@ -947,7 +947,7 @@ public:
         llvm_utils->list_api = list_api.get();
         llvm_utils->struct_api = struct_api.get();
         struct_api->intent_out_reset = [this](ASR::Struct_t *type) {
-            return declare_intent_out_reset(type);
+            return intent_out_reset_procedure(type);
         };
         llvm_utils->dict_api = nullptr;
         llvm_utils->set_api = nullptr;
@@ -2318,6 +2318,9 @@ public:
 
         declare_common_block_storage(x.m_symtab);
 
+        intent_out_reset_unit = x.m_symtab;
+        collect_intent_out_resets(x.m_symtab);
+
         // Process Variables first:
         for (SymbolTable *scope : cell_scopes) {
             mangle_prefix = ASRUtils::cell_prefix(scope);
@@ -2431,61 +2434,105 @@ public:
         // lookup, exactly as with CUDA.
         emit_gpu_metal_source_registration(x);
 
-        define_intent_out_resets(x.m_symtab);
+        emit_intent_out_resets();
 
         LCOMPILERS_ASSERT_MSG(llvm_utils->stringFormat_return.all_clean(),
                         "`_lcompilers_string_format_fortran()` Return Not Freed");
     }
 
-    // The intent(out) resets of derived types (LLVMFinalize::
-    // vtable_intent_out_reset_slot), declared when their vtables are built.
-    std::map<ASR::Struct_t*, llvm::Function*> intent_out_resets;
-    std::vector<ASR::Struct_t*> pending_intent_out_resets;
+    // The intent(out) resets of the derived types of this translation unit
+    // (IntentOutReset), which fill LLVMFinalize::vtable_intent_out_reset_slot.
+    std::map<ASR::Struct_t*, ASR::IntentOutReset_t*> intent_out_resets;
+    // Their procedures. Each is private to this unit and emitted only when a
+    // vtable of this unit takes it, since the pass records every derived
+    // type the unit can describe, also those of the modules it uses. Those
+    // taken are also listed in the order the vtables took them.
+    std::set<const ASR::Function_t*> intent_out_reset_procedures;
+    std::set<const ASR::Function_t*> taken_intent_out_resets;
+    std::vector<ASR::Function_t*> taken_intent_out_reset_order;
+    // Whether the intent_out_deallocate pass recorded them, so that every
+    // derived type it records must have one.
+    bool intent_out_resets_recorded = false;
+    const SymbolTable *intent_out_reset_unit = nullptr;
 
-    llvm::Function *declare_intent_out_reset(ASR::Struct_t *type) {
-        auto found = intent_out_resets.find(type);
-        if (found != intent_out_resets.end()) return found->second;
-        auto *function = llvm::Function::Create(
-            llvm::FunctionType::get(llvm::Type::getVoidTy(context), {llvm_utils->i8_ptr}, false),
-            llvm::Function::InternalLinkage,
-            "__lfortran_intent_out_reset_" + ASRUtils::nominal_symbol_name(&type->base),
-            module.get());
-        intent_out_resets[type] = function;
-        pending_intent_out_resets.push_back(type);
-        return function;
+    // Whether `x` is the procedure of an intent(out) reset that no vtable of
+    // this unit has taken (yet), which is neither declared nor defined.
+    bool untaken_intent_out_reset(const ASR::Function_t &x) {
+        return intent_out_reset_procedures.count(&x) && !taken_intent_out_resets.count(&x);
     }
 
-    // Defines the declared resets once the translation unit is complete, so
-    // that no other procedure is being generated. Each forwards to the
-    // procedure the intent_out_deallocate pass builds for its type
-    // (make_intent_out_reset_procedure): the dynamic type's reset is exactly
-    // the one of a nonpolymorphic intent(out) dummy of that type.
-    void define_intent_out_resets(SymbolTable *global_scope) {
-        while (!pending_intent_out_resets.empty()) {
-            ASR::Struct_t *type = pending_intent_out_resets.back();
-            pending_intent_out_resets.pop_back();
-            std::string name = global_scope->get_unique_name(
-                "__lfortran_intent_out_reset_body_" + ASRUtils::nominal_symbol_name(&type->base));
-            ASR::Function_t *reset = make_intent_out_reset_procedure(al, type,
-                global_scope, name);
-            global_scope->add_symbol(name, &reset->base);
-            visit_Function(*reset);
-            uint32_t h = get_hash((ASR::asr_t*)reset);
-            llvm::Function *procedure = llvm_symtab_fn.at(h);
-            procedure->setLinkage(llvm::Function::InternalLinkage);
-            llvm::Function *entry = intent_out_resets.at(type);
-            auto saved_ip = builder->saveIP();
-            builder->SetInsertPoint(llvm::BasicBlock::Create(context, "entry", entry));
-            builder->CreateCall(procedure, {builder->CreateBitCast(&*entry->arg_begin(),
-                procedure->getFunctionType()->getParamType(0))});
-            builder->CreateRetVoid();
-            builder->restoreIP(saved_ip);
+    // Collects the records of `scope` and of the scopes the pass walks from
+    // it.
+    void collect_intent_out_resets(SymbolTable *scope) {
+        for (const auto &item : scope->get_scope()) {
+            if (ASR::is_a<ASR::IntentOutReset_t>(*item.second)) {
+                auto *reset = ASR::down_cast<ASR::IntentOutReset_t>(item.second);
+                intent_out_resets[ASR::down_cast<ASR::Struct_t>(
+                    reset->m_type_declaration)] = reset;
+                if (reset->m_procedure) {
+                    intent_out_reset_procedures.insert(
+                        ASR::down_cast<ASR::Function_t>(reset->m_procedure));
+                }
+                continue;
+            }
+            SymbolTable *nested = ASRUtils::symbol_symtab(item.second);
+            if (nested && nested->parent == scope && ASRUtils::intent_out_reset_walks(*nested)) {
+                collect_intent_out_resets(nested);
+            }
+        }
+    }
+
+    // The function of the vtable_intent_out_reset_slot of `type`, or nullptr
+    // when its reset has no effect. The first vtable that takes it declares
+    // it, by its name alone, which is unique in the unit, and it is defined
+    // once the unit's own procedures are (emit_intent_out_resets).
+    llvm::Function *intent_out_reset_procedure(ASR::Struct_t *type) {
+        auto found = intent_out_resets.find(type);
+        if (found == intent_out_resets.end()) {
+            if (intent_out_resets_recorded && intent_out_reset_unit &&
+                    ASRUtils::intent_out_reset_recorded(*type, *intent_out_reset_unit)) {
+                throw LCompilersException("Internal error: derived type '" +
+                    std::string(type->m_name) + "' has no intent(out) reset record");
+            }
+            // The pass did not run (a custom pass list), or the type belongs
+            // to an earlier interactive cell, whose records this unit does
+            // not hold: nothing resets the object from its dynamic type.
+            return nullptr;
+        }
+        if (found->second->m_procedure == nullptr) return nullptr;
+        auto *procedure = ASR::down_cast<ASR::Function_t>(found->second->m_procedure);
+        if (taken_intent_out_resets.insert(procedure).second) {
+            taken_intent_out_reset_order.push_back(procedure);
+            std::string saved_prefix = mangle_prefix;
+            const ASR::symbol_t *saved_host = procedure_host;
+            mangle_prefix = "";
+            procedure_host = nullptr;
+            instantiate_function(*procedure);
+            mangle_prefix = saved_prefix;
+            procedure_host = saved_host;
+        }
+        // Keyed like instantiate_function does.
+        uint32_t h = get_hash((ASR::asr_t*)procedure);
+        return llvm_symtab_fn.at(h);
+    }
+
+    // Defines the reset procedures that vtables took and that the unit's
+    // own procedures did not define with their scopes, also those taken by
+    // the vtables that these procedures build in turn.
+    void emit_intent_out_resets() {
+        for (size_t i = 0; i < taken_intent_out_reset_order.size(); i++) {
+            ASR::Function_t *procedure = taken_intent_out_reset_order[i];
+            uint32_t h = get_hash((ASR::asr_t*)procedure);
+            if (llvm_symtab_fn.at(h)->isDeclaration()) {
+                visit_Function(*procedure);
+            }
         }
     }
 
     // Resets the polymorphic intent(out) dummy `wrapper`, a CLASS(T) wrapper
     // {vtable, object}, on entry from its dynamic type, through the vtable.
-    // Nothing is done for an absent optional dummy.
+    // Nothing is done for an absent optional dummy, nor when the reset of the
+    // dynamic type has no effect (a null slot).
     void reset_intent_out_from_dynamic_type(llvm::Value *wrapper, ASR::Struct_t *declared) {
         llvm::Type *class_type = llvm_utils->getClassType(declared, false);
         llvm::Type *data_type = llvm_utils->getStructType(declared, module.get(), true);
@@ -2503,9 +2550,11 @@ public:
                     llvm_utils->CreateInBoundsGEP2(slot_type->getPointerTo(), vtable,
                         {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                             LLVMFinalize::vtable_intent_out_reset_slot)}));
-                builder->CreateCall(reset_type,
-                    builder->CreateBitCast(reset, reset_type->getPointerTo()),
-                    {builder->CreateBitCast(data, llvm_utils->i8_ptr)});
+                llvm_utils->create_if_else(builder->CreateIsNotNull(reset), [&]() {
+                    builder->CreateCall(reset_type,
+                        builder->CreateBitCast(reset, reset_type->getPointerTo()),
+                        {builder->CreateBitCast(data, llvm_utils->i8_ptr)});
+                }, [](){});
             }, [](){});
         }, [](){});
     }
@@ -10462,6 +10511,10 @@ public:
             // A dummy procedure is an argument, not a separately linked symbol.
             return;
         }
+        if (untaken_intent_out_reset(x)) {
+            // Emitted only for a vtable that takes it.
+            return;
+        }
         if (ASRUtils::is_device_only_function(x)) {
             // A routine that exists only on the device is not lowered to LLVM
             // IR. The device code generator emits it as Metal/CUDA source.
@@ -10531,7 +10584,7 @@ public:
     }
 
     void instantiate_function(const ASR::Function_t &x){
-        if (is_dummy_procedure(x)) {
+        if (is_dummy_procedure(x) || untaken_intent_out_reset(x)) {
             return;
         }
         llvm::DIScope* debug_current_scope_copy = debug_current_scope;
@@ -10654,6 +10707,9 @@ public:
                     && (ftype->m_abi == ASR::abiType::Source
                         || ftype->m_abi == ASR::abiType::BindC)
                     && ftype->m_deftype == ASR::deftypeType::Implementation) {
+                F->setLinkage(llvm::Function::InternalLinkage);
+            }
+            if (intent_out_reset_procedures.count(&x)) {
                 F->setLinkage(llvm::Function::InternalLinkage);
             }
             llvm_symtab_fn[h] = F;
@@ -31040,6 +31096,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     if (!had_error_before_passes && diagnostics.has_error()) {
         return Error();
     }
+    v.intent_out_resets_recorded = pass_manager.intent_out_resets_recorded;
     auto t2 = std::chrono::high_resolution_clock::now();
 
     if (co.time_report) {
