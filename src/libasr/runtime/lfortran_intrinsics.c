@@ -13262,8 +13262,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         }
     }
     if (unit_file_bin) { // Unformatted
-        if (access_id == 0) {  // 0 = SEQUENTIAL access: always append
-            fseek(filep, 0, SEEK_END);
+        if (access_id == 0) {  // C needs a seek between a read and a write
+            fseek(filep, 0, SEEK_CUR);
         }
         va_list args;
         va_start(args, format_len);
