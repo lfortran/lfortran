@@ -1693,6 +1693,10 @@ public:
                                 } else { // Otherwise Assign Directly.
                                     assigns_at_end.push_back(assignment);
                                 }
+                                // A later statement of the where construct must see what the call wrote
+                                if (ASR::is_a<ASR::Where_t>(*m_body[i])) {
+                                    ctx_duplicator.ctx_vars[ASRUtils::symbol_get_past_external(sym)] = ext_sym;
+                                }
                             }
                             // For do-loop function calls inside loop condition & cycle conditions
                             // put a sync for scalar variables.
@@ -1952,6 +1956,17 @@ public:
 
     void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& x) {
         visit_expr(*x.m_array);
+    }
+
+    // A where construct is synced as one statement: its body holds only masked assignments
+    void visit_Where(const ASR::Where_t &x) {
+        visit_expr(*x.m_test);
+        for (size_t i = 0; i < x.n_body; i++) {
+            visit_stmt(*x.m_body[i]);
+        }
+        for (size_t i = 0; i < x.n_orelse; i++) {
+            visit_stmt(*x.m_orelse[i]);
+        }
     }
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
