@@ -7871,6 +7871,48 @@ public:
         return ASR::make_CPtrToPointer_t(al, x.base.base.loc, cptr, fptr, nullptr, nullptr);
     }
 
+    // Fortran 2023 (16.9.202) requires all integer arguments of system_clock
+    // to have the same kind and at least the decimal exponent range of
+    // default integer; earlier standards allow any integer kinds.
+    void check_system_clock_f23_kinds(const Vec<ASR::expr_t*> &args) {
+        const char* arg_names[] = {"count", "count_rate", "count_max"};
+        bool has_error = false;
+        int first_idx = -1;
+        int first_kind = 0;
+        for (int i = 0; i < (int) args.size() && i < 3; i++) {
+            if (args[i] == nullptr || !ASRUtils::is_integer(*ASRUtils::expr_type(args[i]))) {
+                continue;
+            }
+            int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[i]));
+            if (kind < compiler_options.po.default_integer_kind) {
+                diag.add(Diagnostic(
+                    "integer argument " + std::string(arg_names[i]) + " of system_clock "
+                    "must have a decimal exponent range of at least that of default integer "
+                    "in Fortran 2023: integer(" + std::to_string(kind) + ")",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {args[i]->base.loc})
+                    }));
+                has_error = true;
+            }
+            if (first_idx == -1) {
+                first_idx = i;
+                first_kind = kind;
+            } else if (kind != first_kind) {
+                diag.add(Diagnostic(
+                    "integer arguments of system_clock must have the same kind in Fortran 2023: "
+                    + std::string(arg_names[first_idx]) + " is integer(" + std::to_string(first_kind)
+                    + "), " + arg_names[i] + " is integer(" + std::to_string(kind) + ")",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {args[i]->base.loc})
+                    }));
+                has_error = true;
+            }
+        }
+        if (has_error && !compiler_options.continue_compilation) {
+            throw SemanticAbort();
+        }
+    }
+
     ASR::asr_t* intrinsic_subroutine_as_node(const AST::SubroutineCall_t &x, std::string var_name) {
         if (is_intrinsic_registry_subroutine(var_name)) {
             if ( ASRUtils::IntrinsicImpureSubroutineRegistry::is_intrinsic_subroutine(var_name)) {
@@ -7892,6 +7934,9 @@ public:
                 }
                 if( ASRUtils::IntrinsicImpureSubroutineRegistry::is_intrinsic_subroutine(var_name) ) {
                     fill_optional_kind_arg(var_name, args);
+                    if (var_name == "system_clock" && compiler_options.std_f23_conformance) {
+                        check_system_clock_f23_kinds(args);
+                    }
 
                     ASRUtils::create_intrinsic_subroutine create_func =
                         ASRUtils::IntrinsicImpureSubroutineRegistry::get_create_subroutine(var_name);
