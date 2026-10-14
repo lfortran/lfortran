@@ -3616,6 +3616,43 @@ class ReplaceExprWithTemporaryVisitor:
         }
     }
 
+    // A rank one constant value, such as the value of a named constant of a
+    // module, which TransformVariableInitialiser substitutes for it. It is
+    // named like the named constant that implied_do_loops makes of a
+    // literal value, so that array_op indexes it alongside the target.
+    static bool is_nameable_array_constant(ASR::expr_t* value) {
+        return ASR::is_a<ASR::ArrayConstant_t>(*value) &&
+            ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(value)) == 1 &&
+            ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(value)) > 0;
+    }
+
+    ASR::expr_t* name_array_constant(ASR::ArrayConstant_t* x) {
+        const Location& loc = x->base.base.loc;
+        ASR::ttype_t* index_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, index_type));
+        dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            ASRUtils::get_fixed_size_of_array(x->m_type), index_type));
+        dims.push_back(al, dim);
+        ASR::ttype_t* type = ASRUtils::duplicate_type(al,
+            ASRUtils::type_get_past_allocatable(x->m_type), &dims,
+            ASR::array_physical_typeType::FixedSizeArray, true);
+        ASR::expr_t* value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
+            x->m_n_data, x->m_data, type, x->m_storage_format));
+        std::string name = current_scope->get_unique_name("__libasr_array_constant_");
+        ASR::symbol_t* constant = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, name),
+                nullptr, 0, ASR::intentType::Local, value, value,
+                ASR::storage_typeType::Parameter, ASRUtils::duplicate_type(al, type),
+                nullptr, ASR::abiType::Source, ASR::accessType::Public,
+                ASR::presenceType::Required, false));
+        current_scope->add_symbol(name, constant);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, constant));
+    }
+
     // Whether the section target of `a(:, i) = value`, with `a` an array
     // variable of intrinsic type, is left for array_op to assign element by
     // element through `a` itself, instead of through a pointer to the
@@ -3628,7 +3665,8 @@ class ReplaceExprWithTemporaryVisitor:
             ASRUtils::is_simd_array(x.m_value) ) {
             return false;
         }
-        if( ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) ) {
+        if( ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
+            !is_nameable_array_constant(x.m_value) ) {
             switch( x.m_value->type ) {
                 case ASR::exprType::Var:
                 case ASR::exprType::StructInstanceMember:
@@ -3729,6 +3767,10 @@ class ReplaceExprWithTemporaryVisitor:
             ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
             ASRUtils::extract_indices(x.m_target, m_args, n_args);
             evaluate_section_subscripts_once(section);
+            if( is_nameable_array_constant(x.m_value) ) {
+                const_cast<ASR::Assignment_t&>(x).m_value = name_array_constant(
+                    ASR::down_cast<ASR::ArrayConstant_t>(x.m_value));
+            }
             // The value is prepared exactly as for a pointer to the section.
             exprs_with_target[x.m_value] = std::make_pair(x.m_target, targetType::GeneratedTargetPointerForArraySection);
         } else if( ASR::is_a<ASR::ArraySection_t>(*x.m_target) ||
