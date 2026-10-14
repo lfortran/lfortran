@@ -46,6 +46,7 @@
 #include <libasr/pass/replace_select_case.h>
 #include <libasr/pass/loop_vectorise.h>
 #include <libasr/pass/update_array_dim_intrinsic_calls.h>
+#include <libasr/pass/explicit_shape_extent.h>
 #include <libasr/pass/array_by_data.h>
 #include <libasr/pass/list_expr.h>
 #include <libasr/pass/create_subroutine_from_function.h>
@@ -124,6 +125,7 @@ namespace LCompilers {
             {"select_case", &pass_replace_select_case},
             {"loop_vectorise", &pass_loop_vectorise},
             {"array_dim_intrinsics_update", &pass_update_array_dim_intrinsic_calls},
+            {"explicit_shape_extent", &pass_explicit_shape_extent},
             {"pass_list_expr", &pass_list_expr},
             {"pass_array_by_data", &pass_array_by_data},
             {"subroutine_from_function", &pass_create_subroutine_from_function},
@@ -351,6 +353,10 @@ namespace LCompilers {
                 "symbolic",
                 "intrinsic_function",
                 "intrinsic_subroutine",
+                // The extent of an explicit-shape array is never negative.
+                // Its maximum with zero is added after the intrinsic
+                // function pass, so that it is lowered by the backends.
+                "explicit_shape_extent",
                 "subroutine_from_function",
                 // A pass above can add a routine of its own, such as the
                 // shared lowering of an intrinsic, so the partition is
