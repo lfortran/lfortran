@@ -95,6 +95,14 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
         return size;
     }
 
+    // A bound or length is copied out of the type of the array for each use,
+    // so that a later pass rewriting the expression in the body (e.g.
+    // inlining a call in max(0, f(n))) leaves the type unchanged.
+    ASR::expr_t* copy_of(ASR::expr_t* expr) {
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        return duplicator.duplicate_expr(expr);
+    }
+
     void replace_ArraySize(ASR::ArraySize_t* x) {
         ASR::expr_t* size_v = ASRUtils::get_expr_size_expr(x->m_v);
         if( x->m_value == nullptr && size_v != nullptr &&
@@ -129,8 +137,7 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
             ASRUtils::extract_value(x->m_dim, dim);
             // The extent is declared with a kind of its own, as for `a(n)`
             // with an integer(8) `n`, and SIZE returns its own kind
-            ASRUtils::ExprStmtDuplicator duplicator(al);
-            ASR::expr_t* length = duplicator.duplicate_expr(dims[dim - 1].m_length);
+            ASR::expr_t* length = copy_of(dims[dim - 1].m_length);
             if( ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(length)) !=
                     ASRUtils::extract_kind_from_ttype_t(x->m_type) ) {
                 length = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al,
@@ -145,7 +152,7 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
                                     al, x->base.base.loc, 1, x->m_type));
         for( int i = 0; i < n; i++ ) {
             ASR::expr_t* dim_length = ASRUtils::EXPR(ASR::make_Cast_t(
-                al, x->base.base.loc, dims[i].m_length, ASR::cast_kindType::IntegerToInteger, x->m_type, nullptr, nullptr));
+                al, x->base.base.loc, copy_of(dims[i].m_length), ASR::cast_kindType::IntegerToInteger, x->m_type, nullptr, nullptr));
 
             array_size = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x->base.base.loc,
                             array_size, ASR::binopType::Mul, dim_length, x->m_type,
@@ -172,8 +179,8 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
         int64_t dim = -1;
         ASRUtils::extract_value(x->m_dim, dim);
         ASRUtils::ASRBuilder b(al, x->base.base.loc);
-        ASR::expr_t* length = dims[dim - 1].m_length;
-        ASR::expr_t* start = dims[dim - 1].m_start;
+        ASR::expr_t* length = copy_of(dims[dim - 1].m_length);
+        ASR::expr_t* start = copy_of(dims[dim - 1].m_start);
         length = b.t2t(length, ASRUtils::expr_type(length), x->m_type);
         start = b.t2t(start, ASRUtils::expr_type(start), x->m_type);
         ASR::expr_t* bound = nullptr;
@@ -207,7 +214,7 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
                 bound = empty_bound;
             } else {
                 bound = ASRUtils::EXPR(ASR::make_IfExp_t(al, x->base.base.loc,
-                    b.Gt(length, ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    b.Gt(copy_of(length), ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                         al, x->base.base.loc, 0, x->m_type))),
                     bound, empty_bound, x->m_type, nullptr));
             }

@@ -139,9 +139,25 @@ public:
         if (array->n_dims != arg_array->n_dims) {
             return;
         }
+        // The dimensions are copied, so that a later pass rewriting the
+        // expressions of the cast (e.g. inlining a call in a bound) leaves
+        // the type of the array unchanged.
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, arg_array->n_dims);
+        for (size_t i = 0; i < arg_array->n_dims; i++) {
+            ASR::dimension_t dim = arg_array->m_dims[i];
+            if (dim.m_start != nullptr) {
+                dim.m_start = duplicator.duplicate_expr(dim.m_start);
+            }
+            if (dim.m_length != nullptr) {
+                dim.m_length = duplicator.duplicate_expr(dim.m_length);
+            }
+            dims.push_back(al, dim);
+        }
         const_cast<ASR::ArrayPhysicalCast_t&>(x).m_type = ASRUtils::TYPE(
             ASR::make_Array_t(al, array->base.base.loc, array->m_type,
-                arg_array->m_dims, arg_array->n_dims, array->m_physical_type,
+                dims.p, dims.size(), array->m_physical_type,
                 array->m_memory_space));
     }
 };
