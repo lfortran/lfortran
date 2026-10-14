@@ -1183,6 +1183,25 @@ struct FixedFormRecursiveDescent {
             lex_do(cur);
             return true;
         }
+        unsigned char *block_pos = nullptr;
+        if (is_named_block(cur, block_pos)) {
+            t.cur = cur;
+            tokenize_until(block_pos);
+            cur = block_pos;
+            push_token_advance(cur, "block");
+            tokenize_line(cur);
+            return true;
+        }
+        if (next_is(cur, "block") && next_is_eos(cur + 5)) {
+            push_token_advance(cur, "block");
+            tokenize_line(cur);
+            return true;
+        }
+        if (next_is(cur, "endblock") && !next_is(cur, "endblockdata")) {
+            push_token_advance(cur, "endblock");
+            tokenize_line(cur);
+            return true;
+        }
         // handle derived type tokenization
         // this needs to be done before 'lex_declaration'
         // `type, <attr-spec-list> :: name` (e.g. `type, extends(p) :: c`)
@@ -1630,6 +1649,16 @@ struct FixedFormRecursiveDescent {
         if (!try_next(tmp, ":")) return false;
         if (!next_is(tmp, "dowhile(")) return false;
         do_pos = tmp;
+        return true;
+    }
+
+    bool is_named_block(unsigned char *cur, unsigned char *&block_pos) {
+        unsigned char *tmp = cur;
+        if (!try_name(tmp)) return false;
+        if (!try_next(tmp, ":")) return false;
+        if (!next_is(tmp, "block")) return false;
+        if (!next_is_eos(tmp + 5)) return false;
+        block_pos = tmp;
         return true;
     }
 
