@@ -454,6 +454,7 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.print_leading_space = true;
             compiler_options.logical_casting = false;
             compiler_options.po.realloc_lhs_arrays = true;
+            compiler_options.std_f23_conformance = true;
         } else if (opts.arg_standard == "legacy") {
             // f23
             compiler_options.show_style_suggestions = false;
