@@ -158,6 +158,9 @@ bool dummy_is_read_only(ASR::Variable_t *dummy) {
 class Bindings : public ASRUtils::BlockBodyWalkVisitor<Bindings> {
     using Base = ASRUtils::BlockBodyWalkVisitor<Bindings>;
     ASR::symbol_t *target;
+    // A pointer is bound by a pointer association: a value written to it
+    // goes to what it points to.
+    bool pointer;
 
     bool is_target(ASR::expr_t *e) { return variable_of(e) == target; }
 
@@ -166,7 +169,12 @@ class Bindings : public ASRUtils::BlockBodyWalkVisitor<Bindings> {
         ASR::Function_t *callee = call_target(name);
         for (size_t i = 0; i < n_args; i++) {
             if (!is_target(args[i].m_value)) continue;
-            if (dummy_is_read_only(dummy_of(callee, i, n_args))) continue;
+            ASR::Variable_t *dummy = dummy_of(callee, i, n_args);
+            if (dummy_is_read_only(dummy)) continue;
+            if (pointer && dummy && !ASRUtils::is_pointer(dummy->m_type) &&
+                    !ASRUtils::is_allocatable(dummy->m_type)) {
+                continue;
+            }
             writes++;
             value = nullptr;
         }
@@ -176,10 +184,11 @@ public:
     size_t writes = 0;
     ASR::expr_t *value = nullptr;
 
-    explicit Bindings(ASR::symbol_t *target) : target(target) {}
+    explicit Bindings(ASR::symbol_t *target) : target(target),
+        pointer(ASRUtils::is_pointer(ASRUtils::symbol_type(target))) {}
 
     void visit_Assignment(const ASR::Assignment_t &x) {
-        if (is_target(x.m_target)) {
+        if (!pointer && is_target(x.m_target)) {
             writes++;
             value = x.m_value;
         }
@@ -376,6 +385,7 @@ class EntryValueWriter : public ASR::BaseExprReplacer<EntryValueWriter> {
         if (ASR::is_a<ASR::ArraySection_t>(*array)) {
             ASR::ArraySection_t *section =
                 ASR::down_cast<ASR::ArraySection_t>(array);
+            std::vector<Extent> base;
             for (size_t i = 0; i < section->n_args; i++) {
                 ASR::array_index_t &index = section->m_args[i];
                 if (index.m_step == nullptr) continue;
@@ -383,12 +393,31 @@ class EntryValueWriter : public ASR::BaseExprReplacer<EntryValueWriter> {
                     : b.ArrayLBound(section->m_v, i + 1);
                 ASR::expr_t *hi = index.m_right ? index.m_right
                     : b.ArrayUBound(section->m_v, i + 1);
-                lo = rewrite(as(lo, index_type), false);
-                hi = rewrite(as(hi, index_type), false);
-                ASR::expr_t *step = rewrite(as(index.m_step, index_type), false);
-                if (!valid) return false;
+                lo = attempt(as(lo, index_type));
+                hi = attempt(as(hi, index_type));
+                ASR::expr_t *step = attempt(as(index.m_step, index_type));
                 Extent e;
                 e.lower = b.i_t(1, index_type);
+                if (lo == nullptr || hi == nullptr || step == nullptr) {
+                    // A section's extent the routine only knows where it
+                    // forms the section; its lower bound is 1 anyway.
+                    if (!bounding) {
+                        out.push_back(e);
+                        continue;
+                    }
+                    // A section never has more elements in a dimension
+                    // than its array has there.
+                    if (base.empty() &&
+                            !extents(section->m_v, base, depth + 1)) {
+                        return false;
+                    }
+                    if (i >= base.size() || base[i].length == nullptr) {
+                        return false;
+                    }
+                    e.length = base[i].length;
+                    out.push_back(e);
+                    continue;
+                }
                 ASR::expr_t *count = b.Div(b.Add(b.Sub(hi, lo), step), step);
                 e.length = ASRUtils::EXPR(ASR::make_IfExp_t(al,
                     array->base.loc, b.Gt(count, b.i_t(0, index_type)),
@@ -398,7 +427,30 @@ class EntryValueWriter : public ASR::BaseExprReplacer<EntryValueWriter> {
             }
             return true;
         }
+        // An array whose shape is fixed for the whole call.
+        if (dummy_shape(array)) {
+            size_t rank = ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(array));
+            for (size_t d = 0; d < rank; d++) {
+                Extent e;
+                e.lower = b.ArrayLBound(duplicate(al, array), d + 1);
+                e.length = b.ArraySize(duplicate(al, array),
+                    b.i_t(d + 1, index_type), index_type);
+                out.push_back(e);
+            }
+            return true;
+        }
         return false;
+    }
+
+    // `e` written out, or nullptr, leaving the writer valid either way.
+    ASR::expr_t* attempt(ASR::expr_t *e) {
+        bool outer = valid;
+        valid = true;
+        ASR::expr_t *written = rewrite(e, false);
+        bool ok = valid;
+        valid = outer;
+        return ok ? written : nullptr;
     }
 
     // Whether the shape of `array` is fixed for the whole call: an array
@@ -425,6 +477,10 @@ public:
     // rather than failing: the kernel layout writes the extents of a
     // kernel's own arrays over its parameters and its thread index.
     bool lenient = false;
+    // Writes a bound of the value rather than the value: the extent of a
+    // section whose subscripts cannot be written on entry is bounded by
+    // the extent of its array.
+    bool bounding = false;
 
     EntryValueWriter(Allocator &al, ASR::Function_t &fn,
             const StorageMap &storage)
@@ -521,6 +577,10 @@ public:
         ASRUtils::ASRBuilder b(al, x->base.base.loc);
         ASR::expr_t *size = nullptr;
         for (size_t d = first; d < last; d++) {
+            if (all[d].length == nullptr) {
+                valid = lenient;
+                return;
+            }
             ASR::expr_t *length = as(all[d].length, x->m_type);
             size = size ? b.Mul(size, length) : length;
         }
@@ -548,6 +608,10 @@ public:
         ASR::expr_t *lower = as(all[d - 1].lower, x->m_type);
         if (x->m_bound == ASR::arrayboundType::LBound) {
             *current_expr = lower;
+            return;
+        }
+        if (all[d - 1].length == nullptr) {
+            valid = lenient;
             return;
         }
         *current_expr = b.Sub(b.Add(lower, as(all[d - 1].length, x->m_type)),
@@ -1241,6 +1305,347 @@ void StructStorage::rewrite_references(ASR::Function_t &fn,
     rewriter.visit_Function(fn);
 }
 
+// The allocations of the allocatable rank-one locals of a device routine,
+// and the locals that something other than an allocation may reallocate.
+class Allocations : public ASRUtils::BlockBodyWalkVisitor<Allocations> {
+    using Base = ASRUtils::BlockBodyWalkVisitor<Allocations>;
+
+    template <typename T>
+    void allocation(const T &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (ASR::symbol_t *sym = variable_of(x.m_args[i].m_a)) {
+                shapes[sym].push_back(&x.m_args[i]);
+            }
+        }
+    }
+
+    void call_arguments(ASR::symbol_t *name, ASR::call_arg_t *args,
+            size_t n_args) {
+        ASR::Function_t *callee = call_target(name);
+        for (size_t i = 0; i < n_args; i++) {
+            ASR::symbol_t *sym = variable_of(args[i].m_value);
+            if (sym == nullptr) continue;
+            ASR::Variable_t *dummy = dummy_of(callee, i, n_args);
+            if (dummy == nullptr || ASRUtils::is_allocatable(dummy->m_type)
+                    || ASRUtils::is_pointer(dummy->m_type)) {
+                reallocated.insert(sym);
+            }
+        }
+    }
+
+public:
+    std::map<ASR::symbol_t*, std::vector<const ASR::alloc_arg_t*>> shapes;
+    std::set<ASR::symbol_t*> reallocated;
+
+    void visit_Allocate(const ASR::Allocate_t &x) { allocation(x); }
+    void visit_ReAlloc(const ASR::ReAlloc_t &x) { allocation(x); }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        if (x.m_realloc_lhs || x.m_move_allocation) {
+            if (ASR::symbol_t *sym = variable_of(x.m_target)) {
+                reallocated.insert(sym);
+            }
+            if (ASR::symbol_t *sym = variable_of(x.m_value)) {
+                reallocated.insert(sym);
+            }
+        }
+        Base::visit_Assignment(x);
+    }
+
+    void visit_Associate(const ASR::Associate_t &x) {
+        if (ASR::symbol_t *sym = variable_of(x.m_target)) {
+            reallocated.insert(sym);
+        }
+        Base::visit_Associate(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        call_arguments(x.m_name, x.m_args, x.n_args);
+        Base::visit_SubroutineCall(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        call_arguments(x.m_name, x.m_args, x.n_args);
+        Base::visit_FunctionCall(x);
+    }
+
+    void visit_IntrinsicImpureSubroutine(
+            const ASR::IntrinsicImpureSubroutine_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (ASR::symbol_t *sym = variable_of(x.m_args[i])) {
+                reallocated.insert(sym);
+            }
+        }
+        Base::visit_IntrinsicImpureSubroutine(x);
+    }
+
+    void visit_IntrinsicImpureFunction(
+            const ASR::IntrinsicImpureFunction_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (ASR::symbol_t *sym = variable_of(x.m_args[i])) {
+                reallocated.insert(sym);
+            }
+        }
+        Base::visit_IntrinsicImpureFunction(x);
+    }
+};
+
+// Gives an allocatable rank-one local of a device routine, that the
+// routine allocates with a shape it only knows where it allocates it --
+// inside a loop, with an extent the loop index picks -- a buffer of an
+// upper bound of that shape known on entry, and makes the local a pointer
+// to the leading part of the buffer the allocation asks for.
+class AllocationBuffers {
+    Allocator &al;
+    StorageMap no_storage;
+
+    // The allocation `x` becomes when it allocates `var`: an association
+    // of `var` with the leading part of `buffer` it has the extent of.
+    ASR::stmt_t* association(const Location &loc, ASR::symbol_t *var,
+            ASR::symbol_t *buffer, ASR::expr_t *length) {
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::ttype_t *index_type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+            loc, 4));
+        Vec<ASR::array_index_t> range;
+        range.reserve(al, 1);
+        ASR::array_index_t index;
+        index.loc = loc;
+        index.m_left = b.i_t(1, index_type);
+        index.m_right = length;
+        index.m_step = b.i_t(1, index_type);
+        range.push_back(al, index);
+        ASR::ttype_t *element = ASRUtils::duplicate_type(al,
+            ASRUtils::extract_type(ASRUtils::symbol_type(buffer)));
+        Vec<ASR::dimension_t> unknown;
+        unknown.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = nullptr;
+        dim.m_length = nullptr;
+        unknown.push_back(al, dim);
+        ASR::ttype_t *section_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+            element, unknown.p, unknown.n,
+            ASR::array_physical_typeType::DescriptorArray,
+            ASR::memory_spaceType::Global));
+        ASR::expr_t *section = ASRUtils::EXPR(ASR::make_ArraySection_t(al,
+            loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, buffer)), range.p,
+            range.n, section_type, nullptr));
+        return ASRUtils::STMT(ASR::make_Associate_t(al, loc,
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, var)), section));
+    }
+
+    void transform(ASR::stmt_t **&body, size_t &n_body,
+            const std::map<ASR::symbol_t*, ASR::symbol_t*> &buffers,
+            std::set<ASR::symbol_t*> &visited) {
+        Vec<ASR::stmt_t*> out;
+        out.reserve(al, n_body);
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::stmt_t *s = body[i];
+            switch (s->type) {
+                case ASR::stmtType::If: {
+                    ASR::If_t *x = ASR::down_cast<ASR::If_t>(s);
+                    transform(x->m_body, x->n_body, buffers, visited);
+                    transform(x->m_orelse, x->n_orelse, buffers, visited);
+                    break;
+                }
+                case ASR::stmtType::DoLoop: {
+                    ASR::DoLoop_t *x = ASR::down_cast<ASR::DoLoop_t>(s);
+                    transform(x->m_body, x->n_body, buffers, visited);
+                    break;
+                }
+                case ASR::stmtType::WhileLoop: {
+                    ASR::WhileLoop_t *x = ASR::down_cast<ASR::WhileLoop_t>(s);
+                    transform(x->m_body, x->n_body, buffers, visited);
+                    break;
+                }
+                case ASR::stmtType::Select: {
+                    ASR::Select_t *x = ASR::down_cast<ASR::Select_t>(s);
+                    for (size_t c = 0; c < x->n_body; c++) {
+                        if (ASR::is_a<ASR::CaseStmt_t>(*x->m_body[c])) {
+                            ASR::CaseStmt_t *t =
+                                ASR::down_cast<ASR::CaseStmt_t>(x->m_body[c]);
+                            transform(t->m_body, t->n_body, buffers, visited);
+                        } else {
+                            ASR::CaseStmt_Range_t *t =
+                                ASR::down_cast<ASR::CaseStmt_Range_t>(
+                                    x->m_body[c]);
+                            transform(t->m_body, t->n_body, buffers, visited);
+                        }
+                    }
+                    transform(x->m_default, x->n_default, buffers, visited);
+                    break;
+                }
+                case ASR::stmtType::BlockCall:
+                case ASR::stmtType::AssociateBlockCall: {
+                    ASR::symbol_t *m = ASRUtils::symbol_get_past_external(
+                        ASR::is_a<ASR::BlockCall_t>(*s)
+                            ? ASR::down_cast<ASR::BlockCall_t>(s)->m_m
+                            : ASR::down_cast<ASR::AssociateBlockCall_t>(s)
+                                ->m_m);
+                    if (!visited.insert(m).second) break;
+                    if (ASR::is_a<ASR::Block_t>(*m)) {
+                        ASR::Block_t *x = ASR::down_cast<ASR::Block_t>(m);
+                        transform(x->m_body, x->n_body, buffers, visited);
+                    } else if (ASR::is_a<ASR::AssociateBlock_t>(*m)) {
+                        ASR::AssociateBlock_t *x =
+                            ASR::down_cast<ASR::AssociateBlock_t>(m);
+                        transform(x->m_body, x->n_body, buffers, visited);
+                    }
+                    break;
+                }
+                case ASR::stmtType::Allocate:
+                case ASR::stmtType::ReAlloc: {
+                    ASR::alloc_arg_t *args = nullptr;
+                    size_t n_args = 0;
+                    if (ASR::is_a<ASR::Allocate_t>(*s)) {
+                        args = ASR::down_cast<ASR::Allocate_t>(s)->m_args;
+                        n_args = ASR::down_cast<ASR::Allocate_t>(s)->n_args;
+                    } else {
+                        args = ASR::down_cast<ASR::ReAlloc_t>(s)->m_args;
+                        n_args = ASR::down_cast<ASR::ReAlloc_t>(s)->n_args;
+                    }
+                    Vec<ASR::alloc_arg_t> kept;
+                    kept.reserve(al, n_args);
+                    std::vector<ASR::stmt_t*> associations;
+                    for (size_t k = 0; k < n_args; k++) {
+                        ASR::symbol_t *var = variable_of(args[k].m_a);
+                        auto it = buffers.find(var);
+                        if (it == buffers.end()) {
+                            kept.push_back(al, args[k]);
+                            continue;
+                        }
+                        associations.push_back(association(s->base.loc, var,
+                            it->second, args[k].m_dims[0].m_length));
+                    }
+                    if (associations.empty()) break;
+                    if (kept.size() > 0) {
+                        if (ASR::is_a<ASR::Allocate_t>(*s)) {
+                            ASR::down_cast<ASR::Allocate_t>(s)->m_args = kept.p;
+                            ASR::down_cast<ASR::Allocate_t>(s)->n_args = kept.n;
+                        } else {
+                            ASR::down_cast<ASR::ReAlloc_t>(s)->m_args = kept.p;
+                            ASR::down_cast<ASR::ReAlloc_t>(s)->n_args = kept.n;
+                        }
+                        out.push_back(al, s);
+                    }
+                    for (ASR::stmt_t *a : associations) out.push_back(al, a);
+                    continue;
+                }
+                default:
+                    break;
+            }
+            out.push_back(al, s);
+        }
+        body = out.p;
+        n_body = out.n;
+    }
+
+    // Whether an allocation's lower bound is 1, as the leading part of the
+    // buffer the local points to starts at 1: a reallocation to the shape
+    // of a section, say, has the lower bound of the section.
+    bool starts_at_one(ASR::Function_t &fn, ASR::expr_t *start) {
+        if (start == nullptr) return true;
+        int64_t value = 0;
+        if (ASRUtils::extract_value(ASRUtils::expr_value(start), value)) {
+            return value == 1;
+        }
+        EntryValueWriter writer(al, fn, no_storage);
+        ASR::expr_t *written = writer.write(start);
+        return written != nullptr && ASRUtils::extract_value(
+            ASRUtils::expr_value(written), value) && value == 1;
+    }
+
+public:
+    explicit AllocationBuffers(Allocator &al) : al(al) {}
+
+    bool give(ASR::Function_t &fn) {
+        Allocations found;
+        for (size_t i = 0; i < fn.n_body; i++) {
+            found.visit_stmt(*fn.m_body[i]);
+        }
+        std::map<ASR::symbol_t*, ASR::symbol_t*> buffers;
+        for (auto &item : found.shapes) {
+            ASR::symbol_t *sym = item.first;
+            if (found.reallocated.count(sym) ||
+                    !ASR::is_a<ASR::Variable_t>(*sym)) {
+                continue;
+            }
+            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+            if (var->m_intent != ASR::intentType::Local ||
+                    !ASRUtils::is_allocatable(var->m_type) ||
+                    ASRUtils::extract_n_dims_from_ttype(var->m_type) != 1) {
+                continue;
+            }
+            ASR::ttype_t *element = ASRUtils::extract_type(var->m_type);
+            if (!ASRUtils::is_integer(*element) &&
+                    !ASRUtils::is_real(*element) &&
+                    !ASRUtils::is_logical(*element) &&
+                    !ASRUtils::is_complex(*element)) {
+                continue;
+            }
+            // The upper bound each allocation gives, on entry.
+            ASR::expr_t *bound = nullptr;
+            bool ok = true;
+            for (const ASR::alloc_arg_t *shape : item.second) {
+                if (shape->n_dims != 1 || shape->m_dims[0].m_length == nullptr
+                        || !starts_at_one(fn, shape->m_dims[0].m_start)) {
+                    ok = false;
+                    break;
+                }
+                EntryValueWriter writer(al, fn, no_storage);
+                writer.bounding = true;
+                ASR::expr_t *one = writer.write(shape->m_dims[0].m_length);
+                if (one == nullptr) {
+                    ok = false;
+                    break;
+                }
+                if (bound == nullptr ||
+                        PassUtils::same_expression(bound, one)) {
+                    bound = bound ? bound : one;
+                    continue;
+                }
+                ASRUtils::ASRBuilder b(al, one->base.loc);
+                bound = ASRUtils::EXPR(ASR::make_IfExp_t(al, one->base.loc,
+                    b.Gt(bound, one), duplicate(al, bound), duplicate(al, one),
+                    ASRUtils::expr_type(one), nullptr));
+            }
+            if (!ok || bound == nullptr) continue;
+            const Location &loc = var->base.base.loc;
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                ASR::integerbozType::Decimal));
+            dim.m_length = bound;
+            dims.push_back(al, dim);
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::expr_t *buffer = b.Variable(fn.m_symtab,
+                fn.m_symtab->get_unique_name("__gpu_buffer_" +
+                    std::string(var->m_name), false),
+                ASRUtils::make_Array_t_util(al, loc,
+                    ASRUtils::duplicate_type(al, element), dims.p, dims.n),
+                ASR::intentType::Local);
+            Vec<ASR::dimension_t> unknown;
+            unknown.reserve(al, 1);
+            dim.m_start = nullptr;
+            dim.m_length = nullptr;
+            unknown.push_back(al, dim);
+            var->m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                    ASRUtils::duplicate_type(al, element), unknown.p,
+                    unknown.n, ASR::array_physical_typeType::DescriptorArray,
+                    ASR::memory_spaceType::Global))));
+            buffers[sym] = ASR::down_cast<ASR::Var_t>(buffer)->m_v;
+        }
+        if (buffers.empty()) return false;
+        std::set<ASR::symbol_t*> visited;
+        transform(fn.m_body, fn.n_body, buffers, visited);
+        return true;
+    }
+};
+
 class LocalReferences : public ASRUtils::BlockBodyWalkVisitor<LocalReferences> {
 public:
     std::set<ASR::symbol_t*> referenced;
@@ -1251,6 +1656,37 @@ public:
 };
 
 } // namespace
+
+bool gpu_bind_allocations_to_buffers(Allocator &al,
+        ASR::TranslationUnit_t &unit) {
+    std::vector<ASR::Function_t*> routines;
+    std::vector<SymbolTable*> work = {unit.m_symtab};
+    while (!work.empty()) {
+        SymbolTable *scope = work.back();
+        work.pop_back();
+        for (auto &item : scope->get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (ASR::is_a<ASR::Module_t>(*sym)) {
+                work.push_back(ASR::down_cast<ASR::Module_t>(sym)->m_symtab);
+            } else if (ASR::is_a<ASR::Program_t>(*sym)) {
+                work.push_back(ASR::down_cast<ASR::Program_t>(sym)->m_symtab);
+            } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
+                if (ASRUtils::runs_on_device(*fn) &&
+                        !ASRUtils::is_device_kernel(sym)) {
+                    routines.push_back(fn);
+                }
+                work.push_back(fn->m_symtab);
+            }
+        }
+    }
+    AllocationBuffers buffers(al);
+    bool changed = false;
+    for (ASR::Function_t *fn : routines) {
+        if (buffers.give(*fn)) changed = true;
+    }
+    return changed;
+}
 
 bool gpu_give_struct_component_storage(Allocator &al,
         ASR::TranslationUnit_t &unit) {

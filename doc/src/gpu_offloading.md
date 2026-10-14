@@ -188,7 +188,15 @@ generates the device source. It never falls back to the CPU:
   the `allocate`, reallocation or move that gives it one, also when that
   shape is read from another such local, and when several of them give it
   the same shape, as shared lowering does when it allocates a temporary and
-  then reallocates it to the shape it already has.
+  then reallocates it to the shape it already has. A rank-one allocatable
+  local whose extent is only known where it is allocated -- inside a loop
+  of the procedure, as the temporaries of `v(1:n(l)) * a(1:n(l), l-1)` in
+  `do l = 2, m` -- points instead to the leading part of a buffer, which is
+  a run-time sized local like those above, of an upper bound of every such
+  extent known on entry: the extent of a section whose subscripts read the
+  loop index is bounded by the extent of its array in that dimension, as a
+  section never has more elements there. The local itself keeps the exact
+  extent of each allocation.
 * A derived-type value that device code creates -- a local of a
   procedure, or the result of a function such as a structure constructor,
   `associate (t => tensor_t(x))` -- has no storage for an allocatable array
@@ -375,7 +383,9 @@ them; it does not yet.
   (`integer(8)` on Metal), and a derived type with an unused `real(8)`
   component that is handed to the kernel whole (see the open questions).
 * Purity of procedures called from `do concurrent` is not enforced.
-* A run-time sized local of a procedure the loop calls cannot be sized yet
-  when its extent reads the index of a `do` loop of the procedure (`n(l)`
-  in `do l = 1, m`), even when the host could work out the largest value
-  before the launch.
+* A run-time sized local of a procedure the loop calls whose extent reads
+  the index of a `do` loop of the procedure is sized only when the extent
+  is that of a section (bounded by the extent of its array), and only for a
+  rank-one allocatable: `allocate(w(n(l)))` in `do l = 1, m`, or a local of
+  higher rank, cannot be sized yet, even when the host could work out the
+  largest value before the launch by going over the loop.
