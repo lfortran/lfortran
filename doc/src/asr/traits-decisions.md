@@ -6,7 +6,7 @@ chosen, and where the proposal leaves room for more than one reading. Its
 purpose is to improve the proposal, so that independent compiler vendors can
 implement it without having to ask the same questions again.
 
-It is a living document. Last updated: 2026-10-13.
+It is a living document. Last updated: 2026-10-14.
 
 ## About this record
 
@@ -82,18 +82,27 @@ paper:
   the module declaring it, or a facade re-exporting it, is used. Importing the
   type from its own module, or an intrinsic kind constant, is not enough
   (TD-07).
-- A receiver may be modified (`intent(inout)`) only by direct calls on concrete
-  objects; generic trait calls and method calls through trait objects are
-  read-only (TD-10).
+- A message declares its receiver explicitly, as a `type(itself)` dummy marked
+  with PASS, with an ordinary INTENT, any name and any position; a message
+  without one has no receiver, and an implementation must match the receiver's
+  INTENT exactly. This departs from the paper's receiver-free messages. It was
+  approved on 2026-10-14 and is being implemented; the paper's examples and the
+  tests are migrated to it (TD-36).
+- Until TD-36 is implemented: a receiver may be modified (`intent(inout)`) only
+  by direct calls on concrete objects; generic trait calls and method calls
+  through trait objects are read-only (TD-10).
 - A trait-object dummy argument can have `intent(inout)`: its object can then
   be modified through concrete `SELECT TYPE` inspection or by forwarding it,
-  but the messages called through it stay read-only (TD-35).
+  but, until TD-36 is implemented, the messages called through it stay
+  read-only (TD-35).
 - Initializer requirements are checked as conformance obligations but are not
   dispatched through trait objects (TD-13). Besides `initial ::` procedures, a
   matching specific of a standard constructor interface named like the type
   can implement them (TD-33).
 - Five listings are corrected in acceptance copies (four `END TYPE` errata and
-  the SAXPY result), and missing context is completed (TD-29 to TD-31).
+  the SAXPY result), and missing context is completed (TD-29 to TD-31). The
+  acceptance copies are also being migrated to the explicit receivers of
+  TD-36, keeping the original sources.
 - Several temporary limits are diagnosed rather than implemented (TD-24 to
   TD-27). They are not proposed language rules.
 
@@ -146,6 +155,10 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-13 | A type-set member written `character` without a length | **Exactly character(len=1), matching ordinary declarations**; Any character length | TD-34 |
 | 2026-10-13 | A type-set member of assumed length, `character(*)` | **Admit any length; implement length-wildcard support**; Support explicit fixed lengths now; defer length wildcards with a diagnostic | TD-34 |
 | 2026-10-13 | Character lengths known only at run time: actual arguments of assumed or nonconstant length for a length wildcard, and runtime trait dispatch over a type set with a length wildcard | **Keep compile-time-known lengths only for now; document the runtime limits**; Complete runtime-length arguments and wildcard trait dispatch now (recommended) | TD-21, TD-34 |
+| 2026-10-14 | How a message identifies its receiver | First dummy named `self`, declared `type(itself)`; first dummy declared `type(itself)`, regardless of its name; explicit PASS-style receiver designation in the trait. Answered in free text: an explicit `type(itself) :: some_argument`, in any position, as in Fortran's object-oriented programming; without it the procedure has no receiver. | TD-36 |
+| 2026-10-14 | Existing receiver-free message declarations | Keep receiver-free declarations as read-only compatibility syntax; **require explicit receivers for instance methods; migrate existing examples and tests** | TD-36 |
+| 2026-10-14 | Matching an implementation to a message with a receiver | **Require a passed receiver with matching INTENT**; also allow weaker receiver effects or NOPASS implementations, and define adaptation rules | TD-36 |
+| 2026-10-14 | Marking the receiver, since `type(itself)` also declares ordinary same-type arguments | **Always mark the receiver with PASS on its dummy declaration**; infer a unique `type(itself)` dummy, and require PASS when there are several; use `PASS(name)` on the trait method declaration instead | TD-36 |
 
 ### Instructions given without an option form
 
@@ -159,6 +172,10 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-09 | Supplied the updated proposal sources (commit `5163a026`), whose `traits.tex` is identical to the paper used here. | TD-04, TD-32 |
 | 2026-10-13 | After the prototype milestone, asked for type sets to work for all intrinsic types, excluding in the prototype only derived types as members, and supplied an averaging program over `integer \| real \| complex` whose runtime view returns complex values. | TD-15, TD-34 |
 | 2026-10-13 | Asked to get `intent(inout)` working for trait-object arguments of procedures, expecting more such corner cases because the proposal does not spell them out, and to be asked before any recorded decision changes. | TD-35 |
+| 2026-10-13 | Asked why a read-only receiver is the default, then suggested that the implicit receiver of messages might be a mistake and that an explicit receiver could declare `intent(in)` or `intent(inout)` for each message; brainstorming only, no change requested. | TD-10, TD-36 |
+| 2026-10-14 | Asked which uses of `intent(inout)` remained impossible, for a standalone example that the prototype rejects, and what removing every limitation on the receiver's intent would take. | TD-35, TD-36 |
+| 2026-10-14 | Asked how Rust, Swift, Mojo and Go handle receivers, whether `type(ICounter), intent(inout) :: self` would be flawed, and why not `type(itself)`, which corresponds to `Self`. | TD-36 |
+| 2026-10-14 | Confirmed the agreement on explicit receivers and asked to update this record, update all tests and implement it; when in doubt, to stay close to Rust and other explicitly typed languages, or to ask. | TD-36 |
 
 ## Entries
 
@@ -271,7 +288,10 @@ specification action, that is, what the paper should say.
   `traits_paper_inline.py` checks 33 in normal and fast modes, and
   `traits_paper_manual_values.f90` accepts inline-25 and inline-28. inline-17
   and inline-20 are accepted with the candidate kind wildcards and `generics`
-  module of TD-17 and TD-18, which remain open questions.
+  module of TD-17 and TD-18, which remain open questions. Since 2026-10-14 the
+  acceptance copies are being migrated to the explicit receivers of TD-36, an
+  approved language change rather than a missing compiler feature; the raw
+  originals and their hashes are kept, and each migration is recorded.
 - **Specification action.** None for the policy. The adaptations in TD-29 to
   TD-32 are candidates for corrections of the paper.
 
@@ -341,6 +361,15 @@ specification action, that is, what the paper should say.
   must be too. A generic message's binders must correspond with nominally
   equivalent constraints (TD-23). Dummy names may differ; calls through the
   trait keep the trait's dummy names.
+- **Changed by TD-36 (approved 2026-10-14, being implemented).** The receiver
+  part of this rule is replaced, and is historical once TD-36 is implemented.
+  A message declares its receiver, a PASS-marked `type(itself)` dummy in any
+  position, or has none. A message with a receiver is implemented only by a
+  passed-object dummy, the first dummy or a `pass(arg)` dummy in any position,
+  with exactly the receiver's INTENT (`in`, `inout`, `out` or none); a
+  receiverless message only by `nopass`. The receiver is excluded from the
+  dummies that correspond in order, as before. The rest of the rule is
+  unchanged.
 - **Implementation status.** Implemented.
 - **Specification action.** Specify the matching relation, including
   attributes, dummy names for keyword arguments, and whether a more general
@@ -546,8 +575,10 @@ specification action, that is, what the paper should say.
 #### TD-10: Receiver effects
 
 - **Status:** Approved semantic decision, in two steps, kept when revisited
-  on 2026-10-13 (TD-35); mutating messages called through generic code and
-  trait objects remain an open question.
+  on 2026-10-13 (TD-35). Superseded on 2026-10-14 by TD-36, which declares
+  each message's receiver and its INTENT explicitly; the step 2 consequences
+  below are historical once TD-36 is implemented, and the prototype follows
+  them until then.
 - **Why the paper is not tight.** Messages carry no receiver (lines 1098-1116),
   so a trait cannot say whether a message may modify its receiver. In
   `vector.f90`, the message `append(item)` is implemented by
@@ -576,7 +607,18 @@ specification action, that is, what the paper should say.
   so the consequences below are unchanged. The object of an `intent(inout)`
   trait-object dummy can still be modified through concrete `SELECT TYPE`
   inspection (TD-11) or by forwarding it.
-- **Consequences.**
+- **Superseded (2026-10-14, TD-36).** The maintainer then suggested that the
+  implicit receiver of messages was the underlying problem, and chose explicit
+  receivers: a message declares its receiver as a PASS-marked `type(itself)`
+  dummy with an ordinary INTENT, and an implementation must take its passed
+  object with exactly that INTENT. Step 1's explicit per-method declaration of
+  mutation is thereby realized with ordinary INTENT, but its read-only default
+  is not kept: a receiver-free message has no receiver, and a receiver without
+  INTENT has the ordinary unspecified intent. Step 2's
+  restrictions below, read-only generic calls and trait objects and the
+  rejection of `intent(out)` receivers, are replaced by checking each call
+  against the declared receiver.
+- **Consequences of step 2** (historical once TD-36 is implemented).
   - An implementation may take its receiver with `intent(inout)`. Such a
     binding serves direct calls on concrete objects under the ordinary Fortran
     rule that the passed object must then be definable.
@@ -591,13 +633,14 @@ specification action, that is, what the paper should say.
   - The effect is not new syntax: it is the intent of the binding's
     passed-object dummy. `vector.f90` is accepted unchanged.
 - **Implementation status.** Implemented. Mutating generic algorithms are
-  unsupported.
+  unsupported. TD-36 is being implemented to replace these rules.
 - **Specification action.** Decide whether mutation is part of a message's
   contract. Possible directions include a mutation marker in trait messages
   (the step 1 direction, whose syntax is undesigned), deriving the effect from
   the implementations (which defeats checking generic code against the trait
   alone), or forbidding mutation through generic code and trait objects. Also
-  specify pointer, allocatable and `intent(out)` receivers.
+  specify pointer, allocatable and `intent(out)` receivers. The prototype's
+  answer is TD-36: an explicit receiver whose ordinary INTENT is the effect.
 
 #### TD-11: Concrete `SELECT TYPE` inspection of trait objects
 
@@ -678,7 +721,10 @@ specification action, that is, what the paper should say.
   established and have no slot in the view, so a view of `ICastable` alone has
   none and is inspected with `SELECT TYPE`. Messages called through views stay
   read-only (TD-10), and traits with operator requirements or associated types
-  stay generic constraints only.
+  stay generic constraints only. Under TD-36 (approved, being implemented),
+  messages called through views follow their declared receivers instead, and a
+  receiverless message, which NOPASS bindings implement, is still an ordinary
+  message of the view; initializer requirements remain conformance-only.
 - **Specification action.** State whether initializer requirements are part of
   a trait object's interface. If not, say that they are conformance-only. If
   they are, define how a value of the dynamic type is constructed through a
@@ -711,7 +757,9 @@ specification action, that is, what the paper should say.
   TD-10 is unchanged. Which actual arguments are accepted follows the ordinary
   Fortran rules (implementation choice). `intent(out)`, omitted INTENT,
   OPTIONAL and VALUE trait-object dummies were not asked about and remain
-  implementation limits.
+  implementation limits. On 2026-10-14 TD-36 superseded the read-only messages:
+  a message called through such a dummy follows its declared receiver. The
+  borrowing itself is unchanged.
 - **What the paper says.** Trait objects must be allocatable, pointers, or
   "arguments of a procedure", in accordance with present `CLASS` objects
   (lines 1643-1650). Its only trait-object dummy argument is
@@ -754,7 +802,10 @@ specification action, that is, what the paper should say.
   - The object is modified through concrete `SELECT TYPE` inspection (TD-11) or
     by forwarding the dummy. Messages called through it stay read-only, so a
     type whose conformance has an `intent(inout)` receiver binding cannot be
-    passed to it either (TD-10).
+    passed to it either (TD-10). This sentence is historical once TD-36 is
+    implemented: the dummy is a definable object, so it can call messages
+    whose declared receiver is `intent(inout)` or `intent(out)`, and such
+    conformances can form trait objects.
   - As for other nonpointer dummies, a pure function cannot have an
     `intent(inout)` trait-object dummy; a pure subroutine can.
 - **Implementation status.** Implemented for scalar trait objects. `intent(out)`,
@@ -766,7 +817,232 @@ specification action, that is, what the paper should say.
   arguments it accepts. Specify `intent(out)` (finalization and default
   initialization of the dynamic type on entry) and omitted INTENT, and relate
   the INTENT of a trait-object dummy to the receiver effects of messages
-  (OQ-04).
+  (OQ-04). TD-36 gives the receiver side: a message's receiver declares its
+  INTENT, and each call checks it against the definability of the object.
+
+#### TD-36: Explicit receivers of messages
+
+- **Status:** Approved semantic decision (2026-10-14), a deliberate departure
+  from the paper. It supersedes the read-only receiver rules of TD-10 and the
+  read-only messages of TD-35, and changes the receiver part of the matching
+  rule of TD-06; those entries keep their history and mark the superseded
+  parts. It is being implemented: until the implementation is complete, the
+  prototype still behaves as TD-06, TD-10 and TD-35 describe.
+- **What the paper says.** A traits facility "should therefore *not* require
+  such message signatures to contain passed-object dummy arguments, or their
+  types, i.e. any details concerning the receivers", because "in order to be
+  sendable to different receivers, a message must not know anything about its
+  receiver" (lines 1098-1116). A compiler "will simply skip" passed-object
+  arguments when checking conformance (lines 1311-1317). The paper proposes
+  `itself` as Fortran's spelling of the predefined associated type that Rust
+  and Swift call `Self`, the implementing type (lines 1880-1886), and uses it
+  for the operands and results of operator requirements.
+- **Why it is not tight.** Without a receiver in the message, a trait cannot
+  say whether a message has a receiver at all, or what it does with it: read
+  it, modify it or redefine it (TD-10). The INTENT of the receiver is then
+  visible only in each implementation, which a separately compiled consumer of
+  the trait does not see, so generic code and trait objects cannot be checked
+  against the trait alone. TD-10 therefore made generic calls and trait objects
+  read-only, and TD-35 kept that rule for `intent(inout)` trait-object dummies.
+- **History.**
+  1. 2026-10-13. While the work of TD-35 was in progress, the maintainer asked
+     why a read-only receiver is the default and why a mutable receiver needs
+     extra syntax. The implementers explained that messages declare no
+     receiver, so its effect has to be declared somewhere, and that a
+     read-only or a mutable default are both coherent. The maintainer then
+     suggested that the implicit receiver of a message might be the mistake:
+     with an explicit receiver, each message could declare `intent(in)` or
+     `intent(inout)` for it. No change was requested at that point.
+  2. 2026-10-14. After TD-35, the maintainer asked which uses of
+     `intent(inout)` remained impossible and for a standalone example. The
+     implementers wrote `mre_traits_inout_dispatch.f90`, in which
+     `call object%increment()` through a `class(ICounter), intent(inout)`
+     dummy is rejected because `Counter` binds `increment` to an
+     implementation with an `intent(inout)` receiver. Asked what removing
+     every limitation on the receiver's INTENT would take, they sketched an
+     explicit receiver `type(itself), intent(inout) :: self` in the message;
+     a rule that identifies the receiver without relying on the name `self`;
+     receiver matching for conformance; checking each call against the
+     definability of its object; and the semantics of every INTENT,
+     `intent(out)` in particular. They recommended keeping receiver-free
+     declarations as a read-only shorthand.
+  3. 2026-10-14, spelling. The maintainer asked how Rust, Swift, Mojo and Go
+     handle receivers, and whether `type(ICounter), intent(inout) :: self`
+     would be flawed. The implementers compared Rust's explicit receivers
+     (`&self`, `&mut self`, short for `self: &mut Self`) with `Self` the
+     implementing type and `dyn ICounter` a separate trait-object type;
+     Swift's implicit receivers with a `mutating` marker; Mojo's explicit
+     `self` and `mut self` with an inferred `Self` type; and Go, whose
+     receivers appear only in implementations, with no read-only contract.
+     They said that `type(ICounter)` could be defined as a spelling of the
+     implementing type for the receiver only, but would be ambiguous elsewhere
+     between the same implementing type (Rust's `Self`) and any conforming type
+     (`class(ICounter)`). The maintainer asked why not `type(itself)`, which
+     the implementers had suggested and which corresponds to `Self`. The
+     implementers agreed that it is the cleaner choice: it is the paper's own
+     name for the implementing type, it does not give the trait's name a second
+     meaning, and it means the same in every argument and result position.
+  4. Options presented (2026-10-14), three questions in one form:
+     - How a message identifies its receiver. Options: the first dummy named
+       `self`, declared `type(itself)`; the first dummy declared
+       `type(itself)`, regardless of its name; an explicit PASS-style receiver
+       designation in the trait. The maintainer answered in free text: "Yes,
+       use the explicit `type(itself) :: some_argument` and the some_argument
+       can be at any place, just like in OOP in Fortran. If not present, then
+       the function doesn't have "self"."
+     - Existing receiver-free declarations. Options: keep receiver-free
+       declarations as read-only compatibility syntax; **require explicit
+       receivers for instance methods, and migrate the existing examples and
+       tests**.
+     - Matching an implementation to a message with a receiver. Options:
+       **require a passed receiver with matching INTENT**; also allow weaker
+       receiver effects or NOPASS implementations, and define adaptation rules.
+  5. Follow-up question (2026-10-14). `type(itself)` also declares ordinary
+     arguments of the implementing type, such as the `other` of a message
+     `merge(self, other)`, so the type alone cannot select the receiver when a
+     message has more than one `type(itself)` dummy. Options: **always mark
+     the receiver with PASS on its dummy declaration**; infer a unique
+     `type(itself)` dummy, and require PASS only when there are several; use
+     `PASS(name)` on the trait's method declaration instead. The chosen
+     spelling is `type(itself), intent(inout), pass :: some_argument`.
+  6. The maintainer confirmed the agreement and asked to update this record,
+     to update all tests and to implement it, adding: "When making decisions,
+     let's stay close to Rust and other typed explicit languages as those seem
+     quite close to Fortran, when in doubt. You can also ask me."
+- **Choice.** A message declares its receiver explicitly, as a `type(itself)`
+  dummy marked with PASS, of any name and in any position. A message without
+  one has no receiver. Existing declarations, examples and tests are migrated
+  instead of keeping a read-only shorthand. A receiver is implemented only by
+  a passed-object dummy with exactly its INTENT.
+- **Rules.**
+  - *Declaration.* In the interface body of a message,
+    `type(itself), intent(inout), pass :: name` declares `name` as its
+    receiver. The name and the position among the dummy arguments are free:
+    `self` is not reserved, and the receiver is never inferred from a name, a
+    position or the type alone, not even when the message has a single
+    `type(itself)` dummy. A message has at most one marked dummy, and the
+    marker is a bare PASS on a `type(itself)` dummy argument; PASS on any
+    other entity, `PASS(name)` and NOPASS on a dummy declaration are not part
+    of the syntax. The receiver is subject to the ordinary passed-object
+    requirements of Fortran: it is a scalar, nonpointer, nonallocatable dummy
+    data object without the VALUE attribute.
+  - *Other `type(itself)` dummies.* They are ordinary arguments of the
+    implementing type, like Rust's `other: &Self`: the caller passes them
+    explicitly, and their INTENTs have their ordinary meaning.
+  - *No marked receiver.* The message has no receiver, and NOPASS bindings
+    implement it. Called through an object or a value of a constrained type
+    parameter, it still uses the implementation selected for that object, at
+    run time through a trait object, like a NOPASS type-bound procedure of
+    standard Fortran; it is not a static method (TD-09). The receiver-free
+    declaration no longer implies a read-only receiver: a migrated program
+    declares the receiver that it means.
+  - *Initializers and operators.* Initializer and operator requirements keep
+    their rules: they have no receiver, and their `type(itself)` operands and
+    results are not marked.
+  - *Matching* (TD-06). A message with a receiver is implemented by a binding
+    with a passed-object dummy whose INTENT is exactly the receiver's:
+    `intent(in)`, `intent(inout)`, `intent(out)`, or no INTENT. The
+    implementation chooses that dummy by the ordinary rules, the first dummy or
+    a `PASS(name)` dummy in any position, independently of the receiver's
+    position in the message. A NOPASS binding does not implement a message with
+    a receiver, and a binding with a passed object does not implement a
+    receiverless message. The other dummy arguments correspond in order, as
+    before.
+  - *Calls.* In a call through a trait object or on a value of a constrained
+    type parameter, the object is associated with the receiver, so it is never
+    an actual argument, and keyword arguments use the message's names of the
+    other dummies. Each call is checked against the INTENT of the called
+    message's receiver and the definability of the object: a read-only
+    object, for example an `intent(in)` trait-object dummy, can call a message
+    with an `intent(in)` receiver but not one with an `intent(inout)` or
+    `intent(out)` receiver, which needs a definable object under the ordinary
+    rules listed in TD-35. A message with a mutating receiver no longer
+    prevents forming trait objects or selecting the conformance for a
+    constraint.
+  - *INTENT semantics* are those of an ordinary nonallocatable, nonpointer
+    passed-object dummy:
+    - `intent(in)`: the implementation does not define the receiver. As
+      always in Fortran, this is not deep immutability: the targets of
+      pointer components are not protected.
+    - `intent(inout)`: the implementation reads and may modify the object in
+      place; nothing is reset on entry.
+    - `intent(out)`: on entry the object is finalized if it is finalizable,
+      its allocatable components are deallocated, and default initialization
+      is applied, exactly once and before the body of the implementation;
+      components without default initialization become undefined. The outer
+      storage does not change: the address of the object, the allocation of a
+      trait object that owns it, the association of a pointer to it and its
+      dynamic type stay as they are. An `intent(out)` receiver is not an
+      allocatable `intent(out)` dummy, which would deallocate its actual.
+    - No INTENT is not replaced by `intent(in)` or `intent(inout)`. As for any
+      dummy without INTENT, the object must be definable only if the
+      implementation defines it, which is a requirement on the program rather
+      than a check at the call, and nothing is reset on entry.
+  - *Ordinary rules.* Purity, lifetime and aliasing follow the ordinary rules
+    for passed-object dummies. For example, the nonpointer dummies of a PURE
+    function, the receiver included, have `intent(in)` (or VALUE, which a
+    passed object cannot have); a PURE subroutine specifies the INTENT of its
+    receiver; and a PURE implementation cannot take a polymorphic
+    `intent(out)` passed object, so it needs a nonpolymorphic one, such as the
+    `TYPE` receiver of a sealed type.
+  - *Trait objects.* A use of `itself` only as the receiver does not make a
+    trait one with associated types, which is a generic constraint only
+    (TD-13, TD-20): such a trait can declare trait objects. Other uses of
+    `itself`, for example an ordinary `type(itself)` argument, keep their own
+    rules. The trait object's implementations may include messages with any
+    receiver INTENT.
+  - *Receiver versus dispatch context.* The marked receiver is the semantic
+    receiver of the message. It is not the private context, such as the
+    payload address, the dynamic type and the selected implementations, that
+    the prototype passes to its dispatch adapters: a receiverless message is
+    dispatched through a trait object with that context too, and the
+    receiver's INTENT decides what the implementation may do with the object,
+    not how an adapter forwards it.
+- **Rationale.** The existence, position and INTENT of the receiver become part
+  of the message, so calls in generic code and through trait objects are
+  checked against the trait alone, also under separate compilation. `itself`
+  names no concrete receiver type, so a message can still be sent to different
+  receivers, which is the aim of the paper's rule. The effect is the ordinary
+  INTENT, with no new keyword such as Swift's `mutating`, which brings the
+  syntax close to Rust's explicit `&self` and `&mut self` receivers and to
+  Fortran's passed-object dummies, which can have any name and position. The
+  marker is required even for a single `type(itself)` dummy, so that adding an
+  ordinary same-type argument never changes which dummy is the receiver, and
+  it sits on the dummy declaration, next to the INTENT, rather than on the
+  procedure.
+- **Consequences for existing programs.**
+  - A message with an implicit receiver must now declare it. A receiver-free
+    message has no receiver, so a binding with a passed object no longer
+    implements it, and an unmigrated program is diagnosed rather than given a
+    new meaning.
+  - The paper's acceptance copies (TD-04), the tests and this documentation
+    are migrated to explicit receivers. The paper and the raw original sources
+    are kept unchanged with their hashes, and each migrated copy records its
+    derivation from them. A migration changes only receivers, the bindings and
+    signatures of their implementations and the calls they require; the
+    algorithms and results of the examples are unchanged.
+  - Where one message had both PASS and NOPASS implementations, such as `sum`
+    of `ISum` in the paper's `static.f90`, `mixed.f90` and `ocp.f90`, the
+    message now declares the receiver that its PASS implementations need, and
+    its NOPASS implementations get a passed-object dummy that they do not use.
+    Exact matching is not weakened for them, and separate tests keep
+    receiverless messages with NOPASS implementations.
+  - `vector.f90` declares an `intent(inout)` receiver for `append`, so its
+    mutation no longer needs the direct-call-only rule of TD-10.
+- **Implementation status.** Approved; being implemented. The prototype still
+  implements TD-06, TD-10 and TD-35 for now: messages without receivers,
+  read-only generic calls and trait objects, and no `intent(out)` or omitted
+  INTENT receivers. This entry will say when the explicit receivers are
+  implemented.
+- **Specification action.** Decide whether messages declare their receivers.
+  If they do, specify: the declaration (here a PASS-marked `type(itself)`
+  dummy of any name and position) and its constraints; that an unmarked
+  `type(itself)` dummy is an ordinary argument; the meaning of a message
+  without a receiver; receiver matching, including the passed-object position
+  of an implementation and NOPASS; the INTENT semantics for each kind of
+  object, `intent(out)` and no INTENT in particular; what calls through trait
+  objects and constrained type parameters may do; and which uses of `itself`
+  prevent trait objects (OQ-04).
 
 ### D. Generic procedures, methods and type sets
 
@@ -1386,7 +1662,7 @@ that they are not reopened as ambiguities.
 | Rule | Paper | Prototype |
 | --- | --- | --- |
 | Conformance is nominal: matching names and signatures alone do not make a type conform. Structural subtyping is only an Outlook idea. | `sect:implementing_traits`; lines 2703-2713; `sect:structural_subtyping` | Implemented |
-| Messages carry no receiver; passed-object arguments are skipped when checking conformance. | lines 1098-1116, 1311-1317 | Implemented (TD-06) |
+| Messages carry no receiver; passed-object arguments are skipped when checking conformance. | lines 1098-1116, 1311-1317 | Implemented (TD-06) until TD-36, which departs from it: messages declare explicit receivers (approved 2026-10-14, being implemented) |
 | A child trait is a subtype of each of its parents. | lines 1150-1160 | Implemented |
 | `implements :: T`, without traits, binds initializers and methods to a type. | `sect:adding_methods` (lines 1241-1301), inline-05 | Implemented for a derived type of the same program unit; other targets and binding forms are diagnosed as not implemented yet |
 | Bindings that a type already has, including its `initial` bindings, satisfy a later acknowledgement of a trait, also from another module. | lines 1285-1295, 1319-1338; inline-06, inline-09 | Implemented (TD-33) |
@@ -1414,9 +1690,9 @@ names the entries with the details.
 | ID | Question | See |
 | --- | --- | --- |
 | OQ-01 | Visibility and coherence of conformances: explicit provider `USE`, importing the trait only, an ownership rule with globally unique conformances, or named conformances; `ONLY`, renaming, re-export and conflicts; identical rules for combined and separate compilation. | TD-07, TD-08 |
-| OQ-02 | The exact rule for an implementation matching a message: attributes, dummy names for keyword arguments, more general implementations. | TD-06 |
+| OQ-02 | The exact rule for an implementation matching a message: attributes, dummy names for keyword arguments, more general implementations, and the receiver (TD-36 chooses exact receiver INTENT). | TD-06, TD-36 |
 | OQ-03 | Composition: identity of requirements, overloads across parents, agreement of intrinsic acknowledgements. Overloaded requirements that coincide after substituting `itself`, such as `operator(*)` with `(itself, itself)` and `(itself, integer)` when the implementing type is `integer`. How an elemental and a non-elemental requirement that both accept a call are resolved (standard generic resolution prefers the non-elemental one; the prototype currently reports an ambiguity). | TD-05 |
-| OQ-04 | Whether a message may modify its receiver, how this is declared, and what generic code and trait objects may assume; pointer, allocatable and `intent(out)` receivers; the INTENTs of trait-object dummy arguments. | TD-10, TD-35 |
+| OQ-04 | Whether a message may modify its receiver, how this is declared, and what generic code and trait objects may assume; pointer, allocatable and `intent(out)` receivers; the INTENTs of trait-object dummy arguments. The prototype's answer for receivers is TD-36: an explicit PASS-marked `type(itself)` receiver with an ordinary INTENT. | TD-10, TD-35, TD-36 |
 | OQ-05 | Initializer requirements and trait objects. Which procedures implement an initializer requirement: `initial ::` procedures and matching standard constructor interfaces are approved for the prototype (TD-33); whether the implicit structure constructor can is open. | TD-13, TD-33 |
 | OQ-06 | Trait objects: conversions and combinations; `SELECT TYPE`, including dynamic conformance queries; arrays of trait objects (homogeneous like `CLASS` arrays or not); pointer components and results. | TD-11, TD-12 |
 | OQ-07 | Associated types: inference, one type per conformance, constraints on associated types, projection syntax, use as generic constraints. | TD-20 |

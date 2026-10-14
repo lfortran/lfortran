@@ -18,6 +18,15 @@ function results, persistent nonowning scalar pointer views, and concrete
 
 ## Declaring a contract
 
+Explicit receivers were approved on 2026-10-14 (TD-36 of the
+[decisions record](traits-decisions.md)): a message will declare its receiver
+as a `type(itself)` dummy marked with PASS, for example
+`type(itself), intent(in), pass :: self`, with any name, position and ordinary
+INTENT, and a message without one will have no receiver. They are being
+implemented. Until then, the compiler accepts the receiver-free messages
+described below, and the receiver rules in this document are those of the
+current prototype.
+
 A named abstract interface describes messages without a passed-object argument:
 
 ```fortran
