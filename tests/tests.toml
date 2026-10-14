@@ -4725,6 +4725,13 @@ filename = "../integration_tests/gpu_unsupported_07.f90"
 gpu_offload_cuda = true
 gpu_offload_metal = true
 
+# A temporary of the compiler the host cannot size, on every device: the error
+# does not name it.
+[[test]]
+filename = "../integration_tests/gpu_metal_391.f90"
+gpu_offload_cuda = true
+gpu_offload_metal = true
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
