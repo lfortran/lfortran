@@ -26,4 +26,4 @@ program derived_type_operator_01
     c%i = 7
     print *, c .and. .true.
     if ((c .and. .true.) /= 7) error stop
-end program derived_type_operator_01x
+end program derived_type_operator_01
