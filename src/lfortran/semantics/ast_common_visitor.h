@@ -26990,6 +26990,26 @@ public:
     // definable (see BodyVisitor::visit_AssociateBlock).
     std::set<ASR::symbol_t*> non_definable_associate_variables;
 
+    // An associate name whose selector is an expression rather than a
+    // variable: a function result, a parenthesized designator, or any other
+    // value (F2018 11.1.3.3). It is not definable either, although ordinary
+    // definition contexts do not check this yet; the receiver of a trait call
+    // and an intent(inout) trait view do (see
+    // check_receiver_not_expression_associate).
+    std::set<ASR::symbol_t*> expression_associate_variables;
+
+    // The object an intent(inout) or intent(out) receiver, or an
+    // intent(inout) trait view, would define is not an associate name of an
+    // expression, nor a part of one.
+    void check_receiver_not_expression_associate(ASR::expr_t *object,
+            const std::string &use) {
+        ASR::symbol_t *base = extract_assignment_base_symbol(object);
+        if (!base || !expression_associate_variables.count(base)) return;
+        trait_call_error("the associate name '" + std::string(ASRUtils::symbol_name(base)) +
+            "' is associated with an expression, not a variable, so it cannot be " + use,
+            object->base.loc);
+    }
+
     bool selector_has_constant_or_non_definable_base(ASR::expr_t* expr) {
         ASR::symbol_t* base_sym = extract_assignment_base_symbol(expr);
         if (!base_sym) {
@@ -27239,7 +27259,11 @@ public:
         // An intent(inout) view designates its actual's payload, which must
         // be definable; only a read-only view may borrow a value.
         bool defining = ASRUtils::EXPR2VAR(dummy)->m_intent == ASR::intentType::InOut;
-        if (defining) check_definable_actual(actual);
+        if (defining) {
+            check_definable_actual(actual);
+            check_receiver_not_expression_associate(actual,
+                "associated with an intent(inout) trait object");
+        }
         make_runtime_trait_view(actual, target, !defining);
     }
 
@@ -28843,6 +28867,11 @@ public:
                     ASRUtils::trait_member_receiver_intent(&signature->base))) {
             check_association_definable(receiver);
             check_definable_actual(receiver);
+        }
+        if (ASRUtils::trait_receiver_defines(
+                ASRUtils::trait_member_receiver_intent(&signature->base))) {
+            check_receiver_not_expression_associate(receiver,
+                "the receiver of a message with an intent(inout) or intent(out) receiver");
         }
         if (runtime_slot >= 0) {
             auto *contract = ASRUtils::trait_runtime_contract(ASRUtils::expr_type(receiver));

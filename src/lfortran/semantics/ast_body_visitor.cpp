@@ -3696,6 +3696,11 @@ public:
                 trait_call_error("associate views of runtime trait objects are not implemented yet",
                     tmp_expr->base.loc);
             }
+            // A function reference whose result is not a data pointer is an
+            // expression, even when the associate name below is associated
+            // with the result itself rather than with a copy of it.
+            bool selector_is_function_result = ASR::is_a<ASR::FunctionCall_t>(*tmp_expr) &&
+                !ASRUtils::is_pointer(tmp_type);
             ASR::storage_typeType tmp_storage = ASR::storage_typeType::Default;
             bool create_associate_stmt = false;
             bool procedure_alias = ASR::is_a<ASR::FunctionType_t>(
@@ -3835,6 +3840,15 @@ public:
             if (selector_is_constant || procedure_alias) {
                 non_definable_associate_variables.insert(associate_sym);
             }
+            // The selector is a value rather than a variable: copied into the
+            // associate name, a function result, or the associate name of
+            // such a selector in turn.
+            ASR::symbol_t *selector_base = extract_assignment_base_symbol(tmp_expr);
+            if (!procedure_alias && !selector_is_constant &&
+                    (!create_associate_stmt || selector_is_function_result ||
+                     (selector_base && expression_associate_variables.count(selector_base)))) {
+                expression_associate_variables.insert(associate_sym);
+            }
             ASR::expr_t* target_var = ASRUtils::EXPR(ASR::make_Var_t(al, v->loc, ASR::down_cast<ASR::symbol_t>(v)));
             if( create_associate_stmt ) {
                 ASR::stmt_t* associate_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, tmp_expr->base.loc, target_var, tmp_expr));
@@ -3854,6 +3868,7 @@ public:
         current_scope = current_scope_copy;
         for( auto &item: new_scope->get_scope() ) {
             non_definable_associate_variables.erase(item.second);
+            expression_associate_variables.erase(item.second);
         }
         ASR::AssociateBlock_t* associate_block_t = ASR::down_cast<ASR::AssociateBlock_t>(
             ASR::down_cast<ASR::symbol_t>(associate_block));
