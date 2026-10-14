@@ -17162,6 +17162,17 @@ public:
                 new_dim.loc = func_calls[i]->base.loc;
                 new_dim.m_start = func_calls[i];
                 new_dim.m_length = func_calls[i + 1];
+                // Constant actual arguments can give the length a negative
+                // value, in which case the extent is zero.
+                ASR::expr_t* length_value = new_dim.m_length
+                    ? ASRUtils::expr_value(new_dim.m_length) : nullptr;
+                int64_t length = 0;
+                if (length_value && ASRUtils::extract_value(length_value, length)
+                        && length < 0) {
+                    new_dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                        al, new_dim.m_length->base.loc, 0,
+                        ASRUtils::expr_type(new_dim.m_length)));
+                }
                 new_dims.push_back(al, new_dim);
             } else {
                 new_dims.push_back(al, t->m_dims[j]);
