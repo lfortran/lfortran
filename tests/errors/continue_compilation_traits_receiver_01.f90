@@ -438,9 +438,9 @@ end module cc_traits_receiver_bad_r29
 module cc_traits_receiver_bad_r30
     implicit none
     abstract interface :: IR30
-        integer function f(item)
-            dimension :: item(2)
-            type(itself), intent(in), pass :: item
+        integer function f(self)
+            dimension :: self(2)
+            type(itself), intent(in), pass :: self
         end function
     end interface
 end module cc_traits_receiver_bad_r30

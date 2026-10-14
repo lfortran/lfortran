@@ -5,6 +5,18 @@
 ! objects with the same INTENT, a read-only view calls the intent(in)
 ! message, an intent(inout) view the others, and the intent(out) receiver is
 ! default-initialized on entry. Direct, static generic and view calls agree.
+! An earlier dummy of the same name, made an array by a DIMENSION statement
+! before its type, does not make the receivers arrays.
+module traits_receiver_intent_10_a
+    implicit none
+contains
+    real function first(self)
+        dimension :: self(2)
+        real, intent(in) :: self
+        first = self(1) + self(2)
+    end function
+end module
+
 module traits_receiver_intent_10_m
     implicit none
     abstract interface :: ITally
@@ -69,10 +81,12 @@ contains
 end module
 
 program traits_receiver_intent_10
+    use traits_receiver_intent_10_a
     use traits_receiver_intent_10_m
     implicit none
     type(Tally) :: t
 
+    if (abs(first([1.5, 2.5]) - 4.0) > 1e-6) error stop 6
     call t%add(2)
     if (t%total() /= 2) error stop 1
     call bump(t, 3)

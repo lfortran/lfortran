@@ -2353,6 +2353,18 @@ public:
     // Attributes defined before declaration
     std::map<std::string, ASR::symbol_t*> symbols_having_only_attributes_without_type;
 
+    // The variable that an attribute statement of the current scope declared
+    // before its type statement, if any. The map is keyed by name alone, and
+    // an entry left by another scope is not a variable of this one.
+    ASR::symbol_t* attribute_only_symbol(const std::string &name) {
+        auto it = symbols_having_only_attributes_without_type.find(name);
+        if (it == symbols_having_only_attributes_without_type.end() ||
+                ASRUtils::symbol_parent_symtab(it->second) != current_scope) {
+            return nullptr;
+        }
+        return it->second;
+    }
+
     // procedures explicitly declared with 'intrinsic' attribute
     // e.g. a declaration like: 'intrinsic abs' for an intrinsic
     // elemental function 'abs'
@@ -3382,7 +3394,7 @@ public:
 		ASR::ttype_t* typ = implicit_dictionary.at(std::string(1,sym[0]));
 		get_sym = declare_implicit_variable2(s.loc, sym, intent, typ);
 	    } else {
-		if (symbols_having_only_attributes_without_type.find(sym) == symbols_having_only_attributes_without_type.end()) {
+		if (attribute_only_symbol(sym) == nullptr) {
 	            ASR::intentType intent;
 	            ASR::abiType abi;
 	            if (is_proc_arg) {
@@ -3398,7 +3410,7 @@ public:
 	                                                    abi, ASR::accessType::Public, ASR::presenceType::Required,
 	                                                    false, false, false));
 	        } else {
-	            get_sym = symbols_having_only_attributes_without_type[sym];
+	            get_sym = attribute_only_symbol(sym);
 	        }
 	    }
 	}
@@ -9831,8 +9843,7 @@ public:
                         SetChar variable_dependencies_vec;
                         variable_dependencies_vec.reserve(al, 1);
                         ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value);
-                        if ( symbols_having_only_attributes_without_type.find(sym) != symbols_having_only_attributes_without_type.end() ) {
-                            ASR::symbol_t* symbol = symbols_having_only_attributes_without_type[sym];
+                        if ( ASR::symbol_t* symbol = attribute_only_symbol(sym) ) {
                             ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
                             symbol_variable->base.base.loc = s.loc;
                             if ( symbol_variable->m_type ) {
@@ -11120,8 +11131,7 @@ public:
                     ASRUtils::anchor_cptr_null_constant_to_type_declaration(
                         al, variable_added_to_symtab->m_symbolic_value, variable_added_to_symtab);
                     if ( !is_implicitly_declared && !is_external) {
-                        if ( symbols_having_only_attributes_without_type.find(sym) != symbols_having_only_attributes_without_type.end() ) {
-                            ASR::symbol_t* symbol = symbols_having_only_attributes_without_type[sym];
+                        if ( ASR::symbol_t* symbol = attribute_only_symbol(sym) ) {
                             ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
                             if ( symbol_variable->m_type ) {
                                 if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {

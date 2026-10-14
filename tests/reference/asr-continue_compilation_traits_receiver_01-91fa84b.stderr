@@ -222,10 +222,10 @@ semantic error: the receiver 'self' of trait message 'f' must be a scalar withou
 431 |             type(itself), intent(in), pass :: self
     |                                               ^^^^ 
 
-semantic error: the receiver 'item' of trait message 'f' must be a scalar without the pointer, allocatable or value attribute
+semantic error: the receiver 'self' of trait message 'f' must be a scalar without the pointer, allocatable or value attribute
    --> tests/errors/continue_compilation_traits_receiver_01.f90:443:47
     |
-443 |             type(itself), intent(in), pass :: item
+443 |             type(itself), intent(in), pass :: self
     |                                               ^^^^ 
 
 semantic error: the receiver 'self' of trait message 's' with the optional, target, volatile or codimension attribute is not implemented yet
