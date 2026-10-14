@@ -1612,9 +1612,9 @@ dummy, view or owner, a part of one, a named constant, and an associate or
 SELECT TYPE name whose selector is not a definable variable, such as an
 expression or a parenthesized variable, are diagnosed; an `intent(in)` pointer
 dummy protects only its association, so its target can be the receiver.
-Pointer and allocatable receivers remain unsupported. The verifier checks that each binding's passed-object INTENT is
-its message's receiver INTENT, and that each runtime slot and adapter passes
-the receiver as its origins require.
+Pointer and allocatable receivers remain unsupported. The verifier checks that
+each binding's passed-object INTENT is its message's receiver INTENT, and that
+each runtime slot and adapter passes the receiver as its origins require.
 
 The paper's `vector.f90` (`traits_paper_vector`, its oracle and the
 `test_paper_functional_{normal,fast}` and `test_paper_separate_vector_{normal,fast}`
