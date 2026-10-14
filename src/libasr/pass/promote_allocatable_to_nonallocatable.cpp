@@ -4,6 +4,7 @@
 #include <libasr/utils.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
+#include <libasr/codegen/gpu_utils.h>
 #include <libasr/containers.h>
 #include <map>
 #include <set>
@@ -857,14 +858,16 @@ class DeviceImplicitAllocInserter:
 
         // The shape an assignment gives its target has to be readable where
         // the target is declared, so only a value whose extents come from a
-        // variable can be used.
+        // variable can be used: the variable itself, or the one an
+        // elementwise expression (`2*c`) takes its shape from.
         ASR::expr_t* shape_source(ASR::expr_t* value) {
             ASR::expr_t* v = ASRUtils::get_past_array_physical_cast(value);
-            if( ASR::is_a<ASR::Var_t>(*v) ||
-                ASR::is_a<ASR::StructInstanceMember_t>(*v) ) {
-                return v;
+            while( v && !ASR::is_a<ASR::Var_t>(*v) &&
+                    !ASR::is_a<ASR::StructInstanceMember_t>(*v) &&
+                    !ASR::is_a<ASR::ArraySection_t>(*v) ) {
+                v = gpu_elementwise_shape_source(v);
             }
-            return nullptr;
+            return v;
         }
 
         // The variable an argument passes, past a physical cast, when it is a
