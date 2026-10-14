@@ -253,15 +253,24 @@ private:
         for (size_t i = 0; i < fn->n_body; i++) {
             collector.visit_stmt(*fn->m_body[i]);
         }
+        // A clone is not a procedure of the type a type-bound call names,
+        // so a call retargeted at one is an ordinary call. The routine was
+        // resolved already and the passed object is among the arguments.
         for (ASR::FunctionCall_t *call : collector.function_calls) {
             ASR::symbol_t *target = specialise(call->m_name, call->m_args,
                 call->n_args);
-            if (target) call->m_name = target;
+            if (target) {
+                call->m_name = target;
+                call->m_dt = nullptr;
+            }
         }
         for (ASR::SubroutineCall_t *call : collector.subroutine_calls) {
             ASR::symbol_t *target = specialise(call->m_name, call->m_args,
                 call->n_args);
-            if (target) call->m_name = target;
+            if (target) {
+                call->m_name = target;
+                call->m_dt = nullptr;
+            }
         }
     }
 
@@ -374,9 +383,15 @@ private:
         if (ASR::symbol_t *existing = ext->m_parent_symtab->get_symbol(name)) {
             return existing;
         }
+        // The clone is placed next to the original routine, whose owner
+        // is not necessarily the one the external symbol named: a call
+        // through a type-bound procedure names the type.
+        ASR::symbol_t *owner = ASRUtils::get_asr_owner(clone);
+        char *module_name = owner
+            ? s2c(al, ASRUtils::symbol_name(owner)) : ext->m_module_name;
         ASR::asr_t *new_ext = ASR::make_ExternalSymbol_t(al,
             clone->base.loc, ext->m_parent_symtab, s2c(al, name), clone,
-            ext->m_module_name, nullptr, 0, s2c(al, name),
+            module_name, nullptr, 0, s2c(al, name),
             ASR::accessType::Public);
         ASR::symbol_t *new_sym = ASR::down_cast<ASR::symbol_t>(new_ext);
         ext->m_parent_symtab->add_symbol(name, new_sym);
