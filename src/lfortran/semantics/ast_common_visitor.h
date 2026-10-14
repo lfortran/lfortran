@@ -22402,6 +22402,51 @@ public:
         }
     }
 
+    // The named constant `c` whose procedure pointer component `expr`
+    // references, as in `c%f`, `c%inner%f` or `c(1)%f`, or nullptr. Such a
+    // reference is not a procedure component reference (F2023 R1040:
+    // `scalar-variable % procedure-component-name`), since a variable shall
+    // not be a constant or a subobject of a constant (C901).
+    ASR::expr_t* procedure_component_of_constant(ASR::expr_t* expr) {
+        if (expr == nullptr || !ASR::is_a<ASR::StructInstanceMember_t>(*expr) ||
+                !ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
+                    ASRUtils::expr_type(expr)))) {
+            return nullptr;
+        }
+        ASR::expr_t* base = ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v;
+        while (true) {
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*base)) {
+                base = ASR::down_cast<ASR::StructInstanceMember_t>(base)->m_v;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*base)) {
+                base = ASR::down_cast<ASR::ArrayItem_t>(base)->m_v;
+            } else {
+                break;
+            }
+        }
+        return ASRUtils::is_const(base) ? base : nullptr;
+    }
+
+    // The target of a procedure pointer and the actual argument of a dummy
+    // procedure or procedure pointer can be a procedure component reference,
+    // but not a procedure pointer component of a named constant. `what` names
+    // the role of `expr`.
+    void check_procedure_component_of_constant(ASR::expr_t* expr,
+            const std::string& what) {
+        ASR::expr_t* constant = procedure_component_of_constant(expr);
+        if (constant == nullptr) {
+            return;
+        }
+        diag.add(Diagnostic(
+            "a procedure pointer component of a named constant cannot be "
+            + what,
+            Level::Error, Stage::Semantic, {
+                Label("`" + std::string(ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(constant)->m_v))
+                    + "` is a named constant, not a variable",
+                    {expr->base.loc})}));
+        if (!compiler_options.continue_compilation) throw SemanticAbort();
+    }
+
     // `actual` associated with the dummy argument `dummy` of a procedure.
     ASR::expr_t* cast_procedure_actual(ASR::expr_t* actual, ASR::expr_t* dummy) {
         if (actual == nullptr || dummy == nullptr || !ASR::is_a<ASR::Var_t>(*dummy)) {
@@ -22410,6 +22455,7 @@ public:
         ASR::symbol_t* dummy_sym = ASRUtils::symbol_get_past_external(
             ASR::down_cast<ASR::Var_t>(dummy)->m_v);
         if (ASR::is_a<ASR::Function_t>(*dummy_sym)) {
+            check_procedure_component_of_constant(actual, "an actual argument");
             return cast_procedure(actual, ASRUtils::get_FunctionType(
                 ASR::down_cast<ASR::Function_t>(dummy_sym)), dummy_sym);
         }
@@ -22417,6 +22463,9 @@ public:
             return actual;
         }
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(dummy_sym);
+        if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(v->m_type))) {
+            check_procedure_component_of_constant(actual, "an actual argument");
+        }
         // A pointer dummy is associated with the pointer itself.
         if (ASRUtils::is_pointer(v->m_type) ||
                 !ASR::is_a<ASR::FunctionType_t>(*v->m_type)) {

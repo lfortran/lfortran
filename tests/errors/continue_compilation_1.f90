@@ -2908,3 +2908,39 @@ subroutine cc1_data_section_errors(n)
     data cc1_ds_d(2:3), cc1_ds_s /1, 2/  ! {Error} DATA statement element count mismatch: 3 elements on left-hand side, 2 values on right-hand side
     data cc1_ds_e(1:3), (cc1_ds_f(i), i=1,n) /1, 2/  ! {Error} DATA statement element count mismatch: more elements on left-hand side than 2 values on right-hand side
 end subroutine cc1_data_section_errors
+
+! A procedure pointer component of a named constant, or of a subobject of a
+! named constant, is not a procedure component reference, whose base is a
+! variable (C901, R1040): it can be neither a procedure pointer target nor an
+! actual argument.
+module cc1_proc_component_of_constant_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_func
+    implicit none
+    type :: cc1_pcoc_t
+        procedure(cc1_pclim_known_func), pointer, nopass :: f => null()
+    end type
+    type :: cc1_pcoc_outer_t
+        type(cc1_pcoc_t) :: inner
+    end type
+    type(cc1_pcoc_t), parameter :: cc1_pcoc_c = cc1_pcoc_t(cc1_pclim_known_func)
+    type(cc1_pcoc_outer_t), parameter :: cc1_pcoc_o = &
+        cc1_pcoc_outer_t(cc1_pcoc_t(cc1_pclim_known_func))
+    type(cc1_pcoc_t), parameter :: cc1_pcoc_cs(2) = cc1_pcoc_t(cc1_pclim_known_func)
+contains
+    subroutine cc1_pcoc_use()
+        procedure(cc1_pclim_known_func), pointer :: q
+        integer :: r
+        q => cc1_pcoc_c%f  ! {Error} a procedure pointer component of a named constant cannot be a pointer assignment target
+        q => cc1_pcoc_o%inner%f  ! {Error} a procedure pointer component of a named constant cannot be a pointer assignment target
+        q => cc1_pcoc_cs(2)%f  ! {Error} a procedure pointer component of a named constant cannot be a pointer assignment target
+        r = cc1_pcoc_call(cc1_pcoc_c%f)  ! {Error} a procedure pointer component of a named constant cannot be an actual argument
+        call cc1_pcoc_take_pointer(cc1_pcoc_o%inner%f)  ! {Error} a procedure pointer component of a named constant cannot be an actual argument
+    end subroutine cc1_pcoc_use
+    integer function cc1_pcoc_call(g)
+        procedure(cc1_pclim_known_func) :: g
+        cc1_pcoc_call = g()
+    end function cc1_pcoc_call
+    subroutine cc1_pcoc_take_pointer(g)
+        procedure(cc1_pclim_known_func), pointer, intent(in) :: g
+    end subroutine cc1_pcoc_take_pointer
+end module cc1_proc_component_of_constant_mod

@@ -3386,6 +3386,8 @@ public:
                         {value->base.loc})}));
             throw SemanticAbort();
         }
+        check_procedure_component_of_constant(value,
+            "a pointer assignment target");
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         tmp = nullptr;
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
@@ -9172,6 +9174,10 @@ public:
                             passed_arg = cast_procedure_actual(passed_arg, f->m_args[i + offset]);
                             args.p[i].m_value = passed_arg;
                             passed_type = ASRUtils::expr_type(passed_arg);
+                        } else if (ASR::is_a<ASR::FunctionType_t>(
+                                *ASRUtils::type_get_past_pointer(param_type))) {
+                            check_procedure_component_of_constant(passed_arg,
+                                "an actual argument");
                         }
                         // Skip type checking for function types (procedure dummy
                         // arguments are validated separately above).
