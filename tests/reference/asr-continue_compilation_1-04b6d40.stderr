@@ -1272,6 +1272,12 @@ semantic error: Interface 'cc1_puim_nosuch' is referenced but not defined
 2854 |     procedure(cc1_puim_nosuch), pointer :: cc1_puim_q => cc1_puim_g  ! {Error} Interface 'cc1_puim_nosuch' is referenced but not defined
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
 
+semantic error: Interface 'cc1_putm_nosuch' is referenced but not defined
+    --> tests/errors/continue_compilation_1.f90:2861:5
+     |
+2861 |     procedure(cc1_putm_nosuch), pointer :: cc1_putm_a => null()  ! {Error} Interface 'cc1_putm_nosuch' is referenced but not defined
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

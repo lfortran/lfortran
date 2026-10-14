@@ -2857,3 +2857,14 @@ contains
         cc1_puim_g = 1
     end function cc1_puim_g
 end module cc1_procptr_undefined_iface_m
+module cc1_procptr_undefined_target_m
+    procedure(cc1_putm_nosuch), pointer :: cc1_putm_a => null()  ! {Error} Interface 'cc1_putm_nosuch' is referenced but not defined
+    procedure(cc1_putm_f), pointer :: cc1_putm_q => cc1_putm_nosuch
+    type :: cc1_putm_t
+        procedure(cc1_putm_f), pointer, nopass :: c => cc1_putm_nosuch
+    end type cc1_putm_t
+contains
+    integer function cc1_putm_f()
+        cc1_putm_f = 0
+    end function cc1_putm_f
+end module cc1_procptr_undefined_target_m

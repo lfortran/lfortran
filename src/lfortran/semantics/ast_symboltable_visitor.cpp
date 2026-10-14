@@ -5471,10 +5471,11 @@ public:
     }
 
     void resolve_pending_proc_ptr_inits() {
-        // The target of each pointer is known now, and so is its interface
-        // unless no procedure defines it, which is reported afterwards. A
-        // target that does not match a known interface is reported, every
-        // mismatch before compilation stops.
+        // The target and the interface of each pointer are known now, unless
+        // one is still a placeholder that no procedure defines, which is
+        // reported afterwards instead. A known target that does not match a
+        // known interface is reported, every mismatch before compilation
+        // stops.
         bool init_mismatch = false;
         for (auto &item : pending_proc_ptr_inits) {
             ASR::symbol_t *proc_sym = item.resolve_scope->resolve_symbol(item.proc_name);
@@ -5488,6 +5489,7 @@ public:
                 ASR::make_Var_t(al, item.loc, proc_sym));
             ASR::symbol_t *iface = item.var->m_type_declaration;
             if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(proc_sym))
+                    && !is_pending_proc_placeholder(proc_sym)
                     && !(iface && is_pending_proc_placeholder(iface))
                     && !check_initializer_type(item.var->m_type,
                         ASRUtils::expr_type(init_expr), init_expr)) {
