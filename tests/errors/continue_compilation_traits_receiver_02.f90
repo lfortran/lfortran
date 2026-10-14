@@ -4,10 +4,8 @@
 ! receiver is not an argument of the call. PURE messages follow the ordinary
 ! PURE rules. Each procedure or module whose name starts with bad_ has one
 ! error; procedures whose names start with ok_ are valid controls, and
-! ordinary_ procedures are the same errors without traits. An associate name
-! of an expression in a definition context, which this compiler does not
-! diagnose in ordinary Fortran either, has no case here. The PURE rules for a
-! receiver are checked where the trait declares the message (C19 to C19e).
+! ordinary_ procedures are the same errors without traits. The PURE rules for
+! a receiver are checked where the trait declares the message (C19 to C19e).
 module cc_traits_receiver_calls_contracts
     use, intrinsic :: iso_fortran_env, only: real64
     implicit none
@@ -117,6 +115,9 @@ contains
         class(Counter) :: self
         print *, self%n
     end subroutine
+    type(Counter) function make_counter()
+        make_counter%n = 2
+    end function
     integer function meter_record{IMember :: T}(self, x) result(r)
         type(Meter), intent(inout) :: self
         type(T), intent(in) :: x(:)
@@ -170,6 +171,19 @@ contains
         class(ICounter), intent(in) :: v
         associate (r => v)
             call r%bump(1)
+        end associate
+    end subroutine
+    ! C06: nor an associate name of a function result.
+    subroutine bad_bump_associate_result()
+        associate (r => make_counter())
+            call r%bump(1)
+        end associate
+    end subroutine
+    ! C07: nor an associate name of a parenthesized variable.
+    subroutine bad_reset_associate_parentheses(c)
+        type(Counter), intent(inout) :: c
+        associate (r => (c))
+            call r%reset(4)
         end associate
     end subroutine
     ! C08: nor a SELECT TYPE name of a read-only view.
