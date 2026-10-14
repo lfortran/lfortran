@@ -1339,31 +1339,10 @@ public:
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
             if (is_common_declaration(x.m_items[i])) continue;
-            if(AST::is_a<AST::Declaration_t>(*x.m_items[i])) {
-                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
-                if(decl->m_vartype) {
-
-                    AST::AttrType_t* type = nullptr;
-                    if (AST::is_a<AST::AttrType_t>(*decl->m_vartype)) {
-                        type = AST::down_cast<AST::AttrType_t>(decl->m_vartype);
-                    } else if  (AST::is_a<AST::AttrTypeList_t>(*decl->m_vartype)){
-                        type = AST::down_cast<AST::AttrType_t>(
-                                AST::down_cast<AST::decl_attribute_t>(
-                                    AST::make_AttrType_t(
-                                    al, decl->m_vartype->base.loc, 
-                                    AST::decl_typeType::TypeType,
-                                    nullptr, 0, decl->m_vartype, 
-                                    nullptr, AST::symbolType::None)));
-                        
-                    } 
-
-                    LCOMPILERS_ASSERT(type);
-
-                    if(type && type->m_type == AST::decl_typeType::TypeProcedure) {
-                        procedure_decl_indices.push_back(al, i);
-                        continue;
-                    }
-                }
+            if (has_interface_declared_later(x.m_items, i, x.n_items,
+                    &contained_procedures)) {
+                procedure_decl_indices.push_back(al, i);
+                continue;
             }
             try {
                 visit_decl_stmt(*x.m_items[i]);
