@@ -1534,6 +1534,11 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "forall2.f90"
+asr = true
+pass = "forall"
+
+[[test]]
 filename = "subroutine8.f90"
 ast = true
 
