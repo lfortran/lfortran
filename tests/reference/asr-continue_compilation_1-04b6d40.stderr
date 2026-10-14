@@ -1278,6 +1278,36 @@ semantic error: Interface 'cc1_putm_nosuch' is referenced but not defined
 2861 |     procedure(cc1_putm_nosuch), pointer :: cc1_putm_a => null()  ! {Error} Interface 'cc1_putm_nosuch' is referenced but not defined
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
 
+semantic error: type mismatch in initialization: `integer` cannot be assigned to `FunctionType() pointer`
+    --> tests/errors/continue_compilation_1.f90:2883:54
+     |
+2883 |     procedure(cc1_plnm_f), pointer :: cc1_plnm_p1 => cc1_plnm_x  ! {Error} type mismatch in initialization: `integer` cannot be assigned to `FunctionType() pointer`
+     |                                                      ^^^^^^^^^^ 
+
+semantic error: Symbol 'cc1_plna_gen' must be a variable or a procedure
+    --> tests/errors/continue_compilation_1.f90:2886:54
+     |
+2886 |     procedure(cc1_plnm_f), pointer :: cc1_plnm_p4 => cc1_plna_gen  ! {Error} Symbol 'cc1_plna_gen' must be a variable or a procedure
+     |                                                      ^^^^^^^^^^^^ cannot use a 'GenericProcedure' as a variable
+     |
+   1 | ! If you need a function, put it into the module below and remove the same
+     |  ~ 'cc1_plna_gen' declared as a 'GenericProcedure' here
+
+semantic error: type mismatch in initialization: `integer` cannot be assigned to `FunctionType(return_type: integer) pointer`
+    --> tests/errors/continue_compilation_1.f90:2884:54
+     |
+2884 |     procedure(cc1_plnm_f), pointer :: cc1_plnm_p2 => cc1_plnm_y  ! {Error} type mismatch in initialization: `integer` cannot be assigned to `FunctionType(return_type: integer) pointer`
+     |                                                      ^^^^^^^^^^ 
+
+semantic error: Symbol 'cc1_plnm_gen' must be a variable or a procedure
+    --> tests/errors/continue_compilation_1.f90:2885:54
+     |
+2885 |     procedure(cc1_plnm_f), pointer :: cc1_plnm_p3 => cc1_plnm_gen  ! {Error} Symbol 'cc1_plnm_gen' must be a variable or a procedure
+     |                                                      ^^^^^^^^^^^^ cannot use a 'GenericProcedure' as a variable
+     |
+   1 | ! If you need a function, put it into the module below and remove the same
+     |  ~ 'cc1_plnm_gen' declared as a 'GenericProcedure' here
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

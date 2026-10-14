@@ -10549,8 +10549,12 @@ public:
                         }
                         // An interface that is a module procedure defined
                         // later is a placeholder until the module defines
-                        // it, so the target is checked against it only then.
+                        // it, so a procedure target is checked against it
+                        // only then. Any other target is checked now.
                         bool is_pending_interface = !is_derived_type
+                            && init_sym
+                            && ASR::is_a<ASR::Function_t>(
+                                *ASRUtils::symbol_get_past_external(init_sym))
                             && type_declaration
                             && is_pending_proc_placeholder(type_declaration)
                             && static_cast<Derived&>(*this).procedure_declared_later(
