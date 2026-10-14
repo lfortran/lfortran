@@ -4401,6 +4401,7 @@ RUN(NAME read_100 LABELS gfortran llvm)
 RUN(NAME read_101 LABELS gfortran llvm)
 RUN(NAME read_102 LABELS gfortran llvm)
 RUN(NAME read_crlf_01 LABELS gfortran llvm)
+RUN(NAME read_unconnected_unit_01 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
