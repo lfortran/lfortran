@@ -2050,13 +2050,13 @@ inline bool declared_shape_to_vla_workspace(ASR::Array_t *arr,
 
 // A per-thread workspace for an allocatable array whose size is only known
 // on the device, sized from the struct member the array is copied from.
-// The one allocatable array component of the kernel's arguments, when the
-// kernel has exactly one. Two members cannot share a size; those must be
-// named by an assignment.
-inline bool unique_struct_alloc_member_key(const ASR::Function_t &kernel,
-        GpuStructMemberKey &key) {
-    int n = 0;
-    GpuStructMemberKey found;
+// The allocatable array components of the kernel's arguments. When the
+// kernel has exactly one, an array copied from a component is a copy of
+// that one; two members cannot share a size, so those must be named by an
+// assignment.
+inline std::vector<GpuStructMemberKey> gpu_struct_alloc_member_keys(
+        const ASR::Function_t &kernel) {
+    std::vector<GpuStructMemberKey> keys;
     for (size_t ai = 0; ai < kernel.n_args; ai++) {
         ASR::Var_t *av = ASR::down_cast<ASR::Var_t>(kernel.m_args[ai]);
         ASR::Variable_t *avar = ASR::down_cast<ASR::Variable_t>(
@@ -2073,14 +2073,10 @@ inline bool unique_struct_alloc_member_key(const ASR::Function_t &kernel,
         ASR::Struct_t *stype = ASR::down_cast<ASR::Struct_t>(decl_sym);
         for (auto &mem :
                 ASRUtils::collect_allocatable_array_members(stype)) {
-            n++;
-            found = GpuStructMemberKey{avar->m_name, mem.first};
-            if (n > 1) return false;
+            keys.push_back(GpuStructMemberKey{avar->m_name, mem.first});
         }
     }
-    if (n != 1) return false;
-    key = found;
-    return true;
+    return keys;
 }
 
 inline size_t gpu_struct_member_rank_from_key(const ASR::Function_t &kernel,
@@ -2142,6 +2138,20 @@ inline bool struct_member_vla_workspace(const ASR::Function_t &kernel,
     GpuStructMemberKey struct_key;
     ASR::expr_t *source_array = nullptr;
     bool from_member = true;
+    // An array assigned to the whole of it gives it its shape.
+    auto find_source_array = [&]() {
+        auto is_array = [](ASR::expr_t *v) {
+            return ASRUtils::is_array(ASRUtils::expr_type(v));
+        };
+        ASR::expr_t *source = gpu_find_assigned_value(scope_body,
+            scope_n_body, var_name, is_array);
+        if (source == nullptr) {
+            source = gpu_find_assigned_value(kernel.m_body, kernel.n_body,
+                var_name, is_array);
+        }
+        return source;
+    };
+    std::vector<GpuStructMemberKey> member_keys;
     if (scope_body != nullptr
             && find_struct_member_key_from_assignments(scope_body,
                 scope_n_body, var_name, struct_key, &source_array)) {
@@ -2149,22 +2159,19 @@ inline bool struct_member_vla_workspace(const ASR::Function_t &kernel,
     } else if (find_struct_member_key_from_assignments(kernel.m_body,
             kernel.n_body, var_name, struct_key, &source_array)) {
         // The assignment in the kernel body names the member.
-    } else if (unique_struct_alloc_member_key(kernel, struct_key)) {
-        // The kernel's one allocatable component is only a guess at what
-        // the array is a copy of: an array assigned to the whole of it is
-        // what gives it its shape.
-        auto is_array = [](ASR::expr_t *v) {
-            return ASRUtils::is_array(ASRUtils::expr_type(v));
-        };
-        source_array = gpu_find_assigned_value(scope_body, scope_n_body,
-            var_name, is_array);
-        if (source_array == nullptr) {
-            source_array = gpu_find_assigned_value(kernel.m_body,
-                kernel.n_body, var_name, is_array);
-        }
-        from_member = source_array == nullptr;
-    } else {
+    } else if ((member_keys = gpu_struct_alloc_member_keys(kernel)).empty()) {
         return false;
+    } else {
+        // The kernel's one allocatable component is only a guess at what
+        // the array is a copy of, and with two there is nothing to guess
+        // from: an array assigned to the whole of it is what gives it its
+        // shape.
+        source_array = find_source_array();
+        from_member = source_array == nullptr;
+        if (from_member) {
+            if (member_keys.size() != 1) return false;
+            struct_key = member_keys[0];
+        }
     }
     ws.var_name = var_name;
     ws.elem_size = gpu_vla_elem_size(arr);
