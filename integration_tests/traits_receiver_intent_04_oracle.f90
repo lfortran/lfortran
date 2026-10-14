@@ -1,136 +1,89 @@
-! Standard-Fortran counterpart of traits_receiver_intent_04.f90: Gauge2
-! extends Gauge, whose deferred binding reset takes a class(Gauge) passed
-! object with intent(out). Each call finalizes the object once for its dynamic
-! type, deallocates the allocatable components of Gauge2 and of its parent and
-! applies their default initialization before the body runs, through direct
-! calls, class(IReset) dummies and an allocatable owner.
+! Standard-Fortran counterpart of traits_receiver_intent_04.f90: deferred
+! bindings whose passed objects have no INTENT, called through class(IOpen)
+! dummies with intent(in) and intent(inout), an owner and direct calls.
+! Nothing is finalized, deallocated or default-initialized on entry.
 module traits_receiver_intent_04_oracle_m
-    use iso_c_binding, only: c_ptr, c_loc, c_associated, c_null_ptr
     implicit none
-    integer :: finals = 0, finals2 = 0, entries = 0
-    type(c_ptr) :: expected = c_null_ptr
-    type, abstract :: IReset
+    integer :: finals = 0
+    type, abstract :: IOpen
     contains
-        procedure(level_iface), deferred :: level
-        procedure(reset_iface), deferred :: reset
+        procedure(peek_iface), deferred :: peek
+        procedure(touch_iface), deferred, pass(self) :: touch
     end type
     abstract interface
-        integer function level_iface(self)
-            import :: IReset
-            class(IReset), intent(in) :: self
+        integer function peek_iface(self)
+            import :: IOpen
+            class(IOpen) :: self
         end function
-        subroutine reset_iface(self, start)
-            import :: IReset
-            class(IReset), target, intent(out) :: self
-            integer, intent(in) :: start
+        subroutine touch_iface(by, self)
+            import :: IOpen
+            integer, intent(in) :: by
+            class(IOpen) :: self
         end subroutine
     end interface
-    type, extends(IReset) :: Gauge
-        integer :: n = 7
+    type, extends(IOpen) :: Cell
+        integer :: n = 0
+        integer :: tag = 5
         integer, allocatable :: data(:)
     contains
-        procedure, pass :: level => gauge_level
-        procedure, pass :: reset => gauge_reset
-        final :: gauge_final
-    end type
-    type, extends(Gauge) :: Gauge2
-        integer :: extra = 11
-        integer, allocatable :: more(:)
-    contains
-        final :: gauge2_final
+        procedure :: peek => cell_peek
+        procedure, pass(self) :: touch => cell_touch
+        final :: cell_final
     end type
 contains
-    integer function gauge_level(self)
-        class(Gauge), intent(in) :: self
-        gauge_level = self%n
+    integer function cell_peek(self)
+        class(Cell) :: self
+        cell_peek = self%n
     end function
-    subroutine gauge_reset(self, start)
-        class(Gauge), target, intent(out) :: self
-        integer, intent(in) :: start
-        type(c_ptr) :: actual
-        actual = c_loc(self%n)
-        if (c_associated(expected)) then
-            if (.not. c_associated(actual, expected)) error stop 90
-        end if
-        if (self%n /= 7 .or. allocated(self%data)) error stop 91
-        select type (self)
-        type is (Gauge2)
-            if (self%extra /= 11 .or. allocated(self%more)) error stop 92
-            self%extra = 2 * start
-            allocate(self%more(start))
-        class default
-            error stop 93
-        end select
-        entries = entries + 1
-        self%n = start
-        allocate(self%data(start))
+    subroutine cell_touch(by, self)
+        integer, intent(in) :: by
+        class(Cell) :: self
+        if (self%tag /= 9 .or. .not. allocated(self%data)) error stop 90
+        self%n = self%n + by
+        self%data(1) = self%n
     end subroutine
-    subroutine gauge_final(self)
-        type(Gauge), intent(inout) :: self
+    subroutine cell_final(self)
+        type(Cell), intent(inout) :: self
         finals = finals + 1
     end subroutine
-    subroutine gauge2_final(self)
-        type(Gauge2), intent(inout) :: self
-        finals2 = finals2 + 1
+    integer function observe(v)
+        class(IOpen), intent(in) :: v
+        observe = v%peek()
+    end function
+    subroutine nudge(v, by)
+        class(IOpen), intent(inout) :: v
+        integer, intent(in) :: by
+        call v%touch(by=by)
     end subroutine
-    subroutine reset_view(x, start)
-        class(IReset), intent(inout) :: x
-        integer, intent(in) :: start
-        call x%reset(start)
+    subroutine nudge_generic(x, by)
+        class(IOpen), intent(inout) :: x
+        integer, intent(in) :: by
+        call x%touch(by)
     end subroutine
-    subroutine reset_generic(x, start)
-        class(IReset), intent(inout) :: x
-        integer, intent(in) :: start
-        call x%reset(start)
-    end subroutine
-    subroutine expect(g, n)
-        class(IReset), intent(in) :: g
-        integer, intent(in) :: n
-        if (finals /= 1 .or. finals2 /= 1 .or. entries /= 1) then
-            print '(a,3i4)', 'counts:', finals, finals2, entries
-            error stop 94
-        end if
-        finals = 0
-        finals2 = 0
-        entries = 0
-        select type (g)
-        type is (Gauge2)
-            if (g%n /= n .or. g%extra /= 2 * n) error stop 95
-            if (size(g%data) /= n .or. size(g%more) /= n) error stop 96
-        class default
-            error stop 97
-        end select
-    end subroutine
+    integer function observe_generic(x)
+        class(IOpen), intent(in) :: x
+        observe_generic = x%peek()
+    end function
 end module
 
 program traits_receiver_intent_04_oracle
-    use iso_c_binding, only: c_loc
     use traits_receiver_intent_04_oracle_m
     implicit none
-    type(Gauge2), target :: g2
-    class(IReset), allocatable, target :: owner
-
-    g2%n = 1
-    g2%extra = 1
-    allocate(g2%data(2), g2%more(2))
-    expected = c_loc(g2%n)
-    call g2%reset(3)
-    call expect(g2, 3)
-    call reset_view(g2, 4)
-    call expect(g2, 4)
-    call reset_generic(g2, 5)
-    call expect(g2, 5)
-    allocate(Gauge2 :: owner)
-    select type (concrete => owner)
-    type is (Gauge2)
-        expected = c_loc(concrete%n)
-    class default
-        error stop 1
-    end select
-    call owner%reset(6)
-    call expect(owner, 6)
-    call reset_view(owner, 2)
-    call expect(owner, 2)
-    if (.not. allocated(owner) .or. owner%level() /= 2) error stop 2
+    type(Cell) :: c
+    class(IOpen), allocatable :: owner
+    c%tag = 9
+    allocate(c%data(1))
+    call nudge(c, 2)
+    if (c%n /= 2 .or. c%data(1) /= 2 .or. observe(c) /= 2) error stop 1
+    call nudge_generic(c, 3)
+    if (observe_generic(c) /= 5 .or. c%data(1) /= 5) error stop 2
+    call c%touch(4)
+    if (c%peek() /= 9 .or. c%tag /= 9) error stop 3
+    allocate(owner, source=c)
+    call nudge(owner, 1)
+    if (owner%peek() /= 10 .or. observe(owner) /= 10 .or. c%n /= 9) error stop 4
+    if (finals /= 0) error stop 5
+    deallocate(owner)
+    if (finals /= 1) error stop 6
     print '(a)', 'traits_receiver_intent_04 ok'
 end program

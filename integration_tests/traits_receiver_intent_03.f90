@@ -9,9 +9,10 @@
 ! static generic call, an allocatable owner and its component, a pointer, a
 ! function with an intent(out) receiver and a sealed type's TYPE passed
 ! object. The scratch component has no default initialization and is never
-! read after entry. traits_receiver_intent_04 covers a dynamic type that
-! extends the implementing type. traits_receiver_intent_03_oracle.f90 is the
-! standard-Fortran counterpart.
+! read after entry. Dynamic types that extend the implementing type are not
+! checked here: like ordinary polymorphic intent(out) dummies, they do not
+! reset the components an extension adds yet (see TD-36).
+! traits_receiver_intent_03_oracle.f90 is the standard-Fortran counterpart.
 module traits_receiver_intent_03_m
     use iso_c_binding, only: c_ptr, c_loc, c_associated, c_null_ptr
     implicit none
