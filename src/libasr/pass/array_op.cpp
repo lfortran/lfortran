@@ -696,6 +696,31 @@ static bool have_same_rank(ASR::expr_t* target, const Vec<ASR::expr_t*>& compone
     return true;
 }
 
+// The extents of a section whose subscript triplets have compile-time
+// start, end and stride, such as `a(:, i)` of an array `a` with constant
+// bounds.
+static bool get_compile_time_section_extents(ASR::ArraySection_t* section,
+        std::vector<int64_t>& extents) {
+    extents.clear();
+    for (size_t i = 0; i < section->n_args; i++) {
+        ASR::array_index_t& index = section->m_args[i];
+        if (index.m_left == nullptr && index.m_step == nullptr) {
+            continue;
+        }
+        int64_t start = 0, end = 0, step = 0;
+        if (index.m_left == nullptr || index.m_right == nullptr ||
+                index.m_step == nullptr ||
+                !ASRUtils::extract_value(ASRUtils::expr_value(index.m_left), start) ||
+                !ASRUtils::extract_value(ASRUtils::expr_value(index.m_right), end) ||
+                !ASRUtils::extract_value(ASRUtils::expr_value(index.m_step), step) ||
+                step == 0) {
+            return false;
+        }
+        extents.push_back(std::max<int64_t>((end - start + step) / step, 0));
+    }
+    return true;
+}
+
 static bool get_compile_time_extents(ASR::expr_t* expr, std::vector<int64_t>& extents) {
     ASR::dimension_t* dims = nullptr;
     size_t rank = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(expr), dims);
@@ -704,6 +729,10 @@ static bool get_compile_time_extents(ASR::expr_t* expr, std::vector<int64_t>& ex
         int64_t extent = 0;
         if (dims[i].m_length == nullptr ||
                 !ASRUtils::extract_value(dims[i].m_length, extent)) {
+            if (ASR::is_a<ASR::ArraySection_t>(*expr)) {
+                return get_compile_time_section_extents(
+                    ASR::down_cast<ASR::ArraySection_t>(expr), extents);
+            }
             return false;
         }
         extents.push_back(extent);

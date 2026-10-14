@@ -1167,6 +1167,10 @@ filename = "array_op_in_bounds.f90"
 pass = "array_op"
 
 [[test]]
+filename = "array_op_section_in_bounds.f90"
+pass = "array_struct_temporary,array_op"
+
+[[test]]
 filename = "array16.f90"
 run = true
 
