@@ -5767,14 +5767,13 @@ inline bool is_parent(ASR::Struct_t* a, ASR::Struct_t* b) {
     return false;
 }
 /**
- * Check if two derived types are :
- * 1) the same, or
- * 2) one is parent of another, or
- * 3) both are unlimited polymorphic types
+ * Check if two derived type definitions specify the same type: they are the
+ * same definition, or (F2018 7.5.2.4) different definitions with the same
+ * name that both have the SEQUENCE attribute or both have the BIND attribute
+ * and whose components agree.
  */
-inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
-    if (a == b || is_parent(a, b) || is_parent(b, a) ||
-        (is_unlimited_polymorphic_type(a) && is_unlimited_polymorphic_type(b))) {
+inline bool is_same_derived_type(ASR::Struct_t* a, ASR::Struct_t* b) {
+    if (a == b) {
         return true;
     }
 
@@ -5786,6 +5785,17 @@ inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
     }
 
     return false;
+}
+
+/**
+ * Check if two derived types are :
+ * 1) the same, or
+ * 2) one is parent of another, or
+ * 3) both are unlimited polymorphic types
+ */
+inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
+    return is_same_derived_type(a, b) || is_parent(a, b) || is_parent(b, a) ||
+        (is_unlimited_polymorphic_type(a) && is_unlimited_polymorphic_type(b));
 }
 
 // Can we pass this ARGUMENT of this derivedtype --> to this PARAMETER of this derivedtype?
@@ -8744,6 +8754,41 @@ static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
     return is_allocatable(type) || is_pointer(type);
 }
 
+// Whether `to` is type compatible with `from` (F2018 7.3.2.3) and has the
+// same kind type parameters, as MOVE_ALLOC requires (F2018 16.9.137). The
+// requirement that `to` be polymorphic if `from` is is not checked here.
+static inline bool is_move_alloc_type_compatible(ASR::expr_t* from,
+        ASR::expr_t* to) {
+    ASR::ttype_t* from_type = extract_type(expr_type(from));
+    ASR::ttype_t* to_type = extract_type(expr_type(to));
+    if (is_unlimited_polymorphic_type(to_type)) {
+        return true;
+    }
+    if (is_unlimited_polymorphic_type(from_type)) {
+        return false;
+    }
+    bool is_from_struct = ASR::is_a<ASR::StructType_t>(*from_type);
+    bool is_to_struct = ASR::is_a<ASR::StructType_t>(*to_type);
+    if (is_from_struct != is_to_struct) {
+        return false;
+    }
+    if (!is_to_struct) {
+        return check_equal_type(to_type, from_type, to, from);
+    }
+    if (is_class_type(to_type)) {
+        return check_class_assignment_compatibility(to, from);
+    }
+    ASR::symbol_t* from_sym = symbol_get_past_external(
+        get_struct_sym_from_struct_expr(from));
+    ASR::symbol_t* to_sym = symbol_get_past_external(
+        get_struct_sym_from_struct_expr(to));
+    if (ASR::is_a<ASR::Struct_t>(*from_sym) && ASR::is_a<ASR::Struct_t>(*to_sym)) {
+        return is_same_derived_type(ASR::down_cast<ASR::Struct_t>(from_sym),
+            ASR::down_cast<ASR::Struct_t>(to_sym));
+    }
+    return from_sym == to_sym;
+}
+
 // Whether an Assignment with move_allocation can transfer the allocation of
 // `value` to `target`: both are allocatable descriptor arrays, or both are
 // allocatable noncharacter scalars and `target` is type compatible with
@@ -8763,24 +8808,11 @@ static inline bool is_move_allocation_pair(ASR::expr_t* target,
     if (is_character(*target_type) || is_character(*value_type)) {
         return false;
     }
-    ASR::ttype_t* target_el_type = extract_type(target_type);
-    ASR::ttype_t* value_el_type = extract_type(value_type);
-    if (is_class_type(target_el_type)) {
-        return is_unlimited_polymorphic_type(target_el_type) ||
-            (ASR::is_a<ASR::StructType_t>(*value_el_type) &&
-             check_class_assignment_compatibility(target, value));
-    }
-    if (is_class_type(value_el_type)) {
+    if (is_class_type(extract_type(value_type)) &&
+            !is_class_type(extract_type(target_type))) {
         return false;
     }
-    if (ASR::is_a<ASR::StructType_t>(*target_el_type) ||
-            ASR::is_a<ASR::StructType_t>(*value_el_type)) {
-        return ASR::is_a<ASR::StructType_t>(*target_el_type) &&
-            ASR::is_a<ASR::StructType_t>(*value_el_type) &&
-            symbol_get_past_external(get_struct_sym_from_struct_expr(target)) ==
-            symbol_get_past_external(get_struct_sym_from_struct_expr(value));
-    }
-    return check_equal_type(target_el_type, value_el_type, target, value);
+    return is_move_alloc_type_compatible(value, target);
 }
 
 // Reports whether a value of the derived type `st` has a constant byte
