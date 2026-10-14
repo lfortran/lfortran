@@ -2255,12 +2255,10 @@ namespace Shape {
         } else {
             for (size_t i = 0; i < n_dims; i++) {
                 if (m_dims[i].m_length) {
-                    ASR::expr_t *e = nullptr;
+                    ASR::expr_t *e = Max::create_extent(al, m_dims[i].m_length);
                     if (extract_kind_from_ttype_t(type) != 4) {
                         ASRUtils::ASRBuilder b(al, loc);
-                        e = b.i2i_t(m_dims[i].m_length, extract_type(type));
-                    } else {
-                        e = m_dims[i].m_length;
+                        e = b.i2i_t(e, extract_type(type));
                     }
                     m_shapes.push_back(al, e);
                 }
