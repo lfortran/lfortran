@@ -217,7 +217,7 @@ public:
 
     std::string read_string() {
         size_t n = read_int64();
-        if (pos+n > s.size()) {
+        if (n > s.size() - pos) {
             throw LCompilersException("read_string: String is too short for deserialization.");
         }
         std::string r = std::string(&s[pos], n);
@@ -375,7 +375,7 @@ public:
 
     std::string read_string() {
         size_t n = read_int64();
-        if (pos+n > s.size()) {
+        if (n > s.size() - pos) {
             throw LCompilersException("read_string: String is too short for deserialization.");
         }
         std::string r = std::string(&s[pos], n);

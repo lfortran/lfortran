@@ -1903,7 +1903,8 @@ Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al
                 found_empty_mod = true;
                 continue;
             }
-            Result<ASR::TranslationUnit_t*, ErrorMessage> res = load_modfile(al, modfile, false, symtab, lm);
+            Result<ASR::TranslationUnit_t*, ErrorMessage> res = load_modfile(al, modfile, false, symtab, lm,
+                full_path.string());
             if (res.ok) {
                 ASR::TranslationUnit_t* asr = res.result;
                 if (intrinsic) {
@@ -1928,7 +1929,8 @@ Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al
                                   smod_suffix.size(), smod_suffix) == 0) {
                     std::string smodfile;
                     if (read_file(entry.path().string(), smodfile) && !smodfile.empty()) {
-                        Result<ASR::TranslationUnit_t*, ErrorMessage> res = load_modfile(al, smodfile, false, symtab, lm);
+                        Result<ASR::TranslationUnit_t*, ErrorMessage> res = load_modfile(al, smodfile, false,
+                            symtab, lm, entry.path().string());
                         if (res.ok) {
                             ASR::TranslationUnit_t* asr = res.result;
                             if (intrinsic) {
@@ -1970,7 +1972,8 @@ Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> find_and_load_submodu
             if (startswith(submod_filename, smod_prefix) && endswith(submod_filename, ".smod")) {
                 std::string submodfile;
                 if (read_file(file.path().string(), submodfile) && !submodfile.empty()) {
-                    Result<ASR::TranslationUnit_t*, ErrorMessage> sub_res = load_modfile(al, submodfile, false, symtab, lm);
+                    Result<ASR::TranslationUnit_t*, ErrorMessage> sub_res = load_modfile(al, submodfile, false,
+                        symtab, lm, file.path().string());
                     if (sub_res.ok) {
                         ASR::TranslationUnit_t* asr = sub_res.result;
                         submodules_collector.push_back(asr);
