@@ -2732,8 +2732,13 @@ void set_string_length(Serialization_Info* s_info){
         s_info->current_arg_info.current_string_len = 
             transform_string_size_into_int(s_info);
     } else {
-        if(s_info->current_element_type == CHAR_PTR_TYPE ||
-            s_info->current_element_type == STRING_DESCRIPTOR_TYPE ) return; // Array. length already set (Consumed from array of lengths).
+        // Empty arrays have no descriptor to inspect.
+        if (!stack_empty(s_info->array_sizes_stack) &&
+            get_stack_top(s_info->array_sizes_stack) == 0) return;
+        if (!stack_empty(s_info->array_sizes_stack) &&
+            get_stack_top(s_info->array_sizes_stack) > 0 &&
+            (s_info->current_element_type == CHAR_PTR_TYPE ||
+             s_info->current_element_type == STRING_DESCRIPTOR_TYPE)) return; // Character array has a shared element length.
             ASSERT_MSG(s_info->current_element_type != CHAR_PTR_TYPE,
                     "ICE:%s\n","Not supported -- Can't deduce length for CCHAR");
             s_info->current_arg_info.current_string_len = 
@@ -3003,7 +3008,8 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
             }
         } else if (cur == '(' || cur == '{') { // StructStart, complexStart
             s_info->current_arg_info.is_complex = (cur == '{');
-            push_stack(s_info->array_sizes_stack, -1000000); // dummy size. needed to know when to move from arg* to another.
+            // Keep empty arrays empty while walking a contained struct.
+            push_stack(s_info->array_sizes_stack, zero_size ? 0 : -1000000); // dummy size. needed to know when to move from arg* to another.
             ++s_info->current_stop;
         } else if (cur == ')' || cur == '}') { // StructEnd, ComplexEnd
             s_info->current_arg_info.is_complex = false;
@@ -11485,6 +11491,47 @@ static void parse_character_from_buffer(char* buffer, int field_len,
     }
 }
 
+static inline int read_character(InputSource *inputSource)
+{
+    switch (inputSource->inputMethod) {
+
+    case INPUT_FILE: {
+        int c = fgetc(inputSource->file);
+#if defined(__EMSCRIPTEN__)
+        // Recover a spurious EOF on interactive stdin: a record
+        // boundary at the very start of this read looks like end of
+        // file on the first attempt; the retry pulls the next line.
+        if (c == EOF && inputSource->file == stdin) {
+            clearerr(inputSource->file);
+            c = fgetc(inputSource->file);
+        }
+#endif
+        // CRLF is one external sequential/stream record terminator.
+        // A lone CR remains data, as do characters in internal/direct files.
+        if (c == '\r' && inputSource->access_id != 2) {
+            int next = fgetc(inputSource->file);
+            if (next == '\n') {
+                c = '\n';
+            } else if (next != EOF) {
+                ungetc(next, inputSource->file);
+            }
+        }
+        if (c != EOF && c != '\n') {
+            inputSource->pos_in_record++;
+        }
+        return c;
+    }
+
+    case INPUT_STRING:
+        if (inputSource->str.pos < inputSource->str.len) {
+            return (unsigned char)inputSource->str.buf[inputSource->str.pos++];
+        }
+        return EOF;
+    }
+
+    return EOF;
+}
+
 static inline char* read_line(char *buf, int size, InputSource *inputSource)
 {
     if (size <= 0) {
@@ -11535,22 +11582,35 @@ static inline char* read_line(char *buf, int size, InputSource *inputSource)
             ret = fgets(buf, size, inputSource->file);
         }
 #endif
-        if (ret != NULL) {
-            // Keep record-local cursor in sync for T/TL/TR editing.
-            // Count only non-newline chars consumed from current record.
-            size_t n = strlen(buf);
-            size_t consumed = 0;
-            for (size_t j = 0; j < n; j++) {
-                if (buf[j] == '\n') break;
-                consumed++;
-            }
-            inputSource->pos_in_record += (long)consumed;
-            if (inputSource->record_length >= 0 &&
-                    inputSource->pos_in_record > inputSource->record_length) {
-                inputSource->pos_in_record = inputSource->record_length;
+        if (ret == NULL) {
+            return NULL;
+        }
+        size_t n = strlen(buf);
+        // CRLF is one external sequential/stream record terminator.
+        // A lone CR remains data, as do characters in direct files.
+        if (inputSource->access_id != 2 && n > 0) {
+            if (n >= 2 && buf[n - 1] == '\n' && buf[n - 2] == '\r') {
+                buf[n - 2] = '\n';
+                buf[--n] = '\0';
+            } else if (buf[n - 1] == '\r') {
+                // The LF may follow just past the end of the buffer.
+                int next = fgetc(inputSource->file);
+                if (next == '\n') {
+                    buf[n - 1] = '\n';
+                } else if (next != EOF) {
+                    ungetc(next, inputSource->file);
+                }
             }
         }
-        return ret;
+        // Keep record-local cursor in sync for T/TL/TR editing.
+        // Count only non-newline chars consumed from current record.
+        char *nl = (char*)memchr(buf, '\n', n);
+        inputSource->pos_in_record += (long)(nl ? (size_t)(nl - buf) : n);
+        if (inputSource->record_length >= 0 &&
+                inputSource->pos_in_record > inputSource->record_length) {
+            inputSource->pos_in_record = inputSource->record_length;
+        }
+        return buf;
     }
     case INPUT_STRING:
         while (i < size - 1 && inputSource->str.pos < inputSource->str.len) {
@@ -11568,37 +11628,6 @@ static inline char* read_line(char *buf, int size, InputSource *inputSource)
     }
 
     return NULL;
-}
-
-static inline int read_character(InputSource *inputSource)
-{
-    switch (inputSource->inputMethod) {
-
-    case INPUT_FILE: {
-        int c = fgetc(inputSource->file);
-#if defined(__EMSCRIPTEN__)
-        // Same spurious-EOF recovery as in read_line above: a record
-        // boundary at the very start of this read looks like end of
-        // file on the first attempt; the retry pulls the next line.
-        if (c == EOF && inputSource->file == stdin) {
-            clearerr(inputSource->file);
-            c = fgetc(inputSource->file);
-        }
-#endif
-        if (c != EOF && c != '\n') {
-            inputSource->pos_in_record++;
-        }
-        return c;
-    }
-
-    case INPUT_STRING:
-        if (inputSource->str.pos < inputSource->str.len) {
-            return (unsigned char)inputSource->str.buf[inputSource->str.pos++];
-        }
-        return EOF;
-    }
-
-    return EOF;
 }
 
 static bool read_field(InputSource *inputSource, int read_width, bool advance_no,
@@ -12331,9 +12360,13 @@ static void init_record_state(InputSource *inputSource)
                 fseek(inputSource->file, inputSource->record_start_pos, SEEK_SET);
                 
                 inputSource->record_length = 0;
-                int c;
+                int c, previous = EOF;
                 while ((c = fgetc(inputSource->file)) != EOF && c != '\n') {
                     inputSource->record_length++;
+                    previous = c;
+                }
+                if (c == '\n' && previous == '\r') {
+                    inputSource->record_length--;
                 }
                 
                 // Restore position to start of record

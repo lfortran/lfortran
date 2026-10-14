@@ -1351,6 +1351,8 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
 endif()
 RUN(NAME format_114 LABELS gfortran llvm)
 RUN(NAME format_115 LABELS gfortran llvm)
+RUN(NAME format_116 LABELS gfortran llvm)
+RUN(NAME format_117 LABELS gfortran llvm)
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
 RUN(NAME submodule_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3088,6 +3090,8 @@ RUN(NAME realloc_lhs_28 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME realloc_lhs_29 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_30 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
 RUN(NAME automatic_allocation_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
@@ -4389,6 +4393,7 @@ RUN(NAME read_99 LABELS gfortran llvm COPY_TO_BIN read_99_data.txt)
 RUN(NAME read_100 LABELS gfortran llvm)
 RUN(NAME read_101 LABELS gfortran llvm)
 RUN(NAME read_102 LABELS gfortran llvm)
+RUN(NAME read_crlf_01 LABELS gfortran llvm)
 
 RUN(NAME write_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME write_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -4906,6 +4911,7 @@ RUN(NAME optional_16 LABELS gfortran llvm)
 RUN(NAME optional_17 LABELS gfortran llvm)
 RUN(NAME optional_18 LABELS gfortran llvm)
 RUN(NAME optional_string_arg_01 LABELS gfortran llvm)
+RUN(NAME optional_string_arg_02 LABELS gfortran llvm)
 
 RUN(NAME end_name_match LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME construct_name_01 LABELS gfortran llvm)
