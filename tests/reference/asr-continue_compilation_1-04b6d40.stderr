@@ -3696,3 +3696,9 @@ semantic error: Incorrect number of arguments passed to the 'getcwd' intrinsic. 
      |
 2800 |     cc1_gk_s = getcwd(cc1_gk_c, cc1_gk_s)  ! {Error} Incorrect number of arguments passed to the 'getcwd' intrinsic.
      |                ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: PRINT statement is not allowed inside a PURE procedure
+    --> tests/errors/continue_compilation_1.f90:2808:5
+     |
+2808 |     print *, n  ! {Error} PRINT statement is not allowed inside a PURE procedure
+     |     ^^^^^^^^^^ 

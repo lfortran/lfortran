@@ -1545,7 +1545,7 @@ public:
         } else {
             ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(
                 ASR::down_cast<ASR::Function_t>(s));
-            if (!ft->m_pure && !ft->m_elemental) found = true;
+            if (!ft->m_pure) found = true;
         }
         ASR::BaseWalkVisitor<GpuImpureCallFinder>::visit_FunctionCall(x);
     }
