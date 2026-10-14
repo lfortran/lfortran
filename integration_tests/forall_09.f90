@@ -128,11 +128,20 @@ if (any(e1 /= [5, 4, 3, 2, 1])) error stop 12
 c = [1, 2, 3, 4, 5]
 forall (i = 1:5) c(i) = from_common(i)
 if (any(c /= [5, 4, 3, 2, 1])) error stop 13
+
+! A function that reads the variable through another contained function.
+a = [1, 2, 3, 4, 5]
+forall (i = 1:5) a(i) = a(i) + via_first_a()
+if (any(a /= [2, 3, 4, 5, 6])) error stop 14
 print *, "ok"
 
 contains
 
 pure integer function first_a()
 first_a = a(1)
+end function
+
+pure integer function via_first_a()
+via_first_a = first_a()
 end function
 end program

@@ -256,6 +256,70 @@ public:
     }
 };
 
+// Whether a called procedure may access `base`, a variable of `scope`, by
+// host association. Only a procedure contained in `scope` can; it does if
+// it, a procedure it contains, or a procedure contained in `scope` that it
+// calls or passes on references `base` or a pointer of `scope`.
+class HostAccessVisitor : public ASR::BaseWalkVisitor<HostAccessVisitor>
+{
+public:
+    ASR::symbol_t *base;
+    SymbolTable *scope;
+    std::set<ASR::symbol_t*> visited;
+    bool found = false;
+
+    HostAccessVisitor(ASR::symbol_t *base, SymbolTable *scope)
+        : base(base), scope(scope) {}
+
+    void visit_procedure(ASR::symbol_t *proc) {
+        proc = ASRUtils::symbol_get_past_external(proc);
+        if (!proc || !ASR::is_a<ASR::Function_t>(*proc)) {
+            found = true;
+            return;
+        }
+        if (found || visited.count(proc)) return;
+        visited.insert(proc);
+        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(proc);
+        for (SymbolTable *s = f->m_symtab->parent; s; s = s->parent) {
+            if (s == scope) {
+                // The procedure that an interface declares is not known.
+                if (ASRUtils::get_FunctionType(f)->m_deftype
+                        == ASR::deftypeType::Interface) {
+                    found = true;
+                } else {
+                    visit_Function(*f);
+                }
+                return;
+            }
+        }
+    }
+
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
+        if (sym == base) {
+            found = true;
+        } else if (sym && ASR::is_a<ASR::Function_t>(*sym)) {
+            visit_procedure(sym);
+        } else if (sym && ASR::is_a<ASR::Variable_t>(*sym)) {
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(v->m_type))
+                    || (v->m_parent_symtab == scope && ASRUtils::is_pointer(v->m_type))) {
+                found = true;
+            }
+        }
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        visit_procedure(x.m_name);
+        ASR::BaseWalkVisitor<HostAccessVisitor>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        visit_procedure(x.m_name);
+        ASR::BaseWalkVisitor<HostAccessVisitor>::visit_SubroutineCall(x);
+    }
+};
+
 class ForAllVisitor : public ASR::StatementWalkVisitor<ForAllVisitor>
 {
 public:
@@ -402,13 +466,10 @@ public:
                 && !ASR::is_a<ASR::Block_t>(*owner)) {
             return true;
         }
+        HostAccessVisitor h(&base->base, scope);
         for (ASR::symbol_t *callee : v.callees) {
-            callee = ASRUtils::symbol_get_past_external(callee);
-            if (!callee || !ASR::is_a<ASR::Function_t>(*callee)) return true;
-            for (SymbolTable *s = ASR::down_cast<ASR::Function_t>(callee)->m_symtab;
-                    s; s = s->parent) {
-                if (s == scope) return true;
-            }
+            h.visit_procedure(callee);
+            if (h.found) return true;
         }
         return false;
     }
