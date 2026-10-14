@@ -1300,10 +1300,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         elements, if the section is a block of consecutive elements of the
         size of the constant: its base is an array variable stored
         contiguously, and its only subscript triplet is the first subscript,
-        with constant bounds and a unit step. A named constant cannot overlap the target. With
-        bounds checking, the element that the block starts at is checked when
-        it is referenced, so the last element of the block has to be known to
-        be within the bounds.
+        with constant bounds and a unit step. A named constant cannot overlap
+        the target. With bounds checking, the element that the block starts
+        at is checked when it is referenced, so the last element of the block
+        has to be known to be within the bounds.
     */
     bool assign_by_block_copy(const ASR::Assignment_t& x) {
         if( !pass_options.array_block_copy || x.m_overloaded != nullptr ||
