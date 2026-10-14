@@ -20,7 +20,8 @@ module cc_traits_protocols_contracts
     end interface IRing
 
     abstract interface :: IShow
-        function code() result(c)
+        function code(self) result(c)
+            type(itself), intent(in), pass :: self
             integer :: c
         end function code
     end interface IShow
@@ -318,9 +319,11 @@ module cc_traits_protocols_declarations
             type(itself)             :: res
         end function operator(*)
     end interface ITwice
-    ! E20: type(itself) in an ordinary message.
+    ! E20: type(itself) for an ordinary argument of a message, other than its
+    ! PASS receiver.
     abstract interface :: ICompare
-        function same(other) result(r)
+        function same(self, other) result(r)
+            type(itself), intent(in), pass :: self
             type(itself), intent(in) :: other
             logical                  :: r
         end function same
@@ -545,12 +548,14 @@ module cc_traits_protocols_conflict_contracts
         end function operator(+)
     end interface IAdd
     abstract interface, extends(IAdd) :: ILeft
-        function left() result(c)
+        function left(self) result(c)
+            type(itself), intent(in), pass :: self
             integer :: c
         end function left
     end interface ILeft
     abstract interface, extends(IAdd) :: IRight
-        function right() result(c)
+        function right(self) result(c)
+            type(itself), intent(in), pass :: self
             integer :: c
         end function right
     end interface IRight

@@ -1,6 +1,7 @@
 module traits_component_boundary_types
     abstract interface :: IValue
-        pure integer function value()
+        pure integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Seed
@@ -55,7 +56,8 @@ module traits_numeric_runtime_boundary_contracts
         integer | real(real64)
     end interface IOtherNumeric
     abstract interface :: ISum
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function sum
@@ -88,23 +90,27 @@ module traits_numeric_runtime_boundary_mixed
     use traits_numeric_runtime_boundary_contracts, only: INumeric
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface IValue
     abstract interface :: IMixedBinders
-        function apply{INumeric :: T, IValue :: V}(x, w) result(s)
+        function apply{INumeric :: T, IValue :: V}(self, x, w) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(V), intent(in) :: w
             type(T)             :: s
         end function apply
     end interface IMixedBinders
     abstract interface :: ISubroutineMember
-        subroutine total{INumeric :: T}(x)
+        subroutine total{INumeric :: T}(self, x)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
         end subroutine total
     end interface ISubroutineMember
     abstract interface :: IMutableMember
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(inout) :: x(:)
             type(T)                :: s
         end function sum
@@ -124,12 +130,14 @@ end module
 module traits_numeric_runtime_boundary_surface
     implicit none
     abstract interface :: IAllocatableArray
-        integer function count(x)
+        integer function count(self, x)
+            type(itself), intent(in), pass :: self
             integer, allocatable, intent(in) :: x(:)
         end function count
     end interface IAllocatableArray
     abstract interface :: ICharacterResult
-        function name() result(r)
+        function name(self) result(r)
+            type(itself), intent(in), pass :: self
             character(len=:), allocatable :: r
         end function name
     end interface ICharacterResult
@@ -147,7 +155,8 @@ end module
 module traits_numeric_runtime_boundary_values
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface IValue
     type :: Unrelated
@@ -177,8 +186,9 @@ module traits_numeric_runtime_boundary_bounds
         integer :: extent(2)
     end type Bounds
     abstract interface :: IBounded
-        function count(n, a) result(r)
+        function count(self, n, a) result(r)
             import :: Bounds
+            type(itself), intent(in), pass :: self
             type(Bounds), intent(in) :: n
             integer, intent(in) :: a(n%extent(1))
             integer :: r

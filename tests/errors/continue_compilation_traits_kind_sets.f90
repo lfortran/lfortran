@@ -12,7 +12,8 @@ module cc_traits_kind_sets_contracts
     end interface INumeric
 
     abstract interface :: ISum
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function sum
@@ -91,7 +92,8 @@ module cc_traits_kind_sets_character_slot
     end interface ICode
 
     abstract interface :: IPick
-        function pick{ICode :: T}(x) result(r)
+        function pick{ICode :: T}(self, x) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: r
         end function pick

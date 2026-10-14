@@ -1,6 +1,7 @@
 module traits_component_body_error_types
     abstract interface :: IValue
-        pure integer function value()
+        pure integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Seed
@@ -100,7 +101,8 @@ end module
 module traits_component_body_error_pure_generic
     use traits_component_body_error_types
     abstract interface :: ITagged
-        integer function tag()
+        integer function tag(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     implements ITagged :: Holder
@@ -280,7 +282,8 @@ end module
 module traits_component_body_error_pure_generic_forward
     use traits_component_body_error_types
     abstract interface :: IHeld
-        integer function held()
+        integer function held(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     implements IHeld :: Holder

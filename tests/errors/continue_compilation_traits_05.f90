@@ -12,13 +12,15 @@ module gt_rep_contracts
         integer | real(8)
     end interface INumeric
     abstract interface :: ISum
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function sum
     end interface ISum
     abstract interface :: IAverager
-        function average{INumeric :: T}(x) result(a)
+        function average{INumeric :: T}(self, x) result(a)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: a
         end function average
@@ -39,10 +41,11 @@ module gt_rep_provider
     use gt_rep_leaf, only: Leaf
     implicit none
     implements ISum :: Leaf
-        procedure, nopass :: sum => leaf_sum
+        procedure, pass :: sum => leaf_sum
     end implements
 contains
-    function leaf_sum{INumeric :: T}(x) result(s)
+    function leaf_sum{INumeric :: T}(self, x) result(s)
+        class(Leaf), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         s = x(1)
@@ -56,10 +59,11 @@ module gt_rep_simple
     public :: SimpleSum
     type, sealed, implements(ISum) :: SimpleSum
     contains
-        procedure, nopass :: sum => simple_sum
+        procedure, pass :: sum => simple_sum
     end type SimpleSum
 contains
-    function simple_sum{INumeric :: T}(x) result(s)
+    function simple_sum{INumeric :: T}(self, x) result(s)
+        type(SimpleSum), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         s = x(1)
@@ -234,15 +238,15 @@ program gt_rep_program
     implicit none
     type, sealed, implements(ISum) :: ReadsState
     contains
-        procedure, nopass :: sum => reads_state
+        procedure, pass :: sum => reads_state
     end type ReadsState
     type, sealed, implements(ISum) :: CallsReader
     contains
-        procedure, nopass :: sum => calls_reader
+        procedure, pass :: sum => calls_reader
     end type CallsReader
     type, sealed, implements(ISum) :: Pure
     contains
-        procedure, nopass :: sum => pure_sum
+        procedure, pass :: sum => pure_sum
     end type Pure
     class(IAverager), allocatable :: av
     integer :: bias
@@ -255,17 +259,20 @@ contains
     integer function get_bias() result(b)
         b = bias
     end function get_bias
-    function reads_state{INumeric :: T}(x) result(s)
+    function reads_state{INumeric :: T}(self, x) result(s)
+        type(ReadsState), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         s = T(bias) + x(1)
     end function reads_state
-    function calls_reader{INumeric :: T}(x) result(s)
+    function calls_reader{INumeric :: T}(self, x) result(s)
+        type(CallsReader), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         s = T(get_bias()) + x(1)
     end function calls_reader
-    function pure_sum{INumeric :: T}(x) result(s)
+    function pure_sum{INumeric :: T}(self, x) result(s)
+        type(Pure), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         s = x(1)

@@ -6,7 +6,8 @@ module traits_missing_method_01_m
     implicit none
 
     abstract interface :: IValue
-        function get_value() result(res)
+        function get_value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function get_value
     end interface IValue
@@ -24,7 +25,8 @@ module traits_structural_no_nominal_01_m
     implicit none
 
     abstract interface :: IValue
-        function get_value() result(res)
+        function get_value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function get_value
     end interface IValue
@@ -69,7 +71,8 @@ module traits_wrong_return_kind_rank_01_m
     implicit none
 
     abstract interface :: IValue
-        function get_value() result(res)
+        function get_value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function get_value
     end interface IValue
@@ -134,7 +137,8 @@ end module
 module traits_wrong_return_kind_01_m
     implicit none
     abstract interface :: IValue
-        function get_value() result(value)
+        function get_value(self) result(value)
+            type(itself), intent(in), pass :: self
             integer :: value
         end function
     end interface
@@ -155,7 +159,8 @@ end module
 module traits_wrong_return_rank_01_m
     implicit none
     abstract interface :: IValue
-        function get_value() result(value)
+        function get_value(self) result(value)
+            type(itself), intent(in), pass :: self
             integer :: value
         end function
     end interface
@@ -178,7 +183,8 @@ module traits_bad_body_undeclared_method_01_m
     implicit none
 
     abstract interface :: IValue
-        function get_value() result(res)
+        function get_value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function get_value
     end interface IValue
@@ -211,7 +217,8 @@ module traits_explicit_type_arg_conflict_01_m
     implicit none
 
     abstract interface :: IValue
-        function get_value() result(res)
+        function get_value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function get_value
     end interface IValue
@@ -267,7 +274,8 @@ module traits_ambiguous_visible_implementations_01_trait_m
     implicit none
 
     abstract interface :: IValue
-        function get_value() result(res)
+        function get_value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function get_value
     end interface IValue
@@ -344,7 +352,8 @@ module traits_function_subroutine_mismatch_01_m
     implicit none
 
     abstract interface :: IValue
-        function get_value() result(res)
+        function get_value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function get_value
     end interface IValue
@@ -412,7 +421,8 @@ module traits_private_binding_01_m
     implicit none
 
     abstract interface :: IValue
-        function get_value() result(res)
+        function get_value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function get_value
     end interface IValue
@@ -464,13 +474,15 @@ module traits_same_name_nonominal_01_m
     implicit none
 
     abstract interface :: IFirst
-        subroutine touch(out)
+        subroutine touch(self, out)
+            type(itself), intent(in), pass :: self
             integer, intent(out) :: out
         end subroutine touch
     end interface IFirst
 
     abstract interface :: ISecond
-        subroutine touch(out)
+        subroutine touch(self, out)
+            type(itself), intent(in), pass :: self
             integer, intent(out) :: out
         end subroutine touch
     end interface ISecond
@@ -516,7 +528,8 @@ end module traits_same_name_nonominal_01
 module traits_call_argument_type_01_m
     implicit none
     abstract interface :: IValue
-        subroutine get_value(value)
+        subroutine get_value(self, value)
+            type(itself), intent(in), pass :: self
             integer, intent(out) :: value
         end subroutine
     end interface
@@ -543,7 +556,8 @@ end module
 module traits_concrete_type_01_m
     implicit none
     abstract interface :: IValue
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function
     end interface
@@ -554,7 +568,8 @@ end module
 module traits_runtime_unimplemented_01_m
     implicit none
     abstract interface :: IValue
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function
     end interface
@@ -569,7 +584,8 @@ module traits_inheritance_parent_only_01_m
     implicit none
 
     abstract interface :: IBase
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function value
     end interface IBase
@@ -619,13 +635,15 @@ module traits_inheritance_missing_method_01_m
     implicit none
 
     abstract interface :: IBase
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function value
     end interface IBase
 
     abstract interface, extends(IBase) :: IChild
-        function child_value() result(res)
+        function child_value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function child_value
     end interface IChild
@@ -653,7 +671,8 @@ module traits_composition_missing_nominal_01_left_m
     implicit none
 
     abstract interface :: IValue
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function value
     end interface IValue
@@ -663,7 +682,8 @@ module traits_composition_missing_nominal_01_right_m
     implicit none
 
     abstract interface :: IValue
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function value
     end interface IValue
@@ -729,13 +749,15 @@ module traits_composition_return_kind_01_m
     implicit none
 
     abstract interface :: INarrow
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer(4) :: res
         end function value
     end interface INarrow
 
     abstract interface :: IWide
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer(8) :: res
         end function value
     end interface IWide
@@ -750,13 +772,15 @@ module traits_composition_return_rank_01_m
     implicit none
 
     abstract interface :: IScalar
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function value
     end interface IScalar
 
     abstract interface :: IArray
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res(2)
         end function value
     end interface IArray
@@ -769,12 +793,14 @@ end module traits_composition_return_rank_01_m
 module traits_composition_result_extent_01_m
     implicit none
     abstract interface :: ITwo
-        function values() result(res)
+        function values(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res(2)
         end function
     end interface
     abstract interface :: IThree
-        function values() result(res)
+        function values(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res(3)
         end function
     end interface
@@ -788,13 +814,15 @@ module traits_composition_attributes_01_optional_m
     implicit none
 
     abstract interface :: IRequired
-        subroutine consume(value)
+        subroutine consume(self, value)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: value
         end subroutine consume
     end interface IRequired
 
     abstract interface :: IOptional
-        subroutine consume(value)
+        subroutine consume(self, value)
+            type(itself), intent(in), pass :: self
             integer, intent(in), optional :: value
         end subroutine consume
     end interface IOptional
@@ -808,13 +836,15 @@ module traits_composition_attributes_01_intent_m
     implicit none
 
     abstract interface :: IInput
-        subroutine consume(value)
+        subroutine consume(self, value)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: value
         end subroutine consume
     end interface IInput
 
     abstract interface :: IOutput
-        subroutine consume(value)
+        subroutine consume(self, value)
+            type(itself), intent(in), pass :: self
             integer, intent(out) :: value
         end subroutine consume
     end interface IOutput
@@ -828,13 +858,15 @@ module traits_composition_attributes_01_value_m
     implicit none
 
     abstract interface :: IReference
-        subroutine consume(value)
+        subroutine consume(self, value)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: value
         end subroutine consume
     end interface IReference
 
     abstract interface :: IByValue
-        subroutine consume(value)
+        subroutine consume(self, value)
+            type(itself), intent(in), pass :: self
             integer, intent(in), value :: value
         end subroutine consume
     end interface IByValue
@@ -848,13 +880,15 @@ module traits_composition_attributes_01_pure_m
     implicit none
 
     abstract interface :: IOrdinary
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function value
     end interface IOrdinary
 
     abstract interface :: IPure
-        pure function value() result(res)
+        pure function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function value
     end interface IPure
@@ -868,14 +902,16 @@ module traits_composition_attributes_01_elemental_m
     implicit none
 
     abstract interface :: IPure
-        pure function shifted(delta) result(res)
+        pure function shifted(self, delta) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: delta
             integer :: res
         end function shifted
     end interface IPure
 
     abstract interface :: IElemental
-        elemental function shifted(delta) result(res)
+        elemental function shifted(self, delta) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: delta
             integer :: res
         end function shifted
@@ -890,14 +926,16 @@ module traits_composition_attributes_01_names_m
     implicit none
 
     abstract interface :: IDelta
-        function shifted(delta) result(res)
+        function shifted(self, delta) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: delta
             integer :: res
         end function shifted
     end interface IDelta
 
     abstract interface :: IAmount
-        function shifted(amount) result(res)
+        function shifted(self, amount) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: amount
             integer :: res
         end function shifted
@@ -913,7 +951,8 @@ module traits_inheritance_dummy_name_01_m
     implicit none
 
     abstract interface :: IBase
-        function shifted(delta) result(res)
+        function shifted(self, delta) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: delta
             integer :: res
         end function shifted
@@ -946,7 +985,8 @@ module traits_inheritance_conflicting_witness_01_contracts_m
     implicit none
 
     abstract interface :: IBase
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function value
     end interface IBase
@@ -1067,8 +1107,9 @@ module traits_inheritance_conflicting_receiver_01_contracts_m
     implicit none
 
     abstract interface :: IBase
-        function value(other) result(res)
+        function value(self, other) result(res)
             import :: Payload
+            type(itself), intent(in), pass :: self
             class(Payload), intent(in) :: other
             integer :: res
         end function value
@@ -1128,20 +1169,23 @@ module traits_composition_unused_body_01_m
     implicit none
 
     abstract interface :: IValue
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function value
     end interface IValue
 
     abstract interface :: IShift
-        function shift(delta) result(res)
+        function shift(self, delta) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: delta
             integer :: res
         end function shift
     end interface IShift
 
     abstract interface, extends(IValue + IShift) :: IChild
-        function child_value() result(res)
+        function child_value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function child_value
     end interface IChild
@@ -1191,14 +1235,16 @@ module traits_composition_unsupported_overload_01_type_m
     implicit none
 
     abstract interface :: IInteger
-        function measure(value) result(res)
+        function measure(self, value) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: value
             integer :: res
         end function measure
     end interface IInteger
 
     abstract interface :: IReal
-        function measure(value) result(res)
+        function measure(self, value) result(res)
+            type(itself), intent(in), pass :: self
             real, intent(in) :: value
             integer :: res
         end function measure
@@ -1213,13 +1259,15 @@ module traits_composition_unsupported_overload_01_arity_m
     implicit none
 
     abstract interface :: INoArgument
-        function measure() result(res)
+        function measure(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function measure
     end interface INoArgument
 
     abstract interface :: IArgument
-        function measure(value) result(res)
+        function measure(self, value) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: value
             integer :: res
         end function measure
@@ -1234,14 +1282,16 @@ module traits_composition_unsupported_overload_01_kind_m
     implicit none
 
     abstract interface :: INarrow
-        function measure(value) result(res)
+        function measure(self, value) result(res)
+            type(itself), intent(in), pass :: self
             integer(4), intent(in) :: value
             integer :: res
         end function measure
     end interface INarrow
 
     abstract interface :: IWide
-        function measure(value) result(res)
+        function measure(self, value) result(res)
+            type(itself), intent(in), pass :: self
             integer(8), intent(in) :: value
             integer :: res
         end function measure
@@ -1256,14 +1306,16 @@ module traits_composition_unsupported_overload_01_rank_m
     implicit none
 
     abstract interface :: IScalar
-        function measure(value) result(res)
+        function measure(self, value) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: value
             integer :: res
         end function measure
     end interface IScalar
 
     abstract interface :: IArray
-        function measure(value) result(res)
+        function measure(self, value) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: value(:)
             integer :: res
         end function measure
@@ -1278,14 +1330,16 @@ module traits_composition_unsupported_overload_01_constraint_m
     implicit none
 
     abstract interface :: IInteger
-        function measure(value) result(res)
+        function measure(self, value) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: value
             integer :: res
         end function measure
     end interface IInteger
 
     abstract interface :: IReal
-        function measure(value) result(res)
+        function measure(self, value) result(res)
+            type(itself), intent(in), pass :: self
             real, intent(in) :: value
             integer :: res
         end function measure
@@ -1305,13 +1359,15 @@ end module traits_composition_unsupported_overload_01_constraint_m
 module traits_shape_contract_inheritance_01_m
     implicit none
     abstract interface :: IShape
-        function count(a) result(r)
+        function count(self, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: a(:)
             integer :: r
         end function
     end interface
     abstract interface :: ISize
-        function count(a) result(r)
+        function count(self, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: a(*)
             integer :: r
         end function
@@ -1324,13 +1380,15 @@ end module
 module traits_shape_contract_inheritance_02_m
     implicit none
     abstract interface :: IShape
-        function count(a) result(r)
+        function count(self, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: a(:)
             integer :: r
         end function
     end interface
     abstract interface :: ISize
-        function count(a) result(r)
+        function count(self, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: a(*)
             integer :: r
         end function
@@ -1343,13 +1401,15 @@ end module
 module traits_shape_contract_composition_01_m
     implicit none
     abstract interface :: IShape
-        function count(a) result(r)
+        function count(self, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: a(:)
             integer :: r
         end function
     end interface
     abstract interface :: ISize
-        function count(a) result(r)
+        function count(self, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: a(*)
             integer :: r
         end function
@@ -1366,13 +1426,15 @@ end module
 module traits_shape_contract_composition_02_m
     implicit none
     abstract interface :: IShape
-        function count(a) result(r)
+        function count(self, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: a(:)
             integer :: r
         end function
     end interface
     abstract interface :: ISize
-        function count(a) result(r)
+        function count(self, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: a(*)
             integer :: r
         end function
@@ -1389,13 +1451,15 @@ end module
 module traits_arrayitem_contract_inheritance_m
     implicit none
     abstract interface :: IFirst
-        function count(n, a) result(r)
+        function count(self, n, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: n(2), a(n(1))
             integer :: r
         end function
     end interface
     abstract interface :: ISecond
-        function count(n, a) result(r)
+        function count(self, n, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: n(2), a(n(2))
             integer :: r
         end function
@@ -1408,13 +1472,15 @@ end module
 module traits_arrayitem_contract_composition_m
     implicit none
     abstract interface :: IFirst
-        function count(n, zinput) result(r)
+        function count(self, n, zinput) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: n(2), zinput(n(1))
             integer :: r
         end function
     end interface
     abstract interface :: ISecond
-        function count(n, zinput) result(r)
+        function count(self, n, zinput) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: n(2), zinput(n(2))
             integer :: r
         end function
@@ -1431,7 +1497,8 @@ end module
 module traits_arrayitem_contract_binding_m
     implicit none
     abstract interface :: IFirst
-        function count(n, a) result(r)
+        function count(self, n, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: n(2), a(n(1))
             integer :: r
         end function
@@ -1697,7 +1764,8 @@ end module traits_numeric_b1_n06_m
 module traits_numeric_b1_n07_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface
@@ -1746,7 +1814,8 @@ end module traits_numeric_b1_n09_m
 module traits_runtime_n01_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function value
     end interface IValue
@@ -1759,7 +1828,8 @@ end module traits_runtime_n01_m
 module traits_runtime_n02_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function value
     end interface IValue
@@ -1787,7 +1857,8 @@ end module traits_runtime_n02_m
 module traits_runtime_n03_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function value
     end interface IValue
@@ -1802,7 +1873,8 @@ end module traits_runtime_n03_m
 module traits_runtime_n08_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function value
     end interface IValue
@@ -1819,7 +1891,8 @@ end module traits_runtime_n08_m
 module traits_runtime_n11_contracts_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function value
     end interface IValue
@@ -1895,7 +1968,8 @@ end module traits_runtime_n11_reverse_m
 module traits_runtime_nyi_pointer_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface
@@ -1905,7 +1979,8 @@ end module traits_runtime_nyi_pointer_m
 module traits_runtime_nyi_array_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface
@@ -1918,7 +1993,8 @@ end module traits_runtime_nyi_array_m
 module traits_runtime_nyi_mutable_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface
@@ -1931,7 +2007,8 @@ end module traits_runtime_nyi_mutable_m
 module traits_runtime_nyi_conversion_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface
@@ -1966,7 +2043,8 @@ end module traits_runtime_nyi_conversion_m
 module traits_runtime_strengthening_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface
@@ -1985,12 +2063,14 @@ end module traits_runtime_strengthening_m
 module traits_runtime_combination_unknown_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface
     abstract interface :: ITag
-        function tag() result(r)
+        function tag(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface
@@ -2008,7 +2088,8 @@ end module traits_runtime_combination_unknown_m
 module traits_runtime_impure_function_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface
@@ -2023,7 +2104,8 @@ end module
 module traits_runtime_impure_subroutine_m
     implicit none
     abstract interface :: IAction
-        subroutine act()
+        subroutine act(self)
+            type(itself), intent(in), pass :: self
         end subroutine
     end interface
 contains
@@ -2036,7 +2118,8 @@ end module
 module traits_runtime_bindc_contract_m
     implicit none
     abstract interface :: IValue
-        function value(n) result(r) bind(c)
+        function value(self, n) result(r) bind(c)
+            type(itself), intent(in), pass :: self
             integer, value, intent(in) :: n
             integer :: r
         end function
@@ -2082,7 +2165,8 @@ end module
 module traits_runtime_completed_attributes_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface
@@ -2133,7 +2217,8 @@ end module
 module traits_owning_boundaries_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface
@@ -2253,16 +2338,18 @@ module traits_inherited_component_bounds_m
         integer :: extent(2), other(2)
     end type
     abstract interface :: ILeft
-        function count(n, a) result(r)
+        function count(self, n, a) result(r)
             import :: Bounds
+            type(itself), intent(in), pass :: self
             type(Bounds), intent(in) :: n
             integer, intent(in) :: a(n%extent(1))
             integer :: r
         end function
     end interface
     abstract interface :: IRight
-        function count(n, a) result(r)
+        function count(self, n, a) result(r)
             import :: Bounds
+            type(itself), intent(in), pass :: self
             type(Bounds), intent(in) :: n
             integer, intent(in) :: a(n%other(1))
             integer :: r
@@ -2369,12 +2456,14 @@ module traits_slot_invariance_m
     abstract interface, extends(IValue) :: IChild
     end interface
     abstract interface :: IEqual
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface
     abstract interface :: IMarker
-        function marker() result(r)
+        function marker(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface
@@ -2512,7 +2601,8 @@ end module
 module traits_indirect_slot_boundaries_m
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(IValue) :: IChild
@@ -2553,7 +2643,8 @@ end module
 module traits_out_entry_effects_m
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
 contains
@@ -2604,7 +2695,8 @@ end module
 module traits_pointer_boundaries_m
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Cell
@@ -2685,19 +2777,22 @@ end module
 module traits_projection_boundaries_m
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(IValue) :: IChild
     end interface
     abstract interface :: ILabel
-        integer function label()
+        integer function label(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(IChild + ILabel) :: ICombined
     end interface
     abstract interface :: IUnrelated
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
 contains
@@ -2772,7 +2867,8 @@ end module
 module traits_runtime_combination_negative_m
     implicit none
     abstract interface :: A
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: B
@@ -2784,7 +2880,8 @@ module traits_runtime_combination_negative_m
         end function
     end interface
     abstract interface :: Alias
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(A + B) :: Child
@@ -2947,7 +3044,8 @@ module traits_runtime_combination_signature_m
     use traits_runtime_combination_negative_m, only: A
     implicit none
     abstract interface :: IPure
-        pure integer function value()
+        pure integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     class(A + IPure), pointer :: conflict
@@ -2979,7 +3077,8 @@ end module
 module traits_runtime_inspection_negative_m
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(IValue) :: IChild
@@ -3245,11 +3344,13 @@ end module
 module traits_generic_method_narrowed
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(IValue) :: IMore
-        integer function extra()
+        integer function extra(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: IAlgorithm
@@ -3275,7 +3376,8 @@ end module
 module traits_generic_method_missing_binder
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: IAlgorithm
@@ -3303,7 +3405,8 @@ end module
 module traits_generic_method_swapped_binders
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: IAlgorithm
@@ -3331,7 +3434,8 @@ end module
 module traits_generic_method_unused_body
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: IAlgorithm
@@ -3357,29 +3461,34 @@ end module
 module traits_generic_runtime_boundaries
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: IArray
-        function apply{IValue :: T}(object) result(r)
+        function apply{IValue :: T}(self, object) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: object(:)
             integer :: r
         end function
     end interface
     abstract interface :: IMutable
-        function apply{IValue :: T}(object) result(r)
+        function apply{IValue :: T}(self, object) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(inout) :: object
             integer :: r
         end function
     end interface
     abstract interface :: IOwning
-        function apply{IValue :: T}(object) result(r)
+        function apply{IValue :: T}(self, object) result(r)
+            type(itself), intent(in), pass :: self
             type(T), allocatable, intent(in) :: object
             integer :: r
         end function
     end interface
     abstract interface :: IResult
-        function apply{IValue :: T}(object) result(r)
+        function apply{IValue :: T}(self, object) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: object
             type(T) :: r
         end function
@@ -3398,7 +3507,8 @@ module traits_generic_runtime_bad_actual
         end function
     end interface
     abstract interface :: IAlgorithm
-        function apply{IValue :: T}(object) result(r)
+        function apply{IValue :: T}(self, object) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: object
             integer :: r
         end function
@@ -3430,7 +3540,8 @@ end module
 module traits_generic_runtime_local_storage
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: IAlgorithm
@@ -3554,7 +3665,8 @@ end module
 module traits_inspection_readonly_io
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Box
@@ -3896,7 +4008,8 @@ end module
 ! Derived-type adoption, abstract obligations and sealing.
 module traits_adoption_missing_01
     abstract interface :: I
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type, implements(I) :: Concrete
@@ -3905,7 +4018,8 @@ end module
 
 module traits_adoption_missing_02
     abstract interface :: I
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type, abstract, implements(I) :: Parent
@@ -3966,7 +4080,8 @@ end module
 
 module traits_adoption_abstract_block
     abstract interface :: I
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type, abstract, implements(I) :: Parent
@@ -3977,7 +4092,8 @@ end module
 
 module traits_adoption_wrong_signature
     abstract interface :: I
-        integer function value(n)
+        integer function value(self, n)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: n
         end function
     end interface
@@ -3995,9 +4111,13 @@ contains
     end function
 end module
 
+! TD-36 exact_pass: the message declares an intent(in) receiver, so an
+! implementation that takes its passed object with intent(inout) does not
+! implement it.
 module traits_adoption_readonly
     abstract interface :: I
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type, sealed, implements(I) :: T
@@ -4015,7 +4135,8 @@ end module
 
 module traits_adoption_nonpolymorphic_ancestor
     abstract interface :: I
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Parent
@@ -4100,7 +4221,8 @@ end module
 
 module traits_intrinsic_errors_contracts
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: IEmpty
@@ -4167,6 +4289,8 @@ contains
     end function
 end module
 
+! TD-36 exact_pass: IValue's value has an intent(in) receiver, which an
+! intent(inout) passed object does not implement, also for an intrinsic type.
 module traits_intrinsic_errors_readonly
     use traits_intrinsic_errors_contracts
     implements IValue :: integer
@@ -4335,7 +4459,8 @@ end module
 
 module traits_component_error_types
     abstract interface :: IValue
-        pure integer function value()
+        pure integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Holder

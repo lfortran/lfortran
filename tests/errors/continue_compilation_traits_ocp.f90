@@ -245,7 +245,8 @@ module cc_traits_ocp_static_protocols
         end function operator(*)
     end interface IWeigh
     abstract interface :: IReduce
-        function reduce{IWeigh :: T}(x) result(s)
+        function reduce{IWeigh :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function reduce
@@ -271,14 +272,15 @@ module cc_traits_ocp_field
         end function operator(*)
     end interface IField
     abstract interface :: IScale
-        function scaled{IField :: T}(x) result(s)
+        function scaled{IField :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function scaled
     end interface IScale
     type, sealed, implements(IScale) :: Helped
     contains
-        procedure, nopass :: scaled => helped_scaled
+        procedure, pass :: scaled => helped_scaled
     end type Helped
     type, sealed, implements(IScale) :: Forwarded
         class(ISum), allocatable :: inner
@@ -286,7 +288,8 @@ module cc_traits_ocp_field
         procedure, pass :: scaled => forwarded_scaled
     end type Forwarded
 contains
-    function helped_scaled{IField :: T}(x) result(s)
+    function helped_scaled{IField :: T}(self, x) result(s)
+        type(Helped), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         ! E13: to a generic procedure.

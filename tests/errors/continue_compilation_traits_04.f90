@@ -10,18 +10,20 @@ module gt_neg_contracts
         integer | real(real64)
     end interface INumeric
     abstract interface :: ISum
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function sum
     end interface ISum
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function value
     end interface IValue
     type, sealed, implements(ISum) :: SimpleSum
     contains
-        procedure, nopass :: sum => simple_sum
+        procedure, pass :: sum => simple_sum
     end type SimpleSum
     type, sealed, implements(ISum) :: ScaledSum
         integer :: factor = 1
@@ -33,7 +35,8 @@ module gt_neg_contracts
         integer :: n = 0
     end type Plain
 contains
-    function simple_sum{INumeric :: T}(x) result(s)
+    function simple_sum{INumeric :: T}(self, x) result(s)
+        type(SimpleSum), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         s = T(0)
@@ -45,7 +48,7 @@ contains
         type(ScaledSum), intent(in) :: self
         type(T),         intent(in) :: x(:)
         type(T)                     :: s
-        s = T(self%factor) * simple_sum(x)
+        s = T(self%factor) * simple_sum(SimpleSum(), x)
     end function scaled_sum
 end module gt_neg_contracts
 

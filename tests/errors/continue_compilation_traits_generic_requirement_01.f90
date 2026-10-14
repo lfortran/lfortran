@@ -12,31 +12,37 @@ module traits_generic_requirement_contracts
         integer | real(real64)
     end interface IOtherNumeric
     abstract interface :: ISum
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function sum
-        function zero{INumeric :: T}() result(z)
+        function zero{INumeric :: T}(self) result(z)
+            type(itself), intent(in), pass :: self
             type(T) :: z
         end function zero
-        function pair{INumeric :: T, INumeric :: U}(x, y) result(r)
+        function pair{INumeric :: T, INumeric :: U}(self, x, y) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x
             type(U), intent(in) :: y
             integer :: r
         end function pair
     end interface ISum
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function value
     end interface IValue
     abstract interface :: IOther
-        function other() result(r)
+        function other(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function other
     end interface IOther
     abstract interface :: IApply
-        function apply{IValue :: T}(object) result(r)
+        function apply{IValue :: T}(self, object) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: object
             integer :: r
         end function apply
@@ -171,7 +177,8 @@ module traits_generic_requirement_nested
     use traits_generic_requirement_contracts
     implicit none
     abstract interface :: IVisit
-        function visit{ISum :: S}(summer) result(r)
+        function visit{ISum :: S}(self, summer) result(r)
+            type(itself), intent(in), pass :: self
             type(S), intent(in) :: summer
             integer :: r
         end function visit

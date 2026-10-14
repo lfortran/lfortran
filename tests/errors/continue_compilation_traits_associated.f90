@@ -1,16 +1,17 @@
 ! Located diagnostics for traits with declared associated types (paper
-! sect:tats) and for implementations that mutate their receiver (PAPER-D07:
-! direct concrete calls only). Each numbered case is an independent
-! violation; all other code is valid.
+! sect:tats) and for messages that declare an intent(inout) receiver (TD-36).
+! Each numbered case is an independent violation; all other code is valid.
 module cc_traits_associated_contracts
     implicit none
     abstract interface :: IPeek
         type :: Element
-        function count_after(item) result(n)
+        function count_after(self, item) result(n)
+            type(itself), intent(in), pass :: self
             type(Element), intent(in) :: item
             integer                   :: n
         end function count_after
-        function first_or(item) result(e)
+        function first_or(self, item) result(e)
+            type(itself), intent(in), pass :: self
             type(Element), intent(in) :: item
             type(Element)             :: e
         end function first_or
@@ -18,13 +19,15 @@ module cc_traits_associated_contracts
 
     abstract interface :: IAppendable
         type :: Element
-        subroutine append(item)
+        subroutine append(self, item)
+            type(itself), intent(inout), pass :: self
             type(Element), intent(in) :: item
         end subroutine append
     end interface IAppendable
 
     abstract interface :: ICounter
-        subroutine bump()
+        subroutine bump(self)
+            type(itself), intent(inout), pass :: self
         end subroutine bump
     end interface ICounter
 end module cc_traits_associated_contracts
@@ -34,7 +37,8 @@ module cc_traits_associated_unused
     implicit none
     abstract interface :: IUnused
         type :: Thing
-        subroutine reset()
+        subroutine reset(self)
+            type(itself), intent(in), pass :: self
         end subroutine reset
     end interface IUnused
 end module cc_traits_associated_unused
@@ -44,7 +48,8 @@ module cc_traits_associated_itself
     implicit none
     abstract interface :: ISelf
         type :: itself
-        subroutine take(item)
+        subroutine take(self, item)
+            type(itself), intent(in), pass :: self
             type(itself), intent(in) :: item
         end subroutine take
     end interface ISelf
@@ -96,7 +101,7 @@ module cc_traits_associated_assumed_length
     end type Text
 contains
     subroutine text_append(self, item)
-        type(Text),       intent(in) :: self
+        type(Text),       intent(inout) :: self
         character(len=*), intent(in) :: item
         print *, self%n + len(item)
     end subroutine text_append
@@ -169,7 +174,8 @@ contains
     end subroutine wrap
 end module cc_traits_associated_box_user
 
-! M01: a receiver must be intent(in) or intent(inout).
+! M01: an implementation takes its passed object with exactly the INTENT of
+! the message's receiver: intent(inout) for bump, not intent(out).
 module cc_traits_associated_out_receiver
     use cc_traits_associated_contracts, only: ICounter
     implicit none
@@ -229,11 +235,14 @@ contains
         call t(1)%append(4)
     end subroutine append_in
 
+    ! M06: a generic body cannot pass an intent(in) dummy as the
+    ! intent(inout) receiver of bump.
     subroutine generic_bump{ICounter :: T}(x)
         type(T), intent(in) :: x
         call x%bump()
     end subroutine generic_bump
 
+    ! M07: nor can a read-only trait object.
     subroutine view_bump(x)
         class(ICounter), intent(in) :: x
         call x%bump()
@@ -262,9 +271,8 @@ program continue_compilation_traits_associated
     associate (fixed => Tally(5))
         call fixed%append(1)
     end associate
-    ! M06: a generic trait call is read-only.
+    ! Passing c to the intent(in) dummies of M06 and M07 is valid.
     call generic_bump(c)
-    ! M07: a runtime view is read-only.
     call view_bump(c)
     i = c%n + t%total
     print *, i
@@ -426,13 +434,15 @@ end module cc_traits_associated_loader_user
 module cc_traits_associated_echo
     implicit none
     abstract interface :: IKeyed
-        function key() result(k)
+        function key(self) result(k)
+            type(itself), intent(in), pass :: self
             integer :: k
         end function key
     end interface IKeyed
     abstract interface :: IEcho
         type :: Element
-        function echo{IKeyed :: T}(item) result(r)
+        function echo{IKeyed :: T}(self, item) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: item
             type(Element) :: r
         end function echo

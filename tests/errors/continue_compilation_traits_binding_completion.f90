@@ -11,7 +11,8 @@ module cc_traits_binding_completion_contracts
     end interface IConstructable
 
     abstract interface :: IPrintable
-        subroutine output()
+        subroutine output(self)
+            type(itself), intent(in), pass :: self
         end subroutine output
     end interface IPrintable
 
@@ -190,7 +191,8 @@ module cc_traits_binding_completion_views
     use cc_traits_binding_completion_contracts, only: IConstructable, IPrintable
     implicit none
     abstract interface, extends(IConstructable + IPrintable) :: IAdmissible
-        subroutine input(filename)
+        subroutine input(self, filename)
+            type(itself), intent(in), pass :: self
             character(*), intent(in) :: filename
         end subroutine input
     end interface IAdmissible

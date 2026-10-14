@@ -2,16 +2,19 @@
 ! from_ or ends with _view has exactly one invalid actual argument, statement
 ! or dummy: a defining view needs a definable payload, and a borrowed view is
 ! neither an owner nor a pointer that could be replaced or reassociated. A
-! conformance with an intent(inout) receiver still has no runtime witness
-! (TD-10), and intent(out) and omitted intents stay unsupported.
+! message whose receiver is intent(inout) needs a definable object, so a
+! read-only view cannot call it (TD-36); intent(out) and omitted intents of
+! trait-object dummies stay unsupported (TD-35).
 module traits_inout_negative_m
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: ICounter
-        subroutine increment()
+        subroutine increment(self)
+            type(itself), intent(inout), pass :: self
         end subroutine
     end interface
     type :: Cell
@@ -92,9 +95,9 @@ contains
             call bump(alias)
         end select
     end subroutine
-    subroutine from_mutating_conformance()
-        type(Counter) :: c
-        call use_counter(c)
+    subroutine from_readonly_mutator(object)
+        class(ICounter), intent(in) :: object
+        call object%increment()
     end subroutine
     subroutine assign_view(object, other)
         class(IValue), intent(inout) :: object

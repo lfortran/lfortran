@@ -1,7 +1,8 @@
 module traits_component_loaded_pure_lib
     implicit none
     abstract interface :: IValue
-        pure integer function value()
+        pure integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Seed
