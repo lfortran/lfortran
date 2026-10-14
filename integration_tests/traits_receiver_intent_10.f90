@@ -6,7 +6,8 @@
 ! message, an intent(inout) view the others, and the intent(out) receiver is
 ! default-initialized on entry. Direct, static generic and view calls agree.
 ! An earlier dummy of the same name, made an array by a DIMENSION statement
-! before its type, does not make the receivers arrays.
+! before its type, does not make the receivers arrays, and a receiver without
+! an INTENT has none, whatever the INTENT of the receivers before it.
 module traits_receiver_intent_10_a
     implicit none
 contains
@@ -33,6 +34,9 @@ module traits_receiver_intent_10_m
             intent(out) :: self
             type(itself), pass :: self
         end subroutine
+        integer function peek(self)
+            type(itself), pass :: self
+        end function
     end interface
     type :: Tally
         integer :: n = 0
@@ -42,6 +46,7 @@ module traits_receiver_intent_10_m
         procedure, pass :: total => tally_total
         procedure, pass(t) :: add => tally_add
         procedure, pass :: clear => tally_clear
+        procedure, pass :: peek => tally_peek
     end implements
 contains
     integer function tally_total(self)
@@ -58,6 +63,10 @@ contains
         if (self%n /= 0 .or. self%base /= 7) error stop 90
         self%n = self%base
     end subroutine
+    integer function tally_peek(self)
+        class(Tally) :: self
+        tally_peek = self%n
+    end function
     integer function observe(v)
         class(ITally), intent(in) :: v
         observe = v%total()
@@ -76,6 +85,7 @@ contains
         integer, intent(in) :: by
         call x%clear()
         call x%add(by)
+        if (x%peek() /= x%total()) error stop 91
         cycle_generic = x%total()
     end function
 end module
@@ -98,5 +108,6 @@ program traits_receiver_intent_10
     call t%clear()
     if (t%n /= 7) error stop 4
     if (cycle_generic(t, 4) /= 11 .or. t%n /= 11) error stop 5
+    if (t%peek() /= 11) error stop 7
     print '(a)', 'traits_receiver_intent_10 ok'
 end program
