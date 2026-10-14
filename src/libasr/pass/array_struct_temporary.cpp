@@ -870,6 +870,10 @@ bool set_allocation_size(
                         allocate_dim.m_length = size_i_1;
                         allocate_dims.push_back(al, allocate_dim);
                     }
+                    if (ASRUtils::is_character(*ASRUtils::expr_type(value))) {
+                        ASRUtils::ASRBuilder b(al, loc);
+                        len_allocte_expr = b.StringLen(intrinsic_array_function->m_args[0]);
+                    }
                     break;
                 }
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape): {
