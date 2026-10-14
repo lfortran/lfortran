@@ -1915,7 +1915,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         }
         return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, designator->base.loc,
             base, item->m_args, item->n_args, item->m_type,
-            item->m_storage_format, nullptr));
+            item->m_storage_format, nullptr, false));
     }
 
     // Copies `arg`, a strided designator (see `is_strided_struct_designator`),

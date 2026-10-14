@@ -1163,6 +1163,10 @@ filename = "array15.f90"
 pass = "array_op"
 
 [[test]]
+filename = "array_op_in_bounds.f90"
+pass = "array_op"
+
+[[test]]
 filename = "array16.f90"
 run = true
 
@@ -6082,6 +6086,10 @@ asr = true
 
 [[test]]
 filename = "asr/verify/array_item_element_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/array_item_in_bounds_array.asr"
 asr = true
 
 [[test]]

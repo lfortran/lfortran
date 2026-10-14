@@ -668,6 +668,55 @@ class BitCastArrayVisitor: public ASR::CallReplacerOnExpressionsVisitor<BitCastA
     }
 };
 
+// Whether `components` is not empty and every component has the rank of
+// `target`, so that the shape check of an assignment compares each of them
+// with the target in every dimension.
+static bool have_same_rank(ASR::expr_t* target, const Vec<ASR::expr_t*>& components) {
+    int rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(target));
+    if (components.size() == 0) {
+        return false;
+    }
+    for (size_t i = 0; i < components.size(); i++) {
+        if (ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(components[i])) != rank) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool get_compile_time_extents(ASR::expr_t* expr, std::vector<int64_t>& extents) {
+    ASR::dimension_t* dims = nullptr;
+    size_t rank = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(expr), dims);
+    extents.clear();
+    for (size_t i = 0; i < rank; i++) {
+        int64_t extent = 0;
+        if (dims[i].m_length == nullptr ||
+                !ASRUtils::extract_value(dims[i].m_length, extent)) {
+            return false;
+        }
+        extents.push_back(extent);
+    }
+    return true;
+}
+
+// Whether the extents of `target` and of all `components` are known at
+// compile time and equal, so that a runtime shape check cannot fail.
+static bool have_same_compile_time_shape(ASR::expr_t* target,
+        const Vec<ASR::expr_t*>& components) {
+    std::vector<int64_t> target_extents, extents;
+    if (!get_compile_time_extents(target, target_extents)) {
+        return false;
+    }
+    for (size_t i = 0; i < components.size(); i++) {
+        if (!get_compile_time_extents(components[i], extents) ||
+                extents != target_extents) {
+            return false;
+        }
+    }
+    return true;
+}
+
 class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisitor> {
     private:
 
@@ -1281,7 +1330,8 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     void generate_loop(const T& x, Vec<ASR::expr_t**>& vars,
                        Vec<ASR::expr_t**>& fix_types_args,
                        const Location& loc,
-                       const std::vector<ASR::expr_t*>* scalar_targets = nullptr) {
+                       const std::vector<ASR::expr_t*>* scalar_targets = nullptr,
+                       const std::set<ASR::expr_t*>* conforming_operands = nullptr) {
         Vec<size_t> var_ranks;
         Vec<ASR::expr_t*> vars_expr;
         var_ranks.reserve(al, vars.size()); vars_expr.reserve(al, vars.size());
@@ -1311,6 +1361,32 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             var2indices[i] = indices;
         }
 
+        size_t var_with_maxrank = 0;
+        for( size_t i = 0; i < var_ranks.size(); i++ ) {
+            if( var_ranks[i] > var_ranks[var_with_maxrank] ) {
+                var_with_maxrank = i;
+            }
+        }
+        // The loops run over the bounds of the operand with the maximum
+        // rank, so its elements are always in bounds. The index of every
+        // other operand starts at its lower bound and advances with the
+        // loops, so its elements are in bounds if its shape is known to
+        // conform with that operand.
+        auto is_conforming = [&](size_t i) {
+            return conforming_operands != nullptr &&
+                var_ranks[i] == var_ranks[var_with_maxrank] &&
+                conforming_operands->count(*vars[i]) > 0 &&
+                conforming_operands->count(*vars[var_with_maxrank]) > 0;
+        };
+        std::vector<bool> in_bounds(vars.size(), false);
+        for( size_t i = 0; i < vars.size(); i++ ) {
+            ASR::expr_t* var = *vars[i];
+            in_bounds[i] = (ASR::is_a<ASR::Var_t>(*var) ||
+                    ASR::is_a<ASR::StructInstanceMember_t>(*var) ||
+                    ASR::is_a<ASR::ArrayConstant_t>(*var)) &&
+                (i == var_with_maxrank || is_conforming(i));
+        }
+
         for( size_t i = 0; i < vars.size(); i++ ) {
             if (var_ranks[i] == 0) continue;
             Vec<ASR::array_index_t> indices;
@@ -1322,12 +1398,16 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 array_index.m_right = get_singleton_safe_index(*vars[i],
                     var2indices[i][j], j + 1, loc, scalar_targets);
                 array_index.m_step = nullptr;
+                if( array_index.m_right != var2indices[i][j] ) {
+                    in_bounds[i] = false;
+                }
                 indices.push_back(al, array_index);
             }
             ASR::ttype_t* var_i_type = ASRUtils::extract_type(
                 ASRUtils::expr_type(*vars[i]));
             *vars[i] = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, *vars[i], indices.p,
-                indices.size(), var_i_type, ASR::arraystorageType::ColMajor, nullptr));
+                indices.size(), var_i_type, ASR::arraystorageType::ColMajor, nullptr,
+                in_bounds[i]));
         }
 
         ASRUtils::RemoveArrayProcessingNodeVisitor array_broadcast_visitor(al);
@@ -1346,13 +1426,6 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         fix_types.current_scope = current_scope;
         for( size_t i = 0; i < fix_types_args.size(); i++ ) {
             fix_types.visit_expr(*(*fix_types_args[i]));
-        }
-
-        size_t var_with_maxrank = 0;
-        for( size_t i = 0; i < var_ranks.size(); i++ ) {
-            if( var_ranks[i] > var_ranks[var_with_maxrank] ) {
-                var_with_maxrank = i;
-            }
         }
 
         ASR::do_loop_head_t do_loop_head;
@@ -2540,21 +2613,39 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             return ;
         }
 
+        // Operands whose shape is known to conform with the target before
+        // the loop runs, either by the shape check below or at compile time
+        std::set<ASR::expr_t*> conforming_operands;
         if (bounds_checking && 
             ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
             ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
             ASRUtils::get_expr_size_expr(x.m_target) != nullptr) {
+            Vec<ASR::expr_t*> components;
+            components.reserve(al, 1);
+            CollectComponentsFromElementalExpr collect_components(al, components);
+            collect_components.visit_expr(*x.m_value);
+            bool conforms_at_compile_time = false;
+            if (have_same_rank(x.m_target, components)) {
+                conforming_operands.insert(x.m_target);
+                for (size_t i = 0; i < components.size(); i++) {
+                    conforming_operands.insert(components[i]);
+                    conforming_operands.insert(
+                        ASRUtils::get_past_array_physical_cast(components[i]));
+                }
+                conforms_at_compile_time = have_same_compile_time_shape(
+                    x.m_target, components);
+            }
+
             ASRUtils::ExprStmtDuplicator expr_duplicator(al);
             ASR::expr_t* d_target = expr_duplicator.duplicate_expr(x.m_target);
-            ASR::expr_t* d_value = expr_duplicator.duplicate_expr(x.m_value);
-
             Vec<ASR::expr_t*> vars;
-            vars.reserve(al, 1);
+            vars.reserve(al, components.size());
+            for (size_t i = 0; i < components.size(); i++) {
+                vars.push_back(al, expr_duplicator.duplicate_expr(components[i]));
+            }
 
-            CollectComponentsFromElementalExpr cv(al, vars);
-            cv.visit_expr(*d_value);
-
-            if (debug_inserted.find(&x) == debug_inserted.end()) {
+            if (!conforms_at_compile_time &&
+                    debug_inserted.find(&x) == debug_inserted.end()) {
                 pass_result.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(al, x.base.base.loc, d_target, vars.p, vars.n, x.m_move_allocation)));
                 if (!x.m_move_allocation) {
                     debug_inserted.insert(&x);
@@ -2627,7 +2718,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         fix_type_args.reserve(al, 2);
         fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_target)));
         fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_value)));
-        generate_loop(x, vars, fix_type_args, loc);
+        generate_loop(x, vars, fix_type_args, loc, nullptr, &conforming_operands);
     }
 
     void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t &x) {

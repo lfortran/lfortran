@@ -10827,7 +10827,8 @@ static inline ASR::ttype_t* create_array_type_with_empty_dims(Allocator& al,
 
 static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_v, ASR::array_index_t* a_args, size_t n_args, ASR::ttype_t* a_type,
-    ASR::arraystorageType a_storage_format, ASR::expr_t* a_value) {
+    ASR::arraystorageType a_storage_format, ASR::expr_t* a_value,
+    bool a_in_bounds = false) {
     if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_v) && !(ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_old == ASR::array_physical_typeType::AssumedRankArray)) {
         a_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
     }
@@ -10849,7 +10850,7 @@ static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a
     ASRUtils::ExprStmtDuplicator type_duplicator(al);
     a_type = type_duplicator.duplicate_ttype(a_type);
     return ASR::make_ArrayItem_t(al, a_loc, a_v, a_args,
-        n_args, a_type, a_storage_format, a_value);
+        n_args, a_type, a_storage_format, a_value, a_in_bounds);
 }
 
 inline ASR::ttype_t* make_Pointer_t_util(Allocator& al, const Location& loc, ASR::ttype_t* type) {

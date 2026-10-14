@@ -1658,7 +1658,7 @@ public:
         return ASRUtils::EXPR(ASR::make_ArrayItem_t(
             al, arr_item->base.base.loc, arr_item->m_v,
             new_args.p, new_args.size(), arr_item->m_type,
-            arr_item->m_storage_format, arr_item->m_value));
+            arr_item->m_storage_format, arr_item->m_value, false));
     }
 
     ASR::ImpliedDoLoop_t* substitute_loop_var_in_idl(
@@ -2099,7 +2099,7 @@ public:
                 ASR::expr_t* array_elem = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                     al, a_fmt->base.loc, a_fmt, args.p, args.n, 
                     ASRUtils::type_get_past_array(fmt_type),
-                    ASR::arraystorageType::ColMajor, nullptr));
+                    ASR::arraystorageType::ColMajor, nullptr, false));
 
                 ASR::expr_t* concat = b.StringConcat(fmt_string_var, array_elem, ASRUtils::type_get_past_allocatable(str_type));
                 ASR::stmt_t* body_assign = ASRUtils::STMT(ASR::make_Assignment_t(

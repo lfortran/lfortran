@@ -8,7 +8,7 @@ One element of an array.
 
 ```text
 ArrayItem(expr v, array_index* args, ttype type,
-    arraystorage storage_format, expr? value)
+    arraystorage storage_format, expr? value, bool in_bounds)
 ```
 
 ### Arguments
@@ -20,6 +20,7 @@ ArrayItem(expr v, array_index* args, ttype type,
 | `type` | the type of the element. |
 | `storage_format` | the element order of the array; see [arraystorage](../enum_nodes/arraystorage.md). |
 | `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
+| `in_bounds` | `true` when every subscript is known to be within the bounds of `v`, so a backend need not check it at runtime; `false` otherwise. |
 
 ### Return values
 
@@ -34,6 +35,18 @@ array type.
 Subscripts are as written, so an array declared `a(2:5)` is indexed from two.
 A backend subtracts the lower bound itself, using the `dims` of the array
 type.
+
+With runtime bounds checking, a backend checks every subscript of an element
+reference against the bounds of `v`. A pass that creates the reference can
+set `in_bounds` when the subscript cannot be out of bounds, and the check is
+then omitted. The frontend always sets `false`. The `array_op` pass sets it in
+the loops it creates for an array assignment: for the operand whose bounds
+the loops run over, and for every operand whose shape a preceding
+[DebugCheckArrayBounds](../statement_nodes/DebugCheckArrayBounds.md) compares
+with the target, or whose extents are compile-time constants equal to those
+of the target (the check is then omitted). With a runtime check the claim
+holds only because that check stops the program on a mismatch, so a backend
+that honors `in_bounds` must also implement `DebugCheckArrayBounds`.
 
 ## Examples
 
@@ -60,6 +73,7 @@ type.
   )
   :storage_format :ColMajor
   :value nil
+  :in_bounds false
 )
 ```
 
