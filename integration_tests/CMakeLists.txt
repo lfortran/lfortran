@@ -4802,6 +4802,11 @@ RUN(NAME implicit_argument_casting_03 LABELS gfortran llvm
 RUN(NAME implicit_argument_casting_04 LABELS gfortran llvm
     EXTRA_ARGS --implicit-argument-casting)
 
+RUN(NAME implicit_argument_casting_05 LABELS gfortran llvm
+    EXTRA_ARGS --fixed-form --implicit-typing --implicit-interface
+        --implicit-argument-casting --legacy-array-sections --separate-compilation
+    GFORTRAN_ARGS -ffixed-form -fallow-argument-mismatch)
+
 RUN(NAME specfun_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc
     EXTRA_ARGS --use-loop-variable-after-loop --implicit-typing)
 

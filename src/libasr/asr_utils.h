@@ -10126,23 +10126,30 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     }
                 }
                 if (ASR::is_a<ASR::Function_t>(*a_name_)) {
-                    // get current_scope
-                    SymbolTable* current_scope = nullptr;
+                    // The cast is emitted in the caller, so its temporary
+                    // must belong to the caller's scope. An actual argument
+                    // can be a use-associated variable whose parent scope is
+                    // a different module.
+                    SymbolTable* cast_scope = current_scope;
                     std::string sym_name = "";
                     if (ASR::is_a<ASR::Var_t>(*arg)) {
                         ASR::Var_t* arg_var = ASR::down_cast<ASR::Var_t>(arg);
                         if (ASR::is_a<ASR::Variable_t>(*(arg_var->m_v))) {
                             ASR::Variable_t* arg_var_ = ASR::down_cast<ASR::Variable_t>(arg_var->m_v);
-                            current_scope = arg_var_->m_parent_symtab;
+                            if (cast_scope == nullptr) {
+                                cast_scope = arg_var_->m_parent_symtab;
+                            }
                             sym_name = arg_var_->m_name;
                         }
                     } else if (ASR::is_a<ASR::ArrayItem_t>(*arg)) {
                         ASR::expr_t* arg_expr = ASR::down_cast<ASR::ArrayItem_t>(arg)->m_v;
                         ASR::Variable_t* arg_var = ASRUtils::EXPR2VAR(arg_expr);
-                        current_scope = arg_var->m_parent_symtab;
+                        if (cast_scope == nullptr) {
+                            cast_scope = arg_var->m_parent_symtab;
+                        }
                         sym_name = arg_var->m_name;
                     }
-                    if (current_scope) {
+                    if (cast_scope) {
                         ASR::Array_t* orig_arg_array_t = nullptr;
                         ASR::Array_t* arg_array_t = nullptr;
                         if (orig_arg_type->type == ASR::ttypeType::Array) {
@@ -10160,9 +10167,9 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         ASR::ttype_t* arg_array_type = (ASR::ttype_t*) arg_array_t;
                         ASR::ttype_t* pointer_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, orig_arg_type->base.loc, arg_array_type));
 
-                        std::string cast_sym_name = current_scope->get_unique_name(sym_name + "_cast", false);
+                        std::string cast_sym_name = cast_scope->get_unique_name(sym_name + "_cast", false);
                         ASR::asr_t* cast_ = ASRUtils::make_Variable_t_util(al, arg->base.loc,
-                                        current_scope, s2c(al, cast_sym_name), nullptr,
+                                        cast_scope, s2c(al, cast_sym_name), nullptr,
                                         0, ASR::intentType::Local, nullptr, nullptr,
                                         ASR::storage_typeType::Default, pointer_type, nullptr,
                                         ASR::abiType::Source, ASR::accessType::Public,
@@ -10171,7 +10178,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                                         ASR::pass_attrType::NotMethod, nullptr);
 
                         ASR::symbol_t* cast_sym = ASR::down_cast<ASR::symbol_t>(cast_);
-                        current_scope->add_symbol(cast_sym_name, cast_sym);
+                        cast_scope->add_symbol(cast_sym_name, cast_sym);
 
                         ASR::expr_t* cast_expr = ASRUtils::EXPR(ASR::make_Var_t(al,arg->base.loc, cast_sym));
 
