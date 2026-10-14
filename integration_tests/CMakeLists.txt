@@ -1442,6 +1442,19 @@ RUN(NAME procedure_pointer_29 LABELS llvm)
 RUN(NAME procedure_pointer_30 LABELS llvm)
 RUN(NAME procedure_pointer_31 LABELS llvm)
 RUN(NAME procedure_pointer_32 LABELS llvm)
+RUN(NAME procedure_pointer_34 LABELS llvm)
+# GFortran also rejects the circular declarations of this dispatch table:
+# `table` gives it `a` before `a` is defined, which it reports as a procedure
+# used as an actual argument without an explicit interface or EXTERNAL
+RUN(NAME procedure_pointer_33 LABELS llvm)
+# Templates are not supported by GFortran
+RUN(NAME procedure_pointer_35 LABELS llvm)
+RUN(NAME procedure_pointer_36 LABELS gfortran llvm)
+# Templates are not supported by GFortran, and it takes the host's `later`
+# instead of the internal procedure `later` of `shadowed`
+RUN(NAME procedure_pointer_37 LABELS llvm)
+RUN(NAME procedure_pointer_38 LABELS gfortran llvm)
+RUN(NAME procedure_pointer_39 LABELS gfortran llvm)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
