@@ -19,6 +19,12 @@ if (NOT XEUS_LFORTRAN_WASM_BUILD)
     ADDTEST(test_stacktrace)
 endif()
 
+# The test replaces clock_gettime(), which only reaches the runtime when it is
+# linked statically. The Windows runtime does not use clock_gettime().
+if (NOT WIN32 AND NOT EMSCRIPTEN)
+    ADDTESTC(test_system_clock lfortran_runtime_static)
+endif()
+
 set(SRC
     test_parse.cpp
     test_ast.cpp
