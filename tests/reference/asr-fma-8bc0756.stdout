@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             pi:
                                 (Variable
@@ -66,6 +67,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             r:
                                 (Variable
@@ -90,6 +92,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             s1:
                                 (Variable
@@ -129,6 +132,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             s2:
                                 (Variable
@@ -168,6 +172,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -198,6 +203,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             z:
                                 (Variable
@@ -237,6 +243,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     fma
@@ -466,6 +473,7 @@
                             (Integer 4)
                             ColMajor
                             ()
+                            .true.
                         )
                         (IntrinsicElementalFunction
                             Nint
@@ -511,6 +519,7 @@
                                 (Integer 4)
                                 ColMajor
                                 ()
+                                .true.
                             )]
                             FormatFortran
                             (Allocatable
@@ -530,6 +539,7 @@
                                 (Integer 4)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (IntegerConstant 1 (Integer 4) Decimal)
@@ -550,6 +560,7 @@
                             (Integer 4)
                             ColMajor
                             ()
+                            .true.
                         )
                         (Cast
                             (RealBinOp
@@ -585,6 +596,7 @@
                                 (Integer 4)
                                 ColMajor
                                 ()
+                                .true.
                             )]
                             FormatFortran
                             (Allocatable
@@ -604,6 +616,7 @@
                                 (Integer 4)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (IntegerConstant 0 (Integer 4) Decimal)

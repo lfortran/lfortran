@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-parameter_25-3b336bb",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/parameter_25.f90",
+    "infile_hash": "3c468255bca46302f6bb702b4c60b2199594a390755d2a74dd8a7206",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-parameter_25-3b336bb.stdout",
+    "stdout_hash": "2a854c11d1e70dcce30d4c98c7a7deb4c228c48647c799285907ff55",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

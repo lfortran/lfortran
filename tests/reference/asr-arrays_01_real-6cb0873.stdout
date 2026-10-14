@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -66,6 +67,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             c:
                                 (Variable
@@ -98,6 +100,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i:
                                 (Variable
@@ -122,6 +125,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             j:
                                 (Variable
@@ -146,6 +150,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     arrays_01_real
@@ -165,6 +170,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .false.
                             )
                             (Cast
                                 (IntegerBinOp
@@ -196,6 +202,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (Cast
@@ -227,6 +234,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (Cast
@@ -258,6 +266,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (Cast
@@ -299,6 +308,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .false.
                             )
                             (Cast
                                 (Var 2 i)
@@ -324,6 +334,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (Cast
@@ -355,6 +366,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (Cast
@@ -386,6 +398,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (Cast
@@ -417,6 +430,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (Cast
@@ -452,6 +466,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .false.
                             )
                             (RealBinOp
                                 (ArrayItem
@@ -462,6 +477,7 @@
                                     (Real 8)
                                     ColMajor
                                     ()
+                                    .false.
                                 )
                                 Sub
                                 (Cast
@@ -494,6 +510,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (Cast
@@ -525,6 +542,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (Cast
@@ -556,6 +574,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (Cast
@@ -585,6 +604,7 @@
                             (Real 8)
                             ColMajor
                             ()
+                            .true.
                         )
                         (RealBinOp
                             (RealBinOp
@@ -597,6 +617,7 @@
                                         (Real 8)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Add
                                     (ArrayItem
@@ -607,6 +628,7 @@
                                         (Real 8)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     (Real 8)
                                     ()
@@ -620,6 +642,7 @@
                                     (Real 8)
                                     ColMajor
                                     ()
+                                    .true.
                                 )
                                 (Real 8)
                                 ()
@@ -633,6 +656,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             (Real 8)
                             ()
@@ -652,6 +676,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (Cast
@@ -681,6 +706,7 @@
                             (Real 8)
                             ColMajor
                             ()
+                            .true.
                         )
                         (ArrayItem
                             (Var 2 a)
@@ -690,6 +716,7 @@
                             (Real 8)
                             ColMajor
                             ()
+                            .true.
                         )
                         ()
                         .false.
@@ -706,6 +733,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (Cast
@@ -750,6 +778,7 @@
                                     (Real 8)
                                     ColMajor
                                     ()
+                                    .false.
                                 )
                                 (Cast
                                     (IntegerBinOp
@@ -792,6 +821,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (Cast
@@ -826,6 +856,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (Cast
@@ -860,6 +891,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (Cast
@@ -894,6 +926,7 @@
                                 (Real 8)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (Cast

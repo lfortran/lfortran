@@ -36,6 +36,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -66,6 +67,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i:
                                 (Variable
@@ -90,6 +92,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             n:
                                 (Variable
@@ -114,6 +117,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     a1
@@ -176,6 +180,7 @@
                                     (Real 4)
                                     ColMajor
                                     ()
+                                    .false.
                                 )
                                 (RealBinOp
                                     (RealBinOp
@@ -187,6 +192,7 @@
                                             (Real 4)
                                             ColMajor
                                             ()
+                                            .false.
                                         )
                                         Add
                                         (ArrayItem
@@ -203,6 +209,7 @@
                                             (Real 4)
                                             ColMajor
                                             ()
+                                            .false.
                                         )
                                         (Real 4)
                                         ()
@@ -269,6 +276,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             i:
                                 (Variable
@@ -293,6 +301,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             n:
                                 (Variable
@@ -317,6 +326,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             partial_sum:
                                 (Variable
@@ -341,6 +351,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             total_sum:
                                 (Variable
@@ -365,6 +376,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     parallel_sum
@@ -437,6 +449,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .false.
                                         )
                                         (Integer 4)
                                         ()

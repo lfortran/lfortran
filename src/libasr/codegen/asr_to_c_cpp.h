@@ -11,6 +11,8 @@
  * for both C and C++ code generation.
  */
 
+#include <algorithm>
+#include <cctype>
 #include <memory>
 #include <set>
 
@@ -153,6 +155,43 @@ public:
     SymbolTable* current_scope;
     bool is_string_concat_present;
 
+    // The views of a common block in this translation unit, the CommonBlock
+    // symbols with its link name, share the object of that linker symbol. A
+    // variable in a block has no declaration of its own: it is the object of
+    // its type at its offset in that storage, accessed through a `may_alias`
+    // type, so that the compiler does not assume it apart from the views of
+    // other types of the same storage.
+    struct CommonStorage {
+        // The C identifier of the object, whose linker symbol is link_name.
+        std::string name;
+        std::string link_name;
+        int64_t size = 0;
+        int64_t alignment = 1;
+        // Whether a Tentative or Initialized view provides the storage here,
+        // rather than External views only referring to it.
+        bool defined = false;
+        // Whether an Initialized view gives the storage its initial value,
+        // which makes the definition a strong one even when all is zero.
+        bool initialized_view = false;
+        // The variables of Initialized views that give the storage its
+        // initial value, by offset.
+        std::map<int64_t, const ASR::Variable_t*> initialized;
+    };
+    struct CommonPlacement {
+        const CommonStorage *storage;
+        int64_t offset;
+        // The static descriptor of an array, which every procedure reaches.
+        std::string descriptor;
+    };
+    // By link name.
+    std::map<std::string, CommonStorage> common_storage;
+    std::map<const ASR::Variable_t*, CommonPlacement> common_placement;
+    // The arrays of common_placement, in the order they were placed.
+    std::vector<const ASR::Variable_t*> common_arrays;
+    std::set<std::string> common_names;
+    // The element types that variables in common blocks are accessed as.
+    std::set<std::string> common_access_types;
+
     BaseCCPPVisitor(diag::Diagnostics &diag, Platform &platform,
             CompilerOptions &_compiler_options, bool gen_stdstring, bool gen_stdcomplex, bool is_c,
             int64_t default_lower_bound) : diag{diag},
@@ -166,6 +205,411 @@ public:
         const_vars_count{0}, loop_end_count{0}, bracket_open{0},
         is_string_concat_present{false} {
         }
+
+    /****************************** COMMON blocks *****************************/
+
+    void collect_common_blocks(SymbolTable *symtab,
+            std::vector<const ASR::CommonBlock_t*> &blocks) {
+        for (auto &item : symtab->get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (ASR::is_a<ASR::CommonBlock_t>(*sym)) {
+                blocks.push_back(ASR::down_cast<ASR::CommonBlock_t>(sym));
+            } else if (ASR::is_a<ASR::Module_t>(*sym) || ASR::is_a<ASR::Program_t>(*sym) ||
+                    ASR::is_a<ASR::Function_t>(*sym) || ASR::is_a<ASR::BlockData_t>(*sym)) {
+                collect_common_blocks(ASRUtils::symbol_symtab(sym), blocks);
+            }
+        }
+    }
+
+    [[noreturn]] void common_unsupported(const ASR::Variable_t &v,
+            const std::string &what) {
+        throw CodeGenError(what + " in a COMMON block are not supported by the "
+            "C backend", v.base.base.loc);
+    }
+
+    // The type that an element of `v`, a variable in a common block, is
+    // accessed as, and the size and alignment of the element in the storage
+    // of the block. A logical is accessed as a `bool` but takes the storage
+    // of its kind, so only an array of logicals of kind 1 has elements of
+    // the size of a `bool`. A character, which is a pointer to a buffer of
+    // its own here, cannot be in the storage.
+    std::string common_element_type(const ASR::Variable_t &v, int64_t &size,
+            int64_t &alignment) {
+        if (ASRUtils::is_pointer(v.m_type)) {
+            common_unsupported(v, "pointers");
+        }
+        bool is_array = ASRUtils::is_array(v.m_type);
+        ASR::ttype_t *type = ASRUtils::type_get_past_array(v.m_type);
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(type);
+        switch (type->type) {
+            case ASR::ttypeType::Integer:
+            case ASR::ttypeType::UnsignedInteger: {
+                headers.insert("inttypes.h");
+                size = alignment = kind;
+                break;
+            }
+            case ASR::ttypeType::Real: {
+                if (kind != 4 && kind != 8) {
+                    common_unsupported(v, "real(" + std::to_string(kind) + ") variables");
+                }
+                size = alignment = kind;
+                break;
+            }
+            case ASR::ttypeType::Logical: {
+                if (is_array && kind != 1) {
+                    common_unsupported(v, "logical arrays of a kind other than 1");
+                }
+                size = alignment = kind;
+                break;
+            }
+            case ASR::ttypeType::Complex: {
+                if (kind != 4 && kind != 8) {
+                    common_unsupported(v, "complex(" + std::to_string(kind) + ") variables");
+                }
+                headers.insert("complex.h");
+                size = 2 * kind;
+                alignment = kind;
+                break;
+            }
+            case ASR::ttypeType::String: {
+                common_unsupported(v, "character variables");
+            }
+            case ASR::ttypeType::StructType: {
+                common_unsupported(v, "derived type variables");
+            }
+            default: {
+                common_unsupported(v, "variables of type "
+                    + ASRUtils::type_to_str_fortran_symbol(type, v.m_type_declaration));
+            }
+        }
+        std::string access_type = CUtils::get_c_type_from_ttype_t(type);
+        common_access_types.insert(access_type);
+        return access_type;
+    }
+
+    static std::string common_access_type_name(const std::string &type) {
+        std::string name = "_lcompilers_common_";
+        for (char c : type) {
+            name += std::isalnum(static_cast<unsigned char>(c)) ? c : '_';
+        }
+        return name;
+    }
+
+    int64_t common_size(const ASR::Variable_t &v) {
+        int64_t size, alignment;
+        common_element_type(v, size, alignment);
+        if (ASRUtils::is_array(v.m_type)) {
+            size *= ASRUtils::get_fixed_size_of_array(v.m_type);
+        }
+        return size;
+    }
+
+    // Places `v` at `offset` in `storage`. The variables of an Initialized
+    // view give the storage its initial value, which the variables of an
+    // External view, defined elsewhere, do not.
+    void place_common_variable(const ASR::Variable_t &v, CommonStorage &storage,
+            int64_t offset, bool initializes) {
+        int64_t size, alignment;
+        common_element_type(v, size, alignment);
+        LCOMPILERS_ASSERT(offset >= 0);
+        if (offset % alignment != 0) {
+            throw CodeGenError("variable '" + std::string(v.m_name) + "' is not "
+                "aligned for its type in its COMMON block, which the C backend "
+                "does not support", v.base.base.loc);
+        }
+        LCOMPILERS_ASSERT(common_placement.find(&v) == common_placement.end());
+        common_placement[&v] = {&storage, offset, ""};
+        if (ASRUtils::is_array(v.m_type)) {
+            common_arrays.push_back(&v);
+        }
+        size = common_size(v);
+        storage.size = std::max(storage.size, offset + size);
+        storage.alignment = std::max(storage.alignment, alignment);
+        if (initializes && (v.m_value != nullptr || v.m_symbolic_value != nullptr)) {
+            auto next = storage.initialized.lower_bound(offset);
+            bool overlaps = next != storage.initialized.end()
+                && next->first < offset + size;
+            if (next != storage.initialized.begin()) {
+                auto previous = std::prev(next);
+                overlaps = overlaps
+                    || previous->first + common_size(*previous->second) > offset;
+            }
+            if (overlaps) {
+                throw CodeGenError("variable '" + std::string(v.m_name) + "' gives "
+                    "an initial value to storage of its COMMON block that another "
+                    "variable also initializes", v.base.base.loc);
+            }
+            storage.initialized[offset] = &v;
+        }
+    }
+
+    // Lays out a view of a common block: its members one after another, each
+    // at the next offset of its alignment, and the variable of each
+    // association where its designator is at the anchor.
+    void layout_common_block(const ASR::CommonBlock_t &block) {
+        auto storage = common_storage.find(block.m_link_name);
+        if (storage == common_storage.end()) {
+            std::string base = "_lcompilers_common_" + std::string(
+                block.m_block_name ? block.m_block_name : "blank");
+            std::string name = base;
+            for (int i = 1; common_names.count(name) > 0; i++) {
+                name = base + "_" + std::to_string(i);
+            }
+            common_names.insert(name);
+            storage = common_storage.emplace(block.m_link_name, CommonStorage()).first;
+            storage->second.name = name;
+            storage->second.link_name = block.m_link_name;
+        }
+        if (block.m_role != ASR::common_block_roleType::External) {
+            storage->second.defined = true;
+        }
+        bool initializes = block.m_role == ASR::common_block_roleType::Initialized;
+        if (initializes) {
+            storage->second.initialized_view = true;
+        }
+        int64_t offset = 0;
+        for (size_t i = 0; i < block.n_members; i++) {
+            const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(block.m_members[i]);
+            int64_t size, alignment;
+            common_element_type(*v, size, alignment);
+            offset = (offset + alignment - 1) / alignment * alignment;
+            place_common_variable(*v, storage->second, offset, initializes);
+            offset += common_size(*v);
+        }
+        for (size_t i = 0; i < block.n_associations; i++) {
+            const ASR::common_association_t &association = block.m_associations[i];
+            int64_t element, character, size, alignment;
+            const ASR::Variable_t *anchor = ASRUtils::get_storage_designator_offset(
+                association.m_anchor, element, character);
+            LCOMPILERS_ASSERT(anchor != nullptr &&
+                common_placement.find(anchor) != common_placement.end());
+            // Character variables are rejected above, so no designator
+            // starts within an element.
+            common_element_type(*anchor, size, alignment);
+            LCOMPILERS_ASSERT(character == 0);
+            int64_t at = common_placement[anchor].offset + element * size;
+            const ASR::Variable_t *v = ASRUtils::get_storage_designator_offset(
+                association.m_designator, element, character);
+            LCOMPILERS_ASSERT(v != nullptr && &v->base == association.m_variable);
+            common_element_type(*v, size, alignment);
+            LCOMPILERS_ASSERT(character == 0);
+            place_common_variable(*v, storage->second, at - element * size,
+                initializes);
+        }
+    }
+
+    void layout_common_blocks(const ASR::TranslationUnit_t &x) {
+        std::vector<const ASR::CommonBlock_t*> blocks;
+        collect_common_blocks(x.m_symtab, blocks);
+        for (const ASR::CommonBlock_t *block : blocks) {
+            layout_common_block(*block);
+        }
+    }
+
+    const CommonPlacement* common_placement_of(ASR::expr_t *x) {
+        if (!ASR::is_a<ASR::Var_t>(*x)) return nullptr;
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(x)->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*s)) return nullptr;
+        auto placement = common_placement.find(ASR::down_cast<ASR::Variable_t>(s));
+        return placement == common_placement.end() ? nullptr : &placement->second;
+    }
+
+    static std::string common_address(const CommonPlacement &placement) {
+        return placement.storage->name + ".bytes + " + std::to_string(placement.offset);
+    }
+
+    // An array in a common block is in array element order. A procedure
+    // indexes a multidimensional dummy argument by the strides of a
+    // descriptor only when it keeps one; pass_array_by_data gives the others,
+    // assumed-shape ones included, their elements from the extents with the
+    // last subscript varying fastest, which would see such an array
+    // transposed.
+    void check_common_array_argument(ASR::expr_t *actual, ASR::expr_t *dummy) {
+        if (actual == nullptr || dummy == nullptr || !ASR::is_a<ASR::Var_t>(*dummy)) {
+            return;
+        }
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*actual)) {
+            actual = ASR::down_cast<ASR::ArrayPhysicalCast_t>(actual)->m_arg;
+        }
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(dummy)->m_v);
+        if (common_placement_of(actual) == nullptr || !ASR::is_a<ASR::Variable_t>(*s)) {
+            return;
+        }
+        ASR::ttype_t *type = ASR::down_cast<ASR::Variable_t>(s)->m_type;
+        if (ASRUtils::is_array(type) && ASRUtils::extract_n_dims_from_ttype(type) > 1 &&
+                ASRUtils::extract_physical_type(type) !=
+                    ASR::array_physical_typeType::DescriptorArray) {
+            throw CodeGenError("an array in a COMMON block passed to a "
+                "multidimensional dummy argument is not supported by the C backend",
+                actual->base.loc);
+        }
+    }
+
+    // The elements of the array constant `a`, in array element order, as
+    // a C initializer list.
+    std::string array_constant_initializer(ASR::ArrayConstant_t *a) {
+        Allocator al(1024);
+        std::string r = "{";
+        int64_t n = ASRUtils::get_fixed_size_of_array(a->m_type);
+        for (int64_t i = 0; i < n; i++) {
+            if (i > 0) r += ", ";
+            self().visit_expr(*ASRUtils::fetch_ArrayConstant_value(al, a, i));
+            r += src;
+        }
+        return r + "}";
+    }
+
+    // The initializer of the field of `v` in the initial value of the
+    // storage of its common block: the constant `v` is initialized with, as
+    // any constant of the program is written, or the elements of an array
+    // constant.
+    std::string common_initial_value(const ASR::Variable_t &v) {
+        ASR::expr_t *value = ASRUtils::expr_value(
+            v.m_value ? v.m_value : v.m_symbolic_value);
+        if (value != nullptr && ASRUtils::is_array(v.m_type)
+                && ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+            ASR::ArrayConstant_t *a = ASR::down_cast<ASR::ArrayConstant_t>(value);
+            int64_t n = ASRUtils::get_fixed_size_of_array(v.m_type);
+            if (ASRUtils::get_fixed_size_of_array(a->m_type) == n &&
+                    (ASRUtils::extract_n_dims_from_ttype(v.m_type) == 1 ||
+                     a->m_storage_format == ASR::arraystorageType::ColMajor)) {
+                return array_constant_initializer(a);
+            }
+        } else if (value != nullptr && !ASRUtils::is_array(v.m_type)
+                && ASRUtils::is_value_constant(value)) {
+            self().visit_expr(*value);
+            return src;
+        }
+        throw CodeGenError("the initial value of variable '" + std::string(v.m_name)
+            + "' in a COMMON block is not supported by the C backend", v.base.base.loc);
+    }
+
+    // The linker symbol `link_name` as the assembler label of a C object.
+    // GCC writes the label into its assembly as it is, so a label with
+    // another character than those of an identifier, such as the `#` of the
+    // link name of blank COMMON, is quoted for it; clang takes the label as
+    // the symbol name itself.
+    std::string common_asm_label(const std::string &link_name) {
+        std::string label = link_name;
+        if (platform == Platform::macOS_Intel || platform == Platform::macOS_ARM ||
+                platform == Platform::macOS_PowerPC) {
+            label = "_" + label;
+        }
+        bool identifier = std::all_of(label.begin(), label.end(), [](char c) {
+            return std::isalnum(static_cast<unsigned char>(c)) || c == '_' || c == '$' || c == '.';
+        });
+        std::string plain = "__asm__(\"" + str_escape_c(label) + "\")";
+        if (identifier) {
+            return plain;
+        }
+        return "\n#if defined(__clang__)\n    " + plain + "\n#else\n    __asm__(\"\\\""
+            + str_escape_c(label) + "\\\"\")\n#endif\n";
+    }
+
+    // The storage of the common blocks laid out by layout_common_blocks,
+    // preceded by the types it is accessed as. The object of a block has the
+    // block's link name as its linker symbol. An Initialized view defines it
+    // with the initial value of its variables, a packed structure of them at
+    // their offsets; otherwise a Tentative view defines it as a common
+    // symbol, which the linker merges with the definitions of other objects,
+    // keeping the largest; and External views only declare it.
+    std::string declare_common_storage() {
+        std::string decls;
+        for (const std::string &type : common_access_types) {
+            decls += "typedef " + type + " __attribute__((__may_alias__)) "
+                + common_access_type_name(type) + ";\n";
+        }
+        for (auto &item : common_storage) {
+            const CommonStorage &storage = item.second;
+            std::string fields, values;
+            int64_t end = 0;
+            for (auto &initialized : storage.initialized) {
+                const ASR::Variable_t &v = *initialized.second;
+                if (initialized.first > end) {
+                    fields += "        unsigned char pad" + std::to_string(end) + "["
+                        + std::to_string(initialized.first - end) + "];\n";
+                    values += "{0}, ";
+                }
+                int64_t size, alignment;
+                std::string type = common_element_type(v, size, alignment);
+                if (ASRUtils::is_logical(*ASRUtils::type_get_past_array(v.m_type))) {
+                    type = "unsigned char";
+                    size = 1;
+                }
+                std::string dims;
+                if (ASRUtils::is_array(v.m_type)) {
+                    int64_t n = ASRUtils::get_fixed_size_of_array(v.m_type);
+                    dims = "[" + std::to_string(n) + "]";
+                    size *= n;
+                }
+                fields += "        " + type + " v" + std::to_string(initialized.first)
+                    + dims + ";\n";
+                values += common_initial_value(v) + ", ";
+                end = initialized.first + size;
+            }
+            std::string decl = "union {\n";
+            if (!fields.empty()) {
+                decl += "    struct __attribute__((__packed__)) {\n" + fields + "    } init;\n";
+            }
+            decl += "    unsigned char bytes[" + std::to_string(std::max<int64_t>(storage.size, 1))
+                + "];\n} __attribute__((__aligned__(" + std::to_string(storage.alignment)
+                + "))) " + storage.name + " " + common_asm_label(storage.link_name);
+            if (!storage.defined) {
+                decls += "extern " + decl + ";\n";
+            } else if (storage.initialized_view) {
+                if (values.empty()) {
+                    values = "{0}, ";
+                }
+                values.resize(values.size() - 2);
+                decls += decl + " = {" + (fields.empty() ? values : "{" + values + "}")
+                    + "};\n";
+            } else {
+                decls += decl + " __attribute__((__common__));\n";
+            }
+        }
+        for (const ASR::Variable_t *v : common_arrays) {
+            CommonPlacement &placement = common_placement[v];
+            ASR::ttype_t *type = ASRUtils::type_get_past_array(v->m_type);
+            std::string element = CUtils::get_c_type_from_ttype_t(type);
+            std::string encoded_type = ASRUtils::get_type_code(type);
+            c_ds_api->get_array_type(element, encoded_type, array_types_decls);
+            std::string descriptor_type = c_ds_api->get_array_type(element,
+                encoded_type, array_types_decls, false);
+            std::string base = placement.storage->name + "_" + std::string(v->m_name);
+            placement.descriptor = base;
+            for (int i = 1; common_names.count(placement.descriptor) > 0; i++) {
+                placement.descriptor = base + "_" + std::to_string(i);
+            }
+            common_names.insert(placement.descriptor);
+            // The array in array element order, as the storage of the block
+            // holds it, for the procedures that index it by its strides.
+            ASR::dimension_t *dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(v->m_type, dims);
+            std::string dims_init;
+            int64_t stride = 1;
+            for (size_t i = 0; i < n_dims; i++) {
+                int64_t start = 1, length = 0;
+                [[maybe_unused]] bool constant_bounds = (dims[i].m_start == nullptr ||
+                    ASRUtils::extract_value(ASRUtils::expr_value(dims[i].m_start), start))
+                    && ASRUtils::extract_value(ASRUtils::expr_value(dims[i].m_length), length);
+                LCOMPILERS_ASSERT(constant_bounds);
+                if (i > 0) dims_init += ", ";
+                dims_init += "{" + std::to_string(start) + ", " + std::to_string(length)
+                    + ", " + std::to_string(stride) + "}";
+                stride *= length;
+            }
+            decls += "static " + descriptor_type + " " + placement.descriptor
+                + " __attribute__((__unused__)) = {(" + element + "*)("
+                + common_address(placement) + "), {" + dims_init + "}, "
+                + std::to_string(n_dims) + ", 0, false};\n";
+        }
+        if (!decls.empty()) {
+            decls += "\n";
+        }
+        return decls;
+    }
 
     std::string get_final_combined_src(std::string head, std::string unit_src) {
         std::string to_include = "";
@@ -316,6 +760,10 @@ R"(#include <stdio.h>
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
             if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var_sym);
+                // A variable in a common block lives in the block's storage.
+                if (ASRUtils::get_common_block(v) != nullptr) {
+                    continue;
+                }
                 std::string decl = self().convert_variable_decl(*v);
                 decl = check_tmp_buffer() + decl;
                 bool used_define_for_const = (v->m_storage == ASR::storage_typeType::Parameter &&
@@ -826,8 +1274,9 @@ R"(#include <stdio.h>
                 ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
                 if (ASR::is_a<ASR::Variable_t>(*var_sym)) {
                     ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var_sym);
-                    if (v->m_intent == ASRUtils::intent_local ||
-                        v->m_intent == ASRUtils::intent_return_var) {
+                    if ((v->m_intent == ASRUtils::intent_local ||
+                            v->m_intent == ASRUtils::intent_return_var) &&
+                            ASRUtils::get_common_block(v) == nullptr) {
                         std::string d = indent + self().convert_variable_decl(*v) + ";\n";
                         decl += check_tmp_buffer() + d;
                     }
@@ -1079,6 +1528,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string args = "";
         for (size_t i=0; i<n_args; i++) {
             ASR::expr_t* call_arg = m_args[i].m_value;
+            check_common_array_argument(call_arg, i < f->n_args ? f->m_args[i] : nullptr);
             self().visit_expr(*call_arg);
             ASR::ttype_t* type = ASRUtils::expr_type(call_arg);
             if (ASR::is_a<ASR::Var_t>(*call_arg)
@@ -1652,12 +2102,48 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                 self().visit_expr(*m_dims[i].m_length);
                 diminfo.push_back(src);
             }
-            fill_descriptor_for_array_section_data_only(value_desc, target_desc,
-                lbs, ubs, ds, non_sliced_indices,
-                diminfo, value_rank, target_rank);
+            if (common_placement_of(array_section->m_v) != nullptr) {
+                fill_descriptor_for_common_array_section(value_desc, target_desc,
+                    lbs, ubs, ds, non_sliced_indices, diminfo, value_rank, target_rank);
+            } else {
+                fill_descriptor_for_array_section_data_only(value_desc, target_desc,
+                    lbs, ubs, ds, non_sliced_indices,
+                    diminfo, value_rank, target_rank);
+            }
         } else {
             throw CodeGenError("Only Pointer to Data Array or Fixed Size array supported for now");
         }
+    }
+
+    // The descriptor of a section of an array in a common block, whose
+    // storage holds the array in array element order: the first subscript
+    // varies fastest.
+    void fill_descriptor_for_common_array_section(std::string value_desc,
+            std::string target_desc, std::vector<std::string>& lbs,
+            std::vector<std::string>& ubs, std::vector<std::string>& ds,
+            std::vector<std::string>& non_sliced_indices,
+            std::vector<std::string>& diminfo, int value_rank, int target_rank) {
+        std::string indent(indentation_level * indentation_spaces, ' ');
+        std::string offset = "0", stride = "1", dims;
+        int j = 0;
+        for (int i = 0; i < value_rank; i++) {
+            std::string first = ds[i] != "" ? lbs[i] : non_sliced_indices[i];
+            offset = "(" + offset + " + " + stride + " * ((" + first + ") - ("
+                + diminfo[2*i] + ")))";
+            if (ds[i] != "") {
+                std::string dim = target_desc + "->dims[" + std::to_string(j) + "]";
+                dims += indent + dim + ".stride = (" + stride + " * (" + ds[i] + "));\n";
+                dims += indent + dim + ".lower_bound = 1;\n";
+                dims += indent + dim + ".length = ((((" + ubs[i] + ") - (" + lbs[i]
+                    + "))/(" + ds[i] + ")) + 1);\n";
+                j++;
+            }
+            stride = "(" + stride + " * " + diminfo[2*i + 1] + ")";
+        }
+        LCOMPILERS_ASSERT(j == target_rank);
+        src = indent + target_desc + "->data = (" + value_desc + " + " + offset + ");\n"
+            + indent + target_desc + "->offset = 0;\n" + dims
+            + indent + target_desc + "->n_dims = " + std::to_string(target_rank) + ";\n";
     }
 
     void visit_Associate(const ASR::Associate_t &x) {
@@ -2066,6 +2552,18 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             return;
         }
         ASR::Variable_t* sv = ASR::down_cast<ASR::Variable_t>(s);
+        auto placement = common_placement.find(sv);
+        if (placement != common_placement.end()) {
+            if (ASRUtils::is_array(sv->m_type)) {
+                src = "(&" + placement->second.descriptor + ")";
+            } else {
+                int64_t size, alignment;
+                src = "(*(" + common_access_type_name(common_element_type(*sv, size,
+                    alignment)) + "*)(" + common_address(placement->second) + "))";
+            }
+            last_expr_precedence = 2;
+            return;
+        }
         if (is_c) {
             if ((sv->m_intent == ASRUtils::intent_in
                 || sv->m_intent == ASRUtils::intent_inout)
@@ -2950,8 +3448,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string loop_end_decl = "";
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string out = indent + "for (";
-        ASR::Variable_t *loop_var = ASRUtils::EXPR2VAR(x.m_head.m_v);
-        std::string lvname=loop_var->m_name;
+        // Spelled as any other reference to the variable, which need not be
+        // a local of its own (one in a common block, say).
+        self().visit_expr(*x.m_head.m_v);
+        std::string lvname = src;
         ASR::expr_t *a=x.m_head.m_start;
         ASR::expr_t *b=x.m_head.m_end;
         ASR::expr_t *c=x.m_head.m_increment;

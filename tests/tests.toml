@@ -21,6 +21,12 @@ llvm = true
 filename = "asr/compile/enum_constructor_external_symbol.asr"
 asr_clojure = true
 
+# COMMON views of one block in a BLOCK DATA unit, a procedure and the
+# program, including a block whose only initial value is zero.
+[[test]]
+filename = "asr/compile/common_block_views.asr"
+asr_clojure = true
+
 [[test]]
 filename = "asr/verify/assignment_realloc_nonallocatable.asr"
 asr = true
@@ -179,6 +185,10 @@ asr = true
 
 [[test]]
 filename = "../integration_tests/template_interface_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/template_intrinsic_func_01.f90"
 asr = true
 
 [[test]]
@@ -404,6 +414,14 @@ asr_implicit_argument_casting = true
 
 [[test]]
 filename = "errors/intent_inout_missing_arg.f90"
+asr_implicit_interface = true
+
+[[test]]
+filename = "errors/generic_typed_external_subroutine_01.f90"
+asr_implicit_interface = true
+
+[[test]]
+filename = "errors/generic_function_no_match_01.f90"
 asr_implicit_interface = true
 
 [[test]]
@@ -876,6 +894,10 @@ asr = true
 pass = "function_call_in_declaration"
 
 [[test]]
+filename = "../integration_tests/string_array_concat_04.f90"
+pass = "array_struct_temporary"
+
+[[test]]
 filename = "../integration_tests/external_string_arg_02.f90"
 asr = true
 llvm = true
@@ -1143,6 +1165,26 @@ run = true
 [[test]]
 filename = "array15.f90"
 pass = "array_op"
+
+[[test]]
+filename = "array_op_in_bounds.f90"
+pass = "array_op"
+
+[[test]]
+filename = "../integration_tests/array_item_in_bounds_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/array_item_in_bounds_02.f90"
+asr = true
+
+[[test]]
+filename = "array_op_section_in_bounds.f90"
+pass = "array_struct_temporary,array_op"
+
+[[test]]
+filename = "array_op_section_parameter.f90"
+pass = "array_struct_temporary,array_op"
 
 [[test]]
 filename = "array16.f90"
@@ -1871,6 +1913,10 @@ asr = true
 [[test]]
 filename = "../integration_tests/parameter_22.f90"
 semantics_only_cc = true
+
+[[test]]
+filename = "../integration_tests/parameter_25.f90"
+llvm = true
 
 # IntegerToReal
 [[test]]
@@ -2879,6 +2925,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "../integration_tests/program_06.f90"
+ast_f90 = true
+
+[[test]]
 filename = "use_statement.f90"
 ast = true
 
@@ -3379,6 +3429,10 @@ cpp = true
 wat = true
 
 [[test]]
+filename = "errors/wasm_external_procedure.f90"
+wat = true
+
+[[test]]
 filename = "errors/write_internal_file_c.f90"
 c = true
 
@@ -3441,6 +3495,14 @@ filename = "errors/continue_compilation_operator_interface.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/continue_compilation_external_procedure.f90"
+semantics_only_cc = true
+
+[[test]]
+filename = "errors/continue_compilation_block_interface.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/continue_compilation_coarrays.f90"
 semantics_only_cc = true
 
@@ -3454,6 +3516,10 @@ fixed_form_cc_asr = true
 
 [[test]]
 filename = "errors/continue_compilation_simd.f90"
+semantics_only_cc = true
+
+[[test]]
+filename = "errors/continue_compilation_initial_proc_target.f90"
 semantics_only_cc = true
 
 [[test]]
@@ -3681,6 +3747,10 @@ asr = true
 
 [[test]]
 filename = "errors/fixed_form_12.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_13.f"
 ast = true
 
 [[test]]
@@ -4731,6 +4801,14 @@ filename = "errors/array_bounds_check_17.f90"
 run = true
 
 [[test]]
+filename = "errors/array_bounds_check_18.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_19.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/statement_01.f90"
 asr_implicit_interface_and_typing = true
 
@@ -5308,6 +5386,10 @@ filename = "errors/openmp_default_01.f90"
 asr_openmp = true
 
 [[test]]
+filename = "errors/openmp_threadprivate_common_01.f90"
+asr_openmp = true
+
+[[test]]
 filename = "errors/openmp_default_02.f90"
 asr_openmp = true
 
@@ -5321,6 +5403,10 @@ asr_openmp = true
 
 [[test]]
 filename = "errors/openmp_default_05.f90"
+asr_openmp = true
+
+[[test]]
+filename = "errors/openmp_critical_01.f90"
 asr_openmp = true
 
 [[test]]
@@ -5533,6 +5619,14 @@ filename = "errors/duplicate_module_procedures.f90"
 asr = true
 
 [[test]]
+filename = "errors/proc_ptr_undefined_interface.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_deferred_interface_procedure.f90"
+asr = true
+
+[[test]]
 filename = "errors/string_negative_start_index.f90"
 asr = true
 
@@ -5698,6 +5792,12 @@ options = "-c --separate-compilation"
 filename = "common_linkage_separate_compilation_01.f90"
 llvm = true
 options = "--separate-compilation"
+
+# The overlay at byte 4 of the block is accessed with align 4, and the
+# procedures it is passed to claim no alignment for their dummies.
+[[test]]
+filename = "../integration_tests/common_60.f90"
+llvm = true
 
 [[test]]
 filename = "module_struct_global_separate_compilation_01.f90"
@@ -5866,7 +5966,15 @@ filename = "../integration_tests/shadow_same_symbol.f90"
 run = true
 
 [[test]]
+filename = "errors/template_intrinsic_op_01.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/continue_compilation_templates_01.f90"
+semantics_only_cc = true
+
+[[test]]
+filename = "errors/continue_compilation_templates_02.f90"
 semantics_only_cc = true
 
 [[test]]
@@ -5985,6 +6093,10 @@ filename = "asr/verify/assignment_value_type_mismatch.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/assignment_move_type_mismatch.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/function_signature_argument_mismatch.asr"
 asr = true
 
@@ -6006,6 +6118,10 @@ asr = true
 
 [[test]]
 filename = "asr/verify/array_item_element_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/array_item_in_bounds_array.asr"
 asr = true
 
 [[test]]
@@ -6197,6 +6313,86 @@ filename = "asr/verify/gpu_kernel_launch_polymorphic_array_argument.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/common_block_role_tentative_initializer.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_role_initialized_no_initializer.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_variable_view_of_other_scope.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_variable_not_placed.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_variable_names_variable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_member_back_link.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_member_placed_twice.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_member_not_variable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_member_other_scope.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_no_members.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_association_anchor.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_association_designator.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_link_name.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_abi.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_threadprivate_storage.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_owner_block.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_variable_bindc_name.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_variable_nonconstant_length.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/common_block_variable_not_sequence.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/block_data_contains_procedure.asr"
+asr = true
+
+[[test]]
 filename = "../integration_tests/derived_types_188.f90"
 run = true
 
@@ -6303,4 +6499,16 @@ options = "--gpu=metal"
 
 [[test]]
 filename = "../integration_tests/string_122.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/character_35.f90"
+ast_f90 = true
+
+[[test]]
+filename = "errors/template_component_default_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_component_default_02.f90"
 asr = true

@@ -33,7 +33,7 @@ loop.body:                                        ; preds = %loop.head
   store i32 %8, i32* @__module___lcompilers_created__nested_context__closuretest__z, align 4
   %9 = alloca i64, align 8
   store i32 1, i32* %call_arg_value, align 4
-  %10 = call i32 @apply(i32 (i32*)* @add_z, i32* %call_arg_value)
+  %10 = call i32 @closuretest.apply(i32 (i32*)* @closuretest.add_z, i32* %call_arg_value)
   %11 = alloca i32, align 4
   store i32 %10, i32* %11, align 4
   %12 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %9, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %11)
@@ -71,10 +71,10 @@ FINALIZE_SYMTABLE_closuretest:                    ; preds = %return
   ret i32 0
 }
 
-define i32 @add_z(i32* %x) {
+define i32 @closuretest.add_z(i32* %x) {
 .entry:
   %y = alloca i32, align 4
-  %0 = load i32, i32* %x, align 4
+  %0 = load i32, i32* %x, align 1
   %1 = load i32, i32* @__module___lcompilers_created__nested_context__closuretest__z, align 4
   %2 = add i32 %0, %1
   store i32 %2, i32* %y, align 4
@@ -88,7 +88,7 @@ FINALIZE_SYMTABLE_add_z:                          ; preds = %return
   ret i32 %3
 }
 
-define i32 @apply(i32 (i32*)* %fun, i32* %x) {
+define i32 @closuretest.apply(i32 (i32*)* %fun, i32* %x) {
 .entry:
   %y = alloca i32, align 4
   %0 = call i32 %fun(i32* %x)

@@ -85,6 +85,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             type_2:
                                 (Variable
@@ -114,6 +115,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     derived_types_10
@@ -238,6 +240,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     t_1
@@ -288,6 +291,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     t_2

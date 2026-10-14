@@ -73,6 +73,7 @@
                     :NotMethod
                     nil
                     []
+                    nil
                   )
                   "a" (Variable
                     3
@@ -98,6 +99,7 @@
                     :NotMethod
                     nil
                     []
+                    nil
                   )
                 }
               )
@@ -202,6 +204,7 @@
               :NotMethod
               nil
               []
+              nil
             )
             "x" (Variable
               6
@@ -227,6 +230,7 @@
               :NotMethod
               nil
               []
+              nil
             )
           }
         )

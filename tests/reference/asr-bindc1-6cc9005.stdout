@@ -52,6 +52,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -78,6 +79,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     bindc1

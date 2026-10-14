@@ -54,8 +54,9 @@
                                                     7
                                                     1_intvector_elements
                                                     8 elements
-                                                    intvector
-                                                    []
+                                                    template_vector_m
+                                                    [main
+                                                    intvector]
                                                     elements
                                                     Public
                                                 ),
@@ -79,8 +80,9 @@
                                                                     9
                                                                     1_intvector_elements
                                                                     8 elements
-                                                                    intvector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [main
+                                                                    intvector]
                                                                     elements
                                                                     Public
                                                                 ),
@@ -89,8 +91,9 @@
                                                                     9
                                                                     1_intvector_resize
                                                                     8 resize
-                                                                    intvector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [main
+                                                                    intvector]
                                                                     resize
                                                                     Public
                                                                 ),
@@ -99,8 +102,9 @@
                                                                     9
                                                                     1_intvector_sz
                                                                     8 sz
-                                                                    intvector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [main
+                                                                    intvector]
                                                                     sz
                                                                     Public
                                                                 ),
@@ -127,6 +131,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -151,6 +156,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -180,6 +186,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __asr_push_back
@@ -255,6 +262,7 @@
                                                             (Integer 4)
                                                             ColMajor
                                                             ()
+                                                            .false.
                                                         )
                                                         (Var 9 item)
                                                         ()
@@ -284,13 +292,25 @@
                                                     (SymbolTable
                                                         10
                                                         {
+                                                            1_intvector_elements:
+                                                                (ExternalSymbol
+                                                                    10
+                                                                    1_intvector_elements
+                                                                    8 elements
+                                                                    template_vector_m
+                                                                    [main
+                                                                    intvector]
+                                                                    elements
+                                                                    Public
+                                                                ),
                                                             1_intvector_sz:
                                                                 (ExternalSymbol
                                                                     10
                                                                     1_intvector_sz
                                                                     8 sz
-                                                                    intvector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [main
+                                                                    intvector]
                                                                     sz
                                                                     Public
                                                                 ),
@@ -317,6 +337,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -341,6 +362,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -370,6 +392,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -402,6 +425,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     __asr_resize
@@ -436,7 +460,7 @@
                                                                 Allocated
                                                                 [(StructInstanceMember
                                                                     (Var 10 this)
-                                                                    7 1_intvector_elements
+                                                                    10 1_intvector_elements
                                                                     (Allocatable
                                                                         (Array
                                                                             (Integer 4)
@@ -458,7 +482,7 @@
                                                         [(Allocate
                                                             [((StructInstanceMember
                                                                 (Var 10 this)
-                                                                7 1_intvector_elements
+                                                                10 1_intvector_elements
                                                                 (Allocatable
                                                                     (Array
                                                                         (Integer 4)
@@ -537,11 +561,12 @@
                                                                 (Integer 4)
                                                                 ColMajor
                                                                 ()
+                                                                .false.
                                                             )
                                                             (ArrayItem
                                                                 (StructInstanceMember
                                                                     (Var 10 this)
-                                                                    7 1_intvector_elements
+                                                                    10 1_intvector_elements
                                                                     (Allocatable
                                                                         (Array
                                                                             (Integer 4)
@@ -559,6 +584,7 @@
                                                                 (Integer 4)
                                                                 ColMajor
                                                                 ()
+                                                                .false.
                                                             )
                                                             ()
                                                             .false.
@@ -569,7 +595,7 @@
                                                     (Allocate
                                                         [((StructInstanceMember
                                                             (Var 10 this)
-                                                            7 1_intvector_elements
+                                                            10 1_intvector_elements
                                                             (Allocatable
                                                                 (Array
                                                                     (Integer 4)
@@ -595,7 +621,7 @@
                                                         (ArraySection
                                                             (StructInstanceMember
                                                                 (Var 10 this)
-                                                                7 1_intvector_elements
+                                                                10 1_intvector_elements
                                                                 (Allocatable
                                                                     (Array
                                                                         (Integer 4)
@@ -671,6 +697,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             push_back:
                                                                 (StructMethodDeclaration
@@ -717,6 +744,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     intvector
@@ -768,6 +796,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     main
@@ -820,6 +849,7 @@
                                                 (Integer 4)
                                                 ColMajor
                                                 ()
+                                                .false.
                                             )
                                             NotEq
                                             (IntegerConstant 10 (Integer 4) Decimal)
@@ -852,8 +882,9 @@
                                                                     5
                                                                     1_vector_elements
                                                                     4 elements
-                                                                    vector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [vector_t
+                                                                    vector]
                                                                     elements
                                                                     Public
                                                                 ),
@@ -872,8 +903,9 @@
                                                                     5
                                                                     1_vector_sz
                                                                     4 sz
-                                                                    vector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [vector_t
+                                                                    vector]
                                                                     sz
                                                                     Public
                                                                 ),
@@ -904,6 +936,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -928,6 +961,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -970,6 +1004,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     push_back
@@ -1070,6 +1105,7 @@
                                                             )
                                                             ColMajor
                                                             ()
+                                                            .false.
                                                         )
                                                         (Var 5 item)
                                                         ()
@@ -1104,8 +1140,9 @@
                                                                     6
                                                                     1_vector_elements
                                                                     4 elements
-                                                                    vector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [vector_t
+                                                                    vector]
                                                                     elements
                                                                     Public
                                                                 ),
@@ -1114,8 +1151,9 @@
                                                                     6
                                                                     1_vector_sz
                                                                     4 sz
-                                                                    vector
-                                                                    []
+                                                                    template_vector_m
+                                                                    [vector_t
+                                                                    vector]
                                                                     sz
                                                                     Public
                                                                 ),
@@ -1142,6 +1180,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -1166,6 +1205,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -1208,6 +1248,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -1244,6 +1285,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     resize
@@ -1404,6 +1446,7 @@
                                                                 )
                                                                 ColMajor
                                                                 ()
+                                                                .false.
                                                             )
                                                             (ArrayItem
                                                                 (StructInstanceMember
@@ -1434,6 +1477,7 @@
                                                                 )
                                                                 ColMajor
                                                                 ()
+                                                                .false.
                                                             )
                                                             ()
                                                             .false.
@@ -1549,6 +1593,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             vector:
                                                 (Struct
@@ -1590,6 +1635,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             push_back:
                                                                 (StructMethodDeclaration
@@ -1636,6 +1682,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     vector

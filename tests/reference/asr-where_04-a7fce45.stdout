@@ -35,6 +35,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             reldiff:
                                                 (Variable
@@ -65,6 +66,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     compare_solutions
@@ -257,6 +259,7 @@
                                                         (Real 4)
                                                         ColMajor
                                                         ()
+                                                        .true.
                                                     )
                                                     Sub
                                                     (RealConstant
@@ -297,6 +300,7 @@
                                                         (Real 4)
                                                         ColMajor
                                                         ()
+                                                        .true.
                                                     )
                                                     Sub
                                                     (RealConstant
@@ -376,6 +380,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     solution

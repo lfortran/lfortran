@@ -1,0 +1,13 @@
+{
+    "basename": "asr-common_block_variable_not_placed-ad00db0",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/common_block_variable_not_placed.asr",
+    "infile_hash": "63d2fcc5bf23296a2b96b3288d715b30d1e38bdc8cadc33d197a4c63",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-common_block_variable_not_placed-ad00db0.stderr",
+    "stderr_hash": "b4d505321cb444c5d227c3425a7e6e4e3110998e3a2f3a7770e34fee",
+    "returncode": 2
+}

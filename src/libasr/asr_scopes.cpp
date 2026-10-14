@@ -43,10 +43,18 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
         switch (a.second->type) {
             case (ASR::symbolType::Variable) : {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(a.second);
-                if ( v->m_abi == ASR::abiType::BindC ) {
+                // A variable in a common block has no storage of its own to
+                // refer to; its block becomes External below.
+                if ( v->m_abi == ASR::abiType::BindC ||
+                        v->m_common_block != nullptr ) {
                     break;
                 }
                 v->m_abi = ASR::abiType::ExternalUndefined;
+                break;
+            }
+            case (ASR::symbolType::CommonBlock) : {
+                ASR::CommonBlock_t *c = ASR::down_cast<ASR::CommonBlock_t>(a.second);
+                c->m_role = ASR::common_block_roleType::External;
                 break;
             }
             case (ASR::symbolType::Enum) : {
@@ -75,6 +83,19 @@ void SymbolTable::mark_all_variables_external(Allocator &al) {
                 if ( !startswith(v->m_name, "lfortran_intrinsic") ) {
                     v->m_symtab->mark_all_variables_external(al);
                 }
+                break;
+            }
+            // What a program unit declares is referred to, as the code of
+            // the unit itself is, only through its views of common blocks.
+            case (ASR::symbolType::Program) : {
+                ASR::down_cast<ASR::Program_t>(a.second)->m_symtab
+                    ->mark_all_variables_external(al);
+                break;
+            }
+            case (ASR::symbolType::BlockData) : {
+                ASR::down_cast<ASR::BlockData_t>(a.second)->m_symtab
+                    ->mark_all_variables_external(al);
+                break;
             }
             default : {};
         }
@@ -86,7 +107,7 @@ ASR::symbol_t *SymbolTable::find_scoped_symbol(const std::string &name,
     const SymbolTable *s = this;
     for(size_t i=0; i < n_scope_names; i++) {
         std::string scope_name = m_scope_names[i];
-        if (s->scope.find(scope_name) != scope.end()) {
+        if (s->scope.find(scope_name) != s->scope.end()) {
             ASR::symbol_t *sym = s->scope.at(scope_name);
             s = ASRUtils::symbol_symtab(sym);
             if (s == nullptr) {
@@ -100,7 +121,7 @@ ASR::symbol_t *SymbolTable::find_scoped_symbol(const std::string &name,
             return nullptr;
         }
     }
-    if (s->scope.find(name) != scope.end()) {
+    if (s->scope.find(name) != s->scope.end()) {
         ASR::symbol_t *sym = s->scope.at(name);
         LCOMPILERS_ASSERT(sym)
         return sym;
@@ -115,10 +136,19 @@ std::string SymbolTable::get_unique_name(const std::string &name, bool use_uniqu
     if( use_unique_id && !lcompilers_unique_ID_separate_compilation.empty()) {
         unique_name += "_" + lcompilers_unique_ID_separate_compilation;
     }
-    int counter = 1;
+    if (scope.find(unique_name) == scope.end()) {
+        return unique_name;
+    }
+    // Start from the counter where the previous search for `name` stopped,
+    // so that creating many symbols with the same name is not quadratic.
+    int &counter = unique_name_counter[name];
+    if (counter == 0) {
+        counter = 1;
+    }
+    unique_name = name + std::to_string(counter);
     while (scope.find(unique_name) != scope.end()) {
-        unique_name = name + std::to_string(counter);
         counter++;
+        unique_name = name + std::to_string(counter);
     }
     return unique_name;
 }

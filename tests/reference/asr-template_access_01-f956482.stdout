@@ -45,6 +45,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             g:
                                 (ExternalSymbol
@@ -293,6 +294,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -317,6 +319,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     g
@@ -378,6 +381,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     rbox
@@ -410,8 +414,8 @@
                                                     10
                                                     1_rbox_v
                                                     9 v
-                                                    rbox
-                                                    []
+                                                    template_access_01_inst_m
+                                                    [rbox]
                                                     v
                                                     Public
                                                 ),
@@ -443,6 +447,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -467,6 +472,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     rmk
@@ -562,6 +568,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -586,6 +593,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     h
@@ -680,6 +688,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     box
@@ -738,6 +747,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -766,6 +776,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     f
@@ -817,8 +828,9 @@
                                                                     6
                                                                     1_box_v
                                                                     4 v
-                                                                    box
-                                                                    []
+                                                                    template_access_01_tmpl_m
+                                                                    [t_tmpl
+                                                                    box]
                                                                     v
                                                                     Public
                                                                 ),
@@ -854,6 +866,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -882,6 +895,7 @@
                                                                     NotMethod
                                                                     ()
                                                                     []
+                                                                    ()
                                                                 )
                                                         })
                                                     mk
@@ -964,6 +978,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     t_tmpl

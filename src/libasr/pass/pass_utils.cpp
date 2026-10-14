@@ -11,6 +11,22 @@ namespace LCompilers {
 
     namespace PassUtils {
 
+        void make_new_tu_functions_private(ASR::TranslationUnit_t &unit,
+                const std::function<void()> &instantiate) {
+            std::set<std::string> existing_symbols;
+            for (auto &item: unit.m_symtab->get_scope()) {
+                existing_symbols.insert(item.first);
+            }
+            instantiate();
+            for (auto &item: unit.m_symtab->get_scope()) {
+                if (existing_symbols.find(item.first) == existing_symbols.end()
+                        && ASR::is_a<ASR::Function_t>(*item.second)) {
+                    ASR::down_cast<ASR::Function_t>(item.second)->m_access =
+                        ASR::accessType::Private;
+                }
+            }
+        }
+
         void get_dim_rank(ASR::ttype_t* x_type, ASR::dimension_t*& m_dims, int& n_dims) {
             ASR::ttype_t* t2 = ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(x_type));
@@ -1203,6 +1219,45 @@ namespace LCompilers {
                 throw LCompilersException("Symbol with " + name + " is already present in " + std::to_string(current_scope->counter));
             }
             return ASRUtils::EXPR(ASR::make_Var_t(al, loc, ASR::down_cast<ASR::symbol_t>(expr_sym)));
+        }
+
+        // A non-empty rank one constant, which can be named as a named
+        // constant (parameter); backends keep that as static data.
+        bool is_nameable_array_constant(ASR::ArrayConstant_t* x) {
+            return ASRUtils::extract_n_dims_from_ttype(x->m_type) == 1 &&
+                ASRUtils::get_fixed_size_of_array(x->m_type) > 0;
+        }
+
+        ASR::expr_t* create_named_array_constant(Allocator& al,
+                ASR::ArrayConstant_t* x, SymbolTable* current_scope) {
+            const Location& loc = x->base.base.loc;
+            std::string name = current_scope->get_unique_name("__libasr_array_constant_");
+            // The constant may be typed as a descriptor array without a
+            // lower bound (e.g. the value of an assignment to an
+            // allocatable target); a named constant is a fixed size array
+            // with lower bound 1, like one declared in the source.
+            ASR::ttype_t* index_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, index_type));
+            dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                ASRUtils::get_fixed_size_of_array(x->m_type), index_type));
+            dims.push_back(al, dim);
+            ASR::ttype_t* type = ASRUtils::duplicate_type(al,
+                ASRUtils::type_get_past_allocatable(x->m_type), &dims,
+                ASR::array_physical_typeType::FixedSizeArray, true);
+            ASR::expr_t* value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
+                x->m_n_data, x->m_data, type, x->m_storage_format));
+            ASR::symbol_t* constant = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, name),
+                    nullptr, 0, ASR::intentType::Local, value, value,
+                    ASR::storage_typeType::Parameter, ASRUtils::duplicate_type(al, type),
+                    nullptr, ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::presenceType::Required, false));
+            current_scope->add_symbol(name, constant);
+            return ASRUtils::EXPR(ASR::make_Var_t(al, loc, constant));
         }
 
         ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
