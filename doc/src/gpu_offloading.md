@@ -179,7 +179,9 @@ generates the device source. It never falls back to the CPU:
   right-hand side of an assignment is spliced into the kernel instead: the
   body of the procedure replaces the call, with the actual arguments in
   place of the dummy arguments, which more often makes the extents
-  constants.
+  constants. Inside device code an allocatable local is given the shape of
+  the `allocate`, reallocation or move that gives it one, also when that
+  shape is read from another such local.
 * A kernel cannot allocate. When a loop writes an allocatable array component
   of an element of an array of derived type, the storage the kernel writes
   into has to exist before the launch. The write may be `t(i) = f(...)`,
