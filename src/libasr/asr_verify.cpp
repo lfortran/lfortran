@@ -3077,6 +3077,12 @@ public:
                     case ASR::exprType::ArrayItem:
                     case ASR::exprType::ArrayPhysicalCast:
                     case ASR::exprType::StructInstanceMember:
+                    // An extent that changes from thread to thread is
+                    // written over the thread index; the host evaluates it
+                    // for every thread of the launch.
+                    case ASR::exprType::GpuThreadIndex:
+                    case ASR::exprType::GpuBlockIndex:
+                    case ASR::exprType::GpuBlockSize:
                         ASR::BaseWalkVisitor<ExtentVariables>::visit_expr(expression);
                         break;
                     default: host_evaluable = false;

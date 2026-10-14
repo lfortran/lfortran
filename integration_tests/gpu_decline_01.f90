@@ -1,9 +1,10 @@
-! gpu decline reason: AliasTemporaryRuntimeSized
-! an array assignment whose two sides overlap needs a temporary. Its extent
-! `m(k)` changes with the iteration, so the per-thread temporary would be
-! sized as the whole component `x(k)%v` instead, but that is an element of
-! an array of derived type whose size may differ from one iteration to the
-! next, so the host cannot size it before the launch either.
+! An array assignment whose two sides overlap needs a temporary. Its extent
+! `m(k)` changes with the iteration, so the per-thread temporary is sized
+! as the whole component `x(k)%v` instead, an element of an array of
+! derived type whose size differs from one iteration to the next. This
+! used to be declined (AliasTemporaryRuntimeSized); the host now sizes
+! each thread's slice by the largest size over the iterations, so the
+! loop is offloaded and has to compute the same values.
 program gpu_decline_01
     implicit none
     type :: t_t

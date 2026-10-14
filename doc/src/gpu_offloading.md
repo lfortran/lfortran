@@ -138,6 +138,21 @@ generates the device source. It never falls back to the CPU:
 * The pipeline does not repeat the unsupported-construct check. Where it needs
   a fact the check guarantees (for example that no `real(8)` reaches a Metal
   kernel), it asserts it.
+* An array an iteration needs whose size is known only at run time -- a
+  local of a `block` with run-time extents, an allocatable local, or a
+  temporary the compiler introduces, such as the result of a function or
+  the copy an overlapping assignment needs -- lives in a buffer the host
+  allocates before the launch, since a kernel cannot allocate. Every
+  thread uses a slice of it. When the size changes from one iteration to
+  the next (`allocate(w(m(k)))`, or `x(k)%values()` whose result has the
+  size of a component of the iteration's element), the host works it out
+  for every iteration before the launch, from the loop limits and the
+  values the kernel gives the loop indices, and gives every slice room for
+  the largest. Each thread uses the leading part its own size needs. The size
+  may read the loop indices, the arguments of the loop and the shapes of
+  arrays, but not a value the loop writes, which the host does not know
+  before the launch: such a loop is an error ("workspace ... cannot be
+  sized on the host").
 * A kernel cannot allocate. When a loop writes an allocatable array component
   of an element of an array of derived type, the storage the kernel writes
   into has to exist before the launch. The write may be `t(i) = f(...)`,

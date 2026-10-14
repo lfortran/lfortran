@@ -1,9 +1,0 @@
-ASR pass error: parallel loop cannot be offloaded to the GPU yet: an aliased assignment needs a run-time sized temporary
-  --> tests/../integration_tests/gpu_decline_01.f90:19:5 - 21:10
-   |
-19 |        do concurrent (k = 1:3)
-   |        ^^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-21 |        end do
-   | ...^^^^^^^^^^ an aliased assignment needs a run-time sized temporary

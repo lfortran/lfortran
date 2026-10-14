@@ -210,15 +210,14 @@ public:
                 ASRUtils::extract_kind_from_ttype_t(tb);
     }
 
+    // Whether the device can read the extent of a workspace dimension.
+    // Whether the host can size it is settled by the layout, which writes
+    // out what the host evaluates.
     bool workspace_dim_can_expand(const GpuVlaDim &dim,
             const ASR::Function_t *kernel) {
         if (dim.is_constant) return true;
         if (dim.is_struct_member_size) {
             if (dim.struct_member_key.empty()) return false;
-            if (dim.struct_member_elem_index < 0) {
-                return unsupported(GpuDecline(
-                    GpuDeclineReason::WorkspaceStructElementShape));
-            }
             const std::string &arr = dim.struct_member_key.base;
             const std::string &mem = dim.struct_member_key.member;
             for (size_t i = 0; i < kernel->n_args; i++) {
@@ -238,7 +237,7 @@ public:
             }
             return false;
         }
-        return dim.derived.ok();
+        return true;
     }
 
     class NestedAllocatableReadFinder :
@@ -634,13 +633,38 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
         Vec<ASR::gpu_workspace_dimension_t> dims;
         dims.reserve(al, workspace.dims.size());
         for (const auto &dim : workspace.dims) {
-            ASR::expr_t *extent = dim.is_constant
-                ? b.i32(dim.constant_value)
-                : dim.is_struct_member_size ? dim.source_extent
-                : GpuExtentBuilder::build_host_extent(al, loc,
+            // An extent the host can evaluate once, for every thread, is
+            // written as that; one that changes from thread to thread is
+            // written over the thread index, and the launch sizes every
+            // thread's slice by its largest value.
+            ASR::expr_t *extent = nullptr;
+            if (dim.is_constant) {
+                extent = b.i32(dim.constant_value);
+            } else if (dim.is_struct_member_size) {
+                if (dim.struct_member_elem_index >= 0) {
+                    extent = dim.source_extent;
+                }
+            } else if (dim.derived.ok()) {
+                extent = GpuExtentBuilder::build_host_extent(al, loc,
                     &kernel, identity.p, identity.n, dim.derived);
-            if (!extent || !gpu_bind_kernel_expression(al, kernel,
-                    args, n_args, extent)) {
+            }
+            if (extent == nullptr) {
+                ASR::expr_t *source = dim.source_extent;
+                if (source == nullptr && dim.source_array != nullptr) {
+                    source = b.ArraySize(dim.source_array,
+                        dim.source_array_dim > 0
+                            ? b.i32(dim.source_array_dim) : nullptr, int32);
+                }
+                extent = gpu_kernel_per_thread_extent(al, kernel, source);
+            }
+            if (!extent) {
+                decline = GpuDecline(
+                    GpuDeclineReason::WorkspaceNotSizeableOnHost,
+                    workspace.var_name);
+                return false;
+            }
+            if (!gpu_bind_kernel_expression(al, kernel, args, n_args,
+                    extent)) {
                 decline = GpuDecline(
                     GpuDeclineReason::LaunchVlaExtentNotRebuildable,
                     workspace.var_name);

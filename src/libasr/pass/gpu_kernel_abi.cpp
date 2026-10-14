@@ -1,10 +1,282 @@
 #include <libasr/asr_builder.h>
 #include <libasr/pass/gpu_kernel_abi.h>
+#include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/pass_utils.h>
+
+#include <utility>
 
 namespace LCompilers {
 
 namespace {
+
+ASR::expr_t* duplicate_expression(Allocator &al, ASR::expr_t *e) {
+    ASRUtils::ExprStmtDuplicator duplicator(al);
+    duplicator.success = true;
+    ASR::expr_t *copy = duplicator.duplicate_expr(e);
+    return duplicator.success ? copy : nullptr;
+}
+
+// Writes an expression of a kernel over the kernel's parameters and its
+// thread index alone: a scalar the prelude gives a value is replaced by
+// that value, and, with `through_bindings`, a scalar the kernel binds once
+// by the value it binds. Anything else is not something every thread and
+// the host can evaluate alike, and leaves the writer invalid.
+class GpuThreadExpressionWriter :
+        public ASR::BaseExprReplacer<GpuThreadExpressionWriter> {
+    Allocator &al;
+    const ASR::Function_t &kernel;
+    const std::map<ASR::symbol_t*, ASR::expr_t*> &values;
+    std::set<ASR::symbol_t*> parameters, expanding;
+    bool through_bindings;
+
+public:
+    bool valid = true;
+
+    GpuThreadExpressionWriter(Allocator &al, const ASR::Function_t &kernel,
+            const std::map<ASR::symbol_t*, ASR::expr_t*> &values,
+            bool through_bindings)
+        : al(al), kernel(kernel), values(values),
+          through_bindings(through_bindings) {
+        for (size_t i = 0; i < kernel.n_args; i++) {
+            parameters.insert(ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v));
+        }
+    }
+
+    ASR::expr_t* write(ASR::expr_t *e) {
+        ASR::expr_t *copy = duplicate_expression(al, e);
+        if (copy == nullptr) return nullptr;
+        current_expr = &copy;
+        replace_expr(copy);
+        return valid ? copy : nullptr;
+    }
+
+    // A type says what the value is, not how to compute it.
+    void replace_ttype(ASR::ttype_t *) {}
+
+    // Replaces the current expression by `value`, itself written out, in
+    // place of what `symbol` stands for.
+    void expand(ASR::symbol_t *symbol, ASR::expr_t *value) {
+        ASR::expr_t *copy = value && !expanding.count(symbol)
+            ? duplicate_expression(al, value) : nullptr;
+        if (copy == nullptr) {
+            valid = false;
+            return;
+        }
+        expanding.insert(symbol);
+        ASR::expr_t **outer = current_expr;
+        current_expr = &copy;
+        replace_expr(copy);
+        current_expr = outer;
+        *current_expr = copy;
+        expanding.erase(symbol);
+    }
+
+    // The extent of an array of the kernel's own is the one it is
+    // declared or allocated with.
+    void replace_ArraySize(ASR::ArraySize_t *x) {
+        ASR::expr_t *array = ASRUtils::get_past_array_physical_cast(x->m_v);
+        if (!ASR::is_a<ASR::Var_t>(*array)) {
+            ASR::BaseExprReplacer<GpuThreadExpressionWriter>
+                ::replace_ArraySize(x);
+            return;
+        }
+        ASR::symbol_t *symbol = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(array)->m_v);
+        if (parameters.count(symbol)) {
+            ASR::BaseExprReplacer<GpuThreadExpressionWriter>
+                ::replace_ArraySize(x);
+            return;
+        }
+        GpuExtentScope scope;
+        scope.kernel = &kernel;
+        scope.symtab = kernel.m_symtab;
+        scope.body = kernel.m_body;
+        scope.n_body = kernel.n_body;
+        std::string name = ASRUtils::symbol_name(symbol);
+        size_t rank = ASRUtils::extract_n_dims_from_ttype(
+            ASRUtils::symbol_type(symbol));
+        size_t first = 0, last = rank;
+        if (x->m_dim != nullptr) {
+            int64_t d = 0;
+            if (!ASRUtils::extract_value(ASRUtils::expr_value(x->m_dim), d)
+                    || d < 1 || (size_t)d > rank) {
+                valid = false;
+                return;
+            }
+            first = d - 1;
+            last = d;
+        }
+        ASRUtils::ASRBuilder b(al, x->base.base.loc);
+        ASR::expr_t *size = nullptr;
+        for (size_t d = first; d < last; d++) {
+            ASR::expr_t *extent = gpu_scope_local_array_extent(scope, name,
+                d);
+            if (extent == nullptr) {
+                valid = false;
+                return;
+            }
+            extent = b.i2i_t(extent, x->m_type);
+            size = size ? b.Mul(size, extent) : extent;
+        }
+        expand(symbol, size);
+    }
+
+    void replace_Var(ASR::Var_t *x) {
+        ASR::symbol_t *symbol = ASRUtils::symbol_get_past_external(x->m_v);
+        if (parameters.count(symbol)) return;
+        if (ASR::is_a<ASR::Variable_t>(*symbol) &&
+                ASR::down_cast<ASR::Variable_t>(symbol)->m_storage ==
+                    ASR::storage_typeType::Parameter) {
+            return;
+        }
+        auto value = values.find(symbol);
+        if (value != values.end()) {
+            *current_expr = duplicate_expression(al, value->second);
+            return;
+        }
+        expand(symbol, through_bindings ? gpu_local_scalar_binding(symbol,
+            kernel.m_body, kernel.n_body) : nullptr);
+    }
+};
+
+// Whether an expression is made only of what the host can evaluate before
+// a launch, for any thread: the operations asr_verify accepts in a
+// workspace extent.
+class GpuHostEvaluableCheck :
+        public ASR::BaseWalkVisitor<GpuHostEvaluableCheck> {
+public:
+    bool evaluable = true;
+    void visit_expr(const ASR::expr_t &e) {
+        switch (e.type) {
+            case ASR::exprType::IntegerConstant:
+            case ASR::exprType::LogicalConstant:
+            case ASR::exprType::Var:
+            case ASR::exprType::IntegerBinOp:
+            case ASR::exprType::IntegerUnaryMinus:
+            case ASR::exprType::IntegerCompare:
+            case ASR::exprType::IfExp:
+            case ASR::exprType::Cast:
+            case ASR::exprType::ArraySize:
+            case ASR::exprType::ArrayBound:
+            case ASR::exprType::ArrayItem:
+            case ASR::exprType::ArrayPhysicalCast:
+            case ASR::exprType::StructInstanceMember:
+            case ASR::exprType::GpuThreadIndex:
+            case ASR::exprType::GpuBlockIndex:
+            case ASR::exprType::GpuBlockSize:
+                ASR::BaseWalkVisitor<GpuHostEvaluableCheck>::visit_expr(e);
+                break;
+            default: evaluable = false;
+        }
+    }
+    void visit_ttype(const ASR::ttype_t &) {}
+};
+
+// Whether an expression reads, as a value, something the kernel writes.
+// The shape of an array is not such a value: a kernel cannot allocate, so
+// every array the launch hands it keeps the shape the host gave it, and
+// only the subscripts that pick an element are read.
+class GpuKernelWrittenValueReader :
+        public ASR::BaseWalkVisitor<GpuKernelWrittenValueReader> {
+    const GpuIterationVaryingSymbols &changed;
+
+    void visit_shape_of(ASR::expr_t *e) {
+        while (e != nullptr) {
+            if (ASR::is_a<ASR::Var_t>(*e)) return;
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(e);
+                for (size_t i = 0; i < item->n_args; i++) {
+                    visit_array_index(item->m_args[i]);
+                }
+                e = item->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                ASR::ArraySection_t *section =
+                    ASR::down_cast<ASR::ArraySection_t>(e);
+                for (size_t i = 0; i < section->n_args; i++) {
+                    visit_array_index(section->m_args[i]);
+                }
+                e = section->m_v;
+            } else {
+                visit_expr(*e);
+                return;
+            }
+        }
+    }
+
+public:
+    bool found = false;
+
+    explicit GpuKernelWrittenValueReader(
+        const GpuIterationVaryingSymbols &changed) : changed(changed) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (gpu_writes_symbol(changed,
+                ASRUtils::symbol_get_past_external(x.m_v))) {
+            found = true;
+        }
+    }
+
+    void visit_ArraySize(const ASR::ArraySize_t &x) {
+        visit_shape_of(x.m_v);
+        if (x.m_dim) visit_expr(*x.m_dim);
+    }
+
+    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        visit_shape_of(x.m_v);
+        if (x.m_dim) visit_expr(*x.m_dim);
+    }
+
+    void visit_ttype(const ASR::ttype_t &) {}
+};
+
+// Replays a per-thread expression on the host for one thread of a launch:
+// the thread index and the block index are the host's loop variables over
+// the launch's threads, and the block size is the launch's own.
+class GpuThreadReplay : public ASR::BaseExprReplacer<GpuThreadReplay> {
+    Allocator &al;
+    ASR::expr_t *block, *thread, *block_size;
+
+    ASR::expr_t* as(ASR::expr_t *e, ASR::ttype_t *type) {
+        ASRUtils::ASRBuilder b(al, e->base.loc);
+        return b.i2i_t(e, type);
+    }
+
+public:
+    GpuThreadReplay(Allocator &al, ASR::expr_t *block, ASR::expr_t *thread,
+            ASR::expr_t *block_size)
+        : al(al), block(block), thread(thread), block_size(block_size) {}
+
+    ASR::expr_t* replay(ASR::expr_t *e) {
+        ASR::expr_t *copy = duplicate_expression(al, e);
+        LCOMPILERS_ASSERT(copy != nullptr);
+        current_expr = &copy;
+        replace_expr(copy);
+        return copy;
+    }
+
+    void replace_GpuThreadIndex(ASR::GpuThreadIndex_t *x) {
+        ASRUtils::ASRBuilder b(al, x->base.base.loc);
+        *current_expr = x->m_dim == 0 ? as(thread, x->m_type)
+            : b.i_t(0, x->m_type);
+    }
+
+    void replace_GpuBlockIndex(ASR::GpuBlockIndex_t *x) {
+        ASRUtils::ASRBuilder b(al, x->base.base.loc);
+        *current_expr = x->m_dim == 0 ? as(block, x->m_type)
+            : b.i_t(0, x->m_type);
+    }
+
+    void replace_GpuBlockSize(ASR::GpuBlockSize_t *x) {
+        ASRUtils::ASRBuilder b(al, x->base.base.loc);
+        *current_expr = x->m_dim == 0 ? as(block_size, x->m_type)
+            : b.i_t(1, x->m_type);
+    }
+};
 
 class KernelArgumentBinder :
         public ASR::BaseExprReplacer<KernelArgumentBinder> {
@@ -89,7 +361,11 @@ public:
                 ASR::expr_t *extent = b.Variable(current_scope,
                     current_scope->get_unique_name("__gpu_extent"),
                     ASRUtils::expr_type(value), ASR::intentType::Local);
-                pass_result.push_back(al, b.Assignment(extent, value));
+                if (gpu_reads_thread_index(value)) {
+                    largest_over_threads(x, kernel, value, extent);
+                } else {
+                    pass_result.push_back(al, b.Assignment(extent, value));
+                }
                 ASR::call_arg_t arg;
                 arg.loc = x.base.base.loc;
                 arg.m_value = extent;
@@ -101,6 +377,49 @@ public:
         launch.m_args = args.p;
         launch.n_args = args.n;
         pass_result.push_back(al, &launch.base);
+    }
+
+    // Sets `largest` to the largest value the per-thread extent `value`
+    // has in a thread of the launch that runs the kernel's body. The host
+    // goes over the launch's threads as the kernel numbers them, and skips
+    // a thread the kernel's prelude sends back before the body: such a
+    // thread has no iteration, and its extent may read past the end of
+    // what the iterations read.
+    void largest_over_threads(const ASR::GpuKernelLaunch_t &x,
+            const ASR::Function_t &kernel, ASR::expr_t *value,
+            ASR::expr_t *largest) {
+        const Location &loc = x.base.base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASR::ttype_t *index_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 8));
+        ASR::expr_t *block = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_replay_block"),
+            index_type, ASR::intentType::Local);
+        ASR::expr_t *thread = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_replay_thread"),
+            index_type, ASR::intentType::Local);
+        ASR::expr_t *grid_size = b.i2i_t(x.m_grid_size, index_type);
+        ASR::expr_t *block_size = b.i2i_t(x.m_block_size, index_type);
+        GpuThreadReplay replay(al, block, thread, block_size);
+        ASR::ttype_t *type = ASRUtils::expr_type(value);
+        ASR::expr_t *one_value = replay.replay(value);
+        std::vector<ASR::stmt_t*> body = {b.If(b.Gt(one_value, largest),
+            {b.Assignment(largest, one_value)}, {})};
+        GpuKernelPrelude prelude = gpu_kernel_prelude(al, kernel);
+        for (size_t i = prelude.exits.size(); i-- > 0;) {
+            ASR::expr_t *exit = gpu_bind_kernel_expression(al, kernel,
+                x.m_args, x.n_args, prelude.exits[i]);
+            LCOMPILERS_ASSERT(exit != nullptr);
+            ASR::stmt_t *guarded = b.If(replay.replay(exit), {},
+                std::move(body));
+            body = {guarded};
+        }
+        pass_result.push_back(al, b.Assignment(largest, b.i_t(0, type)));
+        pass_result.push_back(al, b.DoLoop(block, b.i_t(0, index_type),
+            b.Sub(grid_size, b.i_t(1, index_type)), {
+                b.DoLoop(thread, b.i_t(0, index_type),
+                    b.Sub(block_size, b.i_t(1, index_type)),
+                    std::move(body))}));
     }
 };
 
@@ -123,6 +442,67 @@ ASR::expr_t* gpu_bind_kernel_expression(Allocator &al,
     binder.current_expr = &result;
     binder.replace_expr(result);
     return binder.valid ? result : nullptr;
+}
+
+GpuKernelPrelude gpu_kernel_prelude(Allocator &al,
+        const ASR::Function_t &kernel) {
+    GpuKernelPrelude prelude;
+    std::map<ASR::symbol_t*, ASR::expr_t*> values;
+    size_t n = 0;
+    for (; n < kernel.n_body; n++) {
+        ASR::stmt_t *stmt = kernel.m_body[n];
+        if (ASR::is_a<ASR::If_t>(*stmt)) {
+            ASR::If_t *test = ASR::down_cast<ASR::If_t>(stmt);
+            if (test->n_body != 1 || test->n_orelse != 0 ||
+                    !ASR::is_a<ASR::Return_t>(*test->m_body[0])) {
+                break;
+            }
+            GpuThreadExpressionWriter writer(al, kernel, values, false);
+            ASR::expr_t *exit = writer.write(test->m_test);
+            if (exit == nullptr) break;
+            prelude.exits.push_back(exit);
+            continue;
+        }
+        if (!ASR::is_a<ASR::Assignment_t>(*stmt)) break;
+        // The statements so far run one after the other in every thread,
+        // so a scalar holds the last value assigned to it. An element or a
+        // component written here is not a scalar of the prelude.
+        ASR::Assignment_t *assignment = ASR::down_cast<ASR::Assignment_t>(stmt);
+        if (!ASR::is_a<ASR::Var_t>(*assignment->m_target)) continue;
+        ASR::symbol_t *target = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(assignment->m_target)->m_v);
+        ASR::expr_t *value = nullptr;
+        if (!ASRUtils::is_array(ASRUtils::expr_type(assignment->m_target))) {
+            GpuThreadExpressionWriter writer(al, kernel, values, false);
+            value = writer.write(assignment->m_value);
+        }
+        values.erase(target);
+        if (value != nullptr) values[target] = value;
+    }
+    auto rest = gpu_symbols_changed_in(kernel.m_body + n, kernel.n_body - n);
+    for (auto &value : values) {
+        if (!gpu_writes_symbol(*rest, value.first)) {
+            prelude.values.insert(value);
+        }
+    }
+    return prelude;
+}
+
+ASR::expr_t* gpu_kernel_per_thread_extent(Allocator &al,
+        const ASR::Function_t &kernel, ASR::expr_t *extent) {
+    if (extent == nullptr) return nullptr;
+    GpuKernelPrelude prelude = gpu_kernel_prelude(al, kernel);
+    GpuThreadExpressionWriter writer(al, kernel, prelude.values, true);
+    ASR::expr_t *out = writer.write(extent);
+    if (out == nullptr) return nullptr;
+    GpuHostEvaluableCheck evaluable;
+    evaluable.visit_expr(*out);
+    if (!evaluable.evaluable) return nullptr;
+    auto changed = gpu_symbols_changed_in(kernel.m_body, kernel.n_body);
+    GpuKernelWrittenValueReader reader(*changed);
+    reader.visit_expr(*out);
+    if (reader.found) return nullptr;
+    return out;
 }
 
 void pass_gpu_kernel_finalize(Allocator &al, ASR::TranslationUnit_t &unit,

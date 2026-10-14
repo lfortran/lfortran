@@ -283,9 +283,6 @@ std::string gpu_decline_message(const GpuDecline &decline) {
                 ", which has no gpu type of the same width";
         case GpuDeclineReason::ArrayElementNotNumeric:
             return unsupported + "an array whose elements are not numbers";
-        case GpuDeclineReason::WorkspaceStructElementShape:
-            return unsupported + "a workspace sized from a struct element "
-                "whose shape may differ per thread";
         case GpuDeclineReason::LaunchVlaExtentNotRebuildable:
             if (!decline.name.empty()) {
                 return unsupported + "the per-thread workspace for `" +

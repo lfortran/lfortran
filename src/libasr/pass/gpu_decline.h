@@ -176,7 +176,6 @@ enum class GpuDeclineReason {
     // --- the layout of a kernel argument: everything else ---
     ArrayElementTypeWidth,
     ArrayElementNotNumeric,
-    WorkspaceStructElementShape,
     // A per-thread workspace the launch layout cannot size, found when the
     // launch is expanded. The host pre-flight in gpu_offload asks the same
     // question of the loop, but of the loop as it stands before the passes
