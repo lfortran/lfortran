@@ -43,6 +43,12 @@ public:
             obj_v = ASR::down_cast<ASR::Var_t>(obj)->m_v;
         }
         for( size_t i = 0; i < struct_type_t->n_members; i++ ) {
+            bool is_len_parameter = false;
+            for (size_t j = 0; j < struct_type_t->n_len_params; j++) {
+                is_len_parameter = is_len_parameter || std::string(
+                    struct_type_t->m_members[i]) == struct_type_t->m_len_params[j];
+            }
+            if (is_len_parameter) continue;
             ASR::symbol_t* member = struct_type_t->m_symtab->resolve_symbol(struct_type_t->m_members[i]);
             new_values.push_back(al, ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(
                     al, struct_type_t->base.base.loc,

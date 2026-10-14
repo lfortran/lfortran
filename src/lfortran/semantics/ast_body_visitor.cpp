@@ -2842,6 +2842,12 @@ public:
                         }
                         for (size_t j = 0; j < struct_def->n_members; j++) {
                             char *member_name = struct_def->m_members[j];
+                            bool is_len_parameter = false;
+                            for (size_t k = 0; k < struct_def->n_len_params; k++) {
+                                is_len_parameter = is_len_parameter ||
+                                    std::string(member_name) == struct_def->m_len_params[k];
+                            }
+                            if (is_len_parameter) continue;
                             ASR::symbol_t *member_sym =
                                 struct_def->m_symtab->resolve_symbol(std::string(member_name));
 

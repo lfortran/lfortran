@@ -25021,9 +25021,19 @@ public:
             ASR::ttype_t* member_type = ASRUtils::symbol_type(StructMember);
             int64_t member_size = 0;
             bool member_size_known = false;
-            members_serialization.push_back(SerializeType(
+            std::string member_serialization = SerializeType(
                 ASRUtils::get_expr_from_sym(al, StructMember), member_type, true,
-                member_size, member_size_known));
+                member_size, member_size_known);
+            for (size_t j = 0; j < StructSymbol->n_len_params; j++) {
+                if (std::string(StructSymbol->m_members[i]) == StructSymbol->m_len_params[j]) {
+                    // LEN storage is not a component item. Preserve its physical
+                    // extent so the runtime walker reaches the next component.
+                    LCOMPILERS_ASSERT(member_size_known);
+                    member_serialization = "P" + std::to_string(member_size);
+                    break;
+                }
+            }
+            members_serialization.push_back(member_serialization);
             members_size.push_back(member_size);
             // An allocatable or pointer component is stored as a descriptor or
             // a pointer but is serialized as the type it holds, and a bind(C)
