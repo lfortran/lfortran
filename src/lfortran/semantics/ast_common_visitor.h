@@ -9484,12 +9484,13 @@ public:
                                 is_kind_parameter = true;
                                 storage_type = ASR::storage_typeType::Parameter;
                             } else if (sa->m_attr == AST::simple_attributeType::AttrLen) {
-                                diag.add(Diagnostic(
-                                    "LEN parameters in parameterized derived types are not supported yet",
-                                    Level::Error, Stage::Semantic, {
-                                        Label("",{x.base.base.loc})
-                                    }));
-                                throw SemanticAbort();
+                                if (!is_derived_type) {
+                                    diag.semantic_error_label("the len attribute requires a derived type parameter", {x.base.base.loc}, "");
+                                    throw SemanticAbort();
+                                }
+                                // LEN is stored in each object, unlike a KIND
+                                // parameter which specializes the declared type.
+                                storage_type = ASR::storage_typeType::Default;
 
                             } else {
                                 diag.add(Diagnostic(
@@ -11549,6 +11550,12 @@ public:
             // indices correspond to kind/len params vs regular members.
             Vec<char*> kind_params;
             kind_params.reserve(al, x.n_namelist);
+            Vec<char*> len_params, parameter_order;
+            len_params.reserve(al, x.n_namelist);
+            parameter_order.reserve(al, x.n_namelist);
+            for (size_t i = 0; i < x.n_namelist; i++) {
+                parameter_order.push_back(al, s2c(al, to_lower(x.m_namelist[i])));
+            }
             std::set<size_t> kind_len_decl_indices;
             for (size_t i = 0; i < x.n_items; i++) {
                 if (!AST::is_a<AST::Declaration_t>(*x.m_items[i])) continue;
@@ -11568,9 +11575,10 @@ public:
                 if (is_kind_attr || is_len_attr) {
                     kind_len_decl_indices.insert(i);
                 }
-                if (is_kind_attr) {
+                if (is_kind_attr || is_len_attr) {
                     for (size_t j = 0; j < decl.n_syms; j++) {
-                        kind_params.push_back(al, s2c(al, to_lower(decl.m_syms[j].m_name)));
+                        (is_kind_attr ? kind_params : len_params).push_back(al,
+                            s2c(al, to_lower(decl.m_syms[j].m_name)));
                     }
                 }
             }
@@ -11585,6 +11593,52 @@ public:
                         is_derived_type = false;
                         throw;
                     }
+                }
+            }
+
+            // The type parameter list defines argument order; declarations
+            // may declare the parameters in a different order.
+            Vec<char*> ordered_kind_params, ordered_len_params;
+            ordered_kind_params.reserve(al, kind_params.size());
+            ordered_len_params.reserve(al, len_params.size());
+            for (size_t i = 0; i < parameter_order.size(); i++) {
+                std::string name = parameter_order[i];
+                bool found = false;
+                for (size_t j = 0; j < kind_params.size(); j++) {
+                    if (name == kind_params[j]) {
+                        ordered_kind_params.push_back(al, kind_params[j]);
+                        found = true;
+                    }
+                }
+                for (size_t j = 0; j < len_params.size(); j++) {
+                    if (name == len_params[j]) {
+                        ordered_len_params.push_back(al, len_params[j]);
+                        found = true;
+                    }
+                }
+                if (!found) {
+                    diag.semantic_error_label("type parameter '" + name + "' requires a kind or len declaration", {x.base.base.loc}, "");
+                    current_scope = parent_scope_pdt;
+                    is_derived_type = false;
+                    throw SemanticAbort();
+                }
+            }
+            if (ordered_kind_params.size() != kind_params.size()
+                    || ordered_len_params.size() != len_params.size()) {
+                diag.semantic_error_label("kind and len declarations must name type parameters", {x.base.base.loc}, "");
+                current_scope = parent_scope_pdt;
+                is_derived_type = false;
+                throw SemanticAbort();
+            }
+            kind_params = ordered_kind_params;
+            len_params = ordered_len_params;
+            for (size_t i = 0; i < len_params.size(); i++) {
+                ASR::ttype_t* parameter_type = ASRUtils::symbol_type(current_scope->get_symbol(len_params[i]));
+                if (!ASRUtils::is_integer(*parameter_type) || ASRUtils::is_array(parameter_type)) {
+                    diag.semantic_error_label("a length type parameter must be a scalar integer", {x.base.base.loc}, "");
+                    current_scope = parent_scope_pdt;
+                    is_derived_type = false;
+                    throw SemanticAbort();
                 }
             }
 
@@ -11633,7 +11687,8 @@ public:
                 is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, struct_access, false, is_abstract,
                 is_sequence,
                 nullptr, 0, nullptr, parent_sym,
-                kind_params.p, kind_params.size());
+                kind_params.p, kind_params.size(), len_params.p, len_params.size(),
+                parameter_order.p, parameter_order.size(), true);
             ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
             parent_scope_pdt->add_symbol(dt_name, derived_type_sym);
 
@@ -11749,7 +11804,7 @@ public:
             is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, struct_access, false, is_abstract,
             is_sequence,
             nullptr, 0, nullptr, parent_sym,
-            nullptr, 0);
+            nullptr, 0, nullptr, 0, nullptr, 0, false);
 
         ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
@@ -12196,6 +12251,7 @@ public:
         std::map<int64_t, int64_t> sentinel_to_actual;
         std::map<std::string, int64_t> kind_values;
         std::string monomorphized_name = pdt_name;
+        if (pdt_struct->n_len_params > 0) monomorphized_name += "_len";
         for (size_t i = 0; i < kind_val_vec.size(); i++) {
             monomorphized_name += "_" + std::to_string(kind_val_vec[i]);
         }
@@ -12417,7 +12473,9 @@ public:
             pdt_final_proc_names.p, pdt_final_proc_names.size(),
             ASR::abiType::Source, dflt_access, false, pdt_struct->m_is_abstract,
             pdt_struct->m_is_sequence,
-            nullptr, 0, nullptr, new_parent, nullptr, 0);
+            nullptr, 0, nullptr, new_parent, nullptr, 0,
+            pdt_struct->m_len_params, pdt_struct->n_len_params,
+            pdt_struct->m_parameter_order, pdt_struct->n_parameter_order, false);
 
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
@@ -12485,6 +12543,7 @@ public:
         struct ParamInfo {
             std::string name;
             ASR::Struct_t* owner;
+            bool is_len;
         };
         std::vector<ParamInfo> all_params;
 
@@ -12506,17 +12565,18 @@ public:
         // Reverse so outermost ancestor comes first
         std::reverse(parent_chain.begin(), parent_chain.end());
 
-        // Collect parent kind params (outermost first)
-        for (auto* ps : parent_chain) {
-            for (size_t i = 0; i < ps->n_kind_params; i++) {
-                all_params.push_back({std::string(ps->m_kind_params[i]), ps});
+        auto collect_params = [&](ASR::Struct_t* owner) {
+            for (size_t i = 0; i < owner->n_parameter_order; i++) {
+                std::string name = owner->m_parameter_order[i];
+                bool is_len = false;
+                for (size_t j = 0; j < owner->n_len_params; j++) {
+                    is_len = is_len || name == owner->m_len_params[j];
+                }
+                all_params.push_back({name, owner, is_len});
             }
-        }
-
-        // Collect the child's own kind params
-        for (size_t i = 0; i < pdt_struct->n_kind_params; i++) {
-            all_params.push_back({std::string(pdt_struct->m_kind_params[i]), pdt_struct});
-        }
+        };
+        for (auto* ps : parent_chain) collect_params(ps);
+        collect_params(pdt_struct);
 
         // Build a map from keyword name to kind_item index for keyword args.
         // Positional args (m_id == nullptr) are consumed in order; keyword
@@ -12541,57 +12601,99 @@ public:
             }
         }
 
-        // Resolve all kind parameter values (parent + own) in order
         std::vector<int64_t> all_kind_vals;
+        Vec<ASR::type_parameter_t> len_values;
+        std::vector<bool> len_defaults;
+        len_values.reserve(al, pdt_struct->n_len_params);
         for (size_t i = 0; i < all_params.size(); i++) {
-            const std::string& param_name = all_params[i].name;
-            ASR::Struct_t* owner = all_params[i].owner;
-            int64_t kind_val = -1;
-
-            // Check for keyword argument matching this parameter
-            auto kw_it = keyword_arg_map.find(param_name);
+            const auto& param = all_params[i];
+            AST::kind_item_t* actual = nullptr;
+            auto kw_it = keyword_arg_map.find(param.name);
             if (kw_it != keyword_arg_map.end()) {
-                size_t kw_idx = kw_it->second;
-                if (sym_type->m_kind[kw_idx].m_value) {
-                    this->visit_expr(*sym_type->m_kind[kw_idx].m_value);
-                    ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                    kind_val = ASRUtils::extract_kind<SemanticAbort>(kind_expr,
-                        sym_type->m_kind[kw_idx].loc, diag);
-                }
-            } else if (i < n_positional && sym_type->m_kind[i].m_value) {
-                // Positional argument at index i
-                this->visit_expr(*sym_type->m_kind[i].m_value);
-                ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
-                kind_val = ASRUtils::extract_kind<SemanticAbort>(kind_expr,
-                    sym_type->m_kind[i].loc, diag);
+                actual = &sym_type->m_kind[kw_it->second];
+            } else if (i < n_positional) {
+                actual = &sym_type->m_kind[i];
             }
-            if (kind_val < 0) {
-                // Fall back to the owner template's default value
-                ASR::symbol_t* param_sym = owner->m_symtab->get_symbol(param_name);
-                if (param_sym && ASR::is_a<ASR::Variable_t>(*param_sym)) {
-                    ASR::Variable_t* pv = ASR::down_cast<ASR::Variable_t>(param_sym);
-                    if (pv->m_symbolic_value) {
-                        kind_val = ASR::down_cast<ASR::IntegerConstant_t>(
-                            ASRUtils::expr_value(pv->m_symbolic_value))->m_n;
-                    }
+            ASR::expr_t* expr = nullptr;
+            ASR::type_parameter_kindType state = ASR::type_parameter_kindType::Explicit;
+            if (actual && actual->m_type != AST::kind_item_typeType::Value) {
+                if (!param.is_len) {
+                    diag.semantic_error_label("a kind parameter must have a constant value", {actual->loc}, "");
+                    throw SemanticAbort();
                 }
-                if (kind_val < 0) {
-                    diag.add(Diagnostic(
-                        "Parameterized derived type '" + pdt_name +
-                        "' parameter '" + param_name +
-                        "' has no default value and must be specified",
-                        Level::Error, Stage::Semantic, {Label("", {loc})}));
+                bool assumed = actual->m_type == AST::kind_item_typeType::Star;
+                if ((assumed && !is_argument) || (!assumed && !is_pointer && !is_allocatable)) {
+                    diag.semantic_error_label(assumed
+                        ? "an assumed length parameter requires a dummy argument"
+                        : "a deferred length parameter requires an allocatable or pointer",
+                        {actual->loc}, "");
+                    throw SemanticAbort();
+                }
+                state = assumed ? ASR::type_parameter_kindType::Assumed
+                                : ASR::type_parameter_kindType::Deferred;
+            } else {
+                if (actual && actual->m_value) {
+                    visit_restricted_expr(*actual->m_value, param.is_len
+                        ? RestrictedExprContext::ArrayBound : RestrictedExprContext::KindParameter);
+                    expr = ASRUtils::EXPR(tmp);
+                    if (param.is_len) check_specification_expr(expr, RestrictedExprContext::ArrayBound);
+                } else {
+                    ASR::Variable_t* pv = ASR::down_cast<ASR::Variable_t>(
+                        param.owner->m_symtab->get_symbol(param.name));
+                    expr = pv->m_symbolic_value;
+                }
+                if (!expr) {
+                    diag.semantic_error_label("parameterized derived type '" + pdt_name
+                        + "' parameter '" + param.name + "' must be specified", {loc}, "");
                     throw SemanticAbort();
                 }
             }
-            all_kind_vals.push_back(kind_val);
+            if (param.is_len) {
+                if (expr && (!ASRUtils::is_integer(*ASRUtils::expr_type(expr))
+                        || ASRUtils::is_array(ASRUtils::expr_type(expr)))) {
+                    diag.semantic_error_label("a length parameter must be a scalar integer", {loc}, "");
+                    throw SemanticAbort();
+                }
+                ASR::type_parameter_t value;
+                value.loc = loc;
+                value.m_value = expr;
+                value.m_kind = state;
+                len_values.push_back(al, value);
+                len_defaults.push_back(actual == nullptr);
+            } else {
+                all_kind_vals.push_back(ASRUtils::extract_kind<SemanticAbort>(expr, loc, diag));
+            }
         }
-
-        // Parent instantiation is handled recursively inside
-        // instantiate_pdt_by_values using the prefix of all_kind_vals.
-        return instantiate_pdt_by_values(loc, pdt_name, all_kind_vals,
-            is_pointer, is_allocatable, dims, type_declaration, abi,
-            is_argument);
+        ASR::ttype_t* type = instantiate_pdt_by_values(loc, pdt_name, all_kind_vals,
+            is_pointer, is_allocatable, dims, type_declaration, abi, is_argument);
+        if (len_values.size() > 0) {
+            ASR::Struct_t* definition = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(type_declaration));
+            for (size_t i = 0; i < len_values.size(); i++) {
+                ASR::expr_t*& actual = len_values.p[i].m_value;
+                if (!actual) continue;
+                ASR::Variable_t* parameter = ASR::down_cast<ASR::Variable_t>(
+                    definition->m_symtab->get_symbol(definition->m_len_params[i]));
+                // Defaults depending on KIND must use the specialization's
+                // evaluated initializer, never the template's sentinel.
+                if (len_defaults[i]) {
+                    actual = parameter->m_symbolic_value;
+                    ASR::expr_t* value = ASRUtils::expr_value(actual);
+                    if (value) actual = value;
+                }
+                ASR::ttype_t* parameter_type = parameter->m_type;
+                ImplicitCastRules::set_converted_value(al, loc, &actual,
+                    ASRUtils::expr_type(actual), parameter_type, diag);
+            }
+            // Actual LEN values belong to this declaration, not the shared
+            // signature of the KIND specialization.
+            type = ASRUtils::duplicate_type(al, type);
+            ASR::StructType_t* instance = ASR::down_cast<ASR::StructType_t>(
+                ASRUtils::extract_type(type));
+            instance->m_len_parameters = len_values.p;
+            instance->n_len_parameters = len_values.size();
+        }
+        return type;
     }
 
     ASR::ttype_t* determine_type(const Location &loc, std::string& sym,
@@ -12952,7 +13054,7 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
-                                                        nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0, nullptr, 0, nullptr, 0, false);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -13020,7 +13122,7 @@ public:
                     ASR::symbol_t* pdt_orig = ASRUtils::symbol_get_past_external(pdt_sym);
                     if (ASR::is_a<ASR::Struct_t>(*pdt_orig)) {
                         ASR::Struct_t* pdt_st = ASR::down_cast<ASR::Struct_t>(pdt_orig);
-                        if (pdt_st->n_kind_params > 0) {
+                        if (pdt_st->m_is_pdt_template) {
                             // Case: 
                             // type :: a(k1)
                             //    integer, kind :: k1
@@ -13176,7 +13278,7 @@ public:
                         nullptr,
                         0,
                         true,
-                        derived_type_name == "~unlimited_polymorphic_type"));
+                        derived_type_name == "~unlimited_polymorphic_type", nullptr, 0));
                     } else { 
                         diag.add(Diagnostic(
                             "Derived type `" + derived_type_name + "` is not defined",
@@ -13286,7 +13388,7 @@ public:
                                 nullptr, nullptr, nullptr, 0, s2c(al, derived_type_name),
                                 ASR::accessType::Private));
                         type_declaration = v;
-                        type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, nullptr, 0, nullptr, 0, false, false));
+                        type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, nullptr, 0, nullptr, 0, false, false, nullptr, 0));
                         type = ASRUtils::make_Array_t_util(
                             al, loc, type, dims.p, dims.size(), abi, is_argument);
                         if (is_pointer) {
@@ -13323,7 +13425,7 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, struct_symtab,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
-                                                        nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0, nullptr, 0, nullptr, 0, false);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -13351,7 +13453,7 @@ public:
                 // set the variable's type declaration to the derived type
                 ASR::Struct_t* pdt_struct = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(v));
-                if (pdt_struct->n_kind_params > 0) {
+                if (pdt_struct->m_is_pdt_template) {
                     type = instantiate_pdt(loc, derived_type_name, sym_type,
                         is_pointer, is_allocatable, dims, type_declaration,
                         abi, is_argument);
@@ -13359,8 +13461,8 @@ public:
                     // Use make_StructType_t_util to get a duplicate with
                     // is_cstruct=false instead of mutating in-place, which
                     // would corrupt the struct's m_struct_signature.
-                    type = ASRUtils::make_StructType_t_util(
-                        al, loc, type_declaration, false);
+                    type = ASRUtils::duplicate_type(al, ASRUtils::extract_type(type));
+                    ASR::down_cast<ASR::StructType_t>(type)->m_is_cstruct = false;
                 } else {
                     type_declaration = v;
                     type = ASRUtils::make_StructType_t_util(al, loc, v, false);

@@ -163,7 +163,7 @@ static ASR::ttype_t* struct_layout_type(Allocator &al,
             ASR::down_cast<ASR::Variable_t>(member)));
     }
     return ASRUtils::TYPE(ASR::make_StructType_t(al, st->base.base.loc,
-        members.p, members.n, nullptr, 0, true, false));
+        members.p, members.n, nullptr, 0, true, false, nullptr, 0));
 }
 
 ASR::ttype_t* gpu_size_of_type_argument(Allocator &al, ASR::expr_t *value,

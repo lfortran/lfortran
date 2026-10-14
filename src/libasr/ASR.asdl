@@ -5,6 +5,10 @@
 
 module ASR {
 
+type_parameter = (expr? value, type_parameter_kind kind)
+type_parameter_kind = Explicit | Assumed | Deferred
+
+
 unit
     = TranslationUnit(symbol_table symtab, node* items, identifier? global_init)
 
@@ -15,7 +19,7 @@ symbol
     | GenericProcedure(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | CustomOperator(symbol_table parent_symtab, identifier name, symbol* procs, access access)
     | ExternalSymbol(symbol_table parent_symtab, identifier name, symbol external, identifier module_name, identifier* scope_names, identifier original_name, access access)
-    | Struct(symbol_table symtab, identifier name, ttype struct_signature, identifier* dependencies, identifier* members, identifier* member_functions, abi abi, access access, bool is_packed, bool is_abstract, bool is_sequence, call_arg* initializers, expr? alignment, symbol? parent, identifier* kind_params)
+    | Struct(symbol_table symtab, identifier name, ttype struct_signature, identifier* dependencies, identifier* members, identifier* member_functions, abi abi, access access, bool is_packed, bool is_abstract, bool is_sequence, call_arg* initializers, expr? alignment, symbol? parent, identifier* kind_params, identifier* len_params, identifier* parameter_order, bool is_pdt_template)
     | Enum(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, enumtype enum_value_type, ttype type, symbol? parent)
     | Union(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, call_arg* initializers, symbol? parent)
     -- A Local integer Variable of Default storage whose symbolic_value is not
@@ -248,7 +252,7 @@ ttype
     | Set(ttype type)
     | List(ttype type)
     | Tuple(ttype* type)
-    | StructType(ttype* data_member_types, ttype* member_function_types, bool is_cstruct, bool is_unlimited_polymorphic)
+    | StructType(ttype* data_member_types, ttype* member_function_types, bool is_cstruct, bool is_unlimited_polymorphic, type_parameter* len_parameters)
     | EnumType(symbol enum_type)
     | UnionType(ttype* data_member_types)
     | Dict(ttype key_type, ttype value_type)

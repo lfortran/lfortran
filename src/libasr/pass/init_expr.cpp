@@ -4,6 +4,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pass/replace_init_expr.h>
+#include <libasr/pass/global_init.h>
 #include <libasr/pass/pass_utils.h>
 
 #include <vector>
@@ -278,9 +279,96 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
 
 };
 
+// LEN actuals initialize each automatic object when its scope is entered.
+// Keep this independent of source declaration initialization: a LEN actual
+// is a specification expression, not a SAVE or component default initializer.
+class LengthParameterInitializer : public ASR::BaseWalkVisitor<LengthParameterInitializer> {
+    Allocator& al;
+    ASR::TranslationUnit_t& unit;
+
+    void initialize(SymbolTable* scope, ASR::stmt_t**& statements, size_t& n_statements) {
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, n_statements);
+        for (const auto& name : ASRUtils::determine_variable_declaration_order(scope)) {
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(scope->get_symbol(name));
+            ASR::ttype_t* type = ASRUtils::extract_type(variable->m_type);
+            if (!ASR::is_a<ASR::StructType_t>(*type) || !variable->m_type_declaration
+                    || (variable->m_intent != ASR::intentType::Local
+                        && variable->m_intent != ASR::intentType::ReturnVar)
+                    || ASRUtils::is_allocatable(variable->m_type)
+                    || ASRUtils::is_pointer(variable->m_type)) continue;
+            ASR::StructType_t* instance = ASR::down_cast<ASR::StructType_t>(type);
+            if (instance->n_len_parameters == 0) continue;
+            ASR::Struct_t* definition = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(variable->m_type_declaration));
+            LCOMPILERS_ASSERT(instance->n_len_parameters == definition->n_len_params);
+            const Location& loc = variable->base.base.loc;
+            ASR::expr_t* object = ASRUtils::EXPR(ASR::make_Var_t(al, loc, &variable->base));
+            for (size_t i = 0; i < instance->n_len_parameters; i++) {
+                ASR::expr_t* actual = instance->m_len_parameters[i].m_value;
+                LCOMPILERS_ASSERT(actual);
+                ASR::symbol_t* member = definition->m_symtab->get_symbol(definition->m_len_params[i]);
+                member = ASRUtils::import_struct_instance_member(al, member, scope);
+                ASR::ttype_t* member_type = ASRUtils::symbol_type(member);
+                if (ASRUtils::is_array(variable->m_type)) {
+                    ASR::dimension_t* dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(variable->m_type, dims);
+                    Vec<ASR::dimension_t> dimensions;
+                    dimensions.from_pointer_n(dims, n_dims);
+                    member_type = ASRUtils::duplicate_type(al, member_type, &dimensions);
+                }
+                ASR::expr_t* target = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
+                    al, loc, object, member, member_type, nullptr));
+                ASRUtils::make_ArrayBroadcast_t_util(al, loc, target, actual);
+                body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                    al, loc, target, actual, nullptr, false, false)));
+            }
+        }
+        for (size_t i = 0; i < n_statements; i++) body.push_back(al, statements[i]);
+        statements = body.p;
+        n_statements = body.size();
+    }
+public:
+    LengthParameterInitializer(Allocator& al_, ASR::TranslationUnit_t& unit_)
+        : al(al_), unit(unit_) {}
+    void visit_Module(const ASR::Module_t& x) {
+        ASR::stmt_t** statements = nullptr;
+        size_t n_statements = 0;
+        auto& module = const_cast<ASR::Module_t&>(x);
+        initialize(module.m_symtab, statements, n_statements);
+        if (n_statements > 0) {
+            ASR::Function_t* startup = ASRUtils::get_or_create_global_init(
+                al, unit, (ASR::asr_t*)&module.base, module.m_loaded_from_mod);
+            if (!module.m_loaded_from_mod) {
+                for (size_t i = 0; i < n_statements; i++) {
+                    ASRUtils::global_init_append_stmt(al, startup, statements[i]);
+                }
+            }
+        }
+        ASR::BaseWalkVisitor<LengthParameterInitializer>::visit_Module(x);
+    }
+    void visit_Program(const ASR::Program_t& x) {
+        auto& program = const_cast<ASR::Program_t&>(x);
+        initialize(program.m_symtab, program.m_body, program.n_body);
+        ASR::BaseWalkVisitor<LengthParameterInitializer>::visit_Program(x);
+    }
+    void visit_Function(const ASR::Function_t& x) {
+        auto& function = const_cast<ASR::Function_t&>(x);
+        initialize(function.m_symtab, function.m_body, function.n_body);
+        ASR::BaseWalkVisitor<LengthParameterInitializer>::visit_Function(x);
+    }
+    void visit_Block(const ASR::Block_t& x) {
+        auto& block = const_cast<ASR::Block_t&>(x);
+        initialize(block.m_symtab, block.m_body, block.n_body);
+        ASR::BaseWalkVisitor<LengthParameterInitializer>::visit_Block(x);
+    }
+};
+
 void pass_replace_init_expr(Allocator &al,
     ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& /*pass_options*/) {
+    LengthParameterInitializer lengths(al, unit);
+    lengths.visit_TranslationUnit(unit);
     InitExprVisitor v(al);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor w(al);

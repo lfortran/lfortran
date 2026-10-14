@@ -7247,6 +7247,11 @@ public:
         SetChar current_module_dependencies_copy = current_module_dependencies;
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = ASRUtils::EXPR(tmp);
+        if (ASRUtils::is_length_type_parameter_inquiry(target)) {
+            diag.semantic_error_label("a length type parameter is not definable",
+                {x.m_target->base.loc}, "");
+            throw SemanticAbort();
+        }
 
         // Handle character array section with substring on LHS:
         if (ASR::is_a<ASR::ArrayConstructor_t>(*target)) {

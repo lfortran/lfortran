@@ -2167,6 +2167,19 @@ static inline bool is_pointer_association_initializer(ASR::expr_t* init) {
 
 // Returns true if expression can be safely used as an actual argument for
 // INTENT(OUT/INOUT) dummy arguments.
+static inline bool is_length_type_parameter_inquiry(ASR::expr_t* expression) {
+    if (!expression || !ASR::is_a<ASR::StructInstanceMember_t>(*expression)) return false;
+    ASR::symbol_t* member = ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::StructInstanceMember_t>(expression)->m_m);
+    ASR::symbol_t* owner = ASRUtils::get_asr_owner(member);
+    if (!owner || !ASR::is_a<ASR::Struct_t>(*owner)) return false;
+    ASR::Struct_t* type = ASR::down_cast<ASR::Struct_t>(owner);
+    for (size_t i = 0; i < type->n_len_params; i++) {
+        if (std::string(ASRUtils::symbol_name(member)) == type->m_len_params[i]) return true;
+    }
+    return false;
+}
+
 static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
     if (a_value == nullptr) {
         return false;
@@ -2188,10 +2201,12 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
         case ASR::exprType::StringItem:
         case ASR::exprType::StringSection:
         case ASR::exprType::ArraySection:
-        case ASR::exprType::StructInstanceMember:
         case ASR::exprType::IntrinsicArrayFunction:
         case ASR::exprType::ListItem: {
             return true;
+        }
+        case ASR::exprType::StructInstanceMember: {
+            return !is_length_type_parameter_inquiry(a_value);
         }
         case ASR::exprType::Cast: {
             ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(a_value);
@@ -5038,7 +5053,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                                                        nullptr,
                                                        0,
                                                        tnew->m_is_cstruct,
-                                                       tnew->m_is_unlimited_polymorphic));
+                                                       tnew->m_is_unlimited_polymorphic, tnew->m_len_parameters, tnew->n_len_parameters));
             break;
         }
         case ASR::ttypeType::UnionType: {
@@ -5404,7 +5419,7 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
                 nullptr,
                 0,
                 tstruct->m_is_cstruct,
-                tstruct->m_is_unlimited_polymorphic));
+                tstruct->m_is_unlimited_polymorphic, tstruct->m_len_parameters, tstruct->n_len_parameters));
         }
         case ASR::ttypeType::Pointer: {
             ASR::Pointer_t* ptr = ASR::down_cast<ASR::Pointer_t>(t);
@@ -6841,7 +6856,7 @@ static inline ASR::symbol_t* import_struct_type(Allocator& al, ASR::symbol_t* st
             upt_symtab, s2c(al, struct_name), nullptr, nullptr, 0,
             nullptr, 0, nullptr, 0, ASR::abiType::Source,
             ASR::accessType::Public, false, true, false, nullptr, 0,
-            nullptr, nullptr, nullptr, 0);
+            nullptr, nullptr, nullptr, 0, nullptr, 0, nullptr, 0, false);
         ASR::symbol_t* new_sym = ASR::down_cast<ASR::symbol_t>(dtype);
         ASR::ttype_t* sig = ASRUtils::make_StructType_t_util(
             al, struct_sym->base.loc, new_sym, false);
@@ -7828,7 +7843,10 @@ class SymbolDuplicator {
             struct_type_t->m_is_sequence,
             struct_type_t->m_initializers, struct_type_t->n_initializers, struct_type_t->m_alignment,
             struct_type_t->m_parent,
-            struct_type_t->m_kind_params, struct_type_t->n_kind_params));
+            struct_type_t->m_kind_params, struct_type_t->n_kind_params,
+            struct_type_t->m_len_params, struct_type_t->n_len_params,
+            struct_type_t->m_parameter_order, struct_type_t->n_parameter_order,
+            struct_type_t->m_is_pdt_template));
     }
     ASR::symbol_t* duplicate_GenericProcedure(ASR::GenericProcedure_t* genericProcedure, SymbolTable* destination_symtab){
         return ASR::down_cast<ASR::symbol_t>(ASR::make_GenericProcedure_t(

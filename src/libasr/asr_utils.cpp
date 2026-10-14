@@ -5592,7 +5592,7 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                            0,
                                            is_cstruct == false ? false : stype->m_is_cstruct,
                                            stype->m_is_unlimited_polymorphic
-                                           )
+                                           , nullptr, 0)
                 );
             }
             ASR::ttype_t* member_type = var->m_type;
@@ -5618,7 +5618,7 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                nullptr,
                                0,
                                is_cstruct,
-                               (derived_type_name == "~unlimited_polymorphic_type" || derived_type_name == "~assumed_type") ? true : false));
+                               (derived_type_name == "~unlimited_polymorphic_type" || derived_type_name == "~assumed_type") ? true : false, nullptr, 0));
 }
 
 ASR::expr_t* get_compile_time_array_size(Allocator& al, ASR::ttype_t* array_type){

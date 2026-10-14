@@ -1446,6 +1446,16 @@ public:
                 "Struct::m_parent of '" + std::string(x.m_name) +
                 "' cannot point outside of its symbol table");
         }
+        for (size_t i = 0; i < x.n_len_params; i++) {
+            ASR::symbol_t* parameter = x.m_symtab->get_symbol(x.m_len_params[i]);
+            require(parameter && ASR::is_a<ASR::Variable_t>(*parameter),
+                "a LEN parameter must name a variable of its derived type");
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(parameter);
+            require(ASRUtils::is_integer(*var->m_type) && !ASRUtils::is_array(var->m_type),
+                "a LEN parameter must be a scalar integer");
+            require(var->m_storage != ASR::storage_typeType::Parameter,
+                "a LEN parameter must have per-object storage");
+        }
         verify_deferred_bindings(x);
         verify_final_procedures(x);
         visit_UserDefinedType(x);
@@ -3473,6 +3483,18 @@ public:
     }
 
     void visit_StructType(const StructType_t& x) {
+        for (size_t i = 0; i < x.n_len_parameters; i++) {
+            const ASR::type_parameter_t& parameter = x.m_len_parameters[i];
+            require((parameter.m_kind == ASR::type_parameter_kindType::Explicit)
+                    == (parameter.m_value != nullptr),
+                "only an explicit LEN parameter has a value expression");
+            if (parameter.m_value) {
+                require(ASRUtils::is_integer(*ASRUtils::expr_type(parameter.m_value))
+                        && !ASRUtils::is_array(ASRUtils::expr_type(parameter.m_value)),
+                    "an explicit LEN parameter value must be a scalar integer");
+                visit_expr(*parameter.m_value);
+            }
+        }
         for (size_t i = 0; i < x.n_data_member_types; i++) {
             visit_ttype(*x.m_data_member_types[i]);
         }
