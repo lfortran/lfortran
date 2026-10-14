@@ -323,6 +323,11 @@ public:
                 r = "type(" + std::string(
                     ASR::down_cast<ASR::TraitErasedType_t>(t)->m_parameter) + ")";
                 break;
+            } case ASR::ttypeType::TypeParameter: {
+                // `type(itself)` of a trait's receiver, or a generic binder.
+                r = "type(" + std::string(
+                    ASR::down_cast<ASR::TypeParameter_t>(t)->m_param) + ")";
+                break;
             } case ASR::ttypeType::TraitDictionaryType: {
                 r = "type(conformance_dictionary)";
                 break;
@@ -1609,6 +1614,10 @@ public:
         }
         if (x.m_presence == ASR::presenceType::Optional) {
             r += ", optional";
+        }
+        // The explicit receiver of a trait message.
+        if (ASRUtils::is_trait_receiver_dummy(x)) {
+            r += ", pass";
         }
         if (x.m_storage == ASR::storage_typeType::Parameter) {
             r += ", parameter";

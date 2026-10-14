@@ -1712,12 +1712,14 @@ static const std::string trait_serialization_source = R"(
 module trait_serialization_m
 implicit none
 abstract interface :: IValue
-    function get_value() result(value)
+    function get_value(self) result(value)
+        type(itself), intent(in), pass :: self
         integer :: value
     end function
 end interface
 abstract interface :: IOther
-    function get_value() result(value)
+    function get_value(self) result(value)
+        type(itself), intent(in), pass :: self
         integer :: value
     end function
 end interface
@@ -1752,7 +1754,8 @@ static const std::string runtime_trait_serialization_source = R"(
 module runtime_trait_serialization_m
 implicit none
 abstract interface :: IValue
-    pure function value() result(r)
+    pure function value(self) result(r)
+        type(itself), intent(in), pass :: self
         integer :: r
     end function
     function tag(code) result(r)
@@ -1877,11 +1880,13 @@ TEST_CASE("Runtime generic erasure preserves checked bodies and explicit evidenc
 module runtime_generic_evidence_m
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: IOther
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: IAlgorithm
@@ -2699,7 +2704,8 @@ TEST_CASE("Named constants are borrowed as the constructors of their values") {
 module constant_view_m
 implicit none
 abstract interface :: IValue
-    integer function value()
+    integer function value(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 type, sealed, implements(IValue) :: Cell
@@ -2817,7 +2823,8 @@ TEST_CASE("Constants that cannot be borrowed by value are diagnosed") {
 module constant_final_m
 implicit none
 abstract interface :: IValue
-    integer function value()
+    integer function value(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 type :: Tracked
@@ -2850,7 +2857,8 @@ end module
 module constant_generic_m
 implicit none
 abstract interface :: IValue
-    integer function value()
+    integer function value(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 abstract interface :: IAlgorithm
@@ -2942,7 +2950,8 @@ TEST_CASE("Constant borrowing keeps subscripted elements and closed numeric argu
 module constant_element_m
 implicit none
 abstract interface :: IValue
-    integer function value()
+    integer function value(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 type, sealed, implements(IValue) :: Cell
@@ -3033,7 +3042,8 @@ TEST_CASE("Runtime trait pointer associations preserve target and intent proofs"
     const std::string source = R"(
 module trait_pointer_proofs_m
 abstract interface :: IValue
-    integer function value()
+    integer function value(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 abstract interface :: IOther
@@ -3232,7 +3242,8 @@ TEST_CASE("Named runtime projections preserve provider and storage proofs") {
     const std::string source = R"(
 module trait_projection_proofs_m
 abstract interface :: IBase
-    integer function value()
+    integer function value(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 abstract interface, extends(IBase) :: IChild
@@ -3240,13 +3251,15 @@ end interface
 abstract interface, extends(IBase) :: IRight
 end interface
 abstract interface :: IAlias
-    integer function value()
+    integer function value(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 abstract interface, extends(IChild + IRight + IAlias) :: ICombined
 end interface
 abstract interface :: IUnrelated
-    integer function value()
+    integer function value(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 type :: Payload
@@ -3573,7 +3586,8 @@ TEST_CASE("Runtime trait ownership round trips and storage proofs") {
     const std::string source = R"(
 module owned_trait_serialization_m
 abstract interface :: IValue
-    function value() result(r)
+    function value(self) result(r)
+        type(itself), intent(in), pass :: self
         integer :: r
     end function
 end interface
@@ -3840,7 +3854,8 @@ TEST_CASE("Runtime trait allocation slots retain canonical association and lifet
     const std::string source = R"(
 module trait_slot_serialization_m
 abstract interface :: IValue
-    function value() result(r)
+    function value(self) result(r)
+        type(itself), intent(in), pass :: self
         integer :: r
     end function
 end interface
@@ -4052,7 +4067,8 @@ TEST_CASE("Runtime trait results retain scoped ownership through result lowering
     const std::string source = R"(
 module trait_result_serialization_m
 abstract interface :: IValue
-    function value() result(r)
+    function value(self) result(r)
+        type(itself), intent(in), pass :: self
         integer :: r
     end function
 end interface
@@ -4487,11 +4503,13 @@ TEST_CASE("Anonymous runtime combinations retain nominal and slot proofs") {
     const std::string source = R"(
 module combination_proofs_m
 abstract interface :: A
-    integer function first()
+    integer function first(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 abstract interface :: B
-    integer function second()
+    integer function second(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 abstract interface :: D
@@ -4499,13 +4517,15 @@ abstract interface :: D
     end function
 end interface
 abstract interface :: Alias
-    integer function first()
+    integer function first(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 abstract interface, extends(A + B + Alias) :: Child
 end interface
 abstract interface :: Unrelated
-    integer function first()
+    integer function first(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 type :: Payload
@@ -5010,7 +5030,8 @@ TEST_CASE("Type-bound generic subroutine references associate view actuals") {
 module generic_binding_m
 implicit none
 abstract interface :: IValue
-    integer function value()
+    integer function value(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 type :: Cell
@@ -5286,6 +5307,21 @@ TEST_CASE("Trait conformance verification preserves nominal identity") {
     }
     REQUIRE(constraint != nullptr);
     REQUIRE(constraint->n_requirements == 1);
+    // The normalized requirement keeps the message's receiver, first, with
+    // its marker and declared intent.
+    auto *normalized = ASR::down_cast<ASR::Function_t>(
+        LCompilers::ASRUtils::symbol_get_past_external(
+            constraint->m_requirements[0].m_procedure));
+    auto *normalized_receiver = LCompilers::ASRUtils::EXPR2VAR(normalized->m_args[0]);
+    CHECK(normalized_receiver->m_pass_attr == ASR::pass_attrType::Pass);
+    CHECK(normalized_receiver->m_intent == ASR::intentType::In);
+    normalized_receiver->m_intent = ASR::intentType::InOut;
+    LCompilers::diag::Diagnostics wrong_receiver_intent;
+    CHECK_FALSE(LCompilers::asr_verify(*result.result, true, wrong_receiver_intent));
+    REQUIRE(!wrong_receiver_intent.diagnostics.empty());
+    CHECK(wrong_receiver_intent.diagnostics.back().code ==
+        "asr.verify.trait_constraint.receiver_matches_parameter");
+    normalized_receiver->m_intent = ASR::intentType::In;
     constraint->m_requirements[0].m_procedure =
         LCompilers::ASRUtils::symbol_get_past_external(
             constraint->m_requirements[0].m_member);
@@ -5293,26 +5329,29 @@ TEST_CASE("Trait conformance verification preserves nominal identity") {
     CHECK_FALSE(LCompilers::asr_verify(*result.result, true, missing_receiver));
     REQUIRE(!missing_receiver.diagnostics.empty());
     CHECK(missing_receiver.diagnostics.back().code ==
-        "asr.verify.trait_requirement.normalized_arg_count");
+        "asr.verify.trait_requirement.procedure_is_restriction");
 }
 
 static const std::string inherited_trait_serialization_source = R"(
 module z_trait_contracts
 implicit none
 abstract interface :: IBase
-    pure function get_value(step) result(value)
+    pure function get_value(self, step) result(value)
+        type(itself), intent(in), pass :: self
         integer, intent(in), optional :: step
         integer :: value
     end function
 end interface
 abstract interface :: IOther
-    pure function get_value(step) result(other_value)
+    pure function get_value(self, step) result(other_value)
+        type(itself), intent(in), pass :: self
         integer, intent(in), optional :: step
         integer :: other_value
     end function
 end interface
 abstract interface :: IUnrelated
-    pure function get_value(step) result(value)
+    pure function get_value(self, step) result(value)
+        type(itself), intent(in), pass :: self
         integer, intent(in), optional :: step
         integer :: value
     end function
@@ -5512,7 +5551,26 @@ TEST_CASE("Inherited trait contracts retain nominal obligations") {
             other->m_symtab->get_symbol("get_value"));
         CHECK(ASRUtils::trait_method_mismatch(*a, *b).difference ==
             ASRUtils::TraitMethodDifference::None);
-        auto *arg = ASRUtils::EXPR2VAR(b->m_args[0]);
+        // Receivers are compared by their presence and intent only.
+        CHECK(ASRUtils::trait_receiver_mismatch(*a, *b).difference ==
+            ASRUtils::TraitMethodDifference::None);
+        auto *receiver = ASRUtils::EXPR2VAR(b->m_args[0]);
+        receiver->m_intent = ASR::intentType::InOut;
+        CHECK(ASRUtils::trait_method_mismatch(*a, *b).difference ==
+            ASRUtils::TraitMethodDifference::None);
+        CHECK(ASRUtils::trait_receiver_mismatch(*a, *b).difference ==
+            ASRUtils::TraitMethodDifference::Contract);
+        receiver->m_intent = ASR::intentType::In;
+        char *receiver_name = receiver->m_name;
+        receiver->m_name = LCompilers::s2c(al, "this");
+        CHECK(ASRUtils::trait_receiver_mismatch(*a, *b).difference ==
+            ASRUtils::TraitMethodDifference::None);
+        receiver->m_name = receiver_name;
+        receiver->m_pass_attr = ASR::pass_attrType::NotMethod;
+        CHECK(ASRUtils::trait_receiver_mismatch(*a, *b).difference ==
+            ASRUtils::TraitMethodDifference::Contract);
+        receiver->m_pass_attr = ASR::pass_attrType::Pass;
+        auto *arg = ASRUtils::EXPR2VAR(b->m_args[1]);
         char *name = arg->m_name;
         arg->m_name = LCompilers::s2c(al, "different_name");
         CHECK(ASRUtils::trait_method_mismatch(*a, *b).difference ==
@@ -5552,7 +5610,7 @@ TEST_CASE("Inherited trait contracts retain nominal obligations") {
             base->m_symtab->get_symbol("get_value"));
         auto *b = ASR::down_cast<ASR::Function_t>(
             other->m_symtab->get_symbol("get_value"));
-        auto *arg = ASRUtils::EXPR2VAR(b->m_args[0]);
+        auto *arg = ASRUtils::EXPR2VAR(b->m_args[1]);
         ASR::ttype_t *type = arg->m_type;
         arg->m_type = ASRUtils::TYPE(ASR::make_Integer_t(al, type->base.loc, 8));
         CHECK(ASRUtils::trait_method_mismatch(*a, *b).difference ==
@@ -5581,7 +5639,7 @@ TEST_CASE("Inherited trait contracts retain nominal obligations") {
         for (auto *procedure : {a, b}) {
             auto *value = ASRUtils::EXPR2VAR(procedure->m_return_var);
             value->m_type = ASRUtils::TYPE(ASR::make_String_t(al, value->base.base.loc,
-                1, procedure->m_args[0], ASR::string_length_kindType::ExpressionLength,
+                1, procedure->m_args[1], ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::DescriptorString));
         }
         CHECK(ASRUtils::trait_method_mismatch(*a, *b).difference ==
@@ -5611,11 +5669,11 @@ TEST_CASE("Inherited trait contracts retain nominal obligations") {
             other->m_symtab->get_symbol("get_value"));
         for (auto *procedure : {a, b}) {
             auto *value = ASRUtils::EXPR2VAR(procedure->m_return_var);
-            ASRUtils::EXPR2VAR(procedure->m_args[0])->m_presence = ASR::presenceType::Required;
+            ASRUtils::EXPR2VAR(procedure->m_args[1])->m_presence = ASR::presenceType::Required;
             auto *dimension = al.allocate<ASR::dimension_t>(1);
             dimension->loc = value->base.base.loc;
             dimension->m_start = nullptr;
-            dimension->m_length = procedure->m_args[0];
+            dimension->m_length = procedure->m_args[1];
             value->m_type = ASRUtils::TYPE(ASR::make_Array_t(al, value->base.base.loc,
                 value->m_type, dimension, 1, ASR::array_physical_typeType::DescriptorArray,
                 ASR::memory_spaceType::Global));
@@ -6239,7 +6297,8 @@ TEST_CASE("Recursive trait forwarding preserves canonical backedges") {
 module recursive_traits_m
 implicit none
 abstract interface :: IValue
-    function value() result(r)
+    function value(self) result(r)
+        type(itself), intent(in), pass :: self
         integer :: r
     end function
 end interface
@@ -7079,11 +7138,13 @@ static const std::string type_adoption_source = R"(
 module type_adoption
 implicit none
 abstract interface :: IValue
-integer function value()
+integer function value(self)
+    type(itself), intent(in), pass :: self
 end function
 end interface
 abstract interface :: IExtra
-real function extra()
+real function extra(self)
+    type(itself), intent(in), pass :: self
 end function
 end interface
 type, implements(IValue) :: Root
@@ -7681,7 +7742,8 @@ module intrinsic_conformance_m
 implicit none
 integer, parameter :: real64 = 8
 abstract interface :: IValue
-    integer function value()
+    integer function value(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 implements IValue :: real(real64)
@@ -7796,7 +7858,8 @@ TEST_CASE("Intrinsic provider imports remain lexical and recoverable") {
     const std::string provider = R"(
 module intrinsic_import_contracts
 abstract interface :: IValue
-    integer function value()
+    integer function value(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 end module
@@ -7890,7 +7953,8 @@ TEST_CASE("Generic trait array receivers fail before specialization") {
     const std::string definition = R"(
 module intrinsic_array_receiver_m
 abstract interface :: IValue
-    integer function value()
+    integer function value(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 implements IValue :: real(8)
@@ -8082,7 +8146,8 @@ TEST_CASE("Trait component ownership retains declaration and expression scopes")
     const std::string source = R"(
 module component_contracts_m
 abstract interface :: IValue
-    pure integer function value()
+    pure integer function value(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 end module
@@ -8217,7 +8282,8 @@ TEST_CASE("Trait lifecycle summaries do not depend on procedure order") {
     using Effect = ASR::TraitLifecycleSummary::Effect;
     const std::string types = R"(
 abstract interface :: IValue
-    pure integer function value()
+    pure integer function value(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 type :: Payload
@@ -8426,7 +8492,8 @@ TEST_CASE("Trait lifecycle summaries follow the verifier on malformed calls") {
     const std::string source = R"(
 module malformed_lifecycle_m
 abstract interface :: IValue
-    integer function value()
+    integer function value(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 type :: Payload
@@ -8548,7 +8615,8 @@ TEST_CASE("Trait component effects and readonly storage fail semantically") {
     const std::string prefix = R"(
 module trait_component_errors_m
 abstract interface :: IValue
-    pure integer function value()
+    pure integer function value(self)
+        type(itself), intent(in), pass :: self
     end function
 end interface
 type :: Payload
@@ -8694,7 +8762,8 @@ abstract interface :: INumeric
     integer | real(8)
 end interface
 abstract interface :: ISum
-    function sum{INumeric :: T}(x) result(s)
+    function sum{INumeric :: T}(self, x) result(s)
+        type(itself), intent(in), pass :: self
         type(T), intent(in) :: x(:)
         type(T) :: s
     end function
@@ -8920,17 +8989,20 @@ TEST_CASE("Generic requirement specializations keep the conformances checked at 
 module evidence_contracts
 implicit none
 abstract interface :: IValue
-    function value() result(r)
+    function value(self) result(r)
+        type(itself), intent(in), pass :: self
         integer :: r
     end function
 end interface
 abstract interface :: ILabel
-    function label() result(r)
+    function label(self) result(r)
+        type(itself), intent(in), pass :: self
         integer :: r
     end function
 end interface
 abstract interface :: IApply
-    function apply{IValue :: T}(object) result(r)
+    function apply{IValue :: T}(self, object) result(r)
+        type(itself), intent(in), pass :: self
         type(T), intent(in) :: object
         integer :: r
     end function
@@ -9302,7 +9374,8 @@ module gt_contracts
         end function sum
     end interface ISum
     abstract interface :: IAverager
-        function average{INumeric :: T}(x) result(a)
+        function average{INumeric :: T}(self, x) result(a)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T) :: a
         end function average
@@ -9660,13 +9733,15 @@ module gx_contracts
         integer | real(8)
     end interface INumeric
     abstract interface :: ISum
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T) :: s
         end function sum
     end interface ISum
     abstract interface :: IAverager
-        function average{INumeric :: T}(x) result(a)
+        function average{INumeric :: T}(self, x) result(a)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T) :: a
         end function average
@@ -9687,10 +9762,11 @@ module gx_provider_a
     use gx_leaf, only: Leaf
     implicit none
     implements ISum :: Leaf
-        procedure, nopass :: sum => sum_a
+        procedure, pass :: sum => sum_a
     end implements
 contains
-    function sum_a{INumeric :: T}(x) result(s)
+    function sum_a{INumeric :: T}(self, x) result(s)
+        type(Leaf), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T) :: s
         s = x(1)
@@ -9702,10 +9778,11 @@ module gx_provider_b
     use gx_leaf, only: Leaf
     implicit none
     implements ISum :: Leaf
-        procedure, nopass :: sum => sum_b
+        procedure, pass :: sum => sum_b
     end implements
 contains
-    function sum_b{INumeric :: T}(x) result(s)
+    function sum_b{INumeric :: T}(self, x) result(s)
+        type(Leaf), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T) :: s
         s = x(1) + T(100)
@@ -9719,10 +9796,11 @@ module gx_simple
     public :: SimpleSum
     type, sealed, implements(ISum) :: SimpleSum
     contains
-        procedure, nopass :: sum => simple_sum
+        procedure, pass :: sum => simple_sum
     end type SimpleSum
 contains
-    function simple_sum{INumeric :: T}(x) result(s)
+    function simple_sum{INumeric :: T}(self, x) result(s)
+        type(SimpleSum), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T) :: s
         s = x(1)
@@ -9803,11 +9881,11 @@ program gx_client
     implicit none
     type, sealed, implements(ISum) :: LocalSum
     contains
-        procedure, nopass :: sum => local_sum
+        procedure, pass :: sum => local_sum
     end type LocalSum
     class(IAverager), allocatable :: av
     av = Averager(drv = PairwiseSum(other = SimpleSum()))
-    print *, av%average([1, 2]), run_a(), run_b(), local_sum([1])
+    print *, av%average([1, 2]), run_a(), run_b(), local_sum(LocalSum(), [1])
 contains
     integer function run_a() result(r)
         use gx_provider_a
@@ -9819,7 +9897,8 @@ contains
         q := PairwiseSum(Leaf())
         r = q%sum([1, 2])
     end function run_b
-    function local_sum{INumeric :: T}(x) result(s)
+    function local_sum{INumeric :: T}(self, x) result(s)
+        type(LocalSum), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T) :: s
         s = x(1)
@@ -9997,6 +10076,347 @@ end program gx_client
             }
             CHECK(not_found);
         }
+    }
+}
+
+TEST_CASE("Explicit trait receivers keep their marker, intent and position") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module explicit_receivers_m
+implicit none
+abstract interface :: IStore
+    subroutine fill(n, self, x)
+        integer, intent(in) :: n
+        type(itself), intent(inout), pass :: self
+        real, intent(in) :: x(:)
+    end subroutine
+    subroutine reset(this)
+        type(itself), intent(out), pass :: this
+    end subroutine
+    function peek(obj) result(r)
+        type(itself), pass :: obj
+        real :: r
+    end function
+    function total(self) result(r)
+        type(itself), intent(in), pass :: self
+        real :: r
+    end function
+    subroutine hello(k)
+        integer, intent(in) :: k
+    end subroutine
+end interface
+abstract interface :: ISized
+    subroutine resize(n, self, x)
+        integer, intent(in) :: n
+        type(itself), intent(inout), pass :: self
+        real, intent(in) :: x(n)
+    end subroutine
+end interface
+type :: Store
+    real :: s = 0
+end type
+implements IStore :: Store
+    procedure, pass(st) :: fill => store_fill
+    procedure, pass :: reset => store_reset
+    procedure, pass :: peek => store_peek
+    procedure, pass :: total => store_total
+    procedure, nopass :: hello => store_hello
+end implements
+implements ISized :: Store
+    procedure, pass(st) :: resize => store_resize
+end implements
+contains
+subroutine store_fill(n, x, st)
+    integer, intent(in) :: n
+    real, intent(in) :: x(:)
+    class(Store), intent(inout) :: st
+    st%s = st%s + sum(x(:n))
+end subroutine
+subroutine store_resize(n, x, st)
+    integer, intent(in) :: n
+    real, intent(in) :: x(n)
+    class(Store), intent(inout) :: st
+    st%s = sum(x)
+end subroutine
+subroutine store_reset(self)
+    class(Store), intent(out) :: self
+end subroutine
+function store_peek(self) result(r)
+    class(Store) :: self
+    real :: r
+    r = self%s
+end function
+function store_total(self) result(r)
+    class(Store), intent(in) :: self
+    real :: r
+    r = self%s
+end function
+subroutine store_hello(k)
+    integer, intent(in) :: k
+end subroutine
+subroutine use_view(o, x)
+    class(IStore), intent(inout) :: o
+    real, intent(in) :: x(:)
+    call o%fill(size(x), x)
+    call o%reset()
+    call o%hello(1)
+end subroutine
+real function use_generic{IStore :: T}(o) result(r)
+    type(T), intent(inout) :: o
+    call o%reset()
+    r = o%total() + o%peek()
+end function
+subroutine use_sized{ISized :: T}(o)
+    type(T), intent(inout) :: o
+    call o%resize(2, [1.0, 2.0])
+end subroutine
+end module
+)";
+    asr_ser(source);
+    asr_mod(source, "explicit_receivers_m");
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("explicit_receivers_m"));
+    auto *trait = ASR::down_cast<ASR::Trait_t>(module->m_symtab->get_symbol("istore"));
+    auto member = [&](const char *name) {
+        return ASR::down_cast<ASR::Function_t>(trait->m_symtab->get_symbol(name));
+    };
+    // The marker is the receiver's own attribute, at its source position;
+    // its intent is the receiver's effect.
+    CHECK(ASRUtils::trait_message_receiver(*member("fill")) == 1);
+    CHECK(ASRUtils::trait_message_receiver(*member("reset")) == 0);
+    CHECK(ASRUtils::trait_message_receiver(*member("hello")) == member("hello")->n_args);
+    CHECK(ASRUtils::EXPR2VAR(member("fill")->m_args[0])->m_pass_attr ==
+        ASR::pass_attrType::NotMethod);
+    const std::pair<const char*, ASR::intentType> effects[] = {
+        {"fill", ASR::intentType::InOut}, {"reset", ASR::intentType::Out},
+        {"peek", ASR::intentType::Unspecified}, {"total", ASR::intentType::In},
+        {"hello", ASR::intentType::Local}};
+    for (const auto &effect : effects) {
+        INFO(effect.first);
+        CHECK(ASRUtils::trait_member_receiver_intent(&member(effect.first)->base) ==
+            effect.second);
+    }
+    // A runtime slot takes the view first, with the dispatch intent: InOut
+    // only when the receiver is defined, never Out.
+    auto *contract = ASRUtils::trait_runtime_contract(&trait->base);
+    REQUIRE(contract != nullptr);
+    auto slot = [&](const char *name) -> ASR::Function_t* {
+        for (size_t i = 0; i < contract->n_slots; i++) {
+            if (std::string(ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+                    contract->m_slots[i].m_origins[0]))) == name) {
+                return ASRUtils::trait_method_function(contract->m_slots[i].m_procedure);
+            }
+        }
+        return nullptr;
+    };
+    const std::pair<const char*, ASR::intentType> dispatch[] = {
+        {"fill", ASR::intentType::InOut}, {"reset", ASR::intentType::InOut},
+        {"peek", ASR::intentType::In}, {"total", ASR::intentType::In},
+        {"hello", ASR::intentType::In}};
+    for (const auto &expected : dispatch) {
+        INFO(expected.first);
+        auto *procedure = slot(expected.first);
+        REQUIRE(procedure != nullptr);
+        auto *view = ASRUtils::EXPR2VAR(procedure->m_args[0]);
+        CHECK(ASR::is_a<ASR::TraitObjectType_t>(*view->m_type));
+        CHECK(view->m_intent == expected.second);
+        CHECK(view->m_pass_attr == ASR::pass_attrType::NotMethod);
+    }
+    // The receiver of `fill` moved from the middle.
+    auto *fill = slot("fill");
+    REQUIRE(fill->n_args == 3);
+    CHECK(std::string(ASRUtils::EXPR2VAR(fill->m_args[1])->m_name) == "n");
+    CHECK(std::string(ASRUtils::EXPR2VAR(fill->m_args[2])->m_name) == "x");
+    // So did that of `resize`: the extent of `x` refers to `n` at its new
+    // position in the constraint's requirement.
+    auto *sized = ASR::down_cast<ASR::Template_t>(module->m_symtab->get_symbol("use_sized"));
+    ASR::Function_t *resize = nullptr;
+    for (const auto &entry : sized->m_symtab->get_scope()) {
+        if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+        auto *requirements = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+        REQUIRE(requirements->n_requirements == 1);
+        resize = ASRUtils::trait_method_function(requirements->m_requirements[0].m_procedure);
+    }
+    REQUIRE(resize != nullptr);
+    REQUIRE(resize->n_args == 3);
+    CHECK(ASRUtils::EXPR2VAR(resize->m_args[0])->m_intent == ASR::intentType::InOut);
+    CHECK(std::string(ASRUtils::EXPR2VAR(resize->m_args[1])->m_name) == "n");
+    auto *x_type = ASRUtils::get_FunctionType(resize)->m_arg_types[2];
+    REQUIRE(ASR::is_a<ASR::Array_t>(*x_type));
+    auto *extent = ASR::down_cast<ASR::Array_t>(x_type)->m_dims[0].m_length;
+    REQUIRE(extent != nullptr);
+    REQUIRE(ASR::is_a<ASR::FunctionParam_t>(*extent));
+    CHECK(ASR::down_cast<ASR::FunctionParam_t>(extent)->m_param_number == 1);
+    // Adapters only forward: the implementation alone has an OUT receiver.
+    ASR::TraitWitness_t *witness = nullptr;
+    for (const auto &entry : module->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::TraitWitness_t>(*entry.second)) {
+            witness = ASR::down_cast<ASR::TraitWitness_t>(entry.second);
+        }
+    }
+    REQUIRE(witness != nullptr);
+    REQUIRE(witness->n_procedures == contract->n_slots);
+    for (size_t i = 0; i < witness->n_procedures; i++) {
+        auto *adapter = ASRUtils::trait_method_function(witness->m_procedures[i]);
+        for (size_t j = 0; j < adapter->n_args; j++) {
+            CHECK(ASRUtils::EXPR2VAR(adapter->m_args[j])->m_intent != ASR::intentType::Out);
+            CHECK(ASRUtils::EXPR2VAR(adapter->m_args[j])->m_pass_attr ==
+                ASR::pass_attrType::NotMethod);
+        }
+    }
+    // A constraint's requirement keeps the marker and the declared intent.
+    auto *generic = ASR::down_cast<ASR::Template_t>(module->m_symtab->get_symbol("use_generic"));
+    ASR::TraitConstraint_t *constraint = nullptr;
+    for (const auto &entry : generic->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) {
+            constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+        }
+    }
+    REQUIRE(constraint != nullptr);
+    ASR::Function_t *reset_requirement = nullptr;
+    for (size_t i = 0; i < constraint->n_requirements; i++) {
+        auto *required = ASRUtils::trait_method_function(
+            constraint->m_requirements[i].m_procedure);
+        auto *message = ASRUtils::trait_method_function(constraint->m_requirements[i].m_member);
+        auto *receiver = ASRUtils::EXPR2VAR(required->m_args[0]);
+        bool declared = ASRUtils::trait_message_receiver(*message) < message->n_args;
+        INFO(message->m_name);
+        CHECK((receiver->m_pass_attr == ASR::pass_attrType::Pass) == declared);
+        CHECK(receiver->m_intent == (declared
+            ? ASRUtils::trait_member_receiver_intent(&message->base) : ASR::intentType::In));
+        if (std::string(message->m_name) == "reset") reset_requirement = required;
+    }
+    REQUIRE(reset_requirement != nullptr);
+    CHECK(ASRUtils::EXPR2VAR(reset_requirement->m_args[0])->m_intent == ASR::intentType::Out);
+    for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+        LCompilers::ASRTextOptions text_options;
+        text_options.form = form;
+        auto text = LCompilers::asr_to_text(*result.result, text_options);
+        LCompilers::diag::Diagnostics text_diagnostics;
+        auto loaded = LCompilers::asr_from_text(al, text, "explicit_receivers.asr", lm,
+            text_diagnostics);
+        INFO(text_diagnostics.render2());
+        REQUIRE(loaded.ok);
+        CHECK(text == LCompilers::asr_to_text(*loaded.result, text_options));
+        auto *copy = ASR::down_cast<ASR::Module_t>(
+            loaded.result->m_symtab->get_symbol("explicit_receivers_m"));
+        auto *copied = ASR::down_cast<ASR::Trait_t>(copy->m_symtab->get_symbol("istore"));
+        CHECK(ASRUtils::trait_message_receiver(*ASR::down_cast<ASR::Function_t>(
+            copied->m_symtab->get_symbol("fill"))) == 1);
+    }
+
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        bool found = false;
+        for (const auto &diagnostic : invalid.diagnostics) found |= diagnostic.code == code;
+        CHECK(found);
+    };
+    auto procedure = [&](const char *name) {
+        return ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol(name));
+    };
+    // A trait that has neither a runtime contract (explicit-shape array
+    // argument) nor conformances: only its own declaration is verified.
+    auto declaration_rejects = [&](bool both, const std::string &code) {
+        const std::string declarations = R"(
+module explicit_receiver_declarations_m
+implicit none
+abstract interface :: ISized
+    subroutine resize(n, self, x)
+        integer, intent(in) :: n
+        type(itself), intent(inout), pass :: self
+        real, intent(in) :: x(n)
+    end subroutine
+end interface
+end module
+)";
+        Allocator al2(256 * 1024);
+        LCompilers::diag::Diagnostics declared;
+        auto ast = LCompilers::LFortran::parse(al2, declarations, declared, options);
+        REQUIRE(ast.ok);
+        auto asr = LCompilers::LFortran::ast_to_asr(
+            al2, *ast.result, declared, nullptr, false, options, lm);
+        REQUIRE(asr.ok);
+        auto *unit = ASR::down_cast<ASR::Module_t>(
+            asr.result->m_symtab->get_symbol("explicit_receiver_declarations_m"));
+        auto *sized = ASR::down_cast<ASR::Trait_t>(unit->m_symtab->get_symbol("isized"));
+        auto *resize = ASR::down_cast<ASR::Function_t>(sized->m_symtab->get_symbol("resize"));
+        LCompilers::diag::Diagnostics valid;
+        CHECK(LCompilers::asr_verify(*asr.result, true, valid));
+        auto *first = ASRUtils::EXPR2VAR(resize->m_args[0]);
+        if (both) {
+            // A second, otherwise valid, receiver.
+            first->m_type = ASRUtils::EXPR2VAR(resize->m_args[1])->m_type;
+            first->m_intent = ASR::intentType::InOut;
+        } else {
+            ASRUtils::EXPR2VAR(resize->m_args[1])->m_pass_attr = ASR::pass_attrType::NotMethod;
+        }
+        first->m_pass_attr = ASR::pass_attrType::Pass;
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*asr.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("a message marks one receiver") {
+        declaration_rejects(true, "asr.verify.trait.receiver_unique");
+    }
+    SUBCASE("only a type(itself) dummy is a receiver") {
+        declaration_rejects(false, "asr.verify.trait.receiver");
+    }
+    SUBCASE("a binding implements its receiver's exact intent") {
+        ASRUtils::EXPR2VAR(procedure("store_reset")->m_args[0])->m_intent =
+            ASR::intentType::InOut;
+        rejects("asr.verify.trait_witness.receiver_type");
+    }
+    SUBCASE("a message without a receiver has a binding without a passed object") {
+        ASR::TraitImplementation_t *implementation = nullptr;
+        for (const auto &entry : module->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::TraitImplementation_t>(*entry.second)) {
+                implementation = ASR::down_cast<ASR::TraitImplementation_t>(entry.second);
+            }
+        }
+        REQUIRE(implementation != nullptr);
+        for (size_t i = 0; i < implementation->n_bindings; i++) {
+            auto &binding = implementation->m_bindings[i];
+            if (std::string(ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+                    binding.m_member))) == "hello") {
+                binding.m_is_nopass = false;
+                binding.m_self_argument = LCompilers::s2c(al, "k");
+            }
+        }
+        rejects("asr.verify.trait_witness.receiver_binding");
+    }
+    SUBCASE("a slot takes its view with the dispatch intent") {
+        ASRUtils::EXPR2VAR(slot("reset")->m_args[0])->m_intent = ASR::intentType::In;
+        rejects("asr.verify.trait_contract.receiver");
+    }
+    SUBCASE("an adapter does not repeat OUT cleanup") {
+        for (size_t i = 0; i < witness->n_procedures; i++) {
+            auto *adapter = ASRUtils::trait_method_function(witness->m_procedures[i]);
+            if (adapter->n_args == 1 && !adapter->m_return_var &&
+                    ASRUtils::EXPR2VAR(adapter->m_args[0])->m_intent == ASR::intentType::InOut) {
+                ASRUtils::EXPR2VAR(adapter->m_args[0])->m_intent = ASR::intentType::Out;
+            }
+        }
+        rejects("asr.verify.trait_witness.signature");
+    }
+    SUBCASE("a constraint requirement keeps the receiver's intent") {
+        ASRUtils::EXPR2VAR(reset_requirement->m_args[0])->m_intent = ASR::intentType::In;
+        rejects("asr.verify.trait_constraint.receiver_matches_parameter");
     }
 }
 

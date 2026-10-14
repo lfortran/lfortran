@@ -6018,7 +6018,8 @@ bool trait_runtime_view_admissible(const ASR::Trait_t &trait)
         ASR::Function_t *message = trait_method_function(member);
         if (message->m_return_var &&
                 contains_trait_itself(expr_type(message->m_return_var))) return false;
-        for (size_t i = 0; i < message->n_args; i++) {
+        // The explicit receiver is the object a view dispatches on.
+        for (size_t i : trait_compared_arguments(*message)) {
             if (contains_trait_itself(expr_type(message->m_args[i]))) return false;
         }
     }
@@ -6092,6 +6093,55 @@ ASR::Template_t *trait_method_template(const ASR::Function_t &method)
     if (!owner || !ASR::is_a<ASR::Template_t>(*owner)) return nullptr;
     auto *generic = ASR::down_cast<ASR::Template_t>(owner);
     return trait_method_function(owner) == &method ? generic : nullptr;
+}
+
+bool is_trait_receiver_dummy(const ASR::Variable_t &dummy)
+{
+    return dummy.m_pass_attr == ASR::pass_attrType::Pass && dummy.m_type &&
+        !ASR::is_a<ASR::FunctionType_t>(*type_get_past_pointer(dummy.m_type));
+}
+
+size_t trait_message_receiver(const ASR::Function_t &message)
+{
+    for (size_t i = 0; i < message.n_args; i++) {
+        auto *arg = message.m_args[i];
+        if (!arg || !ASR::is_a<ASR::Var_t>(*arg)) continue;
+        auto *symbol = symbol_get_past_external(ASR::down_cast<ASR::Var_t>(arg)->m_v);
+        if (symbol && ASR::is_a<ASR::Variable_t>(*symbol) &&
+                is_trait_receiver_dummy(*ASR::down_cast<ASR::Variable_t>(symbol))) {
+            return i;
+        }
+    }
+    return message.n_args;
+}
+
+ASR::Variable_t *trait_message_receiver_variable(const ASR::Function_t &message)
+{
+    size_t index = trait_message_receiver(message);
+    return index < message.n_args ? EXPR2VAR(message.m_args[index]) : nullptr;
+}
+
+std::vector<size_t> trait_compared_arguments(const ASR::Function_t &function,
+    size_t offset)
+{
+    std::vector<size_t> positions;
+    size_t receiver = trait_message_receiver(function);
+    for (size_t i = offset; i < function.n_args; i++) {
+        if (i != receiver) positions.push_back(i);
+    }
+    return positions;
+}
+
+ASR::intentType trait_dispatch_intent(ASR::intentType intent)
+{
+    return trait_receiver_defines(intent) ? ASR::intentType::InOut : ASR::intentType::In;
+}
+
+ASR::intentType trait_member_receiver_intent(ASR::symbol_t *member)
+{
+    auto *message = trait_method_function(member);
+    auto *receiver = message ? trait_message_receiver_variable(*message) : nullptr;
+    return receiver ? receiver->m_intent : ASR::intentType::Local;
 }
 
 ASR::symbol_t *trait_type_parameter(ASR::expr_t *value)
@@ -6311,13 +6361,17 @@ bool trait_erased_signature_matches(const ASR::Function_t &generic,
     auto *method = trait_method_template(generic);
     if (!method || (generic.n_args && !generic.m_args) || !erased.m_args ||
             !generic.m_return_var || !erased.m_return_var) return false;
+    // The explicit receiver of a message is the leading argument of a slot.
+    std::vector<size_t> generic_args = trait_compared_arguments(generic);
+    size_t n_generic = generic_args.size();
+    auto generic_arg = [&](size_t i) { return generic.m_args[generic_args[i]]; };
     // Dictionary binders pass their dictionaries after the message's arguments.
     std::vector<std::pair<std::string, ASR::TraitDictionaryContract_t*>> dictionaries;
     for (size_t i = 0; i < method->n_args; i++) {
         auto *contract = trait_parameter_dictionary(method->m_symtab->get_symbol(method->m_args[i]));
         if (contract) dictionaries.push_back({method->m_args[i], contract});
     }
-    if (erased.n_args != generic.n_args + offset + dictionaries.size()) return false;
+    if (erased.n_args != n_generic + offset + dictionaries.size()) return false;
     auto dictionary_type = [&](size_t i) -> ASR::TraitDictionaryType_t* {
         auto *expr = erased.m_args[i];
         if (!expr || !ASR::is_a<ASR::Var_t>(*expr)) return nullptr;
@@ -6329,14 +6383,14 @@ bool trait_erased_signature_matches(const ASR::Function_t &generic,
     };
     // Arguments a later pass appends to both procedures, such as hidden
     // character lengths, follow the dictionaries, which are found by type.
-    size_t first = offset + generic.n_args;
+    size_t first = offset + n_generic;
     if (!dictionaries.empty()) {
         first = offset;
         while (first < erased.n_args && !dictionary_type(first)) first++;
         if (first + dictionaries.size() > erased.n_args) return false;
     }
     size_t n_explicit = first - offset;
-    if (n_explicit > generic.n_args) return false;
+    if (n_explicit > n_generic) return false;
     for (size_t i = 0; i < dictionaries.size(); i++) {
         auto *type = dictionary_type(first + i);
         if (!type || !type->m_parameter || dictionaries[i].first != type->m_parameter ||
@@ -6352,19 +6406,19 @@ bool trait_erased_signature_matches(const ASR::Function_t &generic,
         typed_expr_type(erased.m_return_var), *method);
     if (!result || (!ASR::is_a<ASR::Integer_t>(*result) && !erased_result)) return false;
     std::map<ASR::symbol_t*, ASR::symbol_t*> arguments;
-    for (size_t i = 0; i < generic.n_args; i++) {
-        if (!generic.m_args[i] || !erased_arg(i) ||
-                !ASR::is_a<ASR::Var_t>(*generic.m_args[i]) ||
+    for (size_t i = 0; i < n_generic; i++) {
+        if (!generic_arg(i) || !erased_arg(i) ||
+                !ASR::is_a<ASR::Var_t>(*generic_arg(i)) ||
                 !ASR::is_a<ASR::Var_t>(*erased_arg(i))) return false;
         auto *a = get_variable_from_symbol(symbol_get_past_external(
-            ASR::down_cast<ASR::Var_t>(generic.m_args[i])->m_v));
+            ASR::down_cast<ASR::Var_t>(generic_arg(i))->m_v));
         auto *b = get_variable_from_symbol(symbol_get_past_external(
             ASR::down_cast<ASR::Var_t>(erased_arg(i))->m_v));
         if (!a || !b || !a->m_name || !b->m_name || !a->m_type || !b->m_type) return false;
         arguments.emplace(&a->base, &b->base);
     }
-    for (size_t i = 0; i < generic.n_args; i++) {
-        auto *a = EXPR2VAR(generic.m_args[i]), *b = EXPR2VAR(erased_arg(i));
+    for (size_t i = 0; i < n_generic; i++) {
+        auto *a = EXPR2VAR(generic_arg(i)), *b = EXPR2VAR(erased_arg(i));
         if (a->m_intent != b->m_intent || a->m_presence != b->m_presence ||
                 a->m_value_attr != b->m_value_attr ||
                 std::string(a->m_name) != b->m_name) return false;
@@ -6372,7 +6426,7 @@ bool trait_erased_signature_matches(const ASR::Function_t &generic,
             if (a->m_intent != ASR::intentType::In) return false;
             continue;
         }
-        auto *binder = trait_type_parameter(generic.m_args[i]);
+        auto *binder = trait_type_parameter(generic_arg(i));
         if (binder) {
             auto *contract = trait_parameter_contract(binder);
             if (!contract || !ASR::is_a<ASR::TraitObjectType_t>(*b->m_type) ||
@@ -6381,7 +6435,7 @@ bool trait_erased_signature_matches(const ASR::Function_t &generic,
                     !trait_contracts_equal(
                         ASR::down_cast<ASR::TraitObjectType_t>(b->m_type)->m_contract,
                         &contract->base)) return false;
-        } else if (!trait_types_equal(generic.m_args[i], erased_arg(i), arguments)) {
+        } else if (!trait_types_equal(generic_arg(i), erased_arg(i), arguments)) {
             return false;
         }
     }
@@ -6945,7 +6999,8 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
             return false;
         }
     }
-    for (size_t i = 0; i < method.n_args; i++) {
+    // The explicit receiver is the object, passed through the view.
+    for (size_t i : trait_compared_arguments(method)) {
         if (!ASR::is_a<ASR::Var_t>(*method.m_args[i])) return false;
         auto *symbol = symbol_get_past_external(ASR::down_cast<ASR::Var_t>(method.m_args[i])->m_v);
         if (!ASR::is_a<ASR::Variable_t>(*symbol)) return false;
@@ -7023,7 +7078,7 @@ bool runtime_trait_method_supported(const ASR::Function_t &method)
     if (!ASR::is_a<ASR::Integer_t>(*result) &&
             !(dictionary_binder(result) &&
                 !ASR::down_cast<ASR::TypeParameter_t>(result)->m_is_class)) return false;
-    for (size_t i = 0; i < method.n_args; i++) {
+    for (size_t i : trait_compared_arguments(method)) {
         if (!ASR::is_a<ASR::Var_t>(*method.m_args[i])) return false;
         auto *symbol = symbol_get_past_external(ASR::down_cast<ASR::Var_t>(method.m_args[i])->m_v);
         if (!ASR::is_a<ASR::Variable_t>(*symbol)) return false;
@@ -7644,19 +7699,19 @@ bool trait_method_binder_type(const ASR::Function_t &procedure, ASR::expr_t *val
     return uses_binder(actual.first, actual.second);
 }
 
-bool trait_binding_mutates_receiver(const ASR::trait_binding_t &binding)
+ASR::intentType trait_binding_receiver_intent(const ASR::trait_binding_t &binding)
 {
-    if (binding.m_is_nopass) return false;
+    if (binding.m_is_nopass) return ASR::intentType::Local;
     auto *procedure = trait_method_function(binding.m_procedure);
-    if (!procedure) return false;
+    if (!procedure) return ASR::intentType::Local;
     for (size_t i = 0; i < procedure->n_args; i++) {
         auto *receiver = ASRUtils::EXPR2VAR(procedure->m_args[i]);
         if (binding.m_self_argument ? std::string(receiver->m_name) == binding.m_self_argument
                 : i == 0) {
-            return receiver->m_intent == ASR::intentType::InOut;
+            return receiver->m_intent;
         }
     }
-    return false;
+    return ASR::intentType::Local;
 }
 
 static bool trait_types_equal_impl(ASR::expr_t *left, ASR::expr_t *right,
@@ -7754,8 +7809,10 @@ bool trait_member_signature_matches(const ASR::Function_t &generic,
         size_t offset)
 {
     auto *definition = trait_method_template(generic);
+    // The explicit receiver of a message is the leading argument of a slot.
+    std::vector<size_t> generic_args = trait_compared_arguments(generic);
     if (!definition || definition->n_args != n_members || !n_members || !members ||
-            !definition->m_args || instance.n_args != generic.n_args + offset ||
+            !definition->m_args || instance.n_args != generic_args.size() + offset ||
             (generic.n_args && !generic.m_args) || (instance.n_args && !instance.m_args) ||
             bool(generic.m_return_var) != bool(instance.m_return_var) ||
             !generic.m_function_signature || !instance.m_function_signature ||
@@ -7772,25 +7829,27 @@ bool trait_member_signature_matches(const ASR::Function_t &generic,
     }
     auto substitution = trait_member_substitution(*definition, members, n_members);
     std::map<ASR::symbol_t*, ASR::symbol_t*> arguments;
-    for (size_t i = 0; i < generic.n_args; i++) {
-        if (!generic.m_args[i] || !instance.m_args[i + offset] ||
-                !ASR::is_a<ASR::Var_t>(*generic.m_args[i]) ||
+    for (size_t i = 0; i < generic_args.size(); i++) {
+        auto *generic_arg = generic.m_args[generic_args[i]];
+        if (!generic_arg || !instance.m_args[i + offset] ||
+                !ASR::is_a<ASR::Var_t>(*generic_arg) ||
                 !ASR::is_a<ASR::Var_t>(*instance.m_args[i + offset])) return false;
         auto *a = get_variable_from_symbol(symbol_get_past_external(
-            ASR::down_cast<ASR::Var_t>(generic.m_args[i])->m_v));
+            ASR::down_cast<ASR::Var_t>(generic_arg)->m_v));
         auto *b = get_variable_from_symbol(symbol_get_past_external(
             ASR::down_cast<ASR::Var_t>(instance.m_args[i + offset])->m_v));
         if (!a || !b || !a->m_name || !b->m_name || !a->m_type || !b->m_type) return false;
         arguments.emplace(&a->base, &b->base);
     }
-    for (size_t i = 0; i < generic.n_args; i++) {
-        auto *a = EXPR2VAR(generic.m_args[i]), *b = EXPR2VAR(instance.m_args[i + offset]);
+    for (size_t i = 0; i < generic_args.size(); i++) {
+        auto *generic_arg = generic.m_args[generic_args[i]];
+        auto *a = EXPR2VAR(generic_arg), *b = EXPR2VAR(instance.m_args[i + offset]);
         if (std::string(a->m_name) != b->m_name || a->m_intent != b->m_intent ||
                 a->m_presence != b->m_presence || a->m_value_attr != b->m_value_attr ||
                 a->m_target_attr != b->m_target_attr ||
                 a->m_contiguous_attr != b->m_contiguous_attr ||
                 a->m_is_volatile != b->m_is_volatile ||
-                !trait_member_type_matches(generic.m_args[i], instance.m_args[i + offset],
+                !trait_member_type_matches(generic_arg, instance.m_args[i + offset],
                     substitution, arguments)) return false;
     }
     auto *a = get_FunctionType(generic), *b = get_FunctionType(instance);
@@ -8064,7 +8123,9 @@ std::string trait_generic_requirement_mismatch(const ASR::Template_t &message,
         }
         types[message.m_args[i]] = {&y->base, b};
     }
-    if (generic->n_args != method->n_args + 1 || !generic->m_args ||
+    // The message's explicit receiver is the requirement's leading argument.
+    std::vector<size_t> method_args = trait_compared_arguments(*method);
+    if (generic->n_args != method_args.size() + 1 || !generic->m_args ||
             (method->n_args && !method->m_args) ||
             bool(generic->m_return_var) != bool(method->m_return_var) ||
             !generic->m_function_signature || !method->m_function_signature ||
@@ -8072,15 +8133,24 @@ std::string trait_generic_requirement_mismatch(const ASR::Template_t &message,
             !ASR::is_a<ASR::FunctionType_t>(*method->m_function_signature)) {
         return "its function is not the message's with a leading receiver";
     }
+    auto *receiver = trait_message_receiver_variable(*method);
+    auto *leading = generic->m_args[0] && ASR::is_a<ASR::Var_t>(*generic->m_args[0])
+        ? get_variable_from_symbol(symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(generic->m_args[0])->m_v)) : nullptr;
+    if (!leading || is_trait_receiver_dummy(*leading) != bool(receiver) ||
+            leading->m_intent != (receiver ? receiver->m_intent : ASR::intentType::In)) {
+        return "its leading argument is not the message's receiver";
+    }
     std::map<ASR::symbol_t*, ASR::symbol_t*> arguments;
-    for (size_t i = 0; i < method->n_args; i++) {
-        if (!method->m_args[i] || !generic->m_args[i + 1] ||
-                !ASR::is_a<ASR::Var_t>(*method->m_args[i]) ||
+    for (size_t i = 0; i < method_args.size(); i++) {
+        auto *method_arg = method->m_args[method_args[i]];
+        if (!method_arg || !generic->m_args[i + 1] ||
+                !ASR::is_a<ASR::Var_t>(*method_arg) ||
                 !ASR::is_a<ASR::Var_t>(*generic->m_args[i + 1])) {
             return "its arguments must be variables";
         }
         auto *a = get_variable_from_symbol(symbol_get_past_external(
-            ASR::down_cast<ASR::Var_t>(method->m_args[i])->m_v));
+            ASR::down_cast<ASR::Var_t>(method_arg)->m_v));
         auto *b = get_variable_from_symbol(symbol_get_past_external(
             ASR::down_cast<ASR::Var_t>(generic->m_args[i + 1])->m_v));
         if (!a || !b || !a->m_name || !b->m_name || !a->m_type || !b->m_type) {
@@ -8088,14 +8158,15 @@ std::string trait_generic_requirement_mismatch(const ASR::Template_t &message,
         }
         arguments.emplace(&a->base, &b->base);
     }
-    for (size_t i = 0; i < method->n_args; i++) {
-        auto *a = EXPR2VAR(method->m_args[i]), *b = EXPR2VAR(generic->m_args[i + 1]);
+    for (size_t i = 0; i < method_args.size(); i++) {
+        auto *method_arg = method->m_args[method_args[i]];
+        auto *a = EXPR2VAR(method_arg), *b = EXPR2VAR(generic->m_args[i + 1]);
         if (std::string(a->m_name) != b->m_name || a->m_intent != b->m_intent ||
                 a->m_presence != b->m_presence || a->m_value_attr != b->m_value_attr ||
                 a->m_target_attr != b->m_target_attr ||
                 a->m_contiguous_attr != b->m_contiguous_attr ||
                 a->m_is_volatile != b->m_is_volatile ||
-                !trait_requirement_type_matches(method->m_args[i],
+                !trait_requirement_type_matches(method_arg,
                     generic->m_args[i + 1], types, arguments)) {
             return "argument '" + std::string(a->m_name) + "' differs from the message's";
         }
@@ -8266,7 +8337,8 @@ ASR::symbol_t *import_trait_slot(Allocator &al, ASR::TraitRuntimeContract_t &con
 }
 
 TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
-    const ASR::Function_t &right, size_t left_offset, size_t right_offset)
+    const ASR::Function_t &right, size_t left_offset, size_t right_offset,
+    bool forwarding)
 {
     LCOMPILERS_ASSERT(left_offset <= left.n_args && right_offset <= right.n_args);
     if (!left.m_function_signature || !right.m_function_signature ||
@@ -8274,20 +8346,23 @@ TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
             !ASR::is_a<ASR::FunctionType_t>(*right.m_function_signature)) {
         return {TraitMethodDifference::Contract, "a procedure signature is missing"};
     }
-    if (left.n_args - left_offset != right.n_args - right_offset) {
-        return {TraitMethodDifference::Arguments, "argument counts differ"};
-    }
     if ((left.n_args && !left.m_args) || (right.n_args && !right.m_args)) {
         return {TraitMethodDifference::Contract, "argument declarations are missing"};
+    }
+    // An explicit receiver is compared by trait_receiver_mismatch.
+    std::vector<size_t> left_args = trait_compared_arguments(left, left_offset);
+    std::vector<size_t> right_args = trait_compared_arguments(right, right_offset);
+    if (left_args.size() != right_args.size()) {
+        return {TraitMethodDifference::Arguments, "argument counts differ"};
     }
     std::map<ASR::symbol_t*, ASR::symbol_t*> parameters;
     auto generic_mismatch = trait_generic_correspondence(left, right, parameters);
     if (!generic_mismatch.empty()) {
         return {TraitMethodDifference::Contract, generic_mismatch};
     }
-    for (size_t i = 0; i < left.n_args - left_offset; i++) {
-        ASR::expr_t *a_expr = left.m_args[i + left_offset];
-        ASR::expr_t *b_expr = right.m_args[i + right_offset];
+    for (size_t i = 0; i < left_args.size(); i++) {
+        ASR::expr_t *a_expr = left.m_args[left_args[i]];
+        ASR::expr_t *b_expr = right.m_args[right_args[i]];
         if (!a_expr || !b_expr || !ASR::is_a<ASR::Var_t>(*a_expr) ||
                 !ASR::is_a<ASR::Var_t>(*b_expr)) {
             return {TraitMethodDifference::Contract, "trait arguments must be variables"};
@@ -8304,9 +8379,9 @@ TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
         }
         parameters.emplace(a_symbol, b_symbol);
     }
-    for (size_t i = 0; i < left.n_args - left_offset; i++) {
-        ASR::expr_t *a_expr = left.m_args[i + left_offset];
-        ASR::expr_t *b_expr = right.m_args[i + right_offset];
+    for (size_t i = 0; i < left_args.size(); i++) {
+        ASR::expr_t *a_expr = left.m_args[left_args[i]];
+        ASR::expr_t *b_expr = right.m_args[right_args[i]];
         auto *a = EXPR2VAR(a_expr);
         auto *b = EXPR2VAR(b_expr);
         int a_rank = extract_n_dims_from_ttype(a->m_type);
@@ -8334,7 +8409,9 @@ TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
             return {TraitMethodDifference::Contract, "dummy argument names differ ('" +
                 std::string(a->m_name) + "' and '" + b->m_name + "')"};
         }
-        if (a->m_intent != b->m_intent || a->m_presence != b->m_presence ||
+        bool forwarded = forwarding && a->m_intent == ASR::intentType::Out &&
+            b->m_intent == ASR::intentType::InOut;
+        if ((a->m_intent != b->m_intent && !forwarded) || a->m_presence != b->m_presence ||
                 a->m_value_attr != b->m_value_attr) {
             return {TraitMethodDifference::Contract,
                 argument + " has different intent, optional or value attributes"};
@@ -8376,6 +8453,33 @@ TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
             a->m_abi != b->m_abi) {
         return {TraitMethodDifference::Contract,
             "pure, elemental or abi attributes differ"};
+    }
+    return {};
+}
+
+std::string trait_intent_spelling(ASR::intentType intent)
+{
+    switch (intent) {
+        case ASR::intentType::In: return "intent(in)";
+        case ASR::intentType::Out: return "intent(out)";
+        case ASR::intentType::InOut: return "intent(inout)";
+        default: return "no intent";
+    }
+}
+
+TraitMethodMismatch trait_receiver_mismatch(const ASR::Function_t &left,
+    const ASR::Function_t &right)
+{
+    auto *a = trait_message_receiver_variable(left);
+    auto *b = trait_message_receiver_variable(right);
+    if (!a && !b) return {};
+    if (!a || !b) {
+        return {TraitMethodDifference::Contract, std::string("one declares the receiver '") +
+            (a ? a->m_name : b->m_name) + "' and the other has no receiver"};
+    }
+    if (a->m_intent != b->m_intent) {
+        return {TraitMethodDifference::Contract, "their receivers have " +
+            trait_intent_spelling(a->m_intent) + " and " + trait_intent_spelling(b->m_intent)};
     }
     return {};
 }

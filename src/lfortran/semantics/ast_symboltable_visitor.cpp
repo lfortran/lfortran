@@ -4495,6 +4495,77 @@ public:
         }
     }
 
+    // The explicit receiver of a trait message is the dummy argument whose
+    // declaration has the bare PASS attribute,
+    // `type(itself), intent(inout), pass :: object`, at any position and
+    // with any name; its Variable records it as pass_attr Pass. A message
+    // without one has no receiver. Initializer and operator requirements
+    // have none.
+    void mark_trait_message_receiver(ASR::Function_t &function,
+            AST::decl_stmt_t **items, size_t n_items, const std::string &requirement,
+            bool operation) {
+        ASR::Variable_t *receiver = nullptr;
+        for (size_t i = 0; i < n_items; i++) {
+            if (!AST::is_a<AST::Declaration_t>(*items[i])) continue;
+            auto *declaration = AST::down_cast<AST::Declaration_t>(items[i]);
+            AST::AttrPass_t *pass = nullptr;
+            for (size_t j = 0; j < declaration->n_attributes; j++) {
+                if (AST::is_a<AST::AttrPass_t>(*declaration->m_attributes[j])) {
+                    pass = AST::down_cast<AST::AttrPass_t>(declaration->m_attributes[j]);
+                }
+            }
+            if (!pass) continue;
+            if (operation) {
+                trait_error("the pass attribute marks the receiver of a message; "
+                    + requirement + " requirements have no receiver", pass->base.base.loc);
+            }
+            if (pass->m_name) {
+                trait_error("the receiver of trait message '" + requirement +
+                    "' is marked by the pass attribute without an argument name",
+                    pass->base.base.loc);
+            }
+            for (size_t j = 0; j < declaration->n_syms; j++) {
+                const AST::var_sym_t &symbol = declaration->m_syms[j];
+                std::string name = symbol.m_name ? to_lower(symbol.m_name) : "";
+                ASR::Variable_t *dummy = nullptr;
+                for (size_t k = 0; k < function.n_args; k++) {
+                    auto *argument = ASRUtils::expr_to_variable_or_null(function.m_args[k]);
+                    if (argument && name == argument->m_name) dummy = argument;
+                }
+                if (!dummy) {
+                    trait_error("the pass attribute marks the receiver of trait message '" +
+                        requirement + "', a dummy argument; '" + name + "' is not one",
+                        symbol.loc);
+                }
+                if (receiver) {
+                    trait_error("trait message '" + requirement + "' marks two receivers, '" +
+                        std::string(receiver->m_name) + "' and '" + name +
+                        "'; the pass attribute marks exactly one", symbol.loc);
+                }
+                receiver = dummy;
+            }
+        }
+        if (!receiver) return;
+        std::string description = "the receiver '" + std::string(receiver->m_name) +
+            "' of trait message '" + requirement + "'";
+        const Location &loc = receiver->base.base.loc;
+        if (!ASRUtils::contains_trait_itself(receiver->m_type)) {
+            trait_error(description + " must be declared type(itself)", loc);
+        }
+        // The passed-object dummy argument of Fortran (F2018 C760).
+        if (ASRUtils::is_array(receiver->m_type) || ASRUtils::is_pointer(receiver->m_type) ||
+                ASRUtils::is_allocatable(receiver->m_type) || receiver->m_value_attr) {
+            trait_error(description + " must be a scalar without the pointer, allocatable "
+                "or value attribute", loc);
+        }
+        if (receiver->m_presence == ASR::presenceType::Optional ||
+                receiver->m_target_attr || receiver->m_is_volatile || receiver->n_codims) {
+            trait_error(description + " with the optional, target, volatile or "
+                "codimension attribute is not implemented yet", loc);
+        }
+        receiver->m_pass_attr = ASR::pass_attrType::Pass;
+    }
+
     // `itself` names the implementing type in the signatures of a trait.
     void declare_trait_itself(SymbolTable *scope, const Location &loc) {
         std::string name = ASRUtils::trait_itself_name;
@@ -4766,20 +4837,42 @@ public:
                     }
                 }
                 visit_interface_item(*item);
+                {
+                    auto *function = ASRUtils::trait_method_function(current_scope->get_symbol(
+                        operation ? member_name : to_lower(procedure_name)));
+                    if (function) {
+                        mark_trait_message_receiver(*function, items, n_items,
+                            operation ? ASRUtils::trait_operation_display_name(*operation)
+                                : to_lower(procedure_name), operation != nullptr);
+                    }
+                }
                 if (!operation) {
                     auto *function = ASRUtils::trait_method_function(
                         current_scope->get_symbol(to_lower(procedure_name)));
+                    size_t receiver = function ? ASRUtils::trait_message_receiver(*function) : 0;
+                    ASR::Variable_t *unmarked = nullptr;
                     bool itself = function && function->m_return_var &&
                         ASRUtils::contains_trait_itself(
                             ASRUtils::expr_type(function->m_return_var));
                     for (size_t j = 0; function && j < function->n_args; j++) {
-                        itself |= ASRUtils::contains_trait_itself(
-                            ASRUtils::expr_type(function->m_args[j]));
+                        if (j == receiver || !ASRUtils::contains_trait_itself(
+                                ASRUtils::expr_type(function->m_args[j]))) continue;
+                        itself = true;
+                        if (!unmarked) unmarked = ASRUtils::expr_to_variable_or_null(
+                            function->m_args[j]);
+                    }
+                    if (itself && receiver == function->n_args && unmarked) {
+                        trait_error("type(itself) dummy argument '" +
+                            std::string(unmarked->m_name) + "' of trait message '" +
+                            to_lower(procedure_name) + "' is not its receiver: the receiver "
+                            "is declared with the pass attribute, `type(itself), pass :: " +
+                            std::string(unmarked->m_name) + "`; other uses of type(itself) "
+                            "in a message are not implemented yet", item->base.loc);
                     }
                     if (itself) {
                         trait_error("type(itself) in a message of a trait is not "
-                            "implemented yet; it is supported in initializer and "
-                            "operator requirements", item->base.loc);
+                            "implemented yet except for its receiver; it is supported in "
+                            "initializer and operator requirements", item->base.loc);
                     }
                 }
                 if (operation) {
@@ -5401,6 +5494,21 @@ public:
             TraitAssociatedInference &associated,
             ASR::ttype_t *intrinsic_type = nullptr) {
         size_t receiver = procedure->n_args;
+        // A message with an explicit receiver is implemented by a
+        // passed-object procedure whose receiver has exactly its intent, a
+        // message without one by a procedure without a passed object.
+        ASR::Variable_t *required_receiver =
+            ASRUtils::trait_message_receiver_variable(*requirement);
+        if (required_receiver && binding.m_is_nopass) {
+            trait_error("trait message '" + std::string(requirement->m_name) +
+                "' has the receiver '" + required_receiver->m_name + "', so its "
+                "binding must have a passed-object argument, not nopass or static", loc);
+        }
+        if (!required_receiver && !binding.m_is_nopass) {
+            trait_error("trait message '" + std::string(requirement->m_name) +
+                "' has no receiver, so its binding must be nopass; a receiver is "
+                "declared in the message as `type(itself), pass :: object`", loc);
+        }
         if (!binding.m_is_nopass) {
             if (!binding.m_self_argument && procedure->n_args > 0) {
                 binding.m_self_argument = ASRUtils::EXPR2VAR(procedure->m_args[0])->m_name;
@@ -5418,18 +5526,20 @@ public:
             if (!ASRUtils::trait_receiver_type_matches(*self, expected_type, intrinsic_type)) {
                 trait_error("passed-object argument must have the implementing type", loc);
             }
-            // An INTENT(INOUT) receiver serves direct calls on concrete
-            // objects only; runtime views and generic trait calls stay
-            // read-only (PAPER-D07).
-            if ((self->m_intent != ASR::intentType::In &&
-                        self->m_intent != ASR::intentType::InOut)
-                    || ASRUtils::is_pointer(self->m_type)
-                    || ASRUtils::is_allocatable(self->m_type)) {
-                trait_error("trait receivers require intent(in) or intent(inout) "
-                    "without pointer or allocatable", loc);
+            if (ASRUtils::is_pointer(self->m_type) || ASRUtils::is_allocatable(self->m_type)) {
+                trait_error("trait receivers cannot be pointer or allocatable", loc);
+            }
+            if (self->m_intent != required_receiver->m_intent) {
+                trait_error("the passed-object argument '" + std::string(self->m_name) +
+                    "' of '" + procedure->m_name + "' has " +
+                    ASRUtils::trait_intent_spelling(self->m_intent) + ", but trait message '" +
+                    requirement->m_name + "' declares its receiver '" +
+                    required_receiver->m_name + "' with " +
+                    ASRUtils::trait_intent_spelling(required_receiver->m_intent), loc);
             }
         }
-        size_t expected_args = requirement->n_args + (binding.m_is_nopass ? 0 : 1);
+        std::vector<size_t> required_args = ASRUtils::trait_compared_arguments(*requirement);
+        size_t expected_args = required_args.size() + (binding.m_is_nopass ? 0 : 1);
         if (procedure->n_args != expected_args) {
             trait_error("argument count does not match trait method '" +
                 std::string(requirement->m_name) + "'", loc);
@@ -5443,13 +5553,15 @@ public:
         }
         for (size_t i = 0, j = 0; i < procedure->n_args; i++) {
             if (i == receiver) continue;
-            parameters.emplace(&ASRUtils::EXPR2VAR(requirement->m_args[j++])->base,
+            parameters.emplace(&ASRUtils::EXPR2VAR(
+                    requirement->m_args[required_args[j++]])->base,
                 &ASRUtils::EXPR2VAR(procedure->m_args[i])->base);
         }
         for (size_t i = 0, j = 0; i < procedure->n_args; i++) {
             if (i == receiver) continue;
+            ASR::expr_t *required_arg = requirement->m_args[required_args[j]];
             ASR::Variable_t *actual = ASRUtils::EXPR2VAR(procedure->m_args[i]);
-            ASR::Variable_t *required = ASRUtils::EXPR2VAR(requirement->m_args[j]);
+            ASR::Variable_t *required = ASRUtils::EXPR2VAR(required_arg);
             int required_rank = ASRUtils::extract_n_dims_from_ttype(required->m_type);
             int actual_rank = ASRUtils::extract_n_dims_from_ttype(actual->m_type);
             if (required_rank != actual_rank) {
@@ -5458,12 +5570,12 @@ public:
                     + "': expected rank " + std::to_string(required_rank)
                     + ", got rank " + std::to_string(actual_rank), loc);
             }
-            if (!trait_binding_types_equal(requirement->m_args[j], procedure->m_args[i],
+            if (!trait_binding_types_equal(required_arg, procedure->m_args[i],
                     parameters, *requirement, binding, associated, loc)) {
                 trait_error("argument '" + std::string(required->m_name)
                     + "' does not match trait method '" + requirement->m_name
                     + "': expected " + ASRUtils::type_to_str_with_kind(
-                        required->m_type, requirement->m_args[j])
+                        required->m_type, required_arg)
                     + ", got " + ASRUtils::type_to_str_with_kind(
                         actual->m_type, procedure->m_args[i]), loc);
             }

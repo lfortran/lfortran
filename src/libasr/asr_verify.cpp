@@ -1174,9 +1174,11 @@ public:
                     "An initializer or operator requirement has its member's result type");
             } else if (member) {
                 ASR::Function_t *member_fn = ASR::down_cast<ASR::Function_t>(member);
-                check(proc_fn->n_args == member_fn->n_args + 1,
+                check(proc_fn->n_args ==
+                        ASRUtils::trait_compared_arguments(*member_fn).size() + 1,
                     "asr.verify.trait_requirement.normalized_arg_count",
-                    "A trait requirement procedure must have one receiver argument more than its trait member");
+                    "A trait requirement procedure must take its trait member's receiver, "
+                    "or a dispatch argument, first and then the member's other arguments");
                 check(ASRUtils::get_FunctionType(*proc_fn)->m_is_restriction,
                     "asr.verify.trait_requirement.procedure_is_restriction",
                     "A normalized trait requirement must be a restriction procedure");
@@ -1428,6 +1430,31 @@ public:
                 "asr.verify.trait.member_has_no_body",
                 "Trait '" + std::string(x.m_name) +
                 "' members must not have a body");
+            // The explicit receiver of a message: at most one dummy with
+            // pass_attr Pass, a scalar `type(itself)` without the pointer,
+            // allocatable or value attribute (F2018 C760). Initializer and
+            // operator requirements have none.
+            size_t receivers = 0;
+            for (size_t i = 0; i < fn->n_args; i++) {
+                auto *dummy = ASRUtils::expr_to_variable_or_null(fn->m_args[i]);
+                if (!dummy || !ASRUtils::is_trait_receiver_dummy(*dummy)) continue;
+                receivers++;
+                require_id(ASRUtils::contains_trait_itself(dummy->m_type) &&
+                        !ASRUtils::is_array(dummy->m_type) &&
+                        !ASRUtils::is_pointer(dummy->m_type) &&
+                        !ASRUtils::is_allocatable(dummy->m_type) && !dummy->m_value_attr &&
+                        dummy->m_presence == ASR::presenceType::Required &&
+                        ASRUtils::is_arg_dummy(dummy->m_intent) && !dummy->m_self_argument,
+                    "asr.verify.trait.receiver",
+                    "The receiver of a trait message must be a required scalar type(itself) "
+                    "dummy without the pointer, allocatable or value attribute");
+            }
+            require_id(receivers <= 1,
+                "asr.verify.trait.receiver_unique",
+                "A trait message has at most one receiver");
+            require_id(receivers == 0 || !ASRUtils::trait_member_operation(a.second),
+                "asr.verify.trait.operation_receiver",
+                "Initializer and operator requirements have no receiver");
             this->visit_symbol(*a.second);
         }
         require_id(x.n_operations == 0 || (x.m_operations &&
@@ -1491,6 +1518,10 @@ public:
                 if (!previous.second) {
                     auto mismatch = ASRUtils::trait_method_mismatch(
                         *previous.first->second, *method);
+                    if (mismatch.difference == ASRUtils::TraitMethodDifference::None) {
+                        mismatch = ASRUtils::trait_receiver_mismatch(
+                            *previous.first->second, *method);
+                    }
                     require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
                         "asr.verify.trait.inherited_signature_matches",
                         "Same-name trait requirements must have equivalent signatures: " +
@@ -2023,8 +2054,13 @@ public:
                 "asr.verify.trait_constraint.receiver_is_variable",
                 "A normalized requirement must have a receiver variable");
             auto *self = ASRUtils::EXPR2VAR(receiver);
+            // The message's explicit receiver keeps its marker and intent; a
+            // message without one is sent through a read-only argument.
+            auto *declared = method ? ASRUtils::trait_message_receiver_variable(*method)
+                : nullptr;
             require_id(self->m_type && ASR::is_a<ASR::TypeParameter_t>(*self->m_type) &&
-                    self->m_intent == ASR::intentType::In &&
+                    self->m_intent == (declared ? declared->m_intent : ASR::intentType::In) &&
+                    ASRUtils::is_trait_receiver_dummy(*self) == bool(declared) &&
                     self->m_presence == ASR::presenceType::Required &&
                     !self->m_value_attr && !self->m_type_declaration &&
                     std::string(ASR::down_cast<ASR::TypeParameter_t>(
@@ -2032,7 +2068,8 @@ public:
                         ASR::down_cast<ASR::TypeParameter_t>(
                             ASRUtils::symbol_type(parameter))->m_param,
                 "asr.verify.trait_constraint.receiver_matches_parameter",
-                "A normalized receiver must be the constraint's read-only type parameter");
+                "A normalized receiver must be the constraint's type parameter with the "
+                "intent of its message's receiver");
             if (specialization) continue;
             auto callable = trait_callables.emplace(
                 std::make_pair(parameter, std::string(ASRUtils::symbol_name(member))),
@@ -2215,7 +2252,11 @@ public:
 
     bool trait_declared_form(const Function_t &message, const Function_t &procedure,
             size_t offset, TraitDeclaredForm &form) const {
-        size_t n_message = explicit_argument_count(message);
+        // The message's explicit receiver is the leading argument of
+        // `procedure`, one of its `offset` leading arguments.
+        size_t receiver = ASRUtils::trait_message_receiver(message);
+        size_t n_receiver = receiver < message.n_args ? 1 : 0;
+        size_t n_message = explicit_argument_count(message) - n_receiver;
         size_t n_procedure = explicit_argument_count(procedure);
         expr_t *result = procedure.m_return_var;
         if (message.m_return_var && !result && n_procedure == n_message + offset + 1) {
@@ -2232,10 +2273,14 @@ public:
         if (n_procedure != n_message + offset) return false;
         auto message_lengths = hidden_string_lengths(message);
         auto procedure_lengths = hidden_string_lengths(procedure);
-        if (message_lengths.size() != message.n_args - n_message) return false;
+        if (message_lengths.size() != message.n_args - explicit_argument_count(message)) {
+            return false;
+        }
         form.args.assign(procedure.m_args, procedure.m_args + n_procedure);
         for (const auto &length : message_lengths) {
-            auto other = procedure_lengths.find(length.first + offset);
+            size_t position = length.first > receiver ? length.first - n_receiver
+                : length.first;
+            auto other = procedure_lengths.find(position + offset);
             if (other == procedure_lengths.end()) return false;
             for (size_t i = n_procedure; i < procedure.n_args; i++) {
                 auto *arg = procedure.m_args[i];
@@ -2245,7 +2290,7 @@ public:
                 }
             }
         }
-        if (form.args.size() != message.n_args + offset) return false;
+        if (form.args.size() != message.n_args - n_receiver + offset) return false;
         form.procedure = procedure;
         form.procedure.m_args = form.args.data();
         form.procedure.n_args = form.args.size();
@@ -2271,12 +2316,16 @@ public:
                 ASR::is_a<TraitObjectType_t>(*typed_expr_type(procedure->m_args[0])) &&
                 ASRUtils::symbol_get_past_external(ASR::down_cast<TraitObjectType_t>(
                     typed_expr_type(procedure->m_args[0]))->m_contract) == &contract.base &&
-                ASRUtils::EXPR2VAR(procedure->m_args[0])->m_intent == intentType::In &&
+                ASRUtils::EXPR2VAR(procedure->m_args[0])->m_intent ==
+                    ASRUtils::trait_dispatch_intent(
+                        ASRUtils::trait_member_receiver_intent(slot.m_origins[0])) &&
+                !ASRUtils::is_trait_receiver_dummy(*ASRUtils::EXPR2VAR(procedure->m_args[0])) &&
                 ASRUtils::get_FunctionType(procedure)->m_deftype == deftypeType::Interface &&
                 !ASRUtils::get_FunctionType(procedure)->m_is_restriction &&
                 procedure->n_body == 0,
             "asr.verify.trait_contract.receiver",
-            "A callable interface must take its read-only view as its first argument", loc);
+            "A callable interface must take its view first, read-only unless its message's "
+            "receiver has intent(inout) or intent(out)", loc);
         for (size_t i = 0; i < slot.n_origins; i++) {
             auto *method = ASRUtils::trait_method_function(slot.m_origins[i]);
             auto *generic = method ? ASRUtils::trait_method_template(*method) : nullptr;
@@ -2760,6 +2809,12 @@ public:
                         "asr.verify.trait_contract.origin_order",
                         "Runtime slot origins must follow the canonical trait hierarchy");
                     auto *method = ASRUtils::trait_method_function(origin);
+                    auto receivers = ASRUtils::trait_receiver_mismatch(
+                        *ASRUtils::trait_method_function(origins[0]), *method);
+                    require_id(receivers.difference == ASRUtils::TraitMethodDifference::None,
+                        "asr.verify.trait_contract.receiver",
+                        "The origins of a runtime slot must agree on their receivers: " +
+                            receivers.message);
                     if (!ASRUtils::trait_method_template(*method)) {
                         TraitDeclaredForm form;
                         auto mismatch = trait_declared_form(*method, *procedure, 1, form)
@@ -2927,7 +2982,8 @@ public:
                     if (signature.m_abi == abiType::ExternalUndefined) signature.m_abi = abiType::Source;
                     comparable.m_function_signature = &signature.base;
                     auto mismatch = ASRUtils::trait_method_mismatch(
-                        *verify_runtime_trait_slot(*contract, slot, operation.loc), comparable);
+                        *verify_runtime_trait_slot(*contract, slot, operation.loc), comparable,
+                        0, 0, true);
                     require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
                         "asr.verify.trait_erasure.operation_signature",
                         "An erased operation must preserve its runtime slot signature");
@@ -3113,8 +3169,11 @@ public:
             auto comparable = *procedure;
             comparable.m_function_signature = &signature.base;
             auto *slot_procedure = verify_runtime_trait_slot(*contract, i, x.base.base.loc);
-            auto mismatch = ASRUtils::trait_method_mismatch(*slot_procedure, comparable);
-            require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
+            auto mismatch = ASRUtils::trait_method_mismatch(*slot_procedure, comparable,
+                0, 0, true);
+            require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None &&
+                    ASRUtils::EXPR2VAR(procedure->m_args[0])->m_intent ==
+                        ASRUtils::EXPR2VAR(slot_procedure->m_args[0])->m_intent,
                 "asr.verify.trait_witness.signature",
                 "A runtime witness adapter must match its slot: " + mismatch.message);
             verify_runtime_trait_adapter_receiver(*procedure);
@@ -3188,10 +3247,18 @@ public:
             "A witness binding must preserve required pure and elemental attributes", loc);
         // Hidden character lengths follow the explicit arguments; an
         // associated type bound to a character type gives the binding one
-        // that its message does not have.
+        // that its message does not have. The message's explicit receiver
+        // corresponds to the binding's passed-object argument.
+        size_t required_receiver = ASRUtils::trait_message_receiver(*required);
+        bool explicit_receiver = required_receiver < required->n_args;
+        std::vector<size_t> required_args = ASRUtils::trait_compared_arguments(*required);
         size_t n_procedure = explicit_argument_count(*procedure);
-        size_t n_required = explicit_argument_count(*required);
+        size_t n_required = explicit_argument_count(*required) - (explicit_receiver ? 1 : 0);
         size_t ordinary = n_required + (binding.m_is_nopass ? 0 : 1);
+        require_with_loc_id(explicit_receiver != binding.m_is_nopass,
+            "asr.verify.trait_witness.receiver_binding",
+            "A message with a receiver is implemented by a passed-object binding, and one "
+            "without a receiver by a binding without a passed object", loc);
         // subroutine_from_function makes an aggregate result of a static
         // binding's procedure its last explicit argument, while the message
         // keeps its result, of type `itself` or an associated type. A
@@ -3213,14 +3280,12 @@ public:
                 "asr.verify.trait_witness.receiver",
                 "A passed-object witness requires its declared receiver", loc);
             auto *self = ASRUtils::EXPR2VAR(procedure->m_args[receiver]);
-            // An INTENT(INOUT) receiver serves direct concrete calls only
-            // (PAPER-D07); runtime evidence borrows read-only.
-            require_with_loc_id((self->m_intent == intentType::In ||
-                        (!runtime && self->m_intent == intentType::InOut)) &&
+            require_with_loc_id((!explicit_receiver || self->m_intent ==
+                        ASRUtils::EXPR2VAR(required->m_args[required_receiver])->m_intent) &&
                     ASRUtils::trait_receiver_type_matches(*self, type_declaration, implementing_type),
                 "asr.verify.trait_witness.receiver_type",
-                "A witness receiver must borrow its nominal implementing type "
-                "or a polymorphic ancestor read-only", loc);
+                "A witness receiver must have its nominal implementing type, or a polymorphic "
+                "ancestor, and exactly the intent of its message's receiver", loc);
         }
         require_with_loc_id(n_procedure == ordinary,
             "asr.verify.trait_witness.binding_signature",
@@ -3237,10 +3302,10 @@ public:
         for (size_t i = 0, j = 0; i < n_procedure; i++) {
             if (i == receiver) continue;
             parameters.emplace(
-                &ASRUtils::EXPR2VAR(required->m_args[j])->base,
+                &ASRUtils::EXPR2VAR(required->m_args[required_args[j]])->base,
                 &ASRUtils::EXPR2VAR(procedure->m_args[i])->base);
             // An assumed length is the corresponding hidden length.
-            auto a = required_lengths.find(j), b = procedure_lengths.find(i);
+            auto a = required_lengths.find(required_args[j]), b = procedure_lengths.find(i);
             if (a != required_lengths.end() && b != procedure_lengths.end()) {
                 parameters.emplace(a->second, b->second);
             }
@@ -3248,15 +3313,16 @@ public:
         }
         for (size_t i = 0, j = 0; i < n_procedure; i++) {
             if (i == receiver) continue;
+            auto *required_arg = required->m_args[required_args[j]];
             auto *actual = ASRUtils::EXPR2VAR(procedure->m_args[i]);
-            auto *formal = ASRUtils::EXPR2VAR(required->m_args[j]);
-            require_with_loc_id(!ASRUtils::trait_associated_type(required->m_args[j]) ||
+            auto *formal = ASRUtils::EXPR2VAR(required_arg);
+            require_with_loc_id(!ASRUtils::trait_associated_type(required_arg) ||
                     !ASRUtils::trait_method_binder_type(*procedure, procedure->m_args[i]),
                 "asr.verify.trait_witness.associated_type",
                 "An associated type must be one type for each conformance, not a type "
                 "parameter of its binding's generic procedure", loc);
             require_with_loc_id(ASRUtils::trait_implemented_types_equal(
-                        required->m_args[j], procedure->m_args[i], type_declaration,
+                        required_arg, procedure->m_args[i], type_declaration,
                         implementing_type, parameters, associated) &&
                     actual->m_intent == formal->m_intent &&
                     actual->m_presence == formal->m_presence &&
@@ -3526,7 +3592,9 @@ public:
             auto *source_procedure = verify_runtime_trait_slot(*from, x.m_slots[i].m_source, x.base.base.loc);
             auto *target_procedure = verify_runtime_trait_slot(*to, i, x.base.base.loc);
             auto mismatch = ASRUtils::trait_method_mismatch(*source_procedure, *target_procedure, 1, 1);
-            require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None,
+            require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None &&
+                    ASRUtils::EXPR2VAR(source_procedure->m_args[0])->m_intent ==
+                        ASRUtils::EXPR2VAR(target_procedure->m_args[0])->m_intent,
                 "asr.verify.trait_project.signature", "Projection must preserve the ordinary callable signature");
         }
     }
@@ -3782,7 +3850,9 @@ public:
         }
         auto *message = ASRUtils::trait_method_function(head.m_origins[0]);
         auto *method = ASRUtils::trait_method_template(*message);
-        require_id(x.n_type_arguments == method->n_args && x.n_args == message->n_args + 1,
+        // The view is the message's receiver or its dispatch argument.
+        std::vector<size_t> message_args = ASRUtils::trait_compared_arguments(*message);
+        require_id(x.n_type_arguments == method->n_args && x.n_args == message_args.size() + 1,
             "asr.verify.trait_deferred_call.signature",
             "A deferred member call must supply every binder and message argument");
         std::map<std::string, std::string> binders;
@@ -3809,9 +3879,10 @@ public:
             return binder != binders.end() && ASR::is_a<TypeParameter_t>(*actual) &&
                 binder->second == ASR::down_cast<TypeParameter_t>(actual)->m_param;
         };
-        for (size_t i = 0; i < message->n_args; i++) {
+        for (size_t i = 0; i < message_args.size(); i++) {
             require_id(x.m_args[i + 1].m_value && deferred(
-                    typed_expr_type(message->m_args[i]), typed_expr_type(x.m_args[i + 1].m_value)),
+                    typed_expr_type(message->m_args[message_args[i]]),
+                    typed_expr_type(x.m_args[i + 1].m_value)),
                 "asr.verify.trait_deferred_call.signature",
                 "A deferred member argument must have its message type with deferred binders");
         }
@@ -4508,9 +4579,11 @@ public:
                 if (ASRUtils::trait_member_operation(member)) continue;
                 auto *required = ASRUtils::trait_method_function(member);
                 auto previous = methods.emplace(required->m_name, required);
-                require_id(previous.second || ASRUtils::trait_method_mismatch(
+                require_id(previous.second || (ASRUtils::trait_method_mismatch(
                         *previous.first->second, *required).difference ==
-                            ASRUtils::TraitMethodDifference::None,
+                            ASRUtils::TraitMethodDifference::None &&
+                        ASRUtils::trait_receiver_mismatch(*previous.first->second,
+                            *required).difference == ASRUtils::TraitMethodDifference::None),
                     "asr.verify.struct.compatible_trait_obligations",
                     "Adopted traits must agree on shared method signatures");
                 symbol_t *method = nullptr;
@@ -4749,13 +4822,17 @@ public:
                     "A generic type argument's evidence must be a visible conformance of "
                     "the argument to its constraint's trait");
                 if (!implementation) continue;
+                // Each binding implements its message's receiver intent
+                // exactly (verified with the conformance), which the
+                // generic's calls were checked against.
                 for (size_t k = 0; k < constraints[j]->n_requirements; k++) {
                     auto *binding = ASRUtils::find_trait_binding(*implementation,
                         constraints[j]->m_requirements[k].m_member);
-                    require_id(!binding || !ASRUtils::trait_binding_mutates_receiver(*binding),
-                        "asr.verify.generic_type.readonly_evidence",
-                        "Generic trait calls are read-only: a constraint's evidence cannot "
-                        "bind a message to a procedure with an intent(inout) receiver");
+                    require_id(!binding || ASRUtils::trait_binding_receiver_intent(*binding) ==
+                            ASRUtils::trait_member_receiver_intent(binding->m_member),
+                        "asr.verify.generic_type.receiver_evidence",
+                        "A constraint's evidence must bind each message to a procedure whose "
+                        "receiver has the message's receiver intent");
                 }
             }
         }
@@ -5406,11 +5483,28 @@ public:
         bool is_proc_pointer = ASRUtils::is_symbol_procedure_variable(
             const_cast<ASR::symbol_t*>(&x.base));
         bool is_struct_member = is_struct;
+        // Pass on a data dummy marks the explicit receiver of a bodyless
+        // trait signature: a trait message, or a constraint's requirement
+        // normalized from one, which takes it first.
+        bool trait_receiver = false;
+        if (x.m_pass_attr == ASR::pass_attrType::Pass && !is_proc_pointer &&
+                x.m_parent_symtab && x.m_parent_symtab->asr_owner &&
+                ASR::is_a<ASR::symbol_t>(*x.m_parent_symtab->asr_owner) &&
+                ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(
+                    x.m_parent_symtab->asr_owner))) {
+            auto *owner = ASR::down_cast2<ASR::Function_t>(x.m_parent_symtab->asr_owner);
+            trait_receiver = owner->n_body == 0 &&
+                ASRUtils::get_FunctionType(owner)->m_deftype == ASR::deftypeType::Interface &&
+                ASRUtils::trait_message_receiver(*owner) < owner->n_args &&
+                ASRUtils::EXPR2VAR(owner->m_args[ASRUtils::trait_message_receiver(*owner)]) ==
+                    &x && x.m_self_argument == nullptr;
+        }
         if (x.m_pass_attr == ASR::pass_attrType::Pass ||
             x.m_pass_attr == ASR::pass_attrType::NoPass) {
-            require(is_proc_pointer && is_struct_member,
+            require(trait_receiver || (is_proc_pointer && is_struct_member),
                 "Variable '" + std::string(x.m_name) +
-                "' has Pass/NoPass but is not a procedure pointer component of a struct.");
+                "' has Pass/NoPass but is neither a procedure pointer component of a "
+                "struct nor the receiver of a trait signature.");
         }
         if (x.m_pass_attr == ASR::pass_attrType::NotMethod) {
             require(x.m_self_argument == nullptr,
@@ -6530,6 +6624,10 @@ public:
                     ASR::expr_t *defined_arg = passed_arg_expr;
                     if (ASR::is_a<ASR::TraitRecover_t>(*defined_arg)) {
                         defined_arg = ASR::down_cast<ASR::TraitRecover_t>(defined_arg)->m_value;
+                    }
+                    // An adapter defines the payload of a defining view only.
+                    if (ASR::is_a<ASR::TraitReceiver_t>(*defined_arg)) {
+                        defined_arg = ASR::down_cast<ASR::TraitReceiver_t>(defined_arg)->m_view;
                     }
                     if (ASR::is_a<ASR::Var_t>(*defined_arg)) {
                         ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(defined_arg)->m_v;

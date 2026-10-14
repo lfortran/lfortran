@@ -59,7 +59,8 @@ TEST_CASE("Fortran output separates trait inspection from compilation") {
     const std::string declarations = R"(
 module trait_fortran_output_m
 abstract interface :: IValue
-    function value() result(r)
+    function value(self) result(r)
+        type(itself), intent(in), pass :: self
         integer :: r
     end function
 end interface
@@ -108,6 +109,8 @@ end function
             } else {
                 REQUIRE(output.ok);
                 CHECK((output.result.find("abstract interface :: ivalue") !=
+                    std::string::npos) == !for_compilation);
+                CHECK((output.result.find("type(itself), intent(in), pass :: self") !=
                     std::string::npos) == !for_compilation);
                 CHECK((output.result.find("implements ivalue :: payload") !=
                     std::string::npos) == !for_compilation);

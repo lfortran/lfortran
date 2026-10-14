@@ -24932,18 +24932,20 @@ public:
             actual_expr);
     }
 
-    // `offset` leading dummies of `f` (a normalized receiver) have no actual.
+    // `offset` leading dummies of `f` (a normalized receiver) have no actual,
+    // and neither has the explicit receiver of a trait message.
     bool infer_template_type_substitutions_from_call(ASR::Function_t *f,
             Vec<ASR::call_arg_t> *call_args,
             std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> &type_subs,
             size_t offset = 0) {
         if (!f || call_args == nullptr) return false;
-        if (call_args->size() + offset > f->n_args) return false;
-        for (size_t i = 0; i + offset < f->n_args && i < call_args->size(); i++) {
+        std::vector<size_t> formals = ASRUtils::trait_compared_arguments(*f, offset);
+        if (call_args->size() > formals.size()) return false;
+        for (size_t i = 0; i < call_args->size(); i++) {
             if ((*call_args)[i].m_value == nullptr) {
                 continue;
             }
-            if (!bind_type_parameter_from_actual(ASRUtils::expr_type(f->m_args[i + offset]),
+            if (!bind_type_parameter_from_actual(ASRUtils::expr_type(f->m_args[formals[i]]),
                     (*call_args)[i].m_value, type_subs)) {
                 return false;
             }
@@ -25007,6 +25009,9 @@ public:
                 + "' with different argument signatures is not implemented yet: "
                 + mismatch.message, loc);
         }
+        if (mismatch.difference == ASRUtils::TraitMethodDifference::None) {
+            mismatch = ASRUtils::trait_receiver_mismatch(left, right);
+        }
         if (mismatch.difference == ASRUtils::TraitMethodDifference::Contract) {
             trait_call_error("incompatible declarations of trait method '"
                 + std::string(left.m_name) + "': " + mismatch.message, loc);
@@ -25057,6 +25062,57 @@ public:
         traits_warning_emitted = true;
     }
 
+    // Puts the receiver of `procedure`, a copy of a trait message, first: its
+    // explicitly marked receiver, moved from any position and retyped to
+    // `receiver_type`, or else a new dispatch argument of that type, which
+    // carries no receiver effect. `semantic` keeps the receiver's declared
+    // intent and marker, as a constraint's requirement does; a runtime slot
+    // takes the private dispatch intent instead (In or InOut, never Out:
+    // the implementation that the slot's adapter calls owns OUT cleanup).
+    // The function type is rebuilt, so that the dependent bounds and lengths
+    // of the other dummies refer to their new positions.
+    void normalize_trait_receiver(ASR::Function_t &procedure, ASR::ttype_t *receiver_type,
+            const Location &loc, bool semantic) {
+        size_t index = ASRUtils::trait_message_receiver(procedure);
+        ASR::expr_t *receiver = nullptr;
+        if (index < procedure.n_args) {
+            receiver = procedure.m_args[index];
+            auto *variable = ASRUtils::EXPR2VAR(receiver);
+            variable->m_type = ASRUtils::duplicate_type(al, receiver_type);
+            variable->m_type_declaration = nullptr;
+            if (!semantic) {
+                variable->m_intent = ASRUtils::trait_dispatch_intent(variable->m_intent);
+                variable->m_pass_attr = ASR::pass_attrType::NotMethod;
+            }
+        } else {
+            std::string receiver_name = procedure.m_symtab->get_unique_name("self");
+            auto *symbol = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc,
+                    procedure.m_symtab, s2c(al, receiver_name), nullptr, 0,
+                    ASR::intentType::In, nullptr, nullptr,
+                    ASR::storage_typeType::Default,
+                    ASRUtils::duplicate_type(al, receiver_type),
+                    nullptr, ASR::abiType::Source, ASR::accessType::Private,
+                    ASR::presenceType::Required, false));
+            procedure.m_symtab->add_symbol(receiver_name, symbol);
+            receiver = ASRUtils::EXPR(ASR::make_Var_t(al, loc, symbol));
+        }
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, procedure.n_args + 1);
+        args.push_back(al, receiver);
+        for (size_t i = 0; i < procedure.n_args; i++) {
+            if (i != index) args.push_back(al, procedure.m_args[i]);
+        }
+        procedure.m_args = args.p;
+        procedure.n_args = args.size();
+        auto *signature = ASRUtils::get_FunctionType(procedure);
+        procedure.m_function_signature = ASRUtils::TYPE(
+            ASRUtils::make_FunctionType_t_util(al,
+                procedure.base.base.loc, procedure.m_args,
+                procedure.n_args, procedure.m_return_var,
+                signature, procedure.m_symtab));
+    }
+
     ASR::symbol_t *normalize_trait_requirement(ASR::Function_t *member,
             ASR::ttype_t *receiver_type, const std::string &type_name,
             SymbolTable *scope, const Location &loc, bool restriction) {
@@ -25071,30 +25127,7 @@ public:
             "__trait_" + type_name + "_" + member->m_name);
         procedure->m_name = s2c(al, procedure_name);
         procedure->m_access = ASR::accessType::Private;
-        std::string receiver_name = procedure->m_symtab->get_unique_name("self");
-        auto *receiver = ASR::down_cast<ASR::symbol_t>(
-            ASRUtils::make_Variable_t_util(al, loc,
-                procedure->m_symtab, s2c(al, receiver_name), nullptr, 0,
-                ASR::intentType::In, nullptr, nullptr,
-                ASR::storage_typeType::Default,
-                ASRUtils::duplicate_type(al, receiver_type),
-                nullptr, ASR::abiType::Source, ASR::accessType::Private,
-                ASR::presenceType::Required, false));
-        procedure->m_symtab->add_symbol(receiver_name, receiver);
-        Vec<ASR::expr_t*> args;
-        args.reserve(al, procedure->n_args + 1);
-        args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, receiver)));
-        for (size_t i = 0; i < procedure->n_args; i++) {
-            args.push_back(al, procedure->m_args[i]);
-        }
-        procedure->m_args = args.p;
-        procedure->n_args = args.size();
-        auto *signature = ASRUtils::get_FunctionType(procedure);
-        procedure->m_function_signature = ASRUtils::TYPE(
-            ASRUtils::make_FunctionType_t_util(al,
-                procedure->base.base.loc, procedure->m_args,
-                procedure->n_args, procedure->m_return_var,
-                signature, procedure->m_symtab));
+        normalize_trait_receiver(*procedure, receiver_type, loc, restriction);
         ASRUtils::get_FunctionType(procedure)->m_is_restriction = restriction;
         scope->add_symbol(procedure_name, copy);
         return copy;
@@ -26086,6 +26119,7 @@ public:
                     wrapper->m_name = s2c(al, scope->get_unique_name(name + "_operation_" +
                         std::to_string(i) + "_" + std::to_string(j)));
                     wrapper->m_access = ASR::accessType::Private;
+                    forward_trait_out_arguments(*wrapper);
                     auto *signature = ASRUtils::get_FunctionType(wrapper);
                     signature->m_deftype = ASR::deftypeType::Implementation;
                     signature->m_abi = ASR::abiType::Source;
@@ -26204,9 +26238,9 @@ public:
             al, scope, types, symbols, name, &method->base, diag));
         slot->m_access = ASR::accessType::Private;
         if (!ASRUtils::trait_member_operation(member)) {
-            add_trait_hidden_dummy(*slot, make_trait_hidden_dummy(*slot, "self",
+            normalize_trait_receiver(*slot,
                 ASRUtils::TYPE(ASR::make_TraitErasedType_t(al, loc, s2c(al, parameter))),
-                loc), loc, false);
+                loc, false);
         }
         add_trait_hidden_dummy(*slot, make_trait_hidden_dummy(*slot, "dictionary",
             ASRUtils::TYPE(ASR::make_TraitDictionaryType_t(al, loc,
@@ -26230,7 +26264,9 @@ public:
             if (!method || ASRUtils::trait_method_template(*method)) {
                 return name + " is generic";
             }
-            for (size_t i = 0; i < method->n_args; i++) {
+            // The explicit receiver, an erased scalar passed by address, may
+            // have any intent.
+            for (size_t i : ASRUtils::trait_compared_arguments(*method)) {
                 auto *dummy = ASRUtils::expr_to_variable_or_null(method->m_args[i]);
                 if (!dummy || !ASRUtils::contains_trait_itself(dummy->m_type)) continue;
                 if (ASRUtils::is_array(dummy->m_type)) {
@@ -26403,6 +26439,7 @@ public:
         adapter->m_name = s2c(al, scope->get_unique_name(
             std::string(dictionary.m_name) + "_" + std::to_string(index)));
         adapter->m_access = ASR::accessType::Private;
+        forward_trait_out_arguments(*adapter);
         for (const auto &entry : adapter->m_symtab->get_scope()) {
             if (!ASR::is_a<ASR::Variable_t>(*entry.second)) continue;
             auto *variable = ASR::down_cast<ASR::Variable_t>(entry.second);
@@ -26475,8 +26512,9 @@ public:
     }
 
     // Why the conformance cannot have a dictionary of `contract`, or "".
-    // Its module owns the dictionary, which copies values bitwise and, like
-    // every runtime view, never modifies a receiver.
+    // Its module owns the dictionary, which copies values bitwise. Each call
+    // through a dictionary slot, like each message call, defines its
+    // receiver only as the message's receiver intent declares.
     std::string trait_dictionary_obstacle(ASR::TraitImplementation_t &implementation,
             ASR::TraitDictionaryContract_t &contract) {
         auto *owner = implementation.m_parent_symtab->asr_owner;
@@ -26492,16 +26530,6 @@ public:
             auto *binding = ASRUtils::find_trait_binding(implementation, member);
             if (!binding) {
                 return "it does not bind '" + ASRUtils::trait_member_display_name(member) + "'";
-            }
-            if (binding->m_is_nopass || !binding->m_self_argument) continue;
-            auto *procedure = ASRUtils::trait_method_function(binding->m_procedure);
-            for (size_t j = 0; procedure && j < procedure->n_args; j++) {
-                auto *self = ASRUtils::EXPR2VAR(procedure->m_args[j]);
-                if (std::string(self->m_name) == binding->m_self_argument &&
-                        self->m_intent != ASR::intentType::In) {
-                    return "its binding of '" + ASRUtils::trait_member_display_name(member) +
-                        "' may modify its receiver";
-                }
             }
         }
         return "";
@@ -26760,6 +26788,20 @@ public:
         return result;
     }
 
+    // A procedure that only forwards its arguments to the implementation it
+    // calls, such as an adapter, leaves the INTENT(OUT) finalization, cleanup
+    // and default initialization of its arguments to that implementation,
+    // so that they happen exactly once (as sealed override dispatch does):
+    // its own OUT dummies become INOUT.
+    void forward_trait_out_arguments(ASR::Function_t &procedure) {
+        for (size_t i = 0; i < procedure.n_args; i++) {
+            auto *dummy = ASRUtils::expr_to_variable_or_null(procedure.m_args[i]);
+            if (dummy && dummy->m_intent == ASR::intentType::Out) {
+                dummy->m_intent = ASR::intentType::InOut;
+            }
+        }
+    }
+
     ASR::symbol_t *trait_adapter(ASR::Function_t *required,
             ASR::ttype_t *type, ASR::symbol_t *type_declaration,
             const ASR::trait_binding_t &binding,
@@ -26781,7 +26823,9 @@ public:
         signature->m_is_restriction = false;
         signature->m_deftype = ASR::deftypeType::Implementation;
         LCOMPILERS_ASSERT(adapter->n_args > 0);
+        forward_trait_out_arguments(*adapter);
         ASR::Variable_t *receiver = ASRUtils::EXPR2VAR(adapter->m_args[0]);
+        receiver->m_pass_attr = ASR::pass_attrType::NotMethod;
         receiver->m_type = witness
             ? ASRUtils::TYPE(ASR::make_TraitObjectType_t(al, loc,
                 make_operator_proc_visible(witness->m_contract, "trait", adapter->m_symtab)))
@@ -26886,6 +26930,7 @@ public:
             trait_call_error("cannot construct the trait operation adapter", loc);
         }
         adapter->m_access = ASR::accessType::Private;
+        forward_trait_out_arguments(*adapter);
         auto *signature = ASRUtils::get_FunctionType(adapter);
         signature->m_is_restriction = false;
         signature->m_deftype = ASR::deftypeType::Implementation;
@@ -27474,9 +27519,6 @@ public:
                     *ASR::down_cast<ASR::Struct_t>(type)) : ASRUtils::symbol_name(type))
                 + "'", loc);
         }
-        if (auto *binding = runtime_trait_mutating_binding(*selected, *contract)) {
-            mutating_trait_binding_error(*binding, *selected, "runtime trait views", loc);
-        }
         auto *witness = ASRUtils::trait_runtime_witness(*selected, contract);
         if (!witness) witness = request_runtime_trait_witness(*selected, *contract, loc);
         if (!witness) {
@@ -28020,10 +28062,6 @@ public:
                     const auto *binding =
                         ASRUtils::find_trait_binding(*implementation, requirement.m_member);
                     LCOMPILERS_ASSERT(binding);
-                    if (ASRUtils::trait_binding_mutates_receiver(*binding)) {
-                        mutating_trait_binding_error(*binding, *implementation,
-                            "generic trait calls", loc);
-                    }
                     bind_requirement(constraint, requirement, binding, nullptr);
                 }
             }
@@ -28167,8 +28205,9 @@ public:
                 return &runtime_signature->base;
             }
             size_t n_message_args = args.size();
+            std::vector<size_t> formals = ASRUtils::trait_compared_arguments(*procedure);
             for (size_t i = 0; i < n_message_args; i++) {
-                auto *formal = ASRUtils::expr_type(procedure->m_args[i]);
+                auto *formal = ASRUtils::expr_type(procedure->m_args[formals[i]]);
                 if (!ASR::is_a<ASR::TypeParameter_t>(*formal)) continue;
                 // A dictionary binder's values are passed unchanged; its
                 // dictionary follows the message's arguments.
@@ -28752,12 +28791,22 @@ public:
         }
         Vec<ASR::call_arg_t> args;
         // The passed-object dummy argument of a generic binding is not among
-        // the actual arguments.
+        // the actual arguments, nor is the explicit receiver of a message.
         size_t pass_index = generic_binding
-            ? ASRUtils::passed_object_index(*generic_binding, signature) : signature->n_args;
+            ? ASRUtils::passed_object_index(*generic_binding, signature)
+            : ASRUtils::trait_message_receiver(*signature);
         trait_call_arguments(signature, actuals, n_actuals, keywords, n_keywords, args, loc,
             pass_index < signature->n_args ? receiver : nullptr, pass_index);
         tmp = nullptr;
+        // A message whose receiver has INTENT(OUT) or INTENT(INOUT) defines
+        // the object it is sent to, which must then be definable, through
+        // every kind of call; any other receiver accepts any object.
+        if (!concrete_binding && !generic_binding && !generic &&
+                ASRUtils::trait_receiver_defines(
+                    ASRUtils::trait_member_receiver_intent(&signature->base))) {
+            check_association_definable(receiver);
+            check_definable_actual(receiver);
+        }
         if (runtime_slot >= 0) {
             auto *contract = ASRUtils::trait_runtime_contract(ASRUtils::expr_type(receiver));
             std::vector<ASR::ttype_t*> member_types;
@@ -29996,37 +30045,6 @@ public:
         pending_body_instantiations.clear();
     }
 
-    // The binding of a slot of `contract` with which `implementation` mutates
-    // its receiver, or nullptr: runtime views are read-only (PAPER-D07).
-    const ASR::trait_binding_t *runtime_trait_mutating_binding(
-            const ASR::TraitImplementation_t &implementation,
-            const ASR::TraitRuntimeContract_t &contract) {
-        for (size_t i = 0; i < contract.n_slots; i++) {
-            for (size_t j = 0; j < contract.m_slots[i].n_origins; j++) {
-                auto *binding = ASRUtils::find_trait_binding(implementation,
-                    contract.m_slots[i].m_origins[j]);
-                if (binding && ASRUtils::trait_binding_mutates_receiver(*binding)) {
-                    return binding;
-                }
-            }
-        }
-        return nullptr;
-    }
-
-    // A mutating binding cannot serve a read-only trait path (a runtime view
-    // or a generic trait call); `path` names that path.
-    [[noreturn]] void mutating_trait_binding_error(const ASR::trait_binding_t &binding,
-            const ASR::TraitImplementation_t &implementation, const std::string &path,
-            const Location &loc) {
-        trait_call_error(path + " are read-only: '" +
-            std::string(ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
-                binding.m_procedure))) + "' implements '" +
-            ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(binding.m_member)) +
-            "' of trait '" + ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
-                implementation.m_trait)) + "' with an intent(inout) receiver, which "
-            "only direct calls on a concrete object may use", loc);
-    }
-
     ASR::TraitWitness_t *create_runtime_trait_witness(
             ASR::TraitImplementation_t *implementation,
             ASR::TraitRuntimeContract_t *contract, bool publish = false) {
@@ -30035,8 +30053,6 @@ public:
             return existing;
         }
         if (!runtime_trait_entries_ownable(*implementation, *contract)) return nullptr;
-        // A conformance that mutates a receiver serves direct calls only.
-        if (runtime_trait_mutating_binding(*implementation, *contract)) return nullptr;
         // Entries that erase protocol binders copy bodies that may be
         // outside the erased subset; such a witness is published once its
         // bodies are known (publish_runtime_trait_witnesses) or when a
@@ -30434,16 +30450,6 @@ public:
                 }
             }
             selections.push_back({trait, selected});
-            if (!selected) continue;
-            for (size_t j = 0; j < constraint->n_requirements; j++) {
-                if (ASRUtils::trait_requirement_specialization(*constraint, j)) continue;
-                auto *binding = ASRUtils::find_trait_binding(*selected,
-                    constraint->m_requirements[j].m_member);
-                if (binding && ASRUtils::trait_binding_mutates_receiver(*binding)) {
-                    mutating_trait_binding_error(*binding, *selected, "generic trait calls",
-                        loc);
-                }
-            }
         }
         if (may_wait && !selections.empty() && std::all_of(selections.begin(),
                 selections.end(), [](const auto &selection) { return !selection.second; })) {

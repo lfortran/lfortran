@@ -2365,6 +2365,12 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
             return is_modifiable_actual_argument_expr(
                 ASR::down_cast<ASR::TraitRecover_t>(a_value)->m_value);
         }
+        // The concrete payload an adapter recovers is defined through the
+        // view of its witness.
+        case ASR::exprType::TraitReceiver: {
+            return is_modifiable_actual_argument_expr(
+                ASR::down_cast<ASR::TraitReceiver_t>(a_value)->m_view);
+        }
         // A borrowed trait view designates the payload of its source.
         case ASR::exprType::TraitPack: {
             return is_modifiable_actual_argument_expr(
@@ -11158,6 +11164,39 @@ ASR::Function_t *trait_method_function(ASR::symbol_t *method);
 ASR::Template_t *trait_method_template(const ASR::Function_t &method);
 // The name a trait declares for the type that implements it.
 constexpr const char *trait_itself_name = "itself";
+// The position of the explicit receiver of a trait message, its dummy
+// argument declared with the bare PASS attribute
+// (`type(itself), intent(inout), pass :: object`), which the dummy's
+// Variable records as pass_attr Pass; n_args when the message has no
+// receiver. Its effect is the dummy's intent. A constraint's normalized
+// requirement keeps the receiver, moved to the first position.
+size_t trait_message_receiver(const ASR::Function_t &message);
+ASR::Variable_t *trait_message_receiver_variable(const ASR::Function_t &message);
+// Whether `dummy` is the explicit receiver of a trait message: a data
+// dummy with pass_attr Pass. Pass otherwise marks procedure pointer
+// components.
+bool is_trait_receiver_dummy(const ASR::Variable_t &dummy);
+// The positions of the arguments of `function` that a comparison of trait
+// signatures pairs in order: those from `offset` on, except an explicit
+// receiver. A normalized requirement, slot or entry passes its receiver or
+// dispatch argument first, so it compares from offset 1.
+std::vector<size_t> trait_compared_arguments(const ASR::Function_t &function,
+    size_t offset = 0);
+// The intent of the private first argument through which a runtime view or
+// an erased value is passed to a slot, an adapter or an entry for a message
+// whose receiver declares `intent`, or that has no receiver (Local): In,
+// unless the receiver is INTENT(INOUT) or INTENT(OUT), which need a definable
+// object; then InOut. An OUT receiver is finalized and initialized by the
+// implementation the adapter calls, never by the forwarding procedures.
+ASR::intentType trait_dispatch_intent(ASR::intentType intent);
+// Whether a call of a message whose receiver declares `intent` defines the
+// object it is sent to: INTENT(OUT) or INTENT(INOUT).
+inline bool trait_receiver_defines(ASR::intentType intent) {
+    return intent == ASR::intentType::Out || intent == ASR::intentType::InOut;
+}
+// The intent of the receiver of trait member `member`, or Local when the
+// member has none.
+ASR::intentType trait_member_receiver_intent(ASR::symbol_t *member);
 // A type a trait declares, which is not one of its members: `itself` or an
 // associated type (`type :: Element`), a variable of the trait's scope whose
 // type is the type parameter of its own name.
@@ -11174,9 +11213,10 @@ bool trait_member_is_initializer(ASR::symbol_t *member);
 bool trait_has_operations(const ASR::Trait_t &trait);
 // Whether `trait` can be a runtime class(...) view: a universal trait without
 // associated types whose requirements without a receiver are all
-// initializers, in its whole hierarchy, and whose messages do not use
-// `itself`. An initializer is required for conformance but is not callable
-// through an object, so the view's contract has no slot for it.
+// initializers, in its whole hierarchy, and whose messages use `itself` only
+// for their explicit receivers. An initializer is required for conformance
+// but is not callable through an object, so the view's contract has no slot
+// for it.
 bool trait_runtime_view_admissible(const ASR::Trait_t &trait);
 // The member as a source names it: `initial`, `operator(*)` or its name.
 std::string trait_member_display_name(ASR::symbol_t *member);
@@ -11401,10 +11441,20 @@ struct TraitMethodMismatch {
 };
 
 // Exact trait contracts, rather than the directional compatibility used by
-// ordinary procedure calls. Offsets omit normalized leading receiver arguments.
+// ordinary procedure calls. Offsets omit normalized leading receiver arguments;
+// an explicit receiver is never paired with an argument. With `forwarding`,
+// `right` forwards its arguments to an implementation of `left`, which owns
+// their INTENT(OUT) cleanup: an OUT argument of `left` is INOUT in `right`.
 TraitMethodMismatch trait_method_mismatch(const ASR::Function_t &left,
     const ASR::Function_t &right, size_t left_offset = 0,
-    size_t right_offset = 0);
+    size_t right_offset = 0, bool forwarding = false);
+// Whether two messages agree on their explicit receivers: both have none, or
+// both have one with the same intent. A receiver's name and position are not
+// part of a message's contract.
+TraitMethodMismatch trait_receiver_mismatch(const ASR::Function_t &left,
+    const ASR::Function_t &right);
+// `intent(in)`, `intent(out)`, `intent(inout)` or `no intent`.
+std::string trait_intent_spelling(ASR::intentType intent);
 
 bool trait_types_equal(ASR::expr_t *left, ASR::expr_t *right,
     const std::map<ASR::symbol_t*, ASR::symbol_t*> &parameters = {});
@@ -11445,10 +11495,11 @@ bool trait_implemented_types_equal(ASR::expr_t *required, ASR::expr_t *actual,
 // instance, is not one).
 bool trait_method_binder_type(const ASR::Function_t &procedure, ASR::expr_t *value);
 
-// Whether a binding implements its message with an INTENT(INOUT) passed-object
-// receiver (PAPER-D07). Such a binding serves direct calls on concrete
-// objects only: runtime views and generic trait calls are read-only.
-bool trait_binding_mutates_receiver(const ASR::trait_binding_t &binding);
+// The intent of the passed-object dummy with which a binding implements its
+// message, or Local for a NOPASS binding. A message with an explicit
+// receiver is implemented only by a passed-object binding whose receiver
+// has exactly the message's receiver intent.
+ASR::intentType trait_binding_receiver_intent(const ASR::trait_binding_t &binding);
 
 bool trait_bindings_equal(const ASR::trait_binding_t &left,
     const ASR::trait_binding_t &right);
