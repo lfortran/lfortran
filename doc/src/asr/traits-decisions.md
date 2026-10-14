@@ -969,7 +969,9 @@ specification action, that is, what the paper should say.
     - `intent(out)`: on entry the object is finalized if it is finalizable,
       its allocatable components are deallocated, and default initialization
       is applied, exactly once and before the body of the implementation;
-      components without default initialization become undefined. The outer
+      components without default initialization become undefined. These
+      follow the object's dynamic type, so an extension's own components are
+      reset too when it inherits the implementation. The outer
       storage does not change: the address of the object, the allocation of a
       trait object that owns it, the association of a pointer to it and its
       dynamic type stay as they are. An `intent(out)` receiver is not an
@@ -1029,11 +1031,13 @@ specification action, that is, what the paper should say.
     receiverless messages with NOPASS implementations.
   - `vector.f90` declares an `intent(inout)` receiver for `append`, so its
     mutation no longer needs the direct-call-only rule of TD-10.
-- **Implementation status.** Approved; being implemented. The prototype still
-  implements TD-06, TD-10 and TD-35 for now: messages without receivers,
-  read-only generic calls and trait objects, and no `intent(out)` or omitted
-  INTENT receivers. This entry will say when the explicit receivers are
-  implemented.
+- **Implementation status.** Approved; being implemented. This entry will say
+  that the explicit receivers are implemented once the tests of every receiver
+  INTENT pass, including `traits_receiver_intent_09`, the `intent(out)`
+  receiver of an inherited implementation called on an object of an
+  extension, whose finalization, deallocation and default initialization are
+  those of the dynamic type. Until then, TD-06, TD-10 and TD-35 describe the
+  released prototype.
 - **Specification action.** Decide whether messages declare their receivers.
   If they do, specify: the declaration (here a PASS-marked `type(itself)`
   dummy of any name and position) and its constraints; that an unmarked

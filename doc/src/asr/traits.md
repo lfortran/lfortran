@@ -90,10 +90,10 @@ The receiver's INTENT has its ordinary Fortran meaning:
   applies its default initialization once, before its body, as for any
   `intent(out)` passed object. The object keeps its address, its allocation
   and its dynamic type, and a trait view of it keeps the implementations
-  selected when the view was formed. As for any polymorphic `intent(out)`
-  dummy in this compiler, an implementation inherited by an extension resets
-  only the components of its declared type when the object is of the
-  extension, a known limitation of the ordinary `intent(out)` lowering.
+  selected when the view was formed. For an object of an extension of the
+  implementing type, these are the finalization, deallocation and default
+  initialization of its dynamic type, including the components that the
+  extension adds.
 - no INTENT: as for any dummy without INTENT, a call does not require a
   definable object, and nothing is reset on entry; the implementation may
   define the receiver only when the object is definable.
@@ -132,8 +132,10 @@ views, owners, pointers and constrained type parameters (`_01`), receiver
 names and positions, independent passed-object positions and keywords
 (`_02`), `intent(out)` finalization, deallocation and default initialization
 once (`_03`), receivers without INTENT (`_04`), PURE messages (`_05`), trait
-inheritance, weakened views and combinations (`_06`) and runtime generic
-messages over a closed type set and an open protocol (`_07`).
+inheritance, weakened views and combinations (`_06`), runtime generic
+messages over a closed type set and an open protocol (`_07`) and
+`intent(out)` receivers of objects of an extension of the implementing type
+(`_09`).
 `traits_receiver_intent_08` checks that `pass`, `nopass` and `itself` stay
 ordinary names in standard Fortran. The separately compiled
 `traits_receiver_intent_separate_01` and its native gate
