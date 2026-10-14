@@ -335,8 +335,8 @@ private:
                                                   ASR::expr_t* target_expr) {
         std::string target_expr_name = get_expr_name_for_runtime_message(target_expr);
         if (!target_expr_name.empty()) {
-            llvm::Value* target_expr_name_llvm = LCompilers::create_global_string_ptr(
-                context, *module, *builder, target_expr_name);
+            llvm::Value* target_expr_name_llvm = llvm_utils->get_runtime_error_string(
+                target_expr_name);
             llvm_utils->generate_runtime_error(
                 is_not_allocated,
                 "Array '%s' is not allocated. Allocate it manually or use the '--realloc-lhs-arrays' option to allocate it automatically.",
@@ -777,6 +777,9 @@ public:
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
     int64_t global_array_count;
+    // Read-only globals holding the values of local named constant arrays,
+    // keyed by their (uniqued) initializer, so that equal constants share one.
+    std::map<llvm::Constant*, llvm::GlobalVariable*> named_array_constant_globals;
     int64_t global_struct_count = 0;
     int64_t null_array_descriptor_count;
     int64_t global_deep_count;
@@ -2653,7 +2656,7 @@ public:
                                 });
                             continue;
                         }
-                        llvm::Value* var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, var_name);
+                        llvm::Value* var_name_llvm = llvm_utils->get_runtime_error_string(var_name);
                         llvm_utils->generate_runtime_error(is_allocated,
                             "Attempting to allocate already allocated variable '%s'",
                             {LLVMUtils::RuntimeLabel("Cannot allocate '%s' because it is already allocated", {tmp_expr->base.loc}, {var_name_llvm})},
@@ -3023,7 +3026,7 @@ public:
                     }
                 }
                 if (!realloc && compiler_options.po.bounds_checking && is_allocated != nullptr && !m_stat) {
-                    llvm::Value* var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, var_name);
+                    llvm::Value* var_name_llvm = llvm_utils->get_runtime_error_string(var_name);
                     llvm_utils->generate_runtime_error(is_allocated,
                         "Attempting to allocate already allocated variable '%s'",
                         {LLVMUtils::RuntimeLabel("Cannot allocate '%s' because it is already allocated", {tmp_expr->base.loc}, {var_name_llvm})},
@@ -5141,12 +5144,12 @@ public:
                     {LLVMUtils::RuntimeLabel("", {x.m_v->base.loc})},
                     infile,
                     location_manager,
-                    LCompilers::create_global_string_ptr(context, *module, *builder, array_name));
+                    llvm_utils->get_runtime_error_string(array_name));
             }
 
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, 2 * x.n_args + 1);
-            bool check_for_bounds = compiler_options.po.bounds_checking;
+            bool check_for_bounds = compiler_options.po.bounds_checking && !x.m_in_bounds;
             if( array_t->m_physical_type == ASR::array_physical_typeType::PointerArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
@@ -6015,7 +6018,7 @@ public:
                     builder->CreatePtrToInt(llvm::ConstantPointerNull::get(
                         llvm::cast<llvm::PointerType>(class_instance_ptr->getType())),
                         llvm::Type::getInt64Ty(context)));
-                llvm::Value* var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, var_name);
+                llvm::Value* var_name_llvm = llvm_utils->get_runtime_error_string(var_name);
                 llvm_utils->generate_runtime_error(cond,
                         "Tried to access member of unallocated variable '%s'",
                         {LLVMUtils::RuntimeLabel("'%s' unallocated here", {cast_expr->m_arg->base.loc}, {var_name_llvm})},
@@ -6052,7 +6055,7 @@ public:
                 if (compiler_options.po.bounds_checking) {
                     ASR::Variable_t* var = ASRUtils::expr_to_variable_or_null(x.m_v);
                     if (var) {
-                        llvm::Value* var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, var->m_name);
+                        llvm::Value* var_name_llvm = llvm_utils->get_runtime_error_string(var->m_name);
                         llvm::Value* cond = builder->CreateICmpEQ(
                             builder->CreatePtrToInt(tmp,
                                 llvm::Type::getInt64Ty(context)),
@@ -6085,7 +6088,7 @@ public:
             ASR::Variable_t* var = ASRUtils::expr_to_variable_or_null(x.m_v);
             if (var) {
                 llvm::Type* x_mv_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_m_v_type, module.get());
-                llvm::Value* var_name_llvm = LCompilers::create_global_string_ptr(context, *module, *builder, var->m_name);
+                llvm::Value* var_name_llvm = llvm_utils->get_runtime_error_string(var->m_name);
                 llvm::Value* cond = builder->CreateICmpEQ(
                     builder->CreatePtrToInt(tmp,
                         llvm::Type::getInt64Ty(context)),
@@ -6500,6 +6503,46 @@ public:
     bool isNullValueArray(const std::vector<llvm::Constant*>& elements) {
         return std::all_of(elements.begin(), elements.end(),
             [](llvm::Constant* elem) { return elem->isNullValue(); });
+    }
+
+    // A local named constant (parameter) array of intrinsic numeric or
+    // logical type is never written, so its value is laid out once as
+    // read-only static data and read in place, rather than copied to the
+    // stack on every entry. Equal constants share one global. Returns the
+    // global, or nullptr if `v` does not qualify.
+    template<typename T>
+    llvm::GlobalVariable* get_named_array_constant_global(const T& x,
+            ASR::Variable_t* v, llvm::Type* type) {
+        if (v->m_storage != ASR::storage_typeType::Parameter ||
+                v->m_is_volatile || v->m_value == nullptr ||
+                !ASR::is_a<ASR::ArrayConstant_t>(*v->m_value) ||
+                !ASR::is_a<ASR::Array_t>(*v->m_type) ||
+                ASRUtils::extract_physical_type(v->m_type) !=
+                    ASR::array_physical_typeType::FixedSizeArray) {
+            return nullptr;
+        }
+        ASR::ttype_t* el_type = ASRUtils::type_get_past_array(v->m_type);
+        int kind = ASRUtils::extract_kind_from_ttype_t(el_type);
+        if (!(ASR::is_a<ASR::Integer_t>(*el_type) ||
+                ASR::is_a<ASR::Logical_t>(*el_type) ||
+                ((ASR::is_a<ASR::Real_t>(*el_type) ||
+                    ASR::is_a<ASR::Complex_t>(*el_type)) &&
+                    (kind == 4 || kind == 8)))) {
+            return nullptr;
+        }
+        LCOMPILERS_ASSERT(type->isArrayTy());
+        llvm::Constant* init = get_const_array(v->m_value, type->getArrayElementType());
+        LCOMPILERS_ASSERT(init->getType() == type);
+        auto it = named_array_constant_globals.find(init);
+        if (it != named_array_constant_globals.end()) {
+            return it->second;
+        }
+        llvm::GlobalVariable* global = new llvm::GlobalVariable(*module, type,
+            true, llvm::GlobalValue::PrivateLinkage, init,
+            save_variable_global_prefix(x) + "." + v->m_name);
+        global->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+        named_array_constant_globals[init] = global;
+        return global;
     }
 
     bool is_parameter_designator(ASR::expr_t* expr) {
@@ -9686,6 +9729,7 @@ public:
                 ptr_loads = ptr_loads_copy;
             }
             llvm::Value *ptr = nullptr;
+            bool is_named_array_constant_global = false;
             // Allocate the variable
             if( is_array_of_strings &&
                     (v->m_storage == ASR::Save || v->m_storage == ASR::Parameter) &&
@@ -9739,6 +9783,10 @@ public:
                     ptr = llvm_utils->create_string(ASRUtils::get_string_type(v->m_type), v->m_name);
                     setup_string(ptr, v->m_type);
                 }
+            } else if (llvm::GlobalVariable* constant_global =
+                    get_named_array_constant_global(x, v, type)) {
+                ptr = constant_global;
+                is_named_array_constant_global = true;
             } else { // Alloca for rest of types (not its internals if exist).
                 if (v->m_storage == ASR::storage_typeType::Save) {
                     std::string parent_function_name = save_variable_global_prefix(x);
@@ -10067,8 +10115,9 @@ public:
             }
             if( init_expr != nullptr && !is_list && !is_dict && !is_tuple && !is_set) {
                 target_var = ptr;
-                if (save_struct_initialized) {
-                    // Already stored inside the one-time guard above
+                if (save_struct_initialized || is_named_array_constant_global) {
+                    // Already initialized: inside the one-time guard above,
+                    // or by the static initializer of the constant global
                 } else if ((v->m_storage == ASR::Save   ||
                     v->m_storage == ASR::Parameter)
                     &&
@@ -12299,7 +12348,7 @@ public:
             ASR::expr_t* first_elem = ASRUtils::EXPR(ASR::make_ArrayItem_t(al,
                 value_section->base.base.loc, value_section->m_v,
                 first_args.p, first_args.n, ASRUtils::extract_type(value_type),
-                ASR::arraystorageType::ColMajor, nullptr));
+                ASR::arraystorageType::ColMajor, nullptr, false));
             // Only the address of the first element is computed here, the
             // element is not accessed.
             int64_t ptr_loads_copy = ptr_loads;
@@ -15364,8 +15413,8 @@ public:
 
             llvm::Value* dim_llvm = llvm::ConstantInt::get(context, llvm::APInt(32, dim + 1));
             if (left_var && right_var) {
-                llvm::Value *left_name = LCompilers::create_global_string_ptr(context, *module, *builder, left_var->m_name);
-                llvm::Value *right_name = LCompilers::create_global_string_ptr(context, *module, *builder, right_var->m_name);
+                llvm::Value *left_name = llvm_utils->get_runtime_error_string(left_var->m_name);
+                llvm::Value *right_name = llvm_utils->get_runtime_error_string(right_var->m_name);
                 llvm_utils->generate_runtime_error(builder->CreateICmpNE(right_llvm_size, left_llvm_size),
                                                     "Array shape mismatch in binary operation with operands '%s' and '%s'. Tried to match size %d of dimension %d of '%s' with size %d of dimension %d of '%s'.",
                                                     {LLVMUtils::RuntimeLabel("LHS size is %d", {left->base.loc}, {left_llvm_size}),
@@ -15510,7 +15559,7 @@ public:
                 } else {
                     llvm_utils->generate_runtime_error(shape_mismatch, message, labels,
                         infile, location_manager,
-                        LCompilers::create_global_string_ptr(context, *module, *builder, target_name),
+                        llvm_utils->get_runtime_error_string(target_name),
                         target_size, dim_llvm, value_size, dim_llvm);
                 }
                 if (mergeBB != nullptr) {
@@ -18968,7 +19017,7 @@ public:
                                     {LLVMUtils::RuntimeLabel("", {x->base.base.loc})},
                                     infile,
                                     location_manager,
-                                    LCompilers::create_global_string_ptr(context, *module, *builder, x->m_name));
+                                    llvm_utils->get_runtime_error_string(x->m_name));
                             }
                             fetch_ptr(x);
                         }
@@ -28278,7 +28327,7 @@ public:
                                 infile,
                                 location_manager,
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
-                                LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(m_name)));
+                                llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)));
                     }
 
                     // Throw error if shapes don't match
@@ -28319,7 +28368,7 @@ public:
                                         LLVMUtils::RuntimeLabel("Parameter is size %d, argument is size %d", {m_dims[j].loc}, {pointer_length, descriptor_length}, false)},
                                     infile,
                                     location_manager,
-                                    LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(m_name)),
+                                    llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
                                     descriptor_length,
                                     dim,
                                     llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
@@ -28344,7 +28393,7 @@ public:
                             {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                             infile,
                             location_manager,
-                            LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(m_name)),
+                            llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
                             desc_size,
                             llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                             pointer_size);
@@ -28379,7 +28428,7 @@ public:
                                         {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                                         infile,
                                         location_manager,
-                                        LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(m_name)),
+                                        llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
                                         fixed_length,
                                         dim,
                                         llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
@@ -28404,7 +28453,7 @@ public:
                                 {LLVMUtils::RuntimeLabel("", {arg_expr->base.loc})},
                                 infile,
                                 location_manager,
-                                LCompilers::create_global_string_ptr(context, *module, *builder, ASRUtils::symbol_name(m_name)),
+                                llvm_utils->get_runtime_error_string(ASRUtils::symbol_name(m_name)),
                                 fixed_size,
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
                                 pointer_size);
@@ -28440,8 +28489,8 @@ public:
                                 is_unallocated, alloc_check_expr);
                         } else {
                             llvm::Value* arg_number = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1));
-                            llvm::Value* subroutine_name = LCompilers::create_global_string_ptr(
-                                context, *module, *builder, ASRUtils::symbol_name(m_name));
+                            llvm::Value* subroutine_name = llvm_utils->get_runtime_error_string(
+                                ASRUtils::symbol_name(m_name));
                             llvm_utils->generate_runtime_error(is_unallocated,
                                     "Argument %d of subroutine %s is unallocated.",
                                     {LLVMUtils::RuntimeLabel("This is unallocated", {arg_expr->base.loc})},
@@ -29921,11 +29970,19 @@ public:
                         llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(
                             x.m_args[i], ASRUtils::extract_type(source_array_type), module.get());
                         int rank = ASRUtils::extract_n_dims_from_ttype(source_array_type);
-                        // Create contiguous copy using the array descriptor utility
-                        tmp = arr_descr->create_contiguous_copy_from_descriptor(
-                            source_llvm_type, source_desc, elem_type, rank, module.get());
-                        // Track this heap allocation to free after function call
-                        contiguous_copies_to_free.push_back(tmp);
+                        if (ASRUtils::is_descriptorString(source_array_type)) {
+                            ASR::String_t* string_type = ASRUtils::get_string_type(source_array_type);
+                            tmp = arr_descr->create_contiguous_string_copy_from_descriptor(
+                                source_llvm_type, source_desc, string_type, rank, module.get());
+                            contiguous_copies_to_free.push_back(
+                                llvm_utils->get_string_data(string_type, tmp));
+                        } else {
+                            // Create contiguous copy using the array descriptor utility
+                            tmp = arr_descr->create_contiguous_copy_from_descriptor(
+                                source_llvm_type, source_desc, elem_type, rank, module.get());
+                            // Track this heap allocation to free after function call
+                            contiguous_copies_to_free.push_back(tmp);
+                        }
                     } else if(arr->m_physical_type != ASR::array_physical_typeType::PointerArray){
                         ASR::ttype_t* array_type = ASRUtils::TYPE(
                                                     ASR::make_Array_t(al, arr->base.base.loc,arr->m_type,

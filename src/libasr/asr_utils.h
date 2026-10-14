@@ -5502,6 +5502,49 @@ inline int extract_kind_str(char* m_n, char *&kind_str) {
     return 4;
 }
 
+// True if `v` is a deferred constant, i.e. a named constant that is a
+// deferred argument of a template, templated procedure or requirement. The
+// symbol owning the scope that declares it is only created once its
+// specification part has been visited, so it cannot be looked up while the
+// template is being defined. A deferred argument is declared like a dummy
+// argument of that scoping unit, though, which a named constant otherwise
+// cannot be.
+static inline bool is_deferred_constant(const ASR::Variable_t* v) {
+    return v->m_storage == ASR::storage_typeType::Parameter
+        && v->m_intent == ASR::intentType::Unspecified
+        && v->m_value == nullptr && v->m_symbolic_value == nullptr;
+}
+
+// True if the named constant `v` has no value because its initializer uses a
+// deferred constant, directly or through other such named constants.
+bool depends_on_deferred_constant(const ASR::Variable_t* v);
+
+// A deferred constant, or a named constant initialized with one, has no value
+// until its template is instantiated, and a symbolic kind is not supported
+// yet. With --continue-compilation, a named constant whose initializer is
+// invalid has no value either.
+template <typename SemanticAbort>
+[[noreturn]] inline void report_valueless_kind_parameter(
+        const ASR::Variable_t* kind_variable, const Location& loc,
+        diag::Diagnostics &diag) {
+    std::string name = kind_variable->m_name;
+    std::string message;
+    std::string label = "`" + name + "` has no value until the template is instantiated";
+    if (is_deferred_constant(kind_variable)) {
+        message = "using a deferred constant as a kind parameter is not supported yet";
+    } else if (depends_on_deferred_constant(kind_variable)) {
+        message = "using a named constant that depends on a deferred constant "
+            "as a kind parameter is not supported yet";
+    } else {
+        message = "the kind parameter `" + name + "` is not a constant expression";
+        label = "";
+    }
+    diag.add(diag::Diagnostic(message,
+        diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label(label, {loc})}));
+    throw SemanticAbort();
+}
+
 // this function only extract's the 'kind' and raises an error when it's of
 // inappropriate type (e.g. float), but doesn't ensure 'kind' is appropriate
 // for whose kind it is
@@ -5523,7 +5566,10 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc, diag::Diagn
                 return ASRUtils::extract_kind_from_ttype_t(kind_variable->m_type);
             } else if( kind_variable->m_storage == ASR::storage_typeType::Parameter ) {
                 if( kind_variable->m_type->type == ASR::ttypeType::Integer ) {
-                    LCOMPILERS_ASSERT( kind_variable->m_value != nullptr );
+                    if( kind_variable->m_value == nullptr ) {
+                        report_valueless_kind_parameter<SemanticAbort>(
+                            kind_variable, loc, diag);
+                    }
                     return ASR::down_cast<ASR::IntegerConstant_t>(kind_variable->m_value)->m_n;
                 } else {
                     diag.add(diag::Diagnostic(
@@ -5721,14 +5767,13 @@ inline bool is_parent(ASR::Struct_t* a, ASR::Struct_t* b) {
     return false;
 }
 /**
- * Check if two derived types are :
- * 1) the same, or
- * 2) one is parent of another, or
- * 3) both are unlimited polymorphic types
+ * Check if two derived type definitions specify the same type: they are the
+ * same definition, or (F2018 7.5.2.4) different definitions with the same
+ * name that both have the SEQUENCE attribute or both have the BIND attribute
+ * and whose components agree.
  */
-inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
-    if (a == b || is_parent(a, b) || is_parent(b, a) ||
-        (is_unlimited_polymorphic_type(a) && is_unlimited_polymorphic_type(b))) {
+inline bool is_same_derived_type(ASR::Struct_t* a, ASR::Struct_t* b) {
+    if (a == b) {
         return true;
     }
 
@@ -5740,6 +5785,17 @@ inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
     }
 
     return false;
+}
+
+/**
+ * Check if two derived types are :
+ * 1) the same, or
+ * 2) one is parent of another, or
+ * 3) both are unlimited polymorphic types
+ */
+inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
+    return is_same_derived_type(a, b) || is_parent(a, b) || is_parent(b, a) ||
+        (is_unlimited_polymorphic_type(a) && is_unlimited_polymorphic_type(b));
 }
 
 // Can we pass this ARGUMENT of this derivedtype --> to this PARAMETER of this derivedtype?
@@ -8698,6 +8754,41 @@ static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
     return is_allocatable(type) || is_pointer(type);
 }
 
+// Whether `to` is type compatible with `from` (F2018 7.3.2.3) and has the
+// same kind type parameters, as MOVE_ALLOC requires (F2018 16.9.137). The
+// requirement that `to` be polymorphic if `from` is is not checked here.
+static inline bool is_move_alloc_type_compatible(ASR::expr_t* from,
+        ASR::expr_t* to) {
+    ASR::ttype_t* from_type = extract_type(expr_type(from));
+    ASR::ttype_t* to_type = extract_type(expr_type(to));
+    if (is_unlimited_polymorphic_type(to_type)) {
+        return true;
+    }
+    if (is_unlimited_polymorphic_type(from_type)) {
+        return false;
+    }
+    bool is_from_struct = ASR::is_a<ASR::StructType_t>(*from_type);
+    bool is_to_struct = ASR::is_a<ASR::StructType_t>(*to_type);
+    if (is_from_struct != is_to_struct) {
+        return false;
+    }
+    if (!is_to_struct) {
+        return check_equal_type(to_type, from_type, to, from);
+    }
+    if (is_class_type(to_type)) {
+        return check_class_assignment_compatibility(to, from);
+    }
+    ASR::symbol_t* from_sym = symbol_get_past_external(
+        get_struct_sym_from_struct_expr(from));
+    ASR::symbol_t* to_sym = symbol_get_past_external(
+        get_struct_sym_from_struct_expr(to));
+    if (ASR::is_a<ASR::Struct_t>(*from_sym) && ASR::is_a<ASR::Struct_t>(*to_sym)) {
+        return is_same_derived_type(ASR::down_cast<ASR::Struct_t>(from_sym),
+            ASR::down_cast<ASR::Struct_t>(to_sym));
+    }
+    return from_sym == to_sym;
+}
+
 // Whether an Assignment with move_allocation can transfer the allocation of
 // `value` to `target`: both are allocatable descriptor arrays, or both are
 // allocatable noncharacter scalars and `target` is type compatible with
@@ -8717,24 +8808,11 @@ static inline bool is_move_allocation_pair(ASR::expr_t* target,
     if (is_character(*target_type) || is_character(*value_type)) {
         return false;
     }
-    ASR::ttype_t* target_el_type = extract_type(target_type);
-    ASR::ttype_t* value_el_type = extract_type(value_type);
-    if (is_class_type(target_el_type)) {
-        return is_unlimited_polymorphic_type(target_el_type) ||
-            (ASR::is_a<ASR::StructType_t>(*value_el_type) &&
-             check_class_assignment_compatibility(target, value));
-    }
-    if (is_class_type(value_el_type)) {
+    if (is_class_type(extract_type(value_type)) &&
+            !is_class_type(extract_type(target_type))) {
         return false;
     }
-    if (ASR::is_a<ASR::StructType_t>(*target_el_type) ||
-            ASR::is_a<ASR::StructType_t>(*value_el_type)) {
-        return ASR::is_a<ASR::StructType_t>(*target_el_type) &&
-            ASR::is_a<ASR::StructType_t>(*value_el_type) &&
-            symbol_get_past_external(get_struct_sym_from_struct_expr(target)) ==
-            symbol_get_past_external(get_struct_sym_from_struct_expr(value));
-    }
-    return check_equal_type(target_el_type, value_el_type, target, value);
+    return is_move_alloc_type_compatible(value, target);
 }
 
 // Reports whether a value of the derived type `st` has a constant byte
@@ -10749,7 +10827,8 @@ static inline ASR::ttype_t* create_array_type_with_empty_dims(Allocator& al,
 
 static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_v, ASR::array_index_t* a_args, size_t n_args, ASR::ttype_t* a_type,
-    ASR::arraystorageType a_storage_format, ASR::expr_t* a_value) {
+    ASR::arraystorageType a_storage_format, ASR::expr_t* a_value,
+    bool a_in_bounds = false) {
     if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_v) && !(ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_old == ASR::array_physical_typeType::AssumedRankArray)) {
         a_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
     }
@@ -10771,7 +10850,7 @@ static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a
     ASRUtils::ExprStmtDuplicator type_duplicator(al);
     a_type = type_duplicator.duplicate_ttype(a_type);
     return ASR::make_ArrayItem_t(al, a_loc, a_v, a_args,
-        n_args, a_type, a_storage_format, a_value);
+        n_args, a_type, a_storage_format, a_value, a_in_bounds);
 }
 
 inline ASR::ttype_t* make_Pointer_t_util(Allocator& al, const Location& loc, ASR::ttype_t* type) {

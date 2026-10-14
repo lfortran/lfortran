@@ -2110,6 +2110,9 @@ public:
     }
 
     void visit_ArrayItem(const ArrayItem_t &x) {
+        require_id(!x.m_in_bounds || !ASRUtils::is_array(x.m_type),
+            "asr.verify.array_item.in_bounds_array",
+            "only a reference to a single element can be known to be in bounds");
         if( check_external ) {
             // Selecting an element of an array component of an array, as in
             // `w%u(2)`, reads one element of the component out of every

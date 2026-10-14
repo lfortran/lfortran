@@ -580,6 +580,7 @@
                                                             (Real 4)
                                                             ColMajor
                                                             ()
+                                                            .false.
                                                         )
                                                         NotEq
                                                         (Cast
@@ -773,6 +774,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .false.
                                     )
                                     (Cast
                                         (IntegerBinOp
@@ -830,6 +832,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .false.
                                     )
                                     (Cast
                                         (IntegerBinOp
@@ -893,6 +896,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .false.
                                     )
                                     (Cast
                                         (IntegerConstant 0 (Integer 4) Decimal)

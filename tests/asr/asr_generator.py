@@ -170,7 +170,7 @@ def array_item(table, name, indices, element):
         for index in indices)
     return (
         f"(ArrayItem :v {var(table, name)} :args [{entries}] "
-        f":type {type_of(element)} :storage_format :ColMajor :value nil)"
+        f":type {type_of(element)} :storage_format :ColMajor :value nil :in_bounds false)"
     )
 
 

@@ -525,6 +525,7 @@
                                 (Real 4)
                                 ColMajor
                                 ()
+                                .true.
                             )]
                             FormatFortran
                             (Allocatable
@@ -547,6 +548,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -584,6 +586,7 @@
                                 (Real 4)
                                 ColMajor
                                 ()
+                                .true.
                             )]
                             FormatFortran
                             (Allocatable
@@ -606,6 +609,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -643,6 +647,7 @@
                                 (Real 4)
                                 ColMajor
                                 ()
+                                .true.
                             )]
                             FormatFortran
                             (Allocatable
@@ -665,6 +670,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Add
                                     (RealConstant

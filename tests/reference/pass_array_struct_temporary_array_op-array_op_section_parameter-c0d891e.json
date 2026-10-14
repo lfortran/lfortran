@@ -1,0 +1,13 @@
+{
+    "basename": "pass_array_struct_temporary_array_op-array_op_section_parameter-c0d891e",
+    "cmd": "lfortran --pass=array_struct_temporary,array_op --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/array_op_section_parameter.f90",
+    "infile_hash": "23e74ceead55a2c7940d830050a4b4d1e862a7b0063093af5aec1f05",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_array_struct_temporary_array_op-array_op_section_parameter-c0d891e.stdout",
+    "stdout_hash": "b77e6d0fdd865df5fa0d8808b4d2295d1b0331de169da553c4d59e69",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
