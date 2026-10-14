@@ -746,6 +746,12 @@ semantic error: null() cannot be the value of component 'x' of type real(8), dim
 1330 |     type(t_null_array_component) :: v1 = t_null_array_component(null(), t_null_inner_2(1))  ! {Error} null() cannot be the value of component 'x' of type real(8), dimension(2), which is neither a pointer nor allocatable
      |                                                                 ^^^^^^ 
 
+warning: Assuming implicit save attribute for variable declaration
+    --> tests/errors/continue_compilation_1.f90:1330:37
+     |
+1330 |     type(t_null_array_component) :: v1 = t_null_array_component(null(), t_null_inner_2(1))  ! {Error} null() cannot be the value of component 'x' of type real(8), dimension(2), which is neither a pointer nor allocatable
+     |                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
+
 semantic error: null() cannot be the value of component 'p' of type type(c_ptr), which is neither a pointer nor allocatable
     --> tests/errors/continue_compilation_1.f90:1345:71
      |
