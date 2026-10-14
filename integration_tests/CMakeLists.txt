@@ -4545,6 +4545,10 @@ RUN(NAME procedure_56 LABELS gfortran llvm)
 RUN(NAME procedure_57 LABELS gfortran llvm)
 RUN(NAME procedure_58 LABELS gfortran llvm)
 RUN(NAME procedure_59 LABELS gfortran llvm)
+# CI's system GFortran 13 rejects a procedure as the value of a procedure
+# pointer component in a structure constructor initializer (see
+# procedure_pointer_29 above), which the standard allows, so llvm only
+RUN(NAME procedure_60 LABELS llvm)
 RUN(NAME procedure_pointer_abstract_02 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_keyword_01 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_keyword_02 LABELS gfortran llvm)
