@@ -7,7 +7,8 @@
 ! finalizes the object once for its dynamic type (Gauge2's final subroutine,
 ! then its parent's), deallocates the allocatable components of Gauge2 and of
 ! its parent and applies their default initialization before the body runs,
-! which checks the order and counts of the finalizations on entry. The object
+! which checks the order and counts of the finalizations on entry and the
+! old values and allocation status the final subroutines saw. The object
 ! keeps its address and the owner its allocation and dynamic type.
 ! The ordinary polymorphic intent(out) dummies of
 ! traits_receiver_intent_09_oracle.f90 check the same values.
@@ -17,6 +18,8 @@ module traits_receiver_intent_09_m
     integer :: finals = 0, finals2 = 0, entries = 0
     ! Finalization order: Gauge2's final subroutine appends 2, Gauge's 1.
     integer :: order = 0
+    ! What the final subroutines saw: old values and allocation status.
+    integer :: seen_n = -1, seen_extra = -1, seen_allocated = 0
     type(c_ptr) :: expected = c_null_ptr
     abstract interface :: IReset
         integer function level(self)
@@ -76,11 +79,15 @@ contains
         type(Gauge), intent(inout) :: self
         finals = finals + 1
         order = 10 * order + 1
+        seen_n = self%n
+        if (allocated(self%data)) seen_allocated = seen_allocated + 10
     end subroutine
     subroutine gauge2_final(self)
         type(Gauge2), intent(inout) :: self
         finals2 = finals2 + 1
         order = 10 * order + 2
+        seen_extra = self%extra
+        if (allocated(self%more)) seen_allocated = seen_allocated + 1
     end subroutine
     subroutine reset_view(x, start)
         class(IReset), intent(inout) :: x
@@ -92,17 +99,28 @@ contains
         integer, intent(in) :: start
         call x%reset(start)
     end subroutine
-    subroutine expect(g, n)
+    subroutine expect(g, n, old_n, old_extra, old_allocated)
         class(IReset), intent(in) :: g
         integer, intent(in) :: n
+        ! The values and allocation status before the call, which the final
+        ! subroutines saw (Gauge's data counts 10, Gauge2's more 1).
+        integer, intent(in) :: old_n, old_extra, old_allocated
         if (order /= 21 .or. finals /= 1 .or. finals2 /= 1 .or. entries /= 1) then
             print '(a,4i4)', 'counts:', order, finals, finals2, entries
             error stop 94
+        end if
+        if (seen_n /= old_n .or. seen_extra /= old_extra .or. &
+                seen_allocated /= old_allocated) then
+            print '(a,3i6)', 'seen:', seen_n, seen_extra, seen_allocated
+            error stop 98
         end if
         order = 0
         finals = 0
         finals2 = 0
         entries = 0
+        seen_n = -1
+        seen_extra = -1
+        seen_allocated = 0
         select type (g)
         type is (Gauge2)
             if (g%n /= n .or. g%extra /= 2 * n) error stop 95
@@ -126,16 +144,16 @@ program traits_receiver_intent_09
     allocate(g2%data(2), g2%more(2))
     expected = c_loc(g2%n)
     call g2%reset(3)
-    call expect(g2, 3)
+    call expect(g2, 3, 1, 1, 11)
     call reset_view(g2, 4)
-    call expect(g2, 4)
+    call expect(g2, 4, 3, 6, 11)
     call reset_generic(g2, 5)
-    call expect(g2, 5)
+    call expect(g2, 5, 4, 8, 11)
     p => g2
     call p%reset(8)
-    call expect(p, 8)
+    call expect(p, 8, 5, 10, 11)
     call reset_view(p, 9)
-    call expect(p, 9)
+    call expect(p, 9, 8, 16, 11)
     allocate(Gauge2 :: owner)
     select type (concrete => owner)
     type is (Gauge2)
@@ -144,9 +162,9 @@ program traits_receiver_intent_09
         error stop 1
     end select
     call owner%reset(6)
-    call expect(owner, 6)
+    call expect(owner, 6, 7, 11, 0)
     call reset_view(owner, 2)
-    call expect(owner, 2)
+    call expect(owner, 2, 6, 12, 11)
     if (.not. allocated(owner) .or. owner%level() /= 2) error stop 2
     print '(a)', 'traits_receiver_intent_09 ok'
 end program

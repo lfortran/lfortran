@@ -1,7 +1,7 @@
 ! LFortran traits extension test; GFortran does not accept this syntax.
 ! intent(out) receivers (TD-36). On each call of reset or restart, whose
 ! receivers IReset declares intent(out), the object is finalized exactly once
-! (the final subroutine still sees its old allocatable component), its
+! (the final subroutine still sees its old value and allocatable component), its
 ! allocatable components are deallocated and its default initialization is
 ! applied before the body of the implementation runs. The object keeps its
 ! address, its owner's allocation and its dynamic type. The paths are direct
@@ -16,6 +16,9 @@ module traits_receiver_intent_03_m
     use iso_c_binding, only: c_ptr, c_loc, c_associated, c_null_ptr
     implicit none
     integer :: finals = 0, finals_with_data = 0, entries = 0
+    ! What the final subroutines saw: the old value and allocation status.
+    integer :: seen_n = -1, seal_finals = 0, seal_seen_n = -1
+    logical :: seal_seen_data = .false.
     type(c_ptr) :: expected = c_null_ptr
     abstract interface :: IReset
         integer function level(self)
@@ -43,6 +46,8 @@ module traits_receiver_intent_03_m
     type, sealed :: Seal
         integer :: n = 3
         integer, allocatable :: data(:)
+    contains
+        final :: seal_final
     end type
     implements IReset :: Seal
         procedure, pass :: level => seal_level
@@ -87,6 +92,13 @@ contains
         type(Gauge), intent(inout) :: self
         finals = finals + 1
         if (allocated(self%data)) finals_with_data = finals_with_data + 1
+        seen_n = self%n
+    end subroutine
+    subroutine seal_final(self)
+        type(Seal), intent(inout) :: self
+        seal_finals = seal_finals + 1
+        seal_seen_n = self%n
+        seal_seen_data = allocated(self%data)
     end subroutine
     integer function seal_level(self)
         type(Seal), intent(in) :: self
@@ -125,15 +137,35 @@ contains
         if (x%level() /= start) error stop 95
     end subroutine
     ! Counts since the last call, then the state of a Gauge after reset(n).
-    subroutine expect(f, fd, e)
+    subroutine expect(f, fd, e, old)
         integer, intent(in) :: f, fd, e
+        ! The value the final subroutine saw, the one before the call.
+        integer, intent(in), optional :: old
         if (finals /= f .or. finals_with_data /= fd .or. entries /= e) then
             print '(a,3i4)', 'counts:', finals, finals_with_data, entries
             error stop 96
         end if
+        if (present(old)) then
+            if (seen_n /= old) then
+                print '(a,i6)', 'seen:', seen_n
+                error stop 99
+            end if
+        end if
         finals = 0
         finals_with_data = 0
         entries = 0
+        seen_n = -1
+    end subroutine
+    ! Seal's final subroutine ran once and saw the old value and allocation.
+    subroutine expect_seal(old, had_data)
+        integer, intent(in) :: old
+        logical, intent(in) :: had_data
+        if (seal_finals /= 1 .or. seal_seen_n /= old .or. (seal_seen_data .neqv. had_data)) then
+            print '(a,2i6,l2)', 'seal:', seal_finals, seal_seen_n, seal_seen_data
+            error stop 89
+        end if
+        seal_finals = 0
+        seal_seen_n = -1
     end subroutine
     subroutine expect_gauge(g, n)
         type(Gauge), intent(in) :: g
@@ -160,15 +192,15 @@ program traits_receiver_intent_03
     allocate(g%data(4))
     expected = c_loc(g%n)
     call g%reset(5)
-    call expect(1, 1, 1)
+    call expect(1, 1, 1, 1)
     call expect_gauge(g, 5)
     ! An intent(inout) view borrowed from the variable.
     call reset_view(g, 6)
-    call expect(1, 1, 1)
+    call expect(1, 1, 1, 5)
     call expect_gauge(g, 6)
     ! A static generic call.
     call reset_generic(g, 2)
-    call expect(1, 1, 1)
+    call expect(1, 1, 1, 6)
     call expect_gauge(g, 2)
     ! An allocatable owner keeps its allocation and dynamic type.
     allocate(Gauge :: owner)
@@ -179,7 +211,7 @@ program traits_receiver_intent_03
         error stop 2
     end select
     call owner%reset(4)
-    call expect(1, 0, 1)
+    call expect(1, 0, 1, 7)
     if (.not. allocated(owner)) error stop 3
     select type (concrete => owner)
     type is (Gauge)
@@ -188,7 +220,7 @@ program traits_receiver_intent_03
         error stop 5
     end select
     call reset_view(owner, 2)
-    call expect(1, 1, 1)
+    call expect(1, 1, 1, 4)
     if (owner%level() /= 2) error stop 6
     ! An owner component.
     allocate(Gauge :: h%owned)
@@ -199,35 +231,40 @@ program traits_receiver_intent_03
         error stop 7
     end select
     call h%owned%reset(3)
-    call expect(1, 0, 1)
+    call expect(1, 0, 1, 7)
     if (h%owned%level() /= 3) error stop 8
     ! A pointer to the variable.
     p => g
     expected = c_loc(g%n)
     call p%reset(1)
-    call expect(1, 1, 1)
+    call expect(1, 1, 1, 2)
     call expect_gauge(g, 1)
     ! A function with an intent(out) receiver.
     k = g%restart(5)
-    call expect(1, 1, 1)
+    call expect(1, 1, 1, 1)
     if (k /= 105 .or. g%n /= 105 .or. size(g%data) /= 1) error stop 9
     k = restart_view(g, 6)
-    call expect(1, 1, 1)
+    call expect(1, 1, 1, 105)
     if (k /= 106 .or. g%level() /= 106) error stop 10
-    ! A sealed type's TYPE passed object, without a finalizer.
+    ! A sealed type's TYPE passed object, whose final subroutine sees the
+    ! old value and allocation status.
     expected = c_null_ptr
     s%n = 9
     allocate(s%data(2))
     call s%reset(4)
     call expect(0, 0, 1)
+    call expect_seal(9, .true.)
     if (s%n /= 4 .or. size(s%data) /= 4) error stop 11
     call reset_view(s, 5)
     call expect(0, 0, 1)
+    call expect_seal(4, .true.)
     if (s%level() /= 5 .or. size(s%data) /= 5) error stop 12
     k = restart_view(s, 1)
     call expect(0, 0, 1)
+    call expect_seal(5, .true.)
     if (k /= 101 .or. s%n /= 101 .or. allocated(s%data)) error stop 13
     call reset_generic(s, 3)
     call expect(0, 0, 1)
+    call expect_seal(101, .false.)
     print '(a)', 'traits_receiver_intent_03 ok'
 end program
