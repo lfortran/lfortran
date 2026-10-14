@@ -39,7 +39,12 @@ type.
 With runtime bounds checking, a backend checks every subscript of an element
 reference against the bounds of `v`. A pass that creates the reference can
 set `in_bounds` when the subscript cannot be out of bounds, and the check is
-then omitted. The frontend always sets `false`. The `array_op` pass sets it in
+then omitted. The frontend sets it when every subscript is a compile-time
+constant and the array, neither allocatable nor a pointer, has compile-time
+constant bounds in every dimension, as for `a(2, 3)` with `a(8, 4)`; a
+constant subscript outside such bounds is a compile-time error. A reference
+into an assumed-shape, assumed-size, allocatable or pointer array, or with a
+subscript that is not a constant, is still checked. The `array_op` pass sets it in
 the loops it creates for an array assignment: for the operand whose bounds
 the loops run over, and for every operand whose shape a preceding
 [DebugCheckArrayBounds](../statement_nodes/DebugCheckArrayBounds.md) compares

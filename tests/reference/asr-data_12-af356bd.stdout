@@ -525,7 +525,7 @@
                                 (Real 4)
                                 ColMajor
                                 ()
-                                .false.
+                                .true.
                             )]
                             FormatFortran
                             (Allocatable
@@ -548,7 +548,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
-                                        .false.
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -586,7 +586,7 @@
                                 (Real 4)
                                 ColMajor
                                 ()
-                                .false.
+                                .true.
                             )]
                             FormatFortran
                             (Allocatable
@@ -609,7 +609,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
-                                        .false.
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -647,7 +647,7 @@
                                 (Real 4)
                                 ColMajor
                                 ()
-                                .false.
+                                .true.
                             )]
                             FormatFortran
                             (Allocatable
@@ -670,7 +670,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
-                                        .false.
+                                        .true.
                                     )
                                     Add
                                     (RealConstant
