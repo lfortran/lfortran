@@ -227,10 +227,18 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             }
             return "workspace '" + decline.name +
                 "' cannot be sized on the host";
-        case GpuDeclineReason::StructComponentNotSizeable:
-            return "the allocatable component '" + decline.name +
+        case GpuDeclineReason::StructComponentNotSizeable: {
+            // `value%component`: a temporary value is not named.
+            std::string component = decline.name;
+            size_t at = component.find('%');
+            if (at != std::string::npos &&
+                    !gpu_source_name(component.substr(0, at))) {
+                component = component.substr(at + 1);
+            }
+            return "the allocatable component '" + component +
                 "' of a derived-type value of device code cannot be sized "
                 "on the host";
+        }
 
         case GpuDeclineReason::LocalTypeWidth:
             return "local '" + decline.name +

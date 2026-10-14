@@ -207,10 +207,16 @@ private:
                 type_declaration = current_scope->resolve_symbol(
                     ASRUtils::symbol_name(dummy->m_type_declaration));
             }
-            ASR::expr_t *local = b.Variable(current_scope,
-                current_scope->get_unique_name(
-                    "__gpu_ws_" + std::string(dummy->m_name), false),
-                type, ASR::intentType::Local, type_declaration);
+            // The local stands for the callee's, and has its name, which a
+            // diagnostic about the local then shows, unless the name is
+            // one the scope of the call can already see.
+            std::string name = dummy->m_name;
+            if (current_scope->resolve_symbol(name) != nullptr) {
+                name = current_scope->get_unique_name("__gpu_ws_" + name,
+                    false);
+            }
+            ASR::expr_t *local = b.Variable(current_scope, name, type,
+                ASR::intentType::Local, type_declaration);
             created.insert(ASR::down_cast<ASR::Var_t>(local)->m_v);
             ASR::call_arg_t arg;
             arg.loc = loc;
