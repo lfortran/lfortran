@@ -57,12 +57,6 @@ struct GpuDeviceCapabilities {
     int max_integer_kind = 8;
     int max_real_kind = 8;
 
-    // Whether a kernel can bring the program to a halt from a thread. There
-    // is no exit code to deliver either way -- a grid has no status to
-    // return -- but stopping is the part of a Fortran `stop` a device can
-    // honour, and a device that cannot stop can honour none of it.
-    bool device_abort = true;
-
     // Whether a device function may declare a local array whose extent is
     // only known once the kernel runs. Where it may not, the pass splices
     // such a callee into the kernel body instead, so that the local becomes
@@ -152,7 +146,13 @@ enum class GpuDeclineReason {
     // These, and every reason below them, name a thing rather than state a
     // fact, and so read as "the gpu backend does not support <thing>".
     StatementIo,
-    StatementStop,
+    // A `stop` or `error stop` whose stop code is a character value
+    // computed at run time, which the host cannot repeat after the launch
+    // (see gpu_offload_stop.h).
+    StopCodeNotConstant,
+    // A procedure that can stop, which is given hidden arguments, but is
+    // also passed as an actual argument or is not a copy the kernel owns.
+    StoppingProcedureShared,
 
     // --- the layout of a kernel argument: derived types ---
     StructDeclarationUnknown,

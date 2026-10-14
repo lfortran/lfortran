@@ -6042,7 +6042,7 @@ RUN(NAME gpu_metal_284 LABELS gfortran llvm metal cuda_cpu EXTRAFILES gpu_metal_
 RUN(NAME gpu_metal_285 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_286 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_287 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME gpu_metal_288 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+RUN(NAME gpu_metal_288 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_289 LABELS gfortran llvm)
 RUN(NAME gpu_metal_290 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_291 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback)
@@ -6052,11 +6052,11 @@ RUN(NAME gpu_metal_294 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_295 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_296 LABELS gfortran llvm)
 RUN(NAME gpu_metal_297 LABELS gfortran llvm)
-RUN(NAME gpu_metal_298 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+RUN(NAME gpu_metal_298 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_299 LABELS gfortran llvm)
 RUN(NAME gpu_metal_300 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_301 LABELS gfortran llvm)
-RUN(NAME gpu_metal_302 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+RUN(NAME gpu_metal_302 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_303 LABELS gfortran llvm)
 RUN(NAME gpu_metal_304 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_305 LABELS gfortran llvm)
@@ -6089,10 +6089,10 @@ RUN(NAME gpu_metal_330 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQU
 RUN(NAME gpu_metal_331 LABELS gfortran llvm)
 RUN(NAME gpu_metal_332 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_333 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_334 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+RUN(NAME gpu_metal_334 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_335 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_336 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_337 FAIL LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+RUN(NAME gpu_metal_337 FAIL LABELS gfortran llvm metal cuda_cpu)
 # Refused by every gpu backend on purpose -- see the reference test in
 # tests/tests.toml for the diagnostic. Registered here for the answer the
 # host gives, which is the one the kernel used to get wrong in silence.
@@ -6133,6 +6133,8 @@ RUN(NAME gpu_metal_374 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_378 LABELS llvm cuda_cpu) # integer(8) loop index is supported on cuda_cpu; metal declines integer(8); gfortran on CI lacks reduce clause
 RUN(NAME gpu_metal_379 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_380 LABELS llvm metal cuda_cpu) # gfortran on CI lacks reduce clause
+RUN(NAME gpu_metal_383 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_384 FAIL LABELS gfortran llvm metal cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
@@ -6156,6 +6158,7 @@ RUN(NAME gpu_metal_359 FAIL NO_FAST LABELS metal cuda_cpu) # bounds checking rep
 RUN(NAME gpu_metal_363 FAIL NO_FAST LABELS metal cuda_cpu) # bounds checking reports a component an `if` lets the loop write that is not allocated without --realloc-lhs-arrays
 RUN(NAME gpu_metal_364 FAIL NO_FAST NO_STD_F23 LABELS llvm metal cuda_cpu) # bounds checking reports a component the loop assigns an array to that is not allocated without --realloc-lhs-arrays; --std=f23 allocates it on assignment
 RUN(NAME gpu_metal_377 LABELS gfortran llvm metal cuda_cpu EXTRAFILES gpu_metal_377_mod.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME gpu_metal_385 LABELS gfortran llvm metal cuda_cpu EXTRAFILES gpu_metal_385_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME inline_function_calls_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 
@@ -6187,7 +6190,7 @@ RUN(NAME gpu_unsupported_04 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<S
 RUN(NAME gpu_unsupported_05 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_unsupported_06 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback)
 RUN(NAME gpu_unsupported_07 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback)
-RUN(NAME gpu_unsupported_08 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+RUN(NAME gpu_unsupported_08 LABELS gfortran llvm metal cuda_cpu)
 
 RUN(NAME gpu_kernel_source_01 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_02 LABELS gfortran llvm)
