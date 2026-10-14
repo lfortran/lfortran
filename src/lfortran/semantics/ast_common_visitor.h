@@ -17345,29 +17345,6 @@ public:
                 }
             }
             args = args_with_array_section;
-            // There can be a possibility that initially it is ArrayItem and now we realised
-            // that it must be an ArraySection instead.
-            array_arg_idx.clear();
-            for ( size_t i = 0; i < args.size(); i++ ) {
-                ASR::expr_t* arg_expr = args[i].m_value;
-                if ( arg_expr && ASRUtils::is_array(ASRUtils::expr_type(arg_expr)) ) {
-                    array_arg_idx[i] = ASRUtils::expr_type(arg_expr);
-                }
-            }
-            // bool visit_required = false;
-            for ( auto it: array_arg_idx ) {
-                ASR::expr_t* func_arg = f->m_args[it.first];
-                ASR::FunctionType_t* f_type =
-                    ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
-                bool is_elemental = f_type->m_elemental;
-                if (!is_elemental && !ASRUtils::is_array(ASRUtils::EXPR2VAR(func_arg)->m_type)) {
-                    // create array type with empty dimensions and physical type as PointerArray
-                    ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, it.second, ASR::array_physical_typeType::PointerArray, true);
-                    ASRUtils::EXPR2VAR(func_arg)->m_type = new_type;
-                    f_type->m_arg_types[it.first] = new_type;
-                    // visit_required = true;
-                }
-            }
         } else {
             // Check if a scalar (ArrayItem) is passed to an array argument
             for (size_t i = 0; i < f->n_args && i < args.size(); i++) {
@@ -17407,6 +17384,65 @@ public:
                 }
             }
         }
+        check_array_actual_for_scalar_dummy(v, f, args);
+    }
+
+    void check_array_actual_for_scalar_dummy(ASR::symbol_t *v, ASR::Function_t *f,
+            Vec<ASR::call_arg_t> &args) {
+        if (ASRUtils::is_elemental(v)) {
+            return;
+        }
+        // A procedure defined outside any module or procedure of this file.
+        bool has_implicit_interface = !ASR::is_a<ASR::ExternalSymbol_t>(*v) &&
+            ASRUtils::is_tu_scope(f->m_symtab->parent);
+        for (size_t i = 0; i < f->n_args && i < args.size(); i++) {
+            ASR::expr_t *actual = args[i].m_value;
+            if (actual == nullptr || !ASRUtils::is_array(ASRUtils::expr_type(actual))) {
+                continue;
+            }
+            ASR::symbol_t *dummy = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*dummy)) {
+                continue;
+            }
+            ASR::Variable_t *dummy_var = ASR::down_cast<ASR::Variable_t>(dummy);
+            if (ASRUtils::is_array(dummy_var->m_type)) {
+                continue;
+            }
+            std::string message = "rank mismatch in argument `" +
+                std::string(dummy_var->m_name) + "`: the dummy argument is a scalar "
+                "but the actual argument is an array of rank " + std::to_string(
+                ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(actual)));
+            Label label("pass one element of the array instead", {actual->base.loc});
+            if (compiler_options.legacy_array_sections && has_implicit_interface &&
+                    ASR::is_a<ASR::Var_t>(*actual)) {
+                diag.add(Diagnostic(message + "; as a legacy extension, only its "
+                    "first element is passed", Level::Warning, Stage::Semantic, {label}));
+                args.p[i].m_value = first_array_element(actual);
+                continue;
+            }
+            diag.add(Diagnostic(message, Level::Error, Stage::Semantic, {label}));
+            throw SemanticAbort();
+        }
+    }
+
+    ASR::expr_t* first_array_element(ASR::expr_t *array) {
+        const Location &loc = array->base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        size_t n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array));
+        Vec<ASR::array_index_t> indices;
+        indices.reserve(al, n_dims);
+        for (size_t d = 1; d <= n_dims; d++) {
+            ASR::array_index_t index;
+            index.loc = loc;
+            index.m_left = nullptr;
+            index.m_right = b.ArrayLBound(array, d, compiler_options.po.default_integer_kind);
+            index.m_step = nullptr;
+            indices.push_back(al, index);
+        }
+        return ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, array,
+            indices.p, indices.n, ASRUtils::expr_type(array),
+            ASR::arraystorageType::ColMajor, nullptr));
     }
 
     void validate_missing_required_arguments(const Location &loc,

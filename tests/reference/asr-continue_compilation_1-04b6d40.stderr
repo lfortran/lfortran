@@ -3702,3 +3702,9 @@ semantic error: PRINT statement is not allowed inside a PURE procedure
      |
 2808 |     print *, n  ! {Error} PRINT statement is not allowed inside a PURE procedure
      |     ^^^^^^^^^^ 
+
+semantic error: rank mismatch in argument `n`: the dummy argument is a scalar but the actual argument is an array of rank 1
+    --> tests/errors/continue_compilation_1.f90:2824:27
+     |
+2824 |     call cc1_scalar_dummy(a)  ! {Error} rank mismatch in argument `n`: the dummy argument is a scalar but the actual argument is an array of rank 1
+     |                           ^ pass one element of the array instead
