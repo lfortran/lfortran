@@ -5601,8 +5601,10 @@ namespace SelectedIntKind {
             result = 2;
         } else if (val <= 9) {
             result = 4;
-        } else {
+        } else if (val <= 18) {
             result = 8;
+        } else {
+            result = -1;
         }
         return b.i32(result);
     }
@@ -5624,7 +5626,11 @@ namespace SelectedIntKind {
                 b.If(b.LtE(number, b.i_t(9, arg_types[0])), {
                     b.Assignment(result, b.i32(4))
                 }, {
-                    b.Assignment(result, b.i32(8))
+                    b.If(b.LtE(number, b.i_t(18, arg_types[0])), {
+                        b.Assignment(result, b.i32(8))
+                    }, {
+                        b.Assignment(result, b.i32(-1))
+                    })
                 })
             })
         }));
