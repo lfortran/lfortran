@@ -1,6 +1,8 @@
 ! `zz%s(3)%u(1)` selects element `u(1)` of component `s(3)` of every element
 ! of the array `zz`, so the reference is array-valued and must not be marked
 ! in bounds, even though its subscripts are constants within the bounds.
+! LFortran does not compile it end to end yet (#13629); add the llvm label
+! and regenerate the ASR reference once it does.
 program array_item_in_bounds_02
 implicit none
 type :: t
