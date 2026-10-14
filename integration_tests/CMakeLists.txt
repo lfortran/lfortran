@@ -6185,6 +6185,7 @@ RUN(NAME gpu_metal_377 LABELS gfortran llvm metal cuda_cpu EXTRAFILES gpu_metal_
 RUN(NAME gpu_metal_385 LABELS gfortran llvm metal cuda_cpu EXTRAFILES gpu_metal_385_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_metal_395 LABELS gfortran llvm metal cuda_cpu EXTRAFILES gpu_metal_395_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_metal_396 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --fast)
+RUN(NAME gpu_metal_397 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME inline_function_calls_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 

@@ -1,3 +1,4 @@
+#include <functional>
 #include <map>
 #include <set>
 #include <vector>
@@ -187,18 +188,22 @@ void GpuOffloadVisitor::mark_regions_device_code_runs() {
 
 // The allocatable dummy arrays of a device routine that only use the array
 // the caller passed: they neither allocate nor deallocate it, ask whether
-// it is allocated, or hand it on to a dummy that does. A kernel receives
-// every array as a plain one, which is all such a dummy needs, so it is
-// declared as an assumed-shape dummy instead.
+// it is allocated, or hand it on to an allocatable dummy that does. A
+// kernel receives every array as a plain one, which is all such a dummy
+// needs, so it is declared as an assumed-shape dummy instead. Whether a
+// dummy it is handed on to needs the allocation is decided first, so the
+// routines it calls are looked at before it is.
 namespace {
 
 class GpuAllocatableDummyUses :
         public ASRUtils::BlockBodyWalkVisitor<GpuAllocatableDummyUses> {
 public:
     std::set<ASR::symbol_t*> &needs_allocation;
+    std::function<void(ASR::Function_t*)> decide_callee;
 
-    explicit GpuAllocatableDummyUses(std::set<ASR::symbol_t*> &needs)
-        : needs_allocation(needs) {}
+    GpuAllocatableDummyUses(std::set<ASR::symbol_t*> &needs,
+            std::function<void(ASR::Function_t*)> decide_callee_)
+        : needs_allocation(needs), decide_callee(decide_callee_) {}
 
     void mark(ASR::expr_t *e) {
         e = ASRUtils::get_past_array_physical_cast(e);
@@ -251,6 +256,7 @@ public:
         }
         if (!target || !ASR::is_a<ASR::Function_t>(*target)) return;
         ASR::Function_t *callee = ASR::down_cast<ASR::Function_t>(target);
+        decide_callee(callee);
         for (size_t i = 0; i < n_args && i < callee->n_args; i++) {
             if (args[i].m_value && ASRUtils::is_allocatable(
                     ASRUtils::expr_type(callee->m_args[i]))) {
@@ -275,8 +281,17 @@ public:
 } // namespace
 
 void GpuOffloadVisitor::plain_allocatable_dummies(ASR::Function_t *fn) {
+    if (!plain_dummies_decided.insert(fn).second) return;
     std::set<ASR::symbol_t*> needs_allocation;
-    GpuAllocatableDummyUses uses(needs_allocation);
+    // Only the kernel's own copies of routines are device code. A routine
+    // that calls itself, directly or not, sees its own dummies as they are
+    // declared, which keeps them allocatable.
+    GpuAllocatableDummyUses uses(needs_allocation,
+        [&](ASR::Function_t *callee) {
+            if (callee->m_symtab->parent == fn->m_symtab->parent) {
+                plain_allocatable_dummies(callee);
+            }
+        });
     for (size_t i = 0; i < fn->n_body; i++) uses.visit_stmt(*fn->m_body[i]);
     bool changed = false;
     for (size_t i = 0; i < fn->n_args; i++) {
