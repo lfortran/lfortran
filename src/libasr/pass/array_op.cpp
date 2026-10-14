@@ -1298,9 +1298,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         Assigns the named constant `x.m_value` to the section target
         `x.m_target` with a single ArrayBlockCopy instead of a loop over its
         elements, if the section is a block of consecutive elements of the
-        size of the constant: its base array is stored contiguously, and its
-        only subscript triplet is the first subscript, with constant bounds
-        and a unit step. A named constant cannot overlap the target. With
+        size of the constant: its base is an array variable stored
+        contiguously, and its only subscript triplet is the first subscript,
+        with constant bounds and a unit step. A named constant cannot overlap the target. With
         bounds checking, the element that the block starts at is checked when
         it is referenced, so the last element of the block has to be known to
         be within the bounds.
@@ -1333,8 +1333,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
               ASR::is_a<ASR::Logical_t>(*element_type)) ||
             !ASRUtils::check_equal_type(ASRUtils::extract_type(section->m_type),
                 element_type, nullptr, nullptr) ||
-            !(ASR::is_a<ASR::Var_t>(*section->m_v) ||
-              ASR::is_a<ASR::StructInstanceMember_t>(*section->m_v)) ||
+            !ASR::is_a<ASR::Var_t>(*section->m_v) ||
             !ASRUtils::is_contiguous_array_storage(ASRUtils::expr_type(section->m_v)) ) {
             return false;
         }

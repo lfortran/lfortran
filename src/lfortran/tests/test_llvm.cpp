@@ -2618,6 +2618,25 @@ end program
     CHECK(e.evaluate2(cell).ok);
 }
 
+TEST_CASE("FortranEvaluator a section assigned a named constant of an earlier cell") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    CHECK(e.evaluate2("real, parameter :: c(3) = [1., 2., 3.]").ok);
+    CHECK(e.evaluate2("real :: a(3, 2)").ok);
+    CHECK(e.evaluate2("a = 0").ok);
+    // The block copy reads c, which has no storage in this cell's module
+    CHECK(e.evaluate2("a(:, 2) = c").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("a(3, 2)");
+    CHECK(r.ok);
+    CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
+    CHECK(r.result.f32 == 3);
+    r = e.evaluate2("a(3, 1)");
+    CHECK(r.ok);
+    CHECK(r.result.f32 == 0);
+}
+
 TEST_CASE("FortranEvaluator a diagnostic about an earlier cell") {
     CompilerOptions cu;
     cu.interactive = true;
