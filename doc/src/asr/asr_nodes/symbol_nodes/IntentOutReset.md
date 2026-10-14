@@ -30,9 +30,10 @@ of the modules it uses, of its programs, procedures with a body, `BLOCK`
 constructs and generic instances, whether or not the unit has a polymorphic
 dummy of them, because another unit can pass an object of the type to one.
 Generic definitions, traits and interface bodies have no objects of their own
-types and are not recorded. The records are made before the procedures are
-visited, so the procedures take part in dependencies, verification and the
-passes after it like any other procedure.
+types and are not recorded. A type that already has a record keeps it, and
+the pass knows a reset procedure by its record. The records are made before
+the procedures are visited, so the procedures take part in dependencies,
+verification and the passes after it like any other procedure.
 
 The LLVM code generator sets that option and resets a scalar polymorphic
 `intent(out)` dummy (other than `class(*)`) from its dynamic type: on entry it

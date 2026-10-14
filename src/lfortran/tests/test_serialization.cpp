@@ -10655,6 +10655,23 @@ end program
         REQUIRE(copied->m_procedure != nullptr);
         CHECK(ASRUtils::symbol_parent_symtab(copied->m_procedure) == scope);
     }
+    SUBCASE("the pass keeps the records it finds and resets once") {
+        // A record's procedure is known by the record, whatever its name.
+        auto *procedure = ASR::down_cast<ASR::Function_t>(circle->m_procedure);
+        size_t statements = procedure->n_body;
+        module->m_symtab->erase_symbol(procedure->m_name);
+        procedure->m_name = LCompilers::s2c(al, "circle_reset");
+        module->m_symtab->add_symbol("circle_reset", &procedure->base);
+        size_t symbols = module->m_symtab->get_scope().size();
+        LCompilers::pass_intent_out_deallocate(al, *unit, options.po);
+        CHECK(LCompilers::asr_verify(*unit, true, diagnostics));
+        CHECK(procedure->n_body == statements);
+        CHECK(module->m_symtab->get_scope().size() == symbols);
+        for (const auto &item : expected) {
+            INFO(std::get<1>(item));
+            CHECK(record(std::get<0>(item), std::get<1>(item)) != nullptr);
+        }
+    }
 
     auto rejects = [&](const std::string &code) {
         LCompilers::diag::Diagnostics invalid;

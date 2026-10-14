@@ -868,6 +868,8 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
 public:
     // See PassOptions::dynamic_intent_out_reset.
     bool dynamic_reset = false;
+    // The procedures of the unit's IntentOutReset records.
+    std::set<const ASR::Function_t*> reset_procedures;
 
     IntentOutDeallocateVisitor(Allocator& al_) : al(al_) {}
 
@@ -933,6 +935,10 @@ public:
     void visit_Function(const ASR::Function_t &x) {
         ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(&x);
         if (func_type->m_abi == ASR::abiType::ExternalUndefined) {
+            return;
+        }
+        // The procedure of an IntentOutReset record is the reset itself.
+        if (reset_procedures.count(&x)) {
             return;
         }
         // Skip compiler-generated intrinsic implementations
@@ -1137,8 +1143,8 @@ public:
 // The procedure of an IntentOutReset record: `subroutine name(object)` with
 // `type(T), intent(out) :: object`, in `scope`, the scope of T, whose body
 // resets the object as the start of any procedure with such a dummy does.
-// Its name marks it as compiler generated, so that the visitor below does not
-// add the same statements to it again.
+// The visitor below knows it from its record and does not add the same
+// statements to it again.
 static ASR::Function_t *make_intent_out_reset_procedure(Allocator &al,
         ASR::Struct_t *type, SymbolTable *parent, const std::string &name) {
     const Location &loc = type->base.base.loc;
@@ -1172,13 +1178,16 @@ static ASR::Function_t *make_intent_out_reset_procedure(Allocator &al,
 // or not the unit has a polymorphic dummy of them, because a code generator
 // can describe any of them at run time and another unit can pass such an
 // object to a polymorphic intent(out) dummy. Generic definitions, traits and
-// interface bodies have no objects of their own types.
+// interface bodies have no objects of their own types. A type that already
+// has a record keeps it.
 class IntentOutResetRecorder {
     Allocator &al;
     // Procedure names are unique in the unit, not only in their scopes, so
     // that two BLOCKs of one procedure never give a code generator the same
     // name for two procedures.
     std::set<std::string> procedure_names;
+    // The types that have a record, by the scope of the record.
+    std::map<const SymbolTable*, std::set<const ASR::symbol_t*>> recorded;
 
     std::string unique_name(SymbolTable *scope, const std::string &stem,
             std::set<std::string> *taken) {
@@ -1191,7 +1200,8 @@ class IntentOutResetRecorder {
     }
 
     void record_type(SymbolTable *scope, ASR::Struct_t *type) {
-        if (ASRUtils::is_unlimited_polymorphic_type(type)) return;
+        if (ASRUtils::is_unlimited_polymorphic_type(type) ||
+                !recorded[scope].insert(&type->base).second) return;
         std::string type_name = type->m_name;
         ASR::symbol_t *procedure = nullptr;
         if (!type->m_is_abstract && ASRUtils::struct_intent_out_reset_has_effect(*type)) {
@@ -1201,6 +1211,7 @@ class IntentOutResetRecorder {
                 name);
             scope->add_symbol(name, &function->base);
             procedure = &function->base;
+            procedures.insert(function);
         }
         std::string name = unique_name(scope,
             "__libasr_intent_out_reset_record_" + type_name, nullptr);
@@ -1209,7 +1220,33 @@ class IntentOutResetRecorder {
     }
 
 public:
+    // The procedures of the unit's records, those it had and those made.
+    std::set<const ASR::Function_t*> procedures;
+
     IntentOutResetRecorder(Allocator &al_) : al(al_) {}
+
+    // Takes note of the records the unit already has.
+    void collect(SymbolTable *scope) {
+        for (const auto &entry : scope->get_scope()) {
+            ASR::symbol_t *symbol = entry.second;
+            if (ASR::is_a<ASR::IntentOutReset_t>(*symbol)) {
+                auto *reset = ASR::down_cast<ASR::IntentOutReset_t>(symbol);
+                recorded[scope].insert(ASRUtils::symbol_get_past_external(
+                    reset->m_type_declaration));
+                if (reset->m_procedure) {
+                    auto *function = ASR::down_cast<ASR::Function_t>(
+                        ASRUtils::symbol_get_past_external(reset->m_procedure));
+                    procedures.insert(function);
+                    procedure_names.insert(function->m_name);
+                }
+                continue;
+            }
+            SymbolTable *nested = ASRUtils::symbol_symtab(symbol);
+            if (nested && nested->parent == scope && ASRUtils::intent_out_reset_walks(*nested)) {
+                collect(nested);
+            }
+        }
+    }
 
     void record(SymbolTable *scope) {
         // The symbols are taken first, as records are added to the scope.
@@ -1237,13 +1274,15 @@ void pass_intent_out_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
     // before the procedures are visited, so that what follows (dependencies,
     // verification and the passes after this one) treats its procedure like
     // any other.
+    IntentOutResetRecorder recorder(al);
+    recorder.collect(unit.m_symtab);
     if (pass_options.dynamic_intent_out_reset) {
-        IntentOutResetRecorder recorder(al);
         recorder.record(unit.m_symtab);
     }
     // Deallocate intent(out) allocatable arguments at function entry
     IntentOutDeallocateVisitor iod(al);
     iod.dynamic_reset = pass_options.dynamic_intent_out_reset;
+    iod.reset_procedures = recorder.procedures;
     iod.visit_TranslationUnit(unit);
 
     PassUtils::UpdateDependenciesVisitor u(al);
