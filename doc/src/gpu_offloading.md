@@ -184,26 +184,29 @@ generates the device source. It never falls back to the CPU:
   with such a local that calls itself, directly or not, would need one
   array per level of the recursion, and is an error, and so is an extent
   that reads anything else ("workspace ... cannot be sized on the host").
-  A call that is the whole
-  right-hand side of an assignment is spliced into the kernel instead: the
-  body of the procedure replaces the call, with the actual arguments in
-  place of the dummy arguments, which more often makes the extents
-  constants. Inside device code an allocatable local is given the shape of
-  the `allocate`, reallocation or move that gives it one, also when that
-  shape is read from another such local, and when several of them give it
-  the same shape, as shared lowering does when it allocates a temporary and
-  then reallocates it to the shape it already has. A reallocation by an
+  A call that is the whole right-hand side of an assignment is spliced into
+  the kernel instead: the body of the procedure replaces the call, with the
+  actual arguments in place of the dummy arguments, which more often makes
+  the extents constants. An allocatable dummy array that the procedure
+  neither allocates, deallocates, asks about with `allocated`, nor hands on
+  to an allocatable dummy, is handed over as a plain array, with the lower
+  bounds of the actual argument as arguments of their own. Inside device
+  code an allocatable local is given the shape of the `allocate`,
+  reallocation or move that gives it one, also when that shape is read
+  from another such local, and when several of them give it the same
+  shape, as shared lowering does when it allocates a temporary and then
+  reallocates it to the shape it already has. A reallocation by an
   assignment gives the shape of the array the assigned value takes its
   shape from: `r = 2*c(2:)` gives `r` the shape of `c(2:)`, also when `r`
-  is the result of a function. A rank-one allocatable
-  local whose extent is only known where it is allocated -- inside a loop
-  of the procedure, as the temporaries of `v(1:n(l)) * a(1:n(l), l-1)` in
-  `do l = 2, m` -- points instead to the leading part of a buffer, which is
-  a run-time sized local like those above, of an upper bound of every such
-  extent known on entry: the extent of a section whose subscripts read the
-  loop index is bounded by the extent of its array in that dimension, as a
-  section never has more elements there. The local itself keeps the exact
-  extent of each allocation.
+  is the result of a function. A rank-one allocatable local whose extent
+  is only known where it is allocated -- inside a loop of the procedure, as
+  the temporaries of `v(1:n(l)) * a(1:n(l), l-1)` in `do l = 2, m` --
+  points instead to the leading part of a buffer, which is a run-time sized
+  local like those above, of an upper bound of every such extent known on
+  entry: the extent of a section whose subscripts read the loop index is
+  bounded by the extent of its array in that dimension, as a section never
+  has more elements there. The local itself keeps the exact extent of each
+  allocation.
 * A derived-type value that device code creates -- a local of a
   procedure, or the result of a function such as a structure constructor,
   `associate (t => tensor_t(x))` -- has no storage for an allocatable array
