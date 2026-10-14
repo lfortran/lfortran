@@ -6460,57 +6460,6 @@ public:
         current_scope = old_scope;
     }
 
-    // The result variable of a function and those of its ENTRY statements
-    // are one variable when they have the same type: the one the master
-    // procedure returns.  The master body is built in its own scope, where
-    // each of them is a separate copy, so make every reference to such a copy
-    // in the master procedure, reads and those in BLOCK and ASSOCIATE
-    // constructs included, refer to the master's result variable.
-    void associate_entry_result_variables(const AST::Function_t &x,
-            ASR::Function_t *parent_function, ASR::Function_t *master_function) {
-        class ResultVariableAssociator :
-                public ASR::BaseWalkVisitor<ResultVariableAssociator> {
-            public:
-            std::set<ASR::symbol_t*> copies;
-            ASR::symbol_t *result = nullptr;
-
-            void visit_Var(const ASR::Var_t &x) {
-                if (copies.find(x.m_v) != copies.end()) {
-                    const_cast<ASR::Var_t&>(x).m_v = result;
-                }
-            }
-        };
-
-        std::vector<std::string> result_names;
-        result_names.push_back(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(
-            parent_function->m_return_var)->m_v));
-        for (size_t i = 0; i < x.n_items; i++) {
-            if (!AST::is_a<AST::Entry_t>(*x.m_items[i])) continue;
-            AST::Entry_t *entry = AST::down_cast<AST::Entry_t>(x.m_items[i]);
-            result_names.push_back(to_lower(entry->m_name));
-            if (entry->m_return_var && AST::is_a<AST::Name_t>(*entry->m_return_var)) {
-                result_names.push_back(to_lower(
-                    AST::down_cast<AST::Name_t>(entry->m_return_var)->m_id));
-            }
-        }
-
-        ResultVariableAssociator v;
-        v.result = ASR::down_cast<ASR::Var_t>(master_function->m_return_var)->m_v;
-        ASR::ttype_t *result_type = ASRUtils::symbol_type(v.result);
-        for (auto &name: result_names) {
-            ASR::symbol_t *sym = master_function->m_symtab->get_symbol(name);
-            if (sym == nullptr || sym == v.result || !ASR::is_a<ASR::Variable_t>(*sym)) {
-                continue;
-            }
-            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
-            if (!ASRUtils::is_arg_dummy(var->m_intent) &&
-                    ASRUtils::types_equal(var->m_type, result_type, nullptr, nullptr)) {
-                v.copies.insert(sym);
-            }
-        }
-        v.visit_Function(*master_function);
-    }
-
     void visit_Procedure(const AST::Procedure_t &x) {
         SymbolTable* old_scope = current_scope;
         ASR::symbol_t* t = current_scope->get_symbol(to_lower(x.m_name));
@@ -6732,8 +6681,6 @@ public:
             // populate master function
             std::string master_function_name = to_lower(v->m_name) + "_main__lcompilers";
             populate_master_function(x, x.base.base.loc, master_function_name);
-            associate_entry_result_variables(x, v, ASR::down_cast<ASR::Function_t>(
-                current_scope->resolve_symbol(master_function_name)));
 
             // Sync argument types from master function to entry functions
             sync_entry_function_arg_types(v->m_name, master_function_name);
