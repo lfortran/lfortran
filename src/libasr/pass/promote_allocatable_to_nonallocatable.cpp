@@ -169,9 +169,14 @@ class ExplicitShapeInquiryResolver:
 
 // The shape an allocation of device code gives, as the routine `fn` has it
 // on entry: every inquiry about the shape of a local array of an explicit
-// shape resolved, and, when that is not enough, a local the routine binds
-// once replaced by what it is bound to (see gpu_write_extents_at_entry).
-// nullptr when the shape cannot be known on entry.
+// shape resolved, then written over what does not change during the call
+// (see gpu_write_extents_at_entry): `intent(in)` dummy arguments that are
+// not pointers, named constants, and locals the routine binds once, with
+// no other name through which they could be defined. `on_entry` tells
+// whether that could be done; the dimensions are left as they are when it
+// could not. A shape written that way has one value for the whole call,
+// whichever allocation states it, so it is the shape the array is given
+// on entry.
 static ASR::dimension_t* device_allocation_dims(Allocator& al,
         ASR::Function_t* fn, const ASR::alloc_arg_t& alloc_arg,
         bool& on_entry) {
@@ -181,9 +186,8 @@ static ASR::dimension_t* device_allocation_dims(Allocator& al,
     if( dims == nullptr ) {
         dims = alloc_arg.m_dims;
     }
-    on_entry = ASRUtils::is_dimension_dependent_only_on_arguments(
-        dims, alloc_arg.n_dims, true, true);
-    if( on_entry || fn == nullptr ) {
+    on_entry = false;
+    if( fn == nullptr ) {
         return dims;
     }
     Vec<ASR::dimension_t> written;
@@ -213,6 +217,8 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
         std::map<SymbolTable*, std::vector<ASR::symbol_t*>>& scope2var;
         std::map<ASR::symbol_t*, int> alloc_count;
         std::map<ASR::symbol_t*, std::vector<ASR::dimension_t>> alloc_shape;
+        // Whether the first allocation's shape was written on entry.
+        std::map<ASR::symbol_t*, bool> alloc_on_entry;
         bool device_only;
         bool in_device;
         Allocator* al;
@@ -349,12 +355,17 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
                 // A device has no heap: an array of device code allocated
                 // more than once with the one shape, as shared lowering
                 // allocates a temporary and then reallocates it to the
-                // shape it already has, has that shape on entry.
+                // shape it already has, has that shape on entry. Only shapes
+                // written as their values on entry are compared, so that the
+                // same expression is the same shape at every allocation: an
+                // extent reading a value the routine changes between them,
+                // `n = n + 4` or through an associate name, is never one.
                 bool same_shape = false;
                 if( alloc_count[sym] == 1 ) {
                     alloc_shape[sym] = std::vector<ASR::dimension_t>(
                         dims, dims + alloc_arg.n_dims);
-                } else if( in_device ) {
+                    alloc_on_entry[sym] = on_entry;
+                } else if( in_device && on_entry && alloc_on_entry[sym] ) {
                     const std::vector<ASR::dimension_t>& first = alloc_shape[sym];
                     same_shape = first.size() == alloc_arg.n_dims;
                     // An allocation that states no lower bound starts at 1.
@@ -379,8 +390,10 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
                     push_to_scopes_until_symbol_scope(sym);
                 }
             }
-            if( (!on_entry && !ASRUtils::is_dimension_dependent_only_on_arguments(
-                    dims, alloc_arg.n_dims, true, in_device)) ||
+            bool sized = in_device ? on_entry :
+                ASRUtils::is_dimension_dependent_only_on_arguments(
+                    dims, alloc_arg.n_dims, true, false);
+            if( !sized ||
                 is_array_size_called_on_pointer(dims, alloc_arg.n_dims) ) {
                 if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) ) {
                     ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v;
@@ -546,8 +559,10 @@ class PromoteAllocatableToNonAllocatable:
                     (ASRUtils::expr_intent(alloc_arg.m_a) == ASRUtils::intent_local ||
                      (in_device && ASRUtils::expr_intent(alloc_arg.m_a) ==
                         ASRUtils::intent_return_var)) &&
-                    (on_entry || ASRUtils::is_dimension_dependent_only_on_arguments(
-                        alloc_arg.m_dims, alloc_arg.n_dims, false, in_device)) &&
+                    (in_device ? on_entry :
+                        ASRUtils::is_dimension_dependent_only_on_arguments(
+                            alloc_arg.m_dims, alloc_arg.n_dims, false,
+                            false)) &&
                     std::find(scope2var[current_scope].begin(),
                         scope2var[current_scope].end(),
                         ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v) ==

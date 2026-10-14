@@ -4741,6 +4741,14 @@ filename = "../integration_tests/gpu_metal_407.f90"
 gpu_offload_cuda = true
 gpu_offload_metal = true
 
+# An allocatable of a device routine allocated twice with a shape that reads
+# a local the routine changes in between, through an associate name: the
+# shape is not known on entry, an error on every device.
+[[test]]
+filename = "../integration_tests/gpu_metal_408.f90"
+gpu_offload_cuda = true
+gpu_offload_metal = true
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true

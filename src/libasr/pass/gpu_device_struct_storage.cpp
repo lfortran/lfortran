@@ -146,15 +146,20 @@ ASR::Variable_t* dummy_of(ASR::Function_t *callee, size_t i, size_t n_args) {
     return ASR::down_cast<ASR::Variable_t>(dummy);
 }
 
+// An `intent(in)` pointer keeps its association for the call, but what it
+// points to may be defined (F2018 8.5.10), so only a dummy that is not a
+// pointer has the value it has on entry throughout.
 bool dummy_is_read_only(ASR::Variable_t *dummy) {
-    return dummy != nullptr && dummy->m_intent == ASR::intentType::In;
+    return dummy != nullptr && dummy->m_intent == ASR::intentType::In &&
+        !ASRUtils::is_pointer(dummy->m_type);
 }
 
 // How many times the statements of a routine give the variable `target` a
 // value as a whole, and the last value they give it: an assignment to a
 // scalar, a pointer association of an array name. Anything else that may
-// change it -- a loop over it, an argument of a call that may define it --
-// counts too, without a value.
+// change it -- a loop over it, an argument of a call that may define it, a
+// name associated with it, through which it can be defined -- counts too,
+// without a value.
 class Bindings : public ASRUtils::BlockBodyWalkVisitor<Bindings> {
     using Base = ASRUtils::BlockBodyWalkVisitor<Bindings>;
     ASR::symbol_t *target;
@@ -163,6 +168,24 @@ class Bindings : public ASRUtils::BlockBodyWalkVisitor<Bindings> {
     bool pointer;
 
     bool is_target(ASR::expr_t *e) { return variable_of(e) == target; }
+
+    // Whether `e` is the target or a part of it: an element, a section or
+    // a component.
+    bool designates_target(ASR::expr_t *e) {
+        while (e != nullptr) {
+            e = ASRUtils::get_past_array_physical_cast(e);
+            if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+            } else {
+                return is_target(e);
+            }
+        }
+        return false;
+    }
 
     void call_arguments(ASR::symbol_t *name, ASR::call_arg_t *args,
             size_t n_args) {
@@ -199,6 +222,12 @@ public:
         if (is_target(x.m_target)) {
             writes++;
             value = x.m_value;
+        } else if (!pointer && designates_target(x.m_value)) {
+            // `associate (q => m)`: `q = q + 4` defines `m`. Associating
+            // a name with what a pointer points to leaves the pointer's
+            // own association alone.
+            writes++;
+            value = nullptr;
         }
         Base::visit_Associate(x);
     }

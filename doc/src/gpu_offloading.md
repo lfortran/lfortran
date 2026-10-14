@@ -161,52 +161,55 @@ generates the device source. It never falls back to the CPU:
   before the launch: such a loop is an error ("workspace ... cannot be
   sized on the host", or "a temporary array cannot be sized on the host"
   for a temporary the compiler introduces).
-* A procedure the loop calls runs on the device as a procedure, wherever
-  the call is: in an expression, an `associate` selector, a condition, or
+* A procedure the loop calls runs on the device as a procedure, wherever the
+  call is: in an expression, an `associate` selector, a condition, or
   another procedure. A device without variable-length arrays or a heap
   (Metal, CUDA) cannot declare a local array of such a procedure whose size
   is known only at run time -- an allocatable local, an automatic array, or
   a temporary the compiler introduces, such as the result of a function it
   calls. Each such local becomes an argument of the procedure, and every
   call passes an array of its own for it, with the extents of the local
-  written over the actual arguments of that call. Up the chain of calls
-  this ends in the kernel, where the array is a per-thread workspace like
-  any other (see the previous point). The extents may read the arguments of
-  the procedure and named constants, and are written as they are on entry
-  to the procedure: a name it binds once (an associate name, a scalar
-  assigned once) stands for what it is bound to, the extent of a section
-  for the extents of its ranges, and a function without side effects is
-  called with arguments of that kind (`allocate(a(maxval(n)))` with
-  `associate (n => self%nodes_)`). An extent that is evaluated after
-  entry -- of a local of a `block`, or of the array a call is given for
-  its callee -- may not read a dummy argument the procedure can change
-  before (`n = n + 4`), whose value the callers do not know. A procedure
-  with such a local that calls itself, directly or not, would need one
-  array per level of the recursion, and is an error, and so is an extent
-  that reads anything else ("workspace ... cannot be sized on the host").
-  A call that is the whole right-hand side of an assignment is spliced into
-  the kernel instead: the body of the procedure replaces the call, with the
-  actual arguments in place of the dummy arguments, which more often makes
-  the extents constants. An allocatable dummy array that the procedure
-  neither allocates, deallocates, asks about with `allocated`, nor hands on
-  to an allocatable dummy, is handed over as a plain array, with the lower
-  bounds of the actual argument as arguments of their own. Inside device
-  code an allocatable local is given the shape of the `allocate`,
-  reallocation or move that gives it one, also when that shape is read
-  from another such local, and when several of them give it the same
-  shape, as shared lowering does when it allocates a temporary and then
-  reallocates it to the shape it already has. A reallocation by an
-  assignment gives the shape of the array the assigned value takes its
-  shape from: `r = 2*c(2:)` gives `r` the shape of `c(2:)`, also when `r`
-  is the result of a function. A rank-one allocatable local whose extent
-  is only known where it is allocated -- inside a loop of the procedure, as
-  the temporaries of `v(1:n(l)) * a(1:n(l), l-1)` in `do l = 2, m` --
-  points instead to the leading part of a buffer, which is a run-time sized
-  local like those above, of an upper bound of every such extent known on
-  entry: the extent of a section whose subscripts read the loop index is
-  bounded by the extent of its array in that dimension, as a section never
-  has more elements there. The local itself keeps the exact extent of each
-  allocation.
+  written over the actual arguments of that call. Up the chain of calls this
+  ends in the kernel, where the array is a per-thread workspace like any
+  other (see the previous point). The extents may read the arguments of the
+  procedure and named constants, and are written as they are on entry to the
+  procedure: a name it binds once (an associate name, a scalar assigned once
+  and changed through no other name) stands for what it is bound to, the
+  extent of a section for the extents of its ranges, and a function without
+  side effects is called with arguments of that kind
+  (`allocate(a(maxval(n)))` with `associate (n => self%nodes_)`). The value
+  of an `intent(in)` argument is fixed for the call unless it is a pointer,
+  whose target the procedure may change. An extent that is evaluated after
+  entry -- of a local of a `block`, or of the array a call is given for its
+  callee -- may not read a dummy argument the procedure can change before
+  (`n = n + 4`), whose value the callers do not know. A procedure with such
+  a local that calls itself, directly or not, would need one array per level
+  of the recursion, and is an error, and so is an extent that reads anything
+  else ("workspace ... cannot be sized on the host"). A call that is the
+  whole right-hand side of an assignment is spliced into the kernel instead:
+  the body of the procedure replaces the call, with the actual arguments in
+  place of the dummy arguments, which more often makes the extents
+  constants. An allocatable dummy array that the procedure neither
+  allocates, deallocates, asks about with `allocated`, nor hands on to an
+  allocatable dummy, is handed over as a plain array, with the lower bounds
+  of the actual argument as arguments of their own. Inside device code an
+  allocatable local is given the shape of the `allocate`, reallocation or
+  move that gives it one, also when that shape is read from another such
+  local, and when several of them give it the same shape, as shared lowering
+  does when it allocates a temporary and then reallocates it to the shape it
+  already has. That shape has to be written as it is on entry, as an extent
+  is, so that it is one value at every allocation; any other allocatable of
+  device code is an error. A reallocation by an assignment gives the shape
+  of the array the assigned value takes its shape from: `r = 2*c(2:)` gives
+  `r` the shape of `c(2:)`, also when `r` is the result of a function. A
+  rank-one allocatable local whose extent is only known where it is
+  allocated -- inside a loop of the procedure, as the temporaries of
+  `v(1:n(l)) * a(1:n(l), l-1)` in `do l = 2, m` -- points instead to the
+  leading part of a buffer, which is a run-time sized local like those
+  above, of an upper bound of every such extent known on entry: the extent
+  of a section whose subscripts read the loop index is bounded by the extent
+  of its array in that dimension, as a section never has more elements
+  there. The local itself keeps the exact extent of each allocation.
 * A derived-type value that device code creates -- a local of a
   procedure, or the result of a function such as a structure constructor,
   `associate (t => tensor_t(x))` -- has no storage for an allocatable array
