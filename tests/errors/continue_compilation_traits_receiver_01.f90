@@ -4,7 +4,11 @@
 ! without one is receiverless. Each module whose name contains _bad_ has
 ! exactly one error, so that an abandoned unit does not hide another case.
 ! R01-R14 are declarations, R15-R17 the PASS attribute outside a trait
-! message, and R18-R27 implementations of valid traits.
+! message, R18-R27 implementations of valid traits, and R28-R34 attribute
+! statements that name the receiver: every statement of a message that names
+! its receiver gives it attributes, not only the one with PASS. R35-R36, the
+! POINTER statements, which need --implicit-interface, are in
+! continue_compilation_traits_receiver_03.f90.
 
 ! R01: PASS marks a dummy of another type.
 module cc_traits_receiver_bad_r01
@@ -408,6 +412,83 @@ contains
     end subroutine
 end module cc_traits_receiver_bad_r27
 
+! R28: the PASS attribute marks the receiver once.
+module cc_traits_receiver_bad_r28
+    implicit none
+    abstract interface :: IR28
+        integer function f(self)
+            type(itself), intent(in), pass, pass :: self
+        end function
+    end interface
+end module cc_traits_receiver_bad_r28
+
+! R29: a DIMENSION statement after the declaration of the receiver makes it
+! an array.
+module cc_traits_receiver_bad_r29
+    implicit none
+    abstract interface :: IR29
+        integer function f(self)
+            type(itself), intent(in), pass :: self
+            dimension :: self(2)
+        end function
+    end interface
+end module cc_traits_receiver_bad_r29
+
+! R30: and so does one before it.
+module cc_traits_receiver_bad_r30
+    implicit none
+    abstract interface :: IR30
+        integer function f(item)
+            dimension :: item(2)
+            type(itself), intent(in), pass :: item
+        end function
+    end interface
+end module cc_traits_receiver_bad_r30
+
+! R31: a VOLATILE statement is not implemented yet.
+module cc_traits_receiver_bad_r31
+    implicit none
+    abstract interface :: IR31
+        subroutine s(self)
+            type(itself), intent(inout), pass :: self
+            volatile :: self
+        end subroutine
+    end interface
+end module cc_traits_receiver_bad_r31
+
+! R32: nor is an ASYNCHRONOUS one.
+module cc_traits_receiver_bad_r32
+    implicit none
+    abstract interface :: IR32
+        subroutine s(self)
+            type(itself), intent(inout), pass :: self
+            asynchronous :: self
+        end subroutine
+    end interface
+end module cc_traits_receiver_bad_r32
+
+! R33: only an array is CONTIGUOUS.
+module cc_traits_receiver_bad_r33
+    implicit none
+    abstract interface :: IR33
+        integer function f(self)
+            type(itself), intent(in), pass :: self
+            contiguous :: self
+        end function
+    end interface
+end module cc_traits_receiver_bad_r33
+
+! R34: the INTENT of the receiver is given once.
+module cc_traits_receiver_bad_r34
+    implicit none
+    abstract interface :: IR34
+        integer function f(self)
+            intent(in) :: self
+            type(itself), intent(in), pass :: self
+        end function
+    end interface
+end module cc_traits_receiver_bad_r34
+
 ! Valid: the receiver may have any name and position, the implementation
 ! binds its passed object at its own position, and each receiver INTENT is
 ! implemented by the same INTENT.
@@ -447,3 +528,37 @@ contains
         cell_make = n
     end function
 end module cc_traits_receiver_valid
+
+! Valid: the INTENT of a receiver can be given by an INTENT statement before
+! or after its declaration, and its implementation has exactly that intent.
+module cc_traits_receiver_valid_split
+    implicit none
+    abstract interface :: ISplit
+        integer function get(self)
+            intent(in) :: self
+            type(itself), pass :: self
+        end function
+        subroutine put(v, self)
+            integer, intent(in) :: v
+            type(itself), pass :: self
+            intent(inout) :: self
+        end subroutine
+    end interface
+    type :: Slot
+        integer :: n = 0
+    end type
+    implements ISplit :: Slot
+        procedure, pass :: get => slot_get
+        procedure, pass(s) :: put => slot_put
+    end implements
+contains
+    integer function slot_get(self)
+        class(Slot), intent(in) :: self
+        slot_get = self%n
+    end function
+    subroutine slot_put(v, s)
+        integer, intent(in) :: v
+        class(Slot), intent(inout) :: s
+        s%n = v
+    end subroutine
+end module cc_traits_receiver_valid_split

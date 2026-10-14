@@ -1,0 +1,21 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_receiver_03.f90:11:5 - 16:18
+   |
+11 |        abstract interface :: IR35
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+16 |        end interface
+   | ...^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: the receiver 'self' of trait message 'f' must be a scalar without the pointer, allocatable or value attribute
+  --> tests/errors/continue_compilation_traits_receiver_03.f90:14:47
+   |
+14 |             type(itself), intent(in), pass :: self
+   |                                               ^^^^ 
+
+semantic error: the receiver 'self' of trait message 'f' must be a scalar without the pointer, allocatable or value attribute
+  --> tests/errors/continue_compilation_traits_receiver_03.f90:24:47
+   |
+24 |             type(itself), intent(in), pass :: self
+   |                                               ^^^^ 

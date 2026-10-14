@@ -4505,21 +4505,16 @@ public:
             AST::decl_stmt_t **items, size_t n_items, const std::string &requirement,
             bool operation, bool pure) {
         ASR::Variable_t *receiver = nullptr;
-        bool receiver_pointer = false;
         for (size_t i = 0; i < n_items; i++) {
             if (!AST::is_a<AST::Declaration_t>(*items[i])) continue;
             auto *declaration = AST::down_cast<AST::Declaration_t>(items[i]);
             AST::AttrPass_t *pass = nullptr;
-            // The POINTER attribute of a type(itself) declaration is not
-            // retained in its ASR type, so it is detected here.
-            bool pointer = false;
             for (size_t j = 0; j < declaration->n_attributes; j++) {
                 AST::decl_attribute_t *attribute = declaration->m_attributes[j];
                 if (AST::is_a<AST::AttrPass_t>(*attribute)) {
-                    pass = AST::down_cast<AST::AttrPass_t>(attribute);
+                    if (!pass) pass = AST::down_cast<AST::AttrPass_t>(attribute);
                 } else if (AST::is_a<AST::SimpleAttribute_t>(*attribute)) {
                     auto kind = AST::down_cast<AST::SimpleAttribute_t>(attribute)->m_attr;
-                    if (kind == AST::simple_attributeType::AttrPointer) pointer = true;
                     if (kind == AST::simple_attributeType::AttrNoPass) {
                         trait_error("the nopass attribute belongs to the binding of a "
                             "trait message without a receiver, not to a dummy argument; "
@@ -4551,13 +4546,13 @@ public:
                         requirement + "', a dummy argument; '" + name + "' is not one",
                         symbol.loc);
                 }
-                if (receiver) {
+                // A second marker of the same dummy is diagnosed below.
+                if (receiver && receiver != dummy) {
                     trait_error("trait message '" + requirement + "' marks two receivers, '" +
                         std::string(receiver->m_name) + "' and '" + name +
                         "'; the pass attribute marks exactly one", symbol.loc);
                 }
                 receiver = dummy;
-                receiver_pointer = pointer;
             }
         }
         if (!receiver) return;
@@ -4567,18 +4562,91 @@ public:
         if (!ASRUtils::contains_trait_itself(receiver->m_type)) {
             trait_error(description + " must be declared type(itself)", loc);
         }
+        // Every statement of the message that names the receiver gives it
+        // attributes, the PASS declaration as well as separate attribute
+        // statements before or after it. Its ASR Variable does not retain all
+        // of them (a type(itself) dummy drops POINTER and an attribute
+        // statement can be lost when the receiver is declared later), so
+        // they are taken from the source.
+        bool storage = false, unsupported = false, asynchronous = false,
+            contiguous = false;
+        size_t passes = 0, intents = 0;
+        ASR::intentType intent = ASR::intentType::Unspecified;
+        for (size_t i = 0; i < n_items; i++) {
+            if (!AST::is_a<AST::Declaration_t>(*items[i])) continue;
+            auto *declaration = AST::down_cast<AST::Declaration_t>(items[i]);
+            for (size_t j = 0; j < declaration->n_syms; j++) {
+                const AST::var_sym_t &symbol = declaration->m_syms[j];
+                if (!symbol.m_name || to_lower(symbol.m_name) != receiver->m_name) continue;
+                storage |= symbol.n_dim > 0;
+                unsupported |= symbol.n_codim > 0;
+                for (size_t k = 0; k < declaration->n_attributes; k++) {
+                    AST::decl_attribute_t *attribute = declaration->m_attributes[k];
+                    if (AST::is_a<AST::AttrPass_t>(*attribute) && ++passes > 1) {
+                        trait_error("the pass attribute marks the receiver '" +
+                            std::string(receiver->m_name) + "' of trait message '" +
+                            requirement + "' more than once", attribute->base.loc);
+                    } else if (AST::is_a<AST::AttrIntent_t>(*attribute)) {
+                        if (++intents > 1) {
+                            trait_error("the intent of " + description +
+                                " is given more than once", attribute->base.loc);
+                        }
+                        switch (AST::down_cast<AST::AttrIntent_t>(attribute)->m_intent) {
+                            case AST::attr_intentType::In:
+                                intent = ASR::intentType::In; break;
+                            case AST::attr_intentType::Out:
+                                intent = ASR::intentType::Out; break;
+                            case AST::attr_intentType::InOut:
+                                intent = ASR::intentType::InOut; break;
+                        }
+                    } else if (AST::is_a<AST::AttrDimension_t>(*attribute)) {
+                        storage = true;
+                    } else if (AST::is_a<AST::AttrCodimension_t>(*attribute)) {
+                        unsupported = true;
+                    } else if (AST::is_a<AST::SimpleAttribute_t>(*attribute)) {
+                        switch (AST::down_cast<AST::SimpleAttribute_t>(attribute)->m_attr) {
+                            case AST::simple_attributeType::AttrPointer:
+                            case AST::simple_attributeType::AttrAllocatable:
+                            case AST::simple_attributeType::AttrValue:
+                                storage = true; break;
+                            case AST::simple_attributeType::AttrOptional:
+                            case AST::simple_attributeType::AttrTarget:
+                            case AST::simple_attributeType::AttrVolatile:
+                                unsupported = true; break;
+                            case AST::simple_attributeType::AttrAsynchronous:
+                                asynchronous = true; break;
+                            case AST::simple_attributeType::AttrContiguous:
+                                contiguous = true; break;
+                            default: break;
+                        }
+                    }
+                }
+            }
+        }
         // The passed-object dummy argument of Fortran (F2018 C760).
-        if (ASRUtils::is_array(receiver->m_type) || ASRUtils::is_pointer(receiver->m_type) ||
-                receiver_pointer || ASRUtils::is_allocatable(receiver->m_type) ||
-                receiver->m_value_attr) {
+        if (storage || ASRUtils::is_array(receiver->m_type) ||
+                ASRUtils::is_pointer(receiver->m_type) ||
+                ASRUtils::is_allocatable(receiver->m_type) || receiver->m_value_attr) {
             trait_error(description + " must be a scalar without the pointer, allocatable "
                 "or value attribute", loc);
         }
-        if (receiver->m_presence == ASR::presenceType::Optional ||
+        // Only an array can be contiguous (F2018 C830).
+        if (contiguous) {
+            trait_error(description + " must be a scalar, which cannot have the "
+                "contiguous attribute", loc);
+        }
+        if (unsupported || receiver->m_presence == ASR::presenceType::Optional ||
                 receiver->m_target_attr || receiver->m_is_volatile || receiver->n_codims) {
             trait_error(description + " with the optional, target, volatile or "
                 "codimension attribute is not implemented yet", loc);
         }
+        if (asynchronous) {
+            trait_error(description + " with the asynchronous attribute is not "
+                "implemented yet", loc);
+        }
+        // An INTENT statement before the declaration of the receiver is not
+        // retained by its Variable.
+        if (intents == 1) receiver->m_intent = intent;
         // The receiver is a nonpointer dummy data object, so a PURE message
         // constrains its intent like that of any such dummy, whether or not
         // the trait is ever implemented.
