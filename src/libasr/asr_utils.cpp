@@ -4531,6 +4531,30 @@ bool reads_variable_value(ASR::expr_t* e) {
     return finder.found;
 }
 
+bool depends_on_deferred_constant(const ASR::Variable_t* v) {
+    if (v->m_storage != ASR::storage_typeType::Parameter
+            || v->m_value != nullptr || v->m_symbolic_value == nullptr) {
+        return false;
+    }
+    class Finder : public ASR::BaseWalkVisitor<Finder> {
+        public:
+            bool found = false;
+            void visit_Var(const ASR::Var_t &x) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                    if (is_deferred_constant(var)
+                            || depends_on_deferred_constant(var)) {
+                        found = true;
+                    }
+                }
+            }
+    };
+    Finder finder;
+    finder.visit_expr(*v->m_symbolic_value);
+    return finder.found;
+}
+
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope) {
     if (original_sym && ASR::is_a<ASR::ExternalSymbol_t>(*original_sym)) {

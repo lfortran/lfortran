@@ -1158,6 +1158,18 @@ semantic error: Type bound procedure 'get' of 'grandchild' overriding the bindin
 2513 |                 procedure, nopass :: get => later_binding_get2  ! {Error} Type bound procedure 'get' of 'grandchild' overriding the binding of the same name in 'base' must return i32, not r32
      |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Initialization of `k` must reduce to a compile time constant.
+    --> tests/errors/continue_compilation_1.f90:2528:5
+     |
+2528 |     integer, parameter :: k = n  ! {Error} Initialization of `k` must reduce to a compile time constant.
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the kind parameter `k` is not a constant expression
+    --> tests/errors/continue_compilation_1.f90:2529:10
+     |
+2529 |     real(k) :: x  ! {Error} the kind parameter `k` is not a constant expression
+     |          ^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
