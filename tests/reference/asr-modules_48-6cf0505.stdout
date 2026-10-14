@@ -345,7 +345,7 @@
                                 )
                                 ColMajor
                                 ()
-                                .false.
+                                .true.
                             )
                             8 1_string_t_s
                             (Allocatable
@@ -385,7 +385,7 @@
                                 )
                                 ColMajor
                                 ()
-                                .false.
+                                .true.
                             )
                             8 1_string_t_s
                             (Allocatable

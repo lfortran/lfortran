@@ -1442,6 +1442,19 @@ RUN(NAME procedure_pointer_29 LABELS llvm)
 RUN(NAME procedure_pointer_30 LABELS llvm)
 RUN(NAME procedure_pointer_31 LABELS llvm)
 RUN(NAME procedure_pointer_32 LABELS llvm)
+RUN(NAME procedure_pointer_34 LABELS llvm)
+# GFortran also rejects the circular declarations of this dispatch table:
+# `table` gives it `a` before `a` is defined, which it reports as a procedure
+# used as an actual argument without an explicit interface or EXTERNAL
+RUN(NAME procedure_pointer_33 LABELS llvm)
+# Templates are not supported by GFortran
+RUN(NAME procedure_pointer_35 LABELS llvm)
+RUN(NAME procedure_pointer_36 LABELS gfortran llvm)
+# Templates are not supported by GFortran, and it takes the host's `later`
+# instead of the internal procedure `later` of `shadowed`
+RUN(NAME procedure_pointer_37 LABELS llvm)
+RUN(NAME procedure_pointer_38 LABELS gfortran llvm)
+RUN(NAME procedure_pointer_39 LABELS gfortran llvm)
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 
@@ -2003,6 +2016,8 @@ RUN(NAME parameter_20 LABELS gfortran llvm)
 RUN(NAME parameter_21 LABELS gfortran llvm)
 RUN(NAME parameter_22 LABELS gfortran llvm)
 RUN(NAME parameter_23 LABELS gfortran llvm c)
+RUN(NAME parameter_24 LABELS gfortran llvm)
+RUN(NAME parameter_25 LABELS gfortran llvm)
 
 RUN(NAME fortuno_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -3037,6 +3052,7 @@ RUN(NAME allocate_72 LABELS gfortran llvm)
 RUN(NAME allocate_73 LABELS gfortran llvm)
 RUN(NAME allocate_74 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_75 LABELS gfortran llvm fortran)
+RUN(NAME allocate_76 LABELS gfortran llvm)
 
 RUN(NAME realloc_lhs_01 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
@@ -3066,6 +3082,8 @@ RUN(NAME realloc_lhs_26 LABELS gfortran llvm
 RUN(NAME realloc_lhs_27 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME realloc_lhs_28 LABELS gfortran llvm
+    EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME realloc_lhs_29 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs-arrays)
 
 RUN(NAME automatic_allocation_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --std=f23)
@@ -3319,6 +3337,7 @@ RUN(NAME string_119 LABELS gfortran llvm)
 RUN(NAME string_120 LABELS gfortran llvm)
 RUN(NAME string_121 LABELS gfortran llvm)
 RUN(NAME string_122 LABELS gfortran llvm)
+RUN(NAME string_123 LABELS gfortran llvm)
 RUN(NAME string_array_concat_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_array_concat_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_array_concat_03 LABELS gfortran llvm)
@@ -5529,6 +5548,8 @@ RUN(NAME array_section_assign_04 LABELS gfortran llvm)
 RUN(NAME array_section_assign_05 FILE array_section_assign_04 LABELS llvm
     EXTRA_ARGS --descriptor-index-64)
 RUN(NAME array_section_assign_06 LABELS gfortran llvm)
+RUN(NAME array_item_in_bounds_01 LABELS gfortran llvm)
+RUN(NAME array_item_in_bounds_02 LABELS gfortran)
 
 RUN(NAME intent_out_array_01 LABELS gfortran llvm)
 RUN(NAME intent_out_allocatable_component_dealloc LABELS gfortran llvm)

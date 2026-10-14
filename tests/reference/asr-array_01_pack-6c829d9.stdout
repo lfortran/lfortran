@@ -260,7 +260,7 @@
                                 (Integer 4)
                                 ColMajor
                                 ()
-                                .false.
+                                .true.
                             )]
                             FormatFortran
                             (Allocatable
@@ -280,7 +280,7 @@
                                 (Integer 4)
                                 ColMajor
                                 ()
-                                .false.
+                                .true.
                             )
                             NotEq
                             (IntegerConstant 2 (Integer 4) Decimal)

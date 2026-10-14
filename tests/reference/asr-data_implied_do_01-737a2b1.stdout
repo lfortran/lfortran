@@ -186,7 +186,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
-                                        .false.
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -227,7 +227,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
-                                        .false.
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -268,7 +268,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
-                                        .false.
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -309,7 +309,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
-                                        .false.
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -350,7 +350,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
-                                        .false.
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant

@@ -214,7 +214,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
-                                            .false.
+                                            .true.
                                         )
                                         (IntegerConstant 2 (Integer 4) Decimal)
                                         ()
