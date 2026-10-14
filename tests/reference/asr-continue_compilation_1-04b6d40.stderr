@@ -3510,3 +3510,15 @@ semantic error: `to` argument of `move_alloc` must have the same kind as `from` 
      |
 2518 |         call move_alloc(mai_c1, mai_c4)  ! {Error} `to` argument of `move_alloc` must have the same kind as `from` argument, but `to` is character(kind=4) and `from` is character(kind=1)
      |                                 ^^^^^^ kind differs from character(kind=1)
+
+semantic error: the actual argument of the `intent(out)` dummy argument `lhs` of the elemental subroutine `cc1_elemental_set` is a scalar, but another actual argument is an array
+    --> tests/errors/continue_compilation_1.f90:2597:32
+     |
+2597 |         call cc1_elemental_set(s, [1, 2, 3])  ! {Error} the actual argument of the `intent(out)` dummy argument `lhs` of the elemental subroutine `cc1_elemental_set` is a scalar, but another actual argument is an array
+     |                                ^ 
+
+semantic error: the actual argument of the `intent(out)` dummy argument `lhs` of the elemental subroutine `cc1_elemental_set` is a scalar, but another actual argument is an array
+    --> tests/errors/continue_compilation_1.f90:2598:9
+     |
+2598 |         s = [1, 2, 3]  ! {Error} the actual argument of the `intent(out)` dummy argument `lhs` of the elemental subroutine `cc1_elemental_set` is a scalar, but another actual argument is an array
+     |         ^ 
