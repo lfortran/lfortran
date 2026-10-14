@@ -139,7 +139,13 @@ public:
   }
 #endif
 
-  static Expected<std::unique_ptr<KaleidoscopeJIT>> Create() {
+#if LLVM_VERSION_MAJOR >= 18
+  using OptLevel = CodeGenOptLevel;
+#else
+  using OptLevel = CodeGenOpt::Level;
+#endif
+
+  static Expected<std::unique_ptr<KaleidoscopeJIT>> Create(OptLevel opt_level) {
 #if LLVM_VERSION_MAJOR >= 13
     auto EPC = SelfExecutorProcessControl::Create();
     if (!EPC)
@@ -159,7 +165,7 @@ public:
     auto JTMB = *JTMB_P;
 #else
     // LLVM 7: Create TargetMachine directly using EngineBuilder
-    auto JTMB = EngineBuilder().selectTarget();
+    auto JTMB = EngineBuilder().setOptLevel(opt_level).selectTarget();
     if (!JTMB)
       return make_error<StringError>("Could not create target machine",
                                      inconvertibleErrorCode());
@@ -168,6 +174,7 @@ public:
 #endif
 
 #if LLVM_VERSION_MAJOR >= 8
+    JTMB.setCodeGenOptLevel(opt_level);
     auto DL = JTMB.getDefaultDataLayoutForTarget();
     if (!DL)
       return DL.takeError();
