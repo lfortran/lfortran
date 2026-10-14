@@ -1254,6 +1254,18 @@ semantic error: Interface 'cc1_pcll_never' is referenced but not defined
 2723 |                 procedure(cc1_pcll_never), pointer, nopass :: pf => null()  ! {Error} Interface 'cc1_pcll_never' is referenced but not defined
      |                 ^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
 
+semantic error: type mismatch in initialization: `FunctionType(return_type: integer)` cannot be assigned to `FunctionType(return_type: real) pointer`
+    --> tests/errors/continue_compilation_1.f90:2843:57
+     |
+2843 |     procedure(cc1_plim_real), pointer :: cc1_plim_p1 => cc1_plia_int  ! {Error} type mismatch in initialization: `FunctionType(return_type: integer)` cannot be assigned to `FunctionType(return_type: real) pointer`
+     |                                                         ^^^^^^^^^^^^ 
+
+semantic error: type mismatch in initialization: `FunctionType(return_type: integer)` cannot be assigned to `FunctionType(return_type: real) pointer`
+    --> tests/errors/continue_compilation_1.f90:2844:57
+     |
+2844 |     procedure(cc1_plia_real), pointer :: cc1_plim_p2 => cc1_plim_int  ! {Error} type mismatch in initialization: `FunctionType(return_type: integer)` cannot be assigned to `FunctionType(return_type: real) pointer`
+     |                                                         ^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

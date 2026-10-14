@@ -5471,6 +5471,10 @@ public:
     }
 
     void resolve_pending_proc_ptr_inits() {
+        // The target and the interface of each pointer are known now, so a
+        // target that does not match the interface is reported, every
+        // mismatch before compilation stops.
+        bool init_mismatch = false;
         for (auto &item : pending_proc_ptr_inits) {
             ASR::symbol_t *proc_sym = item.resolve_scope->resolve_symbol(item.proc_name);
             if (!proc_sym) {
@@ -5481,6 +5485,12 @@ public:
             }
             ASR::expr_t *init_expr = ASRUtils::EXPR(
                 ASR::make_Var_t(al, item.loc, proc_sym));
+            if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(proc_sym))
+                    && !check_initializer_type(item.var->m_type,
+                        ASRUtils::expr_type(init_expr), init_expr)) {
+                init_mismatch = true;
+                continue;
+            }
             item.var->m_symbolic_value = init_expr;
             item.var->m_value = nullptr;
             SetChar variable_dependencies_vec;
@@ -5492,6 +5502,9 @@ public:
             item.var->n_dependencies = variable_dependencies_vec.n;
         }
         pending_proc_ptr_inits.clear();
+        if (init_mismatch && !compiler_options.continue_compilation) {
+            throw SemanticAbort();
+        }
     }
 
     // A type declared in a module procedure can bind a module procedure

@@ -2828,3 +2828,25 @@ contains
         print *, n
     end subroutine
 end subroutine
+
+module cc1_procptr_later_init_a
+contains
+    integer function cc1_plia_int()
+        cc1_plia_int = 42
+    end function cc1_plia_int
+    real function cc1_plia_real()
+        cc1_plia_real = 0
+    end function cc1_plia_real
+end module cc1_procptr_later_init_a
+module cc1_procptr_later_init_m
+    use cc1_procptr_later_init_a
+    procedure(cc1_plim_real), pointer :: cc1_plim_p1 => cc1_plia_int  ! {Error} type mismatch in initialization: `FunctionType(return_type: integer)` cannot be assigned to `FunctionType(return_type: real) pointer`
+    procedure(cc1_plia_real), pointer :: cc1_plim_p2 => cc1_plim_int  ! {Error} type mismatch in initialization: `FunctionType(return_type: integer)` cannot be assigned to `FunctionType(return_type: real) pointer`
+contains
+    real function cc1_plim_real()
+        cc1_plim_real = 0
+    end function cc1_plim_real
+    integer function cc1_plim_int()
+        cc1_plim_int = 42
+    end function cc1_plim_int
+end module cc1_procptr_later_init_m
