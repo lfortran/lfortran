@@ -5940,8 +5940,8 @@ public:
             }
 
             // Step 3: Fix call arguments in wrapper body
-            // The wrapper body has a SubroutineCall (or assignment with FunctionCall)
-            // to the master function. Find it and fix the function-pointer args.
+            // The wrapper body has a SubroutineCall to the master function.
+            // Find it and fix the function-pointer args.
             for (size_t si = 0; si < wrapper_func->n_body; si++) {
                 ASR::stmt_t* stmt = wrapper_func->m_body[si];
                 ASR::call_arg_t* call_args = nullptr;
@@ -5952,15 +5952,6 @@ public:
                     if (call->m_name == master_sym) {
                         call_args = call->m_args;
                         n_call_args = call->n_args;
-                    }
-                } else if (ASR::is_a<ASR::Assignment_t>(*stmt)) {
-                    ASR::Assignment_t* assign = ASR::down_cast<ASR::Assignment_t>(stmt);
-                    if (assign->m_value && ASR::is_a<ASR::FunctionCall_t>(*assign->m_value)) {
-                        ASR::FunctionCall_t* call = ASR::down_cast<ASR::FunctionCall_t>(assign->m_value);
-                        if (call->m_name == master_sym) {
-                            call_args = call->m_args;
-                            n_call_args = call->n_args;
-                        }
                     }
                 }
 
@@ -6006,7 +5997,7 @@ public:
     }
 
     void add_subroutine_call(const Location& loc, std::string entry_function_name, std::string parent_function_name,
-                            int label, bool is_function = false) {
+                            int label) {
         ASR::symbol_t* entry_function_sym = current_scope->resolve_symbol(entry_function_name);
         if (entry_function_sym == nullptr) {
             diag.add(Diagnostic(
@@ -6053,6 +6044,13 @@ public:
                     sym = entry_function->m_symtab->resolve_symbol(sym_name);
                 }
                 LCOMPILERS_ASSERT(sym != nullptr);
+                // result variables of the same type are one variable
+                if (entry_function->m_return_var && ASR::is_a<ASR::Variable_t>(*sym) &&
+                        ASR::down_cast<ASR::Variable_t>(sym)->m_intent == ASR::intentType::Local &&
+                        ASRUtils::types_equal(ASRUtils::symbol_type(sym),
+                            ASRUtils::expr_type(entry_function->m_return_var), nullptr, nullptr)) {
+                    sym = ASR::down_cast<ASR::Var_t>(entry_function->m_return_var)->m_v;
+                }
                 arg = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
             } else {
                 ASR::expr_t* master_function_arg = master_function->m_args[i];
@@ -6153,20 +6151,8 @@ public:
             ASR::call_arg_t call_arg; call_arg.loc = loc; call_arg.m_value = arg; args.push_back(al, call_arg);
         }
 
-        ASR::stmt_t* stmt = nullptr;
-        if (is_function) {
-            // make an assignment to the return variable of entry function
-            ASR::expr_t* lhs = entry_function->m_return_var;
-            ASR::expr_t* rhs = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, master_function_sym,
-                                master_function_sym, args.p, args.n, ASRUtils::expr_type(lhs), nullptr, nullptr));
-
-            stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, lhs, rhs, nullptr, compiler_options.po.realloc_lhs_arrays, false));
-
-        } else {
-            stmt = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,loc, master_function_sym,
-                                        master_function_sym, args.p, args.n, nullptr, nullptr, compiler_options.implicit_argument_casting, current_scope, current_function_dependencies));
-        }
-        LCOMPILERS_ASSERT(stmt != nullptr);
+        ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,loc, master_function_sym,
+                                    master_function_sym, args.p, args.n, nullptr, nullptr, compiler_options.implicit_argument_casting, current_scope, current_function_dependencies));
 
         Vec<ASR::stmt_t*> body; body.reserve(al, entry_function->n_body + 1);
         for (size_t i = 0; i < entry_function->n_body; i++) {
@@ -6186,7 +6172,6 @@ public:
     }
 
     void visit_stmts_helper(std::vector<AST::decl_stmt_t*> ast_stmt_vector, std::vector<ASR::stmt_t*> &stmt_vector,
-                            std::string original_function_name, ASR::expr_t* return_var,
                             std::vector<ASR::stmt_t*> &after_return_stmt_entry_function, bool is_last = false, bool is_main_function = false) {
         bool return_encountered = false;
         bool entry_encountered = false;
@@ -6223,25 +6208,6 @@ public:
             ASR::stmt_t* tmp_stmt = nullptr;
             if (tmp != nullptr) {
                 tmp_stmt = ASRUtils::STMT(tmp);
-                if (tmp_stmt->type == ASR::stmtType::Assignment) {
-                    // if it is an assignment to any of the entry function return variables, then
-                    // make an assignment to return variable of master function
-                    ASR::Assignment_t* assignment = ASR::down_cast<ASR::Assignment_t>(tmp_stmt);
-                    ASR::expr_t* target = assignment->m_target;
-                    if (ASR::is_a<ASR::Var_t>(*target)) {
-                        ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(target);
-                        std::string var_name = ASRUtils::symbol_name(var->m_v);
-                        if (original_function_name == var_name || (entry_functions[original_function_name].find(var_name) != entry_functions[original_function_name].end())) {
-                            // this is an assignment to entry function return variable
-                            // make an assignment to return variable of master function
-                            if (return_var != nullptr) {
-                                ASR::expr_t* lhs = return_var; ASR::expr_t* rhs = assignment->m_value;
-                                ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, tmp_stmt->base.loc, lhs, rhs, nullptr, compiler_options.po.realloc_lhs_arrays, false));
-                                tmp_stmt = stmt;
-                            }
-                        }
-                    }
-                }
                 if (is_main_function && return_encountered && !entry_encountered) {
                     after_return_stmt_entry_function.push_back(tmp_stmt);
                     is_pushed = true;
@@ -6264,18 +6230,6 @@ public:
             } else if (!this->tmp_vec.empty()) {
                 for(auto &x: this->tmp_vec) {
                     ASR::stmt_t* s = ASRUtils::STMT(x);
-                    if (return_var != nullptr && s->type == ASR::stmtType::FileWrite) {
-                        ASR::FileWrite_t* fw = ASR::down_cast<ASR::FileWrite_t>(s);
-                        if (fw->m_unit && ASR::is_a<ASR::Var_t>(*fw->m_unit)) {
-                            std::string unit_name = ASRUtils::symbol_name(
-                                ASR::down_cast<ASR::Var_t>(fw->m_unit)->m_v);
-                            if (original_function_name == unit_name ||
-                                entry_functions[original_function_name].find(unit_name) !=
-                                    entry_functions[original_function_name].end()) {
-                                fw->m_unit = return_var;
-                            }
-                        }
-                    }
                     if (is_main_function && return_encountered && !entry_encountered) {
                         after_return_stmt_entry_function.push_back(s);
                     } else if (is_main_function && entry_encountered && return_encountered) {
@@ -6426,7 +6380,7 @@ public:
         std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> copies;
         size_t stmt_start = stmt_vector.size();
         size_t trailing_start = after_return_stmt_entry_function.size();
-        visit_stmts_helper(subroutine_stmt_vector, stmt_vector, original_function_name, master_function->m_return_var, after_return_stmt_entry_function, false, true);
+        visit_stmts_helper(subroutine_stmt_vector, stmt_vector, after_return_stmt_entry_function, false, true);
         copies.push_back({{stmt_start, stmt_vector.size()},
             {trailing_start, after_return_stmt_entry_function.size()}});
 
@@ -6438,7 +6392,7 @@ public:
             bool is_last = it.first == entry_functions[original_function_name].rbegin()->first;
             stmt_start = stmt_vector.size();
             trailing_start = after_return_stmt_entry_function.size();
-            visit_stmts_helper(it.second, stmt_vector, original_function_name, master_function->m_return_var, after_return_stmt_entry_function, is_last);
+            visit_stmts_helper(it.second, stmt_vector, after_return_stmt_entry_function, is_last);
             copies.push_back({{stmt_start, stmt_vector.size()},
                 {trailing_start, after_return_stmt_entry_function.size()}});
         }
@@ -6674,9 +6628,9 @@ public:
                 of the subroutine.
             */
             int label = 1;
-            add_subroutine_call(x.base.base.loc, v->m_name, v->m_name, label++, true);
+            add_subroutine_call(x.base.base.loc, v->m_name, v->m_name, label++);
             for (auto &it: entry_functions[v->m_name]) {
-                add_subroutine_call(x.base.base.loc, it.first, v->m_name, label++, true);
+                add_subroutine_call(x.base.base.loc, it.first, v->m_name, label++);
             }
             // populate master function
             std::string master_function_name = to_lower(v->m_name) + "_main__lcompilers";

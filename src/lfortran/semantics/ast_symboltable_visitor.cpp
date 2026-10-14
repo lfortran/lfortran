@@ -1381,7 +1381,7 @@ public:
             }
         }
         process_simd_variables();
-        tmp = ASR::make_Program_t(
+        ASR::asr_t *tmp0 = ASR::make_Program_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, to_lower(x.m_name)),
@@ -1397,7 +1397,7 @@ public:
             diag.add(diag::Diagnostic(
                 "Program already defined",
                 diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {tmp->loc})}));
+                    diag::Label("", {tmp0->loc})}));
             throw SemanticAbort();
         }
         handle_save();
@@ -1408,6 +1408,7 @@ public:
             if ( !compiler_options.continue_compilation ) throw e;
         }
         in_program = false;
+        tmp = tmp0;
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
 
@@ -1528,7 +1529,8 @@ public:
     }
 
     void create_template_entry_function(const Location &loc, std::string function_name, std::vector<AST::arg_t> &vector_args,
-                                        bool is_master = false, bool is_function = false, std::string parent_function_name = "") {
+                                        bool is_master = false, const std::vector<std::string> &result_names = {},
+                                        std::string result_name = "") {
         SetChar current_function_dependencies_copy = current_function_dependencies;
         current_function_dependencies.clear(al);
 
@@ -1645,28 +1647,16 @@ public:
             func_deps.push_back(al, s2c(al, itr));
         }
 
-        ASR::symbol_t* return_var = current_scope->resolve_symbol(function_name);
+        // An entry returns its own result variable; the master takes them all as arguments.
         ASR::expr_t* return_var_expr = nullptr;
-        if (return_var) {
-            if (ASR::is_a<ASR::Variable_t>(*return_var)) {
-                ASR::Variable_t* rv = ASR::down_cast<ASR::Variable_t>(return_var);
-                if (rv->m_intent == ASR::intentType::Local) {
-                    rv->m_intent = ASR::intentType::ReturnVar;
-                }
+        for (auto &name: result_names) {
+            ASR::symbol_t* result = current_scope->get_symbol(name);
+            if (name == result_name) {
+                ASR::down_cast<ASR::Variable_t>(result)->m_intent = ASR::intentType::ReturnVar;
+                return_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, result));
+            } else if (!is_master) {
+                ASR::down_cast<ASR::Variable_t>(result)->m_intent = ASR::intentType::Local;
             }
-            return_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var));
-        }
-        if (!return_var && is_function) {
-            // create return variable, with same type as parent function
-            ASR::symbol_t* parent_func_sym = current_scope->resolve_symbol(parent_function_name);
-            ASR::ttype_t* return_type = ASRUtils::symbol_type(parent_func_sym);
-            ASR::symbol_t* return_var_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
-                                                loc, current_scope, s2c(al, function_name), nullptr, 0,
-                                                ASR::intentType::ReturnVar, nullptr, nullptr, ASR::storage_typeType::Default,
-                                                return_type, parent_func_sym, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
-                                                false));
-            current_scope->add_symbol(function_name, return_var_sym);
-            return_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var_sym));
         }
 
         ASR::asr_t* tmp_ = ASRUtils::make_Function_t_util(
@@ -1730,7 +1720,8 @@ public:
     }
 
     template <typename T>
-    std::vector<AST::arg_t> perform_argument_mapping(const T& x, std::string sym_name) {
+    std::vector<AST::arg_t> perform_argument_mapping(const T& x, std::string sym_name,
+            const std::vector<std::string> &result_names = {}) {
         // create master function
         std::vector<std::string> arg_names;
         bool has_alt_returns = false;
@@ -1750,6 +1741,7 @@ public:
                 }
             }
         }
+        arg_names.insert(arg_names.end(), result_names.begin(), result_names.end());
         std::set<std::string> s(arg_names.begin(), arg_names.end());
         std::vector<std::string> arg_names_unique(s.begin(), s.end());
         if (has_alt_returns) {
@@ -1804,6 +1796,15 @@ public:
                     }
                     entry_function_arguments_mapping[it.first].push_back(index);
                 }
+            }
+        }
+        // Every entry passes all the result variables to the master.
+        for (auto &result: result_names) {
+            int index = std::distance(arg_names_unique.begin(),
+                std::find(arg_names_unique.begin(), arg_names_unique.end(), result));
+            entry_function_arguments_mapping[sym_name].push_back(index);
+            for (auto &it: entry_functions[sym_name]) {
+                entry_function_arguments_mapping[it.first].push_back(index);
             }
         }
         std::vector<AST::arg_t> master_args;
@@ -2625,11 +2626,11 @@ public:
                 template function for each entry and a master function
             */
             for (auto &entry_function: entry_functions[sym_name]) {
-                create_template_entry_function(x.base.base.loc, entry_function.first, entry_function_args[entry_function.first], false, false, sym_name);
+                create_template_entry_function(x.base.base.loc, entry_function.first, entry_function_args[entry_function.first]);
             }
             std::vector<AST::arg_t> master_args = perform_argument_mapping(x, sym_name);
 
-            create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true, false, sym_name);
+            create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true);
         }
         entry_function_args.clear();
         try {
@@ -3530,12 +3531,36 @@ public:
                 This subroutine contains an entry function, create
                 template function for each entry and a master function
             */
-            for (auto &entry_function: entry_functions[sym_name]) {
-                create_template_entry_function(x.base.base.loc, entry_function.first, entry_function_args[entry_function.first], false, true, sym_name);
+            ASR::Variable_t* result = ASRUtils::EXPR2VAR(func->m_return_var);
+            std::vector<std::string> result_names = {result->m_name};
+            std::map<std::string, std::string> entry_result;
+            for (size_t i = 0; i < x.n_items; i++) {
+                if (!AST::is_a<AST::Entry_t>(*x.m_items[i])) continue;
+                AST::Entry_t* entry = AST::down_cast<AST::Entry_t>(x.m_items[i]);
+                std::string name = to_lower(entry->m_name);
+                if (entry->m_return_var) {
+                    name = to_lower(AST::down_cast<AST::Name_t>(entry->m_return_var)->m_id);
+                }
+                entry_result[to_lower(entry->m_name)] = name;
+                if (std::find(result_names.begin(), result_names.end(), name) == result_names.end()) {
+                    result_names.push_back(name);
+                }
+                if (current_scope->get_symbol(name) == nullptr) {
+                    // an undeclared entry result takes the type of the function result
+                    current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
+                        entry->base.base.loc, current_scope, s2c(al, name), nullptr, 0,
+                        ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
+                        ASRUtils::duplicate_type(al, result->m_type), result->m_type_declaration,
+                        ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false)));
+                }
             }
-            std::vector<AST::arg_t> master_args = perform_argument_mapping(x, sym_name);
+            for (auto &entry_function: entry_functions[sym_name]) {
+                create_template_entry_function(x.base.base.loc, entry_function.first, entry_function_args[entry_function.first],
+                    false, result_names, entry_result[entry_function.first]);
+            }
+            std::vector<AST::arg_t> master_args = perform_argument_mapping(x, sym_name, result_names);
 
-            create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true, true, sym_name);
+            create_template_entry_function(x.base.base.loc, sym_name+"_main__lcompilers", master_args, true, result_names);
         }
         try {
             add_class_procedures();

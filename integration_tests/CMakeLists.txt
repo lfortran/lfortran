@@ -4117,6 +4117,7 @@ RUN(NAME spec_expr_02 LABELS gfortran llvm)
 RUN(NAME spec_expr_03 LABELS gfortran llvm)
 RUN(NAME spec_expr_04 LABELS gfortran llvm)
 RUN(NAME spec_expr_05 LABELS gfortran llvm)
+RUN(NAME spec_expr_06 LABELS gfortran llvm)
 
 RUN(NAME enum_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME enum_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES
@@ -4668,6 +4669,7 @@ RUN(NAME entry_19 LABELS gfortran llvm)
 RUN(NAME entry_20 LABELS gfortran llvm)
 RUN(NAME entry_21 LABELS gfortran llvm)
 RUN(NAME entry_22 LABELS gfortran llvm)
+RUN(NAME entry_23 LABELS gfortran llvm)
 
 RUN(NAME character_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME character_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -5512,6 +5514,7 @@ RUN(NAME write_implied_do_1 LABELS gfortran llvm)
 RUN(NAME move_alloc_derived_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME move_alloc_class_01 LABELS gfortran llvm)
 RUN(NAME move_alloc_class_02 LABELS gfortran llvm)
+RUN(NAME move_alloc_class_03 LABELS gfortran llvm)
 RUN(NAME move_alloc_finalize_01 LABELS gfortran llvm)
 RUN(NAME array_section_assign_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
