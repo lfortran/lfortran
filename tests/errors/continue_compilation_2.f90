@@ -636,3 +636,26 @@ contains
         y = +x  ! {Error} No matching `operator(+)` found for this operand type
     end subroutine
 end module cc2_unary_plus_array_mod
+
+! An allocatable or pointer array must have a deferred shape (F2018 C832,
+! C836), so an assumed-size `(*)` is rejected like an explicit shape (#15092).
+module cc2_deferred_shape_mod
+    implicit none
+    type :: cc2_ds_t
+        integer :: i
+    end type
+contains
+    subroutine cc2_ds_alloc(x)
+        real, allocatable :: x(*)  ! {Error} Allocatable array 'x' must have a deferred shape or assumed rank
+    end subroutine
+    subroutine cc2_ds_ptr(y)
+        real, pointer :: y(*)  ! {Error} Pointer array 'y' must have a deferred shape or assumed rank
+    end subroutine
+    subroutine cc2_ds_stmt(z)
+        real :: z(*)
+        allocatable :: z  ! {Error} Allocatable array 'z' must have a deferred shape or assumed rank
+    end subroutine
+    subroutine cc2_ds_type(a)
+        type(cc2_ds_t), allocatable :: a(*)  ! {Error} Allocatable array 'a' must have a deferred shape or assumed rank
+    end subroutine
+end module cc2_deferred_shape_mod
