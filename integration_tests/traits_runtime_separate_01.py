@@ -1,4 +1,8 @@
-"""Exercise trait dispatch/ownership without implementer modules in the consumer."""
+"""Exercise trait dispatch/ownership without implementer modules in the consumer.
+
+--receivers checks explicit intent(in), intent(inout) and intent(out)
+receivers (TD-36) of independently compiled providers.
+"""
 
 import argparse
 import hashlib
@@ -17,6 +21,7 @@ def main():
     mode = parser.add_mutually_exclusive_group()
     mode.add_argument("--owning", action="store_true")
     mode.add_argument("--pointers", action="store_true")
+    mode.add_argument("--receivers", action="store_true")
     args = parser.parse_args()
     compiler = str(Path(args.lfortran).resolve())
     sources = Path(__file__).resolve().parent
@@ -24,6 +29,8 @@ def main():
         prefix = "traits_runtime_owning_separate_01"
     elif args.pointers:
         prefix = "traits_runtime_pointer_separate_01"
+    elif args.receivers:
+        prefix = "traits_receiver_intent_separate_01"
     else:
         prefix = "traits_runtime_separate_01"
     work = Path(args.work_dir).resolve() / f"runtime-traits-{os.getpid()}"
@@ -76,6 +83,8 @@ def main():
         if args.pointers:
             assert "TraitAssociate" in semantic and "TraitBorrow" in semantic
             assert "TraitWitness" not in semantic, "pointer forwarding must not know implementers"
+        if args.receivers:
+            assert "TraitWitness" not in semantic, "receivers must not need implementers"
 
         provider_imports = ["contracts"]
         provider_objects = []
@@ -95,8 +104,8 @@ def main():
         llvm = (directory / "driver.ll").read_text()
         metadata = re.findall(r"^@([^ ]*Type_Info_[^ ]*) = ", llvm, re.MULTILINE)
         if not args.owning and not args.pointers:
-            assert any("traits_runtime_separate_01_a_m" in name for name in metadata)
-            assert any("traits_runtime_separate_01_b_m" in name for name in metadata)
+            assert any(f"{prefix}_a_m" in name for name in metadata)
+            assert any(f"{prefix}_b_m" in name for name in metadata)
         executable = work / "program"
         run([compiler, driver, consumer, archive, contracts, "-o", executable])
         run([executable])
