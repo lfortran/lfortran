@@ -190,6 +190,30 @@ ASR::Function_t* global_init_of(ASR::symbol_t *sym) {
     return ASR::down_cast<ASR::Function_t>(fn);
 }
 
+// Writes the components of a structure constructor, and of the constructors
+// nested in it, straight into `result_var`, appending the statements to
+// `stmts`.
+class StructInitializer: public ASR::BaseExprReplacer<StructInitializer> {
+
+    public:
+
+    Allocator &al;
+    SymbolTable *current_scope;
+    ASR::expr_t *result_var;
+    Vec<ASR::stmt_t*> &stmts;
+
+    StructInitializer(Allocator &al_, SymbolTable *current_scope_,
+            ASR::expr_t *result_var_, Vec<ASR::stmt_t*> &stmts_):
+        al(al_), current_scope(current_scope_), result_var(result_var_),
+        stmts(stmts_) {}
+
+    void replace_StructConstructor(ASR::StructConstructor_t *x) {
+        bool remove_original_statement = false;
+        PassUtils::ReplacerUtils::replace_StructConstructor(x, this, true,
+            remove_original_statement, &stmts);
+    }
+};
+
 class GlobalInitVisitor {
 
     private:
@@ -286,23 +310,31 @@ class GlobalInitVisitor {
                     v.m_symbolic_value);
         }
 
-        // Take the declaration initializer off `v` and return it as the
-        // statement that replaces it.
-        ASR::stmt_t* take_initializer(ASR::Variable_t *v) {
+        // Take the declaration initializer off `v` and append the statements
+        // that replace it to `stmts`.
+        void take_initializer(ASR::Variable_t *v, Vec<ASR::stmt_t*> &stmts) {
             const Location &loc = v->base.base.loc;
             ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(
                 al, loc, &v->base));
-            ASR::stmt_t *stmt;
             if (is_pointer_initializer(*v)) {
-                stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(
-                    al, loc, target, v->m_symbolic_value));
+                stmts.push_back(al, ASRUtils::STMT(ASRUtils::make_Associate_t_util(
+                    al, loc, target, v->m_symbolic_value)));
+            } else if (ASR::is_a<ASR::StructConstructor_t>(*v->m_symbolic_value)) {
+                // Initialization is not intrinsic assignment (F2018
+                // 7.5.6.3): neither the variable nor a value built by the
+                // constructor is finalized. The components are defined in
+                // place, as the init_expr pass does for a local that is not
+                // saved.
+                StructInitializer replacer(al, v->m_parent_symtab, target, stmts);
+                ASR::expr_t *init = v->m_symbolic_value;
+                replacer.current_expr = &init;
+                replacer.replace_expr(init);
             } else {
-                stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                    al, loc, target, v->m_symbolic_value, nullptr, false, false));
+                stmts.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                    al, loc, target, v->m_symbolic_value, nullptr, false, false)));
             }
             v->m_symbolic_value = nullptr;
             v->m_value = nullptr;
-            return stmt;
         }
 
         // A module compiled into an object file of its own initializes itself
@@ -336,7 +368,12 @@ class GlobalInitVisitor {
                 if (fn == nullptr) {
                     fn = ASRUtils::get_or_create_global_init(al, unit, owner);
                 }
-                ASRUtils::global_init_append_stmt(al, fn, take_initializer(v));
+                Vec<ASR::stmt_t*> stmts;
+                stmts.reserve(al, 1);
+                take_initializer(v, stmts);
+                for (ASR::stmt_t *stmt : stmts) {
+                    ASRUtils::global_init_append_stmt(al, fn, stmt);
+                }
             }
         }
 
@@ -357,7 +394,10 @@ class GlobalInitVisitor {
                     ASRUtils::global_init_guard_name, false));
             std::vector<ASR::stmt_t*> guarded;
             guarded.push_back(ASRUtils::mark_run_stmt(al, guard, loc));
-            for (ASR::Variable_t *v : vars) guarded.push_back(take_initializer(v));
+            Vec<ASR::stmt_t*> stmts;
+            stmts.reserve(al, vars.size());
+            for (ASR::Variable_t *v : vars) take_initializer(v, stmts);
+            for (ASR::stmt_t *stmt : stmts) guarded.push_back(stmt);
             Vec<ASR::stmt_t*> body;
             body.reserve(al, owner->n_body + 1);
             body.push_back(al, b.If(b.Not(guard), guarded, {}));

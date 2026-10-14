@@ -4691,6 +4691,7 @@ RUN(NAME save_22 LABELS gfortran llvm)
 RUN(NAME save_23 LABELS gfortran llvm)
 RUN(NAME save_24 LABELS gfortran llvm)
 RUN(NAME save_25 LABELS llvm) # gfortran 13 at CI rejects procedure targets in initializer structure constructors
+RUN(NAME save_26 LABELS llvm) # gfortran 13 at CI rejects procedure targets in initializer structure constructors
 
 
 RUN(NAME entry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
