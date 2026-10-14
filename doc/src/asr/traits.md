@@ -62,19 +62,20 @@ module. It does not make implementations in unrelated, unseen modules visible.
 
 ### Receivers
 
-Explicit receivers were approved on 2026-10-14 and are being implemented; this
-section, the examples and the other receiver rules of this document describe
-the approved rules.
+Explicit receivers were approved and implemented on 2026-10-14; this section,
+the examples and the other receiver rules of this document describe the
+implemented rules.
 
 A receiver is declared, never inferred (TD-36 of the
 [decisions record](traits-decisions.md)): a message has one exactly when one
 of its dummies is a scalar, nonpointer, nonallocatable, non-VALUE
 `type(itself)` dummy with a bare PASS attribute. That dummy may have any name
 and any position. Two such dummies, PASS on another dummy or on a result, and
-PASS(name) or NOPASS on a dummy are diagnosed; an OPTIONAL, TARGET, VOLATILE
-or coarray receiver is not implemented yet. Elsewhere, PASS, PASS(name) and
-NOPASS remain attributes of bindings and procedure pointer components, and are
-diagnosed on other declarations. A message without a receiver is receiverless.
+PASS(name) or NOPASS on a dummy are diagnosed; an OPTIONAL, TARGET, VOLATILE,
+ASYNCHRONOUS or coarray receiver is not implemented yet. Elsewhere, PASS,
+PASS(name) and NOPASS remain attributes of bindings and procedure pointer
+components, and are diagnosed on other declarations. A message without a
+receiver is receiverless.
 Another `type(itself)` dummy, without PASS, is an ordinary argument of the
 implementing type, not a second receiver; in a message it is not implemented
 yet.
@@ -1612,9 +1613,10 @@ dummy, view or owner, a part of one, a named constant, and an associate or
 SELECT TYPE name whose selector is not a definable variable, such as an
 expression or a parenthesized variable, are diagnosed; an `intent(in)` pointer
 dummy protects only its association, so its target can be the receiver.
-Pointer and allocatable receivers remain unsupported. The verifier checks that
-each binding's passed-object INTENT is its message's receiver INTENT, and that
-each runtime slot and adapter passes the receiver as its origins require.
+Pointer and allocatable receivers are diagnosed, as for any passed-object dummy
+(C760). The verifier checks that each binding's passed-object INTENT is its
+message's receiver INTENT, and that each runtime slot and adapter passes the
+receiver as its origins require.
 
 The paper's `vector.f90` (`traits_paper_vector`, its oracle and the
 `test_paper_functional_{normal,fast}` and `test_paper_separate_vector_{normal,fast}`
@@ -1646,7 +1648,7 @@ The dependent-signature declaration fixtures have ASR reference coverage through
 oracle checks the concrete computations through the default compilation pipeline.
 
 The broader proposal is not yet implemented. In particular, pointer trait
-results, pointer, allocatable, OPTIONAL, TARGET and VOLATILE receivers,
+results, OPTIONAL, TARGET, VOLATILE, ASYNCHRONOUS and coarray receivers,
 `type(itself)` arguments of messages other than their receivers,
 associated-type projections in generic code, unrestricted intrinsic
 capabilities, generic derived types beyond the boundaries described in their

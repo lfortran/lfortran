@@ -86,23 +86,24 @@ paper:
   with PASS, with an ordinary INTENT, any name and any position; a message
   without one has no receiver, and an implementation must match the receiver's
   INTENT exactly. This departs from the paper's receiver-free messages. It was
-  approved on 2026-10-14 and is being implemented; the paper's examples and the
-  tests are migrated to it (TD-36).
-- Until TD-36 is implemented: a receiver may be modified (`intent(inout)`) only
-  by direct calls on concrete objects; generic trait calls and method calls
-  through trait objects are read-only (TD-10).
+  approved and implemented on 2026-10-14; the paper's examples and the tests
+  are migrated to it (TD-36).
+- Before TD-36, a receiver could be modified (`intent(inout)`) only by direct
+  calls on concrete objects, and generic trait calls and method calls through
+  trait objects were read-only (TD-10). They now follow the declared receiver
+  of each message.
 - A trait-object dummy argument can have `intent(inout)`: its object can then
-  be modified through concrete `SELECT TYPE` inspection or by forwarding it,
-  but, until TD-36 is implemented, the messages called through it stay
-  read-only (TD-35).
+  be modified through concrete `SELECT TYPE` inspection, by forwarding it, or,
+  since TD-36, by calling messages whose declared receiver is `intent(inout)`
+  or `intent(out)` (TD-35).
 - Initializer requirements are checked as conformance obligations but are not
   dispatched through trait objects (TD-13). Besides `initial ::` procedures, a
   matching specific of a standard constructor interface named like the type
   can implement them (TD-33).
 - Five listings are corrected in acceptance copies (four `END TYPE` errata and
   the SAXPY result), and missing context is completed (TD-29 to TD-31). The
-  acceptance copies are also being migrated to the explicit receivers of
-  TD-36, keeping the original sources.
+  acceptance copies are also migrated to the explicit receivers of TD-36,
+  keeping the original sources.
 - Several temporary limits are diagnosed rather than implemented (TD-24 to
   TD-27). They are not proposed language rules.
 
@@ -288,8 +289,8 @@ specification action, that is, what the paper should say.
   `traits_paper_inline.py` checks 33 in normal and fast modes, and
   `traits_paper_manual_values.f90` accepts inline-25 and inline-28. inline-17
   and inline-20 are accepted with the candidate kind wildcards and `generics`
-  module of TD-17 and TD-18, which remain open questions. Since 2026-10-14 the
-  acceptance copies are being migrated to the explicit receivers of TD-36, an
+  module of TD-17 and TD-18, which remain open questions. On 2026-10-14 the
+  acceptance copies were migrated to the explicit receivers of TD-36, an
   approved language change rather than a missing compiler feature; the raw
   originals and their hashes are kept, and each migration is recorded.
 - **Specification action.** None for the policy. The adaptations in TD-29 to
@@ -361,8 +362,8 @@ specification action, that is, what the paper should say.
   must be too. A generic message's binders must correspond with nominally
   equivalent constraints (TD-23). Dummy names may differ; calls through the
   trait keep the trait's dummy names.
-- **Changed by TD-36 (approved 2026-10-14, being implemented).** The receiver
-  part of this rule is replaced, and is historical once TD-36 is implemented.
+- **Changed by TD-36 (approved and implemented 2026-10-14).** The receiver
+  part of this rule is replaced, and is historical.
   A message declares its receiver, a PASS-marked `type(itself)` dummy in any
   position, or has none. A message with a receiver is implemented only by a
   passed-object dummy, the first dummy or a `pass(arg)` dummy in any position,
@@ -576,9 +577,8 @@ specification action, that is, what the paper should say.
 
 - **Status:** Approved semantic decision, in two steps, kept when revisited
   on 2026-10-13 (TD-35). Superseded on 2026-10-14 by TD-36, which declares
-  each message's receiver and its INTENT explicitly; the step 2 consequences
-  below are historical once TD-36 is implemented, and the prototype follows
-  them until then.
+  each message's receiver and its INTENT explicitly; TD-36 is implemented, so
+  the step 2 consequences below are historical.
 - **Why the paper is not tight.** Messages carry no receiver (lines 1098-1116),
   so a trait cannot say whether a message may modify its receiver. In
   `vector.f90`, the message `append(item)` is implemented by
@@ -618,7 +618,7 @@ specification action, that is, what the paper should say.
   restrictions below, read-only generic calls and trait objects and the
   rejection of `intent(out)` receivers, are replaced by checking each call
   against the declared receiver.
-- **Consequences of step 2** (historical once TD-36 is implemented).
+- **Consequences of step 2** (historical since TD-36 is implemented).
   - An implementation may take its receiver with `intent(inout)`. Such a
     binding serves direct calls on concrete objects under the ordinary Fortran
     rule that the passed object must then be definable.
@@ -632,8 +632,11 @@ specification action, that is, what the paper should say.
     receivers are rejected.
   - The effect is not new syntax: it is the intent of the binding's
     passed-object dummy. `vector.f90` is accepted unchanged.
-- **Implementation status.** Implemented. Mutating generic algorithms are
-  unsupported. TD-36 is being implemented to replace these rules.
+- **Implementation status.** Implemented until 2026-10-14, when the
+  implementation of TD-36 replaced these rules: generic trait calls and calls
+  through trait objects now check the declared receiver of each message, so
+  mutating generic algorithms and trait objects of conformances with mutating
+  bindings are supported.
 - **Specification action.** Decide whether mutation is part of a message's
   contract. Possible directions include a mutation marker in trait messages
   (the step 1 direction, whose syntax is undesigned), deriving the effect from
@@ -719,12 +722,12 @@ specification action, that is, what the paper should say.
   without a receiver are initializers declares trait objects (inline-12 and
   inline-13). Its initializer requirements are checked when a conformance is
   established and have no slot in the view, so a view of `ICastable` alone has
-  none and is inspected with `SELECT TYPE`. Messages called through views stay
-  read-only (TD-10), and traits with operator requirements or associated types
-  stay generic constraints only. Under TD-36 (approved, being implemented),
-  messages called through views follow their declared receivers instead, and a
-  receiverless message, which NOPASS bindings implement, is still an ordinary
-  message of the view; initializer requirements remain conformance-only.
+  none and is inspected with `SELECT TYPE`. Messages called through views
+  follow their declared receivers (TD-36; they were read-only before it,
+  TD-10), and a receiverless message, which NOPASS bindings implement, is
+  still an ordinary message of the view. Traits with operator requirements or
+  associated types stay generic constraints only, and initializer requirements
+  remain conformance-only.
 - **Specification action.** State whether initializer requirements are part of
   a trait object's interface. If not, say that they are conformance-only. If
   they are, define how a value of the dynamic type is constructed through a
@@ -802,7 +805,7 @@ specification action, that is, what the paper should say.
   - The object is modified through concrete `SELECT TYPE` inspection (TD-11) or
     by forwarding the dummy. Messages called through it stay read-only, so a
     type whose conformance has an `intent(inout)` receiver binding cannot be
-    passed to it either (TD-10). This sentence is historical once TD-36 is
+    passed to it either (TD-10). This sentence is historical since TD-36 is
     implemented: the dummy is a definable object, so it can call messages
     whose declared receiver is `intent(inout)` or `intent(out)`, and such
     conformances can form trait objects.
@@ -826,8 +829,7 @@ specification action, that is, what the paper should say.
   from the paper. It supersedes the read-only receiver rules of TD-10 and the
   read-only messages of TD-35, and changes the receiver part of the matching
   rule of TD-06; those entries keep their history and mark the superseded
-  parts. It is being implemented: until the implementation is complete, the
-  prototype still behaves as TD-06, TD-10 and TD-35 describe.
+  parts, which are historical now that TD-36 is implemented (2026-10-14).
 - **What the paper says.** A traits facility "should therefore *not* require
   such message signatures to contain passed-object dummy arguments, or their
   types, i.e. any details concerning the receivers", because "in order to be
@@ -1031,13 +1033,21 @@ specification action, that is, what the paper should say.
     receiverless messages with NOPASS implementations.
   - `vector.f90` declares an `intent(inout)` receiver for `append`, so its
     mutation no longer needs the direct-call-only rule of TD-10.
-- **Implementation status.** Approved; being implemented. This entry will say
-  that the explicit receivers are implemented once the tests of every receiver
-  INTENT pass, including `traits_receiver_intent_09`, the `intent(out)`
-  receiver of an inherited implementation called on an object of an
-  extension, whose finalization, deallocation and default initialization are
-  those of the dynamic type. Until then, TD-06, TD-10 and TD-35 describe the
-  released prototype.
+- **Implementation status.** Implemented (2026-10-14). The declaration,
+  binding and call rules hold for every receiver INTENT, through direct calls,
+  constrained type parameters, generic methods, trait objects, owners,
+  pointers, projections and combinations, also under separate compilation;
+  the tests of every receiver INTENT pass, including
+  `traits_receiver_intent_09`, the `intent(out)` receiver of an inherited
+  implementation called on an object of an extension, whose finalization,
+  deallocation and default initialization are those of the dynamic type.
+  Separate temporary limits, diagnosed as not implemented yet rather than
+  proposed rules: OPTIONAL, TARGET, VOLATILE, ASYNCHRONOUS and coarray
+  receivers; a `type(itself)` dummy of a message other than its receiver,
+  which was not implemented before TD-36 either (initializer and operator
+  requirements support such operands); an ASSOCIATE whose selector is a trait
+  object; and `intent(out)`, omitted INTENT, OPTIONAL and VALUE trait-object
+  dummies that are neither allocatable nor pointers (TD-35).
 - **Specification action.** Decide whether messages declare their receivers.
   If they do, specify: the declaration (here a PASS-marked `type(itself)`
   dummy of any name and position) and its constraints; that an unmarked
@@ -1666,7 +1676,7 @@ that they are not reopened as ambiguities.
 | Rule | Paper | Prototype |
 | --- | --- | --- |
 | Conformance is nominal: matching names and signatures alone do not make a type conform. Structural subtyping is only an Outlook idea. | `sect:implementing_traits`; lines 2703-2713; `sect:structural_subtyping` | Implemented |
-| Messages carry no receiver; passed-object arguments are skipped when checking conformance. | lines 1098-1116, 1311-1317 | Implemented (TD-06) until TD-36, which departs from it: messages declare explicit receivers (approved 2026-10-14, being implemented) |
+| Messages carry no receiver; passed-object arguments are skipped when checking conformance. | lines 1098-1116, 1311-1317 | Implemented (TD-06) until TD-36, which departs from it: messages declare explicit receivers (approved and implemented 2026-10-14) |
 | A child trait is a subtype of each of its parents. | lines 1150-1160 | Implemented |
 | `implements :: T`, without traits, binds initializers and methods to a type. | `sect:adding_methods` (lines 1241-1301), inline-05 | Implemented for a derived type of the same program unit; other targets and binding forms are diagnosed as not implemented yet |
 | Bindings that a type already has, including its `initial` bindings, satisfy a later acknowledgement of a trait, also from another module. | lines 1285-1295, 1319-1338; inline-06, inline-09 | Implemented (TD-33) |
