@@ -751,6 +751,9 @@ namespace SystemClock {
         smallest kind of the present integer arguments, so that
         0 <= COUNT <= COUNT_MAX holds in every argument's kind. A real
         COUNT_RATE selects the clock only when it is the sole argument.
+        Only 32-bit and 64-bit clocks exist, so if an integer argument has a
+        kind smaller than default integer, the processor-dependent choice is
+        that no clock is available for the call; 0 is returned in that case.
     */
     static inline int clock_kind(Vec<ASR::ttype_t*>& arg_types, int64_t overload_id) {
         int kind = 0;
@@ -766,6 +769,7 @@ namespace SystemClock {
         if (kind == 0) {
             kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);
         }
+        if (kind < 4) return 0;
         return kind >= 8 ? 8 : 4;
     }
 
@@ -776,6 +780,7 @@ namespace SystemClock {
         std::string new_name = "_lcompilers_system_clock_";
         declare_basic_variables(new_name);
         int kind = clock_kind(arg_types, overload_id);
+        bool no_clock = kind == 0;
         ASR::ttype_t* clock_type = kind == 8 ? int64 : int32;
         std::string prefix = kind == 8 ? "_lfortran_i64" : "_lfortran_i32";
         // Runtime helpers are declared with their C return types.
@@ -798,13 +803,17 @@ namespace SystemClock {
             fill_func_arg_sub("count", arg_types[0], Out);
             ASR::ttype_t* count_type = ASRUtils::extract_type(arg_types[0]);
             int count_kind = ASRUtils::extract_kind_from_ttype_t(count_type);
-            ASR::expr_t* count = clock_value(prefix + "sys_clock_count", clock_type);
-            if (count_kind == kind) {
-                body.push_back(al, b.Assignment(args[0], count));
+            // Without a clock, COUNT is -HUGE(COUNT) in COUNT's kind.
+            int64_t count_huge = static_cast<int64_t>(
+                (uint64_t(1) << (8 * count_kind - 1)) - 1);
+            if (no_clock) {
+                body.push_back(al, b.Assignment(args[0], b.i_t(-count_huge, count_type)));
+            } else if (count_kind == kind) {
+                body.push_back(al, b.Assignment(args[0],
+                    clock_value(prefix + "sys_clock_count", clock_type)));
             } else {
-                // A negative count means no clock: report -HUGE(COUNT) in COUNT's kind.
-                int64_t count_huge = static_cast<int64_t>(
-                    (uint64_t(1) << (8 * count_kind - 1)) - 1);
+                // A negative count means no clock.
+                ASR::expr_t* count = clock_value(prefix + "sys_clock_count", clock_type);
                 ASR::expr_t* clock_count = declare("clock_count", clock_type, Local);
                 body.push_back(al, b.Assignment(clock_count, count));
                 body.push_back(al, b.If(b.Lt(clock_count, b.i_t(0, clock_type)), {
@@ -820,7 +829,9 @@ namespace SystemClock {
             fill_func_arg_sub("count_rate", arg_types[1], Out);
             ASR::ttype_t* rate_type = ASRUtils::extract_type(arg_types[1]);
             ASR::expr_t* rate = nullptr;
-            if (ASRUtils::is_real(*rate_type)) {
+            if (no_clock) {
+                rate = b.constant_t(0, rate_type);
+            } else if (ASRUtils::is_real(*rate_type)) {
                 rate = kind == 8
                     ? clock_value("_lfortran_i64r64sys_clock_count_rate", real64)
                     : clock_value("_lfortran_i32r32sys_clock_count_rate", real32);
@@ -834,7 +845,8 @@ namespace SystemClock {
         if (has_count_max(overload_id)) {
             fill_func_arg_sub("count_max", arg_types[2], Out);
             ASR::ttype_t* max_type = ASRUtils::extract_type(arg_types[2]);
-            ASR::expr_t* count_max = clock_value(prefix + "sys_clock_count_max", clock_type);
+            ASR::expr_t* count_max = no_clock ? b.i_t(0, max_type)
+                : clock_value(prefix + "sys_clock_count_max", clock_type);
             body.push_back(al, b.Assignment(args[2], convert(count_max, max_type)));
         } else {
             fill_func_arg_sub("count_max", int32, In);
