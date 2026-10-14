@@ -3591,6 +3591,13 @@ public:
 	    if (s.n_dim > 0) {
 		is_star_dimension = (s.m_dim[s.n_dim-1].m_end_star == AST::dimension_typeType::DimensionStar);
 	    }
+	    if (is_proc_arg && v->m_type
+	            && !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))
+	            && !ASRUtils::is_allocatable_or_pointer(v->m_type)
+	            && is_legacy_assumed_size(s.m_dim, s.n_dim)) {
+	        make_last_dimension_assumed_size(dims);
+	        is_star_dimension = true;
+	    }
 
 	    if (v->m_type && ASRUtils::is_array(v->m_type)) {
 		/* You can't specify an attribute such as DIMENSION more than once in a scoping
@@ -4059,6 +4066,23 @@ public:
             ASR::arraystorageType::ColMajor, nullptr));
         return ASRUtils::EXPR(ASR::make_ArrayBroadcast_t(al, loc, scalar, shape,
             ASRUtils::duplicate_type(al, type), nullptr));
+    }
+
+    // With --legacy-array-sections, a dummy `a(lda, 1)` is the FORTRAN 66 form of `a(lda, *)`.
+    bool is_legacy_assumed_size(AST::dimension_t *m_dim, size_t n_dim) {
+        if (!compiler_options.legacy_array_sections || n_dim == 0) {
+            return false;
+        }
+        auto is_one = [](AST::expr_t *e) {
+            return e && AST::is_a<AST::Num_t>(*e) && AST::down_cast<AST::Num_t>(e)->m_n == 1;
+        };
+        AST::dimension_t &last = m_dim[n_dim - 1];
+        return (last.m_start == nullptr || is_one(last.m_start)) && is_one(last.m_end);
+    }
+
+    void make_last_dimension_assumed_size(Vec<ASR::dimension_t> &dims) {
+        dims.p[dims.size() - 1].m_start = nullptr;
+        dims.p[dims.size() - 1].m_length = nullptr;
     }
 
     void process_dims(Allocator &al, Vec<ASR::dimension_t> &dims,
@@ -9334,6 +9358,8 @@ public:
                 dims.reserve(al, 0);
                 // location for dimension(...) if present
                 Location dims_attr_loc;
+                AST::dimension_t *attr_dim = nullptr;
+                size_t attr_n_dim = 0;
                 is_allocatable = false;
                 bool is_nopass_attr = false;
                 char* pass_arg_name = nullptr;
@@ -9487,6 +9513,8 @@ public:
                                 throw SemanticAbort();
                             }
                             dims_attr_loc = ad->base.base.loc;
+                            attr_dim = ad->m_dim;
+                            attr_n_dim = ad->n_dim;
                             HiddenDerivedTypeComponents hidden_components(
                                 current_scope, is_derived_type, hidden_derived_type_components);
                             process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time, is_char_type,
@@ -9628,6 +9656,14 @@ public:
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
                         (s_intent == ASRUtils::intent_in || s_intent == ASRUtils::intent_out ||
                         s_intent == ASRUtils::intent_inout) || is_argument, s.m_name);
+                }
+                if (is_argument && !is_allocatable && !is_pointer
+                        && sym_type->m_type != AST::decl_typeType::TypeType
+                        && sym_type->m_type != AST::decl_typeType::TypeClass
+                        && (s.n_dim > 0 ? is_legacy_assumed_size(s.m_dim, s.n_dim)
+                                        : is_legacy_assumed_size(attr_dim, attr_n_dim))) {
+                    make_last_dimension_assumed_size(dims);
+                    is_dimension_star = true;
                 }
                 // Corank from var_sym codimension (e.g., integer :: x[*])
                 if (s.n_codim > 0) {
