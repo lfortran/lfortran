@@ -1906,6 +1906,10 @@ asr = true
 filename = "../integration_tests/parameter_22.f90"
 semantics_only_cc = true
 
+[[test]]
+filename = "../integration_tests/parameter_25.f90"
+llvm = true
+
 # IntegerToReal
 [[test]]
 filename = "../integration_tests/parameter_05.f90"
