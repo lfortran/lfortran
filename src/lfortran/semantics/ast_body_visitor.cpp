@@ -5996,40 +5996,6 @@ public:
         }
     }
 
-    // Remove the variables that a wrapper of the master procedure does not use.
-    void remove_unused_variables(ASR::Function_t* wrapper) {
-        class UsedVariables : public ASR::BaseWalkVisitor<UsedVariables> {
-            public:
-            std::set<ASR::symbol_t*> used;
-            std::vector<ASR::symbol_t*> pending;
-
-            void visit_Var(const ASR::Var_t &x) {
-                if (used.insert(x.m_v).second) pending.push_back(x.m_v);
-            }
-        };
-
-        UsedVariables v;
-        for (size_t i = 0; i < wrapper->n_args; i++) v.visit_expr(*wrapper->m_args[i]);
-        v.visit_expr(*wrapper->m_return_var);
-        for (size_t i = 0; i < wrapper->n_body; i++) v.visit_stmt(*wrapper->m_body[i]);
-        for (auto &item: wrapper->m_symtab->get_scope()) {
-            if (!ASR::is_a<ASR::Variable_t>(*item.second)) v.visit_symbol(*item.second);
-        }
-        while (!v.pending.empty()) {
-            ASR::symbol_t* sym = v.pending.back();
-            v.pending.pop_back();
-            if (ASR::is_a<ASR::Variable_t>(*sym)) v.visit_symbol(*sym);
-        }
-
-        std::vector<std::string> unused;
-        for (auto &item: wrapper->m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Variable_t>(*item.second) && v.used.find(item.second) == v.used.end()) {
-                unused.push_back(item.first);
-            }
-        }
-        for (auto &name: unused) wrapper->m_symtab->erase_symbol(name);
-    }
-
     void add_subroutine_call(const Location& loc, std::string entry_function_name, std::string parent_function_name,
                             int label) {
         ASR::symbol_t* entry_function_sym = current_scope->resolve_symbol(entry_function_name);
@@ -6672,12 +6638,6 @@ public:
 
             // Sync argument types from master function to entry functions
             sync_entry_function_arg_types(v->m_name, master_function_name);
-
-            remove_unused_variables(v);
-            for (auto &it: entry_functions[v->m_name]) {
-                remove_unused_variables(ASR::down_cast<ASR::Function_t>(
-                    current_scope->parent->resolve_symbol(it.first)));
-            }
 
             current_scope = old_scope;
             tmp = nullptr;

@@ -226,6 +226,31 @@
                                     []
                                     ()
                                 ),
+                            mvndnt:
+                                (Variable
+                                    2
+                                    mvndnt
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
                             w:
                                 (Variable
                                     2
@@ -777,6 +802,31 @@
                     (SymbolTable
                         3
                         {
+                            mvndfn:
+                                (Variable
+                                    3
+                                    mvndfn
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
                             mvndnt:
                                 (Variable
                                     3
