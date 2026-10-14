@@ -279,6 +279,7 @@ const std::vector<std::string> declarators{
             "integer*",
             "integer",
             "parameter",
+            "allocatable",
 	    "real*",
             "real",
 	    "complex*",
