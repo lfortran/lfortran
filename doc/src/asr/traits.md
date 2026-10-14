@@ -71,7 +71,9 @@ of its dummies is a scalar, nonpointer, nonallocatable, non-VALUE
 `type(itself)` dummy with a bare PASS attribute. That dummy may have any name
 and any position. Two such dummies, PASS on another dummy or on a result, and
 PASS(name) or NOPASS on a dummy are diagnosed; an OPTIONAL, TARGET or VOLATILE
-receiver is not implemented yet. A message without a receiver is receiverless.
+receiver is not implemented yet. Elsewhere, PASS, PASS(name) and NOPASS remain
+attributes of bindings and procedure pointer components, and are diagnosed on
+other declarations. A message without a receiver is receiverless.
 Another `type(itself)` dummy, without PASS, is an ordinary argument of the
 implementing type, not a second receiver; in a message it is not implemented
 yet.
@@ -116,9 +118,8 @@ of the message as keywords; the receiver is the object before `%`, never an
 actual argument. Messages with the same name in combined traits must agree on
 whether they have a receiver and on its INTENT, while the names and positions
 of their receivers may differ. Initializer and operator requirements have no
-receiver. PURE messages follow the ordinary PURE rules: a PURE procedure calls
-only PURE messages, and the implementation of a PURE function message has an
-`intent(in)` passed object.
+receiver. PURE messages follow the ordinary PURE rules; in particular, a PURE
+procedure calls only PURE messages.
 
 The receiver is the source dummy whose PASS attribute is recorded in its
 `Variable` (`ASRUtils::trait_message_receiver`). It is unrelated to the
