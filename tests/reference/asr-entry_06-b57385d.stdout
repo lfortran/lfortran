@@ -647,6 +647,7 @@
                         .false.
                         .false.
                     )
+                    (Return)
                     (GoToTarget
                         2
                         2
@@ -798,7 +799,8 @@
                         ()
                         .false.
                         .false.
-                    )]
+                    )
+                    (Return)]
                     ()
                     Public
                     .true.

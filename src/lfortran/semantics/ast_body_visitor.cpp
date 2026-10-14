@@ -6379,11 +6379,18 @@ public:
         // Record where each copy of the body starts and ends, so that statement
         // labels repeated across copies can be told apart afterwards.
         std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> copies;
+        // End each copy with a RETURN, so that it does not fall into the next copy.
+        auto end_copy = [&]() {
+            if (!ASR::is_a<ASR::Return_t>(*stmt_vector.back())) {
+                stmt_vector.push_back(ASRUtils::STMT(ASR::make_Return_t(al, loc)));
+            }
+        };
         size_t stmt_start = stmt_vector.size();
         size_t trailing_start = after_return_stmt_entry_function.size();
         visit_stmts_helper(subroutine_stmt_vector, stmt_vector, after_return_stmt_entry_function, false, true);
         copies.push_back({{stmt_start, stmt_vector.size()},
             {trailing_start, after_return_stmt_entry_function.size()}});
+        end_copy();
 
         // handle entry functions
         for (auto &it: entry_functions[original_function_name]) {
@@ -6396,6 +6403,7 @@ public:
             visit_stmts_helper(it.second, stmt_vector, after_return_stmt_entry_function, is_last);
             copies.push_back({{stmt_start, stmt_vector.size()},
                 {trailing_start, after_return_stmt_entry_function.size()}});
+            end_copy();
         }
         renumber_repeated_entry_labels(stmt_vector, after_return_stmt_entry_function, copies);
         for (auto &it: stmt_vector) {
