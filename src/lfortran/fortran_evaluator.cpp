@@ -497,9 +497,11 @@ void FortranEvaluator::drop_redefinitions(LLVMModule &m)
     // pass_array_by_data specialisation of a procedure that lives in the
     // session. Adding a second definition of a symbol the JIT already holds is
     // an error, and the existing definition is equivalent, so keep the
-    // declaration and drop the body.
+    // declaration and drop the body. A procedure with local linkage is private
+    // to its module: it never clashes with one of an earlier cell, and the
+    // earlier one is not visible to this cell, so it keeps its body.
     for (llvm::Function &fn : *m.m_m) {
-        if (fn.isDeclaration()) continue;
+        if (fn.isDeclaration() || fn.hasLocalLinkage()) continue;
         std::string name = fn.getName().str();
         if (!defined_symbols.insert(name).second) {
             fn.deleteBody();

@@ -2890,3 +2890,54 @@ a%extra = 2
     CHECK(r.ok);
     CHECK(r.result.i32 == 102);
 }
+
+// Calling a procedure of an earlier cell that takes a polymorphic argument
+// hangs on Windows (https://github.com/lfortran/lfortran/issues/12494).
+#if !defined(_WIN32)
+TEST_CASE("FortranEvaluator a vtable a later cell builds again") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // Each cell that describes an `ext` at run time builds its vtable with the
+    // procedures that finalize it, some of them private to the cell under a
+    // name every cell gives them. A later cell keeps its own.
+    CHECK(e.evaluate2(R"(module mvtable
+implicit none
+type :: base
+    integer :: n = 7
+end type
+type, extends(base) :: ext
+    integer, allocatable :: data(:)
+end type
+class(base), allocatable :: saved
+contains
+subroutine make()
+    type(ext) :: object
+    allocate(object%data(3))
+    object%data = 5
+    allocate(saved, source=object)
+end subroutine
+integer function total(x)
+    class(base), intent(in) :: x
+    total = x%n
+    select type (x)
+    type is (ext)
+        if (allocated(x%data)) total = total + sum(x%data)
+    end select
+end function
+end module
+)").ok);
+    CHECK(e.evaluate2("use mvtable\ncall make()\n").ok);
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2("total(saved)");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 22);
+    CHECK(e.evaluate2(R"(type(ext) :: a
+if (.not. allocated(a%data)) allocate(a%data(2))
+a%data = 4
+)").ok);
+    r = e.evaluate2("total(a)");
+    CHECK(r.ok);
+    CHECK(r.result.i32 == 15);
+}
+#endif
