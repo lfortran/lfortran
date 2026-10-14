@@ -529,6 +529,53 @@ public:
                 }
                 return b.ArrayItem_01(base, subs);
             }
+            case GpuExtentKind::Call: {
+                ASR::FunctionCall_t *call =
+                    ASR::down_cast<ASR::FunctionCall_t>(e.expr);
+                ASR::Function_t *callee = ASR::down_cast<ASR::Function_t>(
+                    ASRUtils::symbol_get_past_external(call->m_name));
+                Vec<ASR::call_arg_t> call_args;
+                call_args.reserve(al, e.children.size());
+                for (size_t i = 0; i < e.children.size(); i++) {
+                    ASR::call_arg_t arg;
+                    arg.loc = loc;
+                    arg.m_value = child(i);
+                    if (arg.m_value == nullptr || i >= callee->n_args) {
+                        return nullptr;
+                    }
+                    // The host hands an array over as the function takes
+                    // it, which is not how the host stores it.
+                    ASR::ttype_t *type = ASRUtils::expr_type(arg.m_value);
+                    ASR::ttype_t *dummy = ASRUtils::expr_type(
+                        callee->m_args[i]);
+                    if (ASRUtils::is_array(type) && ASRUtils::is_array(dummy)
+                            && ASRUtils::extract_physical_type(type) !=
+                                ASRUtils::extract_physical_type(dummy)) {
+                        ASR::array_physical_typeType physical =
+                            ASRUtils::extract_physical_type(dummy);
+                        arg.m_value = ASRUtils::EXPR(
+                            ASRUtils::make_ArrayPhysicalCast_t_util(al, loc,
+                                arg.m_value,
+                                ASRUtils::extract_physical_type(type),
+                                physical, ASRUtils::duplicate_type(al, type,
+                                    nullptr, physical, true), nullptr));
+                    }
+                    call_args.push_back(al, arg);
+                }
+                // The host calls the function as well as the device.
+                ASR::FunctionType_t *signature =
+                    ASRUtils::get_FunctionType(callee);
+                if (signature->m_exec_space == ASR::exec_spaceType::Device) {
+                    signature->m_exec_space = ASR::exec_spaceType::HostDevice;
+                }
+                return ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
+                    &callee->base, nullptr, call_args.p, call_args.n,
+                    call->m_type, nullptr, nullptr));
+            }
+            case GpuExtentKind::Designator: {
+                return host_designator(al, loc, kernel, args, n_args,
+                    e.array);
+            }
             case GpuExtentKind::ArrayDim: {
                 // The actual argument has the shape the parameter does,
                 // so the host asks it for the extent the kernel reads

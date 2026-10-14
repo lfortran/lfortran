@@ -150,9 +150,17 @@ generates the device source. It never falls back to the CPU:
   values the kernel gives the loop indices, and gives every slice room for
   the largest. Each thread uses the leading part its own size needs. The size
   may read the loop indices, the arguments of the loop and the shapes of
-  arrays, but not a value the loop writes, which the host does not know
+  arrays. A size that is the same in every iteration may also call a
+  function without side effects of the translation unit, such as the one an
+  array intrinsic (`maxval(n)`, `sum(n)`) is lowered to, which the host
+  calls before the launch as the device does. The copy an overlapping
+  assignment needs (`b(1:n(l),l) = ... b(1:n(l+1),l+1) ...`, anywhere in
+  the body) is sized by the whole of each dimension of the assigned array
+  whose extent changes inside the iteration, and uses its leading part. A
+  size may not read a value the loop writes, which the host does not know
   before the launch: such a loop is an error ("workspace ... cannot be
-  sized on the host").
+  sized on the host", or "a temporary array cannot be sized on the host"
+  for a temporary the compiler introduces).
 * A kernel cannot allocate. When a loop writes an allocatable array component
   of an element of an array of derived type, the storage the kernel writes
   into has to exist before the launch. The write may be `t(i) = f(...)`,

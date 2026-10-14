@@ -510,6 +510,11 @@ void pass_gpu_kernel_finalize(Allocator &al, ASR::TranslationUnit_t &unit,
     if (!gpu_device_capabilities(options).device_selected()) return;
     FinalizeGpuKernels finalizer(al, options);
     finalizer.visit_TranslationUnit(unit);
+
+    // The host code that sizes a workspace can call a function, such as
+    // the routine shared lowering gives `maxval`.
+    PassUtils::UpdateDependenciesVisitor u(al);
+    u.visit_TranslationUnit(unit);
 }
 
 } // namespace LCompilers

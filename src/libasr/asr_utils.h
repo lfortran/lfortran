@@ -11168,6 +11168,112 @@ inline std::set<ASR::Function_t*> get_called_functions(ASR::stmt_t **body,
     return collector.callees;
 }
 
+// Whether calling the function `fn` has no effect but its result: it is
+// pure, or it reads its arguments only (all of them `intent(in)`), defines
+// nothing but its own locals and result, and calls only such functions --
+// as the routines shared lowering gives an intrinsic, such as `maxval`,
+// are written. Such a call can be evaluated anywhere its arguments can,
+// any number of times.
+inline bool is_side_effect_free_function(ASR::Function_t &fn,
+        std::set<ASR::Function_t*> &visiting) {
+    ASR::FunctionType_t *type = get_FunctionType(fn);
+    if (type->m_pure) return true;
+    if (type->m_deftype != ASR::deftypeType::Implementation ||
+            fn.m_return_var == nullptr || !visiting.insert(&fn).second) {
+        return false;
+    }
+    for (size_t i = 0; i < fn.n_args; i++) {
+        if (!ASR::is_a<ASR::Var_t>(*fn.m_args[i])) return false;
+        ASR::symbol_t *arg = ASR::down_cast<ASR::Var_t>(fn.m_args[i])->m_v;
+        if (!ASR::is_a<ASR::Variable_t>(*arg) ||
+                ASR::down_cast<ASR::Variable_t>(arg)->m_intent !=
+                    ASR::intentType::In) {
+            return false;
+        }
+    }
+    struct Effects : BlockBodyWalkVisitor<Effects> {
+        ASR::Function_t &fn;
+        std::set<ASR::Function_t*> &visiting;
+        bool free = true;
+        Effects(ASR::Function_t &fn, std::set<ASR::Function_t*> &visiting)
+            : fn(fn), visiting(visiting) {}
+        void visit_stmt(const ASR::stmt_t &x) {
+            switch (x.type) {
+                case ASR::stmtType::Assignment:
+                case ASR::stmtType::DoLoop:
+                case ASR::stmtType::WhileLoop:
+                case ASR::stmtType::If:
+                case ASR::stmtType::Select:
+                case ASR::stmtType::Exit:
+                case ASR::stmtType::Cycle:
+                case ASR::stmtType::Return:
+                case ASR::stmtType::BlockCall:
+                case ASR::stmtType::AssociateBlockCall:
+                    BlockBodyWalkVisitor<Effects>::visit_stmt(x);
+                    break;
+                default:
+                    free = false;
+            }
+        }
+        void visit_Assignment(const ASR::Assignment_t &x) {
+            ASR::expr_t *target = x.m_target;
+            while (true) {
+                if (ASR::is_a<ASR::ArrayItem_t>(*target)) {
+                    target = ASR::down_cast<ASR::ArrayItem_t>(target)->m_v;
+                } else if (ASR::is_a<ASR::ArraySection_t>(*target)) {
+                    target = ASR::down_cast<ASR::ArraySection_t>(target)->m_v;
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
+                    target = ASR::down_cast<ASR::StructInstanceMember_t>(
+                        target)->m_v;
+                } else {
+                    break;
+                }
+            }
+            if (!ASR::is_a<ASR::Var_t>(*target)) {
+                free = false;
+            } else {
+                ASR::symbol_t *s = ASR::down_cast<ASR::Var_t>(target)->m_v;
+                if (!ASR::is_a<ASR::Variable_t>(*s)) {
+                    free = false;
+                } else {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+                    SymbolTable *scope = v->m_parent_symtab;
+                    while (scope != nullptr && scope != fn.m_symtab) {
+                        scope = scope->parent;
+                    }
+                    if (scope == nullptr || (v->m_intent !=
+                            ASR::intentType::Local && v->m_intent !=
+                            ASR::intentType::ReturnVar) ||
+                            v->m_storage == ASR::storage_typeType::Save) {
+                        free = false;
+                    }
+                }
+            }
+            BlockBodyWalkVisitor<Effects>::visit_Assignment(x);
+        }
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            ASR::symbol_t *callee = symbol_get_past_external(x.m_name);
+            if (callee == nullptr || !ASR::is_a<ASR::Function_t>(*callee) ||
+                    !is_side_effect_free_function(
+                        *ASR::down_cast<ASR::Function_t>(callee), visiting)) {
+                free = false;
+            }
+            BlockBodyWalkVisitor<Effects>::visit_FunctionCall(x);
+        }
+    };
+    Effects effects(fn, visiting);
+    for (size_t i = 0; i < fn.n_body && effects.free; i++) {
+        effects.visit_stmt(*fn.m_body[i]);
+    }
+    visiting.erase(&fn);
+    return effects.free;
+}
+
+inline bool is_side_effect_free_function(ASR::Function_t &fn) {
+    std::set<ASR::Function_t*> visiting;
+    return is_side_effect_free_function(fn, visiting);
+}
+
 // Whether a member of `s`, of one of its parents, or of one of its derived
 // type members, cannot be described by static data and so has to be set up by
 // executable code: an array member needs a descriptor of its own or its

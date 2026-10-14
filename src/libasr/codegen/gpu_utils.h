@@ -37,6 +37,10 @@ enum class GpuExtentKind {
     ArgElement, // the element at subscripts children[0..] of `arg_index`
     ArrayDim,   // extent `int_value` (0-based) of array parameter `arg_index`
     Size,       // size(`array`, `dim`), with children[0] the derived `dim`
+    Call,       // a call of the pure function of `expr` the host can call
+                // too, with children[i] its argument i
+    Designator, // the array argument `array` of a Call, which the host
+                // reads, handed over as `expr` hands it
     Bound,      // `bound`(`array`, `dim`), with children[0] the derived `dim`
 };
 
@@ -1405,6 +1409,25 @@ inline GpuExtent gpu_device_range_extent(ASR::array_index_t *range) {
             : gpu_extent_literal(1));
 }
 
+// Whether the host can call the function `name` as the device does: a
+// function of the translation unit itself without side effects, such as the
+// routines shared lowering gives the intrinsics, which every scope can name.
+inline bool gpu_host_callable(ASR::symbol_t *name) {
+    ASR::symbol_t *target = ASRUtils::symbol_get_past_external(name);
+    if (target == nullptr || !ASR::is_a<ASR::Function_t>(*target)) {
+        return false;
+    }
+    ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(target);
+    ASR::FunctionType_t *type = ASRUtils::get_FunctionType(fn);
+    if (type->m_deftype != ASR::deftypeType::Implementation ||
+            type->m_exec_space == ASR::exec_spaceType::Kernel ||
+            !ASRUtils::is_side_effect_free_function(*fn)) {
+        return false;
+    }
+    SymbolTable *parent = fn->m_symtab->parent;
+    return parent != nullptr && parent->parent == nullptr;
+}
+
 inline GpuExtent gpu_derive_extent(ASR::expr_t *e,
         const GpuExtentScope &scope, int depth) {
     GpuExtent none;
@@ -1617,6 +1640,38 @@ inline GpuExtent gpu_derive_extent(ASR::expr_t *e,
                 return out;
             }
         }
+    }
+    // A call of a pure function that the host can call as well, such as the
+    // routine shared lowering gives an array intrinsic (`maxval(n)`), with
+    // arguments the host can work out: integers, or arrays it can read. The
+    // host calls it before the launch, as the device does.
+    if (ASR::is_a<ASR::FunctionCall_t>(*v)) {
+        ASR::FunctionCall_t *call = ASR::down_cast<ASR::FunctionCall_t>(v);
+        if (!gpu_host_callable(call->m_name)) return none;
+        GpuExtent out;
+        out.kind = GpuExtentKind::Call;
+        out.expr = v;
+        for (size_t i = 0; i < call->n_args; i++) {
+            ASR::expr_t *arg = call->m_args[i].m_value;
+            if (arg == nullptr) return none;
+            if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+                ASR::expr_t *array = ASRUtils::get_past_array_physical_cast(
+                    arg);
+                if (!gpu_designator_is_host_readable(array, scope)) {
+                    return none;
+                }
+                GpuExtent designator;
+                designator.kind = GpuExtentKind::Designator;
+                designator.expr = arg;
+                designator.array = array;
+                out.children.push_back(std::move(designator));
+                continue;
+            }
+            GpuExtent value = gpu_derive_extent(arg, scope, depth + 1);
+            if (!value.ok()) return none;
+            out.children.push_back(std::move(value));
+        }
+        return out;
     }
     // An element of an array parameter, at a subscript the host can work
     // out too. The loop index is not a parameter, so an element the
