@@ -1544,19 +1544,12 @@ public:
         ASRUtils::SymbolDuplicator symbol_duplicator(al);
         std::vector<std::string> copy_external_procedure = external_procedures;
         external_procedures.clear();
-        std::vector<std::string> symbols_to_erase;
         for( auto item: old_scope->get_scope() ) {
             symbol_duplicator.duplicate_symbol(item.second, current_scope);
             bool is_external = check_is_external(item.first, old_scope);
             if (is_external) {
                 external_procedures.push_back(item.first);
-                // remove it from old_scope
-                symbols_to_erase.push_back(item.first);
             }
-        }
-
-        for (auto it: symbols_to_erase) {
-            old_scope->erase_symbol(it);
         }
 
         if (is_master) {

@@ -5875,6 +5875,7 @@ public:
         std::map<size_t, std::string> func_type_args; // index -> arg name
         for (size_t i = 1; i < master_func->n_args; i++) {
             ASR::Var_t* master_var = ASR::down_cast<ASR::Var_t>(master_func->m_args[i]);
+            if (!ASR::is_a<ASR::Variable_t>(*master_var->m_v)) continue;
             ASR::Variable_t* master_variable = ASR::down_cast<ASR::Variable_t>(master_var->m_v);
             if (ASR::is_a<ASR::FunctionType_t>(*master_variable->m_type)) {
                 func_type_args[i] = ASRUtils::symbol_name(master_var->m_v);
