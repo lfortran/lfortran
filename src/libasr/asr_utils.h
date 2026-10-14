@@ -3646,6 +3646,13 @@ static inline bool is_const(ASR::expr_t *x) {
 ASR::expr_t* get_struct_member_value_from_constant(ASR::expr_t* value,
                             ASR::symbol_t* member);
 
+// The compile-time value of `expr`, a named constant or a part of one
+// selected by components and constant subscripts. Unlike `expr_value`, this
+// also finds the value of a part whose folded value is not attached to it
+// because it names a procedure inaccessible where `expr` appears, so that the
+// data components of that part can still be folded.
+ASR::expr_t* designator_constant_value(Allocator& al, ASR::expr_t* expr);
+
 // Whether the constant `value` of derived type names a procedure, as the
 // value of an associated procedure pointer component does. The procedure is
 // named by a symbol of the scope that wrote the constant, so the constant
@@ -9412,15 +9419,7 @@ inline ASR::expr_t* fold_ArrayItem_value(Allocator &al, ASR::expr_t* array,
     if (n_indices == 0) {
         return nullptr;
     }
-    ASR::expr_t* base_value = ASRUtils::expr_value(array);
-    if (base_value == nullptr &&
-            ASR::is_a<ASR::StructInstanceMember_t>(*array)) {
-        ASR::StructInstanceMember_t* member_expr =
-            ASR::down_cast<ASR::StructInstanceMember_t>(array);
-        base_value = ASRUtils::get_struct_member_value_from_constant(
-            ASRUtils::expr_value(member_expr->m_v),
-            member_expr->m_m);
-    }
+    ASR::expr_t* base_value = ASRUtils::designator_constant_value(al, array);
     if (base_value == nullptr || !ASR::is_a<ASR::ArrayConstant_t>(*base_value)) {
         return nullptr;
     }

@@ -2191,6 +2191,29 @@ ASR::expr_t* get_struct_member_value_from_constant_array(Allocator &al,
         ASR::arraystorageType::ColMajor));
 }
 
+ASR::expr_t* designator_constant_value(Allocator& al, ASR::expr_t* expr) {
+    ASR::expr_t* value = ASRUtils::expr_value(expr);
+    if (value != nullptr) {
+        return value;
+    }
+    if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+        ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(expr);
+        return fold_ArrayItem_value(al, item->m_v, item->m_args, item->n_args);
+    }
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+        ASR::StructInstanceMember_t* member =
+            ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+        if (!ASR::is_a<ASR::Variable_t>(
+                *ASRUtils::symbol_get_past_external(member->m_m))) {
+            return nullptr;
+        }
+        return get_struct_member_value_from_constant_array(al, expr->base.loc,
+            designator_constant_value(al, member->m_v), member->m_m,
+            member->m_type);
+    }
+    return nullptr;
+}
+
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                             ASR::asr_t* v_var, ASR::symbol_t *v,
                             ASR::symbol_t* member, SymbolTable* current_scope) {
@@ -2257,7 +2280,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope);
         ASR::expr_t* value = nullptr;
         ASR::expr_t* base_value = base_is_parameter ?
-            ASRUtils::expr_value(ASRUtils::EXPR(v_var)) : nullptr;
+            designator_constant_value(al, ASRUtils::EXPR(v_var)) : nullptr;
         if (base_is_parameter && base_value != nullptr) {
             value = get_struct_member_value_from_constant_array(
                 al, loc, base_value, member, member_type);
