@@ -30,6 +30,9 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         }
     }
 
+    pass_plain_dummy_lower_bounds(*ASR::down_cast<ASR::Function_t>(
+        ASR::down_cast<ASR::symbol_t>(plan.kernel_func)));
+
     // Every `stop` the kernel reaches records itself in a status buffer
     // the host reads after the launch, and runs there.
     GpuDeviceStops stops;
