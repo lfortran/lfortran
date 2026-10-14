@@ -177,10 +177,14 @@ generates the device source. It never falls back to the CPU:
   assigned once) stands for what it is bound to, the extent of a section
   for the extents of its ranges, and a function without side effects is
   called with arguments of that kind (`allocate(a(maxval(n)))` with
-  `associate (n => self%nodes_)`). A procedure with such a local that
-  calls itself, directly or not, would need one array per level of the
-  recursion, and is an error, and so is an extent that reads anything else
-  ("workspace ... cannot be sized on the host"). A call that is the whole
+  `associate (n => self%nodes_)`). An extent that is evaluated after
+  entry -- of a local of a `block`, or of the array a call is given for
+  its callee -- may not read a dummy argument the procedure can change
+  before (`n = n + 4`), whose value the callers do not know. A procedure
+  with such a local that calls itself, directly or not, would need one
+  array per level of the recursion, and is an error, and so is an extent
+  that reads anything else ("workspace ... cannot be sized on the host").
+  A call that is the whole
   right-hand side of an assignment is spliced into the kernel instead: the
   body of the procedure replaces the call, with the actual arguments in
   place of the dummy arguments, which more often makes the extents

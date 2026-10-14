@@ -4725,6 +4725,14 @@ filename = "../integration_tests/gpu_metal_391.f90"
 gpu_offload_cuda = true
 gpu_offload_metal = true
 
+# A run-time sized array of device code whose extent reads a dummy argument
+# the routine changes before the call the array is passed to: the host cannot
+# size it before the launch, an error on every device.
+[[test]]
+filename = "../integration_tests/gpu_metal_406.f90"
+gpu_offload_cuda = true
+gpu_offload_metal = true
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true

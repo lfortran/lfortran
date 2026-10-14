@@ -98,9 +98,10 @@ class CallSiteWorkspaces : public ASR::BaseWalkVisitor<CallSiteWorkspaces> {
 public:
     CallSiteWorkspaces(Allocator &al_, ASR::Function_t &callee_,
             size_t n_source_args_, std::vector<ASR::Variable_t*> &dummies_,
-            std::map<ASR::symbol_t*, ASR::expr_t*> &constants_)
+            std::map<ASR::symbol_t*, ASR::expr_t*> &constants_,
+            std::set<ASR::symbol_t*> &created_)
         : al(al_), callee(callee_), n_source_args(n_source_args_),
-          dummies(dummies_), constants(constants_) {}
+          dummies(dummies_), constants(constants_), created(created_) {}
 
     void visit_Program(const ASR::Program_t &x) {
         for (auto &a : x.m_symtab->get_scope()) visit_symbol(*a.second);
@@ -147,6 +148,7 @@ private:
     size_t n_source_args;
     std::vector<ASR::Variable_t*> &dummies;
     std::map<ASR::symbol_t*, ASR::expr_t*> &constants;
+    std::set<ASR::symbol_t*> &created;
     SymbolTable *current_scope = nullptr;
 
     void visit_body(SymbolTable *scope, ASR::stmt_t **body, size_t n_body) {
@@ -209,6 +211,7 @@ private:
                 current_scope->get_unique_name(
                     "__gpu_ws_" + std::string(dummy->m_name), false),
                 type, ASR::intentType::Local, type_declaration);
+            created.insert(ASR::down_cast<ASR::Var_t>(local)->m_v);
             ASR::call_arg_t arg;
             arg.loc = loc;
             arg.m_value = local;
@@ -276,6 +279,19 @@ private:
     std::map<ASR::symbol_t*, Location> launches;
     // A kernel that reaches each routine.
     std::map<ASR::Function_t*, ASR::Function_t*> kernel_of;
+    // The locals this pass declares for the calls of a routine: each has
+    // the extents its callee's local has on entry to the callee, the
+    // values they have at the call, not where the scope of the local
+    // starts.
+    std::set<ASR::symbol_t*> call_site_locals;
+
+    // Whether the extents of `local` are evaluated on entry to `fn`, as
+    // those of an array the routine declares itself are, and not where a
+    // BLOCK starts or a call is made.
+    bool sized_on_entry(ASR::Function_t &fn, ASR::Variable_t &local) {
+        return local.m_parent_symtab == fn.m_symtab &&
+            call_site_locals.count(&local.base) == 0;
+    }
 
     // Every routine a kernel reaches, kernels excluded.
     std::vector<ASR::Function_t*> device_routines() {
@@ -392,9 +408,20 @@ private:
         for (ASR::Variable_t *local : locals) {
             // An extent that reads what the routine binds once, or the
             // shape of another of its arrays, has the value it has on
-            // entry to the routine.
+            // entry to the routine. The callers write the extents over
+            // the actual arguments of the call, which are the values the
+            // dummy arguments have on entry: an extent evaluated later,
+            // where a BLOCK starts or a call is made, may not read a dummy
+            // argument the routine can change before (`n = n + 4` and
+            // then `real :: w(n)` in a BLOCK, or `call inner(n, ...)`).
             ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(local->m_type);
-            gpu_write_extents_at_entry(al, fn, arr->m_dims, arr->n_dims);
+            if (!gpu_write_extents_at_entry(al, fn, arr->m_dims, arr->n_dims)
+                    && !sized_on_entry(fn, *local)) {
+                decline(fn, local->base.base.loc, GpuDecline(
+                    GpuDeclineReason::WorkspaceNotSizeableOnHost,
+                    local->m_name));
+                return false;
+            }
             for (ASR::symbol_t *read : extent_reads(
                     *ASR::down_cast<ASR::Array_t>(local->m_type))) {
                 if (dummies.count(read)) continue;
@@ -443,7 +470,7 @@ private:
         ASRUtils::get_FunctionType(fn)->m_elemental = false;
 
         CallSiteWorkspaces call_sites(al, fn, n_source_args, locals,
-            constants);
+            constants, call_site_locals);
         call_sites.visit_TranslationUnit(unit);
         return true;
     }
