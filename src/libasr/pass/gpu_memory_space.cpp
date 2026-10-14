@@ -1,5 +1,6 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
+#include <libasr/asr_builder.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/gpu_memory_space.h>
@@ -236,9 +237,188 @@ private:
         }
     }
 
+    // A derived-type dummy argument a device routine defines is passed by
+    // reference, and a device routine is written for values in the memory
+    // of the calling thread, as its locals are. An element of a kernel
+    // argument, or a derived-type kernel argument, lives in device memory
+    // instead, so the kernel hands such a dummy a copy of it in its own
+    // memory, and copies it back after the call, as Fortran allows for a
+    // dummy argument. The allocatable components are not copied: the
+    // copy hands the routine the buffers of the original.
+    void copy_struct_arguments(ASR::Function_t &kernel) {
+        std::set<ASR::symbol_t*> parameters;
+        for (size_t i = 0; i < kernel.n_args; i++) {
+            if (ASR::is_a<ASR::Var_t>(*kernel.m_args[i])) {
+                parameters.insert(ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v));
+            }
+        }
+        std::set<ASR::symbol_t*> transformed;
+        copy_struct_arguments(kernel, parameters, transformed,
+            kernel.m_body, kernel.n_body);
+    }
+
+    // The kernel argument a derived-type actual argument is, or is an
+    // element of, or nullptr.
+    static ASR::Variable_t* device_struct(ASR::expr_t *e,
+            const std::set<ASR::symbol_t*> &parameters) {
+        e = ASRUtils::get_past_array_physical_cast(e);
+        if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+        }
+        if (!ASR::is_a<ASR::Var_t>(*e)) return nullptr;
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(e)->m_v);
+        if (!parameters.count(sym) || !ASR::is_a<ASR::Variable_t>(*sym)) {
+            return nullptr;
+        }
+        return ASR::down_cast<ASR::Variable_t>(sym);
+    }
+
+    void copy_struct_arguments(ASR::Function_t &kernel,
+            const std::set<ASR::symbol_t*> &parameters,
+            std::set<ASR::symbol_t*> &transformed,
+            ASR::stmt_t **&body, size_t &n_body) {
+        Vec<ASR::stmt_t*> out;
+        out.reserve(al, n_body);
+        for (size_t i = 0; i < n_body; i++) {
+            ASR::stmt_t *s = body[i];
+            switch (s->type) {
+                case ASR::stmtType::If: {
+                    ASR::If_t *x = ASR::down_cast<ASR::If_t>(s);
+                    copy_struct_arguments(kernel, parameters, transformed,
+                        x->m_body, x->n_body);
+                    copy_struct_arguments(kernel, parameters, transformed,
+                        x->m_orelse, x->n_orelse);
+                    break;
+                }
+                case ASR::stmtType::DoLoop: {
+                    ASR::DoLoop_t *x = ASR::down_cast<ASR::DoLoop_t>(s);
+                    copy_struct_arguments(kernel, parameters, transformed,
+                        x->m_body, x->n_body);
+                    break;
+                }
+                case ASR::stmtType::WhileLoop: {
+                    ASR::WhileLoop_t *x = ASR::down_cast<ASR::WhileLoop_t>(s);
+                    copy_struct_arguments(kernel, parameters, transformed,
+                        x->m_body, x->n_body);
+                    break;
+                }
+                case ASR::stmtType::Select: {
+                    ASR::Select_t *x = ASR::down_cast<ASR::Select_t>(s);
+                    for (size_t c = 0; c < x->n_body; c++) {
+                        if (ASR::is_a<ASR::CaseStmt_t>(*x->m_body[c])) {
+                            ASR::CaseStmt_t *t =
+                                ASR::down_cast<ASR::CaseStmt_t>(x->m_body[c]);
+                            copy_struct_arguments(kernel, parameters,
+                                transformed, t->m_body, t->n_body);
+                        } else {
+                            ASR::CaseStmt_Range_t *t =
+                                ASR::down_cast<ASR::CaseStmt_Range_t>(
+                                    x->m_body[c]);
+                            copy_struct_arguments(kernel, parameters,
+                                transformed, t->m_body, t->n_body);
+                        }
+                    }
+                    copy_struct_arguments(kernel, parameters, transformed,
+                        x->m_default, x->n_default);
+                    break;
+                }
+                case ASR::stmtType::BlockCall:
+                case ASR::stmtType::AssociateBlockCall: {
+                    ASR::symbol_t *m = ASRUtils::symbol_get_past_external(
+                        ASR::is_a<ASR::BlockCall_t>(*s)
+                            ? ASR::down_cast<ASR::BlockCall_t>(s)->m_m
+                            : ASR::down_cast<ASR::AssociateBlockCall_t>(s)
+                                ->m_m);
+                    if (!transformed.insert(m).second) break;
+                    if (ASR::is_a<ASR::Block_t>(*m)) {
+                        ASR::Block_t *x = ASR::down_cast<ASR::Block_t>(m);
+                        copy_struct_arguments(kernel, parameters,
+                            transformed, x->m_body, x->n_body);
+                    } else if (ASR::is_a<ASR::AssociateBlock_t>(*m)) {
+                        ASR::AssociateBlock_t *x =
+                            ASR::down_cast<ASR::AssociateBlock_t>(m);
+                        copy_struct_arguments(kernel, parameters,
+                            transformed, x->m_body, x->n_body);
+                    }
+                    break;
+                }
+                case ASR::stmtType::SubroutineCall: {
+                    ASR::SubroutineCall_t *x =
+                        ASR::down_cast<ASR::SubroutineCall_t>(s);
+                    std::vector<ASR::stmt_t*> after;
+                    copy_call_arguments(kernel, parameters, *x, out, after);
+                    out.push_back(al, s);
+                    for (ASR::stmt_t *t : after) out.push_back(al, t);
+                    continue;
+                }
+                default:
+                    break;
+            }
+            out.push_back(al, s);
+        }
+        body = out.p;
+        n_body = out.n;
+    }
+
+    void copy_call_arguments(ASR::Function_t &kernel,
+            const std::set<ASR::symbol_t*> &parameters,
+            ASR::SubroutineCall_t &call, Vec<ASR::stmt_t*> &before,
+            std::vector<ASR::stmt_t*> &after) {
+        ASR::symbol_t *target = ASRUtils::symbol_get_past_external(
+            call.m_name);
+        if (target && ASR::is_a<ASR::StructMethodDeclaration_t>(*target)) {
+            target = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                    target)->m_proc);
+        }
+        if (!target || !ASR::is_a<ASR::Function_t>(*target)) return;
+        ASR::Function_t *callee = ASR::down_cast<ASR::Function_t>(target);
+        if (callee->n_args != call.n_args) return;
+        for (size_t i = 0; i < call.n_args; i++) {
+            ASR::expr_t *actual = call.m_args[i].m_value;
+            if (actual == nullptr ||
+                    !ASR::is_a<ASR::Var_t>(*callee->m_args[i])) {
+                continue;
+            }
+            ASR::symbol_t *dummy_sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(callee->m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*dummy_sym)) continue;
+            ASR::Variable_t *dummy =
+                ASR::down_cast<ASR::Variable_t>(dummy_sym);
+            if (!ASR::is_a<ASR::StructType_t>(*dummy->m_type) ||
+                    (dummy->m_intent != ASR::intentType::Out &&
+                     dummy->m_intent != ASR::intentType::InOut)) {
+                continue;
+            }
+            ASR::Variable_t *argument = device_struct(actual, parameters);
+            if (argument == nullptr ||
+                    !ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(
+                        actual))) {
+                continue;
+            }
+            const Location &loc = actual->base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::expr_t *copy = b.Variable(kernel.m_symtab,
+                kernel.m_symtab->get_unique_name("__gpu_struct_argument",
+                    false),
+                ASRUtils::duplicate_type(al, ASRUtils::expr_type(actual)),
+                ASR::intentType::Local, argument->m_type_declaration);
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            before.push_back(al, b.Assignment(copy,
+                duplicator.duplicate_expr(actual)));
+            after.push_back(b.Assignment(duplicator.duplicate_expr(actual),
+                copy));
+            call.m_args[i].m_value = copy;
+        }
+    }
+
     void process_function(ASR::Function_t *fn, bool is_kernel) {
         if (processed.count(fn)) return;
         processed.insert(fn);
+
+        if (is_kernel) copy_struct_arguments(*fn);
 
         std::set<ASR::symbol_t*> device_backed;
         if (is_kernel) {

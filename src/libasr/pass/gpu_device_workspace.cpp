@@ -3,6 +3,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/gpu_decline.h>
+#include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_device_workspace.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/symbol_expr_substitution.h>
@@ -52,21 +53,6 @@ the pipeline cannot offload yet.
 */
 
 namespace {
-
-// The routine's own scopes: the routine itself and the BLOCK and ASSOCIATE
-// scopes of its body, but not the routines it contains.
-void routine_scopes(SymbolTable *scope, std::vector<SymbolTable*> &out) {
-    out.push_back(scope);
-    for (auto &item : scope->get_scope()) {
-        if (ASR::is_a<ASR::Block_t>(*item.second)) {
-            routine_scopes(ASR::down_cast<ASR::Block_t>(
-                item.second)->m_symtab, out);
-        } else if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
-            routine_scopes(ASR::down_cast<ASR::AssociateBlock_t>(
-                item.second)->m_symtab, out);
-        }
-    }
-}
 
 // Whether `var` is a local array the device cannot declare: an array of an
 // explicit shape that is not a compile-time constant.
@@ -254,6 +240,18 @@ public:
         GpuLaunchLocations locations;
         locations.visit_TranslationUnit(unit);
         launches = locations.launches;
+        device_routines();
+        std::vector<ASR::Function_t*> reached;
+        for (auto &item : kernel_of) reached.push_back(item.first);
+        for (ASR::Function_t *fn : reached) {
+            std::string component;
+            ASR::Variable_t *var = gpu_struct_local_without_storage(*fn,
+                component);
+            if (var == nullptr) continue;
+            decline(*fn, var->base.base.loc, GpuDecline(
+                GpuDeclineReason::StructComponentNotSizeable,
+                std::string(var->m_name) + "%" + component));
+        }
         // Every round moves the locals of the routines it lifts one level
         // up the call graph, which has no cycle through a routine that is
         // lifted, so this ends.
@@ -312,7 +310,7 @@ private:
     static std::vector<ASR::Variable_t*> runtime_sized_locals(
             ASR::Function_t &fn) {
         std::vector<SymbolTable*> scopes;
-        routine_scopes(fn.m_symtab, scopes);
+        gpu_routine_scopes(fn.m_symtab, scopes);
         std::vector<ASR::Variable_t*> locals;
         for (SymbolTable *scope : scopes) {
             for (auto &item : scope->get_scope()) {
@@ -392,6 +390,11 @@ private:
         // which cannot name the routine's own symbols.
         std::map<ASR::symbol_t*, ASR::expr_t*> constants;
         for (ASR::Variable_t *local : locals) {
+            // An extent that reads what the routine binds once, or the
+            // shape of another of its arrays, has the value it has on
+            // entry to the routine.
+            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(local->m_type);
+            gpu_write_extents_at_entry(al, fn, arr->m_dims, arr->n_dims);
             for (ASR::symbol_t *read : extent_reads(
                     *ASR::down_cast<ASR::Array_t>(local->m_type))) {
                 if (dummies.count(read)) continue;

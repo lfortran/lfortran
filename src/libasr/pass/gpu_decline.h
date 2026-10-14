@@ -138,6 +138,10 @@ enum class GpuDeclineReason {
     FunctionResultAllocation,
     NestedArraySection,
     WorkspaceNotSizeableOnHost,
+    // An allocatable array component of a derived-type local of device
+    // code, which has no heap to allocate it from, whose shape cannot be
+    // told on entry to the routine (see gpu_device_struct_storage.cpp).
+    StructComponentNotSizeable,
 
     // --- what the device has no type for ---
     LocalTypeWidth,

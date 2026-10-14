@@ -35,6 +35,8 @@ enum class GpuExtentKind {
     ArgScalar,  // the value of the kernel parameter `arg_index`
     ArgMember,  // the component `member_path` of parameter `arg_index`
     ArgElement, // the element at subscripts children[0..] of `arg_index`
+    Element,    // the element at subscripts children[0..] of `array`, a
+                // designator the host can read, such as a component
     ArrayDim,   // extent `int_value` (0-based) of array parameter `arg_index`
     Size,       // size(`array`, `dim`), with children[0] the derived `dim`
     Call,       // a call of the pure function of `expr` the host can call
@@ -1679,15 +1681,22 @@ inline GpuExtent gpu_derive_extent(ASR::expr_t *e,
     if (ASR::is_a<ASR::ArrayItem_t>(*v)) {
         ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(v);
         ASR::expr_t *base = ASRUtils::get_past_array_physical_cast(item->m_v);
-        if (!ASR::is_a<ASR::Var_t>(*base)) return none;
-        std::string name = ASRUtils::symbol_name(
-            ASR::down_cast<ASR::Var_t>(base)->m_v);
-        size_t idx = 0;
-        if (!scope.is_arg(name, idx)) return none;
         GpuExtent out;
-        out.kind = GpuExtentKind::ArgElement;
         out.expr = v;
-        out.arg_index = idx;
+        size_t idx = 0;
+        if (ASR::is_a<ASR::Var_t>(*base) && scope.is_arg(ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(base)->m_v), idx)) {
+            out.kind = GpuExtentKind::ArgElement;
+            out.arg_index = idx;
+        } else if (!ASR::is_a<ASR::Var_t>(*base) &&
+                gpu_designator_is_host_readable(base, scope)) {
+            // An element of a component of a parameter, which the host
+            // reads out of the actual argument.
+            out.kind = GpuExtentKind::Element;
+            out.array = base;
+        } else {
+            return none;
+        }
         for (size_t i = 0; i < item->n_args; i++) {
             if (item->m_args[i].m_left || item->m_args[i].m_step) return none;
             GpuExtent sub = gpu_derive_extent(item->m_args[i].m_right, scope,

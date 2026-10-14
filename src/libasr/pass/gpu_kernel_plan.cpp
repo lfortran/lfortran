@@ -576,6 +576,18 @@ public:
                 return host_designator(al, loc, kernel, args, n_args,
                     e.array);
             }
+            case GpuExtentKind::Element: {
+                ASR::expr_t *base = host_designator(al, loc, kernel, args,
+                    n_args, e.array);
+                if (base == nullptr) return nullptr;
+                std::vector<ASR::expr_t*> subs;
+                for (size_t i = 0; i < e.children.size(); i++) {
+                    ASR::expr_t *sub = child(i);
+                    if (sub == nullptr) return nullptr;
+                    subs.push_back(sub);
+                }
+                return b.ArrayItem_01(base, subs);
+            }
             case GpuExtentKind::ArrayDim: {
                 // The actual argument has the shape the parameter does,
                 // so the host asks it for the extent the kernel reads
