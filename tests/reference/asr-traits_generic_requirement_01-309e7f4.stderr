@@ -9,11 +9,11 @@ warning: traits are an experimental LFortran extension; use ordinary derived typ
    | ...^ LFortran extension
 
 warning: `:=` is an experimental LFortran extension (subject to change); use `--infer` to suppress this warning
-  --> tests/../integration_tests/traits_generic_requirement_01.f90:42:9 - 44:14
+  --> tests/../integration_tests/traits_generic_requirement_01.f90:44:9 - 46:14
    |
-42 |            do i := 1, size(x)
+44 |            do i := 1, size(x)
    |            ^^^^^^^^^^^^^^^^^^...
 ...
    |
-44 |            end do
+46 |            end do
    | ...^^^^^^^^^^^^^^ LFortran extension

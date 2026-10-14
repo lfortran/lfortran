@@ -2,12 +2,12 @@
     "basename": "asr-traits_runtime_01-69e1013",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/traits_runtime_01.f90",
-    "infile_hash": "9589d7308036f33bebce6969b5ee5ef5eebafc77894eee0553381a60",
+    "infile_hash": "9acee5c67dd39edecf2e50174d8fbd65eb2ad4b7cdd585765efc47f6",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-traits_runtime_01-69e1013.stdout",
-    "stdout_hash": "30623844753568ad0f9665eba81949ce98d814f5cbf5c3d05c466e24",
+    "stdout_hash": "8ab2be5def0ae0653628af5fcd7561eafa1e7889151ce548f863d447",
     "stderr": "asr-traits_runtime_01-69e1013.stderr",
-    "stderr_hash": "11b98edd4ec07484f3cfa08d958653fc621dc2a40dbafe87d7316cd3",
+    "stderr_hash": "beffc4c1775616e095cd450b2be69062d8772777075499ec34c0cc8b",
     "returncode": 0
 }

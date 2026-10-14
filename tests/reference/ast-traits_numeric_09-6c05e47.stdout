@@ -369,12 +369,35 @@
             [(InterfaceProc
                 (Function
                     value
-                    []
+                    [(self)]
                     []
                     r
                     ()
                     ()
                     [(Declaration
+                        (AttrType
+                            TypeType
+                            []
+                            ()
+                            itself
+                            None
+                        )
+                        [(AttrIntent
+                            In
+                        )
+                        (AttrPass
+                            ()
+                        )]
+                        [(self
+                        []
+                        []
+                        ()
+                        ()
+                        None
+                        ())]
+                        ()
+                    )
+                    (Declaration
                         (AttrType
                             TypeInteger
                             []

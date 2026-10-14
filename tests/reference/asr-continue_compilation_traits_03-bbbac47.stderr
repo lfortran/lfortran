@@ -1,183 +1,183 @@
 warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
- --> tests/errors/continue_compilation_traits_03.f90:2:5 - 5:18
+ --> tests/errors/continue_compilation_traits_03.f90:2:5 - 6:18
   |
 2 |        abstract interface :: IValue
   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
   |
-5 |        end interface
+6 |        end interface
   | ...^^^^^^^^^^^^^^^^^^ LFortran extension
-
-semantic error: runtime dispatch for this trait method signature is not implemented yet
-   --> tests/errors/continue_compilation_traits_03.f90:114:9
-    |
-114 |         class(IMixedBinders), intent(in) :: method
-    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
-semantic error: Dummy argument 'method' not defined
-   --> tests/errors/continue_compilation_traits_03.f90:113:5 - 115:18
-    |
-113 |        subroutine use_mixed(method)
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-    |
-115 |        end subroutine
-    | ...^^^^^^^^^^^^^^^^^^ 
-
-semantic error: runtime dispatch for this trait method signature is not implemented yet
-   --> tests/errors/continue_compilation_traits_03.f90:117:9
-    |
-117 |         class(ISubroutineMember), intent(in) :: method
-    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
-semantic error: Dummy argument 'method' not defined
-   --> tests/errors/continue_compilation_traits_03.f90:116:5 - 118:18
-    |
-116 |        subroutine use_subroutine(method)
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-    |
-118 |        end subroutine
-    | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: runtime dispatch for this trait method signature is not implemented yet
    --> tests/errors/continue_compilation_traits_03.f90:120:9
     |
-120 |         class(IMutableMember), intent(in) :: method
-    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+120 |         class(IMixedBinders), intent(in) :: method
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Dummy argument 'method' not defined
    --> tests/errors/continue_compilation_traits_03.f90:119:5 - 121:18
     |
-119 |        subroutine use_mutable(method)
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+119 |        subroutine use_mixed(method)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
 121 |        end subroutine
     | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: runtime dispatch for this trait method signature is not implemented yet
-   --> tests/errors/continue_compilation_traits_03.f90:138:9
+   --> tests/errors/continue_compilation_traits_03.f90:123:9
     |
-138 |         class(IAllocatableArray), intent(in) :: method
+123 |         class(ISubroutineMember), intent(in) :: method
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Dummy argument 'method' not defined
-   --> tests/errors/continue_compilation_traits_03.f90:137:5 - 139:18
+   --> tests/errors/continue_compilation_traits_03.f90:122:5 - 124:18
     |
-137 |        subroutine use_allocatable(method)
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+122 |        subroutine use_subroutine(method)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-139 |        end subroutine
+124 |        end subroutine
     | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: runtime dispatch for this trait method signature is not implemented yet
-   --> tests/errors/continue_compilation_traits_03.f90:141:9
+   --> tests/errors/continue_compilation_traits_03.f90:126:9
     |
-141 |         class(ICharacterResult), intent(in) :: method
-    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+126 |         class(IMutableMember), intent(in) :: method
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Dummy argument 'method' not defined
-   --> tests/errors/continue_compilation_traits_03.f90:140:5 - 142:18
+   --> tests/errors/continue_compilation_traits_03.f90:125:5 - 127:18
     |
-140 |        subroutine use_character(method)
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-    |
-142 |        end subroutine
-    | ...^^^^^^^^^^^^^^^^^^ 
-
-semantic error: runtime dispatch for this trait method signature is not implemented yet
-   --> tests/errors/continue_compilation_traits_03.f90:189:9
-    |
-189 |         class(IBounded), intent(in) :: method
-    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
-semantic error: Dummy argument 'method' not defined
-   --> tests/errors/continue_compilation_traits_03.f90:188:5 - 190:18
-    |
-188 |        subroutine use_bounded(method)
+125 |        subroutine use_mutable(method)
     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-190 |        end subroutine
+127 |        end subroutine
+    | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+   --> tests/errors/continue_compilation_traits_03.f90:146:9
+    |
+146 |         class(IAllocatableArray), intent(in) :: method
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'method' not defined
+   --> tests/errors/continue_compilation_traits_03.f90:145:5 - 147:18
+    |
+145 |        subroutine use_allocatable(method)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+147 |        end subroutine
+    | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+   --> tests/errors/continue_compilation_traits_03.f90:149:9
+    |
+149 |         class(ICharacterResult), intent(in) :: method
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'method' not defined
+   --> tests/errors/continue_compilation_traits_03.f90:148:5 - 150:18
+    |
+148 |        subroutine use_character(method)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+150 |        end subroutine
+    | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+   --> tests/errors/continue_compilation_traits_03.f90:199:9
+    |
+199 |         class(IBounded), intent(in) :: method
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'method' not defined
+   --> tests/errors/continue_compilation_traits_03.f90:198:5 - 200:18
+    |
+198 |        subroutine use_bounded(method)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+200 |        end subroutine
     | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Type bound procedure 'sum' of 'child' overriding the binding of the same name in 'base' is not implemented yet for generic procedures
-   --> tests/errors/continue_compilation_traits_03.f90:357:9
+   --> tests/errors/continue_compilation_traits_03.f90:367:9
     |
-357 |         procedure, nopass :: sum => child_sum
+367 |         procedure, nopass :: sum => child_sum
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Type bound procedure 'run' of 'special' overriding the binding of the same name in 'tool' is not implemented yet for generic procedures
-   --> tests/errors/continue_compilation_traits_03.f90:365:9
+   --> tests/errors/continue_compilation_traits_03.f90:375:9
     |
-365 |         procedure, nopass :: run => special_run
+375 |         procedure, nopass :: run => special_run
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: move_alloc of a scalar with runtime trait components is not implemented yet
-  --> tests/errors/continue_compilation_traits_03.f90:30:9
+  --> tests/errors/continue_compilation_traits_03.f90:31:9
    |
-30 |         call move_alloc(a, b)
+31 |         call move_alloc(a, b)
    |         ^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: move_alloc of a scalar with runtime trait components is not implemented yet
-  --> tests/errors/continue_compilation_traits_03.f90:34:9
+  --> tests/errors/continue_compilation_traits_03.f90:35:9
    |
-34 |         call move_alloc(a, b)
+35 |         call move_alloc(a, b)
    |         ^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: move_alloc of a scalar with runtime trait components is not implemented yet
-  --> tests/errors/continue_compilation_traits_03.f90:38:9
+  --> tests/errors/continue_compilation_traits_03.f90:39:9
    |
-38 |         call move_alloc(from=a, to=b)
+39 |         call move_alloc(from=a, to=b)
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: integer(8) is not a member of type-set trait 'inumeric'
-  --> tests/errors/continue_compilation_traits_03.f90:72:13
+  --> tests/errors/continue_compilation_traits_03.f90:74:13
    |
-72 |         r = summer%sum(x)
+74 |         r = summer%sum(x)
    |             ^^^^^^^^^^^^^ 
 
 semantic error: real(4) is not a member of type-set trait 'inumeric'
-  --> tests/errors/continue_compilation_traits_03.f90:77:13
+  --> tests/errors/continue_compilation_traits_03.f90:79:13
    |
-77 |         r = summer%sum{real(4)}(y)
+79 |         r = summer%sum{real(4)}(y)
    |             ^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: forwarding between distinct type-set traits is not implemented yet
-  --> tests/errors/continue_compilation_traits_03.f90:83:13
+  --> tests/errors/continue_compilation_traits_03.f90:85:13
    |
-83 |         r = summer%sum(x)
+85 |         r = summer%sum(x)
    |             ^^^^^^^^^^^^^ 
 
 semantic error: a runtime trait component value in a structure constructor is not implemented yet
-   --> tests/errors/continue_compilation_traits_03.f90:168:20
+   --> tests/errors/continue_compilation_traits_03.f90:177:20
     |
-168 |         h = Holder(Unrelated())
+177 |         h = Holder(Unrelated())
     |                    ^^^^^^^^^^^ 
 
 semantic error: ambiguous reference to generic procedure 'pick': specific procedures 'pick_a' and 'pick_b' accept these arguments through trait conformance
-   --> tests/errors/continue_compilation_traits_03.f90:257:18
+   --> tests/errors/continue_compilation_traits_03.f90:267:18
     |
-257 |         print *, pick(x)
+267 |         print *, pick(x)
     |                  ^^^^^^^ 
 
 semantic error: ambiguous reference to generic procedure 'level': specific procedures 'level_parent' and 'level_child' accept these arguments through trait conformance
-   --> tests/errors/continue_compilation_traits_03.f90:261:18
+   --> tests/errors/continue_compilation_traits_03.f90:271:18
     |
-261 |         print *, level(y)
+271 |         print *, level(y)
     |                  ^^^^^^^^ 
 
 semantic error: runtime generic trait implementations outside module scope are not implemented yet
-   --> tests/errors/continue_compilation_traits_03.f90:311:28
+   --> tests/errors/continue_compilation_traits_03.f90:321:28
     |
-311 |     allocate(total, source=a)
+321 |     allocate(total, source=a)
     |                            ^ 
 
 semantic error: runtime generic trait implementations outside module scope are not implemented yet
-   --> tests/errors/continue_compilation_traits_03.f90:312:18
+   --> tests/errors/continue_compilation_traits_03.f90:322:18
     |
-312 |     call consume(p)
+322 |     call consume(p)
     |                  ^ 

@@ -1,153 +1,153 @@
 warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
-  --> tests/errors/continue_compilation_traits_inout.f90:9:5 - 12:18
+  --> tests/errors/continue_compilation_traits_inout.f90:10:5 - 14:18
    |
- 9 |        abstract interface :: IValue
+10 |        abstract interface :: IValue
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-12 |        end interface
+14 |        end interface
    | ...^^^^^^^^^^^^^^^^^^ LFortran extension
 
 semantic error: runtime trait dummies currently require intent(in) or intent(inout) without optional or value
-   --> tests/errors/continue_compilation_traits_inout.f90:140:39
+   --> tests/errors/continue_compilation_traits_inout.f90:143:39
     |
-140 |         class(IValue), intent(out) :: object
+143 |         class(IValue), intent(out) :: object
     |                                       ^^^^^^ 
 
 semantic error: runtime trait dummies currently require intent(in) or intent(inout) without optional or value
-   --> tests/errors/continue_compilation_traits_inout.f90:143:26
+   --> tests/errors/continue_compilation_traits_inout.f90:146:26
     |
-143 |         class(IValue) :: object
+146 |         class(IValue) :: object
     |                          ^^^^^^ 
 
 semantic error: Dummy argument 'object' of pure function must have INTENT(IN) or VALUE attribute
-   --> tests/errors/continue_compilation_traits_inout.f90:154:41
+   --> tests/errors/continue_compilation_traits_inout.f90:157:41
     |
-154 |         class(IValue), intent(inout) :: object
+157 |         class(IValue), intent(inout) :: object
     |                                         ^^^^^^ 
-
-semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-  --> tests/errors/continue_compilation_traits_inout.f90:57:19
-   |
-57 |         call bump(fixed)
-   |                   ^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
   --> tests/errors/continue_compilation_traits_inout.f90:60:19
    |
-60 |         call bump(Cell(3))
-   |                   ^^^^^^^ 
+60 |         call bump(fixed)
+   |                   ^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
   --> tests/errors/continue_compilation_traits_inout.f90:63:19
    |
-63 |         call bump(make_cell())
-   |                   ^^^^^^^^^^^ 
+63 |         call bump(Cell(3))
+   |                   ^^^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
   --> tests/errors/continue_compilation_traits_inout.f90:66:19
    |
-66 |         call bump(make_owner())
+66 |         call bump(make_cell())
+   |                   ^^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+  --> tests/errors/continue_compilation_traits_inout.f90:69:19
+   |
+69 |         call bump(make_owner())
    |                   ^^^^^^^^^^^^ 
 
 semantic error: Argument `c` with intent(in) passed to a dummy argument with modifying intent
-  --> tests/errors/continue_compilation_traits_inout.f90:70:19
+  --> tests/errors/continue_compilation_traits_inout.f90:73:19
    |
-70 |         call bump(c)
+73 |         call bump(c)
    |                   ^ 
 
 semantic error: Argument `h` with intent(in) passed to a dummy argument with modifying intent
-  --> tests/errors/continue_compilation_traits_inout.f90:74:19
+  --> tests/errors/continue_compilation_traits_inout.f90:77:19
    |
-74 |         call bump(h%cell)
+77 |         call bump(h%cell)
    |                   ^^^^^^ 
 
 semantic error: Argument `h` with intent(in) passed to a dummy argument with modifying intent
-  --> tests/errors/continue_compilation_traits_inout.f90:78:19
+  --> tests/errors/continue_compilation_traits_inout.f90:81:19
    |
-78 |         call bump(h%item)
+81 |         call bump(h%item)
    |                   ^^^^^^ 
 
 semantic error: Argument `object` with intent(in) passed to a dummy argument with modifying intent
-  --> tests/errors/continue_compilation_traits_inout.f90:82:19
+  --> tests/errors/continue_compilation_traits_inout.f90:85:19
    |
-82 |         call bump(object)
+85 |         call bump(object)
    |                   ^^^^^^ 
 
 semantic error: Argument `object` with intent(in) passed to a dummy argument with modifying intent
-  --> tests/errors/continue_compilation_traits_inout.f90:86:19
+  --> tests/errors/continue_compilation_traits_inout.f90:89:19
    |
-86 |         call bump(object)
+89 |         call bump(object)
    |                   ^^^^^^ 
 
 semantic error: Argument `alias` with intent(in) passed to a dummy argument with modifying intent
-  --> tests/errors/continue_compilation_traits_inout.f90:92:23
+  --> tests/errors/continue_compilation_traits_inout.f90:95:23
    |
-92 |             call bump(alias)
+95 |             call bump(alias)
    |                       ^^^^^ 
 
-semantic error: runtime trait views are read-only: 'counter_increment' implements 'increment' of trait 'icounter' with an intent(inout) receiver, which only direct calls on a concrete object may use
-  --> tests/errors/continue_compilation_traits_inout.f90:97:26
-   |
-97 |         call use_counter(c)
-   |                          ^ 
+semantic error: Argument `object` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_inout.f90:100:9
+    |
+100 |         call object%increment()
+    |         ^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: runtime trait assignment requires an allocatable owner
-   --> tests/errors/continue_compilation_traits_inout.f90:102:9
+   --> tests/errors/continue_compilation_traits_inout.f90:105:9
     |
-102 |         object = other
+105 |         object = other
     |         ^^^^^^ 
 
 semantic error: runtime trait allocation requires a scalar allocatable owner
-   --> tests/errors/continue_compilation_traits_inout.f90:106:9
+   --> tests/errors/continue_compilation_traits_inout.f90:109:9
     |
-106 |         allocate(Cell :: object)
+109 |         allocate(Cell :: object)
     |         ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: runtime trait deallocation requires a scalar allocatable owner
-   --> tests/errors/continue_compilation_traits_inout.f90:110:20
+   --> tests/errors/continue_compilation_traits_inout.f90:113:20
     |
-110 |         deallocate(object)
+113 |         deallocate(object)
     |                    ^^^^^^ 
 
 semantic error: runtime trait deallocation requires a scalar allocatable owner
-   --> tests/errors/continue_compilation_traits_inout.f90:114:20
+   --> tests/errors/continue_compilation_traits_inout.f90:117:20
     |
-114 |         deallocate(object)
+117 |         deallocate(object)
     |                    ^^^^^^ 
 
 semantic error: runtime trait association requires a scalar trait pointer
-   --> tests/errors/continue_compilation_traits_inout.f90:119:9
+   --> tests/errors/continue_compilation_traits_inout.f90:122:9
     |
-119 |         object => c
+122 |         object => c
     |         ^^^^^^^^^^^ 
 
 semantic error: Only a pointer variable symbol can be nullified.
-   --> tests/errors/continue_compilation_traits_inout.f90:123:17
+   --> tests/errors/continue_compilation_traits_inout.f90:126:17
     |
-123 |         nullify(object)
+126 |         nullify(object)
     |                 ^^^^^^ 
 
 semantic error: an allocatable runtime trait dummy requires an allocatable actual of the same declared trait contract
-   --> tests/errors/continue_compilation_traits_inout.f90:130:24
+   --> tests/errors/continue_compilation_traits_inout.f90:133:24
     |
-130 |         call take_slot(object)
+133 |         call take_slot(object)
     |                        ^^^^^^ 
 
 semantic error: a defining runtime trait pointer dummy requires a pointer actual
-   --> tests/errors/continue_compilation_traits_inout.f90:137:27
+   --> tests/errors/continue_compilation_traits_inout.f90:140:27
     |
-137 |         call take_pointer(object)
+140 |         call take_pointer(object)
     |                           ^^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-   --> tests/errors/continue_compilation_traits_inout.f90:147:20
+   --> tests/errors/continue_compilation_traits_inout.f90:150:20
     |
-147 |         call bump((c))
+150 |         call bump((c))
     |                    ^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-   --> tests/errors/continue_compilation_traits_inout.f90:151:20
+   --> tests/errors/continue_compilation_traits_inout.f90:154:20
     |
-151 |         call bump((object))
+154 |         call bump((object))
     |                    ^^^^^^ 

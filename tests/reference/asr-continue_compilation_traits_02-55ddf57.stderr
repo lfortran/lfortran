@@ -1,165 +1,165 @@
 warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
- --> tests/errors/continue_compilation_traits_02.f90:2:5 - 5:18
+ --> tests/errors/continue_compilation_traits_02.f90:2:5 - 6:18
   |
 2 |        abstract interface :: IValue
   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
   |
-5 |        end interface
+6 |        end interface
   | ...^^^^^^^^^^^^^^^^^^ LFortran extension
 
 semantic error: this instantiation adds runtime trait component lifecycle effects, which are not allowed inside a pure procedure
-   --> tests/errors/continue_compilation_traits_02.f90:137:9 - 143:22
+   --> tests/errors/continue_compilation_traits_02.f90:139:9 - 145:22
     |
-137 |            pure subroutine exchange(x, y)
+139 |            pure subroutine exchange(x, y)
     |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-143 |            end subroutine
+145 |            end subroutine
     | ...^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: cannot deallocate a nondefinable runtime trait component
-  --> tests/errors/continue_compilation_traits_02.f90:31:20
+  --> tests/errors/continue_compilation_traits_02.f90:32:20
    |
-31 |         deallocate(object%item)
+32 |         deallocate(object%item)
    |                    ^^^^^^^^^^^ 
 
 semantic error: cannot assign to a nondefinable runtime trait component
-  --> tests/errors/continue_compilation_traits_02.f90:36:9
+  --> tests/errors/continue_compilation_traits_02.f90:37:9
    |
-36 |         object%item = source
+37 |         object%item = source
    |         ^^^^^^^^^^^ 
 
 semantic error: a defining runtime trait dummy requires a definable allocatable actual
-  --> tests/errors/continue_compilation_traits_02.f90:40:22
+  --> tests/errors/continue_compilation_traits_02.f90:41:22
    |
-40 |         call replace(object%item)
+41 |         call replace(object%item)
    |                      ^^^^^^^^^^^ 
 
 semantic error: runtime trait component assignment with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
-  --> tests/errors/continue_compilation_traits_02.f90:50:9
+  --> tests/errors/continue_compilation_traits_02.f90:51:9
    |
-50 |         x = y
+51 |         x = y
    |         ^^^^^ 
 
 semantic error: runtime trait deallocation with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
-  --> tests/errors/continue_compilation_traits_02.f90:54:9
+  --> tests/errors/continue_compilation_traits_02.f90:55:9
    |
-54 |         deallocate(x)
+55 |         deallocate(x)
    |         ^^^^^^^^^^^^^ 
 
 semantic error: Call to impure procedure 'overwrite' is not allowed inside a PURE procedure
-  --> tests/errors/continue_compilation_traits_02.f90:73:9
+  --> tests/errors/continue_compilation_traits_02.f90:74:9
    |
-73 |         call overwrite(x, y)
+74 |         call overwrite(x, y)
    |         ^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Call to impure procedure 'dispose' is not allowed inside a PURE procedure
-  --> tests/errors/continue_compilation_traits_02.f90:77:9
+  --> tests/errors/continue_compilation_traits_02.f90:78:9
    |
-77 |         call dispose(x)
+78 |         call dispose(x)
    |         ^^^^^^^^^^^^^^^ 
 
 semantic error: a runtime trait component value in a structure constructor is not implemented yet
-  --> tests/errors/continue_compilation_traits_02.f90:87:20
+  --> tests/errors/continue_compilation_traits_02.f90:88:20
    |
-87 |         x = Holder(s)
+88 |         x = Holder(s)
    |                    ^ 
 
 semantic error: move_alloc for runtime trait owners is not implemented yet
-  --> tests/errors/continue_compilation_traits_02.f90:96:9
+  --> tests/errors/continue_compilation_traits_02.f90:97:9
    |
-96 |         call move_alloc(x%item, y%item)
+97 |         call move_alloc(x%item, y%item)
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: this instantiation adds runtime trait component lifecycle effects, which are not allowed inside a pure procedure
-   --> tests/errors/continue_compilation_traits_02.f90:114:5 - 120:18
+   --> tests/errors/continue_compilation_traits_02.f90:116:5 - 122:18
     |
-114 |        pure subroutine swap{ITagged :: T}(x, y)
+116 |        pure subroutine swap{ITagged :: T}(x, y)
     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-120 |        end subroutine
+122 |        end subroutine
     | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Function 'exchange_holder' not found (not user defined nor intrinsic)
-   --> tests/errors/continue_compilation_traits_02.f90:149:9
+   --> tests/errors/continue_compilation_traits_02.f90:151:9
     |
-149 |         call exchange_holder(a, b)
+151 |         call exchange_holder(a, b)
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: runtime trait move_alloc with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
-   --> tests/errors/continue_compilation_traits_02.f90:185:9
+   --> tests/errors/continue_compilation_traits_02.f90:187:9
     |
-185 |         call move_alloc(x, y)
+187 |         call move_alloc(x, y)
     |         ^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: runtime trait temporary with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
-   --> tests/errors/continue_compilation_traits_02.f90:189:31
+   --> tests/errors/continue_compilation_traits_02.f90:191:31
     |
-189 |         count_reshaped = size(reshape(x, [size(x)]))
+191 |         count_reshaped = size(reshape(x, [size(x)]))
     |                               ^^^^^^^^^^^^^^^^^^^^^ 
 
 warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
-   --> tests/errors/continue_compilation_traits_02.f90:328:19
+   --> tests/errors/continue_compilation_traits_02.f90:331:19
     |
-328 |             type, implements(IValue) :: Local
+331 |             type, implements(IValue) :: Local
     |                   ^^^^^^^^^^^^^^^^^^ LFortran extension
 
 semantic error: trait adoption currently requires a nonparameterized type in a module or main program
-   --> tests/errors/continue_compilation_traits_02.f90:328:13 - 330:21
+   --> tests/errors/continue_compilation_traits_02.f90:331:13 - 333:21
     |
-328 |                type, implements(IValue) :: Local
+331 |                type, implements(IValue) :: Local
     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-330 |                end type
+333 |                end type
     | ...^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Call to impure procedure 'overwrite' is not allowed inside a PURE procedure
-   --> tests/errors/continue_compilation_traits_02.f90:166:9
+   --> tests/errors/continue_compilation_traits_02.f90:168:9
     |
-166 |         call overwrite(x, y)
+168 |         call overwrite(x, y)
     |         ^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Call to impure procedure 'relay' is not allowed inside a PURE procedure
-   --> tests/errors/continue_compilation_traits_02.f90:171:9
+   --> tests/errors/continue_compilation_traits_02.f90:173:9
     |
-171 |         call relay(x, y)
+173 |         call relay(x, y)
     |         ^^^^^^^^^^^^^^^^ 
 
 semantic error: Call to impure procedure 'ping' is not allowed inside a PURE procedure
-   --> tests/errors/continue_compilation_traits_02.f90:176:9
+   --> tests/errors/continue_compilation_traits_02.f90:178:9
     |
-176 |         call ping(x, y, 2)
+178 |         call ping(x, y, 2)
     |         ^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Call to impure procedure 'apply' is not allowed inside a PURE procedure
-   --> tests/errors/continue_compilation_traits_02.f90:181:9
+   --> tests/errors/continue_compilation_traits_02.f90:183:9
     |
-181 |         call apply(overwrite, x, y)
+183 |         call apply(overwrite, x, y)
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Call to impure procedure 'assign_box' is not allowed inside a PURE procedure
-   --> tests/errors/continue_compilation_traits_02.f90:249:9
+   --> tests/errors/continue_compilation_traits_02.f90:251:9
     |
-249 |         x = y
+251 |         x = y
     |         ^^^^^ 
 
 semantic error: Call to impure procedure 'copy_into' is not allowed inside a PURE procedure
-   --> tests/errors/continue_compilation_traits_02.f90:260:9
+   --> tests/errors/continue_compilation_traits_02.f90:262:9
     |
-260 |         call c%copy_into(x, y)
+262 |         call c%copy_into(x, y)
     |         ^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Call to impure procedure 'copy' is not allowed inside a PURE procedure
-   --> tests/errors/continue_compilation_traits_02.f90:293:9
+   --> tests/errors/continue_compilation_traits_02.f90:296:9
     |
-293 |         call copy(x, y)
+296 |         call copy(x, y)
     |         ^^^^^^^^^^^^^^^ 
 
 semantic error: Call to impure procedure 'overwrite_contained' is not allowed inside a PURE procedure
-   --> tests/errors/continue_compilation_traits_02.f90:314:9
+   --> tests/errors/continue_compilation_traits_02.f90:317:9
     |
-314 |         call overwrite_contained(x, y)
+317 |         call overwrite_contained(x, y)
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

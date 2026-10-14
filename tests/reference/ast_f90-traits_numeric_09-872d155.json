@@ -2,11 +2,11 @@
     "basename": "ast_f90-traits_numeric_09-872d155",
     "cmd": "lfortran --show-ast-f90 --no-indent --no-color {infile}",
     "infile": "tests/../integration_tests/traits_numeric_09.f90",
-    "infile_hash": "119f147284c32b4731716960970318d7e9bbda776ae60c219bea540f",
+    "infile_hash": "1d50f4ad8862fae6765d7793962aebc12123246f65b69d02e43c20a3",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast_f90-traits_numeric_09-872d155.stdout",
-    "stdout_hash": "f2333b0ef3a7cf335f8cb67fd0a5a613187ad20b83a9218e1cb8281e",
+    "stdout_hash": "5bbe46cf602086e2a57f6b7419eb44f297e37306fa423597eedcb1c9",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

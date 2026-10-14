@@ -2,12 +2,12 @@
     "basename": "c-traits_runtime_01-8997975",
     "cmd": "lfortran --no-color --show-c {infile}",
     "infile": "tests/../integration_tests/traits_runtime_01.f90",
-    "infile_hash": "9589d7308036f33bebce6969b5ee5ef5eebafc77894eee0553381a60",
+    "infile_hash": "9acee5c67dd39edecf2e50174d8fbd65eb2ad4b7cdd585765efc47f6",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "c-traits_runtime_01-8997975.stderr",
-    "stderr_hash": "6b02024b1201eef771bde2b9f72bf49a5cb62940115b1cd69a91f5a3",
+    "stderr_hash": "b9cdd1e7eb8bda926bb43d0da76af5dab193e85c7f03a93171203f07",
     "returncode": 1
 }

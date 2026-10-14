@@ -342,7 +342,7 @@
                                                     )
                                                     18 smallbox
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
@@ -446,7 +446,7 @@
                                                     )
                                                     18 largebox
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
@@ -818,7 +818,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -960,7 +960,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -1084,7 +1084,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -1187,11 +1187,44 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                ),
+                                                            self:
+                                                                (Variable
+                                                                    4
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        itself
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    Pass
+                                                                    ()
+                                                                    []
+                                                                    ()
                                                                 )
                                                         })
                                                     get_value
                                                     (FunctionType
-                                                        []
+                                                        [(TypeParameter
+                                                            itself
+                                                            NonExtensible
+                                                            .false.
+                                                        )]
                                                         (Integer 4)
                                                         Source
                                                         Interface
@@ -1206,12 +1239,41 @@
                                                         Host
                                                     )
                                                     []
-                                                    []
+                                                    [(Var 4 self)]
                                                     []
                                                     (Var 4 res)
                                                     Public
                                                     .false.
                                                     .false.
+                                                    ()
+                                                ),
+                                            itself:
+                                                (Variable
+                                                    3
+                                                    itself
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        itself
+                                                        NonExtensible
+                                                        .false.
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                     ()
                                                 )
                                         })
@@ -1466,7 +1528,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -1474,7 +1536,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
-                                                                    NotMethod
+                                                                    Pass
                                                                     ()
                                                                     []
                                                                     ()

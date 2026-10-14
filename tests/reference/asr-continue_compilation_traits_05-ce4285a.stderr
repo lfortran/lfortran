@@ -9,67 +9,67 @@ warning: traits are an experimental LFortran extension; use ordinary derived typ
    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ LFortran extension
 
 semantic error: The symbol 'averager__simplesum' not found in the module 'gt_rep_owner'
-   --> tests/errors/continue_compilation_traits_05.f90:176:29
+   --> tests/errors/continue_compilation_traits_05.f90:180:29
     |
-176 |     use gt_rep_owner, only: averager__simplesum
+180 |     use gt_rep_owner, only: averager__simplesum
     |                             ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: no visible nominal implementation of trait 'isum' for generic type parameter 'u' of 'pairwisesum' (argument 'nosum')
-   --> tests/errors/continue_compilation_traits_05.f90:201:5
+   --> tests/errors/continue_compilation_traits_05.f90:205:5
     |
-201 |     type(PairwiseSum{NoSum}), save :: shared
+205 |     type(PairwiseSum{NoSum}), save :: shared
     |     ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 warning: `:=` is an experimental LFortran extension (subject to change); use `--infer` to suppress this warning
-   --> tests/errors/continue_compilation_traits_05.f90:136:9
+   --> tests/errors/continue_compilation_traits_05.f90:140:9
     |
-136 |         q := PairwiseSum(Leaf())
+140 |         q := PairwiseSum(Leaf())
     |         ^^^^^^^^^^^^^^^^^^^^^^^^ LFortran extension
 
 semantic error: no visible nominal implementation of trait 'isum' for generic type parameter 'u' of 'pairwisesum' (argument 'leaf')
-   --> tests/errors/continue_compilation_traits_05.f90:136:14
+   --> tests/errors/continue_compilation_traits_05.f90:140:14
     |
-136 |         q := PairwiseSum(Leaf())
+140 |         q := PairwiseSum(Leaf())
     |              ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: no visible nominal implementation of trait 'isum' for generic type parameter 'v'
-   --> tests/errors/continue_compilation_traits_05.f90:155:13
+   --> tests/errors/continue_compilation_traits_05.f90:159:13
     |
-155 |         r = total_of(Leaf())
+159 |         r = total_of(Leaf())
     |             ^^^^^^^^^^^^^^^^ 
 
 semantic error: no visible nominal implementation of trait 'iaverager' for type 'averager{simplesum}'
-   --> tests/errors/continue_compilation_traits_05.f90:189:14
+   --> tests/errors/continue_compilation_traits_05.f90:193:14
     |
-189 |         av = make_avg()
+193 |         av = make_avg()
     |              ^^^^^^^^^^ 
 
 semantic error: calling a generic method of a generic type parameter with concrete type arguments inside a generic derived type is not implemented yet
-   --> tests/errors/continue_compilation_traits_05.f90:222:13
+   --> tests/errors/continue_compilation_traits_05.f90:226:13
     |
-222 |         k = self%other%sum([1, 2, 3])
+226 |         k = self%other%sum([1, 2, 3])
     |             ^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: runtime generic trait implementations outside module scope are not implemented yet
-   --> tests/errors/continue_compilation_traits_05.f90:250:10
+   --> tests/errors/continue_compilation_traits_05.f90:254:10
     |
-250 |     av = Averager(drv = ReadsState())
+254 |     av = Averager(drv = ReadsState())
     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: runtime generic trait implementations outside module scope are not implemented yet
-   --> tests/errors/continue_compilation_traits_05.f90:251:10
+   --> tests/errors/continue_compilation_traits_05.f90:255:10
     |
-251 |     av = Averager(drv = CallsReader())
+255 |     av = Averager(drv = CallsReader())
     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: runtime generic trait implementations outside module scope are not implemented yet
-   --> tests/errors/continue_compilation_traits_05.f90:252:10
+   --> tests/errors/continue_compilation_traits_05.f90:256:10
     |
-252 |     av = Averager(drv = Pure())
+256 |     av = Averager(drv = Pure())
     |          ^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: runtime generic trait implementations outside module scope are not implemented yet
-   --> tests/errors/continue_compilation_traits_05.f90:253:10
+   --> tests/errors/continue_compilation_traits_05.f90:257:10
     |
-253 |     av = Averager(drv = PairwiseSum(other = Pure()))
+257 |     av = Averager(drv = PairwiseSum(other = Pure()))
     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

@@ -9,203 +9,203 @@ warning: traits are an experimental LFortran extension; use ordinary derived typ
    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ LFortran extension
 
 semantic error: no visible nominal implementation of trait 'isum' for generic type parameter 'u' of 'pairwisesum' (argument 'plain')
-  --> tests/errors/continue_compilation_traits_04.f90:87:5
+  --> tests/errors/continue_compilation_traits_04.f90:90:5
    |
-87 |     type(PairwiseSum{Plain}) :: p01
+90 |     type(PairwiseSum{Plain}) :: p01
    |     ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: no visible nominal implementation of trait 'isum' for integer(4), required by generic type parameter 'u' of 'pairwisesum'
-  --> tests/errors/continue_compilation_traits_04.f90:94:5
+  --> tests/errors/continue_compilation_traits_04.f90:97:5
    |
-94 |     type(PairwiseSum{integer}) :: p02
+97 |     type(PairwiseSum{integer}) :: p02
    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: incorrect number of generic type arguments
-   --> tests/errors/continue_compilation_traits_04.f90:146:5
+   --> tests/errors/continue_compilation_traits_04.f90:149:5
     |
-146 |     type(PairwiseSum{SimpleSum, SimpleSum}) :: p07
+149 |     type(PairwiseSum{SimpleSum, SimpleSum}) :: p07
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: generic type 'pairwisesum' requires its generic type arguments
-   --> tests/errors/continue_compilation_traits_04.f90:153:5
+   --> tests/errors/continue_compilation_traits_04.f90:156:5
     |
-153 |     type(PairwiseSum) :: p08
+156 |     type(PairwiseSum) :: p08
     |     ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: 'simplesum' is not a generic derived type
-   --> tests/errors/continue_compilation_traits_04.f90:160:5
+   --> tests/errors/continue_compilation_traits_04.f90:163:5
     |
-160 |     type(SimpleSum{integer}) :: p09
+163 |     type(SimpleSum{integer}) :: p09
     |     ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: a generic type argument must name a type
-   --> tests/errors/continue_compilation_traits_04.f90:167:22
+   --> tests/errors/continue_compilation_traits_04.f90:170:22
     |
-167 |     type(PairwiseSum{3}) :: p10
+170 |     type(PairwiseSum{3}) :: p10
     |                      ^ 
 
 semantic error: initializer 'make' cannot declare the generic parameters of its type 'badinit'; initializers inherit them
-   --> tests/errors/continue_compilation_traits_04.f90:181:5 - 185:21
+   --> tests/errors/continue_compilation_traits_04.f90:184:5 - 188:21
     |
-181 |        function make{ISum :: U}(item) result(res)
+184 |        function make{ISum :: U}(item) result(res)
     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-185 |        end function make
+188 |        end function make
     | ...^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: generic parameter 'u' of method 'sum' reuses the name of a parameter of its type 'shadow'; this prototype does not support shadowing a containing type's parameters
-   --> tests/errors/continue_compilation_traits_04.f90:199:18
+   --> tests/errors/continue_compilation_traits_04.f90:202:18
     |
-199 |     function sum{INumeric :: U}(self, x) result(s)
+202 |     function sum{INumeric :: U}(self, x) result(s)
     |                  ^^^^^^^^^^^^^ 
 
 semantic error: this prototype requires the implements statement to repeat the generic parameters of 'mismatch' exactly
-   --> tests/errors/continue_compilation_traits_04.f90:215:5 - 217:28
+   --> tests/errors/continue_compilation_traits_04.f90:218:5 - 220:28
     |
-215 |        implements ISum :: Mismatch{IValue :: U}
+218 |        implements ISum :: Mismatch{IValue :: U}
     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-217 |        end implements Mismatch
+220 |        end implements Mismatch
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: this prototype requires the implements statement for generic type 'bare' to repeat its generic parameter list
-   --> tests/errors/continue_compilation_traits_04.f90:235:5 - 237:24
+   --> tests/errors/continue_compilation_traits_04.f90:238:5 - 240:24
     |
-235 |        implements ISum :: Bare
+238 |        implements ISum :: Bare
     |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-237 |        end implements Bare
+240 |        end implements Bare
     | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: procedure 'describe' depends on the generic parameters of 'first'; this prototype binds such a procedure to exactly one generic type
-   --> tests/errors/continue_compilation_traits_04.f90:262:9
+   --> tests/errors/continue_compilation_traits_04.f90:265:9
     |
-262 |         procedure, nopass :: describe
+265 |         procedure, nopass :: describe
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: extending a generic derived type is not implemented yet
-   --> tests/errors/continue_compilation_traits_04.f90:275:11
+   --> tests/errors/continue_compilation_traits_04.f90:278:11
     |
-275 |     type, extends(PairwiseSum) :: Child
+278 |     type, extends(PairwiseSum) :: Child
     |           ^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: generic derived types outside modules are not implemented yet
-   --> tests/errors/continue_compilation_traits_04.f90:283:5 - 285:22
+   --> tests/errors/continue_compilation_traits_04.f90:286:5 - 288:22
     |
-283 |        type :: LocalBox{ISum :: U}
+286 |        type :: LocalBox{ISum :: U}
     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-285 |        end type LocalBox
+288 |        end type LocalBox
     | ...^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: this prototype requires the implements statement to repeat the generic parameters of 'renamed' exactly
-   --> tests/errors/continue_compilation_traits_04.f90:296:5 - 298:27
+   --> tests/errors/continue_compilation_traits_04.f90:299:5 - 301:27
     |
-296 |        implements ISum :: Renamed{ISum :: V}
+299 |        implements ISum :: Renamed{ISum :: V}
     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-298 |        end implements Renamed
+301 |        end implements Renamed
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: initializer 'make' of generic type 'extra' declares its own generic parameters; this prototype does not support them
-   --> tests/errors/continue_compilation_traits_04.f90:319:5 - 324:21
+   --> tests/errors/continue_compilation_traits_04.f90:322:5 - 327:21
     |
-319 |        function make{INumeric :: V}(item, n) result(res)
+322 |        function make{INumeric :: V}(item, n) result(res)
     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-324 |        end function make
+327 |        end function make
     | ...^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: procedure 'init' depends on the generic parameters of 'pairwisesum'; this prototype makes it accessible only through its type
-   --> tests/errors/continue_compilation_traits_04.f90:350:31
+   --> tests/errors/continue_compilation_traits_04.f90:353:31
     |
-350 |     use gt_neg_generic, only: init
+353 |     use gt_neg_generic, only: init
     |                               ^^^^ 
 
 semantic error: binding procedure 'describe', which does not depend on the generic parameters of 'described', to the generic type is not implemented yet
-   --> tests/errors/continue_compilation_traits_04.f90:363:9
+   --> tests/errors/continue_compilation_traits_04.f90:366:9
     |
-363 |         procedure, nopass :: describe
+366 |         procedure, nopass :: describe
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: FINAL procedures of a generic derived type are not implemented yet
-   --> tests/errors/continue_compilation_traits_04.f90:378:9
+   --> tests/errors/continue_compilation_traits_04.f90:381:9
     |
-378 |         final :: release
+381 |         final :: release
     |         ^^^^^^^^^^^^^^^^^ 
 
 semantic error: GENERIC bindings of a generic derived type are not implemented yet
-   --> tests/errors/continue_compilation_traits_04.f90:395:9
+   --> tests/errors/continue_compilation_traits_04.f90:398:9
     |
-395 |         generic :: total => sum
+398 |         generic :: total => sum
     |         ^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: DEFERRED bindings of a generic derived type are not implemented yet
-   --> tests/errors/continue_compilation_traits_04.f90:417:9
+   --> tests/errors/continue_compilation_traits_04.f90:420:9
     |
-417 |         procedure(run_iface), deferred, nopass :: run
+420 |         procedure(run_iface), deferred, nopass :: run
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 warning: `:=` is an experimental LFortran extension (subject to change); use `--infer` to suppress this warning
-  --> tests/errors/continue_compilation_traits_04.f90:40:9 - 42:14
+  --> tests/errors/continue_compilation_traits_04.f90:43:9 - 45:14
    |
-40 |            do i := 1, size(x)
+43 |            do i := 1, size(x)
    |            ^^^^^^^^^^^^^^^^^^...
 ...
    |
-42 |            end do
+45 |            end do
    | ...^^^^^^^^^^^^^^ LFortran extension
 
 warning: `:=` is an experimental LFortran extension (subject to change); use `--infer` to suppress this warning
-   --> tests/errors/continue_compilation_traits_04.f90:104:9
+   --> tests/errors/continue_compilation_traits_04.f90:107:9
     |
-104 |         p03 := PairwiseSum(Plain())
+107 |         p03 := PairwiseSum(Plain())
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ LFortran extension
 
 semantic error: no visible nominal implementation of trait 'isum' for generic type parameter 'u' of 'pairwisesum' (argument 'plain')
-   --> tests/errors/continue_compilation_traits_04.f90:104:16
+   --> tests/errors/continue_compilation_traits_04.f90:107:16
     |
-104 |         p03 := PairwiseSum(Plain())
+107 |         p03 := PairwiseSum(Plain())
     |                ^^^^^^^^^^^^^^^^^^^^ 
 
 warning: `:=` is an experimental LFortran extension (subject to change); use `--infer` to suppress this warning
-   --> tests/errors/continue_compilation_traits_04.f90:115:9
+   --> tests/errors/continue_compilation_traits_04.f90:118:9
     |
-115 |         p04 := PairwiseSum{SimpleSum}(ScaledSum(2))
+118 |         p04 := PairwiseSum{SimpleSum}(ScaledSum(2))
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ LFortran extension
 
 semantic error: the actual argument of type 'scaledsum' conflicts with the explicit generic type argument 'simplesum' for parameter 'u' of 'pairwisesum'
-   --> tests/errors/continue_compilation_traits_04.f90:115:16
+   --> tests/errors/continue_compilation_traits_04.f90:118:16
     |
-115 |         p04 := PairwiseSum{SimpleSum}(ScaledSum(2))
+118 |         p04 := PairwiseSum{SimpleSum}(ScaledSum(2))
     |                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Type mismatch in assignment, the types must be compatible
-   --> tests/errors/continue_compilation_traits_04.f90:127:9
+   --> tests/errors/continue_compilation_traits_04.f90:130:9
     |
-127 |         p05 = PairwiseSum(ScaledSum(2))
+130 |         p05 = PairwiseSum(ScaledSum(2))
     |         ^^^   ^^^^^^^^^^^^^^^^^^^^^^^^^ type mismatch (pairwisesum{simplesum} and pairwisesum{scaledsum})
 
 warning: `:=` is an experimental LFortran extension (subject to change); use `--infer` to suppress this warning
-   --> tests/errors/continue_compilation_traits_04.f90:137:9
+   --> tests/errors/continue_compilation_traits_04.f90:140:9
     |
-137 |         h06 := Holder(n = 3)
+140 |         h06 := Holder(n = 3)
     |         ^^^^^^^^^^^^^^^^^^^^ LFortran extension
 
 semantic error: cannot infer generic type parameter 'u' of 'holder'; provide it explicitly
-   --> tests/errors/continue_compilation_traits_04.f90:137:16
+   --> tests/errors/continue_compilation_traits_04.f90:140:16
     |
-137 |         h06 := Holder(n = 3)
+140 |         h06 := Holder(n = 3)
     |                ^^^^^^^^^^^^^ 
 
 semantic error: procedure 'wrap' depends on the generic parameters of 'direct'; this prototype makes it accessible only through its type
-   --> tests/errors/continue_compilation_traits_04.f90:344:28
+   --> tests/errors/continue_compilation_traits_04.f90:347:28
     |
-344 |         print *, allocated(wrap(SimpleSum()))
+347 |         print *, allocated(wrap(SimpleSum()))
     |                            ^^^^^^^^^^^^^^^^^ 

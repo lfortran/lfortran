@@ -2,12 +2,12 @@
     "basename": "asr-traits_dependent_result_02-28a9e22",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/traits_dependent_result_02.f90",
-    "infile_hash": "ddbf7e2658d3f93907dbe6a437e09da71e2dec83f019d8b6363309ff",
+    "infile_hash": "1bc76b1202a32424187034bdb23954e91b60df9ddbb1f8f1c6111d65",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-traits_dependent_result_02-28a9e22.stdout",
-    "stdout_hash": "d1b946fbdaae8c3f339c530d0c3042460fbfcf7371f07c320fba4536",
+    "stdout_hash": "04087478fad8ba8af35a5f18430b548d10533516204141e6cc5303ea",
     "stderr": "asr-traits_dependent_result_02-28a9e22.stderr",
-    "stderr_hash": "f844e20d0a4640bbef15ce10714b0a1c1ab3c7b3a20acb5fa936e57d",
+    "stderr_hash": "529f7657f65b8b1415e696ba74fce0eb5a69ab429144ab9891921918",
     "returncode": 0
 }

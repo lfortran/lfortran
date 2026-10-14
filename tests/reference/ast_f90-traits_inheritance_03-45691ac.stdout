@@ -2,17 +2,20 @@ module traits_inheritance_03_m
 implicit none
 
 abstract interface :: IBase
-    function value() result(res)
+    function value(self) result(res)
+    type(itself), intent(in), pass :: self
     integer :: res
     end function value
 end interface IBase
 abstract interface, extends(IBase) :: ILeft
-    function left_value() result(res)
+    function left_value(self) result(res)
+    type(itself), intent(in), pass :: self
     integer :: res
     end function left_value
 end interface ILeft
 abstract interface, extends(IBase) :: IRight
-    function right_value() result(res)
+    function right_value(self) result(res)
+    type(itself), intent(in), pass :: self
     integer :: res
     end function right_value
 end interface IRight

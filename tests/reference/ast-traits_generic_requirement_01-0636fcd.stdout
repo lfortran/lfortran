@@ -105,12 +105,36 @@
                 (TraitProcedure
                     (Function
                         sum
-                        [(x)]
+                        [(self)
+                        (x)]
                         []
                         s
                         ()
                         ()
                         [(Declaration
+                            (AttrType
+                                TypeType
+                                []
+                                ()
+                                itself
+                                None
+                            )
+                            [(AttrIntent
+                                In
+                            )
+                            (AttrPass
+                                ()
+                            )]
+                            [(self
+                            []
+                            []
+                            ()
+                            ()
+                            None
+                            ())]
+                            ()
+                        )
+                        (Declaration
                             (AttrType
                                 TypeType
                                 []
@@ -176,8 +200,8 @@
             []
             [(DerivedTypeProc
                 ()
-                [(SimpleAttribute
-                    AttrNoPass
+                [(AttrPass
+                    ()
                 )]
                 [(UseSymbol
                     simple_sum
@@ -233,7 +257,8 @@
         [(TraitProcedure
             (Function
                 simple_sum
-                [(x)]
+                [(self)
+                (x)]
                 []
                 s
                 ()
@@ -243,6 +268,26 @@
                     (EndOfLine)]
                 )
                 [(Declaration
+                    (AttrType
+                        TypeType
+                        []
+                        ()
+                        SimpleSum
+                        None
+                    )
+                    [(AttrIntent
+                        In
+                    )]
+                    [(self
+                    []
+                    []
+                    ()
+                    ()
+                    None
+                    ())]
+                    ()
+                )
+                (Declaration
                     (AttrType
                         TypeType
                         []
@@ -436,6 +481,17 @@
                         simple_sum
                         []
                         [(()
+                        (FuncCallOrArray
+                            SimpleSum
+                            []
+                            []
+                            []
+                            []
+                            []
+                        )
+                        ()
+                        0)
+                        (()
                         x
                         ()
                         0)]

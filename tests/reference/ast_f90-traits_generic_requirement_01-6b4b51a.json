@@ -2,11 +2,11 @@
     "basename": "ast_f90-traits_generic_requirement_01-6b4b51a",
     "cmd": "lfortran --show-ast-f90 --no-indent --no-color {infile}",
     "infile": "tests/../integration_tests/traits_generic_requirement_01.f90",
-    "infile_hash": "d5ec4f6b5e9d4df5fe8448fa48942ac60c951d36dce2492c8685fe85",
+    "infile_hash": "278319a7885518c654afba8c425d820f4b63db9d5344160b8549695f",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast_f90-traits_generic_requirement_01-6b4b51a.stdout",
-    "stdout_hash": "de8643513e2be77ef215a29519eb95201380f0e81d2ac219d59b1be6",
+    "stdout_hash": "85b2e11c7ffa06eb294b1007bc1a608646a9a471537596a56ccbf51d",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

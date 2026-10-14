@@ -2,12 +2,12 @@
     "basename": "fortran-traits_static_declaration_01-5d66dd7",
     "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/traits_static_declaration_01.f90",
-    "infile_hash": "3bb0baa95b5c12ec1ad47c7fac74528ca5618b71ba3cb3718e0f229a",
+    "infile_hash": "d34cf2e0fcf18bc6823ec000edc28362cd163a663fba83a46ea6bd27",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "fortran-traits_static_declaration_01-5d66dd7.f90",
-    "stdout_hash": "ee944b741cfc38e5cd1f8ce36763111bc91af7881bdc03c07c2c9763",
+    "stdout_hash": "874c6cb744bea24dc5ec3635d11d88a8bc397cecee5ea052a2312566",
     "stderr": "fortran-traits_static_declaration_01-5d66dd7.stderr",
-    "stderr_hash": "acc20f7dc9e8325da336d576175e3a1800d029a7fdbf542a126b1cb3",
+    "stderr_hash": "995e0523d42ba7a6ca3c8b5f4ed3e26bd316ce9ca8091f6e5cd0713d",
     "returncode": 0
 }

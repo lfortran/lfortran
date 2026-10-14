@@ -4,7 +4,9 @@ implicit none
 !   slot 0: ivalue%value
 
 abstract interface :: ivalue
-    integer(4) function value() result(r)
+    type(itself), intent(in) :: itself
+    integer(4) function value(self) result(r)
+        type(itself), intent(in), pass :: self
     end function value
 end interface ivalue
 

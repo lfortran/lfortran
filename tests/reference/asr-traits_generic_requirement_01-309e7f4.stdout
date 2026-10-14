@@ -210,7 +210,18 @@
                                             ((FunctionCall
                                                 43 __instantiated_simple_sum
                                                 ()
-                                                [((ArrayPhysicalCast
+                                                [((StructConstructor
+                                                    2 simplesum
+                                                    []
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    ()
+                                                ))
+                                                ((ArrayPhysicalCast
                                                     (Var 89 x)
                                                     DescriptorArray
                                                     DescriptorArray
@@ -422,7 +433,18 @@
                                             ((FunctionCall
                                                 43 __instantiated_simple_sum1
                                                 ()
-                                                [((ArrayPhysicalCast
+                                                [((StructConstructor
+                                                    2 simplesum
+                                                    []
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    ()
+                                                ))
+                                                ((ArrayPhysicalCast
                                                     (Var 93 x)
                                                     DescriptorArray
                                                     DescriptorArray
@@ -508,6 +530,36 @@
                                                     []
                                                     ()
                                                 ),
+                                            self:
+                                                (Variable
+                                                    81
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    43 simplesum
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
                                             t:
                                                 (Variable
                                                     81
@@ -567,7 +619,13 @@
                                         })
                                     __instantiated_simple_sum
                                     (FunctionType
-                                        [(Array
+                                        [(StructType
+                                            []
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        (Array
                                             (Integer 4)
                                             [(()
                                             ())]
@@ -589,7 +647,8 @@
                                     )
                                     [__type_set_selected4
                                     __type_set_selected5]
-                                    [(Var 81 x)]
+                                    [(Var 81 self)
+                                    (Var 81 x)]
                                     [(Assignment
                                         (Var 81 s)
                                         (FunctionCall
@@ -701,6 +760,36 @@
                                                     []
                                                     ()
                                                 ),
+                                            self:
+                                                (Variable
+                                                    85
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    43 simplesum
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
                                             t:
                                                 (Variable
                                                     85
@@ -760,7 +849,13 @@
                                         })
                                     __instantiated_simple_sum1
                                     (FunctionType
-                                        [(Array
+                                        [(StructType
+                                            []
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        (Array
                                             (Real 8)
                                             [(()
                                             ())]
@@ -782,7 +877,8 @@
                                     )
                                     [__type_set_selected6
                                     __type_set_selected7]
-                                    [(Var 85 x)]
+                                    [(Var 85 self)
+                                    (Var 85 x)]
                                     [(Assignment
                                         (Var 85 s)
                                         (FunctionCall
@@ -1871,7 +1967,7 @@
                                                     )
                                                     43 simplesum
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
@@ -1952,7 +2048,8 @@
                                         (FunctionCall
                                             43 __instantiated_simple_sum
                                             ()
-                                            [((ArrayPhysicalCast
+                                            [((Var 83 self))
+                                            ((ArrayPhysicalCast
                                                 (Var 83 x)
                                                 DescriptorArray
                                                 DescriptorArray
@@ -2051,7 +2148,7 @@
                                                     )
                                                     43 simplesum
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
@@ -2132,7 +2229,8 @@
                                         (FunctionCall
                                             43 __instantiated_simple_sum1
                                             ()
-                                            [((ArrayPhysicalCast
+                                            [((Var 87 self))
+                                            ((ArrayPhysicalCast
                                                 (Var 87 x)
                                                 DescriptorArray
                                                 DescriptorArray
@@ -2231,7 +2329,7 @@
                                                     )
                                                     43 scaledsum
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
@@ -2412,7 +2510,7 @@
                                                     )
                                                     43 scaledsum
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
@@ -5051,7 +5149,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -5246,7 +5344,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -5414,8 +5512,8 @@
                                     2 isum
                                     [(2 __trait_member_isum_sum
                                     2 simple_sum@trait
-                                    ()
-                                    .true.)]
+                                    self
+                                    .false.)]
                                     Public
                                 ),
                             __implements_simplesum_isum_witness:
@@ -5477,7 +5575,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -5580,7 +5678,18 @@
                                                         (FunctionCall
                                                             34 __trait_erasure_simple_sum_i32_entry@trait
                                                             ()
-                                                            [((ArrayPhysicalCast
+                                                            [((TraitReceiver
+                                                                (Var 34 self)
+                                                                2 __implements_simplesum_isum_witness
+                                                                2 simplesum
+                                                                (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                            ))
+                                                            ((ArrayPhysicalCast
                                                                 (Var 34 x)
                                                                 DescriptorArray
                                                                 DescriptorArray
@@ -5661,7 +5770,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -5764,7 +5873,18 @@
                                                         (FunctionCall
                                                             35 __trait_erasure_simple_sum_r64_entry@trait
                                                             ()
-                                                            [((ArrayPhysicalCast
+                                                            [((TraitReceiver
+                                                                (Var 35 self)
+                                                                2 __implements_simplesum_isum_witness
+                                                                2 simplesum
+                                                                (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                            ))
+                                                            ((ArrayPhysicalCast
                                                                 (Var 35 x)
                                                                 DescriptorArray
                                                                 DescriptorArray
@@ -5853,7 +5973,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -6002,7 +6122,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -6188,6 +6308,36 @@
                                                                     []
                                                                     ()
                                                                 ),
+                                                            self:
+                                                                (Variable
+                                                                    99
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    2 simplesum
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                ),
                                                             t:
                                                                 (Variable
                                                                     99
@@ -6247,7 +6397,13 @@
                                                         })
                                                     __trait_erasure_scaled_sum_i32___instantiated_simple_sum
                                                     (FunctionType
-                                                        [(Array
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        (Array
                                                             (Integer 4)
                                                             [(()
                                                             ())]
@@ -6269,7 +6425,8 @@
                                                     )
                                                     [__trait_erasure_scaled_sum_i32___type_set_selected3
                                                     __trait_erasure_scaled_sum_i32___type_set_selected4]
-                                                    [(Var 99 x)]
+                                                    [(Var 99 self)
+                                                    (Var 99 x)]
                                                     [(Assignment
                                                         (Var 99 s)
                                                         (FunctionCall
@@ -7053,7 +7210,18 @@
                                                             ((FunctionCall
                                                                 36 __trait_erasure_scaled_sum_i32___instantiated_simple_sum
                                                                 ()
-                                                                [((ArrayPhysicalCast
+                                                                [((StructConstructor
+                                                                    2 simplesum
+                                                                    []
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                ))
+                                                                ((ArrayPhysicalCast
                                                                     (Var 37 x)
                                                                     DescriptorArray
                                                                     DescriptorArray
@@ -7163,6 +7331,36 @@
                                                                     []
                                                                     ()
                                                                 ),
+                                                            self:
+                                                                (Variable
+                                                                    103
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    2 simplesum
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                ),
                                                             t:
                                                                 (Variable
                                                                     103
@@ -7222,7 +7420,13 @@
                                                         })
                                                     __trait_erasure_scaled_sum_r64___instantiated_simple_sum
                                                     (FunctionType
-                                                        [(Array
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        (Array
                                                             (Real 8)
                                                             [(()
                                                             ())]
@@ -7244,7 +7448,8 @@
                                                     )
                                                     [__trait_erasure_scaled_sum_r64___type_set_selected3
                                                     __trait_erasure_scaled_sum_r64___type_set_selected4]
-                                                    [(Var 103 x)]
+                                                    [(Var 103 self)
+                                                    (Var 103 x)]
                                                     [(Assignment
                                                         (Var 103 s)
                                                         (FunctionCall
@@ -8028,7 +8233,18 @@
                                                             ((FunctionCall
                                                                 38 __trait_erasure_scaled_sum_r64___instantiated_simple_sum
                                                                 ()
-                                                                [((ArrayPhysicalCast
+                                                                [((StructConstructor
+                                                                    2 simplesum
+                                                                    []
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                ))
+                                                                ((ArrayPhysicalCast
                                                                     (Var 39 x)
                                                                     DescriptorArray
                                                                     DescriptorArray
@@ -8351,6 +8567,36 @@
                                                                     []
                                                                     ()
                                                                 ),
+                                                            self:
+                                                                (Variable
+                                                                    30
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    2 simplesum
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                ),
                                                             t:
                                                                 (Variable
                                                                     30
@@ -8410,7 +8656,13 @@
                                                         })
                                                     __trait_erasure_simple_sum_i32_entry
                                                     (FunctionType
-                                                        [(Array
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        (Array
                                                             (Integer 4)
                                                             [(()
                                                             ())]
@@ -8432,7 +8684,8 @@
                                                     )
                                                     [__trait_erasure_simple_sum_i32___type_set_selected
                                                     __trait_erasure_simple_sum_i32___type_set_selected1]
-                                                    [(Var 30 x)]
+                                                    [(Var 30 self)
+                                                    (Var 30 x)]
                                                     [(Assignment
                                                         (Var 30 s)
                                                         (FunctionCall
@@ -8781,6 +9034,36 @@
                                                                     []
                                                                     ()
                                                                 ),
+                                                            self:
+                                                                (Variable
+                                                                    32
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    2 simplesum
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                ),
                                                             t:
                                                                 (Variable
                                                                     32
@@ -8840,7 +9123,13 @@
                                                         })
                                                     __trait_erasure_simple_sum_r64_entry
                                                     (FunctionType
-                                                        [(Array
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        (Array
                                                             (Real 8)
                                                             [(()
                                                             ())]
@@ -8862,7 +9151,8 @@
                                                     )
                                                     [__trait_erasure_simple_sum_r64___type_set_selected
                                                     __trait_erasure_simple_sum_r64___type_set_selected1]
-                                                    [(Var 32 x)]
+                                                    [(Var 32 self)
+                                                    (Var 32 x)]
                                                     [(Assignment
                                                         (Var 32 s)
                                                         (FunctionCall
@@ -8968,6 +9258,35 @@
                                     (SymbolTable
                                         10
                                         {
+                                            itself:
+                                                (Variable
+                                                    10
+                                                    itself
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        itself
+                                                        NonExtensible
+                                                        .false.
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
                                             sum:
                                                 (Template
                                                     (SymbolTable
@@ -9012,6 +9331,35 @@
                                                                                     .false.
                                                                                     .false.
                                                                                     NotMethod
+                                                                                    ()
+                                                                                    []
+                                                                                    ()
+                                                                                ),
+                                                                            self:
+                                                                                (Variable
+                                                                                    12
+                                                                                    self
+                                                                                    []
+                                                                                    In
+                                                                                    ()
+                                                                                    ()
+                                                                                    Default
+                                                                                    (TypeParameter
+                                                                                        itself
+                                                                                        NonExtensible
+                                                                                        .false.
+                                                                                    )
+                                                                                    ()
+                                                                                    Source
+                                                                                    Public
+                                                                                    Required
+                                                                                    .false.
+                                                                                    .false.
+                                                                                    .false.
+                                                                                    ()
+                                                                                    .false.
+                                                                                    .false.
+                                                                                    Pass
                                                                                     ()
                                                                                     []
                                                                                     ()
@@ -9083,7 +9431,12 @@
                                                                         })
                                                                     sum
                                                                     (FunctionType
-                                                                        [(Array
+                                                                        [(TypeParameter
+                                                                            itself
+                                                                            NonExtensible
+                                                                            .false.
+                                                                        )
+                                                                        (Array
                                                                             (TypeParameter
                                                                                 t
                                                                                 NonExtensible
@@ -9112,7 +9465,8 @@
                                                                         Host
                                                                     )
                                                                     []
-                                                                    [(Var 12 x)]
+                                                                    [(Var 12 self)
+                                                                    (Var 12 x)]
                                                                     []
                                                                     (Var 12 s)
                                                                     Public
@@ -9266,6 +9620,36 @@
                                                                     []
                                                                     ()
                                                                 ),
+                                                            self:
+                                                                (Variable
+                                                                    61
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    2 simplesum
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                ),
                                                             t:
                                                                 (Variable
                                                                     61
@@ -9333,7 +9717,13 @@
                                                         })
                                                     __instantiated_simple_sum
                                                     (FunctionType
-                                                        [(Array
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        (Array
                                                             (TypeParameter
                                                                 t
                                                                 NonExtensible
@@ -9363,7 +9753,8 @@
                                                     )
                                                     [__type_set_requirement
                                                     __type_set_requirement2]
-                                                    [(Var 61 x)]
+                                                    [(Var 61 self)
+                                                    (Var 61 x)]
                                                     [(Assignment
                                                         (Var 61 s)
                                                         (FunctionCall
@@ -10656,7 +11047,18 @@
                                                             ((FunctionCall
                                                                 22 __instantiated_simple_sum
                                                                 ()
-                                                                [((ArrayPhysicalCast
+                                                                [((StructConstructor
+                                                                    2 simplesum
+                                                                    []
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                ))
+                                                                ((ArrayPhysicalCast
                                                                     (Var 23 x)
                                                                     DescriptorArray
                                                                     DescriptorArray
@@ -11542,6 +11944,36 @@
                                                                     []
                                                                     ()
                                                                 ),
+                                                            self:
+                                                                (Variable
+                                                                    21
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                    2 simplesum
+                                                                    Source
+                                                                    Private
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                ),
                                                             t:
                                                                 (Variable
                                                                     21
@@ -11609,7 +12041,13 @@
                                                         })
                                                     simple_sum
                                                     (FunctionType
-                                                        [(Array
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        (Array
                                                             (TypeParameter
                                                                 t
                                                                 NonExtensible
@@ -11639,7 +12077,8 @@
                                                     )
                                                     [__type_set_requirement
                                                     __type_set_requirement1]
-                                                    [(Var 21 x)]
+                                                    [(Var 21 self)
+                                                    (Var 21 x)]
                                                     [(Assignment
                                                         (Var 21 s)
                                                         (FunctionCall
@@ -11766,7 +12205,7 @@
                                                     2 simple_sum@trait
                                                     Source
                                                     .false.
-                                                    .true.
+                                                    .false.
                                                     ()
                                                 )
                                         })
@@ -11921,7 +12360,7 @@
                                                                                     )
                                                                                     ()
                                                                                     Source
-                                                                                    Private
+                                                                                    Public
                                                                                     Required
                                                                                     .false.
                                                                                     .false.
@@ -11929,7 +12368,7 @@
                                                                                     ()
                                                                                     .false.
                                                                                     .false.
-                                                                                    NotMethod
+                                                                                    Pass
                                                                                     ()
                                                                                     []
                                                                                     ()
@@ -12128,7 +12567,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -12136,7 +12575,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
-                                                                    NotMethod
+                                                                    Pass
                                                                     ()
                                                                     []
                                                                     ()

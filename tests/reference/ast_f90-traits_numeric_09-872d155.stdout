@@ -35,7 +35,8 @@ end module traits_numeric_09_m
 module traits_numeric_09_shadow_m
 implicit none
 abstract interface :: integer
-    function value() result(r)
+    function value(self) result(r)
+    type(itself), intent(in), pass :: self
     integer :: r
     end function value
 end interface integer

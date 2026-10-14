@@ -1392,7 +1392,7 @@
                                                     )
                                                     40 box
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
@@ -7504,7 +7504,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -7628,7 +7628,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -9790,6 +9790,35 @@
                                     (SymbolTable
                                         17
                                         {
+                                            itself:
+                                                (Variable
+                                                    17
+                                                    itself
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        itself
+                                                        NonExtensible
+                                                        .false.
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
                                             value:
                                                 (Function
                                                     (SymbolTable
@@ -9819,11 +9848,44 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                ),
+                                                            self:
+                                                                (Variable
+                                                                    18
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        itself
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    Pass
+                                                                    ()
+                                                                    []
+                                                                    ()
                                                                 )
                                                         })
                                                     value
                                                     (FunctionType
-                                                        []
+                                                        [(TypeParameter
+                                                            itself
+                                                            NonExtensible
+                                                            .false.
+                                                        )]
                                                         (Integer 4)
                                                         Source
                                                         Interface
@@ -9838,7 +9900,7 @@
                                                         Host
                                                     )
                                                     []
-                                                    []
+                                                    [(Var 18 self)]
                                                     []
                                                     (Var 18 r)
                                                     Public
@@ -9926,7 +9988,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -9934,7 +9996,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
-                                                                    NotMethod
+                                                                    Pass
                                                                     ()
                                                                     []
                                                                     ()

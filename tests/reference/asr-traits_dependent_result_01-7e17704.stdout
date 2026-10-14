@@ -122,14 +122,48 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                ),
+                                                            self:
+                                                                (Variable
+                                                                    5
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        itself
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    Pass
+                                                                    ()
+                                                                    []
+                                                                    ()
                                                                 )
                                                         })
                                                     copy_text
                                                     (FunctionType
-                                                        [(String 1 () AssumedLength DescriptorString)
+                                                        [(TypeParameter
+                                                            itself
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        (String 1 () AssumedLength DescriptorString)
                                                         (Integer 4)]
                                                         (String 1 (FunctionParam
-                                                            1
+                                                            2
                                                             (Integer 4)
                                                             ()
                                                         ) ExpressionLength DescriptorString)
@@ -146,13 +180,43 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 5 input)
+                                                    [(Var 5 self)
+                                                    (Var 5 input)
                                                     (Var 5 n)]
                                                     []
                                                     (Var 5 r)
                                                     Public
                                                     .false.
                                                     .true.
+                                                    ()
+                                                ),
+                                            itself:
+                                                (Variable
+                                                    3
+                                                    itself
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        itself
+                                                        NonExtensible
+                                                        .false.
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
                                                     ()
                                                 ),
                                             text:
@@ -234,14 +298,48 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                ),
+                                                            self:
+                                                                (Variable
+                                                                    4
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        itself
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    Pass
+                                                                    ()
+                                                                    []
+                                                                    ()
                                                                 )
                                                         })
                                                     text
                                                     (FunctionType
-                                                        [(Integer 4)
+                                                        [(TypeParameter
+                                                            itself
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        (Integer 4)
                                                         (String 1 () AssumedLength DescriptorString)]
                                                         (String 1 (FunctionParam
-                                                            0
+                                                            1
                                                             (Integer 4)
                                                             ()
                                                         ) ExpressionLength DescriptorString)
@@ -258,7 +356,8 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 4 n)
+                                                    [(Var 4 self)
+                                                    (Var 4 n)
                                                     (Var 4 input)]
                                                     []
                                                     (Var 4 r)
@@ -410,7 +509,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -418,7 +517,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
-                                                                    NotMethod
+                                                                    Pass
                                                                     ()
                                                                     []
                                                                     ()
@@ -557,7 +656,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -565,7 +664,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
-                                                                    NotMethod
+                                                                    Pass
                                                                     ()
                                                                     []
                                                                     ()

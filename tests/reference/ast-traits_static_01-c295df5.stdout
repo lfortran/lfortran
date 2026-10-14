@@ -20,12 +20,35 @@
             [(InterfaceProc
                 (Function
                     get_value
-                    []
+                    [(self)]
                     []
                     res
                     ()
                     ()
                     [(Declaration
+                        (AttrType
+                            TypeType
+                            []
+                            ()
+                            itself
+                            None
+                        )
+                        [(AttrIntent
+                            In
+                        )
+                        (AttrPass
+                            ()
+                        )]
+                        [(self
+                        []
+                        []
+                        ()
+                        ()
+                        None
+                        ())]
+                        ()
+                    )
+                    (Declaration
                         (AttrType
                             TypeInteger
                             []

@@ -43,6 +43,35 @@
                                     (SymbolTable
                                         3
                                         {
+                                            itself:
+                                                (Variable
+                                                    3
+                                                    itself
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (TypeParameter
+                                                        itself
+                                                        NonExtensible
+                                                        .false.
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
                                             shifted_values:
                                                 (Function
                                                     (SymbolTable
@@ -129,6 +158,35 @@
                                                                     []
                                                                     ()
                                                                 ),
+                                                            self:
+                                                                (Variable
+                                                                    5
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        itself
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    Pass
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                ),
                                                             zinput:
                                                                 (Variable
                                                                     5
@@ -163,13 +221,18 @@
                                                         })
                                                     shifted_values
                                                     (FunctionType
-                                                        [(Integer 4)
+                                                        [(TypeParameter
+                                                            itself
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        (Integer 4)
                                                         (Integer 4)
                                                         (Array
                                                             (Integer 4)
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (FunctionParam
-                                                                1
+                                                                2
                                                                 (Integer 4)
                                                                 ()
                                                             ))]
@@ -180,7 +243,7 @@
                                                             (Integer 4)
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (FunctionParam
-                                                                1
+                                                                2
                                                                 (Integer 4)
                                                                 ()
                                                             ))]
@@ -200,7 +263,8 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 5 offset)
+                                                    [(Var 5 self)
+                                                    (Var 5 offset)
                                                     (Var 5 n)
                                                     (Var 5 zinput)]
                                                     []
@@ -270,16 +334,50 @@
                                                                     ()
                                                                     []
                                                                     ()
+                                                                ),
+                                                            self:
+                                                                (Variable
+                                                                    4
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TypeParameter
+                                                                        itself
+                                                                        NonExtensible
+                                                                        .false.
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    Pass
+                                                                    ()
+                                                                    []
+                                                                    ()
                                                                 )
                                                         })
                                                     values
                                                     (FunctionType
-                                                        [(Integer 4)]
+                                                        [(TypeParameter
+                                                            itself
+                                                            NonExtensible
+                                                            .false.
+                                                        )
+                                                        (Integer 4)]
                                                         (Array
                                                             (Integer 4)
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (FunctionParam
-                                                                0
+                                                                1
                                                                 (Integer 4)
                                                                 ()
                                                             ))]
@@ -299,7 +397,8 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 4 n)]
+                                                    [(Var 4 self)
+                                                    (Var 4 n)]
                                                     []
                                                     (Var 4 r)
                                                     Public
@@ -456,7 +555,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -464,7 +563,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
-                                                                    NotMethod
+                                                                    Pass
                                                                     ()
                                                                     []
                                                                     ()
@@ -633,7 +732,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
@@ -641,7 +740,7 @@
                                                                     ()
                                                                     .false.
                                                                     .false.
-                                                                    NotMethod
+                                                                    Pass
                                                                     ()
                                                                     []
                                                                     ()

@@ -2,12 +2,12 @@
     "basename": "asr-traits_generic_requirement_01-309e7f4",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/traits_generic_requirement_01.f90",
-    "infile_hash": "d5ec4f6b5e9d4df5fe8448fa48942ac60c951d36dce2492c8685fe85",
+    "infile_hash": "278319a7885518c654afba8c425d820f4b63db9d5344160b8549695f",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-traits_generic_requirement_01-309e7f4.stdout",
-    "stdout_hash": "e85a6b470283004c5d9aa6a585cd5991e990bd44653305273f1014c1",
+    "stdout_hash": "c1eb69ee29e93e38279171fc28433c0af3ce4aa51519373d62f33f39",
     "stderr": "asr-traits_generic_requirement_01-309e7f4.stderr",
-    "stderr_hash": "02fc5abdd10646beef771496c29c077ffd824b36e944a4d1af82d579",
+    "stderr_hash": "fd4c76efd807c39ef86ccf38b55c2095966261634057f648bad6dc69",
     "returncode": 0
 }

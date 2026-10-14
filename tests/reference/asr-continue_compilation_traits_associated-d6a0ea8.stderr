@@ -1,161 +1,161 @@
 warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
-  --> tests/errors/continue_compilation_traits_associated.f90:7:5 - 18:1
+  --> tests/errors/continue_compilation_traits_associated.f90:6:5 - 19:1
    |
- 7 |        abstract interface :: IPeek
+ 6 |        abstract interface :: IPeek
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-18 |    
+19 |    
    | ...^ LFortran extension
 
 semantic error: associated type 'thing' of trait 'iunused' is not used by any of its methods, so it cannot be inferred
-  --> tests/errors/continue_compilation_traits_associated.f90:36:9
+  --> tests/errors/continue_compilation_traits_associated.f90:39:9
    |
-36 |         type :: Thing
+39 |         type :: Thing
    |         ^^^^^^^^^^^^^ 
 
 semantic error: 'itself' is the type that implements a trait; it cannot be declared as an associated type
-  --> tests/errors/continue_compilation_traits_associated.f90:46:9
+  --> tests/errors/continue_compilation_traits_associated.f90:50:9
    |
-46 |         type :: itself
+50 |         type :: itself
    |         ^^^^^^^^^^^^^^ 
 
 semantic error: trait 'ipeek' has associated types and can only be used as a generic constraint
-  --> tests/errors/continue_compilation_traits_associated.f90:59:9
+  --> tests/errors/continue_compilation_traits_associated.f90:64:9
    |
-59 |         class(IPeek), intent(in) :: x
+64 |         class(IPeek), intent(in) :: x
    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Dummy argument 'x' not defined
-  --> tests/errors/continue_compilation_traits_associated.f90:58:5 - 60:28
+  --> tests/errors/continue_compilation_traits_associated.f90:63:5 - 65:28
    |
-58 |        subroutine show_peek(x)
+63 |        subroutine show_peek(x)
    |        ^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-60 |        end subroutine show_peek
+65 |        end subroutine show_peek
    | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: associated type 'element' of trait 'ipeek' is bound to integer(4) by 'count_after' and to real(4) by 'first_or'
-  --> tests/errors/continue_compilation_traits_associated.f90:67:5 - 72:19
+  --> tests/errors/continue_compilation_traits_associated.f90:72:5 - 77:19
    |
-67 |        type, sealed, implements(IPeek) :: Mixed
+72 |        type, sealed, implements(IPeek) :: Mixed
    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
    |
-72 |        end type Mixed
+77 |        end type Mixed
    | ...^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: associated type 'element' cannot be inferred as a character type without a constant length from 'text_append'
-  --> tests/errors/continue_compilation_traits_associated.f90:92:5 - 96:18
-   |
-92 |        type, sealed, implements(IAppendable) :: Text
-   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+   --> tests/errors/continue_compilation_traits_associated.f90:97:5 - 101:18
+    |
+ 97 |        type, sealed, implements(IAppendable) :: Text
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
-   |
-96 |        end type Text
-   | ...^^^^^^^^^^^^^^^^^^ 
+    |
+101 |        end type Text
+    | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: traits with associated types as generic constraints are not implemented yet
-   --> tests/errors/continue_compilation_traits_associated.f90:110:25
+   --> tests/errors/continue_compilation_traits_associated.f90:115:25
     |
-110 |     function peek_count{IPeek :: T}(x) result(n)
+115 |     function peek_count{IPeek :: T}(x) result(n)
     |                         ^^^^^^^^^^ 
 
-semantic error: trait receivers require intent(in) or intent(inout) without pointer or allocatable
-   --> tests/errors/continue_compilation_traits_associated.f90:176:5 - 180:19
+semantic error: the passed-object argument 'self' of 'reset_bump' has intent(out), but trait message 'bump' declares its receiver 'self' with intent(inout)
+   --> tests/errors/continue_compilation_traits_associated.f90:182:5 - 186:19
     |
-176 |        type, sealed, implements(ICounter) :: Reset
+182 |        type, sealed, implements(ICounter) :: Reset
     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-180 |        end type Reset
+186 |        end type Reset
     | ...^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: associated type 'element' of trait 'iecho' cannot be bound to t, a type parameter of the generic procedure 'mirror_echo': it is one type for each implementation
-   --> tests/errors/continue_compilation_traits_associated.f90:443:5 - 445:19
+   --> tests/errors/continue_compilation_traits_associated.f90:453:5 - 455:19
     |
-443 |        implements IEcho :: Mirror
+453 |        implements IEcho :: Mirror
     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
     |
-445 |        end implements
+455 |        end implements
     | ...^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: a character generic type argument requires a constant length
-   --> tests/errors/continue_compilation_traits_associated.f90:168:24
+   --> tests/errors/continue_compilation_traits_associated.f90:173:24
     |
-168 |         print *, size([Box(s)])
+173 |         print *, size([Box(s)])
     |                        ^^^^^^ 
 
 semantic error: Argument `c` with intent(in) passed to a dummy argument with modifying intent
-   --> tests/errors/continue_compilation_traits_associated.f90:223:9
+   --> tests/errors/continue_compilation_traits_associated.f90:229:9
     |
-223 |         call c%bump()
+229 |         call c%bump()
     |         ^^^^^^^^^^^^^ 
 
 semantic error: Argument `t` with intent(in) passed to a dummy argument with modifying intent
-   --> tests/errors/continue_compilation_traits_associated.f90:229:9
+   --> tests/errors/continue_compilation_traits_associated.f90:235:9
     |
-229 |         call t(1)%append(4)
+235 |         call t(1)%append(4)
     |         ^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Type mismatch in argument `item`: expected `integer(4)` but got `logical(4)`.
-   --> tests/errors/continue_compilation_traits_associated.f90:255:23
+semantic error: Argument `x` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_associated.f90:242:9
     |
-255 |     i = k%count_after(.true.)
+242 |         call x%bump()
+    |         ^^^^^^^^^^^^^ 
+
+semantic error: Argument `x` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_associated.f90:248:9
+    |
+248 |         call x%bump()
+    |         ^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in argument `item`: expected `integer(4)` but got `logical(4)`.
+   --> tests/errors/continue_compilation_traits_associated.f90:264:23
+    |
+264 |     i = k%count_after(.true.)
     |                       ^^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-   --> tests/errors/continue_compilation_traits_associated.f90:260:5
+   --> tests/errors/continue_compilation_traits_associated.f90:269:5
     |
-260 |     call frozen%append(1)
+269 |     call frozen%append(1)
     |     ^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
-   --> tests/errors/continue_compilation_traits_associated.f90:263:9
+   --> tests/errors/continue_compilation_traits_associated.f90:272:9
     |
-263 |         call fixed%append(1)
+272 |         call fixed%append(1)
     |         ^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: generic trait calls are read-only: 'count_bump' implements 'bump' of trait 'icounter' with an intent(inout) receiver, which only direct calls on a concrete object may use
-   --> tests/errors/continue_compilation_traits_associated.f90:266:5
-    |
-266 |     call generic_bump(c)
-    |     ^^^^^^^^^^^^^^^^^^^^ 
-
-semantic error: runtime trait views are read-only: 'count_bump' implements 'bump' of trait 'icounter' with an intent(inout) receiver, which only direct calls on a concrete object may use
-   --> tests/errors/continue_compilation_traits_associated.f90:268:20
-    |
-268 |     call view_bump(c)
-    |                    ^ 
-
 semantic error: default input/output of type(bag) for write(formatted) in 'show' of the generic type instance shelf{bag} is not implemented yet: component 'a' of bag is allocatable
-   --> tests/errors/continue_compilation_traits_associated.f90:313:9
+   --> tests/errors/continue_compilation_traits_associated.f90:321:9
     |
-313 |         type(Shelf{Bag}) :: bags
+321 |         type(Shelf{Bag}) :: bags
     |         ^^^^^^^^^^^^^^^^ 
 
 semantic error: default input/output of type(link) for write(formatted) in 'show' of the generic type instance shelf{link} is not implemented yet: component 'next' of link is a pointer
-   --> tests/errors/continue_compilation_traits_associated.f90:329:9
+   --> tests/errors/continue_compilation_traits_associated.f90:337:9
     |
-329 |         type(Shelf{Link}) :: links
+337 |         type(Shelf{Link}) :: links
     |         ^^^^^^^^^^^^^^^^^ 
 
 semantic error: defined input/output of type(label) for write(formatted) in 'show' of the generic type instance shelf{label} is not implemented yet
-   --> tests/errors/continue_compilation_traits_associated.f90:366:9
+   --> tests/errors/continue_compilation_traits_associated.f90:374:9
     |
-366 |         type(Shelf{Label}) :: labels
+374 |         type(Shelf{Label}) :: labels
     |         ^^^^^^^^^^^^^^^^^^ 
 
 semantic error: defined input/output of type(label) for write(formatted) in 'show' of the generic type instance shelf{sleeve} is not implemented yet: it transfers component 'tag' of sleeve
-   --> tests/errors/continue_compilation_traits_associated.f90:378:9
+   --> tests/errors/continue_compilation_traits_associated.f90:386:9
     |
-378 |         type(Shelf{Sleeve}) :: sleeves
+386 |         type(Shelf{Sleeve}) :: sleeves
     |         ^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: default input/output of type(coordinates) for read(formatted) in 'load' of the generic type instance loader{coordinates} is not implemented yet
-   --> tests/errors/continue_compilation_traits_associated.f90:419:9
+   --> tests/errors/continue_compilation_traits_associated.f90:427:9
     |
-419 |         type(Loader{Coordinates}) :: places
+427 |         type(Loader{Coordinates}) :: places
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^ 
