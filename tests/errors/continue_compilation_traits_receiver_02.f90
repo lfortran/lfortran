@@ -1,13 +1,13 @@
-! Explicit trait receivers (TD-36): calls. An intent(inout) or intent(out)
-! receiver needs a definable object, whatever path dispatches the call; an
-! intent(in) receiver, or one without INTENT, accepts any object. The
+! Explicit trait receivers (TD-36): calls and PURE rules. An intent(inout) or
+! intent(out) receiver needs a definable object, whatever path dispatches the
+! call; an intent(in) receiver, or one without INTENT, accepts any object. The
 ! receiver is not an argument of the call. PURE messages follow the ordinary
 ! PURE rules. Each procedure or module whose name starts with bad_ has one
 ! error; procedures whose names start with ok_ are valid controls, and
-! ordinary_ procedures are the same errors without traits. Errors that this
-! compiler does not diagnose in ordinary Fortran either (an associate name of
-! an expression in a definition context, a PURE function with an
-! intent(inout) dummy) have no cases here.
+! ordinary_ procedures are the same errors without traits. An associate name
+! of an expression in a definition context, which this compiler does not
+! diagnose in ordinary Fortran either, has no case here. The PURE rules for a
+! receiver are checked where the trait declares the message (C19 to C19e).
 module cc_traits_receiver_calls_contracts
     use, intrinsic :: iso_fortran_env, only: real64
     implicit none
@@ -299,3 +299,55 @@ contains
         self%n = self%n + 1
     end subroutine
 end module cc_traits_receiver_bad_impure_tick
+
+! C19: the receiver of a PURE function message is intent(in) (F2018 C1583);
+! the trait declaration alone is diagnosed.
+module cc_traits_receiver_bad_pure_function_inout
+    implicit none
+    abstract interface :: ITakeInout
+        pure integer function take(self)
+            type(itself), intent(inout), pass :: self
+        end function
+    end interface
+end module cc_traits_receiver_bad_pure_function_inout
+
+! C19b: nor intent(out).
+module cc_traits_receiver_bad_pure_function_out
+    implicit none
+    abstract interface :: ITakeOut
+        pure integer function take(self)
+            type(itself), intent(out), pass :: self
+        end function
+    end interface
+end module cc_traits_receiver_bad_pure_function_out
+
+! C19c: nor without INTENT.
+module cc_traits_receiver_bad_pure_function_no_intent
+    implicit none
+    abstract interface :: ITakeLoose
+        pure integer function take(self)
+            type(itself), pass :: self
+        end function
+    end interface
+end module cc_traits_receiver_bad_pure_function_no_intent
+
+! C19d: the receiver of a PURE subroutine message declares its INTENT
+! (F2018 C1584).
+module cc_traits_receiver_bad_pure_subroutine_no_intent
+    implicit none
+    abstract interface :: ITickLoose
+        pure subroutine tick(self)
+            type(itself), pass :: self
+        end subroutine
+    end interface
+end module cc_traits_receiver_bad_pure_subroutine_no_intent
+
+! C19e: an ELEMENTAL message that is not IMPURE is PURE.
+module cc_traits_receiver_bad_elemental_function_inout
+    implicit none
+    abstract interface :: IScaleInout
+        elemental integer function scaled(self)
+            type(itself), intent(inout), pass :: self
+        end function
+    end interface
+end module cc_traits_receiver_bad_elemental_function_inout
