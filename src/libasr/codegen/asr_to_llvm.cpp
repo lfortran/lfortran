@@ -11816,7 +11816,8 @@ public:
                     (ASR::is_a<ASR::ArrayItem_t>(*x.m_tgt) ||
                      ASR::is_a<ASR::StructInstanceMember_t>(*x.m_tgt)) &&
                     !ASRUtils::is_array(tgt_type) &&
-                    !ASR::is_a<ASR::Pointer_t>(*tgt_type);
+                    !ASR::is_a<ASR::Pointer_t>(*tgt_type) &&
+                    !ASR::is_a<ASR::Allocatable_t>(*tgt_type);
                 if (tgt_is_array_or_member) {
                     this->visit_expr(*x.m_tgt);
                 } else {
@@ -11827,16 +11828,17 @@ public:
                 // uint32_t t_h = get_hash((ASR::asr_t*)t);
                 // nptr = llvm_symtab[t_h];
                 nptr = tmp;
-                // Load the pointer value for simple Var targets.
-                // StructInstanceMember/ArrayItem targets are already
-                // loaded by visit_expr_wrapper with load_ref=true.
-                // For class types with new_classes, visit_expr_wrapper
-                // already loaded the struct pointer, so skip the
-                // extra Pointer_t load to avoid reading the vtable.
+                // Load the address held by simple pointer or allocatable
+                // Var targets (an allocatable string is its own descriptor,
+                // like a non-allocatable one). StructInstanceMember/ArrayItem
+                // targets are already loaded by visit_expr_wrapper with
+                // load_ref=true, and so are class(*) targets, so skip the
+                // extra load for them to avoid reading the vtable.
                 if( !ASRUtils::is_array(tgt_type) &&
-                    ASR::is_a<ASR::Pointer_t>(*tgt_type) &&
+                    (ASR::is_a<ASR::Pointer_t>(*tgt_type) ||
+                     LLVM::is_llvm_pointer(*tgt_type)) &&
                     ASR::is_a<ASR::Var_t>(*x.m_tgt) &&
-                    !ASRUtils::is_class_type(ASRUtils::extract_type(tgt_type)) ) {
+                    !ASRUtils::is_unlimited_polymorphic_type(x.m_tgt) ) {
                     llvm::Type* tgt_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                         x.m_tgt, tgt_type, module.get());
                     nptr = llvm_utils->CreateLoad2(tgt_llvm_type, nptr);
