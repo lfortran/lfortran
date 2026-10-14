@@ -321,10 +321,10 @@ class GlobalInitVisitor {
                     al, loc, target, v->m_symbolic_value)));
             } else if (ASR::is_a<ASR::StructConstructor_t>(*v->m_symbolic_value)) {
                 // Initialization is not intrinsic assignment (F2018
-                // 7.5.6.3): neither the variable nor a value built by the
-                // constructor is finalized. The components are defined in
-                // place, as the init_expr pass does for a local that is not
-                // saved.
+                // 7.5.6.3), so the variable must not be finalized. Define
+                // its components in place, recursing into nested
+                // constructors, as the init_expr pass does for a local that
+                // is not saved, instead of assigning the whole variable.
                 StructInitializer replacer(al, v->m_parent_symtab, target, stmts);
                 ASR::expr_t *init = v->m_symbolic_value;
                 replacer.current_expr = &init;
