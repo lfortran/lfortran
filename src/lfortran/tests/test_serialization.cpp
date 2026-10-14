@@ -10418,6 +10418,41 @@ end module
         ASRUtils::EXPR2VAR(reset_requirement->m_args[0])->m_intent = ASR::intentType::In;
         rejects("asr.verify.trait_constraint.receiver_matches_parameter");
     }
+    SUBCASE("only a trait signature has a receiver") {
+        // The dummy of an ordinary abstract interface is never one, even
+        // when it is marked like one.
+        const std::string ordinary = R"(
+module explicit_receiver_ordinary_m
+implicit none
+abstract interface
+    subroutine plain(k)
+        integer, intent(in) :: k
+    end subroutine
+end interface
+end module
+)";
+        Allocator al2(256 * 1024);
+        LCompilers::diag::Diagnostics declared;
+        auto ast = LCompilers::LFortran::parse(al2, ordinary, declared, options);
+        REQUIRE(ast.ok);
+        auto asr = LCompilers::LFortran::ast_to_asr(
+            al2, *ast.result, declared, nullptr, false, options, lm);
+        REQUIRE(asr.ok);
+        auto *unit = ASR::down_cast<ASR::Module_t>(
+            asr.result->m_symtab->get_symbol("explicit_receiver_ordinary_m"));
+        auto *plain = ASR::down_cast<ASR::Function_t>(unit->m_symtab->get_symbol("plain"));
+        LCompilers::diag::Diagnostics valid;
+        CHECK(LCompilers::asr_verify(*asr.result, true, valid));
+        ASRUtils::EXPR2VAR(plain->m_args[0])->m_pass_attr = ASR::pass_attrType::Pass;
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*asr.result, true, invalid));
+        INFO(invalid.render2());
+        bool found = false;
+        for (const auto &diagnostic : invalid.diagnostics) {
+            found |= diagnostic.code == "asr.verify.variable.pass_attr";
+        }
+        CHECK(found);
+    }
 }
 
 TEST_CASE("Topological sorting string") {

@@ -5069,6 +5069,39 @@ public:
         visit_UserDefinedType(x);
     }
 
+    // Whether `function` is a signature that can mark an explicit receiver: a
+    // message of a trait, also a generic one (a Template of the trait), or a
+    // requirement that a trait constraint of its scope names, normalized from
+    // a message, also a generic one (a Template that the constraint names).
+    static bool is_trait_signature(const ASR::Function_t &function) {
+        auto owner = [](const SymbolTable *s) -> const ASR::symbol_t* {
+            return s && s->asr_owner && ASR::is_a<ASR::symbol_t>(*s->asr_owner)
+                ? ASR::down_cast<ASR::symbol_t>(s->asr_owner) : nullptr;
+        };
+        auto required = [](const SymbolTable *scope, const ASR::symbol_t *requirement) {
+            for (const auto &entry : scope->get_scope()) {
+                if (!ASR::is_a<ASR::TraitConstraint_t>(*entry.second)) continue;
+                auto *constraint = ASR::down_cast<ASR::TraitConstraint_t>(entry.second);
+                for (size_t i = 0; i < constraint->n_requirements; i++) {
+                    if (ASRUtils::symbol_get_past_external(
+                            constraint->m_requirements[i].m_procedure) == requirement) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
+        const SymbolTable *scope = function.m_symtab->parent;
+        const ASR::symbol_t *unit = owner(scope);
+        if (!unit) return false;
+        if (ASR::is_a<ASR::Trait_t>(*unit) || required(scope, &function.base)) return true;
+        if (!ASR::is_a<ASR::Template_t>(*unit)) return false;
+        const SymbolTable *outer = ASR::down_cast<ASR::Template_t>(unit)->m_symtab->parent;
+        const ASR::symbol_t *outer_unit = owner(outer);
+        return (outer_unit && ASR::is_a<ASR::Trait_t>(*outer_unit)) ||
+            (outer && required(outer, unit));
+    }
+
     void visit_Variable(const Variable_t &x) {
         if (x.m_storage == storage_typeType::Association) {
             auto *value = ASRUtils::association_value(x);
@@ -5497,11 +5530,12 @@ public:
                 ASRUtils::get_FunctionType(owner)->m_deftype == ASR::deftypeType::Interface &&
                 ASRUtils::trait_message_receiver(*owner) < owner->n_args &&
                 ASRUtils::EXPR2VAR(owner->m_args[ASRUtils::trait_message_receiver(*owner)]) ==
-                    &x && x.m_self_argument == nullptr;
+                    &x && x.m_self_argument == nullptr && is_trait_signature(*owner);
         }
         if (x.m_pass_attr == ASR::pass_attrType::Pass ||
             x.m_pass_attr == ASR::pass_attrType::NoPass) {
-            require(trait_receiver || (is_proc_pointer && is_struct_member),
+            require_id(trait_receiver || (is_proc_pointer && is_struct_member),
+                "asr.verify.variable.pass_attr",
                 "Variable '" + std::string(x.m_name) +
                 "' has Pass/NoPass but is neither a procedure pointer component of a "
                 "struct nor the receiver of a trait signature.");
