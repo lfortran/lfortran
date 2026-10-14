@@ -83,18 +83,28 @@ contains
             if (any(c /= "ab")) error stop 25
         end if
     end subroutine
+    ! Bounds of a dimension of zero extent are 1 and 0.
+    integer function lb(lo, hi)
+        integer, intent(in) :: lo, hi
+        lb = merge(lo, 1, hi >= lo)
+    end function
+    integer function ub(lo, hi)
+        integer, intent(in) :: lo, hi
+        ub = merge(hi, 0, hi >= lo)
+    end function
     subroutine check_bounds(lo, hi)
         integer, intent(in) :: lo, hi
-        integer :: a(lo:hi), i
+        integer :: a(lo:hi), m(2, lo:hi), i
         a = [(i, i=lo,hi)]
+        m = 0
         if (size(a) /= max(0, hi-lo+1)) error stop 9
-        if (hi >= lo) then
-            if (lbound(a, 1) /= lo .or. ubound(a, 1) /= hi) error stop 10
-            do i = lo, hi
-                if (a(i) /= i) error stop 11
-            end do
-        end if
-        call check_bound_dummy(lo, hi, a)
+        if (lbound(a, 1) /= lb(lo, hi) .or. ubound(a, 1) /= ub(lo, hi)) error stop 10
+        if (any(lbound(m) /= [1, lb(lo, hi)])) error stop 26
+        if (any(ubound(m) /= [2, ub(lo, hi)])) error stop 27
+        do i = lo, hi
+            if (a(i) /= i) error stop 11
+        end do
+        call check_bound_dummy(lo, hi, a, m)
         call check_assumed(a, max(0, hi-lo+1))
     end subroutine
     subroutine check_wide(n)
@@ -106,9 +116,15 @@ contains
             if (a(2) /= 42 .or. a(n+1) /= 42) error stop 15
         end if
     end subroutine
-    subroutine check_bound_dummy(lo, hi, a)
-        integer, intent(in) :: lo, hi, a(lo:hi)
+    subroutine check_bound_dummy(lo, hi, a, m)
+        integer, intent(in) :: lo, hi, a(lo:hi), m(2, lo:hi)
         if (size(a) /= max(0, hi-lo+1)) error stop 12
+        if (lbound(a, 1) /= lb(lo, hi) .or. ubound(a, 1) /= ub(lo, hi)) error stop 28
+        if (any(lbound(a) /= [lb(lo, hi)])) error stop 29
+        if (any(ubound(a) /= [ub(lo, hi)])) error stop 30
+        if (any(lbound(m) /= [1, lb(lo, hi)])) error stop 31
+        if (any(ubound(m) /= [2, ub(lo, hi)])) error stop 32
+        if (lbound(m, 2) /= lb(lo, hi) .or. ubound(m, 2) /= ub(lo, hi)) error stop 33
         call check_assumed(a, max(0, hi-lo+1))
     end subroutine
 end program
