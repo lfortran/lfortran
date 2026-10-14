@@ -2944,3 +2944,31 @@ contains
         procedure(cc1_pclim_known_func), pointer, intent(in) :: g
     end subroutine cc1_pcoc_take_pointer
 end module cc1_proc_component_of_constant_mod
+
+! Nor can it be an argument of `associated` or a procedure pointer component
+! value in a structure constructor (R758, C7109).
+module cc1_proc_component_of_constant_2_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_func
+    use cc1_proc_component_of_constant_mod, only: cc1_pcoc_t, cc1_pcoc_c, &
+        cc1_pcoc_o, cc1_pcoc_cs
+    implicit none
+    type :: cc1_pcoc2_t
+        procedure(cc1_pclim_known_func), pointer, nopass :: f => null()
+        procedure(cc1_pclim_known_func), pointer, nopass :: g => null()
+    end type
+contains
+    subroutine cc1_pcoc2_use()
+        procedure(cc1_pclim_known_func), pointer :: q
+        type(cc1_pcoc_t) :: v
+        type(cc1_pcoc2_t) :: w
+        logical :: l
+        q => cc1_pclim_known_func
+        l = associated(q, cc1_pcoc_c%f)  ! {Error} a procedure pointer component of a named constant cannot be an argument of associated
+        l = associated(q, cc1_pcoc_o%inner%f)  ! {Error} a procedure pointer component of a named constant cannot be an argument of associated
+        l = associated(cc1_pcoc_cs(1)%f)  ! {Error} a procedure pointer component of a named constant cannot be an argument of associated
+        v = cc1_pcoc_t(cc1_pcoc_c%f)  ! {Error} a procedure pointer component of a named constant cannot be a component value in a structure constructor
+        v = cc1_pcoc_t(f=cc1_pcoc_o%inner%f)  ! {Error} a procedure pointer component of a named constant cannot be a component value in a structure constructor
+        w = cc1_pcoc2_t(g=cc1_pcoc_cs(2)%f, &  ! {Error} a procedure pointer component of a named constant cannot be a component value in a structure constructor
+            f=cc1_pclim_known_func)
+    end subroutine cc1_pcoc2_use
+end module cc1_proc_component_of_constant_2_mod

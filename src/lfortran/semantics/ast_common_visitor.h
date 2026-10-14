@@ -15094,6 +15094,8 @@ public:
                 continue;
             }
             ASR::expr_t* arg = vals[i].m_value;
+            check_procedure_component_of_constant(arg,
+                "a component value in a structure constructor");
             ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
             if (ASRUtils::is_procedure_pointer_value(member_var, arg)) {
                 // A procedure defined later, or one given to a component
@@ -20728,6 +20730,8 @@ public:
         std::vector<std::string> kwarg_names = {"pointer", "target"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
+        check_procedure_component_of_constant(ptr_, "an argument of associated");
+        check_procedure_component_of_constant(tgt_, "an argument of associated");
         if (tgt_ != nullptr) {
             if (ASR::expr_t* tgt_value = ASRUtils::expr_value(tgt_)) {
                 if (ASR::is_a<ASR::PointerNullConstant_t>(*tgt_value)) {
@@ -22418,10 +22422,11 @@ public:
         return ASRUtils::is_const(base) ? base : nullptr;
     }
 
-    // The target of a procedure pointer and the actual argument of a dummy
-    // procedure or procedure pointer can be a procedure component reference,
-    // but not a procedure pointer component of a named constant. `what` names
-    // the role of `expr`.
+    // The target of a procedure pointer (also in `associated` and as a
+    // structure constructor component value, R758) and the actual argument of
+    // a dummy procedure or procedure pointer can be a procedure component
+    // reference, but not a procedure pointer component of a named constant.
+    // `what` names the role of `expr`.
     void check_procedure_component_of_constant(ASR::expr_t* expr,
             const std::string& what) {
         ASR::expr_t* constant = procedure_component_of_constant(expr);
