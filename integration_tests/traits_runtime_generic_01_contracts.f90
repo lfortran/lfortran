@@ -1,7 +1,8 @@
 module traits_runtime_generic_01_contracts_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function value
     end interface IValue

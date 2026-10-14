@@ -2,21 +2,25 @@ module traits_runtime_06_m
     use iso_c_binding, only: c_int, c_ptr, c_loc, c_associated
     implicit none
     abstract interface :: IBase
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(IBase) :: ILeft
-        integer function left_value()
+        integer function left_value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(IBase) :: IRight
-        integer function right_value()
+        integer function right_value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(ILeft + IRight) :: IDiamond
     end interface
     abstract interface :: IAlias
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(IDiamond + IAlias) :: IAgreement

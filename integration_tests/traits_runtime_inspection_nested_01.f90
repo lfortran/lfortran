@@ -18,7 +18,8 @@ module traits_runtime_inspection_nested_01_m
     use traits_runtime_inspection_nested_01_types, only: ParentAlias => Parent, Child, Grandchild, Other
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     implements IValue :: Grandchild

@@ -18,7 +18,8 @@ module traits_runtime_numeric_01_contracts_m
     end interface INumeric
 
     abstract interface :: ISum
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function sum
@@ -41,7 +42,7 @@ module traits_runtime_numeric_01_providers_m
 
     type, sealed, implements(ISum) :: ForwardSum
     contains
-        procedure, nopass :: sum => forward_total
+        procedure, pass :: sum => forward_total
     end type ForwardSum
 
     type, sealed, implements(ISum) :: ScaledSum
@@ -52,7 +53,7 @@ module traits_runtime_numeric_01_providers_m
 
     type, sealed, implements(ISum) :: SplitSum
     contains
-        procedure, nopass :: sum => split_total
+        procedure, pass :: sum => split_total
     end type SplitSum
 
     type, sealed, implements(IStride) :: StrideProbe
@@ -62,7 +63,8 @@ module traits_runtime_numeric_01_providers_m
 
 contains
 
-    function forward_total{INumeric :: T}(x) result(s)
+    function forward_total{INumeric :: T}(self, x) result(s)
+        type(ForwardSum), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         integer             :: i
@@ -84,7 +86,8 @@ contains
         s = T(self%factor) * s
     end function scaled_total
 
-    recursive function split_total{INumeric :: T}(x) result(s)
+    recursive function split_total{INumeric :: T}(self, x) result(s)
+        type(SplitSum), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         integer             :: m
@@ -94,7 +97,7 @@ contains
             s = x(1)
         else
             m = size(x) / 2
-            s = split_total(x(:m)) + split_total(x(m+1:))
+            s = split_total(self, x(:m)) + split_total(self, x(m+1:))
         end if
     end function split_total
 

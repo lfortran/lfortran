@@ -1,7 +1,8 @@
 ! Compile-only trait syntax is an LFortran extension.
 module traits_static_declaration_01_m
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface

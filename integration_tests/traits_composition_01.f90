@@ -2,13 +2,15 @@ module traits_composition_01_m
     implicit none
 
     abstract interface :: IValue
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function value
     end interface IValue
 
     abstract interface :: IShift
-        function shift(delta) result(res)
+        function shift(self, delta) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: delta
             integer :: res
         end function shift

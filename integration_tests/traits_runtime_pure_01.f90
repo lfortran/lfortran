@@ -2,7 +2,8 @@
 module traits_runtime_pure_01_m
     implicit none
     abstract interface :: IValue
-        pure function value(n) result(r)
+        pure function value(self, n) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: n
             integer :: r
         end function

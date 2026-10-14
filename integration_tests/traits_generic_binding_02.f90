@@ -15,7 +15,8 @@ module traits_generic_binding_02_m
     end interface INumeric
 
     abstract interface :: ISum
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function sum
@@ -27,7 +28,8 @@ module traits_generic_binding_02_m
     end interface IValue
 
     abstract interface :: IApply
-        function apply{IValue :: T}(object) result(r)
+        function apply{IValue :: T}(self, object) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: object
             integer             :: r
         end function apply
@@ -56,7 +58,7 @@ program traits_generic_binding_02
 
     type, sealed, implements(ISum) :: Unused
     contains
-        procedure, nopass :: sum => unused_sum
+        procedure, pass :: sum => unused_sum
     end type Unused
 
     type :: Offset
@@ -112,7 +114,8 @@ contains
         adder_value = 7
     end function adder_value
 
-    function unused_sum{INumeric :: T}(x) result(s)
+    function unused_sum{INumeric :: T}(self, x) result(s)
+        type(Unused), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         s = T(size(x))

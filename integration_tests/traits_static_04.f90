@@ -2,7 +2,8 @@ module traits_static_04_m
     implicit none
 
     abstract interface :: IVaLuE
-        subroutine gEt_VaLuE(oUt)
+        subroutine gEt_VaLuE(self, oUt)
+            type(itself), intent(in), pass :: self
             integer, intent(out) :: oUt
         end subroutine gEt_VaLuE
     end interface IVaLuE

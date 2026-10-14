@@ -3,11 +3,13 @@
 ! definable SELECT TYPE association, through procedure dummies and pointers,
 ! generic resolution, a function, a type-bound procedure of another type and a
 ! pure subroutine. Named non-first PASS, NOPASS and keyword arguments still
-! dispatch read-only messages through the view.
+! dispatch messages with intent(in) receivers and receiverless messages
+! through the view.
 module traits_runtime_borrow_05_m
     implicit none
     abstract interface :: IValue
-        integer function value(scale)
+        integer function value(self, scale)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: scale
         end function
     end interface
@@ -16,7 +18,8 @@ module traits_runtime_borrow_05_m
         end function
     end interface
     abstract interface, extends(IValue) :: IChild
-        integer function twice()
+        integer function twice(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Cell

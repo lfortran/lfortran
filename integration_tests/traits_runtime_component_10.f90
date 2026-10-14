@@ -2,7 +2,8 @@ module traits_runtime_component_10_m
     implicit none
     integer :: finals = 0, final_sum = 0, holder_finals = 0, plain_finals = 0
     abstract interface :: IValue
-        pure integer function value()
+        pure integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Payload

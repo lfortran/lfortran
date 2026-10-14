@@ -2,7 +2,8 @@ module traits_runtime_combination_01_contracts_m
     use iso_c_binding, only: c_int, c_ptr
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: ILabel
@@ -10,7 +11,8 @@ module traits_runtime_combination_01_contracts_m
         end function
     end interface
     abstract interface :: IScale
-        integer function scaled(factor)
+        integer function scaled(self, factor)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: factor
         end function
     end interface
@@ -19,7 +21,8 @@ module traits_runtime_combination_01_contracts_m
     abstract interface, extends(IValue) :: IRight
     end interface
     abstract interface :: IAlias
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(IScale + ILeft + IRight + ILabel + IAlias) :: IRich

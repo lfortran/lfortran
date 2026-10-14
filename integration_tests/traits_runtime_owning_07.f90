@@ -2,7 +2,8 @@ module traits_runtime_owning_07_m
     implicit none
     integer :: finals = 0, finalized_values = 0
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface

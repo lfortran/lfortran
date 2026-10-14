@@ -6,7 +6,7 @@ module traits_runtime_character_separate_01_provider_m
 
     type, sealed, implements(IPick) :: HiddenMin
     contains
-        procedure, nopass :: pick => hidden_min_pick
+        procedure, pass :: pick => hidden_min_pick
     end type HiddenMin
 
     ! The passed object is the third dummy argument.
@@ -33,7 +33,8 @@ module traits_runtime_character_separate_01_provider_m
 
 contains
 
-    function hidden_min_pick{ICode :: T}(x, floor) result(r)
+    function hidden_min_pick{ICode :: T}(self, x, floor) result(r)
+        type(HiddenMin), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T), intent(in) :: floor
         type(T)             :: r, m

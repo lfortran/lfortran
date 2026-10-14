@@ -1,7 +1,8 @@
 module traits_runtime_slot_01_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface

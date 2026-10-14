@@ -1,22 +1,25 @@
-! Receiver effects of a universal trait (PAPER-D07): Count implements
-! ICounter's bump with an INTENT(INOUT) receiver, which direct calls on
+! Receiver effects of a universal trait (TD-36): ICounter's bump declares an
+! INTENT(INOUT) receiver, which Count implements and which direct calls on
 ! concrete variables, components, array elements and INTENT(INOUT) dummies
-! use to mutate them. Its read-only IValue conformance still serves runtime
-! views and generic calls; a mutating conformance serves neither (see
-! continue_compilation_traits_associated).
+! use to mutate them. Its IValue conformance, whose value has an INTENT(IN)
+! receiver, serves runtime views and generic calls. Calls of mutating
+! messages through views and generic code are checked by the
+! traits_receiver_intent tests.
 module traits_associated_03_contracts
     implicit none
     private
     public :: ICounter, IValue
 
     abstract interface :: ICounter
-        subroutine bump(by)
+        subroutine bump(self, by)
+            type(itself), intent(inout), pass :: self
             integer, intent(in) :: by
         end subroutine bump
     end interface ICounter
 
     abstract interface :: IValue
-        function value() result(v)
+        function value(self) result(v)
+            type(itself), intent(in), pass :: self
             integer :: v
         end function value
     end interface IValue

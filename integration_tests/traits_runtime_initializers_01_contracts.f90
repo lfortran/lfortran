@@ -10,12 +10,14 @@ module traits_runtime_initializers_01_contracts
     end interface ICastable
 
     abstract interface :: IPrintable
-        subroutine output()
+        subroutine output(self)
+            type(itself), intent(in), pass :: self
         end subroutine output
     end interface IPrintable
 
     abstract interface, extends(ICastable + IPrintable) :: IAdmissible
-        subroutine input(filename)
+        subroutine input(self, filename)
+            type(itself), intent(in), pass :: self
             character(*), intent(in) :: filename
         end subroutine input
     end interface IAdmissible

@@ -2,11 +2,13 @@ module traits_runtime_component_14_types_m
     implicit none
     integer :: finals = 0, final_sum = 0
     abstract interface :: IValue
-        pure integer function value()
+        pure integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: ITagged
-        integer function tag()
+        integer function tag(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Payload

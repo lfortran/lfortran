@@ -2,13 +2,15 @@ module traits_inheritance_05_contracts_m
     implicit none
 
     abstract interface :: IValue
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function value
     end interface IValue
 
     abstract interface :: IScale
-        function scaled(factor) result(res)
+        function scaled(self, factor) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: factor
             integer :: res
         end function scaled

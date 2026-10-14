@@ -2,7 +2,8 @@ module traits_composition_03_left_m
     implicit none
 
     abstract interface :: IValue
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function value
     end interface IValue
@@ -12,7 +13,8 @@ module traits_composition_03_right_m
     implicit none
 
     abstract interface :: IValue
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function value
     end interface IValue

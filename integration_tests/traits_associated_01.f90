@@ -17,11 +17,13 @@ module traits_associated_01_traits_m
 
     abstract interface :: IPeek
         type :: Element
-        function count_after(item) result(n)
+        function count_after(self, item) result(n)
+            type(itself), intent(in), pass :: self
             type(Element), intent(in) :: item
             integer                   :: n
         end function count_after
-        function first_or(item) result(e)
+        function first_or(self, item) result(e)
+            type(itself), intent(in), pass :: self
             type(Element), intent(in) :: item
             type(Element)             :: e
         end function first_or

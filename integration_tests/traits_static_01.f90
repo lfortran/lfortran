@@ -2,7 +2,8 @@ module traits_static_01_m
     implicit none
 
     abstract interface :: IValue
-        function get_value() result(res)
+        function get_value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function get_value
     end interface IValue

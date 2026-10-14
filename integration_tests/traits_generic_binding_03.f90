@@ -15,7 +15,8 @@ module traits_generic_binding_03_m
     end interface INumeric
 
     abstract interface :: ISum
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function sum

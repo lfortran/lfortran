@@ -1,10 +1,10 @@
 ! A type parameter constrained by a trait whose message is itself generic. The
 ! body calls the generic message through the type parameter with the
 ! procedure's own numeric type parameter forwarded; the static evidence is a
-! nopass or a passed-object generic implementation, specialized for each
-! element type. GFortran does not accept this LFortran extension; the
-! standard-Fortran twin traits_generic_requirement_01_oracle.f90 checks the
-! same values (60 checks).
+! generic implementation that ignores or uses its passed object (the message's
+! receiver, TD-36), specialized for each element type. GFortran does not
+! accept this LFortran extension; the standard-Fortran twin
+! traits_generic_requirement_01_oracle.f90 checks the same values (60 checks).
 module traits_generic_requirement_01_m
     use, intrinsic :: iso_fortran_env, only: real64
     implicit none
@@ -16,7 +16,8 @@ module traits_generic_requirement_01_m
     end interface INumeric
 
     abstract interface :: ISum
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function sum
@@ -24,7 +25,7 @@ module traits_generic_requirement_01_m
 
     type, sealed, implements(ISum) :: SimpleSum
     contains
-        procedure, nopass :: sum => simple_sum
+        procedure, pass :: sum => simple_sum
     end type SimpleSum
 
     type, sealed, implements(ISum) :: ScaledSum
@@ -35,7 +36,8 @@ module traits_generic_requirement_01_m
 
 contains
 
-    function simple_sum{INumeric :: T}(x) result(s)
+    function simple_sum{INumeric :: T}(self, x) result(s)
+        type(SimpleSum), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         s = T(0)
@@ -48,7 +50,7 @@ contains
         type(ScaledSum), intent(in) :: self
         type(T),         intent(in) :: x(:)
         type(T)                     :: s
-        s = T(self%factor) * simple_sum(x)
+        s = T(self%factor) * simple_sum(SimpleSum(), x)
     end function scaled_sum
 
     ! Adder's ISum message is generic in its own T; the call forwards Elem.

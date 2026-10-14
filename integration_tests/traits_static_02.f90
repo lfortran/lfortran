@@ -2,7 +2,8 @@ module traits_static_02_m
     implicit none
 
     abstract interface :: IShift
-        function shift_value(delta, scale) result(res)
+        function shift_value(self, delta, scale) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: delta
             integer, intent(in) :: scale
             integer :: res

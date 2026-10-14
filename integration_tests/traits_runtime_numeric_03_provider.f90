@@ -21,7 +21,8 @@ module traits_runtime_numeric_03_provider_m
 
     ! Two closed binders: one member slot per member pair.
     abstract interface :: IPair
-        function weigh{INumeric :: T, INumeric :: U}(x, w) result(s)
+        function weigh{INumeric :: T, INumeric :: U}(self, x, w) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(U), intent(in) :: w
             type(T)             :: s

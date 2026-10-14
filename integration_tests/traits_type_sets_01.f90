@@ -30,7 +30,8 @@ module traits_type_sets_01_m
             type(T), intent(in) :: x(:)
             type(T)             :: r
         end function fold
-        function count_true{IAnyFlag :: T}(x) result(n)
+        function count_true{IAnyFlag :: T}(self, x) result(n)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             integer             :: n
         end function count_true
@@ -39,7 +40,7 @@ module traits_type_sets_01_m
     type, sealed, implements(IFold) :: AllOf
     contains
         procedure, nopass :: fold => all_true
-        procedure, nopass :: count_true => count_set
+        procedure, pass :: count_true => count_set
     end type AllOf
 
     ! The passed object is the second dummy argument of count_biased.
@@ -72,7 +73,8 @@ contains
         end do
     end function any_true
 
-    function count_set{IAnyFlag :: T}(x) result(n)
+    function count_set{IAnyFlag :: T}(self, x) result(n)
+        type(AllOf), intent(in) :: self
         type(T), intent(in) :: x(:)
         integer             :: n
         integer             :: i
@@ -86,7 +88,7 @@ contains
         type(T),     intent(in) :: x(:)
         type(AnyOf), intent(in) :: self
         integer                 :: n
-        n = self%bias + count_set(x)
+        n = self%bias + count_set(AllOf(), x)
     end function count_biased
 
     function parity{IAnyFlag :: T}(x) result(r)
@@ -158,10 +160,10 @@ program traits_type_sets_01
     call check(.not. logical(any_true{logical(1)}(f1(2:2))))
     call check(any_true(f4(5:1:-2)))
 
-    call check(count_set(f1) == 3)
-    call check(count_set(f2) == 2)
-    call check(count_set(f4(5:1:-1)) == 4)
-    call check(count_set{logical(8)}(f8) == 1)
+    call check(count_set(AllOf(), f1) == 3)
+    call check(count_set(AllOf(), f2) == 2)
+    call check(count_set(AllOf(), f4(5:1:-1)) == 4)
+    call check(count_set{logical(8)}(AllOf(), f8) == 1)
     call check(.not. logical(parity(f2)))
     call check(logical(parity(f8)))
     call check(kind(parity(f2)) == 2)

@@ -15,7 +15,8 @@ module traits_runtime_borrow_03_m
     integer :: calls = 0
 
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function value
     end interface IValue
 

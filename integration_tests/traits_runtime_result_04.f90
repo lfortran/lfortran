@@ -1,7 +1,8 @@
 module traits_runtime_result_04_m
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Payload

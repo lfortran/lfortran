@@ -13,13 +13,15 @@ module traits_generic_type_02_contracts
         integer | real(8)
     end interface INumeric
     abstract interface :: ISum
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T) :: s
         end function sum
     end interface ISum
     abstract interface :: IAverager
-        function average{INumeric :: T}(x) result(a)
+        function average{INumeric :: T}(self, x) result(a)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T) :: a
         end function average
@@ -40,10 +42,11 @@ module traits_generic_type_02_provider_a
     use traits_generic_type_02_leaf, only: Leaf
     implicit none
     implements ISum :: Leaf
-        procedure, nopass :: sum => sum_a
+        procedure, pass :: sum => sum_a
     end implements
 contains
-    function sum_a{INumeric :: T}(x) result(s)
+    function sum_a{INumeric :: T}(self, x) result(s)
+        class(Leaf), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T) :: s
         integer :: i
@@ -59,10 +62,11 @@ module traits_generic_type_02_provider_b
     use traits_generic_type_02_leaf, only: Leaf
     implicit none
     implements ISum :: Leaf
-        procedure, nopass :: sum => sum_b
+        procedure, pass :: sum => sum_b
     end implements
 contains
-    function sum_b{INumeric :: T}(x) result(s)
+    function sum_b{INumeric :: T}(self, x) result(s)
+        class(Leaf), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T) :: s
         integer :: i
@@ -139,11 +143,12 @@ module traits_generic_type_02_app
     public :: run_shared, run_local
     type, sealed, implements(ISum) :: MySum
     contains
-        procedure, nopass :: sum => my_sum
+        procedure, pass :: sum => my_sum
     end type MySum
     type(PairwiseSum{MySum}), save :: shared
 contains
-    function my_sum{INumeric :: T}(x) result(s)
+    function my_sum{INumeric :: T}(self, x) result(s)
+        type(MySum), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T) :: s
         integer :: i
@@ -174,7 +179,7 @@ program traits_generic_type_02
     ! statically only.
     type, sealed, implements(ISum) :: LocalSum
     contains
-        procedure, nopass :: sum => local_sum
+        procedure, pass :: sum => local_sum
     end type LocalSum
     type(Averager{LocalSum}) :: a
     integer :: bias, checks
@@ -229,7 +234,8 @@ contains
     integer function get_bias() result(b)
         b = bias
     end function get_bias
-    function local_sum{INumeric :: T}(x) result(s)
+    function local_sum{INumeric :: T}(self, x) result(s)
+        type(LocalSum), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T) :: s
         integer :: i

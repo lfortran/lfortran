@@ -3,13 +3,15 @@ module traits_composition_04_m
     implicit none
 
     abstract interface :: ILeft
-        function count(a) result(r)
+        function count(self, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: a(:)
             integer :: r
         end function
     end interface
     abstract interface :: IRight
-        function count(a) result(r)
+        function count(self, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: a(:)
             integer :: r
         end function

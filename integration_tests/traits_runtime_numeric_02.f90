@@ -22,14 +22,16 @@ module traits_runtime_numeric_02_interfaces_m
    end interface INumeric
 
    abstract interface :: ISum
-      function sum{INumeric :: T}(x) result(s)
+      function sum{INumeric :: T}(self, x) result(s)
+         type(itself), intent(in), pass :: self
          type(T), intent(in) :: x(:)
          type(T)             :: s
       end function sum
    end interface ISum
 
    abstract interface :: IAverager
-      function average{INumeric :: T}(x) result(a)
+      function average{INumeric :: T}(self, x) result(a)
+         type(itself), intent(in), pass :: self
          type(T), intent(in) :: x(:)
          type(T)             :: a
       end function average
@@ -50,12 +52,13 @@ module traits_runtime_numeric_02_simple_m
 
    type, sealed, implements(ISum) :: SimpleSum
    contains
-      procedure, nopass :: sum
+      procedure, pass :: sum
    end type SimpleSum
 
 contains
 
-   function sum{INumeric :: T}(x) result(s)
+   function sum{INumeric :: T}(self, x) result(s)
+      type(SimpleSum), intent(in) :: self
       type(T), intent(in) :: x(:)
       type(T)             :: s
       leaf_calls = leaf_calls + 1

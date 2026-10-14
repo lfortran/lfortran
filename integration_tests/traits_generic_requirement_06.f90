@@ -6,13 +6,15 @@ module traits_generic_requirement_06_m
     implicit none
 
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function value
     end interface IValue
 
     abstract interface :: IApply
-        function apply{IValue :: T}(object) result(r)
+        function apply{IValue :: T}(self, object) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: object
             integer :: r
         end function apply

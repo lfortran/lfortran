@@ -15,14 +15,16 @@ module traits_generic_type_01_contracts
     end interface INumeric
 
     abstract interface :: ISum
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function sum
     end interface ISum
 
     abstract interface :: IAverager
-        function average{INumeric :: T}(x) result(a)
+        function average{INumeric :: T}(self, x) result(a)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: a
         end function average
@@ -35,10 +37,10 @@ module traits_generic_type_01_leaves
     private
     public :: SimpleSum, ScaledSum
 
-    ! Paper-style stateless leaf with a nopass generic method.
+    ! Paper-style stateless leaf whose generic method ignores its passed object.
     type, sealed, implements(ISum) :: SimpleSum
     contains
-        procedure, nopass :: sum => simple_sum
+        procedure, pass :: sum => simple_sum
     end type SimpleSum
 
     ! A passed-object leaf whose state reaches the generic method.
@@ -50,7 +52,8 @@ module traits_generic_type_01_leaves
 
 contains
 
-    function simple_sum{INumeric :: T}(x) result(s)
+    function simple_sum{INumeric :: T}(self, x) result(s)
+        type(SimpleSum), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         s = T(0)

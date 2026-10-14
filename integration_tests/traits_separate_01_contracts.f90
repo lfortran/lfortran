@@ -1,7 +1,8 @@
 module traits_separate_01_contracts_m
     implicit none
     abstract interface :: IValue
-        function get_value() result(value)
+        function get_value(self) result(value)
+            type(itself), intent(in), pass :: self
             integer :: value
         end function get_value
     end interface IValue

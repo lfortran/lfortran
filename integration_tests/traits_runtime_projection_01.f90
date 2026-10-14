@@ -1,11 +1,13 @@
 module traits_runtime_projection_01_m
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(IValue) :: IChild
-        integer function twice()
+        integer function twice(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Box

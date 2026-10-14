@@ -3,7 +3,8 @@ module traits_runtime_owning_08_m
     integer :: part_finals = 0, leaf_finals = 0
     integer :: part_values = 0, leaf_values = 0, final_order = 0
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface

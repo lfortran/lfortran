@@ -3,7 +3,8 @@ module traits_runtime_owning_05_m
     implicit none
     integer :: defined_calls = 0
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface

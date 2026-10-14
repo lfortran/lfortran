@@ -2,11 +2,13 @@ module traits_dependent_result_02_m
     implicit none
 
     abstract interface :: IValues
-        pure function values(n) result(r)
+        pure function values(self, n) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: n
             integer :: r(n)
         end function
-        pure function shifted_values(offset, n, zinput) result(r)
+        pure function shifted_values(self, offset, n, zinput) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: offset, n, zinput(n)
             integer :: r(n)
         end function

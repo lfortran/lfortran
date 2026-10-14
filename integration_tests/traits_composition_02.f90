@@ -2,13 +2,15 @@ module traits_composition_02_m
     implicit none
 
     abstract interface :: ILeft
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function value
     end interface ILeft
 
     abstract interface :: IRight
-        function value() result(right_result)
+        function value(self) result(right_result)
+            type(itself), intent(in), pass :: self
             integer :: right_result
         end function value
     end interface IRight

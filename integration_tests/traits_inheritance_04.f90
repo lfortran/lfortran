@@ -2,7 +2,8 @@ module traits_inheritance_04_contracts_m
     implicit none
 
     abstract interface :: IBase
-        function shift(delta) result(res)
+        function shift(self, delta) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: delta
             integer :: res
         end function shift

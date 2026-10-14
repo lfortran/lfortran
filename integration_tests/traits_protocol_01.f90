@@ -33,7 +33,8 @@ module traits_protocol_01_contracts_m
     end interface IRing
 
     abstract interface :: IShow
-        function code() result(c)
+        function code(self) result(c)
+            type(itself), intent(in), pass :: self
             integer :: c
         end function code
     end interface IShow

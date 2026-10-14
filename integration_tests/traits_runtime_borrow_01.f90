@@ -4,7 +4,8 @@ module traits_runtime_borrow_01_m
     integer :: finalized = 0
     type(c_ptr) :: expected
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function value
     end interface IValue

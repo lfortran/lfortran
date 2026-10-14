@@ -4,7 +4,8 @@ module traits_type_adoption_04_provider
     integer :: receiver_finals = 0
 
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
 

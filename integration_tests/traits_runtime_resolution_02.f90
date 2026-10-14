@@ -13,7 +13,8 @@ module traits_runtime_resolution_02_m
     integer :: made = 0
 
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function value
     end interface IValue
 

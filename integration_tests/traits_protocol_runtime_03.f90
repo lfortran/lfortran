@@ -20,11 +20,13 @@ module traits_protocol_runtime_03_contracts_m
     end interface INumeric
 
     abstract interface :: IShape
-        function extent{INumeric :: T}(x) result(n)
+        function extent{INumeric :: T}(self, x) result(n)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:, :)
             integer             :: n
         end function extent
-        function corners{INumeric :: T}(x) result(s)
+        function corners{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:, :)
             type(T)             :: s
         end function corners

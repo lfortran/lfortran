@@ -1,10 +1,10 @@
 ! Mutating trait methods (paper sect:tats and sect:associated_types_usage):
-! IAppendable's append(item) declares no receiver; Vector{U} implements it
-! exactly as in the paper with an INTENT(INOUT) passed-object dummy, and the
-! non-generic Tally implements it with Element = integer. Appends are made
-! on variables, through an INTENT(INOUT) dummy and on a nested generic
-! instance. Direct calls on concrete objects may mutate their receiver
-! (PAPER-D07). Each unit uses only the instances it owns: the INTENT(INOUT)
+! IAppendable's append(self, item) declares an INTENT(INOUT) receiver
+! (TD-36); Vector{U} implements it as in the paper with an INTENT(INOUT)
+! passed-object dummy, and the non-generic Tally implements it with
+! Element = integer. Appends are made on variables, through an INTENT(INOUT)
+! dummy and on a nested generic instance, by direct calls on concrete
+! objects. Each unit uses only the instances it owns: the INTENT(INOUT)
 ! dummy is appended to in the module that creates its Vector{integer}.
 module traits_associated_02_traits_m
     implicit none
@@ -13,7 +13,8 @@ module traits_associated_02_traits_m
 
     abstract interface :: IAppendable
         type :: Element
-        subroutine append(item)
+        subroutine append(self, item)
+            type(itself), intent(inout), pass :: self
             type(Element), intent(in) :: item
         end subroutine append
     end interface IAppendable

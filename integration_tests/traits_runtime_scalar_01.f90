@@ -4,7 +4,8 @@ module traits_runtime_scalar_01_m
         integer :: number
     end type Argument
     abstract interface :: IScalar
-        function evaluate(real_arg, complex_arg, logical_arg, text, object) result(r)
+        function evaluate(self, real_arg, complex_arg, logical_arg, text, object) result(r)
+            type(itself), intent(in), pass :: self
             real(8), intent(in) :: real_arg
             complex(8), intent(in) :: complex_arg
             logical, intent(in) :: logical_arg
@@ -15,7 +16,8 @@ module traits_runtime_scalar_01_m
         subroutine add_to(value)
             integer, intent(inout) :: value
         end subroutine add_to
-        function text_length(n, text) result(r)
+        function text_length(self, n, text) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: n
             character(n), intent(in) :: text
             integer :: r

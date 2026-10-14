@@ -4,7 +4,8 @@ module traits_runtime_generic_02_m
     type(c_ptr) :: seen_value = c_null_ptr, seen_provider = c_null_ptr
     integer :: argument_finals = 0
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(IValue) :: IMore
@@ -12,7 +13,8 @@ module traits_runtime_generic_02_m
         end function
     end interface
     abstract interface :: IAlgorithm
-        function apply{IValue :: Element}(object, increment) result(r)
+        function apply{IValue :: Element}(self, object, increment) result(r)
+            type(itself), intent(in), pass :: self
             type(Element), intent(in) :: object
             integer, intent(in) :: increment
             integer :: r
@@ -52,7 +54,7 @@ module traits_runtime_generic_02_m
         procedure, nopass :: tag => first_tag
     end implements
     implements (IAlgorithm + ITag) :: Scale
-        procedure, nopass :: apply => scale_apply
+        procedure, pass :: apply => scale_apply
         procedure, nopass :: tag => second_tag
     end implements
 contains
@@ -83,7 +85,8 @@ contains
         seen_provider = c_loc(self%bias)
         r = add_value{Renamed}(arg, delta) + self%bias
     end function
-    function scale_apply{IValue :: Q}(arg, delta) result(r)
+    function scale_apply{IValue :: Q}(self, arg, delta) result(r)
+        class(Scale), intent(in) :: self
         type(Q), intent(in) :: arg
         integer, intent(in) :: delta
         integer :: r

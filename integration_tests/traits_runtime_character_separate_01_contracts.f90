@@ -9,7 +9,8 @@ module traits_runtime_character_separate_01_contracts_m
 
     ! The smallest element of x, but not below floor.
     abstract interface :: IPick
-        function pick{ICode :: T}(x, floor) result(r)
+        function pick{ICode :: T}(self, x, floor) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T), intent(in) :: floor
             type(T)             :: r
@@ -18,7 +19,8 @@ module traits_runtime_character_separate_01_contracts_m
 
     ! Ordinary messages with character results of two lengths.
     abstract interface :: ILabel
-        function label(code, width) result(s)
+        function label(self, code, width) result(s)
+            type(itself), intent(in), pass :: self
             character(len=*), intent(in) :: code
             integer,          intent(in) :: width
             character(len=5)             :: s

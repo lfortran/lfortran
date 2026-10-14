@@ -8,7 +8,7 @@ module traits_runtime_numeric_separate_02_provider_m
 
     type, sealed, implements(ISum) :: HiddenSimple
     contains
-        procedure, nopass :: sum => hidden_simple_sum
+        procedure, pass :: sum => hidden_simple_sum
     end type HiddenSimple
 
     ! The passed object is the second dummy argument.
@@ -44,7 +44,8 @@ module traits_runtime_numeric_separate_02_provider_m
 
 contains
 
-    function hidden_simple_sum{INumeric :: T}(x) result(s)
+    function hidden_simple_sum{INumeric :: T}(self, x) result(s)
+        type(HiddenSimple), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         integer             :: i

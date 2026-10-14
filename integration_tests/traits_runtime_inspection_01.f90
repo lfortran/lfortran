@@ -3,7 +3,8 @@ module traits_runtime_inspection_01_m
     use traits_runtime_inspection_twin_b_m, only: RightTwin => Twin
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(IValue) :: IChild

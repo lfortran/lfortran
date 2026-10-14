@@ -2,7 +2,8 @@ module traits_runtime_generic_04_m
     use traits_runtime_generic_01_contracts_m, only: IValue
     implicit none
     abstract interface :: IPair
-        function combine{IValue :: Left, IValue :: Right}(first, second) result(r)
+        function combine{IValue :: Left, IValue :: Right}(self, first, second) result(r)
+            type(itself), intent(in), pass :: self
             type(Left), intent(in) :: first
             type(Right), intent(in) :: second
             integer(8) :: r

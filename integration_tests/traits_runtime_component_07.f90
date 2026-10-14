@@ -2,9 +2,11 @@ module traits_runtime_component_07_m
     implicit none
     integer :: calls = 0, finals = 0, final_sum = 0
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
-        subroutine fetch(n)
+        subroutine fetch(self, n)
+            type(itself), intent(in), pass :: self
             integer, intent(out) :: n
         end subroutine
     end interface

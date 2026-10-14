@@ -10,12 +10,12 @@ module traits_protocol_separate_01_provider_m
 
     type, sealed, implements(ISum) :: OpenSimple
     contains
-        procedure, nopass :: sum => open_simple_sum
+        procedure, pass :: sum => open_simple_sum
     end type OpenSimple
 
     type, sealed, implements(ISum) :: OpenReverse
     contains
-        procedure, nopass :: sum => open_reverse_sum
+        procedure, pass :: sum => open_reverse_sum
     end type OpenReverse
 
     type, sealed, implements(ISum) :: OpenPairwise
@@ -36,7 +36,8 @@ module traits_protocol_separate_01_provider_m
 
 contains
 
-    function open_simple_sum{INumeric :: T}(x) result(s)
+    function open_simple_sum{INumeric :: T}(self, x) result(s)
+        type(OpenSimple), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         integer             :: i
@@ -46,7 +47,8 @@ contains
         end do
     end function open_simple_sum
 
-    function open_reverse_sum{INumeric :: T}(x) result(s)
+    function open_reverse_sum{INumeric :: T}(self, x) result(s)
+        type(OpenReverse), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         integer             :: i

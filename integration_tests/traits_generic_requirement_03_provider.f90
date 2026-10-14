@@ -8,7 +8,7 @@ module traits_generic_requirement_03_provider
 
     type, sealed, implements(ISum) :: SimpleSum
     contains
-        procedure, nopass :: sum => simple_sum
+        procedure, pass :: sum => simple_sum
     end type SimpleSum
 
     type, sealed, implements(ISum) :: ScaledSum
@@ -35,7 +35,8 @@ module traits_generic_requirement_03_provider
 
 contains
 
-    function simple_sum{INumeric :: T}(x) result(s)
+    function simple_sum{INumeric :: T}(self, x) result(s)
+        type(SimpleSum), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         integer :: i
@@ -49,7 +50,7 @@ contains
         type(T),         intent(in) :: x(:)
         type(ScaledSum), intent(in) :: self
         type(T)                     :: s
-        s = T(self%factor) * simple_sum(x)
+        s = T(self%factor) * simple_sum(SimpleSum(), x)
     end function scaled_sum
 
     integer function read_value(self) result(r)

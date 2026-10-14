@@ -3,7 +3,8 @@ module traits_runtime_component_04_provider_m
     private
     public :: Holder
     abstract interface :: IValue
-        pure integer function value()
+        pure integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Payload

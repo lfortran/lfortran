@@ -2,20 +2,23 @@ module traits_inheritance_01_m
     implicit none
 
     abstract interface :: IValue
-        function get_value() result(res)
+        function get_value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function get_value
     end interface IValue
 
     abstract interface, extends(IValue) :: IShift
-        function shift(delta) result(res)
+        function shift(self, delta) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: delta
             integer :: res
         end function shift
     end interface IShift
 
     abstract interface, extends(IShift) :: IReport
-        subroutine report(out)
+        subroutine report(self, out)
+            type(itself), intent(in), pass :: self
             integer, intent(out) :: out
         end subroutine report
     end interface IReport

@@ -5,25 +5,29 @@ module traits_intrinsic_01_provider_m
     implicit none
 
     abstract interface :: IValue
-        function value() result(res)
+        function value(self) result(res)
+            type(itself), intent(in), pass :: self
             integer :: res
         end function value
     end interface IValue
 
     abstract interface :: IPrintable
-        subroutine output()
+        subroutine output(self)
+            type(itself), intent(in), pass :: self
         end subroutine output
     end interface IPrintable
 
     abstract interface :: IShift
-        function shift(delta) result(res)
+        function shift(self, delta) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: delta
             integer :: res
         end function shift
     end interface IShift
 
     abstract interface :: IAdjust
-        function adjust(delta) result(res)
+        function adjust(self, delta) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: delta
             real(real64) :: res
         end function adjust

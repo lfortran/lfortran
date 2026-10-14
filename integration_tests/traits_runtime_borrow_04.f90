@@ -2,16 +2,17 @@
 ! concrete variable, a component, an array element, an allocated owner, an
 ! owner component or a pointer target, also through an intent(in) pointer
 ! dummy. The callee modifies that payload
-! through concrete SELECT TYPE inspection and observes it through a read-only
-! message at its original address. Borrowing copies, finalizes and rebinds
-! nothing.
+! through concrete SELECT TYPE inspection and observes it through a message
+! with an intent(in) receiver at its original address. Borrowing copies,
+! finalizes and rebinds nothing.
 module traits_runtime_borrow_04_m
     use iso_c_binding, only: c_ptr, c_loc, c_associated
     implicit none
     type(c_ptr) :: expected
     integer :: finalized = 0
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Cell

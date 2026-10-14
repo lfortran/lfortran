@@ -3,11 +3,12 @@
 ! before their definition), with explicit method type arguments by position or
 ! keyword, with concrete method type arguments inside the generic body, with an
 ! outer type parameter spelled like the method's own, with a nominally
-! constrained method type parameter (pass(self) and nopass evidence), through
-! an array element of the type parameter (its subscript is evaluated once), as
-! a generic subroutine, and from an internal procedure. A method may have two
-! type parameters or one used only by its result. GFortran does not accept this
-! LFortran extension.
+! constrained method type parameter (pass(self) evidence and evidence that
+! ignores its passed object), a receiverless method with nopass evidence,
+! through an array element of the type parameter (its subscript is evaluated
+! once), as a generic subroutine, and from an internal procedure. A method may
+! have two type parameters or one used only by its result. GFortran does not
+! accept this LFortran extension.
 module traits_generic_requirement_02_m
     use, intrinsic :: iso_fortran_env, only: real64
     implicit none
@@ -26,27 +27,31 @@ module traits_generic_requirement_02_m
     end interface INumeric
 
     abstract interface :: ISum
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function sum
     end interface ISum
 
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function value
     end interface IValue
 
     abstract interface :: IApply
-        function apply{IValue :: T}(object) result(r)
+        function apply{IValue :: T}(self, object) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: object
             integer :: r
         end function apply
     end interface IApply
 
     abstract interface :: IFold
-        subroutine fold{INumeric :: T}(x, total)
+        subroutine fold{INumeric :: T}(self, x, total)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T), intent(inout) :: total
         end subroutine fold
@@ -54,7 +59,8 @@ module traits_generic_requirement_02_m
 
     ! Two method type parameters, and one used only by the result.
     abstract interface :: IPair
-        function pair{INumeric :: T, INumeric :: U}(x, y) result(r)
+        function pair{INumeric :: T, INumeric :: U}(self, x, y) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x
             type(U), intent(in) :: y
             integer :: r
@@ -66,7 +72,8 @@ module traits_generic_requirement_02_m
 
     ! A method with an inline type set is copied with its own type set.
     abstract interface :: IInline
-        function twice{integer | real(real64) :: T}(x) result(r)
+        function twice{integer | real(real64) :: T}(self, x) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x
             type(T) :: r
         end function twice
@@ -74,7 +81,7 @@ module traits_generic_requirement_02_m
 
     type, sealed, implements(ISum) :: SimpleSum
     contains
-        procedure, nopass :: sum => simple_sum
+        procedure, pass :: sum => simple_sum
     end type SimpleSum
 
     type, sealed, implements(ISum) :: ScaledSum
@@ -116,12 +123,13 @@ module traits_generic_requirement_02_m
     end implements
 
     implements IApply :: Doubler
-        procedure, nopass :: apply => doubler_apply
+        procedure, pass :: apply => doubler_apply
     end implements
 
 contains
 
-    function simple_sum{INumeric :: T}(x) result(s)
+    function simple_sum{INumeric :: T}(self, x) result(s)
+        type(SimpleSum), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         integer :: i
@@ -136,7 +144,7 @@ contains
         type(T),         intent(in) :: x(:)
         type(ScaledSum), intent(in) :: self
         type(T)                     :: s
-        s = T(self%factor) * simple_sum(x)
+        s = T(self%factor) * simple_sum(SimpleSum(), x)
     end function scaled_sum
 
     integer function read_value(self) result(r)
@@ -151,7 +159,8 @@ contains
         r = object%value() + self%amount
     end function offset_apply
 
-    function doubler_apply{IValue :: Item}(object) result(r)
+    function doubler_apply{IValue :: Item}(self, object) result(r)
+        class(Doubler), intent(in) :: self
         type(Item), intent(in) :: object
         integer :: r
         r = 2 * object%value()

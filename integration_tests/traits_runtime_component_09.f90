@@ -1,11 +1,13 @@
 module traits_runtime_component_09_m
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: IReader
-        function read{IValue :: T}(x) result(n)
+        function read{IValue :: T}(self, x) result(n)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x
             integer :: n
         end function

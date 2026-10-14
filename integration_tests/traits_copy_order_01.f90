@@ -2,7 +2,8 @@
 module traits_copy_order_01_m
     implicit none
     abstract interface :: ICount
-        function count(n, a, btext) result(r)
+        function count(self, n, a, btext) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: n, a(n)
             character(len=n), intent(in) :: btext
             integer :: r

@@ -2,7 +2,8 @@ module traits_runtime_character_01_m
     implicit none
     integer :: bound_calls = 0
     abstract interface :: IString
-        integer function measure(text)
+        integer function measure(self, text)
+            type(itself), intent(in), pass :: self
             character(*), intent(in) :: text
         end function
         integer function next_bound()

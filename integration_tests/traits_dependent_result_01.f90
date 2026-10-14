@@ -2,12 +2,14 @@ module traits_dependent_result_01_m
     implicit none
 
     abstract interface :: IText
-        pure function text(n, input) result(r)
+        pure function text(self, n, input) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: n
             character(*), intent(in) :: input
             character(len=n) :: r
         end function
-        pure function copy_text(input, n) result(r)
+        pure function copy_text(self, input, n) result(r)
+            type(itself), intent(in), pass :: self
             character(*), intent(in) :: input
             integer, intent(in) :: n
             character(len=n) :: r

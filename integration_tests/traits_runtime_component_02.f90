@@ -8,7 +8,8 @@ module traits_runtime_component_02_extension_mod
     integer :: final_sum = 0
 
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function value
     end interface
 

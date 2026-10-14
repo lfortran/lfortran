@@ -2,14 +2,16 @@ module traits_inheritance_02_m
     implicit none
 
     abstract interface :: IShift
-        function shift(delta) result(res)
+        function shift(self, delta) result(res)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: delta
             integer :: res
         end function shift
     end interface IShift
 
     abstract interface :: IReport
-        subroutine report(delta, out)
+        subroutine report(self, delta, out)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: delta
             integer, intent(out) :: out
         end subroutine report

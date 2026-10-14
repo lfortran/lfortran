@@ -6,11 +6,13 @@ module traits_type_adoption_01_m
     integer :: final_count = 0
 
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: IExtra
-        integer function extra(n)
+        integer function extra(self, n)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: n
         end function
     end interface

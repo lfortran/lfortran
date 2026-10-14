@@ -3,22 +3,26 @@ module traits_arrayitem_01_m
     implicit none
 
     abstract interface :: ILeft
-        function count(n, a) result(r)
+        function count(self, n, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: n(1), a(n(1))
             integer :: r
         end function
-        function matrix(n, k, a) result(r)
+        function matrix(self, n, k, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: n(2, 2), k(2)
             integer, intent(in) :: a(n(k(1), 2), k(2))
             integer :: r
         end function
     end interface
     abstract interface :: IRight
-        function count(n, a) result(r)
+        function count(self, n, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: n(1), a(n(1))
             integer :: r
         end function
-        function matrix(n, k, a) result(r)
+        function matrix(self, n, k, a) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: n(2, 2), k(2)
             integer, intent(in) :: a(n(k(1), 2), k(2))
             integer :: r

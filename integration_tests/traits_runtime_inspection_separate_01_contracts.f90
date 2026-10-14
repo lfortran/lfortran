@@ -2,7 +2,8 @@ module traits_runtime_inspection_contracts_m
     use iso_c_binding, only: c_ptr
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: ILabel

@@ -3,7 +3,8 @@ module traits_runtime_component_15_m
     integer :: assignments = 0, finals = 0, final_sum = 0, holder_finals = 0
     integer :: seen(8) = 0
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Part

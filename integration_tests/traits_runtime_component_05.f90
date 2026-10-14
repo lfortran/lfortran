@@ -2,7 +2,8 @@ module traits_runtime_component_05_m
     implicit none
     integer :: assignments = 0, finals = 0, final_sum = 0
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Part

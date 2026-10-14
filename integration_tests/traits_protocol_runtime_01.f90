@@ -27,7 +27,8 @@ module traits_protocol_runtime_01_contracts_m
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function total
-        function weighted{INumeric :: T}(x, w) result(s)
+        function weighted{INumeric :: T}(self, x, w) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T), intent(in) :: w
             type(T)             :: s

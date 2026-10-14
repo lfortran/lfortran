@@ -2,7 +2,8 @@ module traits_runtime_08_m
     use iso_c_binding, only: c_int, c_ptr, c_loc, c_associated
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function value
     end interface IValue

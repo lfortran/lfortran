@@ -6,7 +6,8 @@ module traits_protocol_static_02_contracts_m
     public :: IScaled, IKey
 
     abstract interface :: IKey
-        function key() result(r)
+        function key(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function key
     end interface IKey
@@ -15,7 +16,8 @@ module traits_protocol_static_02_contracts_m
         initial(n)
             integer, intent(in) :: n
         end initial
-        function scaled{IKey :: U}(k) result(r)
+        function scaled{IKey :: U}(self, k) result(r)
+            type(itself), intent(in), pass :: self
             type(U), intent(in) :: k
             integer :: r
         end function scaled

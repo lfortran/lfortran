@@ -10,20 +10,23 @@ module traits_generic_requirement_03_contracts
     end interface INumeric
 
     abstract interface :: ISum
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function sum
     end interface ISum
 
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function value
     end interface IValue
 
     abstract interface :: IApply
-        function apply{IValue :: T}(object) result(r)
+        function apply{IValue :: T}(self, object) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: object
             integer :: r
         end function apply

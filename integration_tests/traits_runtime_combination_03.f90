@@ -1,7 +1,8 @@
 module traits_runtime_combination_03_first
     implicit none
     abstract interface :: I
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: IEmpty
@@ -11,7 +12,8 @@ end module
 module traits_runtime_combination_03_second
     implicit none
     abstract interface :: I
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: IEmpty

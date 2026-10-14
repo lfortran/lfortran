@@ -3,7 +3,8 @@ module traits_runtime_component_08_m
     logical :: may_finalize = .true.
     integer :: finals = 0
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     type :: Payload

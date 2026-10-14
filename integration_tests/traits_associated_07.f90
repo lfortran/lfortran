@@ -6,17 +6,20 @@ module traits_associated_07_m
     implicit none
 
     abstract interface :: IValue
-        function value() result(v)
+        function value(self) result(v)
+            type(itself), intent(in), pass :: self
             integer :: v
         end function value
     end interface IValue
 
     abstract interface :: IBox
         type :: Element
-        subroutine put(x)
+        subroutine put(self, x)
+            type(itself), intent(inout), pass :: self
             type(Element), intent(in) :: x
         end subroutine put
-        function pick{IValue :: T}(key) result(r)
+        function pick{IValue :: T}(self, key) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: key
             type(Element) :: r
         end function pick

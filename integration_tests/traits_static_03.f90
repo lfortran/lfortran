@@ -2,7 +2,8 @@ module traits_static_03_m
     implicit none
 
     abstract interface :: IBoxOps
-        subroutine report(label, out)
+        subroutine report(self, label, out)
+            type(itself), intent(in), pass :: self
             character(*), intent(in) :: label
             integer, intent(out) :: out
         end subroutine report

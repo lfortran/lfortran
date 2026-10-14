@@ -1,11 +1,13 @@
 module traits_runtime_projection_02_m
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(IValue) :: IStaticChild
-        real function fraction()
+        real function fraction(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(IValue) :: IForeignChild

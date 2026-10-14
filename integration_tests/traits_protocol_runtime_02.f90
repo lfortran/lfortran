@@ -1,6 +1,7 @@
 ! Character arguments of open protocol runtime generic messages: their
 ! hidden lengths follow the binders' dictionaries in every slot, entry,
-! witness and call, for a nopass and a named passed-object implementation.
+! witness and call, for implementations whose passed object is first and
+! unused or named and used.
 module traits_protocol_runtime_02_contracts_m
     implicit none
     private
@@ -17,7 +18,8 @@ module traits_protocol_runtime_02_contracts_m
     end interface INumeric
 
     abstract interface :: ILabelled
-        function total{INumeric :: T}(label, x, suffix) result(s)
+        function total{INumeric :: T}(self, label, x, suffix) result(s)
+            type(itself), intent(in), pass :: self
             character(len=*), intent(in) :: label
             type(T),          intent(in) :: x(:)
             character(len=*), intent(in) :: suffix
@@ -67,7 +69,7 @@ module traits_protocol_runtime_02_provider_m
 
     type, sealed, implements(ILabelled) :: Plain
     contains
-        procedure, nopass :: total => plain_total
+        procedure, pass :: total => plain_total
     end type Plain
 
     type, sealed, implements(ILabelled) :: Weighted
@@ -78,7 +80,8 @@ module traits_protocol_runtime_02_provider_m
 
 contains
 
-    function plain_total{INumeric :: T}(label, x, suffix) result(s)
+    function plain_total{INumeric :: T}(self, label, x, suffix) result(s)
+        type(Plain), intent(in) :: self
         character(len=*), intent(in) :: label
         type(T),          intent(in) :: x(:)
         character(len=*), intent(in) :: suffix

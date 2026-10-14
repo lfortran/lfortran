@@ -1,18 +1,21 @@
 module traits_generic_method_01_m
     implicit none
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface
     abstract interface :: ILeft
-        function apply{IValue :: T}(object) result(r)
+        function apply{IValue :: T}(self, object) result(r)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: object
             integer :: r
         end function
     end interface
     abstract interface :: IRight
-        function apply{IValue :: Renamed}(object) result(r)
+        function apply{IValue :: Renamed}(self, object) result(r)
+            type(itself), intent(in), pass :: self
             type(Renamed), intent(in) :: object
             integer :: r
         end function
@@ -34,7 +37,7 @@ module traits_generic_method_01_m
         procedure, pass(self) :: apply => offset_apply
     end implements
     implements IAlgorithm :: Scaled
-        procedure, nopass :: apply => scaled_apply
+        procedure, pass :: apply => scaled_apply
     end implements
 contains
     integer function read_value(self) result(r)
@@ -47,7 +50,8 @@ contains
         integer :: r
         r = object%value() + self%amount
     end function
-    function scaled_apply{IValue :: Item}(object) result(r)
+    function scaled_apply{IValue :: Item}(self, object) result(r)
+        class(Scaled), intent(in) :: self
         type(Item), intent(in) :: object
         integer :: r
         r = 2*object%value() + 100
@@ -67,5 +71,5 @@ program traits_generic_method_01
     if (second%apply(object) /= 174) error stop 3
     if (second%apply{Value}(object) /= 174) error stop 4
     if (offset_apply(object, first) /= 47) error stop 5
-    if (scaled_apply{Value}(object) /= 174) error stop 6
+    if (scaled_apply{Value}(second, object) /= 174) error stop 6
 end program

@@ -9,14 +9,16 @@ module traits_runtime_numeric_separate_02_contracts_m
     end interface INumeric
 
     abstract interface :: ISum
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function sum
     end interface ISum
 
     abstract interface :: IAverager
-        function average{INumeric :: T}(x) result(a)
+        function average{INumeric :: T}(self, x) result(a)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: a
         end function average

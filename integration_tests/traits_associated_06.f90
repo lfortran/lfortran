@@ -8,11 +8,13 @@ module traits_associated_06_m
 
     abstract interface :: IStore
         type :: Element
-        subroutine put(item, pos)
+        subroutine put(self, item, pos)
+            type(itself), intent(inout), pass :: self
             type(Element), intent(in) :: item
             integer(8), value, intent(in) :: pos
         end subroutine put
-        function matches(item, pos) result(found)
+        function matches(self, item, pos) result(found)
+            type(itself), intent(in), pass :: self
             type(Element), intent(in) :: item
             integer(8), value, intent(in) :: pos
             logical :: found

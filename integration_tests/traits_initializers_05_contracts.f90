@@ -13,7 +13,8 @@ module traits_initializers_05_contracts
     end interface IConstructable
 
     abstract interface :: IValued
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             real :: r
         end function value
     end interface IValued

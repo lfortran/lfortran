@@ -1,7 +1,8 @@
 module traits_runtime_slot_02_contracts
     implicit none
     abstract interface :: IValue
-        pure function value() result(r)
+        pure function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function
     end interface

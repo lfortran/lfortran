@@ -1,7 +1,8 @@
 module traits_reexport_01_source_m
     implicit none
     abstract interface :: IValue
-        function value() result(result_value)
+        function value(self) result(result_value)
+            type(itself), intent(in), pass :: self
             integer :: result_value
         end function
     end interface

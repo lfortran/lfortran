@@ -2,7 +2,8 @@ module traits_runtime_05_base_m
     use iso_c_binding, only: c_int, c_ptr
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface :: ILabel
@@ -19,7 +20,8 @@ module traits_runtime_05_contracts_m
     use traits_runtime_05_base_m, only: IValue, ILabel, Box, expected_address
     implicit none
     abstract interface, extends(IValue) :: IChild
-        integer function double_value()
+        integer function double_value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     abstract interface, extends(IChild + ILabel) :: ICombined

@@ -2,7 +2,8 @@
 module traits_runtime_03_m
     implicit none
     abstract interface :: IOperations
-        function affine(left, right) result(r)
+        function affine(self, left, right) result(r)
+            type(itself), intent(in), pass :: self
             integer, intent(in) :: left, right
             integer :: r
         end function affine

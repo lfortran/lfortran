@@ -1,7 +1,8 @@
 ! Trait method calls through designators that are not variables: components,
 ! nested components and array elements of components, with and without
 ! explicit method type arguments. Generic bindings (a pass(self) argument that
-! is not first, nopass, and a generic subroutine) are specialized statically;
+! is not first, a passed object that the implementation ignores, and a generic
+! subroutine) are specialized statically;
 ! a subscript of the receiver is evaluated once. A conformance without a
 ! type-bound procedure is reached through a component, while an ordinary
 ! type-bound procedure of a polymorphic component keeps its dynamic dispatch.
@@ -22,20 +23,23 @@ module traits_generic_binding_04_m
     end interface INumeric
 
     abstract interface :: ISum
-        function sum{INumeric :: T}(x) result(s)
+        function sum{INumeric :: T}(self, x) result(s)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T)             :: s
         end function sum
     end interface ISum
 
     abstract interface :: IValue
-        function value() result(r)
+        function value(self) result(r)
+            type(itself), intent(in), pass :: self
             integer :: r
         end function value
     end interface IValue
 
     abstract interface :: IFold
-        subroutine fold{INumeric :: T}(x, total)
+        subroutine fold{INumeric :: T}(self, x, total)
+            type(itself), intent(in), pass :: self
             type(T), intent(in) :: x(:)
             type(T), intent(inout) :: total
         end subroutine fold
@@ -66,7 +70,7 @@ module traits_generic_binding_04_m
     end type PlainHolder
 
     implements ISum :: Plain
-        procedure, nopass :: sum => plain_sum
+        procedure, pass :: sum => plain_sum
     end implements
 
     type, implements(IValue) :: Base
@@ -107,7 +111,8 @@ contains
         end do
     end function adder_sum
 
-    function plain_sum{INumeric :: T}(x) result(s)
+    function plain_sum{INumeric :: T}(self, x) result(s)
+        class(Plain), intent(in) :: self
         type(T), intent(in) :: x(:)
         type(T)             :: s
         integer             :: i

@@ -2,7 +2,8 @@ module traits_intrinsic_03_m
     use iso_fortran_env, only: int64, real64
     implicit none
     abstract interface :: IValue
-        integer function value()
+        integer function value(self)
+            type(itself), intent(in), pass :: self
         end function
     end interface
     implements IValue :: integer(int64)
