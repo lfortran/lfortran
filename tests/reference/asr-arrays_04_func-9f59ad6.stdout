@@ -372,7 +372,7 @@
                             (Real 4)
                             ColMajor
                             ()
-                            .false.
+                            .true.
                         )
                         (Cast
                             (IntegerConstant 3 (Integer 4) Decimal)
@@ -397,7 +397,7 @@
                             (Real 4)
                             ColMajor
                             ()
-                            .false.
+                            .true.
                         )
                         (Cast
                             (IntegerConstant 2 (Integer 4) Decimal)
@@ -422,7 +422,7 @@
                             (Real 4)
                             ColMajor
                             ()
-                            .false.
+                            .true.
                         )
                         (Cast
                             (IntegerConstant 1 (Integer 4) Decimal)

@@ -2595,3 +2595,148 @@ subroutine generic_function_no_match_error(n)
     integer :: a(generic_no_match(1.5, n))  ! {Error} no specific procedure of the generic 'generic_no_match' matches the arguments
     integer :: b(generic_no_match(z=n))  ! {Error} no specific procedure of the generic 'generic_no_match' matches the arguments
 end subroutine
+
+! A procedure given to a procedure pointer component whose interface is a
+! module procedure defined later must match that interface.
+module cc1_pclim_procs_mod
+    implicit none
+contains
+    subroutine cc1_pclim_known_sub()
+    end subroutine cc1_pclim_known_sub
+    integer function cc1_pclim_known_func()
+        cc1_pclim_known_func = 0
+    end function cc1_pclim_known_func
+end module cc1_pclim_procs_mod
+
+module cc1_proc_component_later_interface_mismatch_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_sub, cc1_pclim_known_func
+    implicit none
+    type :: cc1_pclim_func_t
+        procedure(cc1_pclim_func), pointer, nopass :: pf => null()
+    end type
+    type :: cc1_pclim_sub_t
+        procedure(cc1_pclim_sub), pointer, nopass :: pf => null()
+    end type
+    type(cc1_pclim_func_t) :: cc1_pclim_s1 = cc1_pclim_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+    type(cc1_pclim_sub_t) :: cc1_pclim_s2 = cc1_pclim_sub_t(pf=cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+contains
+    integer function cc1_pclim_func()
+        cc1_pclim_func = 0
+    end function cc1_pclim_func
+    subroutine cc1_pclim_sub()
+    end subroutine cc1_pclim_sub
+end module cc1_proc_component_later_interface_mismatch_mod
+
+! A template between such a procedure and the end of the module does not
+! discard the check.
+module cc1_proc_component_later_interface_template_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_sub, cc1_pclim_known_func
+    implicit none
+    type :: cc1_pclt_func_t
+        procedure(cc1_pclt_func), pointer, nopass :: pf => null()
+    end type
+    type :: cc1_pclt_sub_t
+        procedure(cc1_pclt_sub), pointer, nopass :: pf => null()
+    end type
+    type(cc1_pclt_sub_t) :: cc1_pclt_s1 = cc1_pclt_sub_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    template cc1_pclt_unused {t}
+        deferred type :: t
+    contains
+        subroutine cc1_pclt_noop(x)
+            type(t), intent(in) :: x
+        end subroutine cc1_pclt_noop
+    end template
+    type(cc1_pclt_func_t) :: cc1_pclt_s2 = cc1_pclt_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+contains
+    integer function cc1_pclt_func()
+        cc1_pclt_func = 0
+    end function cc1_pclt_func
+    subroutine cc1_pclt_sub()
+    end subroutine cc1_pclt_sub
+end module cc1_proc_component_later_interface_template_mod
+
+! A procedure given in a template to a procedure pointer component whose
+! interface is a module procedure defined later in the host must match that
+! interface, whether the template or the host declares the component.
+module cc1_proc_component_template_host_interface_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_sub, cc1_pclim_known_func
+    implicit none
+    type :: cc1_pcth_sub_t
+        procedure(cc1_pcth_sub), pointer, nopass :: pf => null()
+    end type
+    template cc1_pcth_tmpl {t}
+        deferred type :: t
+        type :: cc1_pcth_func_t
+            procedure(cc1_pcth_func), pointer, nopass :: pf => null()
+        end type
+        type :: cc1_pcth_never_t
+            procedure(cc1_pcth_never), pointer, nopass :: pf => null()  ! {Error} Interface 'cc1_pcth_never' is referenced but not defined
+        end type
+        type(cc1_pcth_sub_t), parameter :: cc1_pcth_c1 = cc1_pcth_sub_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+        type(cc1_pcth_func_t), parameter :: cc1_pcth_c2 = cc1_pcth_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+    contains
+        subroutine cc1_pcth_noop(x)
+            type(t), intent(in) :: x
+        end subroutine cc1_pcth_noop
+    end template
+    template cc1_pcth_unused {t}
+        deferred type :: t
+    contains
+        subroutine cc1_pcth_noop2(x)
+            type(t), intent(in) :: x
+        end subroutine cc1_pcth_noop2
+    end template
+contains
+    integer function cc1_pcth_func()
+        cc1_pcth_func = 0
+    end function cc1_pcth_func
+    subroutine cc1_pcth_sub()
+    end subroutine cc1_pcth_sub
+end module cc1_proc_component_template_host_interface_mod
+
+! A procedure given to a procedure pointer component of a derived type
+! declared in a procedure must match the interface that the component takes
+! from the procedure of that name accessible there, defined later, whether
+! the procedure is in a template or is internal to another procedure. An
+! internal procedure hides the host's procedure of the same name.
+module cc1_proc_component_local_type_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_sub, cc1_pclim_known_func
+    implicit none
+    template cc1_pcll_tmpl {t}
+        deferred type :: t
+    contains
+        subroutine cc1_pcll_tmpl_noop()
+            type :: cc1_pcll_tmpl_t
+                procedure(cc1_pcll_sub), pointer, nopass :: pf => null()
+            end type
+            type(cc1_pcll_tmpl_t), parameter :: cc1_pcll_c1 = cc1_pcll_tmpl_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+        end subroutine cc1_pcll_tmpl_noop
+    end template
+contains
+    subroutine cc1_pcll_outer()
+    contains
+        subroutine cc1_pcll_inner()
+            type :: cc1_pcll_t
+                procedure(cc1_pcll_sub), pointer, nopass :: pf => null()
+            end type
+            type :: cc1_pcll_never_t
+                procedure(cc1_pcll_never), pointer, nopass :: pf => null()  ! {Error} Interface 'cc1_pcll_never' is referenced but not defined
+            end type
+            type(cc1_pcll_t), parameter :: cc1_pcll_c2 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+        end subroutine cc1_pcll_inner
+    end subroutine cc1_pcll_outer
+    subroutine cc1_pcll_shadow()
+        type :: cc1_pcll_t
+            procedure(cc1_pcll_func), pointer, nopass :: pf => null()
+        end type
+        type(cc1_pcll_t), parameter :: cc1_pcll_c3 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    contains
+        subroutine cc1_pcll_func()
+        end subroutine cc1_pcll_func
+    end subroutine cc1_pcll_shadow
+    subroutine cc1_pcll_sub()
+    end subroutine cc1_pcll_sub
+    integer function cc1_pcll_func()
+        cc1_pcll_func = 0
+    end function cc1_pcll_func
+end module cc1_proc_component_local_type_mod

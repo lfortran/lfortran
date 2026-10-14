@@ -2503,20 +2503,34 @@ public:
     // which has to run whatever the mask selects belongs there rather than in
     // the masked body.
     Vec<ASR::stmt_t*>* body_enclosing_where = nullptr;
-    std::vector<std::pair<std::string, ASR::symbol_t*>> pending_proc_placeholders;
+    // A procedure named as an interface or given to a procedure pointer
+    // component before its definition is declared as a placeholder
+    // procedure until the procedure is known, see
+    // `resolve_proc_pointer_placeholders()`.
+    struct ProcPlaceholder {
+        std::string name;
+        ASR::symbol_t* placeholder;
+        // The scope in which the declaration referencing the procedure
+        // looks `name` up: that of the declaration, or the host of the
+        // derived type of a component.
+        SymbolTable* scope;
+    };
+    std::vector<ProcPlaceholder> pending_proc_placeholders;
     // The placeholders in `pending_proc_placeholders` that stand for a
     // procedure given to a procedure pointer component before its
     // definition, see `declare_forward_procedure_target()`.
     std::set<ASR::symbol_t*> forward_procedure_targets;
-    // Each value of a procedure pointer component that names one of
-    // `forward_procedure_targets`, checked against the component once the
-    // procedure is known.
-    struct ForwardProcedureTargetUse {
-        ASR::symbol_t* placeholder;
+    // Each procedure given to a procedure pointer component that cannot be
+    // checked against the component yet, because the procedure is one of
+    // `forward_procedure_targets` or the component's interface is one of
+    // `pending_proc_placeholders`. It is checked once both are known, see
+    // `resolve_proc_pointer_placeholders()`.
+    struct DeferredProcedureComponentValue {
+        ASR::symbol_t* procedure;
         ASR::Variable_t* member;
         Location loc;
     };
-    std::vector<ForwardProcedureTargetUse> forward_procedure_target_uses;
+    std::vector<DeferredProcedureComponentValue> deferred_procedure_component_values;
     // The pointers created by create_construct_variable_pointer, each with
     // the variable of the BLOCK construct it is associated with
     std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> construct_variable_pointers;
@@ -4276,37 +4290,51 @@ public:
         return true;
     }
 
-    void validate_fixed_size_array_index_bounds(ASR::expr_t* array,
+    // Reports a constant subscript of `array` that lies outside the constant
+    // bounds of its dimension. Returns whether every subscript is known to be
+    // within the bounds: all are constants and the array is neither
+    // allocatable nor a pointer and has constant bounds, which are then those
+    // of its declaration.
+    bool validate_fixed_size_array_index_bounds(ASR::expr_t* array,
             ASR::array_index_t* args, size_t n_args, const Location& loc) {
         if (_processing_common_block_object) {
-            return;
+            return false;
         }
+        ASR::ttype_t* array_type = ASRUtils::expr_type(array);
         ASR::ttype_t* arr_type = ASRUtils::type_get_past_pointer(
-            ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(array)));
+            ASRUtils::type_get_past_allocatable(array_type));
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(arr_type, m_dims);
+        bool in_bounds = n_dims > 0 && n_dims == n_args &&
+            !ASRUtils::is_allocatable(array_type) &&
+            !ASRUtils::is_pointer(array_type);
         for (size_t i = 0; i < std::min(n_dims, n_args); i++) {
             if (args[i].m_left != nullptr || args[i].m_step != nullptr) {
+                in_bounds = false;
                 continue;
             }
             ASR::expr_t* idx_expr = args[i].m_right;
             if (idx_expr == nullptr) {
+                in_bounds = false;
                 continue;
             }
             ASR::expr_t* idx_value = ASRUtils::expr_value(idx_expr);
             int64_t idx = 0;
             if (idx_value && ASRUtils::extract_value(idx_value, idx)) {
                 int64_t lb = 1;
+                bool lb_known = false;
                 if (m_dims[i].m_start) {
                     ASR::expr_t* start_val = ASRUtils::expr_value(m_dims[i].m_start);
                     if (start_val) {
-                        ASRUtils::extract_value(start_val, lb);
+                        lb_known = ASRUtils::extract_value(start_val, lb);
                     }
                 }
+                bool ub_known = false;
                 if (m_dims[i].m_length) {
                     ASR::expr_t* len_val = ASRUtils::expr_value(m_dims[i].m_length);
                     int64_t len = 0;
                     if (len_val && ASRUtils::extract_value(len_val, len)) {
+                        ub_known = true;
                         int64_t ub = lb + len - 1;
                         if (idx < lb || idx > ub) {
                             diag.add(Diagnostic(
@@ -4319,8 +4347,12 @@ public:
                         }
                     }
                 }
+                in_bounds = in_bounds && lb_known && ub_known;
+            } else {
+                in_bounds = false;
             }
         }
+        return in_bounds;
     }
 
     // Gives `v` the initial value `value` that a DATA statement specifies.
@@ -6591,7 +6623,7 @@ public:
     bool is_pending_proc_placeholder(ASR::symbol_t *s) {
         s = ASRUtils::symbol_get_past_external(s);
         for (auto &placeholder : pending_proc_placeholders) {
-            if (ASRUtils::symbol_get_past_external(placeholder.second) == s) {
+            if (ASRUtils::symbol_get_past_external(placeholder.placeholder) == s) {
                 return true;
             }
         }
@@ -10480,8 +10512,8 @@ public:
                             for (auto &pending_placeholder : pending_proc_placeholders) {
                                 ASR::symbol_t *pending_underlying =
                                     ASRUtils::symbol_get_past_external(
-                                        pending_placeholder.second);
-                                if (pending_placeholder.first == init_name &&
+                                        pending_placeholder.placeholder);
+                                if (pending_placeholder.name == init_name &&
                                         pending_underlying == init_sym_underlying) {
                                     is_pending_placeholder = true;
                                     break;
@@ -13562,7 +13594,8 @@ public:
                     
                     parent_scope->add_symbol(func_name, placeholder); 
                     v = placeholder;
-                    pending_proc_placeholders.push_back({func_name, placeholder});
+                    pending_proc_placeholders.push_back({func_name, placeholder,
+                        is_derived_type ? parent_scope : current_scope});
                 }
                 type_declaration = v;
                 v = ASRUtils::symbol_get_past_external(v);
@@ -14150,7 +14183,7 @@ public:
         ASR::symbol_t* declared = current_scope->resolve_symbol(name);
         if (declared != nullptr) {
             if (forward_procedure_targets.count(declared) > 0) {
-                forward_procedure_target_uses.push_back(
+                deferred_procedure_component_values.push_back(
                     {declared, member_var, value->base.loc});
             }
             return;
@@ -14165,9 +14198,9 @@ public:
                 nullptr, ASR::accessType::Public, false, false, nullptr,
                 nullptr, nullptr));
         current_scope->add_symbol(name, placeholder);
-        pending_proc_placeholders.push_back({name, placeholder});
+        pending_proc_placeholders.push_back({name, placeholder, current_scope});
         forward_procedure_targets.insert(placeholder);
-        forward_procedure_target_uses.push_back(
+        deferred_procedure_component_values.push_back(
             {placeholder, member_var, value->base.loc});
     }
 
@@ -14681,11 +14714,22 @@ public:
             ASR::expr_t* arg = vals[i].m_value;
             ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
             if (ASRUtils::is_procedure_pointer_value(member_var, arg)) {
-                // A procedure defined later is checked once it is known, see
+                // A procedure defined later, or one given to a component
+                // whose interface is a procedure defined later, is checked
+                // once both are known, see
                 // `resolve_proc_pointer_placeholders()`.
                 bool forward_target = ASR::is_a<ASR::Var_t>(*arg)
                     && forward_procedure_targets.count(
                         ASR::down_cast<ASR::Var_t>(arg)->m_v) > 0;
+                if (!forward_target && ASR::is_a<ASR::Var_t>(*arg)
+                        && member_var->m_type_declaration != nullptr
+                        && is_pending_proc_placeholder(
+                            member_var->m_type_declaration)) {
+                    deferred_procedure_component_values.push_back(
+                        {ASR::down_cast<ASR::Var_t>(arg)->m_v, member_var,
+                            arg->base.loc});
+                    continue;
+                }
                 if (!forward_target
                         && !procedure_component_value_matches(member_var, arg)) {
                     if (!compiler_options.continue_compilation) {
@@ -14942,6 +14986,7 @@ public:
         // A compile time value folded out of a single element of the base
         // describes one element, not the array this reference denotes.
         array_item->m_value = nullptr;
+        array_item->m_in_bounds = false;
     }
 
     ASR::asr_t* create_ArrayRef(const Location &loc, AST::fnarg_t* m_args,
@@ -15354,12 +15399,13 @@ public:
                         Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
                 }
-                validate_fixed_size_array_index_bounds(v_Var, args.p,
-                    args.size(), loc);
+                bool in_bounds = validate_fixed_size_array_index_bounds(
+                    v_Var, args.p, args.size(), loc);
                 ASR::expr_t* array_item = ASRUtils::EXPR(
                     ASRUtils::make_ArrayItem_t_util(al, loc,
                         v_Var, args.p, args.size(), final_type,
-                        ASR::arraystorageType::ColMajor, arr_ref_val));
+                        ASR::arraystorageType::ColMajor, arr_ref_val,
+                        in_bounds));
                 give_struct_member_item_shape_of_base(array_item);
                 return (ASR::asr_t*) array_item;
             }
@@ -17773,13 +17819,13 @@ public:
             array_item_node = ASR::make_ArraySection_t(al, loc, expr, indices.p,
                 indices.size(), array_section_type, nullptr);
         } else {
-            validate_fixed_size_array_index_bounds(expr, indices.p,
-                indices.size(), loc);
+            bool in_bounds = validate_fixed_size_array_index_bounds(expr,
+                indices.p, indices.size(), loc);
             ASR::expr_t* array_item_value = ASRUtils::fold_ArrayItem_value(
                 al, expr, indices.p, indices.size());
             array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc, expr, indices.p,
                 indices.size(), ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(expr))),
-                ASR::arraystorageType::ColMajor, array_item_value);
+                ASR::arraystorageType::ColMajor, array_item_value, in_bounds);
         }
     }
 
@@ -26837,6 +26883,13 @@ public:
 
             } else if (ASR::is_a<ASR::ArrayItem_t>(*ASRUtils::EXPR(tmp))) {
                 ASR::ArrayItem_t* tmp2 = ASR::down_cast<ASR::ArrayItem_t>(ASRUtils::EXPR(tmp));
+                // The reference becomes array-valued, one element of the
+                // component out of every element of the base, and only a
+                // reference to a single element can be marked in bounds.
+                if (ASR::is_a<ASR::Array_t>(*array_type) ||
+                        ASR::is_a<ASR::Allocatable_t>(*array_type)) {
+                    tmp2->m_in_bounds = false;
+                }
                 if(ASR::is_a<ASR::Array_t>(*array_type)){
                     ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(array_type);
                     arr->m_type = ASRUtils::type_get_past_array(tmp2->m_type);

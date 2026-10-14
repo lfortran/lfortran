@@ -984,7 +984,7 @@
                                 (Real 4)
                                 ColMajor
                                 ()
-                                .false.
+                                .true.
                             )
                             (Logical 4)
                             ()

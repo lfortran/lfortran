@@ -5976,7 +5976,9 @@ LFORTRAN_API int32_t _lfortran_i32sys_clock_count() {
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
-        return (int32_t)(ts.tv_nsec / 1000000) + ((int32_t)ts.tv_sec * 1000);
+        // Milliseconds, wrapping from COUNT_MAX to zero without signed overflow.
+        uint64_t ms = (uint64_t)ts.tv_sec * 1000 + (uint64_t)(ts.tv_nsec / 1000000);
+        return (int32_t)(ms % ((uint64_t)INT_MAX + 1));
     } else {
         return - INT_MAX;
     }
