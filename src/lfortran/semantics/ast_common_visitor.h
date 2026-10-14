@@ -20957,6 +20957,7 @@ public:
                 tmp = create_func(al, x.base.base.loc, args, diag);
                 if (var_name == "getcwd") {
                     if (!tmp) throw SemanticAbort();
+                    warn_getcwd_extension(x.base.base.loc);
                     current_function_deterministic = false;
                     current_function_side_effect_free = false;
                 }
@@ -21100,6 +21101,13 @@ public:
         }
         return ASR::make_SizeOfType_t(al, x.base.base.loc, arg_type,
             size_type, value);
+    }
+
+    void warn_getcwd_extension(const Location& loc) {
+        diag.semantic_warning_label(
+            "`getcwd` is a GNU extension",
+            {loc},
+            "standard Fortran has no getcwd intrinsic; pass the directory in from the caller or call the platform function through a bind(c) interface");
     }
 
     ASR::asr_t* create_SizeOf(const AST::FuncCallOrArray_t& x) {

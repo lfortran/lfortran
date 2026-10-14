@@ -7900,6 +7900,9 @@ public:
                         // create_func has already reported a diagnostic; abort this
                         throw SemanticAbort();
                     }
+                    if (var_name == "getcwd") {
+                        warn_getcwd_extension(x.base.base.loc);
+                    }
                     return tmp;
                 }
             }
