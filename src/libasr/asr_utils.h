@@ -10525,6 +10525,44 @@ static inline ASR::expr_t* find_first_array_arg_if_elemental(
     return first_array_argument;
 }
 
+// F2018 15.8.3: an elemental subroutine called with an array needs an array for each
+// `intent(out)` or `intent(inout)` dummy. Returns the error, with `bad_arg` the scalar one, or "".
+static inline std::string check_elemental_subroutine_args(
+    const ASR::Function_t* f,
+    const ASR::call_arg_t* args, size_t n_args, size_t& bad_arg
+) {
+    if (!ASRUtils::get_FunctionType(f)->m_elemental || f->m_return_var) {
+        return "";
+    }
+    bool has_array_arg = false;
+    for (size_t i = 0; i < n_args; i++) {
+        if (args[i].m_value && is_array(ASRUtils::expr_type(args[i].m_value))) {
+            has_array_arg = true;
+            break;
+        }
+    }
+    for (size_t i = 0; has_array_arg && i < n_args && i < f->n_args; i++) {
+        if (args[i].m_value == nullptr || is_array(ASRUtils::expr_type(args[i].m_value))) {
+            continue;
+        }
+        ASR::symbol_t* dummy = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*dummy)) {
+            continue;
+        }
+        ASR::intentType intent = ASR::down_cast<ASR::Variable_t>(dummy)->m_intent;
+        if (intent == ASR::intentType::Out || intent == ASR::intentType::InOut) {
+            bad_arg = i;
+            return "the actual argument of the `intent(" +
+                std::string(intent == ASR::intentType::Out ? "out" : "inout") +
+                ")` dummy argument `" + ASRUtils::symbol_name(dummy) +
+                "` of the elemental subroutine `" + f->m_name +
+                "` is a scalar, but another actual argument is an array";
+        }
+    }
+    return "";
+}
+
 static inline void promote_ints_to_kind_8(ASR::expr_t** m_args, size_t n_args,
     Allocator& al, const Location& loc) {
     for (size_t i = 0; i < n_args; i++) {

@@ -9253,6 +9253,18 @@ public:
         ASR::call_arg_t* call_args = args.p;
         size_t n_call_args = args.size();
         ASRUtils::insert_self_arg(al, final_sym, call_args, n_call_args, v_expr);
+        if (f) {
+            size_t bad_arg = 0;
+            std::string elemental_error = ASRUtils::check_elemental_subroutine_args(
+                f, call_args, n_call_args, bad_arg);
+            if (!elemental_error.empty()) {
+                diag.add(diag::Diagnostic(elemental_error,
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {call_args[bad_arg].m_value->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
         tmp = ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
                 final_sym, original_sym, call_args, n_call_args, v_expr, &cast_stmt, compiler_options.implicit_argument_casting, current_scope, current_function_dependencies);
 

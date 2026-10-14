@@ -2574,3 +2574,27 @@ subroutine cc1_valueless_kind_parameter()
     integer, parameter :: k = n  ! {Error} Initialization of `k` must reduce to a compile time constant.
     real(k) :: x  ! {Error} the kind parameter `k` is not a constant expression
 end subroutine cc1_valueless_kind_parameter
+
+! An elemental subroutine called with an array argument needs an array for its
+! intent(out) dummy too, in a call and in a defined assignment.
+module cc1_elemental_scalar_out_m
+    implicit none
+    type :: cc1_elemental_t
+        integer :: i
+    end type
+    interface assignment(=)
+        module procedure cc1_elemental_set
+    end interface
+contains
+    elemental subroutine cc1_elemental_set(lhs, rhs)
+        type(cc1_elemental_t), intent(out) :: lhs
+        integer, intent(in) :: rhs
+        lhs%i = rhs
+    end subroutine
+    subroutine cc1_elemental_scalar_out()
+        type(cc1_elemental_t) :: s
+        call cc1_elemental_set(s, 1)
+        call cc1_elemental_set(s, [1, 2, 3])  ! {Error} the actual argument of the `intent(out)` dummy argument `lhs` of the elemental subroutine `cc1_elemental_set` is a scalar, but another actual argument is an array
+        s = [1, 2, 3]  ! {Error} the actual argument of the `intent(out)` dummy argument `lhs` of the elemental subroutine `cc1_elemental_set` is a scalar, but another actual argument is an array
+    end subroutine
+end module

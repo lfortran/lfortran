@@ -1,5 +1,4 @@
 #include "libasr/asr.h"
-#include <algorithm>
 #include <limits>
 #include <set>
 #include <unordered_set>
@@ -2820,7 +2819,8 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
     ASR::ttype_t* target_type, ASR::ttype_t* value_type, bool& found, Allocator& al, const Location& target_loc,
     const Location& value_loc, SymbolTable* curr_scope, SetChar& current_function_dependencies,
     SetChar& current_module_dependencies, ASR::asr_t*& asr, ASR::symbol_t* sym, const Location& loc, ASR::expr_t* expr_dt,
-    const std::function<void (const std::string &, const Location &)> err, char* pass_arg=nullptr) {
+    const std::function<void (const std::string &, const Location &)> err, std::string& elemental_error,
+    char* pass_arg=nullptr) {
     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(proc);
     std::string matched_subrout_name = "";
     if( subrout->n_args == 2 ) {
@@ -2841,6 +2841,12 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
         }
         if( ASRUtils::types_equal(target_arg_type, target_type, subrout->m_args[0], target) &&
             ASRUtils::types_equal(value_arg_type, value_type, subrout->m_args[1], value) ) {
+            ASR::call_arg_t actuals[2] = {{target_loc, target}, {value_loc, value}};
+            size_t bad_arg = 0;
+            elemental_error = ASRUtils::check_elemental_subroutine_args(subrout, actuals, 2, bad_arg);
+            if( !elemental_error.empty() ) {
+                return;
+            }
             std::string arg0_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[0])->m_v);
             std::string arg1_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[1])->m_v);
             if( pass_arg != nullptr ) {
@@ -3148,6 +3154,7 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     ASR::ttype_t *target_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));
     ASR::ttype_t *value_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(value));
     bool found = false;
+    std::string elemental_error;
     ASR::symbol_t* sym = curr_scope->resolve_symbol("~assign");
     ASR::expr_t* expr_dt = nullptr;
     if (!sym) {
@@ -3170,18 +3177,14 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     if (sym) {
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
-        // Non-elemental specifics take precedence over elemental ones.
-        std::vector<ASR::symbol_t*> procs(gen_proc->m_procs, gen_proc->m_procs + gen_proc->n_procs);
-        std::stable_partition(procs.begin(), procs.end(),
-            [](ASR::symbol_t* p) { return !ASRUtils::is_elemental(p); });
-        for( size_t i = 0; i < procs.size() && !found; i++ ) {
-            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(procs[i]);
+        for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
+            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
             switch( proc->type ) {
                 case ASR::symbolType::Function: {
                     process_overloaded_assignment_function(proc, target, value, target_type,
                         value_type, found, al, target->base.loc, value->base.loc, curr_scope,
                         current_function_dependencies, current_module_dependencies, asr, sym,
-                        loc, expr_dt, err);
+                        loc, expr_dt, err, elemental_error);
                     break;
                 }
                 case ASR::symbolType::StructMethodDeclaration: {
@@ -3190,7 +3193,7 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                     process_overloaded_assignment_function(proc_func, target, value, target_type,
                         value_type, found, al, target->base.loc, value->base.loc, curr_scope,
                         current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
-                        expr_dt, err, class_proc->m_self_argument);
+                        expr_dt, err, elemental_error, class_proc->m_self_argument);
                     if (found && expr_dt && ASRUtils::is_class_type(
                             ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr_dt)))) {
                         // For polymorphic (class) types, create a type-bound call
@@ -3230,6 +3233,9 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                     err("Only functions and class procedures can be used for generic assignment statement, found " + std::to_string(proc->type), loc);
                 }
             }
+        }
+        if( !found && !elemental_error.empty() ) {
+            err(elemental_error, target->base.loc);
         }
     }
     return found;
