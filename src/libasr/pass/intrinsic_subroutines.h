@@ -734,55 +734,108 @@ namespace SystemClock {
         return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::SystemClock), m_args.p, m_args.n, overload_id);
     }
 
+    static inline bool has_count(int64_t overload_id) {
+        return overload_id == 0 || overload_id == 3 || overload_id == 4 || overload_id == 6;
+    }
+
+    static inline bool has_count_rate(int64_t overload_id) {
+        return overload_id == 1 || overload_id == 3 || overload_id == 5 || overload_id == 6;
+    }
+
+    static inline bool has_count_max(int64_t overload_id) {
+        return overload_id == 2 || overload_id == 4 || overload_id == 5 || overload_id == 6;
+    }
+
+    /*
+        All values of one call describe the same clock. Its integer kind is the
+        smallest kind of the present integer arguments, so that
+        0 <= COUNT <= COUNT_MAX holds in every argument's kind. A real
+        COUNT_RATE selects the clock only when it is the sole argument.
+    */
+    static inline int clock_kind(Vec<ASR::ttype_t*>& arg_types, int64_t overload_id) {
+        int kind = 0;
+        auto use_integer_kind = [&](ASR::ttype_t* type) {
+            if (ASRUtils::is_integer(*type)) {
+                int k = ASRUtils::extract_kind_from_ttype_t(type);
+                if (kind == 0 || k < kind) kind = k;
+            }
+        };
+        if (has_count(overload_id)) use_integer_kind(arg_types[0]);
+        if (has_count_rate(overload_id)) use_integer_kind(arg_types[1]);
+        if (has_count_max(overload_id)) use_integer_kind(arg_types[2]);
+        if (kind == 0) {
+            kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);
+        }
+        return kind >= 8 ? 8 : 4;
+    }
+
     static inline ASR::stmt_t* instantiate_SystemClock(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
 
-        std::string c_func_name_1 = "_lfortran_i32sys_clock_count";
-        std::string c_func_name_2 = "_lfortran_i32sys_clock_count_rate";
-        std::string c_func_name_3 = "_lfortran_i32sys_clock_count_max";
         std::string new_name = "_lcompilers_system_clock_";
         declare_basic_variables(new_name);
-        Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
-        if (overload_id == 0 || overload_id == 3 || overload_id == 4 || overload_id == 6) {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 8) {
-                c_func_name_1 = "_lfortran_i64sys_clock_count";
+        int kind = clock_kind(arg_types, overload_id);
+        ASR::ttype_t* clock_type = kind == 8 ? int64 : int32;
+        std::string prefix = kind == 8 ? "_lfortran_i64" : "_lfortran_i32";
+        // Runtime helpers are declared with their C return types.
+        auto clock_value = [&](const std::string& c_func_name, ASR::ttype_t* type) {
+            ASR::symbol_t* s = b.create_c_func_subroutines(c_func_name, fn_symtab, 0, type);
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+            Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
+            return b.Call(s, call_args, type);
+        };
+        auto convert = [&](ASR::expr_t* x, ASR::ttype_t* type) {
+            ASR::ttype_t* x_type = ASRUtils::expr_type(x);
+            if (x_type->type == type->type && ASRUtils::extract_kind_from_ttype_t(x_type)
+                    == ASRUtils::extract_kind_from_ttype_t(type)) {
+                return x;
             }
+            return b.t2t(x, x_type, type);
+        };
+        if (has_count(overload_id)) {
             fill_func_arg_sub("count", arg_types[0], Out);
-            ASR::symbol_t *s_1 = b.create_c_func_subroutines(c_func_name_1, fn_symtab, 0, arg_types[0]);
-            fn_symtab->add_symbol(c_func_name_1, s_1);
-            dep.push_back(al, s2c(al, c_func_name_1));
-            body.push_back(al, b.Assignment(args[0], b.Call(s_1, call_args, arg_types[0])));
+            ASR::ttype_t* count_type = ASRUtils::extract_type(arg_types[0]);
+            int count_kind = ASRUtils::extract_kind_from_ttype_t(count_type);
+            ASR::expr_t* count = clock_value(prefix + "sys_clock_count", clock_type);
+            if (count_kind == kind) {
+                body.push_back(al, b.Assignment(args[0], count));
+            } else {
+                // A negative count means no clock: report -HUGE(COUNT) in COUNT's kind.
+                int64_t count_huge = static_cast<int64_t>(
+                    (uint64_t(1) << (8 * count_kind - 1)) - 1);
+                ASR::expr_t* clock_count = declare("clock_count", clock_type, Local);
+                body.push_back(al, b.Assignment(clock_count, count));
+                body.push_back(al, b.If(b.Lt(clock_count, b.i_t(0, clock_type)), {
+                        b.Assignment(args[0], b.i_t(-count_huge, count_type))
+                    }, {
+                        b.Assignment(args[0], convert(clock_count, count_type))
+                    }));
+            }
         } else {
             fill_func_arg_sub("count", int32, In);
         }
-        if (overload_id == 1 || overload_id == 3 || overload_id == 5 || overload_id == 6) {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_types[1]) == 8) {
-                if (is_real(*arg_types[1])) {
-                    c_func_name_2 = "_lfortran_i64r64sys_clock_count_rate";
-                } else {
-                    c_func_name_2 = "_lfortran_i64sys_clock_count_rate";
-                }
-            } else if (is_real(*arg_types[1])) {
-                c_func_name_2 = "_lfortran_i32r32sys_clock_count_rate";
-            }
+        if (has_count_rate(overload_id)) {
             fill_func_arg_sub("count_rate", arg_types[1], Out);
-            ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 0, arg_types[1]);
-            fn_symtab->add_symbol(c_func_name_2, s_2);
-            dep.push_back(al, s2c(al, c_func_name_2));
-            body.push_back(al, b.Assignment(args[1], b.Call(s_2, call_args, arg_types[1])));
+            ASR::ttype_t* rate_type = ASRUtils::extract_type(arg_types[1]);
+            ASR::expr_t* rate = nullptr;
+            if (ASRUtils::is_real(*rate_type)) {
+                rate = kind == 8
+                    ? clock_value("_lfortran_i64r64sys_clock_count_rate", real64)
+                    : clock_value("_lfortran_i32r32sys_clock_count_rate", real32);
+            } else {
+                rate = clock_value(prefix + "sys_clock_count_rate", clock_type);
+            }
+            body.push_back(al, b.Assignment(args[1], convert(rate, rate_type)));
         } else {
             fill_func_arg_sub("count_rate", int32, In);
         }
-        if (overload_id == 2 || overload_id == 4 || overload_id == 5 || overload_id == 6) {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_types[2]) == 8) {
-                c_func_name_3 = "_lfortran_i64sys_clock_count_max";
-            }
+        if (has_count_max(overload_id)) {
             fill_func_arg_sub("count_max", arg_types[2], Out);
-            ASR::symbol_t *s_3 = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 0, arg_types[2]);
-            fn_symtab->add_symbol(c_func_name_3, s_3);
-            dep.push_back(al, s2c(al, c_func_name_3));
-            body.push_back(al, b.Assignment(args[2], b.Call(s_3, call_args, arg_types[2])));
+            ASR::ttype_t* max_type = ASRUtils::extract_type(arg_types[2]);
+            ASR::expr_t* count_max = clock_value(prefix + "sys_clock_count_max", clock_type);
+            body.push_back(al, b.Assignment(args[2], convert(count_max, max_type)));
         } else {
             fill_func_arg_sub("count_max", int32, In);
         }
