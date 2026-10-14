@@ -2869,3 +2869,57 @@ contains
         instantiate item_oob_t {3}, only: item_w3 => item_w
     end subroutine
 end module
+
+! template_save_shadow_1
+! C1610: a local of a template procedure named like a deferred constant hides
+! it, and is a local like any other, so it cannot have the SAVE attribute.
+module template_save_shadow_1_m
+    implicit none
+    template save_shadow_tmpl {n}
+        deferred integer, parameter :: n
+    contains
+        integer function f() result(r)
+            integer, save :: n = 7  ! {Error} variable 'n' in a template or templated procedure cannot have the save attribute
+            r = n
+        end function
+    end template
+end module
+
+! A deferred constant, or a named constant that depends on one, has no value
+! in the template; using it as a kind parameter is not supported yet (#14770).
+module continue_compilation_templates_01_deferred_kind
+    implicit none
+    template deferred_kind_t {p}
+        deferred integer, parameter :: p
+        integer, parameter :: wp = p
+        type :: deferred_kind_w
+            real(p) :: x(3)  ! {Error} using a deferred constant as a kind parameter is not supported yet
+        end type
+    contains
+        integer function deferred_kind_f()
+            real(p) :: x  ! {Error} using a deferred constant as a kind parameter is not supported yet
+            deferred_kind_f = kind(x)
+        end function
+
+        integer function deferred_kind_g()
+            integer(wp) :: i  ! {Error} using a named constant that depends on a deferred constant as a kind parameter is not supported yet
+            deferred_kind_g = kind(i)
+        end function
+
+        real function deferred_kind_h()
+            deferred_kind_h = 1.0_p  ! {Error} using a deferred constant as a kind parameter is not supported yet
+        end function
+
+        integer function deferred_kind_i()
+            deferred_kind_i = 2_wp  ! {Error} using a named constant that depends on a deferred constant as a kind parameter is not supported yet
+        end function
+
+        logical function deferred_kind_l()
+            deferred_kind_l = .true._p  ! {Error} using a deferred constant as a kind parameter is not supported yet
+        end function
+
+        character function deferred_kind_c()
+            deferred_kind_c = p_"a"  ! {Error} using a deferred constant as a kind parameter is not supported yet
+        end function
+    end template
+end module

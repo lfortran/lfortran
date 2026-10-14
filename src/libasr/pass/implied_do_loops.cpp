@@ -764,15 +764,33 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         // arguments stay constants and are never expanded into temporaries
     }
 
+    // A rank one constant of intrinsic numeric or logical type that is the
+    // whole value of an assignment is named as a named constant (parameter),
+    // which backends keep as static data. Filling a temporary with it
+    // instead takes code for each element, for every such assignment.
+    bool is_named_array_constant(ASR::ArrayConstant_t* x, bool is_assignment_value) {
+        if (!is_assignment_value || !PassUtils::is_nameable_array_constant(x)) {
+            return false;
+        }
+        ASR::ttype_t* element_type = ASRUtils::extract_type(x->m_type);
+        return ASR::is_a<ASR::Integer_t>(*element_type) ||
+            ASR::is_a<ASR::Real_t>(*element_type) ||
+            ASR::is_a<ASR::Complex_t>(*element_type) ||
+            ASR::is_a<ASR::Logical_t>(*element_type);
+    }
+
     void replace_ArrayConstant(ASR::ArrayConstant_t* x) {
         const Location& loc = x->base.base.loc;
         ASR::expr_t* result_var_copy = result_var;
         bool is_result_var_fixed_size = false;
+        bool is_assignment_value = false;
         if (result_var != nullptr &&
             resultvar2value.find(result_var) != resultvar2value.end() &&
             resultvar2value[result_var] == &(x->base)) {
+            is_assignment_value = true;
             is_result_var_fixed_size = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(result_var));
         }
+        bool is_named_constant = is_named_array_constant(x, is_assignment_value);
         ASR::ttype_t* result_type_ = nullptr;
         bool is_allocatable = false;
         ASR::expr_t* array_constant_size = get_ArrayConstant_size(x);
@@ -815,8 +833,12 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         if (ASRUtils::is_struct(*result_type_)) {
             struct_expr = ASRUtils::EXPR((ASR::asr_t*) x);
         }
-        result_var = PassUtils::create_var(result_counter, "_array_constant_",
-                        loc, result_type_, al, current_scope, struct_expr);
+        if (is_named_constant) {
+            result_var = PassUtils::create_named_array_constant(al, x, current_scope);
+        } else {
+            result_var = PassUtils::create_var(result_counter, "_array_constant_",
+                            loc, result_type_, al, current_scope, struct_expr);
+        }
         result_counter += 1;
         *current_expr = result_var;
 
@@ -862,9 +884,11 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             pass_result.push_back(al, allocate_stmt);
         }
         LCOMPILERS_ASSERT(result_var != nullptr);
-        Vec<ASR::stmt_t*>* result_vec = &pass_result;
-        PassUtils::ReplacerUtils::replace_ArrayConstant(x, this,
-            remove_original_statement, result_vec);
+        if (!is_named_constant) {
+            Vec<ASR::stmt_t*>* result_vec = &pass_result;
+            PassUtils::ReplacerUtils::replace_ArrayConstant(x, this,
+                remove_original_statement, result_vec);
+        }
         result_var = result_var_copy;
     }
 

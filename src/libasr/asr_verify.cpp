@@ -809,11 +809,11 @@ public:
                 "Reallocation of non allocatable variable is not allowed");
         }
         if (x.m_move_allocation) {
-            require_id(ASRUtils::is_move_allocation_pair(
-                    ASRUtils::expr_type(x.m_target), ASRUtils::expr_type(x.m_value)),
+            require_id(ASRUtils::is_move_allocation_pair(x.m_target, x.m_value),
                 "asr.verify.assignment.move_allocatable_operands",
                 "Move assignment target and value must both be allocatable "
-                "arrays or both be allocatable noncharacter scalars");
+                "arrays, or both be allocatable noncharacter scalars with a "
+                "target type compatible with the value");
         }
         BaseWalkVisitor<VerifyVisitor>::visit_Assignment(x);
     }
@@ -2110,6 +2110,9 @@ public:
     }
 
     void visit_ArrayItem(const ArrayItem_t &x) {
+        require_id(!x.m_in_bounds || !ASRUtils::is_array(x.m_type),
+            "asr.verify.array_item.in_bounds_array",
+            "only a reference to a single element can be known to be in bounds");
         if( check_external ) {
             // Selecting an element of an array component of an array, as in
             // `w%u(2)`, reads one element of the component out of every

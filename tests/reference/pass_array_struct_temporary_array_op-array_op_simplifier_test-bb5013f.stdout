@@ -406,6 +406,7 @@
                                     (Real 4)
                                     ColMajor
                                     ()
+                                    .true.
                                 )
                                 (RealBinOp
                                     (RealBinOp
@@ -420,6 +421,7 @@
                                             (Real 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         Add
                                         (ArrayItem
@@ -433,6 +435,7 @@
                                             (Real 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (Real 4)
                                         ()

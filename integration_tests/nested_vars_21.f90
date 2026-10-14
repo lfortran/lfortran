@@ -1,61 +1,116 @@
-! A program variable used in internal procedures whose type depends on other
-! types of the program through its parent and its components (#14880).
+! Derived types of a main program with procedure-pointer components, and a
+! procedure pointer, whose interfaces are declared in the program, used
+! through host association in internal procedures (#14968, #13630).
 program nested_vars_21
   implicit none
-  type :: v_t
-    integer :: k = 7
+  abstract interface
+    subroutine ffunc(i)
+      integer, intent(in) :: i
+    end subroutine ffunc
+    integer function vfunc(v)
+      integer, intent(in) :: v(:)
+    end function vfunc
+  end interface
+  type :: callback
+    procedure(ffunc), pointer, nopass :: f => null()
   end type
-  type :: w_t
-    real :: a = 1.5
-    type(v_t) :: v
-    type(v_t) :: varr(2)
+  type :: callback_a
+    procedure(a), pointer, nopass :: f
   end type
-  type :: base_t
-    integer :: j = 3
-    type(v_t), allocatable :: va
+  type :: reducer
+    procedure(vfunc), pointer, nopass :: g => null()
   end type
-  type, extends(base_t) :: loc_t
-    integer :: i = 4
-    type(w_t) :: w
-    type(w_t), allocatable :: wa(:)
-    type(loc_t), pointer :: next => null()
-    class(base_t), allocatable :: cb
+  type :: holder
+    type(callback) :: c(2)
   end type
-  type(loc_t) :: s
-  s%w = w_t(2.5, v_t(9), [v_t(1), v_t(2)])
-  allocate(s%va)
-  s%va%k = 11
-  allocate(s%wa(3))
-  s%wa(2)%v%k = 12
-  allocate(loc_t :: s%cb)
-  print *, f()
-  if (s%i /= 4) error stop 1
-  if (abs(s%w%a - 5.0) > 1e-6) error stop 2
-  if (s%w%v%k /= 10) error stop 3
-  if (s%w%varr(2)%k /= 2) error stop 4
-  if (s%va%k /= 11) error stop 5
-  if (s%wa(2)%v%k /= 13) error stop 6
-  if (s%j /= 3) error stop 7
-  if (associated(s%next)) error stop 8
-  select type (c => s%cb)
-  type is (loc_t)
-    if (c%i /= 4) error stop 9
-  class default
-    error stop 10
-  end select
-  call scale()
-  if (s%i /= 40) error stop 11
+  type(callback) :: my_f
+  type(callback_a) :: my_a
+  type(reducer) :: r(2)
+  type(holder) :: h
+  procedure(a), pointer :: p => null()
+  integer :: trace(6), n
+
+  if (associated(my_f%f)) error stop 1
+  call check_unset()
+
+  n = 0
+  my_f = callback(a)
+  call my_f%f(5)
+  if (n /= 6) error stop 2
+  if (any(trace /= [5, 4, 3, 2, 1, 0])) error stop 3
+
+  n = 0
+  my_a = callback_a(b)
+  call my_a%f(5)
+  if (n /= 6) error stop 4
+  if (any(trace /= [5, 4, 3, 2, 1, 0])) error stop 5
+
+  r(2)%g => total
+  if (sum_with(2, [1, 2, 3]) /= 6) error stop 6
+
+  n = 0
+  h%c(2)%f => c
+  call h%c(2)%f(5)
+  if (n /= 6) error stop 7
+  if (any(trace /= [5, 4, 3, 2, 1, 0])) error stop 8
+
+  n = 0
+  p => d
+  call p(5)
+  if (n /= 6) error stop 12
+  if (any(trace /= [5, 4, 3, 2, 1, 0])) error stop 13
+  print *, trace
+
 contains
-  integer function f()
-    f = s%i
-    s%w%a = s%w%a * 2
-    s%w%v%k = s%w%v%k + 1
-    s%wa(2)%v%k = s%wa(2)%v%k + 1
-  end function
-  subroutine scale()
-    type(w_t) :: x
-    x = w_t(0.5, v_t(1), [v_t(3), v_t(4)])
-    if (x%varr(1)%k /= 3) error stop 12
-    s%i = s%i * 10
-  end subroutine
-end program
+
+  subroutine check_unset()
+    if (associated(my_f%f)) error stop 9
+    if (associated(r(1)%g)) error stop 10
+    if (associated(h%c(1)%f)) error stop 11
+    if (associated(p)) error stop 14
+  end subroutine check_unset
+
+  recursive subroutine a(i)
+    integer, intent(in) :: i
+    n = n + 1
+    trace(n) = i
+    if (i == 0) return
+    call my_f%f(i - 1)
+  end subroutine a
+
+  recursive subroutine b(i)
+    integer, intent(in) :: i
+    n = n + 1
+    trace(n) = i
+    if (i == 0) return
+    call my_a%f(i - 1)
+  end subroutine b
+
+  recursive subroutine c(i)
+    integer, intent(in) :: i
+    n = n + 1
+    trace(n) = i
+    if (i == 0) return
+    call h%c(2)%f(i - 1)
+  end subroutine c
+
+  recursive subroutine d(i)
+    integer, intent(in) :: i
+    n = n + 1
+    trace(n) = i
+    if (i == 0) return
+    call p(i - 1)
+  end subroutine d
+
+  integer function total(v)
+    integer, intent(in) :: v(:)
+    total = sum(v)
+  end function total
+
+  integer function sum_with(k, v)
+    integer, intent(in) :: k
+    integer, intent(in) :: v(:)
+    sum_with = r(k)%g(v)
+  end function sum_with
+
+end program nested_vars_21

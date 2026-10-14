@@ -216,6 +216,13 @@ program continue_compilation_3
         print *, size(bpe)
         bpe = d
     end subroutine
+    integer function f1_prog_13216(a) result(r)
+        type(nosuchtype_13216), intent(in) :: a
+        r = 1
+    end function
+    integer function f2_prog_13216() result(r)
+        r = undefined_program_host_13216
+    end function
         
 end program
 
@@ -349,4 +356,122 @@ subroutine upoly_to_specific_type_14738(d)
     call g_int(d)  ! {Error} Type mismatch in argument `i`: expected `integer(4)` but got `class(*)`
     call g_t(d)  ! {Error} Type mismatch in argument `a`: expected `t_14738` but got `class(*)`
     print *, f_int(d)  ! {Error} Type mismatch in argument `i`: expected `integer(4)` but got `class(*)`.
+end subroutine
+
+module lhs_rhs_errors_14736
+    ! Errors in the target are reported even when the value has an error
+    implicit none
+    integer, parameter :: p_14736 = 1
+contains
+    subroutine sub_14736()
+    end subroutine
+    subroutine test_lhs_14736(a)
+        integer, intent(in) :: a
+        integer :: i
+        p_14736 = undeclared_14736_1
+        a = undeclared_14736_2
+        do i = 1, 3
+            i = undeclared_14736_3
+        end do
+        sub_14736 = undeclared_14736_4
+    end subroutine
+    integer function f_14736(i)
+        integer, intent(in) :: i
+        f_14736 = i
+    end function
+    subroutine test_lhs_func_14736()
+        integer :: arr(3)
+        f_14736(1) = undeclared_14736_5
+        arr(f_14736(1)) = undeclared_14736_6
+        print *, arr
+    end subroutine
+end module
+
+module cc_function_decl_error_13216
+    implicit none
+contains
+    integer function f1_13216() result(r)
+        type(nosuchtype_13216) :: x
+        r = 1
+    end function
+    integer function f2_13216() result(r)
+        r = undefined_variable_13216
+    end function
+    integer function f3_13216(a) result(r)
+        type(nosuchtype_13216), intent(in) :: a
+        r = 3
+    end function
+    integer function f4_13216() result(r)
+        r = undefined_variable2_13216
+    end function
+end module
+
+module cc_function_host_13216
+    implicit none
+contains
+    integer function host_f_13216() result(r)
+        r = inner2_f_13216()
+    contains
+        integer function inner1_f_13216(a) result(q)
+            type(nosuchtype_13216), intent(in) :: a
+            q = 1
+        end function
+        integer function inner2_f_13216() result(q)
+            q = undefined_function_host_13216
+        end function
+    end function
+    integer function after_f_13216() result(r)
+        r = undefined_after_function_host_13216
+    end function
+end module
+
+module cc_module_procedure_host_13216
+    implicit none
+    interface
+        module subroutine mp_13216()
+        end subroutine
+    end interface
+end module
+
+submodule (cc_module_procedure_host_13216) cc_module_procedure_host_s_13216
+contains
+    module procedure mp_13216
+        call helper_mp_13216()
+    contains
+        subroutine bad_mp_13216()
+            implicit real (a-z)
+        end subroutine
+        subroutine helper_mp_13216()
+            print *, undefined_module_procedure_host_13216
+        end subroutine
+    end procedure
+    subroutine after_mp_13216()
+        print *, undefined_after_module_procedure_host_13216
+    end subroutine
+end submodule
+
+subroutine s_13758(x) bind(c)
+    use iso_c_binding, only: c_int
+    implicit none
+    integer(c_int), value, optional :: x
+contains
+    subroutine inner_13758()
+        implicit real (a-z)
+    end subroutine
+    subroutine inner2_13758()
+        print *, undefined_subroutine_host_13758
+    end subroutine
+end subroutine
+
+integer function tf1_13216(a) result(r)
+    type(nosuchtype_toplevel_13216), intent(in) :: a
+    r = 1
+end function
+
+integer function tf2_13216() result(r)
+    r = undefined_toplevel_function_13216
+end function
+
+subroutine ts_13216()
+    print *, undefined_toplevel_subroutine_13216
 end subroutine

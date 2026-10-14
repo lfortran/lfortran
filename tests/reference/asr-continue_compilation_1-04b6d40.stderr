@@ -640,6 +640,16 @@ semantic error: Derived type 't_recovery' not declared
 1165 |       class(t_recovery), intent(in) :: self
      |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Dummy argument 'self' not defined
+    --> tests/errors/continue_compilation_1.f90:1164:5 - 1168:20
+     |
+1164 |        pure function foo(self, x) result(res)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1168 |        end function foo
+     | ...^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: 'binding_outside_module_proc' must be a module procedure or an external procedure with an explicit interface
     --> tests/errors/continue_compilation_1.f90:1201:9
      |
@@ -1131,22 +1141,112 @@ semantic error: using the internal procedure 'cos', which is defined later, as a
      |         ^^^^^^^^^^^^^^ 
 
 semantic error: using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
-    --> tests/errors/continue_compilation_1.f90:2479:5
+    --> tests/errors/continue_compilation_1.f90:2525:5
      |
-2479 |     procedure(tan) :: f  ! {Error} using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
+2525 |     procedure(tan) :: f  ! {Error} using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
      |     ^^^^^^^^^^^^^^ 
 
 semantic error: Type bound procedure 'get' of 'child' overriding the binding of the same name in 'base' must return i32, not r32
-    --> tests/errors/continue_compilation_1.f90:2504:13
+    --> tests/errors/continue_compilation_1.f90:2550:13
      |
-2504 |             procedure, nopass :: get => later_binding_get2  ! {Error} Type bound procedure 'get' of 'child' overriding the binding of the same name in 'base' must return i32, not r32
+2550 |             procedure, nopass :: get => later_binding_get2  ! {Error} Type bound procedure 'get' of 'child' overriding the binding of the same name in 'base' must return i32, not r32
      |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Type bound procedure 'get' of 'grandchild' overriding the binding of the same name in 'base' must return i32, not r32
-    --> tests/errors/continue_compilation_1.f90:2513:17
+    --> tests/errors/continue_compilation_1.f90:2559:17
      |
-2513 |                 procedure, nopass :: get => later_binding_get2  ! {Error} Type bound procedure 'get' of 'grandchild' overriding the binding of the same name in 'base' must return i32, not r32
+2559 |                 procedure, nopass :: get => later_binding_get2  ! {Error} Type bound procedure 'get' of 'grandchild' overriding the binding of the same name in 'base' must return i32, not r32
      |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Initialization of `k` must reduce to a compile time constant.
+    --> tests/errors/continue_compilation_1.f90:2574:5
+     |
+2574 |     integer, parameter :: k = n  ! {Error} Initialization of `k` must reduce to a compile time constant.
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the kind parameter `k` is not a constant expression
+    --> tests/errors/continue_compilation_1.f90:2575:10
+     |
+2575 |     real(k) :: x  ! {Error} the kind parameter `k` is not a constant expression
+     |          ^ 
+
+semantic error: no specific procedure of the generic 'generic_no_match' matches the arguments
+    --> tests/errors/continue_compilation_1.f90:2595:18
+     |
+2595 |     integer :: a(generic_no_match(1.5, n))  ! {Error} no specific procedure of the generic 'generic_no_match' matches the arguments
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: no specific procedure of the generic 'generic_no_match' matches the arguments
+    --> tests/errors/continue_compilation_1.f90:2596:18
+     |
+2596 |     integer :: b(generic_no_match(z=n))  ! {Error} no specific procedure of the generic 'generic_no_match' matches the arguments
+     |                  ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+    --> tests/errors/continue_compilation_1.f90:2620:63
+     |
+2620 |     type(cc1_pclim_func_t) :: cc1_pclim_s1 = cc1_pclim_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+     |                                                               ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    --> tests/errors/continue_compilation_1.f90:2621:64
+     |
+2621 |     type(cc1_pclim_sub_t) :: cc1_pclim_s2 = cc1_pclim_sub_t(pf=cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+     |                                                                ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    --> tests/errors/continue_compilation_1.f90:2641:58
+     |
+2641 |     type(cc1_pclt_sub_t) :: cc1_pclt_s1 = cc1_pclt_sub_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+     |                                                          ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+    --> tests/errors/continue_compilation_1.f90:2649:60
+     |
+2649 |     type(cc1_pclt_func_t) :: cc1_pclt_s2 = cc1_pclt_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+     |                                                            ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    --> tests/errors/continue_compilation_1.f90:2675:73
+     |
+2675 |         type(cc1_pcth_sub_t), parameter :: cc1_pcth_c1 = cc1_pcth_sub_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+     |                                                                         ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+    --> tests/errors/continue_compilation_1.f90:2676:75
+     |
+2676 |         type(cc1_pcth_func_t), parameter :: cc1_pcth_c2 = cc1_pcth_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+     |                                                                           ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Interface 'cc1_pcth_never' is referenced but not defined
+    --> tests/errors/continue_compilation_1.f90:2673:13
+     |
+2673 |             procedure(cc1_pcth_never), pointer, nopass :: pf => null()  ! {Error} Interface 'cc1_pcth_never' is referenced but not defined
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
+
+semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    --> tests/errors/continue_compilation_1.f90:2712:79
+     |
+2712 |             type(cc1_pcll_tmpl_t), parameter :: cc1_pcll_c1 = cc1_pcll_tmpl_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+     |                                                                               ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    --> tests/errors/continue_compilation_1.f90:2725:69
+     |
+2725 |             type(cc1_pcll_t), parameter :: cc1_pcll_c2 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+     |                                                                     ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    --> tests/errors/continue_compilation_1.f90:2732:65
+     |
+2732 |         type(cc1_pcll_t), parameter :: cc1_pcll_c3 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+     |                                                                 ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Interface 'cc1_pcll_never' is referenced but not defined
+    --> tests/errors/continue_compilation_1.f90:2723:17
+     |
+2723 |                 procedure(cc1_pcll_never), pointer, nopass :: pf => null()  ! {Error} Interface 'cc1_pcll_never' is referenced but not defined
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
 
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
@@ -1919,12 +2019,6 @@ semantic error: `shape` array in reshape intrinsic should be of constant size
 499 |     matrix = reshape(source, shape_, pad=[0])
     |                              ^^^^^^ not a constant size array
 
-semantic error: Incompatible ranks 2 and 1 in assignment
-   --> tests/errors/continue_compilation_1.f90:499:5
-    |
-499 |     matrix = reshape(source, shape_, pad=[0])
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
 semantic error: Complex variable 'c' only has %re, %im, and %kind members, not 'mymember'
    --> tests/errors/continue_compilation_1.f90:504:14
     |
@@ -2271,12 +2365,6 @@ semantic error: Operands of comparison operator '==' are not comparable: ieee_cl
     |
 612 |     b = (ieee_cls == ieee_quiet_nan)
     |          ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
-semantic error: Type mismatch in assignment, the types must be compatible
-   --> tests/errors/continue_compilation_1.f90:612:5
-    |
-612 |     b = (ieee_cls == ieee_quiet_nan)
-    |     ^                ^^^^^^^^^^^^^^ type mismatch (integer[:] and ieee_class_type)
 
 semantic error: Type mismatch in assignment, the types must be compatible
    --> tests/errors/continue_compilation_1.f90:617:5
@@ -3129,23 +3217,11 @@ semantic error: type mismatch in structure constructor: value of type payload_t 
 1629 |     a = cptr_component_t(payload)  ! {Error} type mismatch in structure constructor: value of type type(payload_t) cannot be the value of component 'p' of type type(c_ptr)
      |                          ^^^^^^^ 
 
-semantic error: Type mismatch in assignment, the types must be compatible
-    --> tests/errors/continue_compilation_1.f90:1629:5
-     |
-1629 |     a = cptr_component_t(payload)  ! {Error} type mismatch in structure constructor: value of type type(payload_t) cannot be the value of component 'p' of type type(c_ptr)
-     |     ^                    ^^^^^^^ type mismatch (cptr_component_t and payload_t)
-
 semantic error: type mismatch in structure constructor: value of type integer(4) cannot be the value of component 'p' of type type(c_ptr)
     --> tests/errors/continue_compilation_1.f90:1630:26
      |
 1630 |     a = cptr_component_t(1)  ! {Error} type mismatch in structure constructor: value of type integer(4) cannot be the value of component 'p' of type type(c_ptr)
      |                          ^ 
-
-semantic error: Type mismatch in assignment, the types must be compatible
-    --> tests/errors/continue_compilation_1.f90:1630:5
-     |
-1630 |     a = cptr_component_t(1)  ! {Error} type mismatch in structure constructor: value of type integer(4) cannot be the value of component 'p' of type type(c_ptr)
-     |     ^                    ^ type mismatch (cptr_component_t and integer)
 
 semantic error: Type mismatch in argument `x`: expected `integer(4)` but got `type(c_funptr)`
     --> tests/errors/continue_compilation_1.f90:1637:24
@@ -3440,3 +3516,75 @@ semantic error: 'mask' argument of 'maxval' intrinsic must be logical
      |
 2395 |         print *, maxval(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'maxval' intrinsic must be logical
      |                  ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is type(mai_u) and `from` is type(mai_t)
+    --> tests/errors/continue_compilation_1.f90:2507:36
+     |
+2507 |         call move_alloc(mai_t_arr, mai_u_arr)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is type(mai_u) and `from` is type(mai_t)
+     |                                    ^^^^^^^^^ not type compatible with type(mai_t)
+
+semantic error: `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is type(mai_u) and `from` is type(mai_t)
+    --> tests/errors/continue_compilation_1.f90:2508:36
+     |
+2508 |         call move_alloc(mai_t_scl, mai_u_scl)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is type(mai_u) and `from` is type(mai_t)
+     |                                    ^^^^^^^^^ not type compatible with type(mai_t)
+
+semantic error: `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is real(4) and `from` is integer(4)
+    --> tests/errors/continue_compilation_1.f90:2509:36
+     |
+2509 |         call move_alloc(mai_i_arr, mai_r_arr)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is real(4) and `from` is integer(4)
+     |                                    ^^^^^^^^^ not type compatible with integer(4)
+
+semantic error: `to` argument of `move_alloc` must have the same kind as `from` argument, but `to` is integer(8) and `from` is integer(4)
+    --> tests/errors/continue_compilation_1.f90:2510:36
+     |
+2510 |         call move_alloc(mai_i_arr, mai_i8_arr)  ! {Error} `to` argument of `move_alloc` must have the same kind as `from` argument, but `to` is integer(8) and `from` is integer(4)
+     |                                    ^^^^^^^^^^ kind differs from integer(4)
+
+semantic error: `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is integer(4) and `from` is class(*)
+    --> tests/errors/continue_compilation_1.f90:2511:36
+     |
+2511 |         call move_alloc(mai_upoly, mai_i_scl)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is integer(4) and `from` is class(*)
+     |                                    ^^^^^^^^^ not type compatible with class(*)
+
+semantic error: `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is class(mai_child) and `from` is class(mai_base)
+    --> tests/errors/continue_compilation_1.f90:2512:40
+     |
+2512 |         call move_alloc(mai_poly_base, mai_poly_child)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is class(mai_child) and `from` is class(mai_base)
+     |                                        ^^^^^^^^^^^^^^ not type compatible with class(mai_base)
+
+semantic error: `to` argument of `move_alloc` must be polymorphic because `from` argument is polymorphic
+    --> tests/errors/continue_compilation_1.f90:2513:40
+     |
+2513 |         call move_alloc(mai_poly_base, mai_base_scl)  ! {Error} `to` argument of `move_alloc` must be polymorphic because `from` argument is polymorphic
+     |                                        ^^^^^^^^^^^^ type(mai_base) is not polymorphic
+
+semantic error: `from` and `to` arguments of `move_alloc` must have the same rank, but `from` has rank 1 and `to` has rank 2
+    --> tests/errors/continue_compilation_1.f90:2514:36
+     |
+2514 |         call move_alloc(mai_i_arr, mai_i_mat)  ! {Error} `from` and `to` arguments of `move_alloc` must have the same rank, but `from` has rank 1 and `to` has rank 2
+     |                                    ^^^^^^^^^ rank 2
+
+semantic error: `to` argument of `move_alloc` must be allocatable
+    --> tests/errors/continue_compilation_1.f90:2515:36
+     |
+2515 |         call move_alloc(mai_i_arr, mai_fixed)  ! {Error} `to` argument of `move_alloc` must be allocatable
+     |                                    ^^^^^^^^^ must be allocatable
+
+semantic error: `from` argument of `move_alloc` must be allocatable
+    --> tests/errors/continue_compilation_1.f90:2516:25
+     |
+2516 |         call move_alloc(mai_i_ptr, mai_i_arr)  ! {Error} `from` argument of `move_alloc` must be allocatable
+     |                         ^^^^^^^^^ must be allocatable
+
+semantic error: `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is type(mai_base) and `from` is integer(4)
+    --> tests/errors/continue_compilation_1.f90:2517:36
+     |
+2517 |         call move_alloc(mai_i_scl, mai_base_scl)  ! {Error} `to` argument of `move_alloc` must be type compatible with `from` argument, but `to` is type(mai_base) and `from` is integer(4)
+     |                                    ^^^^^^^^^^^^ not type compatible with integer(4)
+
+semantic error: `to` argument of `move_alloc` must have the same kind as `from` argument, but `to` is character(kind=4) and `from` is character(kind=1)
+    --> tests/errors/continue_compilation_1.f90:2518:33
+     |
+2518 |         call move_alloc(mai_c1, mai_c4)  ! {Error} `to` argument of `move_alloc` must have the same kind as `from` argument, but `to` is character(kind=4) and `from` is character(kind=1)
+     |                                 ^^^^^^ kind differs from character(kind=1)

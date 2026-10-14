@@ -1,0 +1,176 @@
+(TranslationUnit
+  (SymbolTable
+    0
+    {
+      "m" (Module
+        (SymbolTable
+          1
+          {
+            "t1" (Struct
+              (SymbolTable
+                2
+                {}
+              )
+              "t1"
+              (StructType
+                []
+                []
+                true
+                false
+              )
+              []
+              []
+              []
+              :Source
+              :Public
+              false
+              false
+              false
+              []
+              nil
+              nil
+              []
+            )
+            "t2" (Struct
+              (SymbolTable
+                4
+                {}
+              )
+              "t2"
+              (StructType
+                []
+                []
+                true
+                false
+              )
+              []
+              []
+              []
+              :Source
+              :Public
+              false
+              false
+              false
+              []
+              nil
+              nil
+              []
+            )
+          }
+        )
+        "m"
+        nil
+        []
+        false
+        false
+        false
+        nil
+      )
+      "generated" (Program
+        (SymbolTable
+          6
+          {
+            "t1" (ExternalSymbol
+              6
+              "t1"
+              (SymbolRef 1 "t1")
+              "m"
+              []
+              "t1"
+              :Public
+            )
+            "t2" (ExternalSymbol
+              6
+              "t2"
+              (SymbolRef 1 "t2")
+              "m"
+              []
+              "t2"
+              :Public
+            )
+            "x" (Variable
+              6
+              "x"
+              []
+              :Local
+              nil
+              nil
+              :Default
+              (Allocatable
+                (StructType
+                  []
+                  []
+                  true
+                  false
+                )
+              )
+              (SymbolRef 6 "t1")
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              :NotMethod
+              nil
+              []
+              nil
+            )
+            "y" (Variable
+              6
+              "y"
+              []
+              :Local
+              nil
+              nil
+              :Default
+              (Allocatable
+                (StructType
+                  []
+                  []
+                  true
+                  false
+                )
+              )
+              (SymbolRef 6 "t2")
+              :Source
+              :Public
+              :Required
+              false
+              false
+              false
+              nil
+              false
+              false
+              :NotMethod
+              nil
+              []
+              nil
+            )
+          }
+        )
+        "generated"
+        []
+        [
+          (Assignment
+            (Var
+              (SymbolRef 6 "x")
+            )
+            (Var
+              (SymbolRef 6 "y")
+            )
+            nil
+            false
+            true
+          )
+        ]
+        nil
+      )
+    }
+  )
+  []
+  nil
+)

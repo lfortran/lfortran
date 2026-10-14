@@ -217,6 +217,11 @@ namespace LCompilers {
             Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type,
             ASR::intentType var_intent=ASR::intentType::Local, ASR::symbol_t* var_decl=nullptr, ASR::expr_t* var=nullptr);
 
+        bool is_nameable_array_constant(ASR::ArrayConstant_t* x);
+
+        ASR::expr_t* create_named_array_constant(Allocator& al,
+            ASR::ArrayConstant_t* x, SymbolTable* current_scope);
+
         ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
                              Allocator& al, ASR::TranslationUnit_t& unit, Location& loc,
                              PassOptions& pass_options);

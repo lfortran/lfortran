@@ -706,11 +706,31 @@ semantic error: deferred type 't' is not extensible, so it cannot be used in a c
 1147 |                 class(t), intent(in) :: x  ! {Error} deferred type 't' is not extensible, so it cannot be used in a class declaration
      |                 ^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Dummy argument 'x' not defined
+    --> tests/errors/continue_compilation_templates_01.f90:1146:13 - 1149:24
+     |
+1146 |                function f(x) result(z)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1149 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: deferred type 't' is abstract, so it cannot be used in a type declaration
     --> tests/errors/continue_compilation_templates_01.f90:1157:17
      |
 1157 |                 type(t), intent(in) :: x  ! {Error} deferred type 't' is abstract, so it cannot be used in a type declaration
      |                 ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'x' not defined
+    --> tests/errors/continue_compilation_templates_01.f90:1156:13 - 1159:24
+     |
+1156 |                function f(x) result(z)
+     |                ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+1159 |                end function
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: deferred type 't' is extensible, so its instantiation argument must be an extensible derived type, not integer
     --> tests/errors/continue_compilation_templates_01.f90:1194:35
@@ -1082,11 +1102,11 @@ semantic error: Intent attribute can only be applied to procedure arguments
 1887 |         type(t), intent(in) :: x, y
      |                  ^^^^^^^^^^ 
 
-semantic error: Type parameter 't' is not specified in any requirements
+semantic error: Derived type `t` is not defined
     --> tests/errors/continue_compilation_templates_01.f90:1888:9
      |
 1888 |         type(t) :: res
-     |         ^^^^^^^^^^^^^^ 
+     |         ^^^^^^^ Type used here is not defined in any scope
 
 semantic error: a deferred type can only be declared in a requirement, a template or a templated procedure
     --> tests/errors/continue_compilation_templates_01.f90:1896:26
@@ -1100,11 +1120,11 @@ semantic error: Intent attribute can only be applied to procedure arguments
 1897 |         type(t), intent(in) :: x, y
      |                  ^^^^^^^^^^ 
 
-semantic error: Type parameter 't' is not specified in any requirements
+semantic error: Derived type `t` is not defined
     --> tests/errors/continue_compilation_templates_01.f90:1898:9
      |
 1898 |         type(t) :: res
-     |         ^^^^^^^^^^^^^^ 
+     |         ^^^^^^^ Type used here is not defined in any scope
 
 semantic error: a deferred type can only be declared in a requirement, a template or a templated procedure
     --> tests/errors/continue_compilation_templates_01.f90:1913:26
@@ -1501,6 +1521,30 @@ semantic error: Array index 3 is out of bounds (1 to 2) in dimension 1
 2864 |             integer :: b(item_arr(n))  ! {Error} Array index 3 is out of bounds (1 to 2) in dimension 1
      |                          ^^^^^^^^^^^ 
 
+semantic error: variable 'n' in a template or templated procedure cannot have the save attribute
+    --> tests/errors/continue_compilation_templates_01.f90:2882:30
+     |
+2882 |             integer, save :: n = 7  ! {Error} variable 'n' in a template or templated procedure cannot have the save attribute
+     |                              ^^^^^ 
+
+semantic error: using a deferred constant as a kind parameter is not supported yet
+    --> tests/errors/continue_compilation_templates_01.f90:2896:18
+     |
+2896 |             real(p) :: x(3)  ! {Error} using a deferred constant as a kind parameter is not supported yet
+     |                  ^ `p` has no value until the template is instantiated
+
+semantic error: using a deferred constant as a kind parameter is not supported yet
+    --> tests/errors/continue_compilation_templates_01.f90:2900:18
+     |
+2900 |             real(p) :: x  ! {Error} using a deferred constant as a kind parameter is not supported yet
+     |                  ^ `p` has no value until the template is instantiated
+
+semantic error: using a named constant that depends on a deferred constant as a kind parameter is not supported yet
+    --> tests/errors/continue_compilation_templates_01.f90:2905:21
+     |
+2905 |             integer(wp) :: i  ! {Error} using a named constant that depends on a deferred constant as a kind parameter is not supported yet
+     |                     ^^ `wp` has no value until the template is instantiated
+
 semantic error: Type mismatch in function call, the function expects 't' but 's' was provided
    --> tests/errors/continue_compilation_templates_01.f90:123:55
     |
@@ -1531,6 +1575,12 @@ semantic error: the instantiation argument for 't' is an expression, but 't' is 
      |
 2192 |         call inline_const_arg{2}(y)  ! {Error} the instantiation argument for 't' is an expression, but 't' is not a deferred constant
      |                               ^ 
+
+semantic error: Function 'g1' not found (not user defined nor intrinsic)
+    --> tests/errors/continue_compilation_templates_01.f90:2229:17
+     |
+2229 |             r = g1()
+     |                 ^^^^ 
 
 semantic error: Type mismatch in assignment, the types must be compatible
     --> tests/errors/continue_compilation_templates_01.f90:2303:9
@@ -1711,3 +1761,39 @@ semantic error: Operator `+` undefined for the type in the expression `+t[:]`
      |
 2836 |         y = +x  ! {Error} Operator `+` undefined for the type in the expression `+t[:]`
      |             ^^ 
+
+semantic error: Variable 'x' is not declared
+    --> tests/errors/continue_compilation_templates_01.f90:2901:36
+     |
+2901 |             deferred_kind_f = kind(x)
+     |                                    ^ 'x' is undeclared
+
+semantic error: Variable 'i' is not declared
+    --> tests/errors/continue_compilation_templates_01.f90:2906:36
+     |
+2906 |             deferred_kind_g = kind(i)
+     |                                    ^ 'i' is undeclared
+
+semantic error: using a deferred constant as a kind parameter is not supported yet
+    --> tests/errors/continue_compilation_templates_01.f90:2910:31
+     |
+2910 |             deferred_kind_h = 1.0_p  ! {Error} using a deferred constant as a kind parameter is not supported yet
+     |                               ^^^^^ `p` has no value until the template is instantiated
+
+semantic error: using a named constant that depends on a deferred constant as a kind parameter is not supported yet
+    --> tests/errors/continue_compilation_templates_01.f90:2914:31
+     |
+2914 |             deferred_kind_i = 2_wp  ! {Error} using a named constant that depends on a deferred constant as a kind parameter is not supported yet
+     |                               ^^^^ `wp` has no value until the template is instantiated
+
+semantic error: using a deferred constant as a kind parameter is not supported yet
+    --> tests/errors/continue_compilation_templates_01.f90:2918:31
+     |
+2918 |             deferred_kind_l = .true._p  ! {Error} using a deferred constant as a kind parameter is not supported yet
+     |                               ^^^^^^^^ `p` has no value until the template is instantiated
+
+semantic error: using a deferred constant as a kind parameter is not supported yet
+    --> tests/errors/continue_compilation_templates_01.f90:2922:31
+     |
+2922 |             deferred_kind_c = p_"a"  ! {Error} using a deferred constant as a kind parameter is not supported yet
+     |                               ^^^^^ `p` has no value until the template is instantiated

@@ -347,7 +347,7 @@ public:
             if (ai != nullptr) {
                 host_item = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
                     host_item, host_idx.p, host_idx.n, ai->m_type,
-                    ai->m_storage_format, nullptr));
+                    ai->m_storage_format, nullptr, false));
             }
             ASR::expr_t *host_member = ASRUtils::EXPR(
                 ASR::make_StructInstanceMember_t(al, loc, host_item,

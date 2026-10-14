@@ -36,3 +36,22 @@ end module
 module cc_op_iface_extra2
     implicit none
 end module
+
+! A procedure named in an interface block must have an explicit interface,
+! which an external procedure of another program unit does not have.
+subroutine cc_op_iface_external(lhs, rhs)
+    implicit none
+    integer, intent(out) :: lhs
+    logical, intent(in) :: rhs
+    lhs = merge(1, 0, rhs)
+end subroutine
+
+module cc_op_iface_external_specific
+    implicit none
+    interface assignment(=)
+        procedure cc_op_iface_external
+    end interface
+    interface cc_op_iface_external_generic
+        procedure cc_op_iface_external
+    end interface
+end module

@@ -1,4 +1,5 @@
 #include "libasr/asr.h"
+#include <algorithm>
 #include <limits>
 #include <set>
 #include <unordered_set>
@@ -3169,8 +3170,12 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     if (sym) {
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
-        for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
-            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
+        // Non-elemental specifics take precedence over elemental ones.
+        std::vector<ASR::symbol_t*> procs(gen_proc->m_procs, gen_proc->m_procs + gen_proc->n_procs);
+        std::stable_partition(procs.begin(), procs.end(),
+            [](ASR::symbol_t* p) { return !ASRUtils::is_elemental(p); });
+        for( size_t i = 0; i < procs.size() && !found; i++ ) {
+            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(procs[i]);
             switch( proc->type ) {
                 case ASR::symbolType::Function: {
                     process_overloaded_assignment_function(proc, target, value, target_type,
@@ -4528,6 +4533,30 @@ bool reads_variable_value(ASR::expr_t* e) {
     }
     Finder finder;
     finder.visit_expr(*e);
+    return finder.found;
+}
+
+bool depends_on_deferred_constant(const ASR::Variable_t* v) {
+    if (v->m_storage != ASR::storage_typeType::Parameter
+            || v->m_value != nullptr || v->m_symbolic_value == nullptr) {
+        return false;
+    }
+    class Finder : public ASR::BaseWalkVisitor<Finder> {
+        public:
+            bool found = false;
+            void visit_Var(const ASR::Var_t &x) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                    if (is_deferred_constant(var)
+                            || depends_on_deferred_constant(var)) {
+                        found = true;
+                    }
+                }
+            }
+    };
+    Finder finder;
+    finder.visit_expr(*v->m_symbolic_value);
     return finder.found;
 }
 
