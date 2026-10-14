@@ -1381,7 +1381,7 @@ public:
             }
         }
         process_simd_variables();
-        tmp = ASR::make_Program_t(
+        ASR::asr_t *tmp0 = ASR::make_Program_t(
             al, x.base.base.loc,
             /* a_symtab */ current_scope,
             /* a_name */ s2c(al, to_lower(x.m_name)),
@@ -1397,7 +1397,7 @@ public:
             diag.add(diag::Diagnostic(
                 "Program already defined",
                 diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("", {tmp->loc})}));
+                    diag::Label("", {tmp0->loc})}));
             throw SemanticAbort();
         }
         handle_save();
@@ -1408,6 +1408,7 @@ public:
             if ( !compiler_options.continue_compilation ) throw e;
         }
         in_program = false;
+        tmp = tmp0;
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
 
