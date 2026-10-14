@@ -18241,6 +18241,10 @@ public:
                 indices.p, indices.size(), loc);
             ASR::expr_t* array_item_value = ASRUtils::fold_ArrayItem_value(
                 al, expr, indices.p, indices.size());
+            if (ASRUtils::constant_names_procedure_outside(array_item_value,
+                    current_scope)) {
+                array_item_value = nullptr;
+            }
             array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc, expr, indices.p,
                 indices.size(), ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(expr))),
                 ASR::arraystorageType::ColMajor, array_item_value, in_bounds);
@@ -27066,7 +27070,7 @@ public:
                                 value = mem_var->m_symbolic_value; // ArrayConstant
                             }
                         }
-                        value = ASRUtils::externalize_struct_refs_in_init(
+                        value = ASRUtils::import_folded_constant_value(
                             al, value, current_scope);
                     }
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp)) ||
@@ -27090,7 +27094,7 @@ public:
                                 value = mem_var->m_symbolic_value; // ArrayConstant
                             }
                         }
-                        value = ASRUtils::externalize_struct_refs_in_init(
+                        value = ASRUtils::import_folded_constant_value(
                             al, value, current_scope);
                     }
                 }
@@ -27161,7 +27165,7 @@ public:
                             value = mem_var->m_symbolic_value; // ArrayConstant
                         }
                     }
-                    value = ASRUtils::externalize_struct_refs_in_init(
+                    value = ASRUtils::import_folded_constant_value(
                         al, value, current_scope);
                 }
             } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp)) ||
@@ -27185,7 +27189,7 @@ public:
                             value = mem_var->m_symbolic_value; // ArrayConstant
                         }
                     }
-                    value = ASRUtils::externalize_struct_refs_in_init(
+                    value = ASRUtils::import_folded_constant_value(
                         al, value, current_scope);
                 }
             }

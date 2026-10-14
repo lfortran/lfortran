@@ -2007,6 +2007,65 @@ bool struct_constant_names_procedure(ASR::expr_t* value) {
     return false;
 }
 
+bool constant_names_procedure_outside(ASR::expr_t* value,
+        SymbolTable* scope) {
+    if (value == nullptr) {
+        return false;
+    }
+    switch (value->type) {
+        case ASR::exprType::Var: {
+            ASR::symbol_t* v = ASR::down_cast<ASR::Var_t>(value)->m_v;
+            return ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v))
+                && !ASRUtils::is_visible_from(v, scope);
+        }
+        case ASR::exprType::StructConstant: {
+            ASR::StructConstant_t* sc = ASR::down_cast<ASR::StructConstant_t>(value);
+            for (size_t i = 0; i < sc->n_args; i++) {
+                if (constant_names_procedure_outside(sc->m_args[i].m_value, scope)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        case ASR::exprType::ArrayConstructor: {
+            ASR::ArrayConstructor_t* ac = ASR::down_cast<ASR::ArrayConstructor_t>(value);
+            for (size_t i = 0; i < ac->n_args; i++) {
+                if (constant_names_procedure_outside(ac->m_args[i], scope)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        case ASR::exprType::ArrayConstant: {
+            ASR::ArrayConstant_t* ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
+            if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(ac->m_type))) {
+                return false;
+            }
+            ASR::expr_t** elements = static_cast<ASR::expr_t**>(ac->m_data);
+            int64_t n = ASRUtils::get_fixed_size_of_array(ac->m_type);
+            for (int64_t i = 0; i < n; i++) {
+                if (constant_names_procedure_outside(elements[i], scope)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        case ASR::exprType::ArrayBroadcast:
+            return constant_names_procedure_outside(
+                ASR::down_cast<ASR::ArrayBroadcast_t>(value)->m_array, scope);
+        default:
+            return false;
+    }
+}
+
+ASR::expr_t* import_folded_constant_value(Allocator& al,
+        ASR::expr_t* value, SymbolTable* scope) {
+    if (constant_names_procedure_outside(value, scope)) {
+        return nullptr;
+    }
+    return externalize_struct_refs_in_init(al, value, scope);
+}
+
 ASR::expr_t* get_struct_member_value_from_constant(ASR::expr_t* value,
                             ASR::symbol_t* member) {
     if (value == nullptr) {
@@ -2223,7 +2282,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                 value = nullptr;
             }
         }
-        value = ASRUtils::externalize_struct_refs_in_init(al, value, current_scope);
+        value = import_folded_constant_value(al, value, current_scope);
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
             member_ext, member_type, value);
     }

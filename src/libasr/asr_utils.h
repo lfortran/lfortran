@@ -3652,6 +3652,18 @@ ASR::expr_t* get_struct_member_value_from_constant(ASR::expr_t* value,
 // cannot stand in for its named constant in another scope.
 bool struct_constant_names_procedure(ASR::expr_t* value);
 
+// Whether the constant `value` names a procedure through a symbol that
+// cannot be named from `scope`, as the value of a procedure pointer
+// component of a named constant of another module does. Such a value cannot
+// stand in for the constant there; it is read at run time instead.
+bool constant_names_procedure_outside(ASR::expr_t* value, SymbolTable* scope);
+
+// The compile-time value `value` of a component of a named constant, for a
+// reference to that component from `scope`, with its derived types imported
+// there, or null if `constant_names_procedure_outside(value, scope)`.
+ASR::expr_t* import_folded_constant_value(Allocator& al,
+    ASR::expr_t* value, SymbolTable* scope);
+
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                             ASR::asr_t* v_var, ASR::symbol_t *v,
                             ASR::symbol_t* member, SymbolTable* current_scope);
