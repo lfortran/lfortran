@@ -18,6 +18,36 @@ semantic error: procedure attributes do not match trait method 'tick'
 295 |        end implements
     | ...^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: the receiver 'self' of trait message 'take', a pure function, must have intent(in), like every nonpointer dummy argument of a pure function without the value attribute (F2018 C1583)
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:309:50
+    |
+309 |             type(itself), intent(inout), pass :: self
+    |                                                  ^^^^ 
+
+semantic error: the receiver 'self' of trait message 'take', a pure function, must have intent(in), like every nonpointer dummy argument of a pure function without the value attribute (F2018 C1583)
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:319:48
+    |
+319 |             type(itself), intent(out), pass :: self
+    |                                                ^^^^ 
+
+semantic error: the receiver 'self' of trait message 'take', a pure function, must have intent(in), like every nonpointer dummy argument of a pure function without the value attribute (F2018 C1583)
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:329:35
+    |
+329 |             type(itself), pass :: self
+    |                                   ^^^^ 
+
+semantic error: the receiver 'self' of trait message 'tick', a pure subroutine, must declare its intent, like every nonpointer dummy argument of a pure subroutine without the value attribute (F2018 C1584)
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:340:35
+    |
+340 |             type(itself), pass :: self
+    |                                   ^^^^ 
+
+semantic error: the receiver 'self' of trait message 'scaled', a pure function, must have intent(in), like every nonpointer dummy argument of a pure function without the value attribute (F2018 C1583)
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:350:50
+    |
+350 |             type(itself), intent(inout), pass :: self
+    |                                                  ^^^^ 
+
 semantic error: Argument `v` with intent(in) passed to a dummy argument with modifying intent
    --> tests/errors/continue_compilation_traits_receiver_02.f90:150:9
     |

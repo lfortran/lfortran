@@ -4503,7 +4503,7 @@ public:
     // have none.
     void mark_trait_message_receiver(ASR::Function_t &function,
             AST::decl_stmt_t **items, size_t n_items, const std::string &requirement,
-            bool operation) {
+            bool operation, bool pure) {
         ASR::Variable_t *receiver = nullptr;
         bool receiver_pointer = false;
         for (size_t i = 0; i < n_items; i++) {
@@ -4578,6 +4578,20 @@ public:
                 receiver->m_target_attr || receiver->m_is_volatile || receiver->n_codims) {
             trait_error(description + " with the optional, target, volatile or "
                 "codimension attribute is not implemented yet", loc);
+        }
+        // The receiver is a nonpointer dummy data object, so a PURE message
+        // constrains its intent like that of any such dummy, whether or not
+        // the trait is ever implemented.
+        if (pure && function.m_return_var && receiver->m_intent != ASR::intentType::In) {
+            trait_error(description + ", a pure function, must have intent(in), "
+                "like every nonpointer dummy argument of a pure function without the "
+                "value attribute (F2018 C1583)", loc);
+        }
+        if (pure && !function.m_return_var &&
+                receiver->m_intent == ASR::intentType::Unspecified) {
+            trait_error(description + ", a pure subroutine, must declare its intent, "
+                "like every nonpointer dummy argument of a pure subroutine without the "
+                "value attribute (F2018 C1584)", loc);
         }
         receiver->m_pass_attr = ASR::pass_attrType::Pass;
     }
@@ -4830,17 +4844,33 @@ public:
                 AST::decl_stmt_t **items;
                 size_t n_items;
                 const char *procedure_name;
+                AST::decl_attribute_t **attributes;
+                size_t n_attributes;
                 if (AST::is_a<AST::Function_t>(*procedure)) {
                     auto *function = AST::down_cast<AST::Function_t>(procedure);
                     items = function->m_items;
                     n_items = function->n_items;
                     procedure_name = function->m_name;
+                    attributes = function->m_attributes;
+                    n_attributes = function->n_attributes;
                 } else {
                     auto *subroutine = AST::down_cast<AST::Subroutine_t>(procedure);
                     items = subroutine->m_items;
                     n_items = subroutine->n_items;
                     procedure_name = subroutine->m_name;
+                    attributes = subroutine->m_attributes;
+                    n_attributes = subroutine->n_attributes;
                 }
+                // A PURE procedure, or an ELEMENTAL one that is not IMPURE.
+                bool pure = false, elemental = false, impure = false;
+                for (size_t j = 0; j < n_attributes; j++) {
+                    if (!AST::is_a<AST::SimpleAttribute_t>(*attributes[j])) continue;
+                    auto kind = AST::down_cast<AST::SimpleAttribute_t>(attributes[j])->m_attr;
+                    pure |= kind == AST::simple_attributeType::AttrPure;
+                    elemental |= kind == AST::simple_attributeType::AttrElemental;
+                    impure |= kind == AST::simple_attributeType::AttrImpure;
+                }
+                pure |= elemental && !impure;
                 if (current_scope->get_symbol(to_lower(procedure_name))) {
                     trait_error("overloaded declarations of trait method '" +
                         to_lower(procedure_name) + "' are not implemented yet",
@@ -4869,7 +4899,7 @@ public:
                     if (function) {
                         mark_trait_message_receiver(*function, items, n_items,
                             operation ? ASRUtils::trait_operation_display_name(*operation)
-                                : to_lower(procedure_name), operation != nullptr);
+                                : to_lower(procedure_name), operation != nullptr, pure);
                     }
                 }
                 if (!operation) {
