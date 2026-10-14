@@ -1,7 +1,9 @@
 ! A polymorphic intent(out) dummy is reset from its dynamic type when that
 ! type is local to the main program, to a BLOCK (two BLOCKs define types of
 ! the same name) or to a procedure, and nothing is done for a type whose
-! reset has no effect.
+! reset has no effect. The BLOCKs are named because, for a type of an
+! unnamed BLOCK, GFortran emits symbols such as __vtab_block@1_Inblock, which
+! the GNU assembler rejects.
 module intent_out_dynamic_type_02_m
     implicit none
     type, abstract :: Base
@@ -37,7 +39,7 @@ program intent_out_dynamic_type_02
     b%k = 1
     call reset_bare(b)
     if (b%k /= 5) error stop 2
-    block
+    first: block
         type, extends(Base) :: InBlock
             integer :: extra = 13
         end type
@@ -46,8 +48,8 @@ program intent_out_dynamic_type_02
         c%extra = 2
         call reset(c)
         if (c%n /= 7 .or. c%extra /= 13) error stop 3
-    end block
-    block
+    end block first
+    second: block
         type, extends(Base) :: InBlock
             integer :: extra = 19
         end type
@@ -56,7 +58,7 @@ program intent_out_dynamic_type_02
         c%extra = 2
         call reset(c)
         if (c%n /= 7 .or. c%extra /= 19) error stop 4
-    end block
+    end block second
     call inner()
     print '(a)', 'intent_out_dynamic_type_02 ok'
 contains
