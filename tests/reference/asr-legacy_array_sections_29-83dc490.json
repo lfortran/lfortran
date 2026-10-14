@@ -1,0 +1,13 @@
+{
+    "basename": "asr-legacy_array_sections_29-83dc490",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/../integration_tests/legacy_array_sections_29.f90",
+    "infile_hash": "e86b49fbcf0d665cac4e85c9b3319707dea66356fdfb437457ddcef0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-legacy_array_sections_29-83dc490.stderr",
+    "stderr_hash": "aa03123834e837dd78320fb2bb7e65c75f1fb4e00f0ceeffd41e563b",
+    "returncode": 0
+}

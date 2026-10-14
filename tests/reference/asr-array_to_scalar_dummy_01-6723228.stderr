@@ -1,0 +1,11 @@
+semantic error: rank mismatch in argument `n`: the dummy argument is a scalar but the actual argument is an array of rank 1
+  --> tests/errors/array_to_scalar_dummy_01.f90:12:23
+   |
+12 |     call scalar_dummy(a)  ! {Error} rank mismatch in argument `n`: the dummy argument is a scalar but the actual argument is an array of rank 1
+   |                       ^ pass one element of the array instead
+
+semantic error: rank mismatch in argument `obj`: the dummy argument is a scalar but the actual argument is an array of rank 1
+  --> tests/errors/array_to_scalar_dummy_01.f90:27:18
+   |
+27 |     call process(objs(1:1))  ! {Error} rank mismatch in argument `obj`: the dummy argument is a scalar but the actual argument is an array of rank 1
+   |                  ^^^^^^^^^ pass one element of the array instead

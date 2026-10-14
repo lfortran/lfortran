@@ -1,0 +1,13 @@
+{
+    "basename": "asr-array_to_scalar_dummy_01-6723228",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/array_to_scalar_dummy_01.f90",
+    "infile_hash": "97785dbd27fd1ba4aa6fbd79f92b82f7bfb1c304b711688680311920",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-array_to_scalar_dummy_01-6723228.stderr",
+    "stderr_hash": "5568eae020fa521463e1d7a555f5d913cc350a646ef64382a7c5cfc1",
+    "returncode": 1
+}
