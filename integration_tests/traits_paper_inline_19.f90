@@ -1,4 +1,4 @@
-! traits.tex inline-19 (lines 1850-1857), unchanged.
+! traits.tex inline-19 (lines 1850-1857) with its TD-36 explicit receiver.
 ! See traits_paper_inline/provenance.json.
 module traits_paper_inline_19
     use iso_fortran_env, only: real64

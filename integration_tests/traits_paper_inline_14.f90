@@ -1,5 +1,5 @@
-! traits.tex inline-14 (lines 1698-1705), unchanged; INumeric is
-! inline-16's, imported explicitly.
+! traits.tex inline-14 (lines 1698-1705) with its TD-36 explicit receiver;
+! INumeric is inline-16's, imported explicitly.
 ! See traits_paper_inline/provenance.json.
 
 include "traits_paper_inline/core.f90"

@@ -3,7 +3,8 @@ module real64_module
    use, intrinsic :: iso_fortran_env, only: real64
 
    abstract interface :: IPrintable
-      subroutine output()
+      subroutine output(self)
+         type(itself), intent(in), pass :: self
       end subroutine output
    end interface IPrintable
 

@@ -11,7 +11,7 @@
       "source_path": "Code/Fortran/ocp.f90",
       "file": "ocp.f90",
       "original_sha256": "7852f86195a9d44721baf930929f8704b49750d10b8dd255744d4d1e1dba7c4c",
-      "sha256": "53ad0e17d5652f2e1f6441b48fe81f938e34d23068ac8df122019876cc901768",
+      "sha256": "713cdbb4bc26b37c40df7bd2df55aa7e5eff504eba38f07a8049a80e88a2cd0f",
       "listing": "lst:OCPFortran (sect:ocp_conformance) lines 1-49 of the companion file, plus lines 8-21 in sect:tats",
       "expected": {
         "stdin_choices": [
@@ -28,9 +28,34 @@
       "adaptation": {
         "kind": "explicit provider USE",
         "added_line": "   use intrinsics\n",
-        "after_line": 159,
+        "after_line": 162,
         "anchor": "   use averager_library, only: Averager\n",
         "reason": "av%average(xi) and av%average(xf) in program main instantiate T = integer and T = real(real64); their INumeric conformances are declared only in module intrinsics, which no program unit uses"
+      },
+      "receiver_migration": {
+        "decision": "TD-36 explicit receivers, approved by the maintainer on 2026-10-14 (explicit_pass_dummy, require_explicit, exact_pass); see doc/src/asr/traits-decisions.md",
+        "replacements": [
+          {
+            "paper": "      function sum{INumeric :: T}(x) result(s)\n         type(T), intent(in) :: x(:)\n",
+            "fixture": "      function sum{INumeric :: T}(self,x) result(s)\n         type(itself), intent(in), pass :: self\n         type(T), intent(in) :: x(:)\n",
+            "reason": "TD-36: ISum's sum declares the intent(in) receiver that PairwiseSum's implementation uses"
+          },
+          {
+            "paper": "      function average{INumeric :: T}(x) result(a)\n         type(T), intent(in) :: x(:)\n",
+            "fixture": "      function average{INumeric :: T}(self,x) result(a)\n         type(itself), intent(in), pass :: self\n         type(T), intent(in) :: x(:)\n",
+            "reason": "TD-36: IAverager's average declares the intent(in) receiver that Averager's implementation uses"
+          },
+          {
+            "paper": "   contains\n      procedure, nopass :: sum\n   end type SimpleSum\n",
+            "fixture": "   contains\n      procedure, pass :: sum\n   end type SimpleSum\n",
+            "reason": "TD-36 exact_pass: a message with a receiver is implemented by a passed-object binding, so SimpleSum's sum takes its passed object"
+          },
+          {
+            "paper": "   function sum{INumeric :: T}(x) result(s)\n      type(T), intent(in) :: x(:)\n",
+            "fixture": "   function sum{INumeric :: T}(self,x) result(s)\n      type(SimpleSum), intent(in) :: self\n      type(T), intent(in) :: x(:)\n",
+            "reason": "TD-36 exact_pass: SimpleSum's stateless sum receives, and ignores, an intent(in) passed object of its sealed type"
+          }
+        ]
       }
     },
     {
@@ -38,7 +63,7 @@
       "source_path": "Code/Fortran/overloading.f90",
       "file": "overloading.f90",
       "original_sha256": "9697a242ce03a441460b340660b52ade97357fdf2bb94389286ae977bd070e92",
-      "sha256": "6aa5224df68bd983ad7c99cecb1e76d5dffe4479ff72c010d38eb58e51589e47",
+      "sha256": "ef9f4eba9d8933ecb64c4c0da5c58c60680c7d529bcff4d585d7d9eec4ff35e4",
       "listing": "lst:types (sect:overloading) lines 1-136 of the companion file",
       "expected": {
         "stdin_choices": [],
@@ -52,13 +77,23 @@
       "adaptation": {
         "kind": "explicit provider USE",
         "added_line": "   use real_type\n",
-        "after_line": 99,
+        "after_line": 100,
         "anchor": "   use my_type,          only: MyType\n",
         "reason": "call products(at,ar) in program main instantiates R = real; real's IReducible + IPrintable conformance is declared only in module real_type, which no program unit uses. MyType's conformance is retained by the existing ONLY import of MyType"
+      },
+      "receiver_migration": {
+        "decision": "TD-36 explicit receivers, approved by the maintainer on 2026-10-14 (explicit_pass_dummy, require_explicit, exact_pass); see doc/src/asr/traits-decisions.md",
+        "replacements": [
+          {
+            "paper": "      subroutine output()\n      end subroutine output\n",
+            "fixture": "      subroutine output(self)\n         type(itself), intent(in), pass :: self\n      end subroutine output\n",
+            "reason": "TD-36: IPrintable's output declares the intent(in) receiver that every implementation reads"
+          }
+        ]
       }
     }
   ],
-  "preservation": "Byte-for-byte copies of the companion files, including module names, whitespace, trailing blanks and comments. The only change is one explicit provider USE line where a fixture lists an adaptation; removing that line reproduces the original sha256. No other boilerplate, erratum or simplification is applied.",
+  "preservation": "Copies of the companion files, including module names, whitespace, trailing blanks and comments. The only changes are one explicit provider USE line where a fixture lists an adaptation and the TD-36 explicit-receiver migration recorded in receiver_migration; reverting the receiver replacements, in reverse order, and removing that line reproduces original_sha256. No other boilerplate, erratum or simplification is applied.",
   "acceptance": {
     "driver": "traits_paper_functional.py",
     "modes": [

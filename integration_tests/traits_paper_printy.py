@@ -49,10 +49,16 @@ def main():
     paper = source / "traits_paper_printy.f90"
     content = paper.read_bytes()
     addition = b"   use real64_module\n"
-    if content.count(addition) != 1 or hashlib.sha256(
-            content.replace(addition, b"", 1)).hexdigest() != (
-            "416c16b58fb0bd38f891eb78485827543cdfad9415240798bfd37207ee5de484"):
-        raise RuntimeError("printy must preserve the original except for one provider USE")
+    # The approved explicit receiver of TD-36: (paper text, fixture text).
+    receiver = (b"      subroutine output()\n      end subroutine output\n",
+                b"      subroutine output(self)\n"
+                b"         type(itself), intent(in), pass :: self\n"
+                b"      end subroutine output\n")
+    if content.count(addition) != 1 or content.count(receiver[1]) != 1 or hashlib.sha256(
+            content.replace(receiver[1], receiver[0], 1).replace(addition, b"", 1)
+            ).hexdigest() != "416c16b58fb0bd38f891eb78485827543cdfad9415240798bfd37207ee5de484":
+        raise RuntimeError("printy must preserve the original except for one provider USE "
+                           "and its TD-36 receiver")
     executable = work / "printy"
     run("paper-compile", [compiler, *flags, paper, "-o", executable], work)
     output = run("paper-run", [executable], work)
@@ -61,7 +67,7 @@ def main():
             float(match[1].replace("D", "E").replace("d", "e")), 4.9,
             rel_tol=0, abs_tol=1e-12):
         raise RuntimeError(f"unexpected printy output: {output!r}")
-    print("paper printy: exact source plus provider USE; output 4.9", flush=True)
+    print("paper printy: source plus provider USE and TD-36 receiver; output 4.9", flush=True)
 
     paper_modules = work / "paper-modules"
     paper_modules.mkdir()

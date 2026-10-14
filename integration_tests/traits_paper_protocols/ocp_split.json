@@ -2,10 +2,10 @@
  "schema": "traits-final-four-acceptance.split.v1",
  "example": "ocp",
  "source": "integration_tests/traits_paper_protocols/ocp.f90",
- "source_sha256": "53ad0e17d5652f2e1f6441b48fe81f938e34d23068ac8df122019876cc901768",
+ "source_sha256": "713cdbb4bc26b37c40df7bd2df55aa7e5eff504eba38f07a8049a80e88a2cd0f",
  "original_sha256": "7852f86195a9d44721baf930929f8704b49750d10b8dd255744d4d1e1dba7c4c",
  "rule": "Split only at program-unit boundaries; each piece keeps its trailing blank separator line; the byte concatenation in order must reproduce source_sha256 before any compilation. Pieces are verbatim slices; no unit is renamed, reordered, simplified or completed.",
- "rejoined_sha256": "53ad0e17d5652f2e1f6441b48fe81f938e34d23068ac8df122019876cc901768",
+ "rejoined_sha256": "713cdbb4bc26b37c40df7bd2df55aa7e5eff504eba38f07a8049a80e88a2cd0f",
  "frozen_before_main": [
   "interfaces",
   "intrinsics",
@@ -13,26 +13,29 @@
   "pairwise_library",
   "averager_library"
  ],
- "dependency_note": "simple_library, pairwise_library and averager_library use only interfaces and never see intrinsics, so none of them can hold integer- or real(real64)-specific sum/average code without global conformance discovery. Only main (acceptance line 160) uses intrinsics. A type added after the providers are frozen is covered by traits_protocol_separate_01.",
+ "dependency_note": "simple_library, pairwise_library and averager_library use only interfaces and never see intrinsics, so none of them can hold integer- or real(real64)-specific sum/average code without global conformance discovery. Only main (acceptance line 163) uses intrinsics. A type added after the providers are frozen is covered by traits_protocol_separate_01.",
  "units": [
   {
    "unit": "interfaces",
    "kind": "module",
    "first_line": 1,
-   "end_statement_line": 36,
-   "last_line": 37,
-   "bytes": 985,
-   "sha256": "e79b87528b8642e0ef07c57ad757244458969cd95b35b38c6388f15179ebf1af",
+   "end_statement_line": 38,
+   "last_line": 39,
+   "bytes": 1091,
+   "sha256": "1382c783ee5a2fc0b8b7780b835bdcadb61ed4e1d85f19af272e10bfb09feb92",
    "imports": [],
    "file": "ocp_1_interfaces.f90",
-   "compile_after": []
+   "compile_after": [],
+   "contains_adaptation": true,
+   "original_piece_sha256": "e79b87528b8642e0ef07c57ad757244458969cd95b35b38c6388f15179ebf1af",
+   "original_piece_bytes": 985
   },
   {
    "unit": "intrinsics",
    "kind": "module",
-   "first_line": 38,
-   "end_statement_line": 49,
-   "last_line": 50,
+   "first_line": 40,
+   "end_statement_line": 51,
+   "last_line": 52,
    "bytes": 272,
    "sha256": "1078fc2b6da07046258a5865743ed9c41010df805d12cf2ac848ef5c043f354c",
    "imports": [
@@ -46,11 +49,11 @@
   {
    "unit": "simple_library",
    "kind": "module",
-   "first_line": 51,
-   "end_statement_line": 76,
-   "last_line": 77,
-   "bytes": 478,
-   "sha256": "43e6d21551165cb73359d05e1315f68e8bddd5fa64e66884148769ccbc8b95a1",
+   "first_line": 53,
+   "end_statement_line": 79,
+   "last_line": 80,
+   "bytes": 523,
+   "sha256": "354abfec016e45ac92253439d732833cbb50a2fe5e830851c18787fe9d6e225f",
    "imports": [
     "interfaces"
    ],
@@ -58,14 +61,17 @@
    "compile_after": [
     "interfaces",
     "intrinsics"
-   ]
+   ],
+   "contains_adaptation": true,
+   "original_piece_sha256": "43e6d21551165cb73359d05e1315f68e8bddd5fa64e66884148769ccbc8b95a1",
+   "original_piece_bytes": 478
   },
   {
    "unit": "pairwise_library",
    "kind": "module",
-   "first_line": 78,
-   "end_statement_line": 115,
-   "last_line": 116,
+   "first_line": 81,
+   "end_statement_line": 118,
+   "last_line": 119,
    "bytes": 873,
    "sha256": "2afd4142bb2074950996915c1ba17eed9da893ee57430859f7574de1f5063441",
    "imports": [
@@ -81,9 +87,9 @@
   {
    "unit": "averager_library",
    "kind": "module",
-   "first_line": 117,
-   "end_statement_line": 149,
-   "last_line": 150,
+   "first_line": 120,
+   "end_statement_line": 152,
+   "last_line": 153,
    "bytes": 747,
    "sha256": "6c29e5b4fa1590628f05166c73ecc45c91ea96beef2f1cb7fc2238b890738e4f",
    "imports": [
@@ -100,9 +106,9 @@
   {
    "unit": "main",
    "kind": "program",
-   "first_line": 151,
-   "end_statement_line": 188,
-   "last_line": 188,
+   "first_line": 154,
+   "end_statement_line": 191,
+   "last_line": 191,
    "bytes": 897,
    "sha256": "51ffe135e78b8b24c439745659a5fa406ca3d9b7ae0e53b56e48bef4793cb84d",
    "imports": [

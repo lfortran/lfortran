@@ -1,4 +1,9 @@
-"""Compile the unchanged module-only paper examples and separate dispatch controls."""
+"""Compile the module-only paper examples and separate dispatch controls.
+
+The fixtures are the paper's files with the TD-36 explicit receivers that
+traits_paper_type_adoption/provenance.json records; reverting them must
+reproduce the paper's bytes.
+"""
 
 import argparse
 import hashlib
@@ -10,10 +15,31 @@ import time
 
 
 SOURCE_HASHES = {
+    "extends_parent.f90": "f309085c7cfb53e308c17b6d9a9bc3d5184cbbb0846dd93921e883175a7e13c4",
+    "abstract_new.f90": "0ae1b5353a02a7bb588b06f904300f911d4744d7130c55e4417e359d38a9a4f4",
+    "simple_sum.f90": "7f1f76499ef81707e74505cc2580c4cf1683fea642ed6f94a6cc0c2a4a545658",
+}
+# The paper's files (simple_sum.f90: the first 55 lines of mixed.f90).
+PAPER_HASHES = {
     "extends_parent.f90": "9141332b540c768055e84b80a6170bb692b0366be0c8c410dcf6b15bf5b8cba3",
     "abstract_new.f90": "1c9b1882ac60448fad1060b265f22b15c5a0c8316bc7142f8f980a1a091991b0",
     "simple_sum.f90": "6c4842ae7b415ce84b958ab0e9029dc9fa4b7c922d6143d15010dcd50dac5bba",
 }
+
+
+def check_paper_original(directory, name, content):
+    """Revert the recorded TD-36 receivers of a fixture, the last one first,
+    and compare the result with the paper's bytes."""
+    record = json.loads((directory / "provenance.json").read_text())["fixtures"][name]
+    if record["sha256"] != SOURCE_HASHES[name] or record["original_sha256"] != PAPER_HASHES[name]:
+        raise RuntimeError(f"provenance.json does not record {name} with its pinned hashes")
+    for replacement in reversed(record["receiver_migration"]["replacements"]):
+        fixture, paper = replacement["fixture"].encode(), replacement["paper"].encode()
+        if content.count(fixture) != 1:
+            raise RuntimeError(f"{name}: a recorded receiver does not occur exactly once")
+        content = content.replace(fixture, paper)
+    if hashlib.sha256(content).hexdigest() != PAPER_HASHES[name]:
+        raise RuntimeError(f"{name} without its TD-36 receivers is not the paper's file")
 
 
 def main():
@@ -50,6 +76,7 @@ def main():
         source = source_dir / "traits_paper_type_adoption" / name
         if hashlib.sha256(source.read_bytes()).hexdigest() != expected:
             raise RuntimeError(f"the authoritative {name} fixture was changed")
+        check_paper_original(source.parent, name, source.read_bytes())
         private = work / source.stem
         private.mkdir()
         run(source.stem + "-asr",

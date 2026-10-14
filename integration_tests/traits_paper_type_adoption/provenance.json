@@ -4,23 +4,50 @@
   "fixtures": {
     "extends_parent.f90": {
       "corpus_id": "extends_parent",
-      "sha256": "9141332b540c768055e84b80a6170bb692b0366be0c8c410dcf6b15bf5b8cba3",
+      "original_sha256": "9141332b540c768055e84b80a6170bb692b0366be0c8c410dcf6b15bf5b8cba3",
+      "sha256": "f309085c7cfb53e308c17b6d9a9bc3d5184cbbb0846dd93921e883175a7e13c4",
       "source": "Code/Fortran/Interop/extends_parent.f90",
       "checks": [
         "verified ASR",
         "object compilation"
       ],
-      "executable": false
+      "executable": false,
+      "receiver_migration": {
+        "decision": "TD-36 explicit receivers, approved by the maintainer on 2026-10-14 (explicit_pass_dummy, require_explicit, exact_pass); see doc/src/asr/traits-decisions.md",
+        "replacements": [
+          {
+            "paper": "      subroutine method1(n)\n         integer, intent(in) :: n\n",
+            "fixture": "      subroutine method1(self,n)\n         type(itself), intent(in), pass :: self\n         integer, intent(in) :: n\n",
+            "reason": "TD-36: IParent's method1 declares the intent(in) receiver of implementation1"
+          },
+          {
+            "paper": "      subroutine method2(res)\n         real, intent(out) :: res\n",
+            "fixture": "      subroutine method2(self,res)\n         type(itself), intent(in), pass :: self\n         real, intent(out) :: res\n",
+            "reason": "TD-36: method2 declares the intent(in) receiver of implementation2"
+          }
+        ]
+      }
     },
     "abstract_new.f90": {
       "corpus_id": "abstract_new",
-      "sha256": "1c9b1882ac60448fad1060b265f22b15c5a0c8316bc7142f8f980a1a091991b0",
+      "original_sha256": "1c9b1882ac60448fad1060b265f22b15c5a0c8316bc7142f8f980a1a091991b0",
+      "sha256": "0ae1b5353a02a7bb588b06f904300f911d4744d7130c55e4417e359d38a9a4f4",
       "source": "Code/Fortran/Interop/abstract_new.f90",
       "checks": [
         "verified ASR",
         "object compilation"
       ],
-      "executable": false
+      "executable": false,
+      "receiver_migration": {
+        "decision": "TD-36 explicit receivers, approved by the maintainer on 2026-10-14 (explicit_pass_dummy, require_explicit, exact_pass); see doc/src/asr/traits-decisions.md",
+        "replacements": [
+          {
+            "paper": "      subroutine method2(res)\n         real, intent(out) :: res\n",
+            "fixture": "      subroutine method2(self,res)\n         type(itself), intent(in), pass :: self\n         real, intent(out) :: res\n",
+            "reason": "TD-36: method2 declares the intent(in) receiver of implementation2"
+          }
+        ]
+      }
     },
     "simple_sum.f90": {
       "corpus_id": null,
@@ -28,15 +55,46 @@
       "source": "Code/Fortran/mixed.f90",
       "line_range": [
         1,
-        55
+        58
       ],
-      "sha256": "6c4842ae7b415ce84b958ab0e9029dc9fa4b7c922d6143d15010dcd50dac5bba",
+      "original_sha256": "6c4842ae7b415ce84b958ab0e9029dc9fa4b7c922d6143d15010dcd50dac5bba",
+      "sha256": "7f1f76499ef81707e74505cc2580c4cf1683fea642ed6f94a6cc0c2a4a545658",
       "checks": [
         "verified ASR",
         "object compilation"
       ],
-      "executable": false
+      "executable": false,
+      "original_line_range": [
+        1,
+        55
+      ],
+      "receiver_migration": {
+        "decision": "TD-36 explicit receivers, approved by the maintainer on 2026-10-14 (explicit_pass_dummy, require_explicit, exact_pass); see doc/src/asr/traits-decisions.md",
+        "derivation": "The prefix of the migrated mixed.f90 through 'end module simple_library': mixed.f90's receiver_migration, all of whose replacements fall in this prefix.",
+        "replacements": [
+          {
+            "paper": "      function sum{INumeric :: T}(x) result(s)\n         type(T), intent(in) :: x(:)\n",
+            "fixture": "      function sum{INumeric :: T}(self,x) result(s)\n         type(itself), intent(in), pass :: self\n         type(T), intent(in) :: x(:)\n",
+            "reason": "TD-36: ISum's sum declares the intent(in) receiver that PairwiseSum's implementation uses"
+          },
+          {
+            "paper": "      function average{INumeric :: T}(x) result(a)\n         type(T), intent(in) :: x(:)\n",
+            "fixture": "      function average{INumeric :: T}(self,x) result(a)\n         type(itself), intent(in), pass :: self\n         type(T), intent(in) :: x(:)\n",
+            "reason": "TD-36: IAverager's average declares the intent(in) receiver that Averager's implementation uses"
+          },
+          {
+            "paper": "   contains\n      procedure, nopass :: sum\n   end type SimpleSum\n",
+            "fixture": "   contains\n      procedure, pass :: sum\n   end type SimpleSum\n",
+            "reason": "TD-36 exact_pass: a message with a receiver is implemented by a passed-object binding, so SimpleSum's sum takes its passed object"
+          },
+          {
+            "paper": "   function sum{INumeric :: T}(x) result(s)\n      type(T), intent(in) :: x(:)\n",
+            "fixture": "   function sum{INumeric :: T}(self,x) result(s)\n      type(SimpleSum), intent(in) :: self\n      type(T), intent(in) :: x(:)\n",
+            "reason": "TD-36 exact_pass: SimpleSum's stateless sum receives, and ignores, an intent(in) passed object of its sealed type"
+          }
+        ]
+      }
     }
   },
-  "note": "The two Interop files are immutable, byte-exact module-only examples. Their empty output methods are never executed. simple_sum is a byte-exact prefix, not a rewritten full OO example."
+  "note": "The two Interop files are module-only examples, copied from the companion files with only the TD-36 explicit-receiver migration recorded in receiver_migration; reverting it reproduces original_sha256. Their empty output methods are never executed. simple_sum is the prefix of the migrated mixed.f90 through its simple_library module, not a rewritten full OO example; reverting the same migration reproduces the byte-exact original prefix (original_line_range)."
 }

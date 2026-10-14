@@ -5,12 +5,13 @@ module simple_library
    end type SimpleSum
 
    implements ISum :: SimpleSum
-      procedure, nopass :: sum
+      procedure, pass :: sum
    end implements SimpleSum
    
 contains
    
-   function sum{INumeric :: T}(x) result(s)
+   function sum{INumeric :: T}(self,x) result(s)
+      class(SimpleSum), intent(in) :: self
       type(T), intent(in) :: x(:)
       type(T)             :: s
       s = T(0)

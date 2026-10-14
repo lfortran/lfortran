@@ -11,10 +11,36 @@
       "corpus_id": "static",
       "source_path": "Code/Fortran/static.f90",
       "file": "static.f90",
-      "sha256": "7c07edea1d8a5c75b39e682f864e814f1e106ff7bfd31baf45ff0abaf560dfbf"
+      "original_sha256": "7c07edea1d8a5c75b39e682f864e814f1e106ff7bfd31baf45ff0abaf560dfbf",
+      "sha256": "fcf1939d232780a5cec5a9b727af724f5398e22bf546fbc64ce36b506474f78b",
+      "receiver_migration": {
+        "decision": "TD-36 explicit receivers, approved by the maintainer on 2026-10-14 (explicit_pass_dummy, require_explicit, exact_pass); see doc/src/asr/traits-decisions.md",
+        "replacements": [
+          {
+            "paper": "      function sum{INumeric :: T}(x) result(s)\n         type(T), intent(in) :: x(:)\n",
+            "fixture": "      function sum{INumeric :: T}(self,x) result(s)\n         type(itself), intent(in), pass :: self\n         type(T), intent(in) :: x(:)\n",
+            "reason": "TD-36: ISum's sum declares the intent(in) receiver that PairwiseSum's implementation uses"
+          },
+          {
+            "paper": "      function average{INumeric :: T}(x) result(a)\n         type(T), intent(in) :: x(:)\n",
+            "fixture": "      function average{INumeric :: T}(self,x) result(a)\n         type(itself), intent(in), pass :: self\n         type(T), intent(in) :: x(:)\n",
+            "reason": "TD-36: IAverager's average declares the intent(in) receiver that Averager's implementation uses"
+          },
+          {
+            "paper": "   contains\n      procedure, nopass :: sum\n   end type SimpleSum\n",
+            "fixture": "   contains\n      procedure, pass :: sum\n   end type SimpleSum\n",
+            "reason": "TD-36 exact_pass: a message with a receiver is implemented by a passed-object binding, so SimpleSum's sum takes its passed object"
+          },
+          {
+            "paper": "   function sum{INumeric :: T}(x) result(s)\n      type(T), intent(in) :: x(:)\n",
+            "fixture": "   function sum{INumeric :: T}(self,x) result(s)\n      type(SimpleSum), intent(in) :: self\n      type(T), intent(in) :: x(:)\n",
+            "reason": "TD-36 exact_pass: SimpleSum's stateless sum receives, and ignores, an intent(in) passed object of its sealed type"
+          }
+        ]
+      }
     }
   ],
-  "preservation": "Byte-for-byte copy, including the original module names, whitespace, the generic PairwiseSum{ISum :: U} and Averager{ISum :: U} definitions, type(U) allocatable fields, initial :: constructors that use U without redeclaring it, methods with independent T binders, inferred constructor chaining and the program's READ/SELECT CASE driver with the runtime class(IAverager) variable. No edits are needed or applied.",
+  "preservation": "Copy of the companion file, including the original module names, whitespace, the generic PairwiseSum{ISum :: U} and Averager{ISum :: U} definitions, type(U) allocatable fields, initial :: constructors that use U without redeclaring it, methods with independent T binders, inferred constructor chaining and the program's READ/SELECT CASE driver with the runtime class(IAverager) variable. The only changes are the TD-36 explicit-receiver migration recorded in receiver_migration; reverting its replacements, in reverse order, reproduces original_sha256.",
   "acceptance": {
     "driver": "traits_paper_functional.py",
     "stdin_choices": [1, 2],

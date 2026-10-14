@@ -37,10 +37,10 @@ import traits_paper_functional as paper  # noqa: E402
 
 # The split maps beside the fixtures are pinned like the fixtures themselves.
 SPLIT_HASHES = {
-    "static": "80415aaa04a5a4dc36d1ad0464bc628a29459d2d3b0afa46e855ffd3870aef62",
-    "overloading": "169bf3b284a278ff59bfe5bbcb5e0cadb1fa725f20935978f4b5bb09e1b15c42",
-    "vector": "37ae6618a4f171d718a7df43f72abca9995f0169da199c5e91256e009d059737",
-    "ocp": "7e4cbc6989eb0f329d638df6b975d48d334086c26dadcb7d6010ca12b7dbe2ef",
+    "static": "8ab5c7a41eb95d311b88f1985417f653431765aeeb1b62102dce2f2d7549dad2",
+    "overloading": "080c71411041b18408c898ffb8715d8e946ccddd40da117953d22ef7b3273cc5",
+    "vector": "6bce3cc1bc1f51e4cc55325206972603f90c7af53c7b5b9fc531d1bf2d0dc80b",
+    "ocp": "bde6d3b82b01944a07ca2ba5792091bec0758d569f4a58dbce2eebdcc232160f",
 }
 # Every library unit of a split has a role; see the module docstring.
 ROLES = {
@@ -364,9 +364,9 @@ RUNTIME_TRAIT_NODES = ("(TraitWitness", "(TraitErasure", "(TraitRuntimeContract"
 def check_vector(logs):
     """Associated types: main owns the three instances of the generic type
     and their conformances to IAppendable, each inferring Element from an
-    append that mutates its receiver for direct calls; the package holds
-    the definition only, and no unit holds runtime trait evidence, views or
-    dispatch, as IAppendable has an associated type."""
+    append that mutates the intent(inout) receiver IAppendable declares; the
+    package holds the definition only, and no unit holds runtime trait
+    evidence, views or dispatch, as IAppendable has an associated type."""
     units = asr_units(logs["test_vector-asr"])
     require(set(units) >= {"test_vector", "traits", "vector_library"},
             f"the ASR of test_vector lacks a unit: {sorted(units)}")
@@ -539,27 +539,25 @@ def units_of(content, split):
     return units
 
 
-def original_of(name, content):
-    """The paper's own bytes: the fixture without its explicit provider USE."""
-    if name not in paper.PROVIDER_IMPORTS:
-        return content
-    return paper.check_provider_import(name, content)
-
-
 def verified_units(name, content, split):
-    """Check the fixture, its paper original and its split; return the units."""
+    """Check the fixture, its paper original and its split; return the units.
+    A piece that holds adaptations (the explicit provider USE, the TD-36
+    receivers) must be its paper piece with exactly those adaptations."""
     require(name in paper.SOURCE_HASHES and digest(content) == paper.SOURCE_HASHES[name],
             f"the authoritative {name}.f90 fixture was changed")
-    original = original_of(name, content)
+    original = paper.paper_original(name, content)
     require(split.get("original_sha256", digest(original)) == digest(original),
             "the split map records a different paper original")
     units = units_of(content, split)
+    adaptations = paper.adaptations(name)
     for unit in units:
-        if unit.record.get("contains_adaptation"):
-            _, anchor, line, _ = paper.PROVIDER_IMPORTS[name]
-            require(digest(unit.piece.replace(anchor + line, anchor, 1))
+        held = [pair for pair in adaptations if pair[1] in unit.piece]
+        require(bool(held) == bool(unit.record.get("contains_adaptation")),
+                f"{unit.name}: contains_adaptation does not match the piece")
+        if held:
+            require(digest(paper.revert(unit.piece, held))
                     == unit.record.get("original_piece_sha256"),
-                    f"{unit.name}: the piece is not its original plus the provider USE")
+                    f"{unit.name}: the piece is not its paper piece plus its adaptations")
     modules = [unit.name for unit in units[:-1]]
     require(split.get("frozen_before_main", modules) == modules,
             "every library unit must be frozen before the main program")

@@ -1,5 +1,5 @@
-! traits.tex inline-29 (lines 2189-2211), completed; verified ASR and
-! object only.
+! traits.tex inline-29 (lines 2189-2211), completed, with the passed object
+! that TD-36 requires for ISum's receiver; verified ASR and object only.
 ! See traits_paper_inline/provenance.json.
 
 include "traits_paper_inline/core.f90"

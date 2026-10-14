@@ -1,5 +1,5 @@
-! traits.tex inline-04 (lines 1169-1175), unchanged; the parent traits
-! are inline-01's, imported explicitly.
+! traits.tex inline-04 (lines 1169-1175) with its TD-36 explicit receiver;
+! the parent traits are inline-01's, imported explicitly.
 ! See traits_paper_inline/provenance.json.
 
 include "traits_paper_inline/core.f90"

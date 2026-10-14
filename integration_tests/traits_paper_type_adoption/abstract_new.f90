@@ -1,7 +1,8 @@
 module abstract_new
 
    abstract interface :: IDeferred
-      subroutine method2(res)
+      subroutine method2(self,res)
+         type(itself), intent(in), pass :: self
          real, intent(out) :: res
       end subroutine method2
    end interface IDeferred

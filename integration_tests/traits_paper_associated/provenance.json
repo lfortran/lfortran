@@ -11,7 +11,7 @@
       "source_path": "Code/Fortran/vector.f90",
       "file": "vector.f90",
       "original_sha256": "88d11188ce85ed6c5c4067344eb2a432f39ec742730584310a2576143d671b40",
-      "sha256": "88d11188ce85ed6c5c4067344eb2a432f39ec742730584310a2576143d671b40",
+      "sha256": "ee8558469dc85a8a6f7779d4c96baaaf7dbb9949d4ab3d750444e36b0fa8bce3",
       "listing": "complete file in sect:associated_types_usage, plus lines 5-11 in sect:tats",
       "expected": {
         "stdin_choices": [],
@@ -25,10 +25,20 @@
         "file": "vector_oracle.f90",
         "sha256": "ce00fc818858df104299695f019b64040d01c925fdf2e862a7c318a697376c2a",
         "kind": "standard-Fortran oracle (gfortran and llvm labels); not trait syntax"
+      },
+      "receiver_migration": {
+        "decision": "TD-36 explicit receivers, approved by the maintainer on 2026-10-14 (explicit_pass_dummy, require_explicit, exact_pass); see doc/src/asr/traits-decisions.md",
+        "replacements": [
+          {
+            "paper": "      subroutine append(item)\n         type(Element), intent(in) :: item\n",
+            "fixture": "      subroutine append(self,item)\n         type(itself), intent(inout), pass :: self\n         type(Element), intent(in) :: item\n",
+            "reason": "TD-36: IAppendable's append declares the intent(inout) receiver that Vector{U}'s implementation modifies"
+          }
+        ]
       }
     }
   ],
-  "preservation": "Byte-for-byte copies of the companion files, including module names, whitespace, trailing blanks and comments. The only change is one explicit provider USE line where a fixture lists an adaptation; removing that line reproduces the original sha256. No other boilerplate, erratum or simplification is applied.",
+  "preservation": "Copy of the companion file, including module names, whitespace, trailing blanks and comments. The only change is the TD-36 explicit-receiver migration recorded in receiver_migration; reverting its replacements, in reverse order, reproduces original_sha256. No other boilerplate, erratum or simplification is applied.",
   "acceptance": {
     "driver": "traits_paper_functional.py",
     "modes": [

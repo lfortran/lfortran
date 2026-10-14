@@ -1,39 +1,45 @@
 {
  "schema": "traits-paper-generic-types-prep.static-split.v1",
  "source": "paper/static.f90",
- "source_sha256": "7c07edea1d8a5c75b39e682f864e814f1e106ff7bfd31baf45ff0abaf560dfbf",
+ "source_sha256": "fcf1939d232780a5cec5a9b727af724f5398e22bf546fbc64ce36b506474f78b",
  "rule": "Split only at program-unit boundaries; each piece keeps its trailing blank separator line; the byte concatenation in order must reproduce the source hash before any compilation.",
- "rejoined_sha256": "7c07edea1d8a5c75b39e682f864e814f1e106ff7bfd31baf45ff0abaf560dfbf",
+ "rejoined_sha256": "fcf1939d232780a5cec5a9b727af724f5398e22bf546fbc64ce36b506474f78b",
  "units": [
   {
    "file": "static_1_interfaces.f90",
    "unit": "interfaces",
    "first_line": 1,
-   "last_line": 29,
-   "bytes": 665,
-   "sha256": "94bc102b427d525fcb11c1a7e052e3b0b5163024bf57703405a92dfaae81f90b",
+   "last_line": 31,
+   "bytes": 771,
+   "sha256": "3d825e4131d8a4a99ebce139dabf4b9ed6f55bde2380e1bb6245cbd95872c863",
    "compile_after": [],
-   "imports": []
+   "imports": [],
+   "contains_adaptation": true,
+   "original_piece_sha256": "94bc102b427d525fcb11c1a7e052e3b0b5163024bf57703405a92dfaae81f90b",
+   "original_piece_bytes": 665
   },
   {
    "file": "static_2_simple_library.f90",
    "unit": "simple_library",
-   "first_line": 30,
-   "last_line": 56,
-   "bytes": 478,
-   "sha256": "43e6d21551165cb73359d05e1315f68e8bddd5fa64e66884148769ccbc8b95a1",
+   "first_line": 32,
+   "last_line": 59,
+   "bytes": 523,
+   "sha256": "354abfec016e45ac92253439d732833cbb50a2fe5e830851c18787fe9d6e225f",
    "compile_after": [
     "interfaces"
    ],
    "imports": [
     "interfaces"
-   ]
+   ],
+   "contains_adaptation": true,
+   "original_piece_sha256": "43e6d21551165cb73359d05e1315f68e8bddd5fa64e66884148769ccbc8b95a1",
+   "original_piece_bytes": 478
   },
   {
    "file": "static_3_pairwise_library.f90",
    "unit": "pairwise_library",
-   "first_line": 57,
-   "last_line": 95,
+   "first_line": 60,
+   "last_line": 98,
    "bytes": 883,
    "sha256": "215d9ff82ddcd1512c6be7c27e8c2737e523abf781cbafce57ea365a69230a0d",
    "compile_after": [
@@ -47,8 +53,8 @@
   {
    "file": "static_4_averager_library.f90",
    "unit": "averager_library",
-   "first_line": 96,
-   "last_line": 129,
+   "first_line": 99,
+   "last_line": 132,
    "bytes": 758,
    "sha256": "a94929447a38b1026b6906d74bb3a214c102ee6bcc13a95be42b874a9b90cc9e",
    "compile_after": [
@@ -63,8 +69,8 @@
   {
    "file": "static_5_main.f90",
    "unit": "main",
-   "first_line": 130,
-   "last_line": 166,
+   "first_line": 133,
+   "last_line": 169,
    "bytes": 879,
    "sha256": "45f169182af3ef33c2816240cea7268edea09ef237b3eebda6fefa45c6f3497a",
    "compile_after": [
@@ -81,5 +87,6 @@
    ]
   }
  ],
- "dependency_note": "pairwise_library and averager_library depend only on interfaces; neither sees simple_library or each other. Only main names all three implementations, so every generic instance (PairwiseSum{SimpleSum}, Averager{SimpleSum}, Averager{PairwiseSum{SimpleSum}}) and its runtime IAverager witness must be created in main."
+ "dependency_note": "pairwise_library and averager_library depend only on interfaces; neither sees simple_library or each other. Only main names all three implementations, so every generic instance (PairwiseSum{SimpleSum}, Averager{SimpleSum}, Averager{PairwiseSum{SimpleSum}}) and its runtime IAverager witness must be created in main.",
+ "original_sha256": "7c07edea1d8a5c75b39e682f864e814f1e106ff7bfd31baf45ff0abaf560dfbf"
 }

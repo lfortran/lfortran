@@ -21,7 +21,8 @@ module basic_interfaces
    end interface IReducible
    
    abstract interface :: IPrintable
-      subroutine output()
+      subroutine output(self)
+         type(itself), intent(in), pass :: self
       end subroutine output
    end interface IPrintable
 

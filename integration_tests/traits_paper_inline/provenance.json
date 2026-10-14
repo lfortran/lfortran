@@ -5,9 +5,9 @@
   },
   "source_repository": "Traits-for-Fortran",
   "source_revision": "5163a026967c165d77b033aaa1476c96feba53bd",
-  "scope": "The 35 core inline Fortran listings of traits.tex, in paper order. Each fixture is the listing byte for byte, or with the adaptations recorded beside it: completed ellipses, explicit trait imports and user-approved errata or initialization. Reverting them reproduces listing_sha256.",
+  "scope": "The 35 core inline Fortran listings of traits.tex, in paper order. Each fixture is the listing byte for byte, or with the adaptations recorded beside it: completed ellipses, explicit trait imports, user-approved errata or initialization, and the TD-36 explicit-receiver migration that the maintainer approved on 2026-10-14. Reverting them reproduces listing_sha256.",
   "contexts": {
-    "core.f90": "Module traits_paper_inline_core: inline-01 (explicit-shape copy), -02, -04, -16 and -14 included unchanged, providing ICastable, ICalculable, IPrintable, IConstructable, IAdmissible, INumeric and ISum.",
+    "core.f90": "Module traits_paper_inline_core: inline-01 (explicit-shape copy), -02, -04, -16 and -14 included as their fixtures (inline-01, -04 and -14 with their TD-36 explicit receivers), providing ICastable, ICalculable, IPrintable, IConstructable, IAdmissible, INumeric and ISum.",
     "generic_sum.f90": "Module traits_paper_inline_sum: inline-16's INumeric and the canonical inline-25 fixture, as assumed by the paper for inline-26/27 (traits.tex 2115-2121)."
   },
   "gates": {
@@ -28,7 +28,7 @@
       "gate": "declaration",
       "status": "ready",
       "fixture": "inline_01.f90",
-      "sha256": "7c900d9e92a06af9cffcad30a730bf8ad50cb9ad602158fda821e327f339371b",
+      "sha256": "33f5145102cc6c649f37fddec98816e4238becdef436266e16153e8b7c662aef",
       "wrapper": "traits_paper_inline_01.f90",
       "expected": {
         "result": "verified ASR and object; not executed"
@@ -39,6 +39,18 @@
           "listing": "        real             :: res(:)\n",
           "fixture": "        real             :: res(size(x))\n",
           "reason": "A deferred-shape function result needs ALLOCATABLE or POINTER; the user approved the explicit-shape result res(size(x)) for the acceptance copy."
+        },
+        {
+          "kind": "approved language change TD-36 (explicit receivers)",
+          "listing": "     function saxpy(a,x,y) result(res)\n        real, intent(in) :: a, x(:), y(:)\n",
+          "fixture": "     function saxpy(self,a,x,y) result(res)\n        type(itself), intent(in), pass :: self\n        real, intent(in) :: a, x(:), y(:)\n",
+          "reason": "TD-36: ICalculable's saxpy declares an explicit intent(in) receiver, the meaning of the paper's receiver-free message"
+        },
+        {
+          "kind": "approved language change TD-36 (explicit receivers)",
+          "listing": "     subroutine output()\n     end subroutine output\n",
+          "fixture": "     subroutine output(self)\n        type(itself), intent(in), pass :: self\n     end subroutine output\n",
+          "reason": "TD-36: IPrintable's output declares the intent(in) receiver that the implementations of inline-05 to inline-09 read"
         }
       ]
     },
@@ -90,14 +102,22 @@
       "gate": "declaration",
       "status": "ready",
       "fixture": "inline_04.f90",
-      "sha256": "656b491a608aa584ed12ceb0471f841063efd53a88461aa460008214688f30f2",
+      "sha256": "4fbcbe7373616ede521262dbf8210fefd9603bc45c4b65d54e2deb58ca26c670",
       "wrapper": "traits_paper_inline_04.f90",
       "context": [
         "core.f90"
       ],
       "expected": {
         "result": "verified ASR and object; not executed"
-      }
+      },
+      "adaptations": [
+        {
+          "kind": "approved language change TD-36 (explicit receivers)",
+          "listing": "     subroutine input(filename)\n        character(*), intent(in) :: filename\n",
+          "fixture": "     subroutine input(self,filename)\n        type(itself), intent(in), pass :: self\n        character(*), intent(in) :: filename\n",
+          "reason": "TD-36: IAdmissible's input declares an explicit intent(in) receiver, the meaning of the paper's receiver-free message"
+        }
+      ]
     },
     {
       "id": "inline-05",
@@ -376,14 +396,22 @@
       "gate": "declaration",
       "status": "ready",
       "fixture": "inline_14.f90",
-      "sha256": "f59dd3a5356c848d1478b32e99e84163eb8dd6cb9d5e28244e5e3e0ce59a0895",
+      "sha256": "fb9dfe13b318179ed3f2c0765dc3d91294b894cebc29b6b3ffd1d2db131357db",
       "wrapper": "traits_paper_inline_14.f90",
       "context": [
         "core.f90"
       ],
       "expected": {
         "result": "verified ASR and object; not executed"
-      }
+      },
+      "adaptations": [
+        {
+          "kind": "approved language change TD-36 (explicit receivers)",
+          "listing": "     function sum{INumeric :: T}(x) result(s)\n        type(T), intent(in) :: x(:)\n",
+          "fixture": "     function sum{INumeric :: T}(self,x) result(s)\n        type(itself), intent(in), pass :: self\n        type(T), intent(in) :: x(:)\n",
+          "reason": "TD-36: ISum's sum declares the intent(in) receiver that PairwiseSum's implementation (inline-32) uses"
+        }
+      ]
     },
     {
       "id": "inline-15",
@@ -464,11 +492,19 @@
       "gate": "declaration",
       "status": "ready",
       "fixture": "inline_19.f90",
-      "sha256": "fd54157fb93158d1df9e83c00850b33f6a74a9b790138e9bbb75eedf7340f0a9",
+      "sha256": "1b6926b3ea4f1556d02c7b2ad87a6c42bde981176ea8568f462b1ccec0a04d8d",
       "wrapper": "traits_paper_inline_19.f90",
       "expected": {
         "result": "verified ASR and object; not executed"
-      }
+      },
+      "adaptations": [
+        {
+          "kind": "approved language change TD-36 (explicit receivers)",
+          "listing": "     function sum{integer | real(real64) :: T}(x) result(s)\n        type(T), intent(in) :: x(:)\n",
+          "fixture": "     function sum{integer | real(real64) :: T}(self,x) result(s)\n        type(itself), intent(in), pass :: self\n        type(T), intent(in) :: x(:)\n",
+          "reason": "TD-36: ISum's sum declares an explicit intent(in) receiver, as in inline-14"
+        }
+      ]
     },
     {
       "id": "inline-20",
@@ -481,11 +517,19 @@
       "gate": "declaration",
       "status": "ready",
       "fixture": "inline_20.f90",
-      "sha256": "98d06eebfbbf1de24d9989613ed030f42ca38b740d91fe5f4039c9b6cbc4c1bb",
+      "sha256": "56ff22678b8f6761c2913877c52510da078f56c5c9264e13e444448e3c81c9a2",
       "wrapper": "traits_paper_inline_20.f90",
       "expected": {
         "result": "verified ASR and object; not executed"
-      }
+      },
+      "adaptations": [
+        {
+          "kind": "approved language change TD-36 (explicit receivers)",
+          "listing": "      function sum{INumeric :: T}(x) result(s)\n         type(T), intent(in) :: x(:)\n",
+          "fixture": "      function sum{INumeric :: T}(self,x) result(s)\n         type(itself), intent(in), pass :: self\n         type(T), intent(in) :: x(:)\n",
+          "reason": "TD-36: ISum's sum declares an explicit intent(in) receiver, as in inline-14"
+        }
+      ]
     },
     {
       "id": "inline-21",
@@ -636,7 +680,7 @@
       "gate": "declaration",
       "status": "ready",
       "fixture": "inline_29.f90",
-      "sha256": "f9bade28f35b5ed91aa1e808750f49aca5c5451f6011c6650c2baf5352bb1b9b",
+      "sha256": "0d2e6a5ea87d486d40afdbffb0c60e5149024d1bf25ee78feb272c074b8d70f9",
       "wrapper": "traits_paper_inline_29.f90",
       "context": [
         "core.f90"
@@ -650,6 +694,18 @@
           "listing": "module simple_library\n   ...\n",
           "fixture": "module simple_library\n   use traits_paper_inline_core, only: INumeric, ISum\n   implicit none\n",
           "reason": "The ellipsis stands for the omitted specification part; the traits are imported explicitly from their paper declarations in core.f90, without implicit provider discovery."
+        },
+        {
+          "kind": "approved language change TD-36 (explicit receivers)",
+          "listing": "   implements ISum :: SimpleSum\n      procedure, nopass :: sum\n",
+          "fixture": "   implements ISum :: SimpleSum\n      procedure, pass :: sum\n",
+          "reason": "TD-36 exact_pass: ISum's sum has a receiver, so SimpleSum binds it with a passed object"
+        },
+        {
+          "kind": "approved language change TD-36 (explicit receivers)",
+          "listing": "   function sum{INumeric :: T}(x) result(s)\n      type(T), intent(in) :: x(:)\n",
+          "fixture": "   function sum{INumeric :: T}(self,x) result(s)\n      class(SimpleSum), intent(in) :: self\n      type(T), intent(in) :: x(:)\n",
+          "reason": "TD-36 exact_pass: SimpleSum's stateless sum receives, and ignores, an intent(in) passed object of its extensible type"
         }
       ]
     },

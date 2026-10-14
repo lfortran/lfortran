@@ -1,13 +1,15 @@
 module extends_parent
 
    abstract interface :: IParent
-      subroutine method1(n)
+      subroutine method1(self,n)
+         type(itself), intent(in), pass :: self
          integer, intent(in) :: n
       end subroutine method1
    end interface IParent
 
    abstract interface :: IChild
-      subroutine method2(res)
+      subroutine method2(self,res)
+         type(itself), intent(in), pass :: self
          real, intent(out) :: res
       end subroutine method2
    end interface IChild

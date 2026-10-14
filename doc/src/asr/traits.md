@@ -303,10 +303,12 @@ is not introduced by this implementation.
 This is an intentional deviation from the proposal's provider-independent
 augmentation rule, discussed in
 [difference-scheme/Traits-for-Fortran#2](https://github.com/difference-scheme/Traits-for-Fortran/issues/2).
-`traits_paper_printy.f90` preserves the original paper example byte-for-byte
-except for one `use real64_module` statement. Its native driver checks both
-that adaptation and the printed value, and compiles a provider, facade and
-generic client in separate compiler invocations.
+`traits_paper_printy.f90` preserves the original paper example except for one
+`use real64_module` statement and the explicit receiver of `output` that TD-36
+of the [decisions record](traits-decisions.md) requires. Its native driver
+checks both adaptations, by reverting them to the paper's bytes, and the
+printed value, and compiles a provider, facade and generic client in separate
+compiler invocations.
 
 Intrinsic type and kind identity are exact: a conformance for `real(8)` does
 not also cover `real(4)` or `integer(8)`. Kind selectors use ordinary Fortran
@@ -400,8 +402,8 @@ ordinary overrides keep dynamic dispatch. Generic derived types are
 described in their own section. A type declared in a BLOCK construct cannot
 adopt traits yet; `continue_compilation_traits_02` diagnoses it.
 
-The byte-exact, module-only paper examples `extends_parent.f90` and
-`abstract_new.f90` are registered through `traits_type_adoption.py` in normal
+The module-only paper examples `extends_parent.f90` and `abstract_new.f90`,
+unchanged except for their recorded TD-36 explicit receivers, are registered through `traits_type_adoption.py` in normal
 and fast native CTests. They are verified and compiled to objects, **not run**:
 their illustrative output-method bodies do not define output values.
 `traits_type_adoption_01` and `_02` supply defined-output controls for dispatch,
@@ -493,8 +495,8 @@ independent of either functional program's private constraint.
 The paper's 35 core inline listings are accounted for in
 `integration_tests/traits_paper_inline/provenance.json`. Each fixture is the
 listing byte for byte, or with recorded adaptations (completed ellipses,
-explicit trait imports, approved errata and initialization) whose reversal
-reproduces the listing's hash. `traits_paper_inline.py` checks this record in
+explicit trait imports, approved errata and initialization, and the TD-36
+explicit receivers) whose reversal reproduces the listing's hash. `traits_paper_inline.py` checks this record in
 the normal and fast `test_paper_inline` CTests: declarations are compiled to
 verified ASR and objects, and programs are run and checked. All 35 are
 accepted: the driver checks 33, and inline-25 and inline-28 remain accepted
@@ -763,7 +765,8 @@ instantiator turns it into the `TraitFunctionCall` of the substituted member's
 slot when a provider entry or a client's static specialization is created, or
 forwards it to an enclosing binder. Both static calls on concrete receivers and
 recursive or forwarded calls through trait components therefore keep their
-existing semantics. The paper's exact `mixed.f90` runs this way, including
+existing semantics. The paper's `mixed.f90`, with its recorded TD-36
+receivers, runs this way, including
 `initial` constructors that borrow constructor values or concrete function
 results as `class(ISum)` arguments for the duration of the call.
 
@@ -879,8 +882,8 @@ and receives the dictionary as well. A runtime call such as `av%average(xi)`
 passes the dictionary of the conformance selected for its binder where the
 call is checked: a `TraitDictionaryValue` for a concrete type, or the caller's
 dictionary when forwarded. Without a visible conformance the call is rejected,
-so the original paper file without `use intrinsics` is diagnosed: no
-conformance is discovered implicitly.
+so the paper program without `use intrinsics` is diagnosed: no conformance
+is discovered implicitly.
 
 Erased values are bytes the dictionary describes. Read-only scalar and
 assumed-shape dummies, scalar locals and a scalar result are supported;
@@ -944,9 +947,9 @@ protocol's dictionary. A binder constrained by several traits and a
 polymorphic actual argument for an erased dummy are not implemented yet
 either.
 
-`traits_paper_ocp` runs the exact paper program, with its approved
-`use intrinsics`, for both choices in normal and fast modes and rejects the
-original without it; its split native gate freezes all five library modules
+`traits_paper_ocp` runs the paper program, with its approved
+`use intrinsics` and its recorded TD-36 receivers, for both choices in normal
+and fast modes and rejects it without that `use`; its split native gate freezes all five library modules
 before compiling `main` and checks that each algorithm library has one open
 entry and `intrinsics` owns the dictionaries `main` references.
 `traits_protocol_separate_01` freezes
@@ -1038,7 +1041,8 @@ the program writes itself stays static only, also as the evidence of an
 instance's type argument: the runtime view of such an instance is diagnosed
 where it is formed.
 
-The paper's `static.f90` is registered byte-exact through
+The paper's `static.f90` is registered, unchanged except for its recorded
+TD-36 receivers, through
 `traits_paper_functional.py` for both inputs, and as the native
 `test_paper_separate_static_{normal,fast}` CTests through
 `traits_paper_separate.py`, which compiles each module separately into frozen,
@@ -1508,9 +1512,10 @@ binding's passed-object dummy (`ASRUtils::trait_binding_mutates_receiver`), and
 the verifier admits `intent(inout)` receivers only outside runtime witnesses and
 rejects mutating evidence of generic type arguments.
 
-The exact paper `vector.f90` (`traits_paper_vector`, its oracle and the
+The paper's `vector.f90` (`traits_paper_vector`, its oracle and the
 `test_paper_functional_{normal,fast}` and `test_paper_separate_vector_{normal,fast}`
-CTests) needs Fortran 2003 reallocation on assignment for
+CTests), whose `append` message declares its `intent(inout)` receiver
+(TD-36), needs Fortran 2003 reallocation on assignment for
 `elements = [elements, item]`, which LFortran's default mode leaves to
 `--realloc-lhs-arrays`. `traits_associated_01` checks associated types and
 unconstrained storage, `traits_associated_02` mutating appends through

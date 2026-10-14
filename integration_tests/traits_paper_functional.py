@@ -3,6 +3,10 @@
 Averaging programs are checked for both interactive choices; overloading and
 vector run once. Standard-Fortran oracles of the paper programs are checked
 like the programs they model.
+
+A fixture is its paper program plus the adaptations that its provenance.json
+records: an explicit provider USE (TD-07) and the explicit receivers of TD-36.
+Reverting them must reproduce the paper program's SHA-256.
 """
 
 import argparse
@@ -17,14 +21,25 @@ import subprocess
 import time
 
 
+# The acceptance fixtures: each paper program with its recorded adaptations.
 SOURCE_HASHES = {
+    "functional1": "51a5c11e8b77624dd7cd653c0f1ded7fccee860b22e8d3668b3f2c09008eca25",
+    "functional2": "808b71c5393ee9dfc19e192cbe7eb689dedd5a9f25fecd0e4018b30ec0cbbeb1",
+    "mixed": "878bdb0ee08ee2df281863e98a3d83b11310287f785cf74f1f54c0622c48877d",
+    "static": "fcf1939d232780a5cec5a9b727af724f5398e22bf546fbc64ce36b506474f78b",
+    "overloading": "ef9f4eba9d8933ecb64c4c0da5c58c60680c7d529bcff4d585d7d9eec4ff35e4",
+    "vector": "ee8558469dc85a8a6f7779d4c96baaaf7dbb9949d4ab3d750444e36b0fa8bce3",
+    "ocp": "713cdbb4bc26b37c40df7bd2df55aa7e5eff504eba38f07a8049a80e88a2cd0f",
+}
+# The paper programs, as the companion repository has them.
+PAPER_HASHES = {
     "functional1": "51a5c11e8b77624dd7cd653c0f1ded7fccee860b22e8d3668b3f2c09008eca25",
     "functional2": "808b71c5393ee9dfc19e192cbe7eb689dedd5a9f25fecd0e4018b30ec0cbbeb1",
     "mixed": "6f9515b4230468ee7f179395713a2b90ed1759e91ce26dd69c884c9115c0516a",
     "static": "7c07edea1d8a5c75b39e682f864e814f1e106ff7bfd31baf45ff0abaf560dfbf",
-    "overloading": "6aa5224df68bd983ad7c99cecb1e76d5dffe4479ff72c010d38eb58e51589e47",
+    "overloading": "9697a242ce03a441460b340660b52ade97357fdf2bb94389286ae977bd070e92",
     "vector": "88d11188ce85ed6c5c4067344eb2a432f39ec742730584310a2576143d671b40",
-    "ocp": "53ad0e17d5652f2e1f6441b48fe81f938e34d23068ac8df122019876cc901768",
+    "ocp": "7852f86195a9d44721baf930929f8704b49750d10b8dd255744d4d1e1dba7c4c",
 }
 SOURCE_DIRECTORIES = {
     "mixed": "traits_paper_dynamic",
@@ -33,14 +48,14 @@ SOURCE_DIRECTORIES = {
     "vector": "traits_paper_associated",
     "ocp": "traits_paper_protocols",
 }
-# Explicit provider imports: the fixture is the original paper file plus one
-# USE line after the anchor line. The original, which contains the provider
-# module in the same file, must be rejected with a diagnostic naming the trait.
+# Explicit provider imports: the fixture adds one USE line after the anchor
+# line. Without it, the program must be rejected with a diagnostic naming the
+# trait, also when the provider module is in the same file.
 PROVIDER_IMPORTS = {
-    "overloading": ("9697a242ce03a441460b340660b52ade97357fdf2bb94389286ae977bd070e92",
+    "overloading": (PAPER_HASHES["overloading"],
                     b"   use my_type,          only: MyType\n", b"   use real_type\n",
                     ("ireducible", "iprintable")),
-    "ocp": ("7852f86195a9d44721baf930929f8704b49750d10b8dd255744d4d1e1dba7c4c",
+    "ocp": (PAPER_HASHES["ocp"],
             b"   use averager_library, only: Averager\n", b"   use intrinsics\n",
             ("inumeric",)),
 }
@@ -73,13 +88,57 @@ def example_of(name):
     return name[:-len("_oracle")] if name in ORACLE_HASHES else name
 
 
-def check_provider_import(name, content):
-    original_hash, anchor, line, _ = PROVIDER_IMPORTS[name]
-    original = content.replace(anchor + line, anchor, 1)
-    if (content.count(line) != 1 or original.count(anchor) != 1
-            or hashlib.sha256(original).hexdigest() != original_hash):
-        raise RuntimeError(f"{name} must be the original paper file plus one provider USE")
+def adaptations(name):
+    """The adaptations of a fixture, in the order applied to its paper
+    program, as (paper bytes, fixture bytes) pairs: the explicit provider USE,
+    then the TD-36 receiver migration that its provenance.json records."""
+    pairs = []
+    if name in PROVIDER_IMPORTS:
+        _, anchor, line, _ = PROVIDER_IMPORTS[name]
+        pairs.append((anchor, anchor + line))
+    directory = Path(__file__).resolve().parent / SOURCE_DIRECTORIES.get(
+        name, "traits_paper_functional")
+    provenance = json.loads((directory / "provenance.json").read_text())
+    record = next((fixture for fixture in provenance["fixtures"]
+                   if fixture["file"] == f"{name}.f90"), None)
+    if (record is None or record["sha256"] != SOURCE_HASHES[name]
+            or record.get("original_sha256", record["sha256"]) != PAPER_HASHES[name]):
+        raise RuntimeError(f"{directory.name}/provenance.json does not record {name}.f90 "
+                           "with its pinned fixture and paper hashes")
+    for replacement in record.get("receiver_migration", {}).get("replacements", []):
+        pairs.append((replacement["paper"].encode(), replacement["fixture"].encode()))
+    return pairs
+
+
+def revert(text, pairs, partial=False):
+    """Undo adaptations, the last one first. The fixture text of each must
+    occur exactly once; a piece of a fixture (partial) may also lack it."""
+    for paper_text, fixture_text in reversed(pairs):
+        count = text.count(fixture_text)
+        if count == 0 and partial:
+            continue
+        if count != 1:
+            raise RuntimeError(f"an adaptation occurs {count} times instead of once: "
+                               f"{fixture_text.decode()!r}")
+        text = text.replace(fixture_text, paper_text)
+    return text
+
+
+def paper_original(name, content):
+    """The paper program of a fixture: its recorded adaptations reverted."""
+    original = revert(content, adaptations(name))
+    if hashlib.sha256(original).hexdigest() != PAPER_HASHES[name]:
+        raise RuntimeError(f"{name} must be its paper program plus the adaptations "
+                           "that its provenance.json records")
     return original
+
+
+def without_provider_import(name, content):
+    """The fixture without its explicit provider USE."""
+    _, anchor, line, _ = PROVIDER_IMPORTS[name]
+    if content.count(line) != 1 or content.count(anchor + line) != 1:
+        raise RuntimeError(f"{name} must add one provider USE after its anchor line")
+    return content.replace(anchor + line, anchor, 1)
 
 
 def list_directed(records, count, convert):
@@ -177,21 +236,23 @@ def main():
         expected_hash = ORACLE_HASHES[name] if name in ORACLE_HASHES else SOURCE_HASHES[name]
         if hashlib.sha256(content).hexdigest() != expected_hash:
             raise RuntimeError(f"the authoritative {source.name} fixture was changed")
+        if name not in ORACLE_HASHES:
+            paper_original(name, content)
         private = work / name
         private.mkdir()
         if name in PROVIDER_IMPORTS:
-            original = check_provider_import(name, content)
+            without_use = without_provider_import(name, content)
             if args.lfortran:
                 traits = PROVIDER_IMPORTS[name][3]
                 missing = private / f"{name}_without_provider_use.f90"
-                missing.write_bytes(original)
+                missing.write_bytes(without_use)
                 text = run(f"{name}-without-provider-use",
                            [args.lfortran.resolve(), "--no-color", "--semantics-only",
                             missing], private, expect_failure=True)
                 if not any(trait in text.lower() for trait in traits):
                     raise RuntimeError(f"{name}: the missing provider USE must be "
                                        f"diagnosed for {traits}:\n{text}")
-                print(f"{name}: the original without its provider USE is rejected",
+                print(f"{name}: the fixture without its provider USE is rejected",
                       flush=True)
         if args.lfortran:
             executable = compile_source(source, private)

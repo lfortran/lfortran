@@ -2,10 +2,10 @@
  "schema": "traits-final-four-acceptance.split.v1",
  "example": "vector",
  "source": "integration_tests/traits_paper_associated/vector.f90",
- "source_sha256": "88d11188ce85ed6c5c4067344eb2a432f39ec742730584310a2576143d671b40",
+ "source_sha256": "ee8558469dc85a8a6f7779d4c96baaaf7dbb9949d4ab3d750444e36b0fa8bce3",
  "original_sha256": "88d11188ce85ed6c5c4067344eb2a432f39ec742730584310a2576143d671b40",
  "rule": "Split only at program-unit boundaries; each piece keeps its trailing blank separator line; the byte concatenation in order must reproduce source_sha256 before any compilation. Pieces are verbatim slices; no unit is renamed, reordered, simplified or completed.",
- "rejoined_sha256": "88d11188ce85ed6c5c4067344eb2a432f39ec742730584310a2576143d671b40",
+ "rejoined_sha256": "ee8558469dc85a8a6f7779d4c96baaaf7dbb9949d4ab3d750444e36b0fa8bce3",
  "frozen_before_main": [
   "traits",
   "vector_library"
@@ -16,20 +16,23 @@
    "unit": "traits",
    "kind": "module",
    "first_line": 1,
-   "end_statement_line": 12,
-   "last_line": 13,
-   "bytes": 242,
-   "sha256": "fc8e30a27086b36c67ce7e1e23cc0bd9dc69eb410d3b296fb0debbb7a1655533",
+   "end_statement_line": 13,
+   "last_line": 14,
+   "bytes": 298,
+   "sha256": "35d3cde0365dd37c4297784cd7c63ee5580759f159acebaca6421ccf26b27487",
    "imports": [],
    "file": "vector_1_traits.f90",
-   "compile_after": []
+   "compile_after": [],
+   "contains_adaptation": true,
+   "original_piece_sha256": "fc8e30a27086b36c67ce7e1e23cc0bd9dc69eb410d3b296fb0debbb7a1655533",
+   "original_piece_bytes": 242
   },
   {
    "unit": "vector_library",
    "kind": "module",
-   "first_line": 14,
-   "end_statement_line": 49,
-   "last_line": 50,
+   "first_line": 15,
+   "end_statement_line": 50,
+   "last_line": 51,
    "bytes": 841,
    "sha256": "ea1fe8501baedf7094874eedd0466dbbedbe082e8d0f771688a1fde3fb422441",
    "imports": [
@@ -43,9 +46,9 @@
   {
    "unit": "test_vector",
    "kind": "program",
-   "first_line": 51,
-   "end_statement_line": 72,
-   "last_line": 72,
+   "first_line": 52,
+   "end_statement_line": 73,
+   "last_line": 73,
    "bytes": 556,
    "sha256": "640d6a827a4fee3aae59b1f9cdcf671ef3a77deb32ca3aa68862847e9789b025",
    "imports": [

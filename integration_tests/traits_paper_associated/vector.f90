@@ -4,7 +4,8 @@ module traits
 
    abstract interface :: IAppendable
       type :: Element
-      subroutine append(item)
+      subroutine append(self,item)
+         type(itself), intent(inout), pass :: self
          type(Element), intent(in) :: item
       end subroutine append
    end interface IAppendable
