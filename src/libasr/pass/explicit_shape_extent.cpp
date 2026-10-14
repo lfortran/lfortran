@@ -1,7 +1,7 @@
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/asr_utils.h>
-#include <libasr/pass/intrinsic_functions.h>
+#include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/explicit_shape_extent.h>
 
