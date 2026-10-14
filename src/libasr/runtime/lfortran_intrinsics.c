@@ -33,6 +33,7 @@ typedef enum {
 #  include <winsock2.h>
 #  include <windows.h>
 #  include <io.h>
+#  include <direct.h>
 #  define ftruncate _chsize_s
 #else
 #  include <unistd.h>
@@ -14427,6 +14428,31 @@ LFORTRAN_API int32_t _lfortran_get_argc() {
 
 LFORTRAN_API char *_lpython_get_argv(int32_t index) {
     return _argv[index];
+}
+
+// getcwd (GNU extension)
+LFORTRAN_API int32_t _lfortran_getcwd(char* buffer, int64_t length) {
+    if (length <= 0) return EINVAL;
+    if ((uint64_t)length >= SIZE_MAX) return ENOMEM;
+    memset(buffer, ' ', (size_t)length);
+    // libc needs a trailing NUL; the Fortran buffer may fit the path exactly.
+    size_t capacity = (size_t)length + 1;
+#if defined(_WIN32)
+    if (capacity > INT_MAX) return ERANGE;
+#endif
+    char* path = internal_malloc(capacity);
+    if (!path) return ENOMEM;
+#if defined(_WIN32)
+    char* result = _getcwd(path, (int)capacity);
+#else
+    char* result = getcwd(path, capacity);
+#endif
+    int32_t status = result ? 0 : errno;
+    if (result) {
+        _lfortran_copy_str_and_pad(buffer, length, path, (int64_t)strlen(path), 1);
+    }
+    internal_free(path);
+    return status;
 }
 
 // get_command_argument
