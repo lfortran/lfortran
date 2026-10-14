@@ -11489,6 +11489,47 @@ static void parse_character_from_buffer(char* buffer, int field_len,
     }
 }
 
+static inline int read_character(InputSource *inputSource)
+{
+    switch (inputSource->inputMethod) {
+
+    case INPUT_FILE: {
+        int c = fgetc(inputSource->file);
+#if defined(__EMSCRIPTEN__)
+        // Recover a spurious EOF on interactive stdin: a record
+        // boundary at the very start of this read looks like end of
+        // file on the first attempt; the retry pulls the next line.
+        if (c == EOF && inputSource->file == stdin) {
+            clearerr(inputSource->file);
+            c = fgetc(inputSource->file);
+        }
+#endif
+        // CRLF is one external sequential/stream record terminator.
+        // A lone CR remains data, as do characters in internal/direct files.
+        if (c == '\r' && inputSource->access_id != 2) {
+            int next = fgetc(inputSource->file);
+            if (next == '\n') {
+                c = '\n';
+            } else if (next != EOF) {
+                ungetc(next, inputSource->file);
+            }
+        }
+        if (c != EOF && c != '\n') {
+            inputSource->pos_in_record++;
+        }
+        return c;
+    }
+
+    case INPUT_STRING:
+        if (inputSource->str.pos < inputSource->str.len) {
+            return (unsigned char)inputSource->str.buf[inputSource->str.pos++];
+        }
+        return EOF;
+    }
+
+    return EOF;
+}
+
 static inline char* read_line(char *buf, int size, InputSource *inputSource)
 {
     if (size <= 0) {
@@ -11526,35 +11567,19 @@ static inline char* read_line(char *buf, int size, InputSource *inputSource)
 
     switch (inputSource->inputMethod) {
     case INPUT_FILE: {
-        char *ret = fgets(buf, size, inputSource->file);
-#if defined(__EMSCRIPTEN__)
-        // A failed first read here is not necessarily end of file: when
-        // stdin is served one line per read() (interactive use), the
-        // previous record's line delivery can end exactly where this
-        // read starts, and the 0-byte read latches a spurious EOF.
-        // Retry once with a clean slate; genuine EOF fails the retry
-        // too, so termination still works.
-        if (ret == NULL && inputSource->file == stdin) {
-            clearerr(inputSource->file);
-            ret = fgets(buf, size, inputSource->file);
+        while (i < size - 1) {
+            int c = read_character(inputSource);
+            if (c == EOF) break;
+            buf[i++] = (char)c;
+            if (c == '\n') break;
         }
-#endif
-        if (ret != NULL) {
-            // Keep record-local cursor in sync for T/TL/TR editing.
-            // Count only non-newline chars consumed from current record.
-            size_t n = strlen(buf);
-            size_t consumed = 0;
-            for (size_t j = 0; j < n; j++) {
-                if (buf[j] == '\n') break;
-                consumed++;
-            }
-            inputSource->pos_in_record += (long)consumed;
-            if (inputSource->record_length >= 0 &&
-                    inputSource->pos_in_record > inputSource->record_length) {
-                inputSource->pos_in_record = inputSource->record_length;
-            }
+        if (i == 0) return NULL;
+        buf[i] = '\0';
+        if (inputSource->record_length >= 0 &&
+                inputSource->pos_in_record > inputSource->record_length) {
+            inputSource->pos_in_record = inputSource->record_length;
         }
-        return ret;
+        return buf;
     }
     case INPUT_STRING:
         while (i < size - 1 && inputSource->str.pos < inputSource->str.len) {
@@ -11572,37 +11597,6 @@ static inline char* read_line(char *buf, int size, InputSource *inputSource)
     }
 
     return NULL;
-}
-
-static inline int read_character(InputSource *inputSource)
-{
-    switch (inputSource->inputMethod) {
-
-    case INPUT_FILE: {
-        int c = fgetc(inputSource->file);
-#if defined(__EMSCRIPTEN__)
-        // Same spurious-EOF recovery as in read_line above: a record
-        // boundary at the very start of this read looks like end of
-        // file on the first attempt; the retry pulls the next line.
-        if (c == EOF && inputSource->file == stdin) {
-            clearerr(inputSource->file);
-            c = fgetc(inputSource->file);
-        }
-#endif
-        if (c != EOF && c != '\n') {
-            inputSource->pos_in_record++;
-        }
-        return c;
-    }
-
-    case INPUT_STRING:
-        if (inputSource->str.pos < inputSource->str.len) {
-            return (unsigned char)inputSource->str.buf[inputSource->str.pos++];
-        }
-        return EOF;
-    }
-
-    return EOF;
 }
 
 static bool read_field(InputSource *inputSource, int read_width, bool advance_no,
@@ -12335,9 +12329,13 @@ static void init_record_state(InputSource *inputSource)
                 fseek(inputSource->file, inputSource->record_start_pos, SEEK_SET);
                 
                 inputSource->record_length = 0;
-                int c;
+                int c, previous = EOF;
                 while ((c = fgetc(inputSource->file)) != EOF && c != '\n') {
                     inputSource->record_length++;
+                    previous = c;
+                }
+                if (c == '\n' && previous == '\r') {
+                    inputSource->record_length--;
                 }
                 
                 // Restore position to start of record
