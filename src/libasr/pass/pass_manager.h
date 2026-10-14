@@ -308,6 +308,10 @@ namespace LCompilers {
                 "device_partition",
                 "gpu_device_allocatable",
                 "conditional_expr",
+                // A FORALL becomes a DO CONCURRENT loop before temporaries
+                // are created, so that temporaries depending on its indices
+                // are evaluated inside each iteration.
+                "forall",
                 "array_struct_temporary",
                 "coarray",
                 // Every pass that can create a startup initializer has run,
@@ -316,7 +320,6 @@ namespace LCompilers {
                 "transform_optional_argument_functions",
                 "select_case",
                 "nested_vars",
-                "forall",
                 "class_constructor",
                 "pass_list_expr",
                 "where",

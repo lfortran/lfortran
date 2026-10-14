@@ -2290,6 +2290,10 @@ RUN(NAME forall_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --im
 RUN(NAME forall_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME forall_04 LABELS gfortran llvm)
 RUN(NAME forall_05 LABELS gfortran llvm)
+RUN(NAME forall_06 LABELS gfortran llvm)
+RUN(NAME forall_07 LABELS gfortran llvm)
+RUN(NAME forall_08 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME forall_09 LABELS llvm EXTRA_ARGS --realloc-lhs-arrays) # GFortran assigns these FORALLs one index at a time
 
 RUN(NAME parsing_01 LABELS gfortran)
 RUN(NAME parsing_02 LABELS gfortran)
