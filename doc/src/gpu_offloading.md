@@ -161,6 +161,25 @@ generates the device source. It never falls back to the CPU:
   before the launch: such a loop is an error ("workspace ... cannot be
   sized on the host", or "a temporary array cannot be sized on the host"
   for a temporary the compiler introduces).
+* A procedure the loop calls runs on the device as a procedure, wherever
+  the call is: in an expression, an `associate` selector, a condition, or
+  another procedure. A device without variable-length arrays or a heap
+  (Metal, CUDA) cannot declare a local array of such a procedure whose size
+  is known only at run time -- an allocatable local, an automatic array, or
+  a temporary the compiler introduces, such as the result of a function it
+  calls. Each such local becomes an argument of the procedure, and every
+  call passes an array of its own for it, with the extents of the local
+  written over the actual arguments of that call. Up the chain of calls
+  this ends in the kernel, where the array is a per-thread workspace like
+  any other (see the previous point). The extents may read the arguments of
+  the procedure and named constants. A procedure with such a local that
+  calls itself, directly or not, would need one array per level of the
+  recursion, and is an error, and so is an extent that reads anything else
+  ("workspace ... cannot be sized on the host"). A call that is the whole
+  right-hand side of an assignment is spliced into the kernel instead: the
+  body of the procedure replaces the call, with the actual arguments in
+  place of the dummy arguments, which more often makes the extents
+  constants.
 * A kernel cannot allocate. When a loop writes an allocatable array component
   of an element of an array of derived type, the storage the kernel writes
   into has to exist before the launch. The write may be `t(i) = f(...)`,
@@ -321,3 +340,12 @@ them; it does not yet.
   (`integer(8)` on Metal), and a derived type with an unused `real(8)`
   component that is handed to the kernel whole (see the open questions).
 * Purity of procedures called from `do concurrent` is not enforced.
+* A run-time sized local of a procedure the loop calls cannot be sized yet
+  when its extent calls a function (`maxval(n)`), reads a name the
+  procedure binds (an associate name), or reads the index of a `do` loop of
+  the procedure (`n(l)` in `do l = 1, m`), even when the host could work
+  out the largest value before the launch.
+* A derived-type value with an allocatable array component that device code
+  creates -- a local, or the result of a function such as a constructor --
+  has no storage for the component on the device yet. Only the components of
+  the loop's own arguments are handed over in device buffers.

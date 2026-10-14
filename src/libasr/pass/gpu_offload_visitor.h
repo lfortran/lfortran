@@ -111,13 +111,13 @@ public:
     // an `inline` device function cannot declare a local whose extent is
     // only known at run time. A kernel *can* have one: the extent is
     // evaluated on the host at launch and a device buffer is bound for
-    // it (`analyze_gpu_vla_workspaces`). So instead of teaching the
-    // device-function boundary to carry such a workspace through every
-    // address-space overload, splice the callee's body into the loop
-    // body: its locals become kernel-scope locals and the existing
-    // workspace machinery applies unchanged, while its dummy arguments
-    // are replaced by the actual arguments -- which often makes the
-    // extent a compile-time constant outright.
+    // it. Every such local of a device function becomes an argument its
+    // callers give it, up to the kernel (gpu_device_workspace.cpp),
+    // wherever the function is called from. A call that is the whole
+    // value of an assignment is spliced into the loop body instead: the
+    // callee's locals become kernel-scope locals, while its dummy
+    // arguments are replaced by the actual arguments -- which often
+    // makes the extent a compile-time constant outright.
     // ---------------------------------------------------------------
 
     // Functions whose bodies must be spliced into the loop body for this

@@ -119,6 +119,7 @@ set(SRC
     pass/gpu_data_layout.cpp
     pass/device_launch_expand.cpp
     pass/gpu_memory_space.cpp
+    pass/gpu_device_workspace.cpp
     pass/coarray.cpp
 
     codegen/asr_to_metal.cpp

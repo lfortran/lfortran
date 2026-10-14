@@ -5925,7 +5925,7 @@ RUN(NAME gpu_metal_163 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_164 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_165 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_166 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_167 LABELS gfortran llvm)
+RUN(NAME gpu_metal_167 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_168 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_169 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_170 LABELS gfortran llvm metal cuda_cpu)
@@ -5935,7 +5935,7 @@ RUN(NAME gpu_metal_173 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_174 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_175 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_176 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_177 LABELS gfortran llvm)
+RUN(NAME gpu_metal_177 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_178 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_179 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_180 LABELS gfortran llvm metal cuda_cpu)
@@ -6076,7 +6076,7 @@ RUN(NAME gpu_metal_306 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_307 LABELS llvm metal cuda_cpu)
 RUN(NAME gpu_metal_308 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_309 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_310 LABELS gfortran llvm)
+RUN(NAME gpu_metal_310 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_311 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_312 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_313 LABELS gfortran llvm metal cuda_cpu)
@@ -6158,6 +6158,7 @@ RUN(NAME gpu_metal_390 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_391 LABELS gfortran llvm) # the GPU backends report an error, see tests/tests.toml
 RUN(NAME gpu_metal_392 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_393 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_394 LABELS gfortran llvm metal cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
@@ -6182,6 +6183,7 @@ RUN(NAME gpu_metal_363 FAIL NO_FAST LABELS metal cuda_cpu) # bounds checking rep
 RUN(NAME gpu_metal_364 FAIL NO_FAST NO_STD_F23 LABELS llvm metal cuda_cpu) # bounds checking reports a component the loop assigns an array to that is not allocated without --realloc-lhs-arrays; --std=f23 allocates it on assignment
 RUN(NAME gpu_metal_377 LABELS gfortran llvm metal cuda_cpu EXTRAFILES gpu_metal_377_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME gpu_metal_385 LABELS gfortran llvm metal cuda_cpu EXTRAFILES gpu_metal_385_mod.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME gpu_metal_395 LABELS gfortran llvm metal cuda_cpu EXTRAFILES gpu_metal_395_mod.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME inline_function_calls_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 
