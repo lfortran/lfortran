@@ -70,10 +70,10 @@ A receiver is declared, never inferred (TD-36 of the
 of its dummies is a scalar, nonpointer, nonallocatable, non-VALUE
 `type(itself)` dummy with a bare PASS attribute. That dummy may have any name
 and any position. Two such dummies, PASS on another dummy or on a result, and
-PASS(name) or NOPASS on a dummy are diagnosed; an OPTIONAL, TARGET or VOLATILE
-receiver is not implemented yet. Elsewhere, PASS, PASS(name) and NOPASS remain
-attributes of bindings and procedure pointer components, and are diagnosed on
-other declarations. A message without a receiver is receiverless.
+PASS(name) or NOPASS on a dummy are diagnosed; an OPTIONAL, TARGET, VOLATILE
+or coarray receiver is not implemented yet. Elsewhere, PASS, PASS(name) and
+NOPASS remain attributes of bindings and procedure pointer components, and are
+diagnosed on other declarations. A message without a receiver is receiverless.
 Another `type(itself)` dummy, without PASS, is an ordinary argument of the
 implementing type, not a second receiver; in a message it is not implemented
 yet.
@@ -118,8 +118,10 @@ of the message as keywords; the receiver is the object before `%`, never an
 actual argument. Messages with the same name in combined traits must agree on
 whether they have a receiver and on its INTENT, while the names and positions
 of their receivers may differ. Initializer and operator requirements have no
-receiver. PURE messages follow the ordinary PURE rules; in particular, a PURE
-procedure calls only PURE messages.
+receiver. A PURE message, or an ELEMENTAL one that is not IMPURE, follows the
+ordinary PURE rules: the receiver of a PURE function message is `intent(in)`
+(F2018 C1583), the receiver of a PURE subroutine message declares its INTENT
+(C1584), and a PURE procedure calls only PURE messages.
 
 The receiver is the source dummy whose PASS attribute is recorded in its
 `Variable` (`ASRUtils::trait_message_receiver`). It is unrelated to the
@@ -982,9 +984,12 @@ arrays keep their bounds, strides (in bytes), sections, reversed strides and
 empty extents, and a result is written to storage the caller provides. Values
 are copied bitwise, so only plain numeric, logical and derived types of such
 components (without allocatable, pointer or finalized parts) have dictionaries.
-A dictionary slot of a message with a receiver passes the erased receiver by
-address with the message's INTENT, so a message can modify erased storage of
-the body in place. A conformance without a dictionary, for example of a type
+A dictionary slot of a message with a receiver takes the erased receiver by
+address, with `intent(inout)` when the message's receiver is `intent(inout)` or
+`intent(out)` and with `intent(in)` otherwise. Only the implementation's passed
+object has the receiver's exact INTENT, so the implementation alone resets an
+`intent(out)` receiver, once, and a message can modify erased storage of the
+body in place. A conformance without a dictionary, for example of a type
 with an allocatable component or declared outside a
 module, keeps its static uses; its runtime use is diagnosed with the reason.
 
@@ -1602,13 +1607,15 @@ rules, whatever path dispatches it: a direct call, a generic call through a
 constrained type parameter, or a call through a runtime view, an owner, a
 pointer, a projection or an association. The object passed as an
 `intent(inout)` or `intent(out)` receiver must be definable, so an `intent(in)`
-dummy, view or owner, a part of one, a named constant, a structure constructor,
-a function result, a parenthesized expression and an associate name of a
-nondefinable selector are diagnosed; an `intent(in)` pointer dummy protects
-only its association, so its target can be the receiver. Pointer and
-allocatable receivers remain unsupported. The verifier checks that each
-binding's passed-object INTENT is its message's receiver INTENT, and that each
-runtime slot and adapter passes the receiver as its origins require.
+dummy, view or owner, a part of one, a named constant, the associate name of a
+constant and a SELECT TYPE name of a nondefinable selector are diagnosed; an
+`intent(in)` pointer dummy protects only its association, so its target can be
+the receiver. Other associate names follow the ordinary checks of actual
+arguments, which do not yet reject the associate name of a function result or
+of a parenthesized variable. Pointer and allocatable receivers remain
+unsupported. The verifier checks that each binding's passed-object INTENT is
+its message's receiver INTENT, and that each runtime slot and adapter passes
+the receiver as its origins require.
 
 The paper's `vector.f90` (`traits_paper_vector`, its oracle and the
 `test_paper_functional_{normal,fast}` and `test_paper_separate_vector_{normal,fast}`
