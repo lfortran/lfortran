@@ -1,6 +1,6 @@
-! A procedure pointer can take its interface from a module procedure defined
-! later in the module and still be initialized to a procedure that is
-! already known (Fortran 2018, 15.4.3.6; #14973).
+! A procedure pointer can take its interface from a module procedure or an
+! interface body defined later in the module and still be initialized to a
+! procedure that is already known (Fortran 2018, 15.4.3.6; #14973).
 module proc_ptr_38_a
     implicit none
 contains
@@ -19,6 +19,12 @@ module proc_ptr_38_m
     implicit none
     procedure(iface_f), pointer :: q => forty_two
     procedure(iface_s), pointer :: r => set_seven
+    procedure(iface_abs), pointer :: s => forty_two
+
+    abstract interface
+        integer function iface_abs()
+        end function
+    end interface
 contains
     integer function local_call()
         procedure(iface_f), pointer :: p => forty_two
@@ -44,6 +50,7 @@ program proc_ptr_38
     call r(i)
     if (i /= 7) error stop
     if (local_call() /= 43) error stop
+    if (s() /= 42) error stop
     q => iface_f
     if (q() /= 0) error stop
     print *, "ok"
