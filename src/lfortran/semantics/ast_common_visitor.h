@@ -10398,7 +10398,8 @@ public:
                     if (init_expr && is_local && !is_derived_type && !is_pointer &&
                             storage_type != ASR::storage_typeType::Parameter) {
                         ASR::expr_t* static_init = nullptr;
-                        if (ASR::is_a<ASR::StructType_t>(*type)) {
+                        bool is_struct_scalar = ASR::is_a<ASR::StructType_t>(*type);
+                        if (is_struct_scalar) {
                             static_init = get_static_struct_initializer(init_expr);
                         } else if (ASR::is_a<ASR::StructType_t>(
                                     *ASRUtils::type_get_past_array(type)) &&
@@ -10414,9 +10415,14 @@ public:
                         // A scalar local of a procedure or block whose
                         // initializer is a constant that is stored once
                         // implicitly has the save attribute, as in the
-                        // intrinsic-type branch.
+                        // intrinsic-type branch. A structure initializer that
+                        // cannot be stored as static data, such as `t(f)` with
+                        // a procedure target, gives the save attribute too;
+                        // the global_init pass assigns it once.
                         if (static_init) {
                             init_expr = static_init;
+                        }
+                        if (static_init || is_struct_scalar) {
                             if (storage_type != ASR::storage_typeType::Save) {
                                 implicit_save = true;
                                 storage_type = ASR::storage_typeType::Save;

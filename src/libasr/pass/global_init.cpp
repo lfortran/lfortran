@@ -212,7 +212,8 @@ class GlobalInitVisitor {
         // Everything a backend can still emit as a constant — an integer
         // array constant, a character array constant — is deliberately left
         // alone, so this only grows as cases are found that need it.
-        bool needs_runtime_init(const ASR::Variable_t &v) {
+        // `local` is set for a variable of a procedure or a block.
+        bool needs_runtime_init(const ASR::Variable_t &v, bool local) {
             if (v.m_symbolic_value == nullptr) return false;
             if (v.m_storage == ASR::storage_typeType::Parameter) return false;
             // The initial value of a variable in a common block is the
@@ -230,6 +231,16 @@ class GlobalInitVisitor {
             }
             if (ASR::is_a<ASR::Cast_t>(*init)) {
                 init = ASR::down_cast<ASR::Cast_t>(init)->m_arg;
+            }
+            // A saved structure local whose initializer is not a constant
+            // the backend can lay out, such as `t(f)` with a procedure
+            // target, is assigned once, the first time control reaches it.
+            if (local && v.m_storage == ASR::storage_typeType::Save &&
+                    ASR::is_a<ASR::StructType_t>(*v.m_type)) {
+                ASR::expr_t *value = v.m_value ? v.m_value
+                    : ASRUtils::expr_value(init);
+                return !ASR::is_a<ASR::StructConstant_t>(*init) &&
+                    !(value && ASR::is_a<ASR::StructConstant_t>(*value));
             }
             if (!ASR::is_a<ASR::ArrayBroadcast_t>(*init)) return false;
             ASR::ttype_t *type = ASRUtils::expr_type(init);
@@ -254,13 +265,14 @@ class GlobalInitVisitor {
         // The variables of `scope` that need executable initialization, in
         // declaration order so that an initializer reading another variable
         // of the same scope sees it already set.
-        std::vector<ASR::Variable_t*> runtime_init_vars(SymbolTable *scope) {
+        std::vector<ASR::Variable_t*> runtime_init_vars(SymbolTable *scope,
+                bool local=false) {
             std::vector<ASR::Variable_t*> vars;
             for (auto &name : ASRUtils::determine_variable_declaration_order(scope)) {
                 ASR::symbol_t *sym = scope->get_symbol(name);
                 if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) continue;
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
-                if (needs_runtime_init(*v)) vars.push_back(v);
+                if (needs_runtime_init(*v, local)) vars.push_back(v);
             }
             return vars;
         }
@@ -336,7 +348,7 @@ class GlobalInitVisitor {
         // reaches it.
         template <typename T>
         void lower_local_scope(T *owner) {
-            std::vector<ASR::Variable_t*> vars = runtime_init_vars(owner->m_symtab);
+            std::vector<ASR::Variable_t*> vars = runtime_init_vars(owner->m_symtab, true);
             if (vars.empty()) return;
             const Location &loc = owner->base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
