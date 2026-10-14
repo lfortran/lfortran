@@ -1170,6 +1170,18 @@ semantic error: the kind parameter `k` is not a constant expression
 2636 |     real(k) :: x  ! {Error} the kind parameter `k` is not a constant expression
      |          ^ 
 
+semantic error: no specific procedure of the generic 'generic_no_match' matches the arguments
+    --> tests/errors/continue_compilation_1.f90:2656:18
+     |
+2656 |     integer :: a(generic_no_match(1.5, n))  ! {Error} no specific procedure of the generic 'generic_no_match' matches the arguments
+     |                  ^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: no specific procedure of the generic 'generic_no_match' matches the arguments
+    --> tests/errors/continue_compilation_1.f90:2657:18
+     |
+2657 |     integer :: b(generic_no_match(z=n))  ! {Error} no specific procedure of the generic 'generic_no_match' matches the arguments
+     |                  ^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

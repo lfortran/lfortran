@@ -421,6 +421,10 @@ filename = "errors/generic_typed_external_subroutine_01.f90"
 asr_implicit_interface = true
 
 [[test]]
+filename = "errors/generic_function_no_match_01.f90"
+asr_implicit_interface = true
+
+[[test]]
 filename = "errors/cpp1.f90"
 asr_preprocess = true
 
@@ -1161,6 +1165,18 @@ run = true
 [[test]]
 filename = "array15.f90"
 pass = "array_op"
+
+[[test]]
+filename = "array_op_in_bounds.f90"
+pass = "array_op"
+
+[[test]]
+filename = "array_op_section_in_bounds.f90"
+pass = "array_struct_temporary,array_op"
+
+[[test]]
+filename = "array_op_section_parameter.f90"
+pass = "array_struct_temporary,array_op"
 
 [[test]]
 filename = "array16.f90"
@@ -4773,6 +4789,14 @@ filename = "errors/array_bounds_check_17.f90"
 run = true
 
 [[test]]
+filename = "errors/array_bounds_check_18.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_19.f90"
+run = true
+
+[[test]]
 filename = "../integration_tests/statement_01.f90"
 asr_implicit_interface_and_typing = true
 
@@ -6082,6 +6106,10 @@ asr = true
 
 [[test]]
 filename = "asr/verify/array_item_element_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/array_item_in_bounds_array.asr"
 asr = true
 
 [[test]]

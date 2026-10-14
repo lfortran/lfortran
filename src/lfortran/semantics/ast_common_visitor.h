@@ -2029,6 +2029,7 @@ public:
         // by extension to share the get_command_argument signature.
         {"getarg", IntrinsicSignature({"number", "value", "length", "status"}, 1, 4)},
         {"system_clock", IntrinsicSignature({"count", "count_rate", "count_max"}, 0, 3)},
+        {"cpu_time", IntrinsicSignature({"time"}, 1, 1)},
         {"date_and_time", IntrinsicSignature({"date", "time", "zone", "values"}, 0, 4)},
         {"get_environment_variable", IntrinsicSignature({"name", "value", "length", "status", "trim_name"}, 1, 5)},
         {"execute_command_line", IntrinsicSignature({"command", "wait", "exitstat", "cmdstat", "cmdmsg"}, 1, 5)},
@@ -8401,7 +8402,7 @@ public:
                                     ASR::ttype_t* arg_type1 = type_unwrap(ASRUtils::expr_type(asr_eq1));
                                     ASR::expr_t* adjusted_eq1 = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                         al, loc, array_item1->m_v, adj_args.p, adj_args.size(),
-                                        arg_type1, ASR::arraystorageType::ColMajor, nullptr));
+                                        arg_type1, ASR::arraystorageType::ColMajor, nullptr, false));
                                     first_pointer_to_cptr = make_cptr_from_expr(loc, adjusted_eq1,
                                         ASRUtils::type_get_past_array(arg_type1));
 
@@ -8418,7 +8419,7 @@ public:
                                     ASR::ttype_t* arg_type_first = type_unwrap(ASRUtils::expr_type(asr_first_eq1));
                                     ASR::expr_t* adjusted_first = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                         al, loc, first_array_item1->m_v, adj_args.p, adj_args.size(),
-                                        arg_type_first, ASR::arraystorageType::ColMajor, nullptr));
+                                        arg_type_first, ASR::arraystorageType::ColMajor, nullptr, false));
                                     first_pointer_to_cptr = make_cptr_from_expr(loc, adjusted_first,
                                         ASRUtils::type_get_past_array(arg_type_first));
 
@@ -8622,7 +8623,7 @@ public:
                                                 ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(storage_array_type);
                                                 ASR::expr_t* storage_at_1 = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                                     al, asr_eq2->base.loc, storage_var_ref, args2_idx.p, args2_idx.size(),
-                                                    elem_type, ASR::arraystorageType::ColMajor, nullptr));
+                                                    elem_type, ASR::arraystorageType::ColMajor, nullptr, false));
 
                                                 // Setup ia2 as pointer to storage(1)
                                                 ASR::ttype_t* type2 = var2__->m_type; // Keep original type
@@ -8669,7 +8670,7 @@ public:
 
                                                 ASR::expr_t* storage_at_offset = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                                     al, asr_eq1->base.loc, storage_var_ref, args1_idx.p, args1_idx.size(),
-                                                    elem_type, ASR::arraystorageType::ColMajor, nullptr));
+                                                    elem_type, ASR::arraystorageType::ColMajor, nullptr, false));
 
                                                 // Setup ia1 as pointer to storage(offset)
                                                 type1 = ASRUtils::make_Array_t_util(
@@ -8801,7 +8802,7 @@ public:
                                         ASR::ttype_t* target_elem_type = ASRUtils::type_get_past_array(target_type);
                                         ASR::expr_t* target_first = ASRUtils::EXPR(ASR::make_ArrayItem_t(
                                             al, target_expr->base.loc, target_expr, idx.p, idx.size(),
-                                            target_elem_type, ASR::arraystorageType::ColMajor, nullptr));
+                                            target_elem_type, ASR::arraystorageType::ColMajor, nullptr, false));
 
                                         ASR::ttype_t* pointer_type_ = ASRUtils::TYPE(ASR::make_Pointer_t(
                                             al, target_expr->base.loc, target_elem_type));
@@ -15408,11 +15409,11 @@ public:
                         char_type = ASRUtils::expr_type(arr_ref_val);
                     } else {
                         ASR::expr_t *a_len_expr = nullptr;
-                        if (ASRUtils::is_value_constant(r) && 
-                            ASRUtils::is_value_constant(l)) {
-                            int64_t a_len_value = std::max<int64_t>(0,
-                                ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(r))->m_n -
-                                ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(l))->m_n + 1);
+                        int64_t r_val, l_val;
+                        // A deferred constant of a template is a parameter without a value
+                        if (ASRUtils::extract_value(ASRUtils::expr_value(r), r_val) &&
+                            ASRUtils::extract_value(ASRUtils::expr_value(l), l_val)) {
+                            int64_t a_len_value = std::max<int64_t>(0, r_val - l_val + 1);
                             a_len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, a_len_value, int_type));
                         } else {
                             ASRUtils::ASRBuilder b(al, loc);
@@ -15530,10 +15531,10 @@ public:
                 ASR::ttype_t *string_tt;
                 {
                     ASR::expr_t* a_len_expr = nullptr;
-                    if (ASRUtils::is_value_constant(r) && ASRUtils::is_value_constant(l)) {
-                        int64_t a_len_value = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(r))->m_n -
-                                              ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(l))->m_n +
-                                              1;
+                    int64_t r_val, l_val;
+                    if (ASRUtils::extract_value(ASRUtils::expr_value(r), r_val) &&
+                        ASRUtils::extract_value(ASRUtils::expr_value(l), l_val)) {
+                        int64_t a_len_value = r_val - l_val + 1;
                         a_len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, a_len_value, sub_int_type));
                     } else {
                         ASRUtils::ASRBuilder b(al, loc);
@@ -16445,7 +16446,7 @@ public:
             }
 
             bool is_function = true;
-            v = intrinsic_as_node(x, is_function);
+            v = intrinsic_as_node(x, is_function, true);
             if( !is_function ) {
                 return tmp;
             }
@@ -16628,7 +16629,7 @@ public:
                 }
 
                 bool is_function = true;
-                v = intrinsic_as_node(x, is_function);
+                v = intrinsic_as_node(x, is_function, true);
                 if( !is_function ) {
                     return tmp;
                 }
@@ -20768,7 +20769,8 @@ public:
     }
 
     ASR::symbol_t* intrinsic_as_node(const AST::FuncCallOrArray_t &x,
-                                     bool& is_function) {
+                                     bool& is_function,
+                                     bool unmatched_generic=false) {
         std::string var_name = to_lower(x.m_func);
         if (ASR::asr_t* result = handle_intrinsics_dble_float_dfloat_shifta(x, al)) {
             is_function = false;
@@ -20996,7 +20998,7 @@ public:
             }
             return nullptr;
         }
-        return resolve_intrinsic_function(x.base.base.loc, var_name);
+        return resolve_intrinsic_function(x.base.base.loc, var_name, unmatched_generic);
     }
 
     bool struct_has_descriptor_string_member(ASR::expr_t* expr) {
@@ -22908,15 +22910,10 @@ public:
                             return;
                         }
                         bool is_function = true;
-                        v = intrinsic_as_node(x, is_function);
+                        v = intrinsic_as_node(x, is_function, true);
                         if( !is_function ) {
                             return ;
                         }
-                    }
-                    if( v == nullptr ) {
-                        diag.add(Diagnostic("Unable to find a function to bind for generic procedure call, " + std::string(gp->m_name),
-                                            Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                        throw SemanticAbort();
                     }
                 }
             }
@@ -23226,15 +23223,20 @@ public:
     }
 
 
-    ASR::symbol_t* resolve_intrinsic_function(const Location &loc, const std::string &remote_sym) {
+    // `unmatched_generic`: `remote_sym` is a generic that none of its specific procedures matched
+    ASR::symbol_t* resolve_intrinsic_function(const Location &loc, const std::string &remote_sym,
+            bool unmatched_generic=false) {
         if (!intrinsic_procedures.is_intrinsic(remote_sym)) {
             check_hidden_derived_type_component_reference(loc, remote_sym);
-            if (compiler_options.implicit_interface) {
+            if (compiler_options.implicit_interface && !unmatched_generic) {
                 return nullptr;
             } else {
                 is_coarray_or_atomic(remote_sym, loc);
-                diag.add(Diagnostic("Function '" + remote_sym + "' not found"
-                    " (not user defined nor intrinsic)",
+                diag.add(Diagnostic(unmatched_generic
+                    ? "no specific procedure of the generic '" + remote_sym
+                        + "' matches the arguments"
+                    : "Function '" + remote_sym + "' not found"
+                        " (not user defined nor intrinsic)",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }
@@ -25453,12 +25455,9 @@ public:
                     al, loc, s_len, int_type));
             }
             ASR::expr_t *a_len_expr = nullptr;
-            if (ASRUtils::is_value_constant(r) &&
-                ASRUtils::is_value_constant(l)) {
-                int64_t r_val = ASR::down_cast<ASR::IntegerConstant_t>(
-                    ASRUtils::expr_value(r))->m_n;
-                int64_t l_val = ASR::down_cast<ASR::IntegerConstant_t>(
-                    ASRUtils::expr_value(l))->m_n;
+            int64_t r_val, l_val;
+            if (ASRUtils::extract_value(ASRUtils::expr_value(r), r_val) &&
+                ASRUtils::extract_value(ASRUtils::expr_value(l), l_val)) {
                 int64_t a_len_value = r_val - l_val + 1;
                 a_len_expr = ASRUtils::EXPR(
                     ASR::make_IntegerConstant_t(al, loc, a_len_value, int_type));

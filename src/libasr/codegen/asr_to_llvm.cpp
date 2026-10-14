@@ -5146,7 +5146,7 @@ public:
 
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, 2 * x.n_args + 1);
-            bool check_for_bounds = compiler_options.po.bounds_checking;
+            bool check_for_bounds = compiler_options.po.bounds_checking && !x.m_in_bounds;
             if( array_t->m_physical_type == ASR::array_physical_typeType::PointerArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ||
                 array_t->m_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
@@ -12299,7 +12299,7 @@ public:
             ASR::expr_t* first_elem = ASRUtils::EXPR(ASR::make_ArrayItem_t(al,
                 value_section->base.base.loc, value_section->m_v,
                 first_args.p, first_args.n, ASRUtils::extract_type(value_type),
-                ASR::arraystorageType::ColMajor, nullptr));
+                ASR::arraystorageType::ColMajor, nullptr, false));
             // Only the address of the first element is computed here, the
             // element is not accessed.
             int64_t ptr_loads_copy = ptr_loads;

@@ -3097,7 +3097,7 @@ namespace Spread {
         if( n_dims_return_type == 1 ) {
             result_section = EXPR(ASR::make_ArrayItem_t(al, loc, result,
                     result_indices.p, result_indices.size(), ASRUtils::extract_type(return_type),
-                    ASR::arraystorageType::ColMajor, nullptr));
+                    ASR::arraystorageType::ColMajor, nullptr, false));
             source = b.ArrayItem_01(source, {b.i32(1)});
         } else {
             ASR::ttype_t* result_section_type = ASRUtils::create_array_type_with_empty_dims(

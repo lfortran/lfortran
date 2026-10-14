@@ -4369,6 +4369,7 @@ public:
                 if (!compiler_options.continue_compilation) throw SemanticAbort();
                 continue;
             }
+            if (!check_specific_explicit_interface(x, pname, loc)) continue;
             symbols.push_back(al, x);
         }
         LCOMPILERS_ASSERT(strlen(generic_name) > 0);
@@ -4576,6 +4577,26 @@ public:
         return false;
     }
 
+    // An external procedure has no explicit interface outside its own subprogram.
+    bool check_specific_explicit_interface(ASR::symbol_t *specific,
+            const std::string &name, const Location &loc) {
+        if (!ASR::is_a<ASR::Function_t>(*specific)) return true;
+        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(specific);
+        if (!ASRUtils::is_tu_scope(ASRUtils::symbol_parent_symtab(specific))
+                || is_enclosing_scope(f->m_symtab, current_scope)) {
+            return true;
+        }
+        diag.add(Diagnostic(
+            "external procedure '" + name + "' needs an explicit interface "
+            "to be named in an interface block",
+            Level::Error, Stage::Semantic, {
+                Label("add an interface body for '" + name
+                    + "', or define it in a module", {loc})
+            }));
+        if (!compiler_options.continue_compilation) throw SemanticAbort();
+        return false;
+    }
+
     // The specific procedure `specific` of the generic interface
     // `generic_name` declared in another scope, as accessible from the current
     // scope, or nullptr if it is not accessible.
@@ -4688,6 +4709,10 @@ public:
                             Label("", {pname.loc})
                         }));
                     if (!compiler_options.continue_compilation) throw SemanticAbort();
+                    any_error = true;
+                    continue;
+                }
+                if (!check_specific_explicit_interface(x, pname.name, pname.loc)) {
                     any_error = true;
                     continue;
                 }

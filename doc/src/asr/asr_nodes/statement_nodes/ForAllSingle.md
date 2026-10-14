@@ -80,6 +80,7 @@ because each statement completes for all indices before the next begins.
       )
       :storage_format :ColMajor
       :value nil
+      :in_bounds false
     )
     :value (Var
       :v (SymbolRef 1 "i")
