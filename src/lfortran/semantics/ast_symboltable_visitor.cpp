@@ -4505,13 +4505,27 @@ public:
             AST::decl_stmt_t **items, size_t n_items, const std::string &requirement,
             bool operation) {
         ASR::Variable_t *receiver = nullptr;
+        bool receiver_pointer = false;
         for (size_t i = 0; i < n_items; i++) {
             if (!AST::is_a<AST::Declaration_t>(*items[i])) continue;
             auto *declaration = AST::down_cast<AST::Declaration_t>(items[i]);
             AST::AttrPass_t *pass = nullptr;
+            // The POINTER attribute of a type(itself) declaration is not
+            // retained in its ASR type, so it is detected here.
+            bool pointer = false;
             for (size_t j = 0; j < declaration->n_attributes; j++) {
-                if (AST::is_a<AST::AttrPass_t>(*declaration->m_attributes[j])) {
-                    pass = AST::down_cast<AST::AttrPass_t>(declaration->m_attributes[j]);
+                AST::decl_attribute_t *attribute = declaration->m_attributes[j];
+                if (AST::is_a<AST::AttrPass_t>(*attribute)) {
+                    pass = AST::down_cast<AST::AttrPass_t>(attribute);
+                } else if (AST::is_a<AST::SimpleAttribute_t>(*attribute)) {
+                    auto kind = AST::down_cast<AST::SimpleAttribute_t>(attribute)->m_attr;
+                    if (kind == AST::simple_attributeType::AttrPointer) pointer = true;
+                    if (kind == AST::simple_attributeType::AttrNoPass) {
+                        trait_error("the nopass attribute belongs to the binding of a "
+                            "trait message without a receiver, not to a dummy argument; "
+                            "the receiver of a message is marked by the pass attribute",
+                            attribute->base.loc);
+                    }
                 }
             }
             if (!pass) continue;
@@ -4543,6 +4557,7 @@ public:
                         "'; the pass attribute marks exactly one", symbol.loc);
                 }
                 receiver = dummy;
+                receiver_pointer = pointer;
             }
         }
         if (!receiver) return;
@@ -4554,7 +4569,8 @@ public:
         }
         // The passed-object dummy argument of Fortran (F2018 C760).
         if (ASRUtils::is_array(receiver->m_type) || ASRUtils::is_pointer(receiver->m_type) ||
-                ASRUtils::is_allocatable(receiver->m_type) || receiver->m_value_attr) {
+                receiver_pointer || ASRUtils::is_allocatable(receiver->m_type) ||
+                receiver->m_value_attr) {
             trait_error(description + " must be a scalar without the pointer, allocatable "
                 "or value attribute", loc);
         }
@@ -4836,7 +4852,17 @@ public:
                             items[j]->base.loc);
                     }
                 }
-                visit_interface_item(*item);
+                {
+                    // Restored even when the signature is abandoned with an
+                    // error under --continue-compilation.
+                    struct RestoreSignatureFlag {
+                        bool &flag;
+                        bool saved;
+                        ~RestoreSignatureFlag() { flag = saved; }
+                    } restore{in_trait_signature, in_trait_signature};
+                    in_trait_signature = true;
+                    visit_interface_item(*item);
+                }
                 {
                     auto *function = ASRUtils::trait_method_function(current_scope->get_symbol(
                         operation ? member_name : to_lower(procedure_name)));

@@ -1,0 +1,211 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_receiver_01.f90:12:5 - 16:18
+   |
+12 |        abstract interface :: IR01
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+16 |        end interface
+   | ...^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: the receiver 'n' of trait message 'f' must be declared type(itself)
+  --> tests/errors/continue_compilation_traits_receiver_01.f90:14:42
+   |
+14 |             integer, intent(in), pass :: n
+   |                                          ^ 
+
+semantic error: trait message 's' marks two receivers, 'a' and 'b'; the pass attribute marks exactly one
+  --> tests/errors/continue_compilation_traits_receiver_01.f90:25:50
+   |
+25 |             type(itself), intent(inout), pass :: b
+   |                                                  ^ 
+
+semantic error: the pass attribute marks the receiver of trait message 'f', a dummy argument; 'r' is not one
+  --> tests/errors/continue_compilation_traits_receiver_01.f90:36:30
+   |
+36 |             integer, pass :: r
+   |                              ^ 
+
+semantic error: the receiver 'self' of trait message 'f' must be a scalar without the pointer, allocatable or value attribute
+  --> tests/errors/continue_compilation_traits_receiver_01.f90:46:47
+   |
+46 |             type(itself), intent(in), pass :: self(:)
+   |                                               ^^^^^^^ 
+
+semantic error: the receiver 'self' of trait message 'f' must be a scalar without the pointer, allocatable or value attribute
+  --> tests/errors/continue_compilation_traits_receiver_01.f90:56:56
+   |
+56 |             type(itself), pointer, intent(in), pass :: self
+   |                                                        ^^^^ 
+
+semantic error: the receiver 'self' of trait message 's' must be a scalar without the pointer, allocatable or value attribute
+  --> tests/errors/continue_compilation_traits_receiver_01.f90:66:63
+   |
+66 |             type(itself), allocatable, intent(inout), pass :: self
+   |                                                               ^^^^ 
+
+semantic error: the receiver 'self' of trait message 'f' must be a scalar without the pointer, allocatable or value attribute
+  --> tests/errors/continue_compilation_traits_receiver_01.f90:76:42
+   |
+76 |             type(itself), value, pass :: self
+   |                                          ^^^^ 
+
+semantic error: the receiver 'self' of trait message 'f' with the optional, target, volatile or codimension attribute is not implemented yet
+  --> tests/errors/continue_compilation_traits_receiver_01.f90:86:57
+   |
+86 |             type(itself), optional, intent(in), pass :: self
+   |                                                         ^^^^ 
+
+semantic error: the receiver 'self' of trait message 'f' with the optional, target, volatile or codimension attribute is not implemented yet
+  --> tests/errors/continue_compilation_traits_receiver_01.f90:96:55
+   |
+96 |             type(itself), target, intent(in), pass :: self
+   |                                                       ^^^^ 
+
+semantic error: the receiver 'self' of trait message 's' with the optional, target, volatile or codimension attribute is not implemented yet
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:106:60
+    |
+106 |             type(itself), volatile, intent(inout), pass :: self
+    |                                                            ^^^^ 
+
+semantic error: the receiver of trait message 'f' is marked by the pass attribute without an argument name
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:116:39
+    |
+116 |             type(itself), intent(in), pass(self) :: self
+    |                                       ^^^^^^^^^^ 
+
+semantic error: the nopass attribute belongs to the binding of a trait message without a receiver, not to a dummy argument; the receiver of a message is marked by the pass attribute
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:126:34
+    |
+126 |             integer, intent(in), nopass :: n
+    |                                  ^^^^^^ 
+
+semantic error: the pass attribute marks the receiver of a message; operator(+) requirements have no receiver
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:136:39
+    |
+136 |             type(itself), intent(in), pass :: lhs
+    |                                       ^^^^ 
+
+semantic error: the pass attribute marks the receiver of a message; initializer requirements have no receiver
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:148:39
+    |
+148 |             type(itself), intent(in), pass :: x
+    |                                       ^^^^ 
+
+semantic error: the pass attribute is allowed only on a procedure pointer component, or as a bare pass on the type(itself) receiver of a trait message
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:161:35
+    |
+161 |         type(Box), intent(inout), pass :: self
+    |                                   ^^^^ 
+
+semantic error: the nopass attribute is allowed only on a procedure pointer component
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:171:30
+    |
+171 |         integer, intent(in), nopass :: k
+    |                              ^^^^^^ 
+
+semantic error: the pass attribute is allowed only on a procedure pointer component, or as a bare pass on the type(itself) receiver of a trait message
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:182:18
+    |
+182 |         integer, pass(k) :: local
+    |                  ^^^^^^^ 
+
+semantic error: trait message 'get' has the receiver 'self', so its binding must have a passed-object argument, not nopass or static
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:243:5 - 245:19
+    |
+243 |        implements IRead :: T18
+    |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+245 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: trait message 'get' has the receiver 'self', so its binding must have a passed-object argument, not nopass or static
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:259:5 - 261:19
+    |
+259 |        implements IRead :: T19
+    |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+261 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: trait message 'make' has no receiver, so its binding must be nopass; a receiver is declared in the message as `type(itself), pass :: object`
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:275:5 - 277:19
+    |
+275 |        implements IMake :: T20
+    |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+277 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the passed-object argument 'self' of 'get21' has intent(inout), but trait message 'get' declares its receiver 'self' with intent(in)
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:294:5 - 296:19
+    |
+294 |        implements IRead :: T21
+    |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+296 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the passed-object argument 'self' of 'put22' has intent(in), but trait message 'put' declares its receiver 'self' with intent(inout)
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:311:5 - 313:19
+    |
+311 |        implements IWrite :: T22
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+313 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the passed-object argument 'self' of 'clear23' has intent(inout), but trait message 'clear' declares its receiver 'self' with intent(out)
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:329:5 - 331:19
+    |
+329 |        implements IClear :: T23
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+331 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the passed-object argument 'self' of 'touch24' has intent(in), but trait message 'touch' declares its receiver 'self' with no intent
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:347:5 - 349:19
+    |
+347 |        implements ITouch :: T24
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+349 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the passed-object argument 'self' of 'get25' has no intent, but trait message 'get' declares its receiver 'self' with intent(in)
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:365:5 - 367:19
+    |
+365 |        implements IRead :: T25
+    |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+367 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'bump': one declares the receiver 'self' and the other has no receiver
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:382:5 - 384:19
+    |
+382 |        implements (ILeft + IRightFree) :: T26
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+384 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: incompatible declarations of trait method 'bump': their receivers have intent(inout) and intent(in)
+   --> tests/errors/continue_compilation_traits_receiver_01.f90:400:5 - 402:19
+    |
+400 |        implements (ILeft + IRightIn) :: T27
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+402 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 

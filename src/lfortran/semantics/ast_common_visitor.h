@@ -2231,6 +2231,11 @@ public:
     int64_t current_symbol;
     ASR::abiType current_procedure_abi_type = ASR::abiType::Source;
     bool is_derived_type = false;
+    // Set while the signatures of a trait are declared, where the bare PASS
+    // attribute marks the receiver of a message (see
+    // mark_trait_message_receiver); elsewhere a data declaration takes PASS
+    // or NOPASS only for a procedure pointer component.
+    bool in_trait_signature = false;
     // Components hidden while a component declaration of the derived type
     // being defined is analyzed (see HiddenDerivedTypeComponents)
     const std::map<std::string, ASR::symbol_t*> *hidden_derived_type_components = nullptr;
@@ -9216,6 +9221,7 @@ public:
                 is_allocatable = false;
                 bool is_nopass_attr = false;
                 char* pass_arg_name = nullptr;
+                AST::decl_attribute_t *pass_attribute = nullptr;
                 if (x.n_attributes > 0) {
                     for (size_t i=0; i < x.n_attributes; i++) {
                         AST::decl_attribute_t *a = x.m_attributes[i];
@@ -9315,6 +9321,7 @@ public:
                             } else if(sa->m_attr == AST::simple_attributeType
                                 ::AttrNoPass) {
                                 is_nopass_attr = true;
+                                pass_attribute = a;
                             } else if (sa->m_attr == AST::simple_attributeType::AttrVolatile) {
                                 is_volatile = true;
                             } else if (sa->m_attr == AST::simple_attributeType::AttrProtected) {
@@ -9376,6 +9383,7 @@ public:
                             extract_bind(attr_bd, s_abi, bindc_name, diag);
                         } else if (AST::is_a<AST::AttrPass_t>(*a)) {
                             AST::AttrPass_t *ap = AST::down_cast<AST::AttrPass_t>(a);
+                            pass_attribute = a;
                             if (ap->m_name) {
                                 pass_arg_name = s2c(al, to_lower(std::string(ap->m_name)));
                             }
@@ -9802,6 +9810,22 @@ public:
                     throw SemanticAbort();
                 }
                 ASR::Variable_t* variable_added_to_symtab = nullptr;
+                // In Fortran, PASS and NOPASS are attributes of a procedure
+                // pointer component only; a bare PASS also marks the receiver
+                // of a trait message. Anywhere else they would mean nothing.
+                if (pass_attribute && !in_trait_signature &&
+                        !(is_derived_type && ASR::is_a<ASR::FunctionType_t>(
+                            *ASRUtils::type_get_past_pointer(type)))) {
+                    diag.add(Diagnostic(is_nopass_attr
+                        ? "the nopass attribute is allowed only on a procedure "
+                          "pointer component"
+                        : "the pass attribute is allowed only on a procedure pointer "
+                          "component, or as a bare pass on the type(itself) receiver "
+                          "of a trait message",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {pass_attribute->base.loc})
+                        }));
+                }
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
                     if ( !is_implicitly_declared && !is_external) {
                         SetChar variable_dependencies_vec;
@@ -27700,6 +27724,19 @@ public:
         size_t method = passed_object ? 1 : 0;
         visit_expr_list(actuals, n_actuals, args, &signature->base,
             method && pass_index == 0 ? 1 : 0);
+        if (method && pass_index < signature->n_args) {
+            // The receiver, or the passed object of a generic binding, is the
+            // object of the call, never an argument.
+            std::string receiver = ASRUtils::EXPR2VAR(signature->m_args[pass_index])->m_name;
+            for (size_t i = 0; i < n_keywords; i++) {
+                if (keywords[i].m_arg && to_lower(keywords[i].m_arg) == receiver) {
+                    trait_call_error("keyword argument '" + receiver + "' names the "
+                        "receiver of trait procedure '" + std::string(signature->m_name) +
+                        "', which is the object of the call, not an argument",
+                        keywords[i].loc);
+                }
+            }
+        }
         if (n_keywords) {
             diag::Diagnostics diagnostics;
             visit_kwargs(args, keywords, n_keywords, signature->m_args,

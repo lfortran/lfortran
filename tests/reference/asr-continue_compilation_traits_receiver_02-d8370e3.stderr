@@ -1,0 +1,109 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_receiver_02.f90:14:5 - 29:18
+   |
+14 |        abstract interface :: ICounter
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+29 |        end interface
+   | ...^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: procedure attributes do not match trait method 'tick'
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:293:5 - 295:19
+    |
+293 |        implements ITick :: Clock
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+295 |        end implements
+    | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Argument `v` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:150:9
+    |
+150 |         call v%reset(1)
+    |         ^^^^^^^^^^^^^^^ 
+
+semantic error: Argument `o` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:155:9
+    |
+155 |         call o%bump(1)
+    |         ^^^^^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:159:9
+    |
+159 |         call fixed%reset(2)
+    |         ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Argument `h` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:164:9
+    |
+164 |         call h%c%reset(3)
+    |         ^^^^^^^^^^^^^^^^^ 
+
+semantic error: associate views of runtime trait objects are not implemented yet
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:171:25
+    |
+171 |         associate (r => v)
+    |                         ^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:180:13
+    |
+180 |             call s%bump(1)
+    |             ^^^^^^^^^^^^^^ 
+
+semantic error: Argument `x` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:186:9
+    |
+186 |         call x%reset(5)
+    |         ^^^^^^^^^^^^^^^ 
+
+semantic error: Argument `v` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:191:31
+    |
+191 |         bad_record_readonly = v%record([1, 2])
+    |                               ^^^^^^^^^^^^^^^^ 
+
+semantic error: Argument `a` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:196:32
+    |
+196 |         bad_restart_readonly = a%restart([1, 2])
+    |                                ^^^^^^^^^^^^^^^^^ 
+
+semantic error: keyword argument 'self' names the receiver of trait procedure 'bump', which is the object of the call, not an argument
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:201:21
+    |
+201 |         call v%bump(self=v, by=1)
+    |                     ^^^^^^ 
+
+semantic error: call to impure trait procedure 'value' is not allowed inside a PURE procedure
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:206:33
+    |
+206 |         bad_pure_calls_impure = v%value()
+    |                                 ^^^^^^^^^ 
+
+semantic error: Argument `v` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:211:9
+    |
+211 |         call v%step()
+    |         ^^^^^^^^^^^^^ 
+
+semantic error: Argument `x` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:216:9
+    |
+216 |         call x%step()
+    |         ^^^^^^^^^^^^^ 
+
+semantic error: Argument `p` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:267:9
+    |
+267 |         call p%mutate()
+    |         ^^^^^^^^^^^^^^^ 
+
+semantic error: Argument `p` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_receiver_02.f90:272:9
+    |
+272 |         call p%reset()
+    |         ^^^^^^^^^^^^^^ 
