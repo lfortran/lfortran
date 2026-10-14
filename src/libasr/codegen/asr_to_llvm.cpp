@@ -9254,6 +9254,15 @@ public:
                 ASR::expr_t* init = var->m_value ? var->m_value : var->m_symbolic_value;
                 llvm::Constant* c = create_llvm_constant_from_asr_expr(init, var->m_type,
                     orig_struct_sym);
+                if (ASR::is_a<ASR::FunctionType_t>(
+                        *ASRUtils::type_get_past_pointer(var->m_type))) {
+                    // The field is typed by the component's interface, the
+                    // initial target by its own signature.
+                    c = llvm::ConstantExpr::getPointerCast(c,
+                        llvm_utils->get_type_from_ttype_t_util(
+                            ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc,
+                                &var->base)), var->m_type, module.get()));
+                }
                 field_values.push_back(c);
             } else {
                 llvm::Type* member_type = llvm_utils->get_type_from_ttype_t_util(
@@ -9418,6 +9427,16 @@ public:
                         ASRUtils::extract_type(pnc->m_type), module.get())->getPointerTo()
                     : llvm_utils->get_type_from_ttype_t_util(pnc->m_var_expr, pnc->m_type, module.get());
                 return llvm::ConstantPointerNull::get(llvm::cast<llvm::PointerType>(value_type));
+            }
+            case ASR::exprType::Var: {
+                // An initial procedure target is the procedure's address.
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(expr)->m_v);
+                if (ASR::is_a<ASR::Function_t>(*sym)) {
+                    return llvm::cast<llvm::Constant>(get_procedure_value(
+                        ASR::down_cast<ASR::Function_t>(sym)));
+                }
+                [[fallthrough]];
             }
             default:
                 throw LCompilersException( "Unsupported constant expression in struct default initializer.");
