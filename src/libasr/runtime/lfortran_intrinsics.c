@@ -6037,7 +6037,8 @@ LFORTRAN_API uint64_t _lfortran_i64sys_clock_count() {
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
-        return (uint64_t)(ts.tv_nsec) + ((uint64_t)ts.tv_sec * 1000000000);
+        uint64_t nanoseconds = (uint64_t)ts.tv_sec * 1000000000 + (uint64_t)ts.tv_nsec;
+        return nanoseconds % ((uint64_t)LLONG_MAX + 1);
     } else {
         return - LLONG_MAX;
     }

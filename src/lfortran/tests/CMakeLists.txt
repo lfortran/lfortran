@@ -16,6 +16,9 @@ endmacro(ADDTESTC)
 
 if (NOT XEUS_LFORTRAN_WASM_BUILD)
     ADDTESTC(test_cwrapper lfortran_c)
+    if (NOT WIN32 AND NOT EMSCRIPTEN)
+        ADDTESTC(test_system_clock lfortran_runtime_static)
+    endif()
     ADDTEST(test_stacktrace)
 endif()
 
