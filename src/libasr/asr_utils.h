@@ -6944,7 +6944,7 @@ static inline ASR::expr_t* externalize_struct_refs_in_init(Allocator& al,
             ext_sym, new_args.p, new_args.size(), new_type, new_value));
     } else if (ASR::is_a<ASR::PointerNullConstant_t>(*init_expr)) {
         ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(init_expr);
-        ASR::ttype_t* pnc_type = pnc->m_type;
+        ASR::ttype_t* pnc_type = import_procedure_type(al, pnc->m_type, scope);
         if (pnc->m_var_expr != nullptr) {
             // The var_expr references a type-identity symbol in another scope
             // which may not be accessible from the current scope. Replace it

@@ -14337,8 +14337,10 @@ public:
             ASR::expr_t* member_null = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
                 al, loc, member_var->m_type, ASRUtils::EXPR(ASR::make_Var_t(al, loc, member))));
             member_null = ASRUtils::externalize_struct_refs_in_init(al, member_null, current_scope);
-            current_struct_type_var_expr =
-                ASR::down_cast<ASR::PointerNullConstant_t>(member_null)->m_var_expr;
+            ASR::PointerNullConstant_t* null_context =
+                ASR::down_cast<ASR::PointerNullConstant_t>(member_null);
+            current_variable_type_ = null_context->m_type;
+            current_struct_type_var_expr = null_context->m_var_expr;
         }
     }
 

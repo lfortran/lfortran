@@ -3271,6 +3271,7 @@ public:
 
     void visit_PointerNullConstant(const PointerNullConstant_t& x) {
         require(x.m_type != nullptr, "null() must have a type");
+        visit_ttype(*x.m_type);
         if ( x.m_var_expr != nullptr ) {
             visit_expr(*x.m_var_expr);
         }
