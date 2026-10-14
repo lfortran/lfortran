@@ -2028,6 +2028,7 @@ public:
         // `call getarg(pos, value)`; the extra optional args are accepted
         // by extension to share the get_command_argument signature.
         {"getarg", IntrinsicSignature({"number", "value", "length", "status"}, 1, 4)},
+        {"getcwd", IntrinsicSignature({"c", "status"}, 1, 2)},
         {"system_clock", IntrinsicSignature({"count", "count_rate", "count_max"}, 0, 3)},
         {"cpu_time", IntrinsicSignature({"time"}, 1, 1)},
         {"date_and_time", IntrinsicSignature({"date", "time", "zone", "values"}, 0, 4)},
@@ -20940,15 +20941,26 @@ public:
 
             } else if( ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ) {
                 Vec<ASR::expr_t*> args;
-                args.reserve(al, 1);
-                for( size_t i = 0; i < x.n_args; i++ ) {
-                    this->visit_expr(*x.m_args[i].m_end);
-                    ASR::expr_t* expr_arg = ASRUtils::EXPR(tmp);
-                    args.push_back(al, expr_arg);
+                if (var_name == "getcwd") {
+                    std::vector<std::string> kwarg_names = {"c"};
+                    handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, var_name);
+                } else {
+                    args.reserve(al, 1);
+                    for( size_t i = 0; i < x.n_args; i++ ) {
+                        this->visit_expr(*x.m_args[i].m_end);
+                        ASR::expr_t* expr_arg = ASRUtils::EXPR(tmp);
+                        args.push_back(al, expr_arg);
+                    }
                 }
                 ASRUtils::create_intrinsic_function create_func =
                     ASRUtils::IntrinsicImpureFunctionRegistry::get_create_function(var_name);
                 tmp = create_func(al, x.base.base.loc, args, diag);
+                if (var_name == "getcwd") {
+                    if (!tmp) throw SemanticAbort();
+                    warn_getcwd_extension(x.base.base.loc);
+                    current_function_deterministic = false;
+                    current_function_side_effect_free = false;
+                }
             } else if( var_name == "size" ) {
                 tmp = create_ArraySize(x);
             } else if (var_name == "rank" ) {
@@ -21089,6 +21101,13 @@ public:
         }
         return ASR::make_SizeOfType_t(al, x.base.base.loc, arg_type,
             size_type, value);
+    }
+
+    void warn_getcwd_extension(const Location& loc) {
+        diag.semantic_warning_label(
+            "`getcwd` is a GNU extension",
+            {loc},
+            "standard Fortran has no getcwd intrinsic; pass the directory in from the caller or call the platform function through a bind(c) interface");
     }
 
     ASR::asr_t* create_SizeOf(const AST::FuncCallOrArray_t& x) {

@@ -3817,6 +3817,8 @@ RUN(NAME boz_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME cmd_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME cmd_02 LABELS gfortran llvm)
 RUN(NAME cmd_03 LABELS gfortran llvm) # get_command_argument loop until empty
+RUN(NAME getcwd_01 LABELS gfortran llvm) # GNU GETCWD subroutine
+RUN(NAME getcwd_02 LABELS gfortran llvm) # GNU GETCWD function
 RUN(NAME cmd_04 LABELS gfortran llvm) # iargc/getarg legacy F77 aliases
 
 RUN(NAME flip_sign LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
