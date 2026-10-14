@@ -2618,9 +2618,51 @@ end program
     CHECK(e.evaluate2(cell).ok);
 }
 
+TEST_CASE("ASR -> LLVM block copy of a named constant only with --fast") {
+    std::string source = R"(subroutine fill(a, i)
+real, intent(inout) :: a(4, 3)
+integer, intent(in) :: i
+real, parameter :: c(4) = [1., 2., 3., 4.]
+a(:, i) = c
+end subroutine)";
+    for (bool fast: {false, true}) {
+        Allocator al(64*1024);
+        LCompilers::diag::Diagnostics diagnostics;
+        CompilerOptions co;
+        co.po.fast = fast;
+        co.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+        co.platform = LCompilers::get_platform();
+        LCompilers::LFortran::AST::TranslationUnit_t* tu = TRY(
+            LCompilers::LFortran::parse(al, source, diagnostics, co));
+        LCompilers::LocationManager lm;
+        {
+            LCompilers::LocationManager::FileLocations fl;
+            fl.in_filename = "fill.f90";
+            lm.files.push_back(fl);
+            lm.file_ends.push_back(source.size());
+        }
+        LCompilers::ASR::TranslationUnit_t* asr = TRY(
+            LCompilers::LFortran::ast_to_asr(al, *tu, diagnostics, nullptr,
+                false, co, lm));
+        LCompilers::LLVMEvaluator e;
+        LCompilers::PassManager lpm;
+        lpm.use_default_passes();
+        LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
+            res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(),
+                e.get_target_config(), al, lpm, co, "", "", "", lm);
+        REQUIRE(res.ok);
+        // The IR before LLVM's optimizations, which turn the loop into a
+        // memcpy too, slowly when there are many of them
+        std::string ir = res.result->str();
+        CHECK((ir.find("@llvm.memcpy") != std::string::npos) == fast);
+        CHECK((ir.find("loop.head") != std::string::npos) == !fast);
+    }
+}
+
 TEST_CASE("FortranEvaluator a section assigned a named constant of an earlier cell") {
     CompilerOptions cu;
     cu.interactive = true;
+    cu.po.fast = true;
     cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
     FortranEvaluator e(cu);
     CHECK(e.evaluate2("real, parameter :: c(3) = [1., 2., 3.]").ok);

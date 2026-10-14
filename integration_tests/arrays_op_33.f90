@@ -1,4 +1,5 @@
 ! Named constants assigned to array sections, with and without a block copy
+! (which is done only with --fast)
 module arrays_op_33_m
 implicit none
 real :: a(8, 4)

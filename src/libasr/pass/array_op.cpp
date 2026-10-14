@@ -1303,10 +1303,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         with constant bounds and a unit step. A named constant cannot overlap
         the target. With bounds checking, the element that the block starts
         at is checked when it is referenced, so the last element of the block
-        has to be known to be within the bounds.
+        has to be known to be within the bounds. This is an optimization, done
+        only with `--fast`.
     */
     bool assign_by_block_copy(const ASR::Assignment_t& x) {
-        if( !pass_options.array_block_copy || x.m_overloaded != nullptr ||
+        if( !pass_options.fast || !pass_options.array_block_copy ||
+            x.m_overloaded != nullptr ||
             x.m_move_allocation || x.m_realloc_lhs ||
             !ASR::is_a<ASR::ArraySection_t>(*x.m_target) ||
             !ASR::is_a<ASR::Var_t>(*x.m_value) ) {

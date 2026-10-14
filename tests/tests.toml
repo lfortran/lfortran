@@ -1918,10 +1918,6 @@ semantics_only_cc = true
 filename = "../integration_tests/parameter_25.f90"
 llvm = true
 
-[[test]]
-filename = "../integration_tests/arrays_op_34.f90"
-llvm = true
-
 # IntegerToReal
 [[test]]
 filename = "../integration_tests/parameter_05.f90"

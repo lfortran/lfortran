@@ -37,9 +37,10 @@ This node is inserted by the `array_op` pass, and it is never produced by a
 frontend. It replaces the loop that would assign a named constant to an array
 section such as `a(:, i)` or `a(2:9, i)`, whose only subscript triplet is its
 first subscript, with a unit step and constant bounds, and which has as many
-elements as `value`. `array_op` inserts it only when the backend lowers it,
-which the LLVM backend does with a single `memcpy`; a function with many such
-assignments then compiles to straight-line code instead of one loop each.
+elements as `value`. It is an optimization: `array_op` inserts it only with
+`--fast`, and only when the backend lowers it, which the LLVM backend does
+with a single `memcpy`; a function with many such assignments then compiles to
+straight-line code instead of one loop each.
 The passes run for `--show-asr` and `--dump-all-passes` keep the loop.
 
 With bounds checking, a backend checks the subscripts of `target` unless it is

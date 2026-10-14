@@ -99,7 +99,8 @@ struct PassOptions {
     bool logical_short_circuit = false;
     bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors
     // The backend lowers ArrayBlockCopy, so array_op may assign a named
-    // constant to a contiguous array section with a single block copy.
+    // constant to a contiguous array section with a single block copy
+    // (with `--fast`).
     bool array_block_copy = false;
     bool coarray = false;
     std::vector<std::string> vector_of_time_report;
