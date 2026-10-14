@@ -40,6 +40,12 @@ semantic error: internal procedure 'a' cannot be the initial target of procedure
 61 |     type(callback) :: v = callback(f=a)  ! {Error} variable initialization
    |                                      ^ an initial procedure target shall be a nonelemental external or module procedure or a specific intrinsic function (Fortran 2023 C1519)
 
+semantic error: internal procedure 'a' cannot be the initial target of procedure pointer 'r'
+  --> tests/errors/continue_compilation_initial_proc_target.f90:63:39
+   |
+63 |     procedure(ffunc), pointer :: r => a  ! {Error} procedure pointer initialization
+   |                                       ^ an initial procedure target shall be a nonelemental external or module procedure or a specific intrinsic function (Fortran 2023 C1519)
+
 semantic error: internal procedure 'b' cannot be the initial target of procedure pointer component 'f'
   --> tests/errors/continue_compilation_initial_proc_target.f90:78:55
    |
@@ -57,12 +63,6 @@ semantic error: internal procedure 'a' cannot be the initial target of procedure
    |
 62 |     procedure(a), pointer :: q => a  ! {Error} procedure pointer initialization
    |                                   ^ an initial procedure target shall be a nonelemental external or module procedure or a specific intrinsic function (Fortran 2023 C1519)
-
-semantic error: internal procedure 'a' cannot be the initial target of procedure pointer 'r'
-  --> tests/errors/continue_compilation_initial_proc_target.f90:63:39
-   |
-63 |     procedure(ffunc), pointer :: r => a  ! {Error} procedure pointer initialization
-   |                                       ^ an initial procedure target shall be a nonelemental external or module procedure or a specific intrinsic function (Fortran 2023 C1519)
 
 semantic error: internal procedure 'a' cannot be the initial target of procedure pointer component 'f'
   --> tests/errors/continue_compilation_initial_proc_target.f90:73:58
