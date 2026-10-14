@@ -11306,22 +11306,18 @@ static inline bool has_link_time_address(ASR::expr_t* d) {
     }
 }
 
-// `p => tgt` in a declaration that a backend lays out as the variable's own
-// static initializer instead of assigning it with a statement: the address of
-// the target is a link-time constant, so the association needs no executable
-// code at all and the unit it is declared in needs no startup initializer
-// because of it.
+// `p => tgt` in the declaration of the pointer `v`, a variable or a
+// component, whose initial value is the address of the target, a link-time
+// constant.
 //
 // An array pointer is deliberately not one of these. It is a descriptor --
 // data pointer, bounds and strides -- rather than a bare address, and the
 // descriptor is filled in from the target by the association itself. Neither
 // is a character pointer, whose descriptor carries the length as well, nor a
-// polymorphic pointer, whose type pointer is not the target's. Nor is a
-// pointer of a procedure, of a block or of a program, whose declaration
-// initializer becomes a statement of that scope whatever shape it has, nor
-// one whose target is a coarray, whose storage the run time allocates.
-static inline bool is_static_pointer_association(const ASR::Variable_t &v) {
-    if (!is_module_variable(v) || !is_pointer(v.m_type)
+// polymorphic pointer, whose type pointer is not the target's, nor one whose
+// target is a coarray, whose storage the run time allocates.
+static inline bool has_static_pointer_target(const ASR::Variable_t &v) {
+    if (!is_pointer(v.m_type)
             || !is_pointer_association_initializer(v.m_symbolic_value)) {
         return false;
     }
@@ -11330,6 +11326,48 @@ static inline bool is_static_pointer_association(const ASR::Variable_t &v) {
         return false;
     }
     return has_link_time_address(v.m_symbolic_value);
+}
+
+// `p => tgt` in a declaration that a backend lays out as the variable's own
+// static initializer instead of assigning it with a statement (see
+// `has_static_pointer_target`), so the association needs no executable code
+// at all and the unit it is declared in needs no startup initializer because
+// of it. A pointer of a procedure, of a block or of a program is not one of
+// these: its declaration initializer becomes a statement of that scope
+// whatever shape it has.
+static inline bool is_static_pointer_association(const ASR::Variable_t &v) {
+    return is_module_variable(v) && has_static_pointer_target(v);
+}
+
+// Every default initial target of a data pointer component of the derived
+// type `struct_sym`, of its parents and of its derived type components is
+// one that `has_static_pointer_target` lays out as static data.
+static inline bool has_only_static_component_targets(ASR::symbol_t* struct_sym) {
+    ASR::Struct_t* s = ASR::down_cast<ASR::Struct_t>(
+        symbol_get_past_external(struct_sym));
+    if (s->m_parent != nullptr
+            && !has_only_static_component_targets(s->m_parent)) {
+        return false;
+    }
+    for (size_t i = 0; i < s->n_members; i++) {
+        ASR::symbol_t* sym = s->m_symtab->get_symbol(s->m_members[i]);
+        if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) {
+            continue;
+        }
+        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+        if (is_pointer(var->m_type)
+                && is_pointer_association_initializer(var->m_symbolic_value)
+                && !has_static_pointer_target(*var)) {
+            return false;
+        }
+        if (ASR::is_a<ASR::StructType_t>(*var->m_type)
+                && !is_class_type(var->m_type)
+                && var->m_type_declaration != nullptr
+                && !has_only_static_component_targets(var->m_type_declaration)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // The code that describes a scalar of `type` to the runtime's formatted output
