@@ -14,8 +14,8 @@ contains
         integer, intent(in) :: iuse(:)
         real, allocatable, intent(inout) :: xx(:)
 
-        ! The input temporary must survive deallocation on callee entry.
-        call set_alloc(xx(iuse), xx)
+        ! Parentheses supply an independent input value before output deallocation.
+        call set_alloc((xx(iuse)), xx)
     end subroutine select_vec
 end module allocate_76_util
 

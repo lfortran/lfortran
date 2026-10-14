@@ -12,8 +12,8 @@ contains
         integer, intent(in) :: iuse(:)
         real, allocatable, intent(inout) :: xx(:)
 
-        ! Evaluate the vector input before deallocating the output actual.
-        call set_alloc(xx(iuse), xx)
+        ! Parentheses supply an independent input value before output deallocation.
+        call set_alloc((xx(iuse)), xx)
     end subroutine select_vec
 end module realloc_lhs_29_util
 
