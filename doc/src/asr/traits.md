@@ -63,7 +63,8 @@ module. It does not make implementations in unrelated, unseen modules visible.
 ### Receivers
 
 Explicit receivers were approved on 2026-10-14 and are being implemented; this
-section and the examples of this document describe the approved rules.
+section, the examples and the other receiver rules of this document describe
+the approved rules.
 
 A receiver is declared, never inferred (TD-36 of the
 [decisions record](traits-decisions.md)): a message has one exactly when one
@@ -1607,13 +1608,11 @@ rules, whatever path dispatches it: a direct call, a generic call through a
 constrained type parameter, or a call through a runtime view, an owner, a
 pointer, a projection or an association. The object passed as an
 `intent(inout)` or `intent(out)` receiver must be definable, so an `intent(in)`
-dummy, view or owner, a part of one, a named constant, the associate name of a
-constant and a SELECT TYPE name of a nondefinable selector are diagnosed; an
-`intent(in)` pointer dummy protects only its association, so its target can be
-the receiver. Other associate names follow the ordinary checks of actual
-arguments, which do not yet reject the associate name of a function result or
-of a parenthesized variable. Pointer and allocatable receivers remain
-unsupported. The verifier checks that each binding's passed-object INTENT is
+dummy, view or owner, a part of one, a named constant, and an associate or
+SELECT TYPE name whose selector is not a definable variable, such as an
+expression or a parenthesized variable, are diagnosed; an `intent(in)` pointer
+dummy protects only its association, so its target can be the receiver.
+Pointer and allocatable receivers remain unsupported. The verifier checks that each binding's passed-object INTENT is
 its message's receiver INTENT, and that each runtime slot and adapter passes
 the receiver as its origins require.
 
