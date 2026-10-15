@@ -7,6 +7,7 @@ program automatic_array_03
     if (any(seq(3) /= [1, 2, 3])) error stop 3
     call check_bounds(-3, -5)
     call check_bounds(-3, -1)
+    call check_local_sized(-3, -1)
     input = 1
     do n = -2, 3
         if (size(trimmed(input, n)) /= max(0, 2-n)) error stop 16
@@ -21,6 +22,9 @@ program automatic_array_03
         lo = 4
         hi = lo + n - 1
         call check_bounds(lo, hi)
+        call check_local_sized(lo, hi)
+        if (size(sized_by_result(n)) /= max(0, n)) error stop 49
+        if (any(sized_by_result(n) /= max(0, n) + 1)) error stop 50
         if (size(bounded(lo, hi)) /= max(0, n)) error stop 4
         if (n > 0) then
             if (any(bounded(lo, hi) /= [(i, i=lo,lo+n-1)])) error stop 5
@@ -148,6 +152,30 @@ contains
             if (a(i) /= i .or. w(i) /= 9) error stop 41
         end do
     end subroutine
+    ! Automatic objects sized by inquiries of other automatic objects.
+    subroutine check_local_sized(lo, hi)
+        integer, intent(in) :: lo, hi
+        integer :: v(lo:hi)
+        integer :: work(2*size(v)), u(ubound(v, 1)), l(lbound(v, 1))
+        integer :: w(size(work)+1)
+        character(len=size(v)) :: c
+        integer :: e
+        e = max(0, hi-lo+1)
+        if (size(work) /= 2*e) error stop 43
+        if (size(u) /= max(0, ub(lo, hi))) error stop 44
+        if (size(l) /= max(0, lb(lo, hi))) error stop 45
+        if (size(w) /= 2*e + 1) error stop 46
+        if (len(c) /= e) error stop 47
+        work = 3
+        if (sum(work) /= 6*e) error stop 48
+    end subroutine
+    function sized_by_result(n) result(r)
+        integer, intent(in) :: n
+        integer :: r(n)
+        integer :: w(size(r) + 1)
+        w = 1
+        r = sum(w)
+    end function
     subroutine check_wide(n)
         integer(8), intent(in) :: n
         integer :: a(2_8:n+1_8)
