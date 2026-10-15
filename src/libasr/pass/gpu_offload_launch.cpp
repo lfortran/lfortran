@@ -247,18 +247,13 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         ASR::make_IntegerConstant_t(al, loc, 256, plan.int_type,
             ASR::integerbozType::Decimal));
 
-    // Compute host-side total_elements = product of (end_d - start_d + 1)
-    ASR::expr_t *host_one = ASRUtils::EXPR(
-        ASR::make_IntegerConstant_t(al, loc, 1, plan.int_type,
-            ASR::integerbozType::Decimal));
+    // Compute host-side total_elements = product of the extents
+    // max(0, end_d - start_d + 1)
     ASR::expr_t *host_total = nullptr;
     for (size_t d = 0; d < plan.n_dims; d++) {
-        ASR::expr_t *dim_range = ASRUtils::EXPR(
-            ASR::make_IntegerBinOp_t(al, loc,
-                ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                    plan.dim_info[d].host_end, ASR::binopType::Sub,
-                    plan.dim_info[d].host_start, plan.int_type, nullptr)),
-                ASR::binopType::Add, host_one, plan.int_type, nullptr));
+        ASR::expr_t *dim_range = gpu_loop_extent(al, loc,
+            plan.dim_info[d].host_start, plan.dim_info[d].host_end,
+            plan.int_type);
         if (host_total == nullptr) {
             host_total = dim_range;
         } else {
