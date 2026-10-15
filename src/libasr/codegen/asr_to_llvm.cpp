@@ -4983,6 +4983,7 @@ public:
                 current_der_type_name = get_type_key(der_symbol);
             }
         } else {
+            array_name = get_expr_name_for_runtime_message(x.m_v);
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
             this->visit_expr(*x.m_v);
