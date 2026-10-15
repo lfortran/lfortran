@@ -32,6 +32,12 @@ Launches are asynchronous, and the device keeps what a kernel writes.
   may still run: a copy into a resident buffer still in use goes into a fresh
   buffer instead, and pooled buffers are reused only once the launches that
   used them have completed.
+* Launches are encoded one after another into one compute encoder, whose
+  dispatches run in order, and the command buffer is committed every
+  LAUNCHES_PER_COMMIT launches and at a sync: encoding a dispatch costs a
+  fraction of what committing a command buffer and its overhead on the GPU
+  do. The queue holds a bounded number of committed command buffers, so a
+  host that launches faster than the GPU runs waits for it there.
 */
 
 // A read-only argument up to this size is copied into the encoder.
@@ -40,15 +46,27 @@ static const size_t INLINE_BYTES_MAX = 4096;
 // as the device heap, is released when the launch is done with it.
 static const size_t POOLED_BUFFER_MAX = (size_t)16 * 1024 * 1024;
 enum { POOL_MAX = 128, MAX_RESIDENT = 1024, HASH_SIZE = 4096 };
+// Launches encoded into one command buffer before it is committed, and how
+// many committed command buffers may be pending: a host that launches faster
+// than the device runs waits for the oldest. Few pending launches keep the
+// buffers they hold few, so that the pool can give them out again.
+enum { LAUNCHES_PER_COMMIT = 64, MAX_PENDING_COMMITS = 3 };
 
 // Registry of the shader sources emitted for each kernel, and the pipeline
 // compiled from each, once per run: a kernel is loaded at every launch, and
 // compiling its source again every time is slow and exhausts the driver's
 // cache of compiled shaders.
+//
+// Each kernel also keeps a scratch buffer per argument slot. The device runs
+// the launches one after another, and what a launch leaves in a scratch
+// buffer is dead once it ends (a part the host reads back is read before the
+// next launch is made), so every launch of the kernel can use the same one,
+// however many of them are still pending.
 static struct {
     const char *name;
     const char *source;
     id<MTLComputePipelineState> pipeline;
+    id<MTLBuffer> scratch[MAX_ARGS];
 } source_registry[MAX_KERNELS];
 static int n_registered = 0;
 
@@ -65,14 +83,22 @@ typedef struct resident {
 
 typedef struct pooled {
     id<MTLBuffer> buffer;
+    size_t length;
     uint64_t last_use;
 } pooled;
 
 struct lfortran_gpu_ctx {
     id<MTLDevice> device;
     id<MTLCommandQueue> queue;
-    // The last command buffer committed and not yet waited for.
+    // The last command buffer committed and not yet waited for, and the
+    // ones committed before it, by serial modulo MAX_PENDING_COMMITS.
     id<MTLCommandBuffer> last_command_buffer;
+    id<MTLCommandBuffer> pending[MAX_PENDING_COMMITS];
+    // The command buffer launches are encoded into, not committed yet, and
+    // its encoder, with the number of launches in it.
+    id<MTLCommandBuffer> open_command_buffer;
+    id<MTLComputeCommandEncoder> encoder;
+    int n_encoded;
     // Command buffers are numbered from 1 as they are committed; `completed`
     // is the highest number the device has finished.
     uint64_t serial;
@@ -81,6 +107,8 @@ struct lfortran_gpu_ctx {
     _Atomic int failed;
     char error[512];
     uint64_t lru_clock;
+    // How many times the host has synced.
+    uint64_t n_syncs;
 };
 
 static resident entries[MAX_RESIDENT];
@@ -93,7 +121,9 @@ static pooled pool[POOL_MAX];
 static int n_pool = 0;
 
 enum { ARG_NONE = 0, ARG_BUFFER, ARG_SCALAR, ARG_SCRATCH };
-enum { SCALAR_INLINE_MAX = 256 };
+// The bytes of the scalar arguments of a launch are kept in the kernel
+// object up to this many, all of them together.
+enum { SCALAR_BYTES = 1024 };
 
 struct lfortran_gpu_kernel {
     id<MTLComputePipelineState> pipeline;
@@ -102,13 +132,16 @@ struct lfortran_gpu_kernel {
     size_t sizes[MAX_ARGS];
     int access[MAX_ARGS];
     int kind[MAX_ARGS];
-    unsigned char scalar_inline[MAX_ARGS][SCALAR_INLINE_MAX];
+    unsigned char scalar_bytes[SCALAR_BYTES];
+    size_t scalar_used;
     void *scalar_heap[MAX_ARGS];
     // A buffer only the device holds, created at the launch and kept until
     // the kernel is released so that the host can read part of it back.
     id<MTLBuffer> scratch_buffers[MAX_ARGS];
     int n_args;
     uint64_t serial;
+    // The kernel's entry in the registry.
+    int entry;
 };
 
 static void fail(const char *what, size_t size) {
@@ -127,10 +160,10 @@ static int completed_by_device(lfortran_gpu_ctx *ctx, uint64_t serial) {
 static id<MTLBuffer> acquire_buffer(lfortran_gpu_ctx *ctx, size_t size) {
     int best = -1;
     for (int i = 0; i < n_pool; i++) {
-        NSUInteger length = [pool[i].buffer length];
+        size_t length = pool[i].length;
         if (length < size || length > 4 * size + 4096) continue;
         if (!completed_by_device(ctx, pool[i].last_use)) continue;
-        if (best < 0 || length < [pool[best].buffer length]) best = i;
+        if (best < 0 || length < pool[best].length) best = i;
     }
     if (best >= 0) {
         id<MTLBuffer> buffer = pool[best].buffer;
@@ -158,6 +191,7 @@ static void release_buffer(id<MTLBuffer> buffer, uint64_t last_use) {
         n_pool--;
     }
     pool[n_pool].buffer = buffer;
+    pool[n_pool].length = [buffer length];
     pool[n_pool].last_use = last_use;
     n_pool++;
 }
@@ -394,13 +428,17 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
 {
     if (!ctx || !entry_point) return NULL;
 
-    // A launch passes the same name every time, so the entry found for it
-    // last is looked at first.
-    static const char *last_name = NULL;
-    static int last_len = -1, last_entry = -1;
+    // A launch passes the same name, a constant, every time: the entry
+    // found for the address of the name is remembered.
+    enum { NAME_CACHE = 64 };
+    static struct { const char *name; int len; int entry; }
+        name_cache[NAME_CACHE];
+    unsigned slot = (unsigned)(((uintptr_t)entry_point >> 3)
+        * 0x9E3779B1u) % NAME_CACHE;
     int entry = -1;
-    if (entry_point == last_name && entry_point_len == last_len) {
-        entry = last_entry;
+    if (name_cache[slot].name == entry_point
+            && name_cache[slot].len == entry_point_len) {
+        entry = name_cache[slot].entry;
     } else {
         char name_buf[LFORTRAN_GPU_MAX_KERNEL_NAME];
         lfortran_gpu_copy_kernel_name(name_buf, entry_point, entry_point_len);
@@ -415,9 +453,9 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
                     name_buf);
             exit(1);
         }
-        last_name = entry_point;
-        last_len = entry_point_len;
-        last_entry = entry;
+        name_cache[slot].name = entry_point;
+        name_cache[slot].len = entry_point_len;
+        name_cache[slot].entry = entry;
     }
     if (!source_registry[entry].pipeline) {
         @autoreleasepool {
@@ -430,6 +468,7 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
     k->pipeline = source_registry[entry].pipeline;
     k->ctx = ctx;
     k->n_args = 0;
+    k->entry = entry;
     return k;
 }
 
@@ -437,10 +476,7 @@ void lfortran_gpu_release_kernel(lfortran_gpu_kernel* k) {
     if (!k) return;
     for (int i = 0; i < k->n_args; i++) {
         if (k->scalar_heap[i]) free(k->scalar_heap[i]);
-        if (k->scratch_buffers[i]) {
-            release_buffer(k->scratch_buffers[i], k->serial);
-            k->scratch_buffers[i] = nil;
-        }
+        k->scratch_buffers[i] = nil;
     }
     k->pipeline = nil;
     free(k);
@@ -492,8 +528,12 @@ void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
         free(k->scalar_heap[idx]);
         k->scalar_heap[idx] = NULL;
     }
-    void *dst = k->scalar_inline[idx];
-    if (size > SCALAR_INLINE_MAX) {
+    void *dst;
+    if (k->scalar_used + size <= SCALAR_BYTES) {
+        dst = k->scalar_bytes + k->scalar_used;
+        // Each argument starts aligned for any scalar.
+        k->scalar_used += (size + 15) & ~(size_t)15;
+    } else {
         dst = k->scalar_heap[idx] = malloc(size);
     }
     memcpy(dst, val, size);
@@ -502,12 +542,39 @@ void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
     set_arg(k, idx, ARG_SCALAR);
 }
 
-// Waits for every command buffer committed so far.
+static void commit_open(lfortran_gpu_ctx *ctx);
+
+// The scratch buffer of argument `slot` of the kernel `entry`, with room for
+// `size` bytes. One larger than the pool keeps -- the device heap -- is made
+// for the launch.
+static id<MTLBuffer> scratch_buffer(lfortran_gpu_ctx *ctx, int entry,
+    int slot, size_t size)
+{
+    if (size > POOLED_BUFFER_MAX) {
+        id<MTLBuffer> buffer = [ctx->device newBufferWithLength:size
+            options:MTLResourceStorageModeShared];
+        if (!buffer) fail("scratch", size);
+        return buffer;
+    }
+    id<MTLBuffer> buffer = source_registry[entry].scratch[slot];
+    if (buffer && [buffer length] >= size) return buffer;
+    size_t length = 256;
+    while (length < size) length *= 2;
+    buffer = [ctx->device newBufferWithLength:length
+        options:MTLResourceStorageModeShared];
+    if (!buffer) fail("scratch", length);
+    source_registry[entry].scratch[slot] = buffer;
+    return buffer;
+}
+
+// Waits for every launch made so far.
 static void wait_all(lfortran_gpu_ctx *ctx) {
+    commit_open(ctx);
     if (ctx->last_command_buffer) {
         [ctx->last_command_buffer waitUntilCompleted];
         ctx->last_command_buffer = nil;
     }
+    for (int i = 0; i < MAX_PENDING_COMMITS; i++) ctx->pending[i] = nil;
     // The completion handlers run after the wait returns; every one of them
     // has to have looked at its command buffer's error.
     while (atomic_load_explicit(&ctx->handled, memory_order_acquire)
@@ -525,6 +592,7 @@ static void wait_all(lfortran_gpu_ctx *ctx) {
 }
 
 static void sync_all(lfortran_gpu_ctx *ctx) {
+    ctx->n_syncs++;
     wait_all(ctx);
     while (n_dirty > 0) {
         int i = dirty_list[n_dirty - 1];
@@ -534,8 +602,18 @@ static void sync_all(lfortran_gpu_ctx *ctx) {
     }
 }
 
-static void commit(lfortran_gpu_ctx *ctx, id<MTLCommandBuffer> cb) {
+// Ends the open encoder and commits its command buffer.
+static void commit_open(lfortran_gpu_ctx *ctx) {
+    if (!ctx->open_command_buffer) return;
+    [ctx->encoder endEncoding];
+    ctx->encoder = nil;
+    id<MTLCommandBuffer> cb = ctx->open_command_buffer;
+    ctx->open_command_buffer = nil;
+    ctx->n_encoded = 0;
     uint64_t serial = ++ctx->serial;
+    int slot = (int)(serial % MAX_PENDING_COMMITS);
+    if (ctx->pending[slot]) [ctx->pending[slot] waitUntilCompleted];
+    ctx->pending[slot] = cb;
     lfortran_gpu_ctx *c = ctx;
     [cb addCompletedHandler:^(id<MTLCommandBuffer> done) {
         NSError *error = [done error];
@@ -571,23 +649,39 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                 break;
             }
         }
+        // The ranges the kernel may write first, so that one the kernel is
+        // also handed to read is read from the same buffer. Making them
+        // ready may have to sync, which leaves nothing dirty: then they are
+        // made ready again.
+        id<MTLBuffer> written[MAX_ARGS];
+        for (uint64_t syncs = ctx->n_syncs - 1; syncs != ctx->n_syncs;) {
+            syncs = ctx->n_syncs;
+            for (int i = 0; i < k->n_args; i++) {
+                written[i] = nil;
+                if (k->kind[i] != ARG_BUFFER
+                        || k->access[i] != LFORTRAN_GPU_WRITE
+                        || k->sizes[i] == 0) {
+                    continue;
+                }
+                written[i] = resident_for_write(ctx, k->ptrs[i],
+                    k->sizes[i]);
+            }
+        }
+        // The launch goes into the open command buffer, which is
+        // committed as the next serial.
         uint64_t serial = ctx->serial + 1;
         k->serial = serial;
-        id<MTLCommandBuffer> commandBuffer = [ctx->queue commandBuffer];
-        id<MTLComputeCommandEncoder> encoder = [commandBuffer computeCommandEncoder];
+        if (!ctx->open_command_buffer) {
+            ctx->open_command_buffer = [ctx->queue commandBuffer];
+            ctx->encoder = [ctx->open_command_buffer computeCommandEncoder];
+        }
+        id<MTLComputeCommandEncoder> encoder = ctx->encoder;
         [encoder setComputePipelineState:k->pipeline];
 
-        // The ranges the kernel may write first, so that one the kernel is
-        // also handed to read is read from the same buffer.
         for (int i = 0; i < k->n_args; i++) {
-            if (k->kind[i] != ARG_BUFFER || k->access[i] != LFORTRAN_GPU_WRITE
-                    || k->sizes[i] == 0) {
-                continue;
-            }
-            id<MTLBuffer> buffer = resident_for_write(ctx, k->ptrs[i],
-                k->sizes[i]);
+            if (!written[i]) continue;
             entries[find_entry(k->ptrs[i])].last_use = serial;
-            [encoder setBuffer:buffer offset:0 atIndex:i];
+            [encoder setBuffer:written[i] offset:0 atIndex:i];
         }
         for (int i = 0; i < k->n_args; i++) {
             switch (k->kind[i]) {
@@ -621,7 +715,8 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                         [encoder setBuffer:nil offset:0 atIndex:i];
                         break;
                     }
-                    id<MTLBuffer> buffer = acquire_buffer(ctx, k->sizes[i]);
+                    id<MTLBuffer> buffer = scratch_buffer(ctx, k->entry, i,
+                        k->sizes[i]);
                     k->scratch_buffers[i] = buffer;
                     [encoder setBuffer:buffer offset:0 atIndex:i];
                     break;
@@ -643,8 +738,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         }
         [encoder dispatchThreads:MTLSizeMake(total_threads, 1, 1)
             threadsPerThreadgroup:MTLSizeMake(threads_per_group, 1, 1)];
-        [encoder endEncoding];
-        commit(ctx, commandBuffer);
+        if (++ctx->n_encoded >= LAUNCHES_PER_COMMIT) commit_open(ctx);
     }
 }
 

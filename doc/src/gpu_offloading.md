@@ -635,7 +635,18 @@ an `intent(in)` dummy -- and *written* otherwise.
 On the CPU emulation (`--gpu=cuda_cpu`) a launch runs the kernel on the
 host's memory before it returns, so there is never anything to copy or wait
 for. The CUDA runtime keeps the same table and orders copies and launches
-on one stream. The Metal runtime commits one command buffer per launch.
+on one stream.
+
+The Metal runtime encodes the launches one after another into one compute
+encoder, whose dispatches the device runs in order, and commits its command
+buffer every 64 launches and at every wait: encoding a dispatch costs the
+host about 2 us, committing a command buffer several times that, and each
+command buffer has an overhead of its own on the device. At most three
+committed command buffers are pending; a host that launches faster than the
+device runs waits for the oldest, which also bounds how many buffers the
+pending launches hold. A scratch buffer is kept per kernel and argument and
+used by every launch of the kernel: the device runs them in order, and what
+a launch leaves in it is dead when the launch ends.
 
 ### Where the host waits
 
