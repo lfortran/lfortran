@@ -113,7 +113,7 @@ contains
     end function
     subroutine check_bounds(lo, hi)
         integer, intent(in) :: lo, hi
-        integer :: a(lo:hi), m(2, lo:hi), i
+        integer :: a(lo:hi), m(2, lo:hi), i, l2, h2
         a = [(i, i=lo,hi)]
         m = 0
         if (size(a) /= max(0, hi-lo+1)) error stop 9
@@ -125,6 +125,28 @@ contains
         end do
         call check_bound_dummy(lo, hi, a, m)
         call check_assumed(a, max(0, hi-lo+1))
+        l2 = lo
+        h2 = hi
+        call check_redefined(l2, h2, a)
+        if (l2 /= lo + 1 .or. h2 /= hi + 2) error stop 42
+    end subroutine
+    ! Redefining a variable of a bound in the body changes neither the
+    ! bounds, nor the extent, nor the element addressing.
+    subroutine check_redefined(lo, hi, a)
+        integer, intent(inout) :: lo, hi
+        integer, intent(in) :: a(lo:hi)
+        integer :: w(lo:hi), l0, h0, i
+        l0 = lo
+        h0 = hi
+        w = 9
+        lo = lo + 1
+        hi = hi + 2
+        if (lbound(a, 1) /= lb(l0, h0) .or. ubound(a, 1) /= ub(l0, h0)) error stop 38
+        if (size(a) /= max(0, h0-l0+1) .or. size(w) /= size(a)) error stop 39
+        if (lbound(w, 1) /= lb(l0, h0) .or. ubound(w, 1) /= ub(l0, h0)) error stop 40
+        do i = l0, h0
+            if (a(i) /= i .or. w(i) /= 9) error stop 41
+        end do
     end subroutine
     subroutine check_wide(n)
         integer(8), intent(in) :: n
