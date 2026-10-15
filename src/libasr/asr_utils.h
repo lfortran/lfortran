@@ -10029,6 +10029,66 @@ inline bool is_stringToArray_cast_needed(ASR::ttype_t* const argument_ty, ASR::t
 
 ASR::Cast_t* cast_string_to_array(Allocator &al, ASR::expr_t* const string_expr, ASR::ttype_t* const array_type);
 
+// Sets `dims` to the bounds `dummy_dims` of a dummy argument of `func` as
+// seen from `scope` at a call with `args`: the dummy arguments are replaced
+// by the actual arguments and the module procedures called are imported.
+// Returns false if a bound is missing or references a symbol that cannot be
+// named from `scope`.
+static inline bool call_site_dummy_dims(Allocator &al, ASR::Function_t* func,
+        ASR::call_arg_t* args, size_t n_args, ASR::dimension_t* dummy_dims,
+        Vec<ASR::dimension_t>& dims, const Location &loc, SymbolTable* scope,
+        SetChar& function_dependencies) {
+    Vec<ASR::call_arg_t> args_vec;
+    args_vec.from_pointer_n(args, n_args);
+    SetChar module_dependencies;
+    module_dependencies.reserve(al, 1);
+    ReplaceArgVisitor arg_replacer(al, scope, func, args_vec,
+        function_dependencies, module_dependencies);
+    CheckSymbolReplacer checker(al, scope, function_dependencies);
+    ExprStmtDuplicator duplicator(al);
+    duplicator.allow_procedure_calls = true;
+    auto at_call_site = [&](ASR::expr_t* bound) -> ASR::expr_t* {
+        if (bound == nullptr) return nullptr;
+        duplicator.success = true;
+        ASR::expr_t* copy = duplicator.duplicate_expr(bound);
+        arg_replacer.current_expr = &copy;
+        arg_replacer.replace_expr(copy);
+        // The actual arguments are shared with the call.
+        copy = duplicator.duplicate_expr(copy);
+        LCOMPILERS_ASSERT(duplicator.success);
+        return copy;
+    };
+    for (size_t i = 0; i < dims.size(); i++) {
+        dims.p[i].loc = loc;
+        dims.p[i].m_start = at_call_site(dummy_dims[i].m_start);
+        dims.p[i].m_length = at_call_site(dummy_dims[i].m_length);
+        if (!checker.check_and_update_symbols(dims.p[i].m_length) ||
+                !checker.check_and_update_symbols(dims.p[i].m_start)) {
+            return false;
+        }
+    }
+    // A module calling a procedure of another module depends on it.
+    SymbolTable* s = scope;
+    while (s->parent != nullptr && !is_tu_scope(s) &&
+            !ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(s->asr_owner))) {
+        s = s->parent;
+    }
+    if (module_dependencies.size() > 0 && s->parent != nullptr && !is_tu_scope(s)) {
+        ASR::Module_t* m = ASR::down_cast2<ASR::Module_t>(s->asr_owner);
+        SetChar deps;
+        deps.from_pointer_n_copy(al, m->m_dependencies, m->n_dependencies);
+        for (size_t i = 0; i < module_dependencies.size(); i++) {
+            if (std::string(module_dependencies[i]) != m->m_name &&
+                    !LCompilers::present(deps, module_dependencies[i])) {
+                deps.push_back(al, module_dependencies[i]);
+            }
+        }
+        m->m_dependencies = deps.p;
+        m->n_dependencies = deps.size();
+    }
+    return true;
+}
+
 static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt,
     bool implicit_argument_casting, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt) {
@@ -10309,44 +10369,29 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     // type is a proper Array, not a bare element type.
                     dimensions = &dimension_;
                 } else if (current_scope) {
-                      // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
-                      // Self is already in a_args (at the PASS position), so
-                      // FunctionParam indices align 1:1 with a_args indices.
-                      ReplaceFunctionParamWithArg r(al, a_args, n_args);
-                      SetChar temp_function_dependencies;
-                      CheckSymbolReplacer c(al, current_scope, temp_function_dependencies);
-    
-                      // 1. Initialize the caller's duplicator
-                      ASRUtils::ExprStmtDuplicator caller_dup(al);
-                      caller_dup.allow_procedure_calls = true;
-                      caller_dup.success = true;
-
-                      bool valid_symbols = true;
-                      for (size_t i = 0; i < dimension_.size(); i++) {
-                          dimension_.p[i].loc = arg->base.loc;
-        
-                          // 2. Safely extract the replaced memory (optimized or mutated)
-                          ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(dimension_[i].m_length);
-                          ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(dimension_[i].m_start);
-        
-                          // 3. Caller takes responsibility for duplication to prevent the DAG crash
-                          dimension_.p[i].m_length = (replaced_length == dimension_.p[i].m_length) ? caller_dup.duplicate_expr(replaced_length) : replaced_length;
-                          dimension_.p[i].m_start = (replaced_start == dimension_.p[i].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
-                          valid_symbols = c.check_and_update_symbols(dimension_[i].m_length) && c.check_and_update_symbols(dimension_[i].m_start);
-
-                          if (!valid_symbols) {
-                            break;
-                          }
-                        }
-                          // If the symbols are valid then include the dimension in ArrayPhysicalCast
-                       if (valid_symbols) {
-                          dimensions = &dimension_;
-                           if (current_function_dependencies.has_value()) {
+                    // The procedure type does not record the extents that
+                    // depend on a scope, so they are taken from the dummy.
+                    // Self is already in a_args (at the PASS position), so
+                    // the dummy arguments align 1:1 with a_args.
+                    ASR::dimension_t* dummy_dims = nullptr;
+                    size_t dummy_n_dims = 0;
+                    if (i < func->n_args && ASR::is_a<ASR::Var_t>(*func->m_args[i])) {
+                        dummy_n_dims = extract_dimensions_from_ttype(expr_type(
+                            func->m_args[i]), dummy_dims);
+                    }
+                    SetChar temp_function_dependencies;
+                    temp_function_dependencies.reserve(al, 1);
+                    if (dummy_n_dims == dimension_.size() &&
+                            call_site_dummy_dims(al, func, a_args, n_args,
+                                dummy_dims, dimension_, arg->base.loc,
+                                current_scope, temp_function_dependencies)) {
+                        dimensions = &dimension_;
+                        if (current_function_dependencies.has_value()) {
                             for (size_t j = 0; j < temp_function_dependencies.n; j++) {
                                 current_function_dependencies->get().push_back(al, temp_function_dependencies[j]);
                             }
-                          }
-                        } else {
+                        }
+                    } else {
                         dimensions = nullptr;
                     }
                 }
