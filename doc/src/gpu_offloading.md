@@ -147,6 +147,10 @@ generates the device source. It never falls back to the CPU:
   subscript of it that the construct may change
   (`associate (e => w(j)); j = 3; e = 1`) is read into a variable of its own
   on entry.
+* An associate name of a construct the loop is in, bound to an expression
+  (`associate (n => size(a))`), is the value the expression had when the
+  construct was entered, which the kernel is handed as a scalar: the
+  expression is not evaluated again, and what it reads is not handed over.
 * An array an iteration needs whose size is known only at run time -- a
   local of a `block` with run-time extents, an allocatable local, or a
   temporary the compiler introduces, such as the result of a function or
