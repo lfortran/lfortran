@@ -99,7 +99,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--bindc-mangling`: Mangles functions with ABI bind(c)
 - `--apply-fortran-mangling`: Mangle symbols with Fortran supported syntax
 - `--mangle-underscore`: Mangles with underscore
-- `--legacy-array-sections`: Enables passing array items as sections if required
+- `--legacy-array-sections`: Enables passing array items as sections if required, and treats a dummy array whose last dimension is `1`, as in `a(lda, 1)`, as assumed size, `a(lda, *)`
 - `--ignore-pragma`: Ignores all the pragmas
 - `--stack-arrays`: Allocate memory for arrays on stack
 
