@@ -57,17 +57,13 @@ struct GpuDeviceCapabilities {
     int max_integer_kind = 8;
     int max_real_kind = 8;
 
-    // Whether a kernel can bring the program to a halt from a thread. There
-    // is no exit code to deliver either way -- a grid has no status to
-    // return -- but stopping is the part of a Fortran `stop` a device can
-    // honour, and a device that cannot stop can honour none of it.
-    bool device_abort = true;
-
     // Whether a device function may declare a local array whose extent is
-    // only known once the kernel runs. Where it may not, the pass splices
-    // such a callee into the kernel body instead, so that the local becomes
-    // a kernel-level one and the per-thread workspace machinery can bind it
-    // to a slice of a device buffer.
+    // only known once the kernel runs. Where it may not, such a local
+    // becomes an argument that every caller gives the function, up to the
+    // kernel, where the per-thread workspace machinery binds it to a slice
+    // of a device buffer (gpu_device_workspace.cpp). A callee that is the
+    // whole value of an assignment is spliced into the kernel body instead,
+    // which turns its locals into kernel-level ones directly.
     bool device_function_runtime_sized_locals = true;
 
     // Whether the device has a scalar type of the same in-memory width as
@@ -142,6 +138,13 @@ enum class GpuDeclineReason {
     FunctionResultAllocation,
     NestedArraySection,
     WorkspaceNotSizeableOnHost,
+    // An allocatable array component of a derived-type local of device
+    // code, which has no heap to allocate it from, whose shape cannot be
+    // told on entry to the routine (see gpu_device_struct_storage.cpp).
+    StructComponentNotSizeable,
+    // An array on the device heap (see gpu_device_heap.cpp) used in a way
+    // the heap does not lower yet; the name says which array and how.
+    HeapArrayUse,
 
     // --- what the device has no type for ---
     LocalTypeWidth,
@@ -152,7 +155,13 @@ enum class GpuDeclineReason {
     // These, and every reason below them, name a thing rather than state a
     // fact, and so read as "the gpu backend does not support <thing>".
     StatementIo,
-    StatementStop,
+    // A `stop` or `error stop` whose stop code is a character value
+    // computed at run time, which the host cannot repeat after the launch
+    // (see gpu_offload_stop.h).
+    StopCodeNotConstant,
+    // A procedure that can stop, which is given hidden arguments, but is
+    // also passed as an actual argument or is not a copy the kernel owns.
+    StoppingProcedureShared,
 
     // --- the layout of a kernel argument: derived types ---
     StructDeclarationUnknown,
@@ -176,7 +185,6 @@ enum class GpuDeclineReason {
     // --- the layout of a kernel argument: everything else ---
     ArrayElementTypeWidth,
     ArrayElementNotNumeric,
-    WorkspaceStructElementShape,
     // A per-thread workspace the launch layout cannot size, found when the
     // launch is expanded. The host pre-flight in gpu_offload asks the same
     // question of the loop, but of the loop as it stands before the passes
@@ -262,6 +270,11 @@ GpuDevice gpu_device_selected(const PassOptions &pass_options);
 // anything.
 GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device);
 GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options);
+
+// Whether `name` is one the program can have written, which a diagnostic
+// may show. A Fortran name begins with a letter (F2018 6.2.2), and every
+// name the compiler makes up for a temporary does not.
+bool gpu_source_name(const std::string &name);
 
 // The whole clause the diagnostic reads, lowercase and naming nothing
 // internal. This is the only place the wording of a decline is written.

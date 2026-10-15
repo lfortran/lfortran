@@ -2028,6 +2028,7 @@ public:
         // `call getarg(pos, value)`; the extra optional args are accepted
         // by extension to share the get_command_argument signature.
         {"getarg", IntrinsicSignature({"number", "value", "length", "status"}, 1, 4)},
+        {"getcwd", IntrinsicSignature({"c", "status"}, 1, 2)},
         {"system_clock", IntrinsicSignature({"count", "count_rate", "count_max"}, 0, 3)},
         {"cpu_time", IntrinsicSignature({"time"}, 1, 1)},
         {"date_and_time", IntrinsicSignature({"date", "time", "zone", "values"}, 0, 4)},
@@ -10397,7 +10398,8 @@ public:
                     if (init_expr && is_local && !is_derived_type && !is_pointer &&
                             storage_type != ASR::storage_typeType::Parameter) {
                         ASR::expr_t* static_init = nullptr;
-                        if (ASR::is_a<ASR::StructType_t>(*type)) {
+                        bool is_struct_scalar = ASR::is_a<ASR::StructType_t>(*type);
+                        if (is_struct_scalar) {
                             static_init = get_static_struct_initializer(init_expr);
                         } else if (ASR::is_a<ASR::StructType_t>(
                                     *ASRUtils::type_get_past_array(type)) &&
@@ -10413,9 +10415,14 @@ public:
                         // A scalar local of a procedure or block whose
                         // initializer is a constant that is stored once
                         // implicitly has the save attribute, as in the
-                        // intrinsic-type branch.
+                        // intrinsic-type branch. A structure initializer that
+                        // cannot be stored as static data, such as `t(f)` with
+                        // a procedure target, gives the save attribute too;
+                        // the global_init pass assigns it once.
                         if (static_init) {
                             init_expr = static_init;
+                        }
+                        if (static_init || is_struct_scalar) {
                             if (storage_type != ASR::storage_typeType::Save) {
                                 implicit_save = true;
                                 storage_type = ASR::storage_typeType::Save;
@@ -14330,8 +14337,10 @@ public:
             ASR::expr_t* member_null = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(
                 al, loc, member_var->m_type, ASRUtils::EXPR(ASR::make_Var_t(al, loc, member))));
             member_null = ASRUtils::externalize_struct_refs_in_init(al, member_null, current_scope);
-            current_struct_type_var_expr =
-                ASR::down_cast<ASR::PointerNullConstant_t>(member_null)->m_var_expr;
+            ASR::PointerNullConstant_t* null_context =
+                ASR::down_cast<ASR::PointerNullConstant_t>(member_null);
+            current_variable_type_ = null_context->m_type;
+            current_struct_type_var_expr = null_context->m_var_expr;
         }
     }
 
@@ -17338,29 +17347,6 @@ public:
                 }
             }
             args = args_with_array_section;
-            // There can be a possibility that initially it is ArrayItem and now we realised
-            // that it must be an ArraySection instead.
-            array_arg_idx.clear();
-            for ( size_t i = 0; i < args.size(); i++ ) {
-                ASR::expr_t* arg_expr = args[i].m_value;
-                if ( arg_expr && ASRUtils::is_array(ASRUtils::expr_type(arg_expr)) ) {
-                    array_arg_idx[i] = ASRUtils::expr_type(arg_expr);
-                }
-            }
-            // bool visit_required = false;
-            for ( auto it: array_arg_idx ) {
-                ASR::expr_t* func_arg = f->m_args[it.first];
-                ASR::FunctionType_t* f_type =
-                    ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
-                bool is_elemental = f_type->m_elemental;
-                if (!is_elemental && !ASRUtils::is_array(ASRUtils::EXPR2VAR(func_arg)->m_type)) {
-                    // create array type with empty dimensions and physical type as PointerArray
-                    ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, it.second, ASR::array_physical_typeType::PointerArray, true);
-                    ASRUtils::EXPR2VAR(func_arg)->m_type = new_type;
-                    f_type->m_arg_types[it.first] = new_type;
-                    // visit_required = true;
-                }
-            }
         } else {
             // Check if a scalar (ArrayItem) is passed to an array argument
             for (size_t i = 0; i < f->n_args && i < args.size(); i++) {
@@ -17400,6 +17386,65 @@ public:
                 }
             }
         }
+        check_array_actual_for_scalar_dummy(v, f, args);
+    }
+
+    void check_array_actual_for_scalar_dummy(ASR::symbol_t *v, ASR::Function_t *f,
+            Vec<ASR::call_arg_t> &args) {
+        if (ASRUtils::is_elemental(v)) {
+            return;
+        }
+        // A procedure defined outside any module or procedure of this file.
+        bool has_implicit_interface = !ASR::is_a<ASR::ExternalSymbol_t>(*v) &&
+            ASRUtils::is_tu_scope(f->m_symtab->parent);
+        for (size_t i = 0; i < f->n_args && i < args.size(); i++) {
+            ASR::expr_t *actual = args[i].m_value;
+            if (actual == nullptr || !ASRUtils::is_array(ASRUtils::expr_type(actual))) {
+                continue;
+            }
+            ASR::symbol_t *dummy = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*dummy)) {
+                continue;
+            }
+            ASR::Variable_t *dummy_var = ASR::down_cast<ASR::Variable_t>(dummy);
+            if (ASRUtils::is_array(dummy_var->m_type)) {
+                continue;
+            }
+            std::string message = "rank mismatch in argument `" +
+                std::string(dummy_var->m_name) + "`: the dummy argument is a scalar "
+                "but the actual argument is an array of rank " + std::to_string(
+                ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(actual)));
+            Label label("pass one element of the array instead", {actual->base.loc});
+            if (compiler_options.legacy_array_sections && has_implicit_interface &&
+                    ASR::is_a<ASR::Var_t>(*actual)) {
+                diag.add(Diagnostic(message + "; as a legacy extension, only its "
+                    "first element is passed", Level::Warning, Stage::Semantic, {label}));
+                args.p[i].m_value = first_array_element(actual);
+                continue;
+            }
+            diag.add(Diagnostic(message, Level::Error, Stage::Semantic, {label}));
+            throw SemanticAbort();
+        }
+    }
+
+    ASR::expr_t* first_array_element(ASR::expr_t *array) {
+        const Location &loc = array->base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        size_t n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array));
+        Vec<ASR::array_index_t> indices;
+        indices.reserve(al, n_dims);
+        for (size_t d = 1; d <= n_dims; d++) {
+            ASR::array_index_t index;
+            index.loc = loc;
+            index.m_left = nullptr;
+            index.m_right = b.ArrayLBound(array, d, compiler_options.po.default_integer_kind);
+            index.m_step = nullptr;
+            indices.push_back(al, index);
+        }
+        return ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc, array,
+            indices.p, indices.n, ASRUtils::expr_type(array),
+            ASR::arraystorageType::ColMajor, nullptr));
     }
 
     // F2018 15.5.2.7: a data pointer dummy without INTENT(IN) is associated
@@ -20975,15 +21020,26 @@ public:
 
             } else if( ASRUtils::IntrinsicImpureFunctionRegistry::is_intrinsic_function(var_name) ) {
                 Vec<ASR::expr_t*> args;
-                args.reserve(al, 1);
-                for( size_t i = 0; i < x.n_args; i++ ) {
-                    this->visit_expr(*x.m_args[i].m_end);
-                    ASR::expr_t* expr_arg = ASRUtils::EXPR(tmp);
-                    args.push_back(al, expr_arg);
+                if (var_name == "getcwd") {
+                    std::vector<std::string> kwarg_names = {"c"};
+                    handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, var_name);
+                } else {
+                    args.reserve(al, 1);
+                    for( size_t i = 0; i < x.n_args; i++ ) {
+                        this->visit_expr(*x.m_args[i].m_end);
+                        ASR::expr_t* expr_arg = ASRUtils::EXPR(tmp);
+                        args.push_back(al, expr_arg);
+                    }
                 }
                 ASRUtils::create_intrinsic_function create_func =
                     ASRUtils::IntrinsicImpureFunctionRegistry::get_create_function(var_name);
                 tmp = create_func(al, x.base.base.loc, args, diag);
+                if (var_name == "getcwd") {
+                    if (!tmp) throw SemanticAbort();
+                    warn_getcwd_extension(x.base.base.loc);
+                    current_function_deterministic = false;
+                    current_function_side_effect_free = false;
+                }
             } else if( var_name == "size" ) {
                 tmp = create_ArraySize(x);
             } else if (var_name == "rank" ) {
@@ -21124,6 +21180,13 @@ public:
         }
         return ASR::make_SizeOfType_t(al, x.base.base.loc, arg_type,
             size_type, value);
+    }
+
+    void warn_getcwd_extension(const Location& loc) {
+        diag.semantic_warning_label(
+            "`getcwd` is a GNU extension",
+            {loc},
+            "standard Fortran has no getcwd intrinsic; pass the directory in from the caller or call the platform function through a bind(c) interface");
     }
 
     ASR::asr_t* create_SizeOf(const AST::FuncCallOrArray_t& x) {

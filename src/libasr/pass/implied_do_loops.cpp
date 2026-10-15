@@ -1312,6 +1312,71 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             return true;
         }
 
+        // I/O items may have different character lengths. Store each in a
+        // descriptor member, rather than padding them into a character array,
+        // so one StringFormat consumes the entire implied-do and its siblings.
+        ASR::expr_t* wrap_character_io_items(ASR::expr_t* value) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+                ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(value);
+                Vec<ASR::expr_t*> values;
+                values.reserve(al, idl->n_values);
+                for (size_t i = 0; i < idl->n_values; i++) {
+                    values.push_back(al, wrap_character_io_items(idl->m_values[i]));
+                }
+                return ASRUtils::EXPR(ASR::make_ImpliedDoLoop_t(al,
+                    value->base.loc, values.p, values.size(), idl->m_var,
+                    idl->m_start, idl->m_end, idl->m_increment,
+                    ASRUtils::expr_type(values[0]), nullptr));
+            }
+            const Location& loc = value->base.loc;
+            int kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(value));
+            std::string name = "~io_character_item_" + std::to_string(kind);
+            SymbolTable* global_scope = current_scope;
+            while (global_scope->parent) global_scope = global_scope->parent;
+            ASR::symbol_t* sym = global_scope->get_symbol(name);
+            if (!sym) {
+                SymbolTable* members_scope = al.make_new<SymbolTable>(global_scope);
+                ASRUtils::ASRBuilder b(al, loc);
+                b.Variable(members_scope, "text", ASRUtils::TYPE(
+                    ASR::make_Allocatable_t(al, loc, ASRUtils::TYPE(
+                        ASR::make_String_t(al, loc, kind, nullptr,
+                            ASR::DeferredLength, ASR::DescriptorString)))), ASR::Local);
+                Vec<char*> members;
+                members.reserve(al, 1);
+                members.push_back(al, s2c(al, "text"));
+                sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Struct_t(al,
+                    loc, members_scope, s2c(al, name), nullptr, nullptr, 0,
+                    members.p, members.size(), nullptr, 0, ASR::Source,
+                    ASR::Public, false, false, false, nullptr, 0, nullptr,
+                    nullptr, nullptr, 0));
+                ASR::down_cast<ASR::Struct_t>(sym)->m_struct_signature =
+                    ASRUtils::make_StructType_t_util(al, loc, sym, true);
+                global_scope->add_symbol(name, sym);
+            }
+            Vec<ASR::call_arg_t> args;
+            args.reserve(al, 1);
+            ASR::call_arg_t arg;
+            arg.loc = loc;
+            arg.m_value = value;
+            args.push_back(al, arg);
+            return ASRUtils::EXPR(ASR::make_StructConstructor_t(al, loc,
+                sym, args.p, args.size(), ASRUtils::make_StructType_t_util(
+                    al, loc, sym, true), nullptr));
+        }
+
+        bool character_io_items(ASR::ImpliedDoLoop_t* idl) {
+            for (size_t i = 0; i < idl->n_values; i++) {
+                ASR::expr_t* value = idl->m_values[i];
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+                    if (!character_io_items(ASR::down_cast<ASR::ImpliedDoLoop_t>(value))) return false;
+                } else if (ASRUtils::is_array(ASRUtils::expr_type(value)) ||
+                    !ASRUtils::is_character(*ASRUtils::expr_type(value))) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
         ASR::stmt_t* create_do_loop_concat_idl(ASR::ImpliedDoLoop_t* x) {
             const Location& loc = x->base.base.loc;
 
@@ -1589,6 +1654,19 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                             string_format_stmt->m_args = new_args.p;
                             string_format_stmt->n_args = new_args.size();
                             i = i + expanded_values.size() - 1;
+                            continue;
+                        }
+                        if (character_io_items(implied_do_loop)) {
+                            value = wrap_character_io_items(value);
+                            ASR::asr_t* items = create_array_constant(x, value);
+                            string_format_stmt->m_args[i] = ASRUtils::EXPR(items);
+                            replacer.result_var = value;
+                            resultvar2value[value] = ASRUtils::EXPR(items);
+                            ASR::expr_t** saved_expr = current_expr;
+                            current_expr = &string_format_stmt->m_args[i];
+                            this->call_replacer();
+                            current_expr = saved_expr;
+                            this->visit_expr(*string_format_stmt->m_args[i]);
                             continue;
                         }
                         {

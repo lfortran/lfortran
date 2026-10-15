@@ -17,8 +17,10 @@ device:
 
 * a real kind wider than the widest floating point type of the device
   (`real(8)` on Metal, `real(10)` and `real(16)` everywhere);
-* an input/output statement, internal-file I/O included (every device);
-* `error stop` or `stop`, on a device that cannot halt the program (Metal).
+* an input/output statement, internal-file I/O included (every device).
+
+`stop` and `error stop` are not on the list: every device runs them (see
+gpu_offload_stop.h).
 
 A loop that passes is committed to the device. A loop that fails is either an
 error at the offending construct or, with `--gpu-allow-cpu-fallback`, assigned
@@ -38,8 +40,6 @@ enum class GpuUnsupportedKind {
     None,
     RealWidth,
     InputOutput,
-    ErrorStop,
-    Stop,
 };
 
 struct GpuUnsupportedConstruct {

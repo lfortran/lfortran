@@ -173,6 +173,8 @@
               :intboz_type :Decimal
             )
             :args []
+            :component_fit nil
+            :scratch []
           )
           (GpuSync)
         ]

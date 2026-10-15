@@ -14,6 +14,7 @@
 #include <libasr/string_utils.h>
 #include <libasr/pass/gpu_data_layout.h>
 #include <libasr/pass/gpu_decline.h>
+#include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/symbol_expr_substitution.h>
@@ -49,22 +50,6 @@ void GpuOffloadVisitor::report_clause_ignored(
     pass_options.diagnostics->message_label(
         "the '" + name + "' clause is ignored on the gpu",
         {where}, "the device decides how to run the iterations",
-        diag::Level::Warning, diag::Stage::ASRPass);
-}
-
-// A `stop` the device runs as a trap. The loop is offloaded and the
-// statement does halt the launch, which is the part of it a device can
-// honour, but a grid returns no status: the stop code is not delivered and
-// a normal termination cannot be told apart from an error one. The program
-// ends with a failure status either way, so say what was dropped rather
-// than let the difference go unmentioned.
-void GpuOffloadVisitor::report_stop_degraded(
-        const Location &where, const std::string &name) {
-    if (pass_options.diagnostics == nullptr) return;
-    pass_options.diagnostics->message_label(
-        "'" + name + "' in an offloaded loop does not deliver its stop code",
-        {where}, "the device halts the launch here and the program exits "
-            "with a failure status",
         diag::Level::Warning, diag::Stage::ASRPass);
 }
 
@@ -196,7 +181,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         // Run-time sized alias temporaries become BLOCK locals here,
         // ahead of the workspace pre-flight below, so that the
         // pre-flight sizes them too.
-        materialize_runtime_alias_blocks(work);
+        {
+            std::vector<std::string> alias_arg_names;
+            collect_kernel_arg_names(work, enclosing_block_scopes,
+                alias_arg_names);
+            materialize_runtime_alias_blocks(work, alias_arg_names);
+        }
         size_scope_array_temporaries(work.body, work.n_body);
     }
 
@@ -1167,6 +1157,19 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                             transitive_collector.visit_stmt(
                                 *fn_impl->m_body[i]);
                         }
+                        // A function the declaration of a local calls,
+                        // `real :: w(f(n))`, is called on entry.
+                        std::vector<SymbolTable*> scopes;
+                        gpu_routine_scopes(fn_impl->m_symtab, scopes);
+                        for (SymbolTable *scope : scopes) {
+                            for (auto &local : scope->get_scope()) {
+                                if (ASR::is_a<ASR::Variable_t>(
+                                        *local.second)) {
+                                    transitive_collector.visit_symbol(
+                                        *local.second);
+                                }
+                            }
+                        }
                     }
                 }
                 for (auto &[name, sym] : transitive_collector.functions) {
@@ -1862,6 +1865,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             // left naming the original. Point every such extent at the
             // copy's own symbols.
             retarget_local_extents(func->m_symtab);
+            retarget_declaration_calls(func->m_symtab, *kernel_scope);
             GpuReplaceSymbolsVisitor fn_replacer(*kernel_scope);
             fn_replacer.replacer.skip_scopes.insert(func->m_symtab);
             for (size_t bi = 0; bi < func->n_body; bi++) {
@@ -1885,6 +1889,22 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     }
                 }
             }
+        }
+    }
+
+    for (auto &item : kernel_scope->get_scope()) {
+        if (ASR::is_a<ASR::Function_t>(*item.second)) {
+            gpu_alias_scalar_associate_names(al,
+                *ASR::down_cast<ASR::Function_t>(item.second));
+        }
+    }
+
+    // Which allocatable dummies a routine hands on to another routine is
+    // read from the calls, so they have to name the kernel's copies first.
+    for (auto &item : kernel_scope->get_scope()) {
+        if (ASR::is_a<ASR::Function_t>(*item.second)) {
+            plain_allocatable_dummies(
+                ASR::down_cast<ASR::Function_t>(item.second));
         }
     }
 

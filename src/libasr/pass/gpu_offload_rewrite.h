@@ -31,6 +31,35 @@ bool gpu_reads_changed(const GpuIterationVaryingSymbols &changed,
 bool gpu_writes_symbol(const GpuIterationVaryingSymbols &changed,
     ASR::symbol_t *s);
 
+// What the statements of an ASSOCIATE scope from `from` on can change, as
+// it bears on a selector bound before them: a selector designates the
+// object it designates where it is bound, so a subscript of it that reads
+// something the statements may change has to be read once, there. A
+// variable bound to an associate name of the scope, at any depth, that
+// they write is changed too.
+class GpuAssociateScopeWrites {
+public:
+    GpuAssociateScopeWrites(ASR::stmt_t **body, size_t n_body, size_t from);
+    bool may_change(ASR::expr_t *e) const;
+private:
+    std::shared_ptr<GpuIterationVaryingSymbols> changed;
+    std::set<ASR::symbol_t*> aliased;
+};
+
+// The selector of an associate name, with every subscript that `writes`
+// may change replaced by a new variable of `scope`, assigned that
+// subscript by a statement appended to `inits`. The selector then stands
+// for the associate name wherever the name is used.
+ASR::expr_t* gpu_fix_selector_subscripts(Allocator &al,
+    ASR::expr_t *selector, const GpuAssociateScopeWrites &writes,
+    SymbolTable *scope, Vec<ASR::stmt_t*> &inits);
+
+// Makes every scalar associate name of a device routine bound to a
+// variable an alias of it: the selector replaces the name. The code
+// generators declare a scalar as a value, so the name would otherwise be
+// a copy, and what is written through it would be lost.
+void gpu_alias_scalar_associate_names(Allocator &al, ASR::Function_t &fn);
+
 // A new variable named `name` in `scope`, added to it.
 //
 // This pass creates a great many variables: loop indices, temporaries for
@@ -180,37 +209,42 @@ public:
         ASR::BaseExprReplacer<GpuReplaceSymbols>::replace_StructConstructor(x);
     }
 
-    void replace_FunctionCall(ASR::FunctionCall_t *x) {
-        // Remap m_name to kernel scope symbol
-        std::string name = ASRUtils::symbol_name(x->m_name);
+    // The kernel's copy of the procedure a call names. A procedure
+    // reached through use association can be imported under its own
+    // name, or under a C-identifier version of the name of the
+    // ExternalSymbol when two modules define procedures of one name.
+    ASR::symbol_t *kernel_procedure(ASR::symbol_t *name_sym) {
+        std::string name = ASRUtils::symbol_name(name_sym);
         ASR::symbol_t *new_sym = lookup_symbol(name);
-        if (!new_sym && ASR::is_a<ASR::ExternalSymbol_t>(*x->m_name)) {
-            // Try sanitized ExternalSymbol name (handles disambiguated
-            // functions where different modules define same-named functions)
+        if (!new_sym && ASR::is_a<ASR::ExternalSymbol_t>(*name_sym)) {
             std::string sanitized = name;
             for (char &c : sanitized) {
                 if (c == '~' || c == '@') c = '_';
             }
             new_sym = lookup_symbol(sanitized);
             if (!new_sym) {
-                // ExternalSymbol name differs from resolved function name;
-                // try the underlying function's name (e.g., "construct"
-                // instead of "~mytype_t@construct").
-                std::string resolved_name = ASRUtils::symbol_name(
-                    ASRUtils::symbol_get_past_external(x->m_name));
-                new_sym = lookup_symbol(resolved_name);
+                new_sym = lookup_symbol(ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(name_sym)));
             }
         }
-        if (new_sym) {
-            x->m_name = new_sym;
+        return new_sym;
+    }
+
+    void retarget_call(ASR::symbol_t *&name, ASR::symbol_t *&original_name) {
+        if (ASR::symbol_t *new_sym = kernel_procedure(name)) {
+            name = new_sym;
         }
-        if (x->m_original_name) {
-            std::string orig_name = ASRUtils::symbol_name(x->m_original_name);
-            ASR::symbol_t *new_orig = lookup_symbol(orig_name);
+        if (original_name) {
+            ASR::symbol_t *new_orig = lookup_symbol(
+                ASRUtils::symbol_name(original_name));
             if (new_orig) {
-                x->m_original_name = new_orig;
+                original_name = new_orig;
             }
         }
+    }
+
+    void replace_FunctionCall(ASR::FunctionCall_t *x) {
+        retarget_call(x->m_name, x->m_original_name);
         // Call base to handle arguments, type, value, dt
         ASR::BaseExprReplacer<GpuReplaceSymbols>::replace_FunctionCall(x);
     }

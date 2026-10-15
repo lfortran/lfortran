@@ -1,16 +1,13 @@
 program gpu_metal_334
-  ! Test: a `stop` in a concurrent body is a device trap where the device
-  ! has one.
+  ! Test: an `error stop` in a concurrent body does not keep the loop off
+  ! the device.
   !
-  ! A Fortran STOP inside an offloaded loop has no exit code to deliver --
-  ! a grid returns no status -- but stopping is the part of it a device can
-  ! honour, and CUDA honours it with a trap. So a loop that guards its work
-  ! with `error stop` still offloads there, and only a device with no trap
-  ! at all (Metal) has to turn the loop down and run it on the host.
+  ! A thread that reaches it records it in the launch's status buffer and
+  ! the host runs the statement after the launch, so a loop that guards its
+  ! work with `error stop` offloads on every device.
   !
-  ! Neither guard is ever taken, so the trap is emitted and never raised;
-  ! what the test checks is that the loop computes what Fortran says it
-  ! computes whichever way it ran.
+  ! Neither guard is ever taken, so what the test checks is that the loop
+  ! computes what Fortran says it computes.
   implicit none
 
   integer, parameter :: n = 8
@@ -29,8 +26,7 @@ program gpu_metal_334
   if (a(1) /= 3) error stop "error stop loop first"
   if (a(n) /= 24) error stop "error stop loop last"
 
-  ! An `error stop` with a stop code, guarded the same way. The code has
-  ! nowhere to go on a device; the stopping is all that is left of it.
+  ! An `error stop` with a stop code, guarded the same way.
   do concurrent (i = 1:n)
     b(i) = a(i) - i
     if (b(i) > 1000) error stop 1

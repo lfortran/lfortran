@@ -775,7 +775,10 @@ public:
                 }
             }
         }
-        if (type->m_pure) {
+        // An elemental procedure is pure unless it is declared impure.
+        if (type->m_elemental && !type->m_pure) {
+            r += "impure ";
+        } else if (type->m_pure && !type->m_elemental) {
             r += "pure ";
         }
         if (type->m_elemental) {
@@ -3436,6 +3439,13 @@ public:
 
     void visit_GpuBlockSize(const ASR::GpuBlockSize_t &x) {
         src = "gpu_block_size(" + std::to_string(x.m_dim) + ")";
+    }
+
+    void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t &x) {
+        visit_expr(*x.m_target);
+        std::string target = src;
+        visit_expr(*x.m_increment);
+        src = "gpu_atomic_fetch_add(" + target + ", " + src + ")";
     }
 
     /******************************* Case Stmt ********************************/

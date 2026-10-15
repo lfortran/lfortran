@@ -179,6 +179,8 @@
                 )
               )
             ]
+            :component_fit nil
+            :scratch []
           )
           (GpuSync)
         ]

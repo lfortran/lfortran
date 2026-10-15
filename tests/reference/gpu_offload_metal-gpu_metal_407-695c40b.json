@@ -1,0 +1,13 @@
+{
+    "basename": "gpu_offload_metal-gpu_metal_407-695c40b",
+    "cmd": "lfortran --no-color --gpu=metal -c {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/gpu_metal_407.f90",
+    "infile_hash": "4afd8af0390ad186da63d2f2b7d522a16bd7e9b5d69640cdc4602388",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "gpu_offload_metal-gpu_metal_407-695c40b.stderr",
+    "stderr_hash": "8085760fb0c529eb8c5634eea5bb5d09f46131fb9972d85b26104fd4",
+    "returncode": 5
+}

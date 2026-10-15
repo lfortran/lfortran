@@ -140,6 +140,38 @@ ASR::expr_t* GpuOffloadVisitor::dup_expr_to_scope(
 void GpuOffloadVisitor::fixup_struct_refs_in_scope(SymbolTable *scope,
         SymbolTable *kernel_scope,
         char *kernel_fn_name) {
+    // Every derived type the scope declares a value of, or names a
+    // component of, is given its copy in the kernel first, so the
+    // references below have a copy to point to however late the kernel
+    // comes to import the type itself -- a BLOCK of the loop that
+    // declares a value of it is only looked at after the routines are
+    // copied, and the value it passes to one of them has to have the type
+    // the routine's dummy has.
+    for (auto &item : scope->get_scope()) {
+        ASR::symbol_t *type_sym = nullptr;
+        if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+            ASR::Variable_t *var =
+                ASR::down_cast<ASR::Variable_t>(item.second);
+            if (var->m_type_declaration) {
+                type_sym = ASRUtils::symbol_get_past_external(
+                    var->m_type_declaration);
+            }
+        } else if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+            ASR::symbol_t *target = ASRUtils::symbol_get_past_external(
+                item.second);
+            SymbolTable *tp = target
+                ? ASRUtils::symbol_parent_symtab(target) : nullptr;
+            if (tp && tp->asr_owner &&
+                    tp->asr_owner->type == ASR::asrType::symbol) {
+                type_sym = ASR::down_cast<ASR::symbol_t>(tp->asr_owner);
+            }
+        }
+        if (type_sym && ASR::is_a<ASR::Struct_t>(*type_sym) &&
+                !kernel_scope->get_symbol(ASRUtils::symbol_name(type_sym))) {
+            import_struct_def(ASR::down_cast<ASR::Struct_t>(type_sym),
+                nullptr, kernel_scope, item.second->base.loc);
+        }
+    }
     for (auto &item : scope->get_scope()) {
         if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
             ASR::ExternalSymbol_t *es =
@@ -339,7 +371,8 @@ ASR::symbol_t* GpuOffloadVisitor::import_struct_def(ASR::Struct_t *orig_struct,
     kernel_scope->add_symbol(struct_name, kernel_struct);
 
     // Create ExternalSymbol entries in kernel scope for each member,
-    // so that StructInstanceMember can reference them.
+    // so that StructInstanceMember can reference them. A type imported
+    // for a routine's copy alone has no `orig_scope` to take them from.
     // Search orig_scope and walk up through AssociateBlock/Block
     // parent scopes, because when the loop is inside an
     // AssociateBlock the ExternalSymbol entries for struct members
