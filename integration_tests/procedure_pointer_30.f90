@@ -1,7 +1,9 @@
 ! A table of procedure pointers: an array of a derived type whose procedure
 ! pointer components are given module procedures by structure constructors
 ! (lfortran/lfortran#2848). The array constant is the only reference to
-! those procedures.
+! those procedures. Its elements are called through dummy arguments, since a
+! procedure pointer component of a constant cannot be called directly (R1040,
+! C901).
 module procedure_pointer_30_funcs
 implicit none
 abstract interface
@@ -51,12 +53,12 @@ use procedure_pointer_30_mod
 implicit none
 integer :: i, s
 do i = 1, 3
-    call table(i)%pf()
+    call run(table(i))
 end do
 if (cnt /= 111) error stop
 s = 0
 do i = 1, 2
-    s = 10*s + ftable(i)%f()
+    s = 10*s + eval(ftable(i))
 end do
 if (s /= 12) error stop
 s = 0
@@ -65,4 +67,13 @@ do i = 1, 2
 end do
 if (s /= 21) error stop
 print *, cnt, s
+contains
+    subroutine run(x)
+        type(pp), intent(in) :: x
+        call x%pf()
+    end subroutine
+    integer function eval(x)
+        type(pc), intent(in) :: x
+        eval = x%f()
+    end function
 end program
