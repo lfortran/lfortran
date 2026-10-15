@@ -6088,7 +6088,7 @@ RUN(NAME gpu_metal_316 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_317 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_318 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_319 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_320 LABELS gfortran llvm)
+RUN(NAME gpu_metal_320 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_321 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_322 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_323 LABELS gfortran llvm metal cuda_cpu)
@@ -6193,6 +6193,7 @@ RUN(NAME gpu_metal_431 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_432 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_433 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_434 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+RUN(NAME gpu_metal_436 LABELS gfortran llvm metal cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
