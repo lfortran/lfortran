@@ -10861,6 +10861,14 @@ public:
                             && ASR::is_a<ASR::FunctionType_t>(
                                 *ASR::down_cast<ASR::Pointer_t>(
                                     ASRUtils::type_get_past_allocatable(type))->m_type)) {
+                        if (AST::down_cast<AST::Name_t>(s.m_initializer)->n_member > 0) {
+                            this->visit_expr(*s.m_initializer);
+                            if (check_procedure_component_of_constant(
+                                    ASRUtils::EXPR(tmp),
+                                    "an initial procedure target")) {
+                                continue;
+                            }
+                        }
                         std::string init_name = to_lower(
                             AST::down_cast<AST::Name_t>(s.m_initializer)->m_id);
                         ASR::symbol_t *init_sym = current_scope->resolve_symbol(init_name);
@@ -18037,6 +18045,7 @@ public:
         if( is_dt_present ) {
             ASR::expr_t* dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                 al, loc, args.p[0].m_value, v, proc_type, nullptr));
+            check_procedure_component_of_constant(dt, "called");
             ASR::call_arg_t* call_args = args.p + 1;
             size_t n_call_args = args.size() - 1;
             ASRUtils::insert_self_arg(al, v, call_args, n_call_args, dt);
@@ -22398,40 +22407,50 @@ public:
         }
     }
 
-    // The named constant `c` whose procedure pointer component `expr`
-    // references, as in `c%f`, `c%inner%f` or `c(1)%f`, or nullptr. Such a
-    // reference is not a procedure component reference (F2023 R1040:
-    // `scalar-variable % procedure-component-name`), since a variable shall
-    // not be a constant or a subobject of a constant (C901).
-    ASR::expr_t* procedure_component_of_constant(ASR::expr_t* expr) {
-        if (expr == nullptr || !ASR::is_a<ASR::StructInstanceMember_t>(*expr) ||
-                !ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
-                    ASRUtils::expr_type(expr)))) {
-            return nullptr;
-        }
-        ASR::expr_t* base = ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_v;
+    // The named constant `c` that `data_ref` is or is a subobject of, as in
+    // `c`, `c%inner` or `c(1)`, or nullptr.
+    ASR::expr_t* named_constant_of_data_ref(ASR::expr_t* data_ref) {
         while (true) {
-            if (ASR::is_a<ASR::StructInstanceMember_t>(*base)) {
-                base = ASR::down_cast<ASR::StructInstanceMember_t>(base)->m_v;
-            } else if (ASR::is_a<ASR::ArrayItem_t>(*base)) {
-                base = ASR::down_cast<ASR::ArrayItem_t>(base)->m_v;
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*data_ref)) {
+                data_ref = ASR::down_cast<ASR::StructInstanceMember_t>(data_ref)->m_v;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*data_ref)) {
+                data_ref = ASR::down_cast<ASR::ArrayItem_t>(data_ref)->m_v;
             } else {
                 break;
             }
         }
-        return ASRUtils::is_const(base) ? base : nullptr;
+        return ASRUtils::is_const(data_ref) ? data_ref : nullptr;
     }
 
-    // The target of a procedure pointer (also in `associated` and as a
-    // structure constructor component value, R758) and the actual argument of
-    // a dummy procedure or procedure pointer can be a procedure component
-    // reference, but not a procedure pointer component of a named constant.
-    // `what` names the role of `expr`.
-    void check_procedure_component_of_constant(ASR::expr_t* expr,
+    // Reports `data_ref % component` at `loc` if `component` is a procedure
+    // pointer component and `data_ref` is a named constant or a subobject of
+    // one, as in `c%f`, `c%inner%f` or `c(1)%f`. Such a reference is not a
+    // procedure component reference (F2023 R1040:
+    // `scalar-variable % procedure-component-name`), since a variable shall
+    // not be a constant or a subobject of a constant (C901). A procedure
+    // designator of a call (R1522), the target of a procedure pointer
+    // (R1041), also in `associated` and as a structure constructor component
+    // value (R758), and the actual argument of a dummy procedure or
+    // procedure pointer (R1524) can be a procedure component reference, but
+    // not such a reference; an initial procedure target (R1518) can only be
+    // a procedure name. `what` names its role. A type-bound procedure of a
+    // constant, `data-ref % binding-name` (R1522), is not a component.
+    // Returns whether it reported the reference.
+    bool check_procedure_component_of_constant(ASR::expr_t* data_ref,
+            ASR::symbol_t* component, const Location& loc,
             const std::string& what) {
-        ASR::expr_t* constant = procedure_component_of_constant(expr);
+        if (data_ref == nullptr || component == nullptr) {
+            return false;
+        }
+        component = ASRUtils::symbol_get_past_external(component);
+        if (!ASR::is_a<ASR::Variable_t>(*component) ||
+                !ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
+                    ASR::down_cast<ASR::Variable_t>(component)->m_type))) {
+            return false;
+        }
+        ASR::expr_t* constant = named_constant_of_data_ref(data_ref);
         if (constant == nullptr) {
-            return;
+            return false;
         }
         diag.add(Diagnostic(
             "a procedure pointer component of a named constant cannot be "
@@ -22440,8 +22459,22 @@ public:
                 Label("`" + std::string(ASRUtils::symbol_name(
                     ASR::down_cast<ASR::Var_t>(constant)->m_v))
                     + "` is a named constant, not a variable",
-                    {expr->base.loc})}));
+                    {loc})}));
         if (!compiler_options.continue_compilation) throw SemanticAbort();
+        return true;
+    }
+
+    // Reports `expr` if it references a procedure pointer component of a
+    // named constant, see above.
+    bool check_procedure_component_of_constant(ASR::expr_t* expr,
+            const std::string& what) {
+        if (expr == nullptr || !ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            return false;
+        }
+        ASR::StructInstanceMember_t* member =
+            ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+        return check_procedure_component_of_constant(member->m_v, member->m_m,
+            expr->base.loc, what);
     }
 
     // `actual` associated with the dummy argument `dummy` of a procedure.

@@ -1467,6 +1467,7 @@ RUN(NAME procedure_pointer_37 LABELS llvm)
 RUN(NAME procedure_pointer_38 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_39 LABELS gfortran llvm)
 RUN(NAME procedure_pointer_40 LABELS llvm) # gfortran 13 at CI rejects procedure targets in initializer structure constructors
+RUN(NAME procedure_pointer_41 LABELS llvm) # gfortran 13 at CI rejects procedure targets in initializer structure constructors
 RUN(NAME bindc_assumed_rank_01 LABELS gfortran llvm)
 
 

@@ -2995,3 +2995,54 @@ contains
         nullify(cc1_pcoc3_c%p)  ! {Error} Cannot assign to a constant variable
     end subroutine cc1_pcoc3_use
 end module cc1_proc_component_of_constant_3_mod
+
+module cc1_proc_component_of_constant_4_procs_mod
+    implicit none
+contains
+    integer function cc1_pcoc4_twice(x)
+        integer, intent(in) :: x
+        cc1_pcoc4_twice = 2*x
+    end function cc1_pcoc4_twice
+end module cc1_proc_component_of_constant_4_procs_mod
+
+! Nor can it be called (R1520, R1521, R1522), or be an initial procedure
+! target, which is a procedure name (R1518).
+module cc1_proc_component_of_constant_4_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_sub, cc1_pclim_known_func
+    use cc1_proc_component_of_constant_mod, only: cc1_pcoc_c, cc1_pcoc_cs
+    use cc1_proc_component_of_constant_4_procs_mod, only: cc1_pcoc4_twice
+    implicit none
+    type :: cc1_pcoc4_t
+        procedure(cc1_pclim_known_sub), pointer, nopass :: sp => null()
+        procedure(cc1_pcoc4_twice), pointer, nopass :: f => null()
+        integer :: n = 0
+    end type
+    type :: cc1_pcoc4_outer_t
+        type(cc1_pcoc4_t) :: inner
+    end type
+    type(cc1_pcoc4_t), parameter :: cc1_pcoc4_c = &
+        cc1_pcoc4_t(cc1_pclim_known_sub, cc1_pcoc4_twice, 3)
+    type(cc1_pcoc4_outer_t), parameter :: cc1_pcoc4_o = &
+        cc1_pcoc4_outer_t(cc1_pcoc4_t(cc1_pclim_known_sub, cc1_pcoc4_twice, 4))
+    type(cc1_pcoc4_t), parameter :: cc1_pcoc4_table(2) = &
+        cc1_pcoc4_t(cc1_pclim_known_sub, cc1_pcoc4_twice, 1)
+    type :: cc1_pcoc4_holder_t
+        procedure(cc1_pclim_known_func), pointer, nopass :: g => cc1_pcoc_cs(1)%f  ! {Error} a procedure pointer component of a named constant cannot be an initial procedure target
+    end type
+    procedure(cc1_pclim_known_func), pointer :: cc1_pcoc4_q => cc1_pcoc_c%f  ! {Error} a procedure pointer component of a named constant cannot be an initial procedure target
+contains
+    subroutine cc1_pcoc4_use()
+        integer :: r
+        call cc1_pcoc4_c%sp()  ! {Error} a procedure pointer component of a named constant cannot be called
+        call cc1_pcoc4_o%inner%sp()  ! {Error} a procedure pointer component of a named constant cannot be called
+        call cc1_pcoc4_table(2)%sp()  ! {Error} a procedure pointer component of a named constant cannot be called
+        r = cc1_pcoc4_c%f(1)  ! {Error} a procedure pointer component of a named constant cannot be called
+        r = cc1_pcoc4_c%f(cc1_pcoc4_c%n)  ! {Error} a procedure pointer component of a named constant cannot be called
+        r = 1 + cc1_pcoc4_o%inner%f(cc1_pcoc4_table(1)%f(2))  ! {Error} a procedure pointer component of a named constant cannot be called (twice)
+        r = cc1_pcoc4_take_pointer(cc1_pcoc4_table(1)%f)  ! {Error} a procedure pointer component of a named constant cannot be an actual argument
+    end subroutine cc1_pcoc4_use
+    integer function cc1_pcoc4_take_pointer(g)
+        procedure(cc1_pcoc4_twice), pointer, intent(in) :: g
+        cc1_pcoc4_take_pointer = 0
+    end function cc1_pcoc4_take_pointer
+end module cc1_proc_component_of_constant_4_mod
