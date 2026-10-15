@@ -4028,6 +4028,8 @@ RUN(NAME template_requirement_abstract_interface_01 LABELS llvm llvm_wasm llvm_w
 RUN(NAME template_local_param_dim_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_local_type_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_local_type_02 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRAFILES template_local_type_02_mod.f90)
+# Templates are not supported by GFortran
+RUN(NAME template_local_type_03 LABELS llvm)
 RUN(NAME template_struct_dependency_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_require_intrinsic_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_reshape_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
