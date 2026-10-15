@@ -957,16 +957,31 @@ static inline ASR::asr_t* create_ArrIntrinsic(
         arr_intrinsic_args.p, arr_intrinsic_args.n, overload_id, return_type, value);
 }
 
+// Whether `type` is a string whose length is an expression of variables, such
+// as `len(a) - 1` for `a(:)(2:)`. A generated function cannot use that length:
+// the variables belong to the caller.
+static inline bool has_variable_string_length(ASR::ttype_t* type) {
+    ASR::ttype_t* element_type = ASRUtils::extract_type(type);
+    if (!ASR::is_a<ASR::String_t>(*element_type)) {
+        return false;
+    }
+    ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(element_type);
+    return str_type->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
+        ASRUtils::expr_value(str_type->m_len) == nullptr;
+}
+
 // A `DeferredLength` string is only a valid declaration for an allocatable or a
 // pointer variable. The `array` dummy argument of a generated reduction is
-// neither, so it is declared with an assumed length instead.
-static inline ASR::ttype_t* assumed_length_if_deferred(Allocator& al, ASR::ttype_t* type) {
+// neither, so it is declared with an assumed length instead, as is a string
+// with a variable length (see `has_variable_string_length`).
+static inline ASR::ttype_t* assumed_length_if_not_constant(Allocator& al, ASR::ttype_t* type) {
     ASR::ttype_t* element_type = ASRUtils::extract_type(type);
     if (!ASR::is_a<ASR::String_t>(*element_type)) {
         return type;
     }
     ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(element_type);
-    if (str_type->m_len_kind != ASR::string_length_kindType::DeferredLength) {
+    if (str_type->m_len_kind != ASR::string_length_kindType::DeferredLength &&
+        !has_variable_string_length(type)) {
         return type;
     }
     ASRBuilder b(al, type->base.loc);
@@ -1453,7 +1468,7 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
     Vec<ASR::expr_t*> args;
     args.reserve(al, 1);
 
-    ASR::ttype_t* array_type = assumed_length_if_deferred(al,
+    ASR::ttype_t* array_type = assumed_length_if_not_constant(al,
         ASRUtils::duplicate_type_with_empty_dims(al, arg_type));
     fill_func_arg("array", array_type)
     if( overload_id == id_array_dim || overload_id == id_array_dim_mask ) {
