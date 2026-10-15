@@ -37,6 +37,7 @@ generators (asr_to_metal.cpp and asr_to_cuda.cpp) expect:
     grid = [grid_size, 1, 1]
     block = [block_size, 1, 1]
     call lfortran_gpu_launch(ctx, kernel, c_loc(grid), c_loc(block))
+    call lfortran_gpu_release_kernel(kernel)
 
 A scratch buffer of the launch (GpuKernelLaunch.scratch), which only the
 device holds, is set with lfortran_gpu_set_scratch_arg instead, read back
@@ -249,9 +250,18 @@ class DeviceLaunchExpandVisitor :
             }
             ASR::ttype_t *element = gpu_size_of_type_argument(al, arg,
                 ASRUtils::type_get_past_array(type));
-            return b.Mul(b.i2i_t(b.ArraySize(arg, nullptr, int32), int64),
+            ASR::expr_t *size = b.Mul(
+                b.i2i_t(b.ArraySize(arg, nullptr, int32), int64),
                 ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc, element,
                     int64, nullptr)));
+            // An allocatable the loop only uses when it is allocated -- a
+            // local allocated when an optional argument is present -- is
+            // handed over as no storage at all when it is not.
+            if (ASRUtils::is_allocatable(ASRUtils::expr_type(arg))) {
+                size = ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                    is_allocated(loc, arg), size, b.i64(0), int64, nullptr));
+            }
+            return size;
         }
 
         // Builds, once per kernel, the struct that carries every scalar
@@ -1128,16 +1138,16 @@ class DeviceLaunchExpandVisitor :
                     {b.CPtr(), int32, b.CPtr(), int64},
                     {true, true, true, true}), args));
             }
-            // The kernel object owns the scratch buffers of this launch
-            // until it is released, which is after they are read back.
-            if (!read_backs.empty()) {
-                Vec<ASR::call_arg_t> release_args;
-                release_args.reserve(al, 1);
-                release_args.push_back(al, call_arg(loc, gpu_kernel));
-                out.push_back(al, b.SubroutineCall(runtime_subroutine(loc,
-                    "lfortran_gpu_release_kernel", {b.CPtr()}, {true}),
-                    release_args));
-            }
+            // The kernel object holds what this launch set up -- the
+            // scalar arguments, the scratch buffers, which are read back
+            // above, and on a discrete GPU the device buffers -- so every
+            // launch releases its own.
+            Vec<ASR::call_arg_t> release_args;
+            release_args.reserve(al, 1);
+            release_args.push_back(al, call_arg(loc, gpu_kernel));
+            out.push_back(al, b.SubroutineCall(runtime_subroutine(loc,
+                "lfortran_gpu_release_kernel", {b.CPtr()}, {true}),
+                release_args));
             for (auto &buffer : packed_buffers) {
                 out.push_back(al, memcpy_call(loc,
                     address_of(loc, buffer.arg),

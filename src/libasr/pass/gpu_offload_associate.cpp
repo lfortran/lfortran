@@ -241,28 +241,19 @@ void GpuOffloadVisitor::resolve_enclosing_associates(ParallelLoopNest &work,
                     assoc_map[assoc_sym] = assoc->m_value;
                 }
             } else if (is_a<ASR::Assignment_t>(*ab->m_body[i])) {
-                // associate(n => constant_expr) generates an
-                // Assignment instead of Associate. Capture the
-                // initial value for variables owned by this
-                // AssociateBlock so they can be resolved.
-                // Only add if the symbol isn't already mapped
-                // (e.g., from a prior Associate node); otherwise
-                // we would overwrite the real alias with a
-                // regular assignment like `v = 0.`, whose RHS
-                // may reference `v` itself and cause infinite
-                // recursion during resolution.
-                // Only scalar selectors are inlined. An
-                // array-valued selector is materialized by the
-                // compiler into a temporary that lives in this
-                // AssociateBlock's symtab, and its defining
-                // expression may itself reference further
-                // AssociateBlock-local symbols (the array
-                // constant buffer, the resolved specific
-                // procedure of a generic constructor, ...).
-                // Inlining it would drag those unreachable
-                // symbols into the kernel. The associate name is
-                // backed by real storage here, so it is passed
-                // into the kernel as an ordinary buffer instead.
+                // A name bound to an expression is an Assignment of
+                // the value to a variable of this AssociateBlock. It
+                // holds the value the expression had when the construct
+                // was entered, and that value is what the kernel is
+                // handed: writing the expression into the loop instead
+                // would evaluate it again, after what it reads may have
+                // changed, and hand the kernel everything it reads --
+                // `size(a)` would copy all of `a` to the device at every
+                // launch. Only a scalar constant is written in; an array
+                // name is handed over as a buffer like any other array.
+                // A name already mapped (from an Associate) keeps its
+                // alias: a later assignment such as `v = 0.` may read `v`
+                // itself.
                 ASR::Assignment_t *asgn = down_cast<ASR::Assignment_t>(
                     ab->m_body[i]);
                 if (is_a<ASR::Var_t>(*asgn->m_target)) {
@@ -273,6 +264,7 @@ void GpuOffloadVisitor::resolve_enclosing_associates(ParallelLoopNest &work,
                             == ab->m_symtab &&
                         !ASRUtils::is_array(
                             down_cast<ASR::Variable_t>(sym)->m_type) &&
+                        ASRUtils::expr_value(asgn->m_value) != nullptr &&
                         assoc_map.find(sym) == assoc_map.end()) {
                         assoc_map[sym] = asgn->m_value;
                     }
