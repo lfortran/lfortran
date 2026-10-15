@@ -3398,7 +3398,14 @@ namespace Eoshift {
             else if(is_logical(*type_array))
                 final_boundary = b.bool_t(false, boundary_type);
             else if(is_character(*type_array)){
-                final_boundary = b.StringConstant("  ", boundary_type);
+                // Blanks as long as the elements; when that length is only
+                // known at run time, assigning one blank pads the rest
+                int64_t len = -1;
+                if (ASRUtils::extract_value(ASRUtils::get_string_type(boundary_type)->m_len, len)) {
+                    final_boundary = b.StringConstant(std::string(len, ' '), boundary_type);
+                } else {
+                    final_boundary = b.StringBlank(ASRUtils::extract_kind_from_ttype_t(boundary_type));
+                }
             }
         }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 4);
