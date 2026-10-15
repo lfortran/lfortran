@@ -6139,6 +6139,7 @@ RUN(NAME gpu_metal_380 LABELS llvm metal cuda_cpu) # gfortran on CI lacks reduce
 # gpu_metal_381 has a BLOCK array whose extent is known only at run time,
 # which a Metal shader cannot declare yet, so it has no metal label.
 RUN(NAME gpu_metal_381 LABELS gfortran llvm cuda_cpu)
+RUN(NAME gpu_metal_382 LABELS gfortran llvm metal cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
