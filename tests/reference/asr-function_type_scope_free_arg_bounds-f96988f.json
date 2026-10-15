@@ -1,0 +1,13 @@
+{
+    "basename": "asr-function_type_scope_free_arg_bounds-f96988f",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/function_type_scope_free_arg_bounds.asr",
+    "infile_hash": "fb2971716f9457912e399b45c8a70e4f5aba73b7fe38a59f46d1fa0d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-function_type_scope_free_arg_bounds-f96988f.stderr",
+    "stderr_hash": "8da07746a954a52e379820b4e40f60981e6c75b5b27cf9d8be493283",
+    "returncode": 2
+}

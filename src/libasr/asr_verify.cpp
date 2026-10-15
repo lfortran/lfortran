@@ -3415,6 +3415,18 @@ public:
         }
 
         for( size_t i = 0; i < x.n_arg_types; i++ ) {
+            ASR::dimension_t* dims = nullptr;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                x.m_arg_types[i], dims);
+            for( size_t j = 0; j < n_dims; j++ ) {
+                require_id((dims[j].m_start == nullptr ||
+                        ASRUtils::is_scope_free_expr(dims[j].m_start)) &&
+                    (dims[j].m_length == nullptr ||
+                        ASRUtils::is_scope_free_expr(dims[j].m_length)),
+                    "asr.verify.function_type.scope_free_arg_bounds",
+                    "the bounds of array argument " + std::to_string(i + 1) +
+                    " of a procedure type must not reference a symbol");
+            }
             verify_nonscoped_ttype(x.m_arg_types[i]);
         }
         if( x.m_return_var_type ) {

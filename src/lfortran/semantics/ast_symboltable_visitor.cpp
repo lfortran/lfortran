@@ -4834,7 +4834,7 @@ public:
                     if(ASR::is_a<ASR::Var_t>(*func->m_args[i]) &&
                        ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v == sym_to_variable){
                         ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, func->m_args, func->n_args);
-                        func_type->m_arg_types[i] = replacer.replace_args_with_FunctionParam(
+                        func_type->m_arg_types[i] = replacer.replace_arg_type_with_FunctionParam(
                                     variable->m_type, current_scope);
                         break;
                     }

@@ -56,6 +56,15 @@ interface ASR, are `Interface`. An empty `arg_types` means the procedure takes
 no arguments, except under `deftype = ImplicitInterface`, where it means the
 arguments are not known here.
 
+A signature does not depend on the scope it is declared in, so it can be
+copied anywhere a procedure of its type is named. An array bound of an
+argument type is therefore either `nil` or scope free: built only from
+constants, [FunctionParam](../expression_nodes/FunctionParam.md)s and
+intrinsic operations on them. A bound that depends on anything else, such as a
+module variable in `a(n)`, is `nil` here and the array keeps its physical
+type; where the extent is needed, for example for the shape check of a call,
+it is taken from the dummy argument of the procedure or of its interface.
+
 ## Examples
 
 ```clojure

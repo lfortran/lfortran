@@ -7221,6 +7221,51 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
 };
 
 
+// Whether an expression references no symbol, so that it means the same in
+// every scope: constants, FunctionParams and intrinsic operations on them.
+class ScopeFreeExprVisitor: public ASR::BaseWalkVisitor<ScopeFreeExprVisitor> {
+public:
+    bool scope_free = true;
+
+    void visit_Var(const ASR::Var_t&) { scope_free = false; }
+    void visit_FunctionCall(const ASR::FunctionCall_t&) { scope_free = false; }
+    void visit_StructConstructor(const ASR::StructConstructor_t&) { scope_free = false; }
+    void visit_StructConstant(const ASR::StructConstant_t&) { scope_free = false; }
+    void visit_EnumConstructor(const ASR::EnumConstructor_t&) { scope_free = false; }
+    void visit_UnionConstructor(const ASR::UnionConstructor_t&) { scope_free = false; }
+    void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t&) { scope_free = false; }
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t&) { scope_free = false; }
+    void visit_StructStaticMember(const ASR::StructStaticMember_t&) { scope_free = false; }
+    void visit_EnumStaticMember(const ASR::EnumStaticMember_t&) { scope_free = false; }
+    void visit_UnionInstanceMember(const ASR::UnionInstanceMember_t&) { scope_free = false; }
+    void visit_EnumType(const ASR::EnumType_t&) { scope_free = false; }
+};
+
+static inline bool is_scope_free_expr(ASR::expr_t* x) {
+    ScopeFreeExprVisitor v;
+    v.visit_expr(*x);
+    return v.scope_free;
+}
+
+// A procedure type records only the array bounds of a dummy argument that
+// are scope free. The others are dropped here, keeping the physical type,
+// from a type `t` the caller owns: they are taken from the interface where
+// they are needed.
+static inline void make_array_bounds_scope_free(ASR::ttype_t* t) {
+    t = type_get_past_allocatable_pointer(t);
+    if (!ASR::is_a<ASR::Array_t>(*t)) return;
+    ASR::Array_t* a = ASR::down_cast<ASR::Array_t>(t);
+    auto scope_free = [](ASR::expr_t* bound) -> ASR::expr_t* {
+        if (bound == nullptr || is_scope_free_expr(bound)) return bound;
+        ASR::expr_t* value = expr_value(bound);
+        return (value && is_scope_free_expr(value)) ? value : nullptr;
+    };
+    for (size_t i = 0; i < a->n_dims; i++) {
+        a->m_dims[i].m_start = scope_free(a->m_dims[i].m_start);
+        a->m_dims[i].m_length = scope_free(a->m_dims[i].m_length);
+    }
+}
+
 class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithFunctionParamVisitor> {
 
     private:
@@ -7253,7 +7298,7 @@ class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithF
 
         if( idx_found ) {
             LCOMPILERS_ASSERT(current_expr);
-            ASR::ttype_t* t_ = replace_args_with_FunctionParam(
+            ASR::ttype_t* t_ = replace_arg_type_with_FunctionParam(
                                 ASRUtils::symbol_type(x->m_v), current_scope);
             *current_expr = ASRUtils::EXPR(ASR::make_FunctionParam_t(
                                 al, m_args[arg_idx]->base.loc, arg_idx,
@@ -7278,6 +7323,14 @@ class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithF
         return t;
     }
 
+    // The type of a dummy argument in a procedure type.
+    ASR::ttype_t* replace_arg_type_with_FunctionParam(ASR::ttype_t* t,
+            SymbolTable* current_scope) {
+        t = replace_args_with_FunctionParam(t, current_scope);
+        make_array_bounds_scope_free(t);
+        return t;
+    }
+
 };
 
 inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
@@ -7293,7 +7346,7 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
     for( size_t i = 0; i < n_args; i++ ) {
         // We need to substitute all direct argument variable references with
         // FunctionParam.
-        ASR::ttype_t *t = replacer.replace_args_with_FunctionParam(
+        ASR::ttype_t *t = replacer.replace_arg_type_with_FunctionParam(
                             expr_type(a_args[i]), current_scope);
         arg_types.push_back(al, t);
     }
