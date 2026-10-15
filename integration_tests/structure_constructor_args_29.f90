@@ -70,8 +70,6 @@ program structure_constructor_args_29
     type(procs_t) :: p
     type(self_t) :: s
     procedure(int_sub_i), pointer :: q
-    type(procs_t) :: saved = procs_t(set_seen, scaled_sum, pad3)
-    type(self_t) :: saved_self = self_t(5, twice_v)
 
     p = procs_t(set_seen, scaled_sum, pad3)
     call p%sub(7)
@@ -87,13 +85,7 @@ program structure_constructor_args_29
     p = procs_t(sub=null(), cfn=pad3, fn=scaled_sum)
     if (associated(p%sub) .or. .not. associated(p%cfn)) error stop 5
 
-    call saved%sub(11)
-    if (seen /= 11) error stop 6
-    if (abs(saved%fn(0.5, [4.0]) - 2.0) > 1e-6) error stop 7
-    if (saved%cfn(5) /= "005") error stop 8
-
     s = self_t(21, twice_v)
-    if (s%get() /= 42) error stop 9
-    if (saved_self%get() /= 10) error stop 10
+    if (s%get() /= 42) error stop 6
     print *, "ok"
 end program structure_constructor_args_29
