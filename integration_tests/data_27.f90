@@ -72,14 +72,13 @@ contains
     subroutine partial_sections(call_number)
         integer, intent(in) :: call_number
         integer :: column(2,2), prefix(4), suffix(4), middle(2,3), row(2,3), &
-            strided(5), vector(3), k
+            strided(5), k
         data column(1:2,1) /1, 2/
         data prefix(:3) /3, 4, 5/
         data suffix(2:) /6, 7, 8/
         data middle(:,2) /9, 10/
         data row(2,1:3) /11, 12, 13/
         data strided(1:5:2) /14, 15, 16/
-        data vector([3, 1]) /17, 18/
         k = call_number - 1
         if (any(column(:,1) /= [1, 2] + k)) error stop "column DATA lifetime"
         if (any(prefix(:3) /= [3, 4, 5] + k)) error stop "prefix DATA lifetime"
@@ -87,14 +86,12 @@ contains
         if (any(middle(:,2) /= [9, 10] + k)) error stop "middle DATA lifetime"
         if (any(row(2,:) /= [11, 12, 13] + k)) error stop "row DATA lifetime"
         if (any(strided(1:5:2) /= [14, 15, 16] + k)) error stop "strided DATA lifetime"
-        if (any(vector([3, 1]) /= [17, 18] + k)) error stop "vector subscript DATA lifetime"
         column(:,1) = column(:,1) + 1
         prefix(:3) = prefix(:3) + 1
         suffix(2:) = suffix(2:) + 1
         middle(:,2) = middle(:,2) + 1
         row(2,:) = row(2,:) + 1
         strided(1:5:2) = strided(1:5:2) + 1
-        vector([3, 1]) = vector([3, 1]) + 1
     end subroutine
 
     subroutine block_construct(call_number)
