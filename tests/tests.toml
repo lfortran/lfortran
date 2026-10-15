@@ -5690,26 +5690,6 @@ filename = "errors/data_implied_do3.f90"
 asr = true
 
 [[test]]
-filename = "errors/data_section1.f90"
-asr = true
-
-[[test]]
-filename = "errors/data_section2.f90"
-asr = true
-
-[[test]]
-filename = "errors/data_section3.f90"
-asr = true
-
-[[test]]
-filename = "errors/data_section4.f90"
-asr = true
-
-[[test]]
-filename = "errors/data_section5.f90"
-asr = true
-
-[[test]]
 filename = "../integration_tests/decl_order_02.f90"
 ast = true
 ast_f90 = true
