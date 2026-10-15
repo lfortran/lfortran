@@ -4052,10 +4052,22 @@ semantic error: procedure 'k' is referenced as a function, but its interface has
     --> tests/errors/continue_compilation_1.f90:3213:24
      |
 3213 |         cc1_rir_call = k()  ! {Error} procedure 'k' is referenced as a function, but its interface has no result
-     |                        ^^^ 
+     |                        ^^^ 'k' cannot be called as a function
 
 semantic error: procedure 'k' is referenced as a function, but its interface has no result
     --> tests/errors/continue_compilation_1.f90:3227:18
      |
 3227 |         print *, k()  ! {Error} procedure 'k' is referenced as a function, but its interface has no result
-     |                  ^^^ 
+     |                  ^^^ 'k' cannot be called as a function
+
+semantic error: procedure 'p' is referenced as a function, but its interface has no result
+    --> tests/errors/continue_compilation_1.f90:3249:13
+     |
+3249 |         x = p()  ! {Error} procedure 'p' is referenced as a function, but its interface has no result
+     |             ^^^ 'p' cannot be called as a function
+
+semantic error: procedure 'pf' is referenced as a function, but its interface has no result
+    --> tests/errors/continue_compilation_1.f90:3250:13
+     |
+3250 |         x = o%pf()  ! {Error} procedure 'pf' is referenced as a function, but its interface has no result
+     |             ^^^^^^ 'pf' cannot be called as a function

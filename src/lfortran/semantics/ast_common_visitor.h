@@ -18003,7 +18003,8 @@ public:
     }
 
     ASR::asr_t* create_FunctionFromFunctionTypeVariable(const Location &loc,
-                Vec<ASR::call_arg_t>& args, ASR::symbol_t *v, bool is_dt_present=false) {
+                Vec<ASR::call_arg_t>& args, ASR::symbol_t *v,
+                const std::string &source_name, bool is_dt_present=false) {
         ASR::ttype_t* proc_type = ASRUtils::import_procedure_type(al,
             ASRUtils::symbol_type(v), current_scope);
         ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::type_get_past_pointer(proc_type));
@@ -18013,10 +18014,10 @@ public:
             return_type = declared_result->second;
         }
         if (return_type == nullptr) {
-            diag.add(Diagnostic("procedure '" + std::string(
-                ASRUtils::symbol_name(v)) + "' is referenced as a function, "
-                "but its interface has no result",
-                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            diag.add(Diagnostic("procedure '" + source_name +
+                "' is referenced as a function, but its interface has no result",
+                Level::Error, Stage::Semantic,
+                {Label("'" + source_name + "' cannot be called as a function", {loc})}));
             throw SemanticAbort();
         }
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
@@ -18183,7 +18184,8 @@ public:
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             return create_Function(x.base.base.loc, new_args, v);
         } else if (ASR::is_a<ASR::Variable_t>(*f2)) {
-            return create_FunctionFromFunctionTypeVariable(x.base.base.loc, new_args, v, is_dt_present);
+            return create_FunctionFromFunctionTypeVariable(x.base.base.loc, new_args, v,
+                std::string(x.m_func), is_dt_present);
         } else {
             LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2));
             return create_GenericProcedureWithASTNode(x, new_args, v, is_dt_present);

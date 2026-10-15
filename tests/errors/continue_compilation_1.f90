@@ -3228,3 +3228,25 @@ contains
         cc1_rir_local_h = 1
     end function cc1_rir_local_h
 end module cc1_resultless_interface_references
+
+! Procedure pointers and procedure pointer components with a subroutine
+! interface are reported by their source names.
+module cc1_resultless_pointer_references
+implicit none
+type :: cc1_rpr_t
+    procedure(cc1_rpr_sub), pointer, nopass :: pf => null()
+end type cc1_rpr_t
+contains
+    subroutine cc1_rpr_sub()
+    end subroutine cc1_rpr_sub
+
+    subroutine cc1_rpr_use()
+        procedure(cc1_rpr_sub), pointer :: p
+        type(cc1_rpr_t) :: o
+        real :: x
+        p => cc1_rpr_sub
+        o%pf => cc1_rpr_sub
+        x = p()  ! {Error} procedure 'p' is referenced as a function, but its interface has no result
+        x = o%pf()  ! {Error} procedure 'pf' is referenced as a function, but its interface has no result
+    end subroutine cc1_rpr_use
+end module cc1_resultless_pointer_references
