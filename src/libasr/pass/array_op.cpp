@@ -2216,6 +2216,101 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         return nullptr;
     }
 
+    // `a op b` of integer(4) sizes, folded when both are constants
+    ASR::expr_t* size_binop(ASR::expr_t* a, ASR::binopType op, ASR::expr_t* b,
+            const Location& loc) {
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        int64_t a_value = 0, b_value = 0;
+        if (ASRUtils::expr_value(a) && ASRUtils::expr_value(b) &&
+                ASRUtils::extract_value(ASRUtils::expr_value(a), a_value) &&
+                ASRUtils::extract_value(ASRUtils::expr_value(b), b_value)) {
+            int64_t result = op == ASR::binopType::Add ? a_value + b_value : a_value * b_value;
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, result, int_type));
+        }
+        return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, a, op, b, int_type, nullptr));
+    }
+
+    // The integer(4) number of elements of a constructor with elements
+    // `args`, or nullptr if it is only known once they are evaluated
+    ASR::expr_t* get_constructor_size(ASR::expr_t** args, size_t n_args,
+            const Location& loc) {
+        ASRUtils::ASRBuilder builder(al, loc);
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+        auto to_int = [&](ASR::expr_t* e) -> ASR::expr_t* {
+            if (e == nullptr) return nullptr;
+            e = duplicator.duplicate_expr(e);
+            if (ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(e)) != 4) {
+                e = builder.i2i_t(e, int_type);
+            }
+            return e;
+        };
+        ASR::expr_t* size = builder.i32(0);
+        for (size_t i = 0; i < n_args; i++) {
+            ASR::expr_t* arg = args[i];
+            ASR::expr_t* arg_size = nullptr;
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*arg)) {
+                ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(arg);
+                ASR::expr_t* values_size = get_constructor_size(
+                    idl->m_values, idl->n_values, loc);
+                if (values_size == nullptr || !ASR::is_a<ASR::Var_t>(*idl->m_var) ||
+                        ASRUtils::expr_references_symbol(values_size,
+                            ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v)) {
+                    return nullptr;
+                }
+                ASR::expr_t* trips = ASRUtils::compute_length_from_start_end_step(al,
+                    to_int(idl->m_start), to_int(idl->m_end), to_int(idl->m_increment));
+                if (ASRUtils::expr_value(trips) == nullptr) {
+                    // An empty loop has no elements rather than a negative number
+                    trips = builder.Max(trips, builder.i32(0));
+                    ASR::IfExp_t* max = ASR::down_cast<ASR::IfExp_t>(trips);
+                    max->m_body = duplicator.duplicate_expr(max->m_body);
+                }
+                arg_size = size_binop(values_size, ASR::binopType::Mul, trips, loc);
+            } else if (ASR::is_a<ASR::ArrayConstructor_t>(*arg)) {
+                ASR::ArrayConstructor_t* constructor = ASR::down_cast<ASR::ArrayConstructor_t>(arg);
+                arg_size = get_constructor_size(constructor->m_args, constructor->n_args, loc);
+                if (arg_size == nullptr) {
+                    return nullptr;
+                }
+            } else if (!ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+                arg_size = builder.i32(1);
+            } else if (ASR::is_a<ASR::Var_t>(*arg) ||
+                    ASR::is_a<ASR::StructInstanceMember_t>(*arg)) {
+                arg_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc,
+                    duplicator.duplicate_expr(arg), nullptr, int_type, nullptr));
+            } else {
+                return nullptr;
+            }
+            size = size_binop(size, ASR::binopType::Add, arg_size, loc);
+        }
+        return size;
+    }
+
+    // A copy of constructor `x` whose type gives its size, where a shape
+    // check reads it from, or nullptr if the size is not known in advance
+    ASR::expr_t* get_constructor_with_size(ASR::ArrayConstructor_t* x) {
+        const Location& loc = x->base.base.loc;
+        ASR::expr_t* size = get_constructor_size(x->m_args, x->n_args, loc);
+        if (size == nullptr) {
+            return nullptr;
+        }
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        ASR::ArrayConstructor_t* constructor = ASR::down_cast<ASR::ArrayConstructor_t>(
+            duplicator.duplicate_expr(&x->base));
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 1);
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        dim.m_length = size;
+        dims.push_back(al, dim);
+        constructor->m_type = ASRUtils::make_Array_t_util(al, loc,
+            ASRUtils::type_get_past_array(constructor->m_type), dims.p, dims.size());
+        return &constructor->base;
+    }
+
     bool should_auto_realloc_component_assignment(ASR::expr_t* target) {
         if (!ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
             return false;
@@ -2826,26 +2921,34 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                     idl->m_type, nullptr, ASR::arraystorageType::ColMajor, nullptr));
             }
             // The constructor is stored into the variable element by
-            // element, so an allocatable variable that is not reallocated
-            // is checked to be allocated first, as for a whole array
-            bool check_allocated = bounds_checking &&
-                ASR::is_a<ASR::ArrayConstructor_t>(*xx.m_value) &&
-                ASRUtils::is_allocatable(ASRUtils::expr_type(xx.m_target)) &&
-                !realloc_lhs && !xx.m_realloc_lhs && !xx.m_move_allocation &&
-                !should_auto_realloc_component_assignment(xx.m_target);
+            // element, so the variable is checked first to be allocated and
+            // to have the shape of the constructor, as for a whole array,
+            // unless it is reallocated to the constructor
+            ASR::expr_t* checked_constructor = nullptr;
+            if (bounds_checking && !xx.m_move_allocation &&
+                    ASR::is_a<ASR::ArrayConstructor_t>(*xx.m_value) &&
+                    !(ASRUtils::is_allocatable(ASRUtils::expr_type(xx.m_target)) &&
+                      (realloc_lhs || xx.m_realloc_lhs ||
+                       should_auto_realloc_component_assignment(xx.m_target)))) {
+                checked_constructor = get_constructor_with_size(
+                    ASR::down_cast<ASR::ArrayConstructor_t>(xx.m_value));
+            }
             replacer.result_expr = xx.m_target;
             ASR::expr_t** current_expr_copy = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&xx.m_value);
             this->call_replacer();
             current_expr = current_expr_copy;
             replacer.result_expr = nullptr;
-            if (check_allocated) {
+            if (checked_constructor) {
                 ASRUtils::ExprStmtDuplicator expr_duplicator(al);
                 Vec<ASR::stmt_t*> stmts;
                 stmts.reserve(al, pass_result.size() + 1);
+                Vec<ASR::expr_t*> components;
+                components.reserve(al, 1);
+                components.push_back(al, checked_constructor);
                 stmts.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(
                     al, x.base.base.loc, expr_duplicator.duplicate_expr(xx.m_target),
-                    nullptr, 0, false)));
+                    components.p, components.size(), false)));
                 if (pass_result.size() == 0 && !remove_original_stmt) {
                     stmts.push_back(al, const_cast<ASR::stmt_t*>(&x.base));
                 }

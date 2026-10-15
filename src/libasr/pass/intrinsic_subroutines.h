@@ -282,7 +282,12 @@ namespace RandomSeed {
                     body.push_back(al, b.Assignment(xx, b.Call(s_get, get_call_args, int32)));
                     vals.push_back(xx);
                 }
-                body.push_back(al, b.Assignment(args[2], b.ArrayConstant(vals, elem_type, false)));
+                // `get` can be larger than the seed, which is stored into
+                // its first elements
+                for (size_t i = 0; i < vals.size(); i++) {
+                    std::vector<ASR::expr_t*> idx = {b.i32(i + 1)};
+                    body.push_back(al, b.Assignment(b.ArrayItem_01(args[2], idx), vals[i]));
+                }
             }
         } else {
             fill_func_arg_sub("get", real32, In);
