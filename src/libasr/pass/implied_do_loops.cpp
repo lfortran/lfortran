@@ -28,6 +28,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
     bool realloc_lhs, allocate_target;
     const LCompilers::PassOptions& pass_options;
     bool skip_idl_save_restore;
+    // Index variables of the enclosing FORALL statements
+    std::vector<ASR::symbol_t*> forall_indices;
 
     int get_index_kind() const {
         return pass_options.descriptor_index_64 ? 8 : 4;
@@ -590,7 +592,23 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         // Any ArrayConstructor inside will be handled by create_do_loop during ImpliedDoLoop expansion.
     }
 
+    bool depends_on_forall_index(ASR::expr_t* x) {
+        for (ASR::symbol_t* index: forall_indices) {
+            if (ASRUtils::expr_references_symbol(x, index)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
+        // The statements that evaluate a constructor are put in front of
+        // the FORALL, where its indices are not defined. A constructor that
+        // depends on them is left to array_struct_temporary, which runs
+        // after the FORALL is lowered to loops.
+        if (depends_on_forall_index(&x->base)) {
+            return;
+        }
         // Skip ArrayConstructor replacement when any argument is a function
         // call (FunctionCall or IntrinsicElementalFunction) returning an array.
         // The implied_do_loop pass incorrectly expands these into do-loops,
@@ -1104,11 +1122,12 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             pass_result.reserve(al, 0);
         }
 
-        // The statements that evaluate an array constructor cannot be put
-        // inside a FORALL, and in front of it they would not see its
-        // indices. Its constructors are left to array_struct_temporary,
-        // which runs after the FORALL is lowered to loops.
-        void visit_ForAllSingle(const ASR::ForAllSingle_t & /*x*/) {
+        void visit_ForAllSingle(const ASR::ForAllSingle_t &x) {
+            visit_do_loop_head(x.m_head);
+            replacer.forall_indices.push_back(
+                ASR::down_cast<ASR::Var_t>(x.m_head.m_v)->m_v);
+            visit_stmt(*x.m_assign_stmt);
+            replacer.forall_indices.pop_back();
         }
 
         void visit_Assignment(const ASR::Assignment_t &x) {

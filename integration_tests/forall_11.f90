@@ -1,5 +1,6 @@
-! FORALL with array constructors that depend on the FORALL indices: each
-! constructor is evaluated for its own index values.
+! FORALL with array constructors: a constructor that depends on the FORALL
+! indices is evaluated for its own index values, and one that does not is
+! still evaluated correctly.
 program forall_11
 implicit none
 type :: st
@@ -10,7 +11,7 @@ type :: alloc_st
 end type
 type(st) :: s(3)
 type(alloc_st) :: t(3)
-integer :: x(3), y(3,4), i, j
+integer :: x(3), y(3,4), m(3,2,2), i, j
 
 x = 0
 forall (i = 1:3) x(i:i) = [i]
@@ -46,6 +47,11 @@ end do
 x = [1, 2, 3]
 forall (i = 1:3) x(i:i) = [x(4-i)]
 if (any(x /= [3, 2, 1])) error stop 7
+
+forall (i = 1:3) m(i,:,:) = reshape([(j, j = 1, 4)], [2, 2])
+do i = 1, 3
+    if (any(m(i,:,1) /= [1, 2]) .or. any(m(i,:,2) /= [3, 4])) error stop 8
+end do
 
 print *, "ok"
 end program
