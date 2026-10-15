@@ -831,6 +831,14 @@ bool is_include(const std::string &s, uint32_t pos) {
     }
 }
 
+// Makes the range of the current file in `lm` hold every position in `out`
+void cover_output(LocationManager &lm, const std::string &out)
+{
+    if (!lm.file_ends.empty() && lm.file_ends.back() < out.size()) {
+        lm.file_ends.back() = out.size();
+    }
+}
+
 /*
 The prescan phase includes:
 - Removal of whitespace (fixed-form only)
@@ -936,6 +944,7 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
                     if ((s[pos] == '"') || (s[pos] == '\'')) {
                         if (!process_include(out, s, lm, pos, fixed_form,
                                 include_dirs, col, diagnostics)) {
+                            cover_output(lm, out);
                             Error error;
                             return error;
                         }
@@ -947,6 +956,7 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
                 }
             };
             if (!ok) {
+                cover_output(lm, out);
                 Error error;
                 return error;
             }
@@ -954,6 +964,7 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
         }
         lm.files.back().in_start.push_back(pos);
         lm.files.back().out_start.push_back(out.size());
+        cover_output(lm, out);
         return out;
     } else {
          // `pos` is the position in the original code `s`
@@ -979,6 +990,7 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
                 while (pos < s.size() && s[pos] == ' ') pos++;
                 LCOMPILERS_ASSERT(pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')));
                 if (!process_include(out, s, lm, pos, fixed_form, include_dirs, col, diagnostics)) {
+                    cover_output(lm, out);
                     Error error;
                     return error;
                 }
@@ -1030,6 +1042,7 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
         // file has it
         lm.files.back().in_start.push_back(pos);
         lm.files.back().out_start.push_back(out.size());
+        cover_output(lm, out);
         return out;
     }
 }
