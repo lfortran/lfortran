@@ -1,0 +1,13 @@
+{
+    "basename": "asr-data_section3-e0b6814",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/data_section3.f90",
+    "infile_hash": "db89cb70462fde2338ed3af6707caca640752020efa5de6f394f344c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-data_section3-e0b6814.stderr",
+    "stderr_hash": "6c0845b7566a1dda76abe2e53342709b43f97951e0391c7e83f7b942",
+    "returncode": 2
+}

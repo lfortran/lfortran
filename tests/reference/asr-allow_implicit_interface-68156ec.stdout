@@ -413,7 +413,7 @@
                                         1.000000
                                         (Real 8)
                                     )
-                                    Default
+                                    Save
                                     (Real 8)
                                     ()
                                     Source
@@ -469,7 +469,7 @@
                                         6.000000
                                         (Real 8)
                                     )
-                                    Default
+                                    Save
                                     (Real 8)
                                     ()
                                     Source
@@ -500,7 +500,7 @@
                                         2.000000
                                         (Real 8)
                                     )
-                                    Default
+                                    Save
                                     (Real 8)
                                     ()
                                     Source
@@ -606,7 +606,7 @@
                                         0.000000
                                         (Real 8)
                                     )
-                                    Default
+                                    Save
                                     (Real 8)
                                     ()
                                     Source
@@ -642,47 +642,7 @@
                     )
                     []
                     []
-                    [(Assignment
-                        (Var 2 zero)
-                        (RealConstant
-                            0.000000
-                            (Real 8)
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 one)
-                        (RealConstant
-                            1.000000
-                            (Real 8)
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 two)
-                        (RealConstant
-                            2.000000
-                            (Real 8)
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 six)
-                        (RealConstant
-                            6.000000
-                            (Real 8)
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Associate
+                    [(Associate
                         (Var 2 alnorm~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 alnorm)

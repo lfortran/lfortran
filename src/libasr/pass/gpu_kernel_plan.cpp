@@ -71,18 +71,15 @@ public:
                     GpuDecline(GpuDeclineReason::StructNonDataMember));
             }
             if (is_decomposed_member(member)) continue;
+            if (gpu_component_is_opaque(member)) continue;
             ASR::ttype_t *type = ASR::down_cast<ASR::Variable_t>(member)->m_type;
             if (ASRUtils::is_pointer(type)) {
                 return unsupported(
                     GpuDecline(GpuDeclineReason::StructPointerMember));
             }
             if (ASRUtils::is_allocatable(type)) {
-                if (ASRUtils::is_array(type)) {
-                    return unsupported(GpuDecline(
-                        GpuDeclineReason::StructAllocatableArrayMember));
-                }
                 return unsupported(GpuDecline(
-                    GpuDeclineReason::StructAllocatableScalarMember));
+                    GpuDeclineReason::StructAllocatableArrayMember));
             }
             if (ASRUtils::is_array(type) &&
                     ASRUtils::get_fixed_size_of_array(type) <= 0) {
@@ -146,6 +143,7 @@ public:
             ASR::ttype_t *member_type = ASRUtils::symbol_type(member);
             if (ASRUtils::is_allocatable_or_pointer(member_type)) {
                 if (is_decomposed_member(member)) continue;
+                if (gpu_component_is_opaque(member)) continue;
                 return unsupported(
                     GpuDecline(GpuDeclineReason::ClassAllocatableComponent));
             }
@@ -274,9 +272,91 @@ public:
         }
     };
 
+    // The first allocatable scalar component of a derived type, at any
+    // depth its value holds inline: its own components, those it inherits,
+    // and those of a component of a derived type that is not itself
+    // allocatable.
+    static ASR::symbol_t* opaque_component(ASR::symbol_t *struct_sym,
+            std::set<ASR::Struct_t*> &visited) {
+        ASR::Struct_t *st = gpu_struct_definition(struct_sym);
+        if (!st || !visited.insert(st).second) return nullptr;
+        if (st->m_parent) {
+            if (ASR::symbol_t *found = opaque_component(st->m_parent,
+                    visited)) {
+                return found;
+            }
+        }
+        for (size_t i = 0; i < st->n_members; i++) {
+            ASR::symbol_t *member = st->m_symtab->get_symbol(st->m_members[i]);
+            if (gpu_component_is_opaque(member)) return member;
+            if (!member || !ASR::is_a<ASR::Variable_t>(*member)) continue;
+            ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(member);
+            if (ASRUtils::is_allocatable_or_pointer(variable->m_type)) continue;
+            if (!ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::type_get_past_array(variable->m_type))) {
+                continue;
+            }
+            if (ASR::symbol_t *found = opaque_component(
+                    variable->m_type_declaration, visited)) {
+                return found;
+            }
+        }
+        return nullptr;
+    }
+
+    // The device carries an allocatable scalar component as the host's
+    // bytes, not as a value it can read (see `gpu_component_is_opaque`).
+    // A kernel that names the component, or that stores a whole value of a
+    // type holding one -- which would need the component allocated and
+    // copied, not its host address duplicated -- is turned down here
+    // rather than compiled into code that reads an address as data.
+    class OpaqueComponentUseFinder : public
+            ASRUtils::BlockBodyWalkVisitor<OpaqueComponentUseFinder> {
+    public:
+        GpuDecline found;
+
+        void visit_body(ASR::stmt_t **body, size_t n_body) {
+            for (size_t i = 0; i < n_body && !found.declined(); i++) {
+                visit_stmt(*body[i]);
+            }
+        }
+
+        void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+            ASR::symbol_t *member = ASRUtils::symbol_get_past_external(x.m_m);
+            if (!found.declined() && gpu_component_is_opaque(member)) {
+                found = GpuDecline(
+                    GpuDeclineReason::AllocatableScalarComponentUse,
+                    ASRUtils::symbol_name(member));
+                return;
+            }
+            ASRUtils::BlockBodyWalkVisitor<OpaqueComponentUseFinder>
+                ::visit_StructInstanceMember(x);
+        }
+
+        void visit_Assignment(const ASR::Assignment_t &x) {
+            if (!found.declined() && ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(ASRUtils::expr_type(
+                        x.m_target)))) {
+                std::set<ASR::Struct_t*> visited;
+                ASR::symbol_t *component = opaque_component(
+                    ASRUtils::get_struct_sym_from_struct_expr(x.m_target),
+                    visited);
+                if (component) {
+                    found = GpuDecline(
+                        GpuDeclineReason::AllocatableScalarComponentCopy,
+                        ASRUtils::symbol_name(component));
+                    return;
+                }
+            }
+            ASRUtils::BlockBodyWalkVisitor<OpaqueComponentUseFinder>
+                ::visit_Assignment(x);
+        }
+    };
+
     bool supported(ASR::symbol_t *kernel_sym,
             ASR::call_arg_t *call_args, size_t n_call_args,
-            const std::vector<GpuVlaWorkspace> &workspaces) {
+            const std::vector<GpuVlaWorkspace> &workspaces,
+            const Vec<ASR::symbol_t*> &device_functions) {
         ASR::Function_t *kernel = ASR::down_cast<ASR::Function_t>(kernel_sym);
         if (n_call_args != kernel->n_args) {
             return unsupported(
@@ -291,6 +371,14 @@ public:
                 GpuDeclineReason::NestedAllocatableComponent,
                 nested.member_name));
         }
+        OpaqueComponentUseFinder opaque;
+        opaque.visit_body(kernel->m_body, kernel->n_body);
+        for (size_t i = 0; i < device_functions.n; i++) {
+            ASR::Function_t *function =
+                ASR::down_cast<ASR::Function_t>(device_functions[i]);
+            opaque.visit_body(function->m_body, function->n_body);
+        }
+        if (opaque.found.declined()) return unsupported(opaque.found);
         for (auto &workspace : workspaces) {
             for (auto &dim : workspace.dims) {
                 if (!workspace_dim_can_expand(dim, kernel)) {
@@ -720,7 +808,8 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
     if (!close_graph(&kernel)) return false;
     GpuLaunchSupport support(decline);
     auto workspaces = collect_gpu_vla_workspaces(kernel, 0);
-    if (!support.supported(&kernel.base, args, n_args, workspaces)) {
+    if (!support.supported(&kernel.base, args, n_args, workspaces,
+            device_functions)) {
         return false;
     }
     const Location &loc = kernel.base.base.loc;

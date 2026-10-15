@@ -562,6 +562,10 @@ RUN(NAME data_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME data_22 LABELS gfortran llvm)
 RUN(NAME data_23 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME data_24 LABELS gfortran llvm)
+RUN(NAME data_27 LABELS gfortran llvm)
+RUN(NAME data_28 LABELS gfortran llvm)
+# GFortran 13 ICEs on vector subscripts in DATA ("Vector sections in data statements")
+RUN(NAME data_29 LABELS llvm)
 RUN(NAME data_vector_subscript LABELS llvm)
 RUN(NAME datastmt_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME slash_init_01 LABELS gfortran llvm)
@@ -3141,6 +3145,7 @@ RUN(NAME block_31 LABELS gfortran llvm)
 RUN(NAME block_32 LABELS gfortran llvm)
 RUN(NAME block_33 LABELS gfortran llvm)
 RUN(NAME block_34 LABELS gfortran llvm)
+RUN(NAME block_35 LABELS gfortran llvm)
 RUN(NAME associate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -4032,6 +4037,8 @@ RUN(NAME template_requirement_abstract_interface_01 LABELS llvm llvm_wasm llvm_w
 RUN(NAME template_local_param_dim_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_local_type_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_local_type_02 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRAFILES template_local_type_02_mod.f90)
+# Templates are not supported by GFortran
+RUN(NAME template_local_type_03 LABELS llvm)
 RUN(NAME template_struct_dependency_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_require_intrinsic_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME template_reshape_01 LABELS llvm llvm_wasm llvm_wasm_emcc)
@@ -4704,6 +4711,7 @@ RUN(NAME save_23 LABELS gfortran llvm)
 RUN(NAME save_24 LABELS gfortran llvm)
 RUN(NAME save_25 LABELS llvm) # gfortran 13 at CI rejects procedure targets in initializer structure constructors
 RUN(NAME save_26 LABELS llvm) # gfortran 13 at CI rejects procedure targets in initializer structure constructors
+RUN(NAME save_27 LABELS gfortran llvm EXTRAFILES save_27_sub.f90)
 
 
 RUN(NAME entry_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -5568,6 +5576,7 @@ RUN(NAME proc_ptr_34 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implici
 RUN(NAME proc_ptr_35 LABELS gfortran llvm)
 RUN(NAME proc_ptr_36 LABELS llvm) # gfortran 13 at CI rejects procedure targets in initializer structure constructors
 RUN(NAME proc_ptr_37 LABELS gfortran llvm)
+RUN(NAME proc_ptr_38 LABELS gfortran llvm)
 RUN(NAME proc_ptr_39 LABELS gfortran llvm)
 RUN(NAME proc_ptr_40 LABELS gfortran llvm) # interface result length calls a function use associated only in the interface (#15004)
 RUN(NAME proc_ptr_nopass_02 LABELS gfortran llvm)
@@ -5967,10 +5976,10 @@ RUN(NAME gpu_metal_202 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_203 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_204 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback)
 RUN(NAME gpu_metal_205 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_206 LABELS gfortran llvm)
+RUN(NAME gpu_metal_206 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_207 LABELS gfortran llvm)
-RUN(NAME gpu_metal_208 LABELS gfortran llvm)
-RUN(NAME gpu_metal_209 LABELS gfortran llvm)
+RUN(NAME gpu_metal_208 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_209 LABELS gfortran llvm metal cuda_cpu)
 # gpu_metal_210 onward were written against the Metal path. Twelve of
 # them are not labelled cuda_cpu: the CUDA lowering does not yet compile
 # them, and labelling a test for a backend that cannot run it says nothing
@@ -6089,7 +6098,7 @@ RUN(NAME gpu_metal_316 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_317 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_318 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_319 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_320 LABELS gfortran llvm)
+RUN(NAME gpu_metal_320 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_321 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_322 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_323 LABELS gfortran llvm metal cuda_cpu)
@@ -6107,10 +6116,7 @@ RUN(NAME gpu_metal_334 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_335 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_336 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_337 FAIL LABELS gfortran llvm metal cuda_cpu)
-# Refused by every gpu backend on purpose -- see the reference test in
-# tests/tests.toml for the diagnostic. Registered here for the answer the
-# host gives, which is the one the kernel used to get wrong in silence.
-RUN(NAME gpu_metal_338 LABELS gfortran llvm)
+RUN(NAME gpu_metal_338 LABELS gfortran llvm metal cuda_cpu)
 # No gfortran label: `reduce` is F2023, and the gfortran the CI builds with
 # rejects it outright ("Syntax error in DO statement"). Same reason
 # gpu_metal_21 above carries none. Checked by hand against gfortran 16,
@@ -6184,6 +6190,28 @@ RUN(NAME gpu_metal_420 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_417 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_418 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_421 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_422 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_423 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_424 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_425 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_426 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_427 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_428 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_429 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_430 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_431 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_432 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_433 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_434 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
+RUN(NAME gpu_metal_436 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_437 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_438 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_439 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_440 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_441 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_442 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_443 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_444 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
@@ -6212,6 +6240,7 @@ RUN(NAME gpu_metal_403 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_404 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_405 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_413 LABELS gfortran llvm metal cuda_cpu EXTRAFILES gpu_metal_413_mod.f90 EXTRA_ARGS --separate-compilation --realloc-lhs-arrays)
+RUN(NAME gpu_metal_435 LABELS gfortran llvm metal cuda_cpu EXTRAFILES gpu_metal_435_mod.f90 EXTRA_ARGS --separate-compilation $<$<STREQUAL:${LFORTRAN_BACKEND},metal>:--gpu-allow-cpu-fallback>)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME inline_function_calls_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 

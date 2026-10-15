@@ -38,20 +38,22 @@ bool is_single_assignment_binding(ASR::symbol_t *sym,
 }
 
 std::vector<ASR::Function_t*> reachable_routines(ASR::stmt_t **body,
-        size_t n_body) {
+        size_t n_body, GpuProcedureImplementations &implementations) {
     std::vector<ASR::Function_t*> order;
     std::set<ASR::Function_t*> seen;
     std::deque<ASR::Function_t*> work;
-    for (ASR::Function_t *fn : gpu_callees(body, n_body, false)) {
+    auto reach = [&](ASR::Function_t *fn) {
+        fn = implementations.implementation(fn);
         if (seen.insert(fn).second) work.push_back(fn);
-    }
+    };
+    for (ASR::Function_t *fn : gpu_callees(body, n_body, false)) reach(fn);
     while (!work.empty()) {
         ASR::Function_t *fn = work.front();
         work.pop_front();
         order.push_back(fn);
         for (ASR::Function_t *callee : gpu_callees(fn->m_body,
                 fn->n_body, false)) {
-            if (seen.insert(callee).second) work.push_back(callee);
+            reach(callee);
         }
     }
     return order;

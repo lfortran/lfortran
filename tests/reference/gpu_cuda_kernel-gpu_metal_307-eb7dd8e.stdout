@@ -43,7 +43,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         __gpu_sum_k = (1 - 1);
         while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
             __gpu_sum_k = (__gpu_sum_k + 1);
-            __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+            __gpu_sum_res = (__gpu_sum_res + work[((int)((1 + (__gpu_sum_k - 1))) - (1))]);
         }
         r[((int)(i) - (__lb_r_0))] = __gpu_sum_res;
     }

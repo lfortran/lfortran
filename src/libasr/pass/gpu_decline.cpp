@@ -269,9 +269,6 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::StructAllocatableArrayMember:
             return unsupported + "a derived type with an allocatable array "
                 "member the gpu backend cannot decompose";
-        case GpuDeclineReason::StructAllocatableScalarMember:
-            return unsupported +
-                "a derived type with an allocatable scalar member";
         case GpuDeclineReason::StructAssumedShapeArrayMember:
             return unsupported +
                 "a derived type with an assumed shape array member";
@@ -323,6 +320,14 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return unsupported + "an allocatable component `" + decline.name +
                 "` reached through another component, which has no buffer "
                 "of its own";
+        case GpuDeclineReason::AllocatableScalarComponentUse:
+            return unsupported + "the allocatable scalar component `" +
+                decline.name + "` on the device, which has no buffer of "
+                "its own";
+        case GpuDeclineReason::AllocatableScalarComponentCopy:
+            return unsupported + "assigning a whole value of a derived type "
+                "with the allocatable scalar component `" + decline.name +
+                "` on the device, which cannot allocate it";
         case GpuDeclineReason::MissingArgument:
             return unsupported + "a missing argument";
         case GpuDeclineReason::ScalarTypeWidth:

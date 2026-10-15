@@ -39,51 +39,6 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
     // Inline IntrinsicArrayFunction Sum before kernel extraction
     inline_intrinsic_sum(work);
 
-    // Also inline Sum in helper functions called from the
-    // loop body. This ensures that sum(f(x)) patterns
-    // inside helper functions are expanded into loops before
-    // kernel extraction, avoiding allocatable temporaries that
-    // cannot be represented as VLAs in Metal shaders.
-    {
-        GpuFunctionCollector sum_fc;
-        for (size_t i = 0; i < work.n_body; i++) {
-            sum_fc.visit_stmt(*work.body[i]);
-        }
-        bool sum_added = true;
-        while (sum_added) {
-            sum_added = false;
-            GpuFunctionCollector sum_tc;
-            for (auto &[fn_name, fn_sym] : sum_fc.functions) {
-                ASR::symbol_t *resolved =
-                    ASRUtils::symbol_get_past_external(fn_sym);
-                if (ASR::is_a<ASR::Function_t>(*resolved)) {
-                    ASR::Function_t *fn =
-                        ASR::down_cast<ASR::Function_t>(resolved);
-                    for (size_t i = 0; i < fn->n_body; i++) {
-                        sum_tc.visit_stmt(*fn->m_body[i]);
-                    }
-                }
-            }
-            for (auto &[name, sym] : sum_tc.functions) {
-                if (sum_fc.functions.find(name) ==
-                        sum_fc.functions.end()) {
-                    sum_fc.functions[name] = sym;
-                    sum_added = true;
-                }
-            }
-        }
-        for (auto &[fn_name, fn_sym] : sum_fc.functions) {
-            ASR::symbol_t *resolved =
-                ASRUtils::symbol_get_past_external(fn_sym);
-            if (ASR::is_a<ASR::Function_t>(*resolved)) {
-                ASR::Function_t *fn =
-                    ASR::down_cast<ASR::Function_t>(resolved);
-                inline_sum_in_stmts(fn->m_body, fn->n_body,
-                    fn->m_symtab);
-            }
-        }
-    }
-
     // Inline IntrinsicArrayFunction Transpose before kernel extraction
     inline_intrinsic_transpose(work);
 

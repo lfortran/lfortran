@@ -1404,10 +1404,10 @@ public:
 
     // The interface of a `procedure(iface) ::` entity in the instantiation.
     // A deferred interface of the template stands for its argument, and an
-    // interface declared next to the entity or in the template's
-    // specification part for its copy there. Any other interface is the same
-    // one, which make_Variable_t_util imports into the new scope when it is
-    // not visible from there.
+    // interface declared next to the entity, in a procedure of the template
+    // enclosing it, or in the template's specification part for its copy
+    // there. Any other interface is the same one, which make_Variable_t_util
+    // imports into the new scope when it is not visible from there.
     ASR::symbol_t* instantiate_interface(ASR::Variable_t* x) {
         ASR::symbol_t* iface = x->m_type_declaration;
         if (iface == nullptr) {
@@ -1420,12 +1420,22 @@ public:
                 && symbol_subs.find(name) != symbol_subs.end()) {
             return symbol_subs[name];
         }
-        if (ASRUtils::symbol_parent_symtab(iface) == x->m_parent_symtab) {
-            // Variables are instantiated before the other symbols of their
-            // scope, so the copy of the interface may not exist yet.
-            SymbolInstantiator t(al, template_scope, target_scope, type_subs, symbol_subs,
-                ASRUtils::symbol_name(iface), iface, diagnostics);
-            return t.instantiate();
+        SymbolTable* iface_scope = ASRUtils::symbol_parent_symtab(iface);
+        for (SymbolTable* s = x->m_parent_symtab; s != nullptr; s = s->parent) {
+            if (s == iface_scope) {
+                // Variables are instantiated before the other symbols of
+                // their scope, and a derived type or an internal procedure
+                // can be instantiated before the other symbols of its host,
+                // so the copy of the interface may not exist yet.
+                SymbolInstantiator t(al, template_scope,
+                    corresponding_target_scope(iface_scope), type_subs,
+                    symbol_subs, ASRUtils::symbol_name(iface), iface,
+                    diagnostics);
+                return t.instantiate();
+            }
+            if (is_template_scope(s) || is_template_scope(s->parent)) {
+                break;
+            }
         }
         if (owner != nullptr && ASR::is_a<ASR::Template_t>(*owner)
                 && ASR::is_a<ASR::Function_t>(*definition)) {

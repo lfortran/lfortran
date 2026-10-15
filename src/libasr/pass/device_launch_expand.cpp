@@ -37,6 +37,7 @@ generators (asr_to_metal.cpp and asr_to_cuda.cpp) expect:
     grid = [grid_size, 1, 1]
     block = [block_size, 1, 1]
     call lfortran_gpu_launch(ctx, kernel, c_loc(grid), c_loc(block))
+    call lfortran_gpu_release_kernel(kernel)
 
 A scratch buffer of the launch (GpuKernelLaunch.scratch), which only the
 device holds, is set with lfortran_gpu_set_scratch_arg instead, read back
@@ -249,9 +250,18 @@ class DeviceLaunchExpandVisitor :
             }
             ASR::ttype_t *element = gpu_size_of_type_argument(al, arg,
                 ASRUtils::type_get_past_array(type));
-            return b.Mul(b.i2i_t(b.ArraySize(arg, nullptr, int32), int64),
+            ASR::expr_t *size = b.Mul(
+                b.i2i_t(b.ArraySize(arg, nullptr, int32), int64),
                 ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc, element,
                     int64, nullptr)));
+            // An allocatable the loop only uses when it is allocated -- a
+            // local allocated when an optional argument is present -- is
+            // handed over as no storage at all when it is not.
+            if (ASRUtils::is_allocatable(ASRUtils::expr_type(arg))) {
+                size = ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                    is_allocated(loc, arg), size, b.i64(0), int64, nullptr));
+            }
+            return size;
         }
 
         // Builds, once per kernel, the struct that carries every scalar
@@ -349,14 +359,14 @@ class DeviceLaunchExpandVisitor :
                 dim.m_length = n;
                 dims.push_back(al, dim);
                 out.push_back(al, b.Allocate(offsets, dims.p, dims.n));
-                // One entry per dimension per element.
+                // Two entries per dimension per element: the extent and
+                // the lower bound.
                 Vec<ASR::dimension_t> size_dims;
                 size_dims.reserve(al, 1);
                 ASR::dimension_t size_dim;
                 size_dim.loc = loc;
                 size_dim.m_start = b.i32(1);
-                size_dim.m_length = rank > 1
-                    ? b.Mul(n, b.i32((int)rank)) : n;
+                size_dim.m_length = b.Mul(n, b.i32(2 * (int)rank));
                 size_dims.push_back(al, size_dim);
                 out.push_back(al, b.Allocate(sizes, size_dims.p,
                     size_dims.n));
@@ -371,8 +381,15 @@ class DeviceLaunchExpandVisitor :
                         b.ArraySize(struct_member(loc, arg, k, member),
                             rank > 1 ? b.i32((int)d + 1) : nullptr,
                             int32)));
+                    extents.push_back(b.Assignment(
+                        member_lower_bound(loc, sizes, k, rank, d),
+                        b.GetLBound(struct_member(loc, arg, k, member),
+                            (int)d + 1)));
                     no_extents.push_back(b.Assignment(
                         member_extent(loc, sizes, k, rank, d), b.i32(0)));
+                    no_extents.push_back(b.Assignment(
+                        member_lower_bound(loc, sizes, k, rank, d),
+                        b.i32(1)));
                 }
                 if (may_be_unallocated) {
                     measure.push_back(b.If(is_allocated(loc,
@@ -412,9 +429,8 @@ class DeviceLaunchExpandVisitor :
                 }
 
                 ASR::expr_t *index_bytes = b.Mul(b.i2i_t(n, int64), b.i64(4));
-                ASR::expr_t *sizes_bytes = rank > 1
-                    ? b.Mul(index_bytes, b.i64((int64_t)rank))
-                    : index_bytes;
+                ASR::expr_t *sizes_bytes =
+                    b.Mul(index_bytes, b.i64(2 * (int64_t)rank));
                 buffers.push_back({data, address_of(loc, data), data_bytes});
                 buffers.push_back({offsets, address_of(loc, offsets),
                     index_bytes});
@@ -512,15 +528,22 @@ class DeviceLaunchExpandVisitor :
         }
 
         // Where the extent of dimension `d` of element `index` sits in the
-        // sizes buffer: the buffer carries `rank` entries per element, in
-        // dimension order.
+        // sizes buffer: the buffer carries `2 * rank` entries per element,
+        // the extents in dimension order and then the lower bounds.
         ASR::expr_t* member_extent(const Location &loc, ASR::expr_t *sizes,
                 ASR::expr_t *index, size_t rank, size_t d) {
             ASRUtils::ASRBuilder b(al, loc);
-            if (rank <= 1) return b.ArrayItem_01(sizes, {index});
             return b.ArrayItem_01(sizes, {b.Add(
-                b.Mul(b.Sub(index, b.i32(1)), b.i32((int)rank)),
+                b.Mul(b.Sub(index, b.i32(1)), b.i32(2 * (int)rank)),
                 b.i32((int)d + 1))});
+        }
+
+        // Where the lower bound of dimension `d` of element `index` sits in
+        // the sizes buffer.
+        ASR::expr_t* member_lower_bound(const Location &loc,
+                ASR::expr_t *sizes, ASR::expr_t *index, size_t rank,
+                size_t d) {
+            return member_extent(loc, sizes, index, rank, rank + d);
         }
 
         // Number of elements of one element's component: the product of its
@@ -1115,16 +1138,16 @@ class DeviceLaunchExpandVisitor :
                     {b.CPtr(), int32, b.CPtr(), int64},
                     {true, true, true, true}), args));
             }
-            // The kernel object owns the scratch buffers of this launch
-            // until it is released, which is after they are read back.
-            if (!read_backs.empty()) {
-                Vec<ASR::call_arg_t> release_args;
-                release_args.reserve(al, 1);
-                release_args.push_back(al, call_arg(loc, gpu_kernel));
-                out.push_back(al, b.SubroutineCall(runtime_subroutine(loc,
-                    "lfortran_gpu_release_kernel", {b.CPtr()}, {true}),
-                    release_args));
-            }
+            // The kernel object holds what this launch set up -- the
+            // scalar arguments, the scratch buffers, which are read back
+            // above, and on a discrete GPU the device buffers -- so every
+            // launch releases its own.
+            Vec<ASR::call_arg_t> release_args;
+            release_args.reserve(al, 1);
+            release_args.push_back(al, call_arg(loc, gpu_kernel));
+            out.push_back(al, b.SubroutineCall(runtime_subroutine(loc,
+                "lfortran_gpu_release_kernel", {b.CPtr()}, {true}),
+                release_args));
             for (auto &buffer : packed_buffers) {
                 out.push_back(al, memcpy_call(loc,
                     address_of(loc, buffer.arg),

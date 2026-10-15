@@ -5471,6 +5471,12 @@ public:
     }
 
     void resolve_pending_proc_ptr_inits() {
+        // The target and the interface of each pointer are known now, unless
+        // one is still a placeholder that no procedure defines, which is
+        // reported afterwards instead. A target that is not a procedure or a
+        // variable, or a known target that does not match a known interface,
+        // is reported, every mismatch before compilation stops.
+        bool init_mismatch = false;
         for (auto &item : pending_proc_ptr_inits) {
             ASR::symbol_t *proc_sym = item.resolve_scope->resolve_symbol(item.proc_name);
             if (!proc_sym) {
@@ -5479,8 +5485,24 @@ public:
                     "'" + item.proc_name + "' is undeclared");
                 throw SemanticAbort();
             }
+            ASR::symbol_t *proc_past = ASRUtils::symbol_get_past_external(proc_sym);
+            if (!ASR::is_a<ASR::Function_t>(*proc_past)
+                    && !ASR::is_a<ASR::Variable_t>(*proc_past)) {
+                report_not_variable_or_procedure(item.proc_name, item.loc,
+                    proc_past);
+                init_mismatch = true;
+                continue;
+            }
             ASR::expr_t *init_expr = ASRUtils::EXPR(
                 ASR::make_Var_t(al, item.loc, proc_sym));
+            ASR::symbol_t *iface = item.var->m_type_declaration;
+            if (!is_pending_proc_placeholder(proc_sym)
+                    && !(iface && is_pending_proc_placeholder(iface))
+                    && !check_initializer_type(item.var->m_type,
+                        ASRUtils::expr_type(init_expr), init_expr)) {
+                init_mismatch = true;
+                continue;
+            }
             item.var->m_symbolic_value = init_expr;
             item.var->m_value = nullptr;
             SetChar variable_dependencies_vec;
@@ -5492,6 +5514,9 @@ public:
             item.var->n_dependencies = variable_dependencies_vec.n;
         }
         pending_proc_ptr_inits.clear();
+        if (init_mismatch && !compiler_options.continue_compilation) {
+            throw SemanticAbort();
+        }
     }
 
     // A type declared in a module procedure can bind a module procedure
