@@ -983,6 +983,16 @@ static inline ASR::ttype_t* assumed_length_if_deferred(Allocator& al, ASR::ttype
         array_type->m_physical_type, true);
 }
 
+// The `result` dummy of a generated array intrinsic is declared with an assumed
+// length unless it is allocatable or a pointer; the caller passes a temporary
+// that already has the length.
+static inline ASR::ttype_t* result_dummy_type(Allocator& al, ASR::ttype_t* type) {
+    if (ASRUtils::is_allocatable_or_pointer(type)) {
+        return type;
+    }
+    return assumed_length_if_deferred(al, type);
+}
+
 // Seeds a character reduction with its identity value: a string as long as the
 // elements of `array` with every character equal to `fill`. Every element of
 // `array` compares greater than a string of char(0) and smaller than a string
@@ -2657,6 +2667,7 @@ namespace Cshift {
                 return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
             }
         }
+        return_type_ = ArrIntrinsic::result_dummy_type(al, return_type_);
         ASR::expr_t *result = declare("result", return_type_, Out);
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", b.int_type(index_kind), Local);
@@ -3179,7 +3190,8 @@ namespace Spread {
         if (is_struct_type_arg) {
             result = declare_struct_type("result", return_type, Out, m_args[0].m_value);
         } else {
-            result = declare("result", return_type, Out);
+            result = declare("result",
+                ArrIntrinsic::result_dummy_type(al, return_type), Out);
         }
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", b.int_type(index_kind), Local);
@@ -3444,6 +3456,7 @@ namespace Eoshift {
                 return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
             }
         }
+        return_type_ = ArrIntrinsic::result_dummy_type(al, return_type_);
         ASR::expr_t *result = declare("result", return_type_, Out);
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", b.int_type(index_kind), Local);
@@ -6594,12 +6607,12 @@ namespace Pack {
         }
         ASR::ttype_t* ret_type = return_type;
         if (overload_id == 2) {
-            ret_type = ArrIntrinsic::assumed_length_if_deferred(al,
-                ASRUtils::duplicate_type_with_empty_dims(
-                    al, ASRUtils::type_get_past_pointer(
-                            ASRUtils::type_get_past_allocatable(return_type)),
-                    ASR::array_physical_typeType::DescriptorArray, true));
+            ret_type = ASRUtils::duplicate_type_with_empty_dims(
+                al, ASRUtils::type_get_past_pointer(
+                        ASRUtils::type_get_past_allocatable(return_type)),
+                ASR::array_physical_typeType::DescriptorArray, true);
         }
+        ret_type = ArrIntrinsic::result_dummy_type(al, ret_type);
         ASR::expr_t *result;
         if (is_struct_type_arg) {
             result = declare_struct_type("result", ret_type, Out, m_args[0].m_value);
@@ -7409,6 +7422,7 @@ namespace Transpose {
                 return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
             }
         }
+        return_type_ = ArrIntrinsic::result_dummy_type(al, return_type_);
         ASR::expr_t *result = declare("result", return_type_, Out);
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", int32, Local);

@@ -30,6 +30,17 @@ program array_06_pack
     call check(pack(s, [.false., .true.]), n, ["bbbbb"])
     call check_allocatable_dummy(s)
 
+    deallocate(s)
+    allocate(character(2) :: s(4))
+    s = ["bb", "cc", "aa", "dd"]
+    call check(pack(s(1:2), [.true., .true.], s(1:3)), 2, ["bb", "cc", "aa"])
+    call check(pack(s(1:3), [.false., .false., .true.], s(1:3)), 2, ["aa", "cc", "aa"])
+    call check(pack(s, s /= "cc", s), 2, ["bb", "aa", "dd", "dd"])
+    deallocate(r)
+    allocate(character(2) :: r(3))
+    r = pack(s(1:2), [.false., .true.], s(1:3))
+    if (r(1) /= "cc" .or. r(2) /= "cc" .or. r(3) /= "aa") error stop 6
+
     buffer = ["xyz", "uvw", "rst"]
     p => buffer
     call check(pack(p, [.true., .true., .false.]), 3, ["xyz", "uvw"])
