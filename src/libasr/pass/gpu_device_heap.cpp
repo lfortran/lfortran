@@ -2850,6 +2850,14 @@ public:
             if (heap.declined.count(kernel_of[fn])) continue;
             lower(*fn);
         }
+        // The host copies the images a kernel stores into an argument out
+        // of their arenas after the launch, so the launch hands the kernel
+        // every arena they use, whether the kernel allocates in it or not.
+        for (ASR::Function_t *kernel : kernels) {
+            for (HeapRecord &r : heap.records[kernel]) {
+                hand_arenas(*kernel, r.image);
+            }
+        }
         if (!routines_made()) return;
         heap.finalize(kernels, routines_);
     }
@@ -2871,6 +2879,16 @@ private:
     // The procedures each kernel reaches, for reporting a heap type the
     // heap cannot hold at the loops that use it.
     std::map<std::string, std::set<ASR::Function_t*>> type_kernels;
+
+    void hand_arenas(ASR::Function_t &kernel, Image *img) {
+        if (img == nullptr) return;
+        for (auto &m : img->members) {
+            if (m.second.kind == ImageMember::Kind::Array) {
+                heap.arena_symbols(kernel, m.second.arena);
+            }
+            if (m.second.image != img) hand_arenas(kernel, m.second.image);
+        }
+    }
 
     std::vector<ASR::Function_t*> device_code() {
         std::vector<ASR::Function_t*> all = kernels;
