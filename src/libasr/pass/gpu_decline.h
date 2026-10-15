@@ -142,6 +142,9 @@ enum class GpuDeclineReason {
     // code, which has no heap to allocate it from, whose shape cannot be
     // told on entry to the routine (see gpu_device_struct_storage.cpp).
     StructComponentNotSizeable,
+    // An array on the device heap (see gpu_device_heap.cpp) used in a way
+    // the heap does not lower yet; the name says which array and how.
+    HeapArrayUse,
 
     // --- what the device has no type for ---
     LocalTypeWidth,
@@ -267,6 +270,11 @@ GpuDevice gpu_device_selected(const PassOptions &pass_options);
 // anything.
 GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device);
 GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options);
+
+// Whether `name` is one the program can have written, which a diagnostic
+// may show. A Fortran name begins with a letter (F2018 6.2.2), and every
+// name the compiler makes up for a temporary does not.
+bool gpu_source_name(const std::string &name);
 
 // The whole clause the diagnostic reads, lowercase and naming nothing
 // internal. This is the only place the wording of a decline is written.

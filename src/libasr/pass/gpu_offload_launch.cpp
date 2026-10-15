@@ -6,7 +6,6 @@
 #include <libasr/containers.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_preflight.h>
-#include <libasr/pass/gpu_offload_stop.h>
 #include <libasr/pass/gpu_offload_visitor.h>
 #include <libasr/pass/parallel_canonicalize.h>
 
@@ -32,33 +31,6 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
 
     pass_plain_dummy_lower_bounds(*ASR::down_cast<ASR::Function_t>(
         ASR::down_cast<ASR::symbol_t>(plan.kernel_func)));
-
-    // Every `stop` the kernel reaches records itself in a status buffer
-    // the host reads after the launch, and runs there.
-    GpuDeviceStops stops;
-    {
-        GpuDecline decline = gpu_lower_device_stops(al, loc,
-            *ASR::down_cast<ASR::Function_t>(
-                ASR::down_cast<ASR::symbol_t>(plan.kernel_func)),
-            current_scope, stops);
-        if (decline.declined()) {
-            report_not_offloaded(loc, decline);
-            return;
-        }
-        if (stops.host_status != nullptr) {
-            Vec<ASR::call_arg_t> args;
-            args.reserve(al, plan.call_args.n + 1);
-            for (size_t i = 0; i < plan.call_args.n; i++) {
-                args.push_back(al, plan.call_args.p[i]);
-            }
-            ASR::call_arg_t arg;
-            arg.loc = loc;
-            arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-                stops.host_status));
-            args.push_back(al, arg);
-            plan.call_args = args;
-        }
-    }
 
     plan.tu_symtab->add_symbol(plan.kernel_name,
         ASR::down_cast<ASR::symbol_t>(plan.kernel_func));
@@ -224,12 +196,16 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     // The components the kernel writes are made ready from the loop as the
     // source wrote it, which the rewrites above left untouched, and before
     // any element is gathered into a copy.
+    // The launch names the block that does it, which the device heap
+    // later reads and changes.
+    ASR::symbol_t *component_fit = nullptr;
     {
         ParallelLoopNest source;
         if (parallel_loop_nest(region, source)) {
-            for (ASR::stmt_t *stmt : build_component_fit(source, starts, ends,
-                    loc)) {
-                launch_stmts.push_back(al, stmt);
+            component_fit = build_component_fit(source, starts, ends, loc);
+            if (component_fit != nullptr) {
+                launch_stmts.push_back(al, ASRUtils::STMT(
+                    ASR::make_BlockCall_t(al, loc, -1, component_fit)));
             }
         }
     }
@@ -334,23 +310,15 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                 nullptr, nullptr, nullptr)));
     }
 
-    for (ASR::stmt_t *stmt : stops.before_launch) {
-        launch_stmts.push_back(al, stmt);
-    }
     launch_stmts.push_back(al, ASRUtils::STMT(
         ASR::make_GpuKernelLaunch_t(al, loc,
             ASR::down_cast<ASR::symbol_t>(plan.kernel_func),
             grid_size, block_size_const,
-            plan.call_args.p, plan.call_args.n)));
+            plan.call_args.p, plan.call_args.n, component_fit, nullptr,
+            0)));
 
     launch_stmts.push_back(al, ASRUtils::STMT(
         ASR::make_GpuSync_t(al, loc)));
-
-    // A thread that stopped ends the program here, as the statement it
-    // reached does on the host, before anything the kernel wrote is used.
-    for (ASR::stmt_t *stmt : stops.after_launch) {
-        launch_stmts.push_back(al, stmt);
-    }
 
     // Put every gathered element the kernel wrote into back over the
     // original, before anything on the host can read it again.

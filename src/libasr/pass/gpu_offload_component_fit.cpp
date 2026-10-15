@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <set>
@@ -258,8 +259,9 @@ ASR::expr_t* constructor_value(ASR::StructConstructor_t *x,
 
 // Whether a statement gives the component `component` of `r` a shape: an
 // allocate of it, or an assignment of an array to it or of a structure
-// constructor to `r`. `extents` are the extents it gives, empty when they
-// cannot be told.
+// constructor to `r`, or of any other value to `r`, which gives the
+// component the one the value has (`r = g(x)`). `extents` are the extents
+// it gives, empty when they cannot be told.
 bool gives_shape(Allocator &al, ASR::stmt_t *stmt, ASR::symbol_t *r,
         const std::string &component, std::vector<ASR::expr_t*> &extents) {
     extents.clear();
@@ -287,6 +289,8 @@ bool gives_shape(Allocator &al, ASR::stmt_t *stmt, ASR::symbol_t *r,
                 ASR::down_cast<ASR::StructConstructor_t>(x->m_value),
                 component);
             if (!value) return false;
+        } else if (names_variable(x->m_target, r)) {
+            return true;
         } else {
             return false;
         }
@@ -958,6 +962,9 @@ struct ComponentWrite {
 class GpuComponentFit {
     Allocator &al;
     SymbolTable *scope;
+    // The procedure with the body of a separate module procedure the loop
+    // calls, which its interface does not have.
+    std::function<ASR::Function_t*(ASR::Function_t*)> implementation;
     bool realloc;
     bool checks;
     const ParallelLoopNest &loop;
@@ -1290,7 +1297,10 @@ class GpuComponentFit {
                         !ASR::is_a<ASR::Function_t>(*callee)) {
                     continue;
                 }
-                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(callee);
+                // A separate module procedure shapes the component in its
+                // body, which its interface does not have.
+                ASR::Function_t *fn = implementation(
+                    ASR::down_cast<ASR::Function_t>(callee));
                 if (!fn->m_return_var ||
                         !ASR::is_a<ASR::Var_t>(*fn->m_return_var)) {
                     continue;
@@ -1590,15 +1600,16 @@ class GpuComponentFit {
             } else if (checks) {
                 fit = check_fits(write.loc, component, extents);
             }
-        } else if (checks && write.shape.always) {
-            if (realloc) {
-                fit.push_back(require_allocated(write.loc, component,
-                    designator_name(&write.element->base) + "%" +
-                        ASRUtils::symbol_name(write.component)));
-            } else {
-                fit.push_back(debug_check(write.loc, component,
-                    duplicate(al, component)));
-            }
+        } else if (write.shape.always && realloc) {
+            // Not a check bounds checking makes: the size cannot be told
+            // here whatever the options, and gpu_device_heap reads this
+            // requirement to store the value from the device heap instead.
+            fit.push_back(require_allocated(write.loc, component,
+                designator_name(&write.element->base) + "%" +
+                    ASRUtils::symbol_name(write.component)));
+        } else if (write.shape.always && checks) {
+            fit.push_back(debug_check(write.loc, component,
+                duplicate(al, component)));
         }
         if (fit.empty()) return;
         fits++;
@@ -1751,20 +1762,23 @@ class GpuComponentFit {
     }
 
 public:
-    GpuComponentFit(Allocator &al, SymbolTable *scope, bool realloc,
+    GpuComponentFit(Allocator &al, SymbolTable *scope,
+            std::function<ASR::Function_t*(ASR::Function_t*)>
+                implementation, bool realloc,
             bool checks, const ParallelLoopNest &loop,
             const std::vector<ASR::expr_t*> &starts,
             const std::vector<ASR::expr_t*> &ends)
-        : al(al), scope(scope), realloc(realloc), checks(checks),
+        : al(al), scope(scope), implementation(std::move(implementation)),
+          realloc(realloc), checks(checks),
           loop(loop), starts(starts), ends(ends) {}
 
-    std::vector<ASR::stmt_t*> build(const Location &loc) {
-        if (!realloc && !checks) return {};
+    ASR::symbol_t* build(const Location &loc) {
+        if (!realloc && !checks) return nullptr;
         LCOMPILERS_ASSERT(starts.size() == loop.n_heads() &&
             ends.size() == loop.n_heads());
         analyse();
         slice(loop.body, loop.n_body, true, true);
-        if (written.empty()) return {};
+        if (written.empty()) return nullptr;
 
         block_scope = al.make_new<SymbolTable>(scope);
         std::vector<ASR::stmt_t*> stmts;
@@ -1793,7 +1807,7 @@ public:
             }
             stmts.insert(stmts.end(), body.begin(), body.end());
         }
-        if (stmts.empty()) return {};
+        if (stmts.empty()) return nullptr;
 
         Vec<ASR::stmt_t*> block_body;
         block_body.from_pointer_n_copy(al, stmts.data(), stmts.size());
@@ -1803,7 +1817,7 @@ public:
         block_scope->asr_owner = block;
         ASR::symbol_t *block_sym = ASR::down_cast<ASR::symbol_t>(block);
         scope->add_symbol(name, block_sym);
-        return {ASRUtils::STMT(ASR::make_BlockCall_t(al, loc, -1, block_sym))};
+        return block_sym;
     }
 };
 
@@ -1817,11 +1831,17 @@ public:
 // allocates the component to the size the write gives it (with
 // --realloc-lhs-arrays) or, with bounds checking, checks that it has that
 // size. What the replay cannot evaluate before the loop runs it does not
-// guess; see doc/src/gpu_offloading.md.
-std::vector<ASR::stmt_t*> GpuOffloadVisitor::build_component_fit(
+// guess; see doc/src/gpu_offloading.md. Returns the block that does it, which
+// the launch names, or nullptr when there is nothing to do.
+ASR::symbol_t* GpuOffloadVisitor::build_component_fit(
         const ParallelLoopNest &loop, const std::vector<ASR::expr_t*> &starts,
         const std::vector<ASR::expr_t*> &ends, const Location &loc) {
-    GpuComponentFit fit(al, current_scope, pass_options.realloc_lhs_arrays,
+    GpuComponentFit fit(al, current_scope,
+        [this](ASR::Function_t *fn) {
+            ASR::Function_t *impl = resolve_function_implementation(fn);
+            return impl != nullptr ? impl : fn;
+        },
+        pass_options.realloc_lhs_arrays,
         pass_options.bounds_checking, loop, starts, ends);
     return fit.build(loc);
 }

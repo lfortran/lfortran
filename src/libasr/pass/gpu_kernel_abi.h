@@ -20,6 +20,13 @@ void pass_gpu_kernel_finalize(Allocator &al, ASR::TranslationUnit_t &unit,
 bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
     ASR::call_arg_t *args, size_t n_args, GpuDecline &decline);
 
+// The extent `dim` of a workspace of `kernel` has, written as the host
+// evaluates it before the launch, or nullptr when the host cannot work it
+// out: it reads a value the kernel computes. Such an array is allocated on
+// the device heap instead (see gpu_device_heap.cpp).
+ASR::expr_t* gpu_workspace_host_extent(Allocator &al,
+    ASR::Function_t &kernel, const GpuVlaDim &dim);
+
 ASR::expr_t* gpu_bind_kernel_expression(Allocator &al,
     const ASR::Function_t &kernel, ASR::call_arg_t *args, size_t n_args,
     ASR::expr_t *expression);

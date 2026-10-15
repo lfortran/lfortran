@@ -107,10 +107,7 @@ static std::string article(const std::string &word) {
     }
 }
 
-// Whether `name` is one the program can have written, which a diagnostic
-// may show. A Fortran name begins with a letter (F2018 6.2.2), and every
-// name the compiler makes up for a temporary does not.
-static bool gpu_source_name(const std::string &name) {
+bool gpu_source_name(const std::string &name) {
     return !name.empty() && std::isalpha(static_cast<unsigned char>(name[0]))
         && !ASRUtils::is_compiler_generated_name(name);
 }
@@ -227,6 +224,9 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             }
             return "workspace '" + decline.name +
                 "' cannot be sized on the host";
+        case GpuDeclineReason::HeapArrayUse:
+            return "the array " + decline.name + " on the device heap is not "
+                "supported yet";
         case GpuDeclineReason::StructComponentNotSizeable: {
             // `value%component`: a temporary value is not named.
             std::string component = decline.name;

@@ -1892,6 +1892,13 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
     }
 
+    for (auto &item : kernel_scope->get_scope()) {
+        if (ASR::is_a<ASR::Function_t>(*item.second)) {
+            gpu_alias_scalar_associate_names(al,
+                *ASR::down_cast<ASR::Function_t>(item.second));
+        }
+    }
+
     // Which allocatable dummies a routine hands on to another routine is
     // read from the calls, so they have to name the kernel's copies first.
     for (auto &item : kernel_scope->get_scope()) {

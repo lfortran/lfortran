@@ -6157,13 +6157,32 @@ RUN(NAME gpu_metal_387 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_388 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_389 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_390 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
-RUN(NAME gpu_metal_391 LABELS gfortran llvm) # the GPU backends report an error, see tests/tests.toml
+RUN(NAME gpu_metal_391 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_406 LABELS gfortran llvm) # the GPU backends report an error, see tests/tests.toml
 RUN(NAME gpu_metal_407 LABELS gfortran llvm) # the GPU backends report an error, see tests/tests.toml
-RUN(NAME gpu_metal_408 LABELS gfortran llvm) # the GPU backends report an error, see tests/tests.toml
+RUN(NAME gpu_metal_408 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_392 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_393 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_394 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_409 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_410 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_411 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_412 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+# A component whose size the host cannot work out before the loop: the
+# value is made on the device heap and copied out after the launch.
+RUN(NAME gpu_metal_358 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_368 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_376 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+# A launch that allocates more than the device heap holds stops; on the CPU
+# each iteration frees what it allocates, so the test is GPU-only.
+RUN(NAME gpu_metal_414 FAIL LABELS metal cuda_cpu)
+RUN(NAME gpu_metal_415 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_416 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays --no-array-bounds-checking)
+RUN(NAME gpu_metal_419 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_420 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_417 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_418 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_421 LABELS gfortran llvm metal cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
@@ -6173,15 +6192,7 @@ RUN(NAME gpu_metal_370 LABELS metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 # Expected run-time errors on the GPU backends only. gpu_metal_359 and
 # gpu_metal_363 are GPU-only because the llvm backend still allocates array
 # components in `t(i) = f(...)` without --realloc-lhs-arrays (#9738).
-# gpu_metal_358 and gpu_metal_368 are a documented limitation, not a user
-# error: the programs are valid with --realloc-lhs-arrays (gfortran runs them),
-# but the host cannot work out the size before the loop runs, so it cannot
-# allocate the component (see doc/src/gpu_offloading.md). So is gpu_metal_376,
-# where two writes in one iteration give the component different sizes.
 # gpu_metal_375 is GPU-only for the same reason as gpu_metal_363 (#9738).
-RUN(NAME gpu_metal_358 FAIL NO_FAST LABELS metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays) # a component whose size the host cannot work out before the loop is reported when it is not allocated
-RUN(NAME gpu_metal_368 FAIL NO_FAST LABELS metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays) # a component sized from a value dummy argument the callee changes is reported when it is not allocated
-RUN(NAME gpu_metal_376 FAIL NO_FAST LABELS metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays) # two writes in one iteration that give a component different sizes are reported when it is not allocated
 RUN(NAME gpu_metal_375 FAIL NO_FAST LABELS metal cuda_cpu) # bounds checking reports a component written in both branches of an `if` that is not allocated without --realloc-lhs-arrays
 RUN(NAME gpu_metal_359 FAIL NO_FAST LABELS metal cuda_cpu) # bounds checking reports a component that is not allocated without --realloc-lhs-arrays
 RUN(NAME gpu_metal_363 FAIL NO_FAST LABELS metal cuda_cpu) # bounds checking reports a component an `if` lets the loop write that is not allocated without --realloc-lhs-arrays
@@ -6199,6 +6210,7 @@ RUN(NAME gpu_metal_402 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_403 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_404 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_405 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_413 LABELS gfortran llvm metal cuda_cpu EXTRAFILES gpu_metal_413_mod.f90 EXTRA_ARGS --separate-compilation --realloc-lhs-arrays)
 RUN(NAME inline_scoped_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 RUN(NAME inline_function_calls_01 LABELS gfortran llvm EXTRA_ARGS --fast)
 
@@ -6219,6 +6231,7 @@ RUN(NAME gpu_decline_12 LABELS gfortran llvm)
 RUN(NAME gpu_decline_13 LABELS gfortran)
 RUN(NAME gpu_decline_14 LABELS gfortran llvm)
 RUN(NAME gpu_decline_15 LABELS gfortran llvm)
+RUN(NAME gpu_decline_16 LABELS gfortran llvm)
 
 # One program per entry of the GPU unsupported list. Each runs on the CPU with
 # --gpu-allow-cpu-fallback where its loop is on the list, and the error

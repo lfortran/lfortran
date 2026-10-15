@@ -563,7 +563,7 @@ public:
     // array elements the loop `loop` writes the storage the kernel writes
     // into, or check that they have it, before the launch. `starts` and
     // `ends` hold the limits of each loop of the nest, already evaluated.
-    std::vector<ASR::stmt_t*> build_component_fit(
+    ASR::symbol_t* build_component_fit(
             const ParallelLoopNest &loop,
             const std::vector<ASR::expr_t*> &starts,
             const std::vector<ASR::expr_t*> &ends, const Location &loc);

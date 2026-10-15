@@ -3441,6 +3441,13 @@ public:
         src = "gpu_block_size(" + std::to_string(x.m_dim) + ")";
     }
 
+    void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t &x) {
+        visit_expr(*x.m_target);
+        std::string target = src;
+        visit_expr(*x.m_increment);
+        src = "gpu_atomic_fetch_add(" + target + ", " + src + ")";
+    }
+
     /******************************* Case Stmt ********************************/
     void visit_CaseStmt(const ASR::CaseStmt_t &x) {
         std::string r = indent;

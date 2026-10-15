@@ -31,6 +31,35 @@ bool gpu_reads_changed(const GpuIterationVaryingSymbols &changed,
 bool gpu_writes_symbol(const GpuIterationVaryingSymbols &changed,
     ASR::symbol_t *s);
 
+// What the statements of an ASSOCIATE scope from `from` on can change, as
+// it bears on a selector bound before them: a selector designates the
+// object it designates where it is bound, so a subscript of it that reads
+// something the statements may change has to be read once, there. A
+// variable bound to an associate name of the scope, at any depth, that
+// they write is changed too.
+class GpuAssociateScopeWrites {
+public:
+    GpuAssociateScopeWrites(ASR::stmt_t **body, size_t n_body, size_t from);
+    bool may_change(ASR::expr_t *e) const;
+private:
+    std::shared_ptr<GpuIterationVaryingSymbols> changed;
+    std::set<ASR::symbol_t*> aliased;
+};
+
+// The selector of an associate name, with every subscript that `writes`
+// may change replaced by a new variable of `scope`, assigned that
+// subscript by a statement appended to `inits`. The selector then stands
+// for the associate name wherever the name is used.
+ASR::expr_t* gpu_fix_selector_subscripts(Allocator &al,
+    ASR::expr_t *selector, const GpuAssociateScopeWrites &writes,
+    SymbolTable *scope, Vec<ASR::stmt_t*> &inits);
+
+// Makes every scalar associate name of a device routine bound to a
+// variable an alias of it: the selector replaces the name. The code
+// generators declare a scalar as a value, so the name would otherwise be
+// a copy, and what is written through it would be lost.
+void gpu_alias_scalar_associate_names(Allocator &al, ASR::Function_t &fn);
+
 // A new variable named `name` in `scope`, added to it.
 //
 // This pass creates a great many variables: loop indices, temporaries for
