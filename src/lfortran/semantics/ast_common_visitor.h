@@ -18012,6 +18012,13 @@ public:
         if (declared_result != implicit_call_result_types.end()) {
             return_type = declared_result->second;
         }
+        if (return_type == nullptr) {
+            diag.add(Diagnostic("procedure '" + std::string(
+                ASRUtils::symbol_name(v)) + "' is referenced as a function, "
+                "but its interface has no result",
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
         }
