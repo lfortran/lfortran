@@ -13188,6 +13188,32 @@ LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* io
     }
 }
 
+LFORTRAN_API void _lfortran_connect_unit_for_read(int32_t unit_num, int32_t unformatted, int32_t* iostat)
+{
+    if (unit_num < 0) return;
+    if (get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)) return;
+    // Implicit open: READ from an unconnected unit opens "fort.<unit>" and creates it if missing
+    char fort_filename[64];
+    snprintf(fort_filename, sizeof(fort_filename), "fort.%d", unit_num);
+    bool write_access = true;
+    FILE* filep = fopen(fort_filename, unformatted ? "r+b" : "r+");
+    if (!filep && errno == ENOENT) {
+        filep = fopen(fort_filename, unformatted ? "w+b" : "w+");
+    } else if (!filep) {
+        filep = fopen(fort_filename, unformatted ? "rb" : "r");
+        write_access = false;
+    }
+    if (!filep) {
+        if (iostat) { *iostat = 5004; return; }
+        fprintf(stderr, "Runtime Error: Cannot open file '%s' for implicit unit %d.\n",
+            fort_filename, unit_num);
+        exit(1);
+    }
+    char* fname = (char*)internal_malloc(strlen(fort_filename) + 1);
+    strcpy(fname, fort_filename);
+    store_unit_file(unit_num, fname, filep, unformatted != 0, 0, true, write_access, 0, false, 0, 0, 0, 0, 0, 1);
+}
+
 LFORTRAN_API char* _lpython_read_alloc(lfortran_allocator_t* al, int64_t fd, int64_t n)
 {
     char *c = (char *) ALLOCATOR_ALLOC(al, n);

@@ -21395,6 +21395,10 @@ public:
                 iostat = llvm::ConstantPointerNull::get(llvm::Type::getInt32Ty(context)->getPointerTo());
             }
 
+            if (x.m_unit && !is_string) {
+                emit_connect_unit_for_read(unit_val, false, iostat);
+            }
+
             // Build namelist descriptor and call _lfortran_namelist_read
             llvm::Value* nml_group = build_namelist_descriptor(x.m_nml);
 
@@ -21569,6 +21573,10 @@ public:
             builder->CreateStore(
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
                 iostat_for_empty_read);
+        }
+
+        if (x.m_unit && !is_string && !x.m_rec && !x.m_pos) {
+            emit_connect_unit_for_read(unit_val, !x.m_is_formatted, iostat);
         }
 
         if (x.m_decimal) {
@@ -22329,6 +22337,24 @@ public:
             { llvm_utils->i32, llvm_utils->i32,
               llvm_utils->i32->getPointerTo() });
         builder->CreateCall(seek_fn, { unit_i32, rec_val, iostat });
+    }
+
+    void emit_connect_unit_for_read(llvm::Value* unit_val, bool unformatted, llvm::Value* iostat) {
+        std::string runtime_func_name = "_lfortran_connect_unit_for_read";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context), {
+                        llvm::Type::getInt32Ty(context),
+                        llvm::Type::getInt32Ty(context),
+                        llvm::Type::getInt32Ty(context)->getPointerTo()
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, module.get());
+        }
+        builder->CreateCall(fn, {unit_val,
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), unformatted ? 1 : 0),
+            iostat});
     }
 
     void emit_seek_record_from_rec(ASR::expr_t* rec_expr, llvm::Value* unit_val, llvm::Value* iostat) {
