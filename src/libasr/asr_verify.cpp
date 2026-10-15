@@ -2212,8 +2212,11 @@ public:
                     ASR::dimension_t* m_dims = nullptr;
                     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
                         ASRUtils::expr_type(x.m_components[i]), m_dims);
-                    require(n_dims == 1 && m_dims[0].m_length != nullptr,
-                        "DebugCheckArrayBounds::m_components ArrayConstructor must have its size in its type");
+                    require(n_dims == 1 && m_dims[0].m_length != nullptr &&
+                        ASRUtils::is_integer(*ASRUtils::expr_type(m_dims[0].m_length)) &&
+                        ASRUtils::extract_kind_from_ttype_t(
+                            ASRUtils::expr_type(m_dims[0].m_length)) == 4,
+                        "DebugCheckArrayBounds::m_components ArrayConstructor must have its integer(4) size in its type");
                 }
 
                 require(ASRUtils::is_array(ASRUtils::expr_type(x.m_components[i])), "DebugCheckArrayBounds::m_components element must have an Array type");
