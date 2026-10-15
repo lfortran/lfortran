@@ -45,8 +45,9 @@ benchmarks/run_benchmarks.py --no-gfortran --lfortran build/src/bin/lfortran --c
 
 The second command fails if any time got more than 10% and more than 0.02 s
 slower (`--threshold` and `--min-diff`). The `Check performance against main`
-job in `Exhaustive-Checks-CI.yml` does this for every PR labeled
-`Tests::Run-Exhaustive`, building the PR and its base on the same runner.
+job in `Exhaustive-Checks-CI.yml` does this on every Exhaustive run, building
+the commit and its base on main on the same runner. To check a PR, dispatch
+Exhaustive on its branch in a fork.
 
 ## Adding a kernel
 

@@ -233,11 +233,10 @@ jobs:
   benchmarks:
     name: Check performance against main
     runs-on: ubuntu-latest
-    # Tests::Run-Exhaustive PRs only. Builds the PR and its base in the same
-    # job, so both are timed on the same runner, and fails if a benchmark in
-    # benchmarks/ got slower.
-    needs: gate
-    if: needs.gate.outputs.run == 'true' && github.event_name == 'pull_request'
+    timeout-minutes: 90
+    # Builds this commit and its base on main in the same job, so both are
+    # timed on the same runner, and fails if a benchmark in benchmarks/ got
+    # slower.
     steps:
       - uses: actions/checkout@v7
         with:
@@ -253,7 +252,8 @@ jobs:
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
+          key: ${{ github.job }}-ubuntu-latest
+          save: ${{ github.ref == 'refs/heads/main' }}
 
       - name: Build base and PR
         shell: bash -e -l {0}
@@ -269,9 +269,15 @@ jobs:
                   -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
                 cmake --build . -j16 --target install
             }
-            # HEAD is the PR merged into main, so HEAD^1 is main
+            # The base is where this branch left main; on main itself it is
+            # the previous main commit.
             pr=$(git rev-parse HEAD)
-            git checkout -q HEAD^1
+            git fetch -q https://github.com/lfortran/lfortran main
+            base=$(git merge-base HEAD FETCH_HEAD)
+            if [[ "$base" == "$pr" ]]; then
+                base=$(git rev-parse HEAD^1)
+            fi
+            git checkout -q "$base"
             build "$HOME/inst_base"
             git checkout -q "$pr"
             build "$HOME/inst_pr"
