@@ -687,6 +687,54 @@ packed launch, the plain components of a polymorphic value -- are host
 accesses of the launch, and `device_launch_expand` waits after the launch
 itself before it copies any of them back.
 
+### Whole-array assignments between launches
+
+In a host loop that launches kernels, a whole-array assignment on the data
+the kernels use -- clearing an accumulator (`dcdw = 0.`), or reducing what a
+kernel wrote (`dcdb = sum(reduce_dcdb, dim=3)`) -- would make the host wait
+for the device and copy the data back in every iteration, only to hand it to
+the next launch again. Such an assignment is a loop over the elements of its
+target whose iterations are independent, so the `gpu_array_statements` pass,
+which runs right after `parallel_dispatch`, makes it a parallel loop and
+sends it to the device too:
+
+```fortran
+dcdb = sum(reduce_dcdb, dim=3)
+! becomes
+do concurrent (i1 = 1:size(dcdb, 1), i2 = 1:size(dcdb, 2))
+    dcdb(lbound(dcdb, 1) + i1 - 1, lbound(dcdb, 2) + i2 - 1) = &
+        sum(reduce_dcdb(lbound(reduce_dcdb, 1) + i1 - 1, &
+                        lbound(reduce_dcdb, 2) + i2 - 1, :))
+end do
+```
+
+An assignment is sent to the device when all of this holds:
+
+* It is in a sequential host loop (`do`, `do while`) whose body has, at any
+  depth, a parallel loop the dispatch sent to the device, and its target or
+  an array it reads is one that such a loop names, or one that another
+  assignment sent to the device names.
+* Its target is a whole array of an intrinsic type -- a variable, a
+  component, or an associate name bound to a whole array -- and the
+  assignment cannot change its shape: not an allocatable it may reallocate
+  (with `--realloc-lhs-arrays`), not a pointer other than an associate name,
+  and not a defined assignment.
+* Its value is computed element by element: scalars, arrays of the target's
+  rank, intrinsic operators, casts and elemental intrinsic functions of them,
+  and `sum` or `product` with a constant `dim` of an array of one more
+  dimension. A scalar is evaluated by every iteration instead of once, so it
+  may not call a function. The value may read the target only element for
+  element (`x = 2*x`); a value that may read other elements of it
+  (`x = x(n:1:-1)`, `x = x(1)`) keeps the assignment on the host.
+* The loop passes the unsupported-construct check: an assignment the device
+  cannot run stays on the host, without an error or a warning that the
+  source did not have.
+
+The host still evaluates the bounds of the loop (`size`, `lbound`), which
+read only the shape of the arrays.
+
+### Deliberate relaxations
+
 Two relaxations are deliberate. A pure procedure the host calls while a
 launch that may have recorded a stop is pending is not waited for, although
 it may itself `error stop`: when both stop, the program reports the
@@ -735,6 +783,12 @@ with a `stop` before that.
   calls into it costs time; recording the facts the check needs (which
   types a procedure uses, whether it does input/output) in the module file
   instead would avoid that.
+
+* **Waiting at the end of a procedure.** A procedure that launches kernels
+  waits for them before it returns, so a procedure that launches a kernel
+  and is called in a loop waits once per call. Keeping its launches pending
+  across the return needs what the callers do with the data, which this
+  analysis, one procedure at a time, does not see.
 
 ## Differences from the current implementation
 
