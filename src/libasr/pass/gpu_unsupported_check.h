@@ -5,6 +5,7 @@
 
 #include <libasr/asr.h>
 #include <libasr/pass/gpu_decline.h>
+#include <libasr/pass/gpu_procedure_implementation.h>
 
 namespace LCompilers {
 
@@ -59,14 +60,20 @@ struct GpuUnsupportedConstruct {
     // The procedure the construct is in, when the loop reaches it through a
     // call; empty for the loop itself.
     std::string routine;
+    // Whether that procedure was read from a module file, so that `loc` is
+    // in a file this compilation cannot show.
+    bool routine_elsewhere = false;
 
     bool found() const { return kind != GpuUnsupportedKind::None; }
 };
 
 // The first construct on the unsupported list of the device `caps` that the
 // parallel loop `region` uses, or one whose `found()` is false.
+// The procedures the loop calls are looked at in the bodies
+// `implementations` finds, which the offload pipeline builds the kernel from.
 GpuUnsupportedConstruct gpu_find_unsupported_construct(
-    const ASR::OMPRegion_t &region, const GpuDeviceCapabilities &caps);
+    const ASR::OMPRegion_t &region, const GpuDeviceCapabilities &caps,
+    GpuProcedureImplementations &implementations);
 
 // "the Metal GPU does not support real(8)": what the construct is and which
 // device lacks it.

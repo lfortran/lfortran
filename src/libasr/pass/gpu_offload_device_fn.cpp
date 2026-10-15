@@ -20,93 +20,11 @@ using ASR::down_cast;
 using ASR::is_a;
 
 // A submodule `module procedure` reaches its callers through the
-// parent module's interface declaration, whose body is empty. Return
-// the Implementation function that actually carries the body,
-// loading the submodule from its `.smod` file when it is not already
-// part of this translation unit (--separate-compilation). Returns
-// `fn` unchanged when it already is an implementation, or when no
-// implementation can be found.
+// parent module's interface declaration, whose body is empty: the
+// implementation carries the body (see GpuProcedureImplementations).
 ASR::Function_t* GpuOffloadVisitor::resolve_function_implementation(
         ASR::Function_t *fn) {
-    if (!fn) return nullptr;
-    ASR::FunctionType_t *fn_ft = ASR::down_cast<ASR::FunctionType_t>(
-        fn->m_function_signature);
-    if (fn_ft->m_deftype != ASR::deftypeType::Interface) return fn;
-    auto cached = function_implementations.find(fn);
-    if (cached != function_implementations.end()) return cached->second;
-    ASR::Function_t *impl = find_function_implementation(fn);
-    function_implementations[fn] = impl;
-    return impl;
-}
-
-// The search behind resolve_function_implementation(), which caches
-// its result.
-ASR::Function_t* GpuOffloadVisitor::find_function_implementation(
-        ASR::Function_t *fn) {
-    std::string pname = fn->m_name;
-    for (auto &tu_item : tu.m_symtab->get_scope()) {
-        if (!ASR::is_a<ASR::Module_t>(*tu_item.second)) continue;
-        ASR::Module_t *mod = ASR::down_cast<ASR::Module_t>(
-            tu_item.second);
-        ASR::symbol_t *impl_sym = mod->m_symtab->get_symbol(pname);
-        if (!impl_sym || !ASR::is_a<ASR::Function_t>(*impl_sym)) continue;
-        ASR::Function_t *impl_func = ASR::down_cast<ASR::Function_t>(
-            impl_sym);
-        if (ASR::down_cast<ASR::FunctionType_t>(
-                impl_func->m_function_signature)->m_deftype ==
-                ASR::deftypeType::Implementation) {
-            return impl_func;
-        }
-    }
-    // Not in this translation unit: load the submodule from disk.
-    SymbolTable *parent_st = fn->m_symtab->parent;
-    if (!parent_st || !parent_st->asr_owner ||
-            parent_st->asr_owner->type != ASR::asrType::symbol) {
-        return fn;
-    }
-    ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
-        parent_st->asr_owner);
-    if (!ASR::is_a<ASR::Module_t>(*owner)) return fn;
-    std::string smod_prefix = std::string(
-        ASR::down_cast<ASR::Module_t>(owner)->m_name) + "@";
-    std::vector<std::filesystem::path> mod_dirs;
-    mod_dirs.push_back(pass_options.runtime_library_dir);
-    mod_dirs.push_back(pass_options.mod_files_dir);
-    mod_dirs.insert(mod_dirs.end(), pass_options.include_dirs.begin(),
-        pass_options.include_dirs.end());
-    for (auto &dir : mod_dirs) {
-        if (dir.empty()) dir = ".";
-        if (!std::filesystem::is_directory(dir)) continue;
-        for (auto &file : std::filesystem::directory_iterator(dir)) {
-            std::string fname = file.path().filename().string();
-            if (!startswith(fname, smod_prefix) ||
-                    !endswith(fname, ".smod")) continue;
-            std::string content;
-            if (!read_file(file.path().string(), content) ||
-                    content.empty()) continue;
-            LocationManager lm_tmp;
-            auto res = load_modfile(al, content, false, *tu.m_symtab,
-                lm_tmp);
-            if (!res.ok) continue;
-            load_submodule_deps(*res.result);
-            fix_external_symbols(*res.result, *tu.m_symtab);
-            lower_loaded_implied_do_loops(*res.result);
-            ASR::Module_t *submod = ASRUtils::extract_module(
-                *res.result);
-            ASR::symbol_t *impl_sym = submod->m_symtab->get_symbol(
-                pname);
-            if (!impl_sym || !ASR::is_a<ASR::Function_t>(*impl_sym)) {
-                continue;
-            }
-            ASR::Function_t *impl_func = ASR::down_cast<ASR::Function_t>(
-                impl_sym);
-            if (ASR::down_cast<ASR::FunctionType_t>(
-                    impl_func->m_function_signature)->m_deftype !=
-                    ASR::deftypeType::Implementation) continue;
-            return impl_func;
-        }
-    }
-    return fn;
+    return implementations.implementation(fn);
 }
 
 // The function the inliner must reason about for a call: its

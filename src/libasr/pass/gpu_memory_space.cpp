@@ -237,25 +237,61 @@ private:
         }
     }
 
-    // A derived-type dummy argument a device routine defines is passed by
+    // A dummy argument a device routine defines (`intent(out)` or
+    // `intent(inout)`), a scalar or a derived-type value, is passed by
     // reference, and a device routine is written for values in the memory
-    // of the calling thread, as its locals are. An element of a kernel
-    // argument, or a derived-type kernel argument, lives in device memory
-    // instead, so the kernel hands such a dummy a copy of it in its own
-    // memory, and copies it back after the call, as Fortran allows for a
-    // dummy argument. The allocatable components are not copied: the
-    // copy hands the routine the buffers of the original.
-    void copy_struct_arguments(ASR::Function_t &kernel) {
+    // of the calling thread, as its locals are. An actual argument stored
+    // elsewhere -- an element of a kernel argument, or of an array dummy
+    // in device memory, a derived-type kernel argument -- is copied into a
+    // local of the caller's own memory for the call, and copied back after
+    // it, as Fortran allows for a dummy argument. The allocatable
+    // components of a derived-type value are not copied: the copy hands the
+    // routine the buffers of the original.
+    void copy_reference_arguments(ASR::Function_t &fn, bool is_kernel) {
         std::set<ASR::symbol_t*> parameters;
-        for (size_t i = 0; i < kernel.n_args; i++) {
-            if (ASR::is_a<ASR::Var_t>(*kernel.m_args[i])) {
+        for (size_t i = 0; is_kernel && i < fn.n_args; i++) {
+            if (ASR::is_a<ASR::Var_t>(*fn.m_args[i])) {
                 parameters.insert(ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v));
+                    ASR::down_cast<ASR::Var_t>(fn.m_args[i])->m_v));
             }
         }
         std::set<ASR::symbol_t*> transformed;
-        copy_struct_arguments(kernel, parameters, transformed,
-            kernel.m_body, kernel.n_body);
+        copy_reference_arguments(fn, parameters, transformed,
+            fn.m_body, fn.n_body);
+    }
+
+    // Whether a scalar actual argument is stored in the memory of the
+    // calling thread: a variable of the caller, or an element of an array
+    // in thread memory. Anything else -- a kernel argument or an element of
+    // one, an element of an array in device memory, a component -- is not
+    // known to be.
+    static bool in_thread_memory(ASR::expr_t *e,
+            const std::set<ASR::symbol_t*> &parameters) {
+        e = ASRUtils::get_past_array_physical_cast(e);
+        ASR::expr_t *array = nullptr;
+        if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+            array = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+            e = array;
+        }
+        if (!ASR::is_a<ASR::Var_t>(*e)) return false;
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(e)->m_v);
+        if (parameters.count(sym)) return false;
+        return array == nullptr || type_memory_space(
+            ASRUtils::expr_type(array)) == ASR::memory_spaceType::Thread;
+    }
+
+    static bool is_intrinsic_scalar(ASR::ttype_t *type) {
+        switch (type->type) {
+            case ASR::ttypeType::Integer:
+            case ASR::ttypeType::UnsignedInteger:
+            case ASR::ttypeType::Real:
+            case ASR::ttypeType::Complex:
+            case ASR::ttypeType::Logical:
+                return true;
+            default:
+                return false;
+        }
     }
 
     // The kernel argument a derived-type actual argument is, or is an
@@ -275,7 +311,7 @@ private:
         return ASR::down_cast<ASR::Variable_t>(sym);
     }
 
-    void copy_struct_arguments(ASR::Function_t &kernel,
+    void copy_reference_arguments(ASR::Function_t &kernel,
             const std::set<ASR::symbol_t*> &parameters,
             std::set<ASR::symbol_t*> &transformed,
             ASR::stmt_t **&body, size_t &n_body) {
@@ -286,21 +322,21 @@ private:
             switch (s->type) {
                 case ASR::stmtType::If: {
                     ASR::If_t *x = ASR::down_cast<ASR::If_t>(s);
-                    copy_struct_arguments(kernel, parameters, transformed,
+                    copy_reference_arguments(kernel, parameters, transformed,
                         x->m_body, x->n_body);
-                    copy_struct_arguments(kernel, parameters, transformed,
+                    copy_reference_arguments(kernel, parameters, transformed,
                         x->m_orelse, x->n_orelse);
                     break;
                 }
                 case ASR::stmtType::DoLoop: {
                     ASR::DoLoop_t *x = ASR::down_cast<ASR::DoLoop_t>(s);
-                    copy_struct_arguments(kernel, parameters, transformed,
+                    copy_reference_arguments(kernel, parameters, transformed,
                         x->m_body, x->n_body);
                     break;
                 }
                 case ASR::stmtType::WhileLoop: {
                     ASR::WhileLoop_t *x = ASR::down_cast<ASR::WhileLoop_t>(s);
-                    copy_struct_arguments(kernel, parameters, transformed,
+                    copy_reference_arguments(kernel, parameters, transformed,
                         x->m_body, x->n_body);
                     break;
                 }
@@ -310,17 +346,17 @@ private:
                         if (ASR::is_a<ASR::CaseStmt_t>(*x->m_body[c])) {
                             ASR::CaseStmt_t *t =
                                 ASR::down_cast<ASR::CaseStmt_t>(x->m_body[c]);
-                            copy_struct_arguments(kernel, parameters,
+                            copy_reference_arguments(kernel, parameters,
                                 transformed, t->m_body, t->n_body);
                         } else {
                             ASR::CaseStmt_Range_t *t =
                                 ASR::down_cast<ASR::CaseStmt_Range_t>(
                                     x->m_body[c]);
-                            copy_struct_arguments(kernel, parameters,
+                            copy_reference_arguments(kernel, parameters,
                                 transformed, t->m_body, t->n_body);
                         }
                     }
-                    copy_struct_arguments(kernel, parameters, transformed,
+                    copy_reference_arguments(kernel, parameters, transformed,
                         x->m_default, x->n_default);
                     break;
                 }
@@ -334,12 +370,12 @@ private:
                     if (!transformed.insert(m).second) break;
                     if (ASR::is_a<ASR::Block_t>(*m)) {
                         ASR::Block_t *x = ASR::down_cast<ASR::Block_t>(m);
-                        copy_struct_arguments(kernel, parameters,
+                        copy_reference_arguments(kernel, parameters,
                             transformed, x->m_body, x->n_body);
                     } else if (ASR::is_a<ASR::AssociateBlock_t>(*m)) {
                         ASR::AssociateBlock_t *x =
                             ASR::down_cast<ASR::AssociateBlock_t>(m);
-                        copy_struct_arguments(kernel, parameters,
+                        copy_reference_arguments(kernel, parameters,
                             transformed, x->m_body, x->n_body);
                     }
                     break;
@@ -387,24 +423,35 @@ private:
             if (!ASR::is_a<ASR::Variable_t>(*dummy_sym)) continue;
             ASR::Variable_t *dummy =
                 ASR::down_cast<ASR::Variable_t>(dummy_sym);
-            if (!ASR::is_a<ASR::StructType_t>(*dummy->m_type) ||
-                    (dummy->m_intent != ASR::intentType::Out &&
-                     dummy->m_intent != ASR::intentType::InOut)) {
+            if (dummy->m_intent != ASR::intentType::Out &&
+                    dummy->m_intent != ASR::intentType::InOut) {
                 continue;
             }
-            ASR::Variable_t *argument = device_struct(actual, parameters);
-            if (argument == nullptr ||
-                    !ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(
-                        actual))) {
+            ASR::ttype_t *actual_type = ASRUtils::expr_type(actual);
+            std::string copy_name;
+            ASR::symbol_t *type_declaration = nullptr;
+            if (ASR::is_a<ASR::StructType_t>(*dummy->m_type)) {
+                ASR::Variable_t *argument = device_struct(actual,
+                    parameters);
+                if (argument == nullptr ||
+                        !ASR::is_a<ASR::StructType_t>(*actual_type)) {
+                    continue;
+                }
+                copy_name = "__gpu_struct_argument";
+                type_declaration = argument->m_type_declaration;
+            } else if (is_intrinsic_scalar(dummy->m_type) &&
+                    is_intrinsic_scalar(actual_type)) {
+                if (in_thread_memory(actual, parameters)) continue;
+                copy_name = "__gpu_scalar_argument";
+            } else {
                 continue;
             }
             const Location &loc = actual->base.loc;
             ASRUtils::ASRBuilder b(al, loc);
             ASR::expr_t *copy = b.Variable(kernel.m_symtab,
-                kernel.m_symtab->get_unique_name("__gpu_struct_argument",
-                    false),
-                ASRUtils::duplicate_type(al, ASRUtils::expr_type(actual)),
-                ASR::intentType::Local, argument->m_type_declaration);
+                kernel.m_symtab->get_unique_name(copy_name, false),
+                ASRUtils::duplicate_type(al, actual_type),
+                ASR::intentType::Local, type_declaration);
             ASRUtils::ExprStmtDuplicator duplicator(al);
             before.push_back(al, b.Assignment(copy,
                 duplicator.duplicate_expr(actual)));
@@ -418,8 +465,6 @@ private:
         if (processed.count(fn)) return;
         processed.insert(fn);
 
-        if (is_kernel) copy_struct_arguments(*fn);
-
         std::set<ASR::symbol_t*> device_backed;
         if (is_kernel) {
             for (auto &workspace : collect_gpu_vla_workspaces(*fn, 0)) {
@@ -428,6 +473,7 @@ private:
         }
         assign_scope(fn->m_symtab, device_backed);
         assign_pointer_spaces(fn);
+        copy_reference_arguments(*fn, is_kernel);
 
         GpuCallCollector collector;
         for (size_t i = 0; i < fn->n_body; i++) {

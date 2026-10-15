@@ -224,6 +224,12 @@ generates the device source. It never falls back to the CPU:
   of a section whose subscripts read the loop index is bounded by the extent
   of its array in that dimension, as a section never has more elements
   there. The local itself keeps the exact extent of each allocation.
+* An internal procedure the loop calls reads the variables and named
+  constants of its host by host association, which device code does not
+  have. The kernel's copy of the procedure is given them instead: a named
+  constant becomes a named constant of the procedure, and a variable a dummy
+  argument, which every call hands the variable. A procedure that calls one
+  that is handed a variable is handed it too, to pass it on.
 * A derived-type value that device code creates -- a local of a
   procedure, or the result of a function such as a structure constructor,
   `associate (t => tensor_t(x))` -- has no storage for an allocatable array
@@ -247,12 +253,14 @@ generates the device source. It never falls back to the CPU:
   a value held in a component of another value -- every value of that type
   device code creates is on the device heap instead (a *heap type*, see
   [Allocating on the device](#allocating-on-the-device)).
-* A derived-type argument a procedure defines (`intent(out)` or
-  `intent(inout)`) is passed by reference, to a value in the memory of the
-  calling thread, as the procedure's locals are. An element of a kernel
-  argument passed for one lives in device memory instead, so the kernel
-  copies it into a local of its own around the call; its allocatable
-  components are not copied, the procedure is handed their device buffers.
+* An argument a procedure defines (`intent(out)` or `intent(inout)`), a
+  scalar or a derived-type value, is passed by reference, to a value in the
+  memory of the calling thread, as the procedure's locals are. An actual
+  argument that lives in device memory instead -- an element of a kernel
+  argument (`call total(i, s1(i))`), of an array dummy in device memory, or
+  a derived-type kernel argument -- is copied into a local of the caller
+  around the call; the allocatable components of a derived-type value are
+  not copied, the procedure is handed their device buffers.
 * An array of device code is an address and, for each dimension, a lower
   bound, an extent and a stride, as a Fortran descriptor is, and every one
   of them reaches the code that indexes the array. An array that does not
@@ -277,6 +285,24 @@ generates the device source. It never falls back to the CPU:
   gathered into a contiguous temporary before such a call and scattered
   back after it, by the kernel and by a routine the kernel calls alike;
   the temporary is a run-time sized local as above.
+* A derived-type value reaches the kernel as a copy of the host's bytes,
+  laid out by the device exactly as the host lays it out. An allocatable
+  array component is handed over in device buffers of its own. So is one
+  of a component that is a derived-type value itself (`self%input_map_%slope_`):
+  the component (`self%input_map_`) becomes an argument of its own of every
+  kernel and device procedure that uses it, read or passed on to a
+  procedure, and every call and launch passes it beside the value it is a
+  component of (`gpu_struct_component_args.cpp`), at any depth. An
+  allocatable scalar component, a `character(len=:), allocatable` one
+  included, is carried as the host's bytes (the address of the value, and
+  its length for a character), which the device keeps in place and copies
+  back unchanged, but never reads: a loop that reads only the other
+  components of the value, also when it passes the whole value to a
+  procedure, runs on the device. A loop that names such a component
+  (`s%name`, `allocated(s%r)`), or assigns a whole value of a type holding
+  one, which would have to allocate it, is an error for now ("the
+  allocatable scalar component `r` on the device, which has no buffer of
+  its own").
 * When a loop writes an allocatable array component of an element of an
   array of derived type that the host passes to the kernel, and the value
   written is not on the device heap, the storage the kernel writes into has
@@ -569,17 +595,27 @@ host hands over, and it is never on the heap. Where it meets heap values:
 * **What counts as using a type.** The check uses the rule above. The
   pipeline does not always follow it yet: a derived type whose components are
   read only through allocatable array components is handed to the kernel one
-  component at a time, but one with other components read is handed over
-  whole, so an unused `real(8)` component there is still an error on Metal
-  (reported by the pipeline, not the check).
+  component at a time, but one with other components read, or used whole
+  (passed to a procedure), is handed over whole, its allocatable components
+  included, and the loop reads those through it, so an unused `real(8)`
+  component there is still an error on Metal (reported by the pipeline, not
+  the check). Likewise an unused component of
+  a kind the device does not interpret -- a pointer, or a character that is
+  not allocatable -- still keeps a value handed over whole off the device,
+  while an unused allocatable scalar component no longer does: the device
+  keeps the host's bytes for it.
 * **Procedures without a visible body.** A `bind(c)` interface is how a kernel
   calls a function the device provides (for example `sqrt`), but a host-only C
   routine looks the same. Either keep an allowlist of device-provided
   functions, or put every other call to a procedure with no body on the list.
 * **Separate compilation.** A called procedure can live in another file or
-  submodule. The facts the check needs about it (does internal I/O, which types
-  it uses) have to be available without its body, for example recorded in the
-  module file.
+  submodule. The check reads the body of a separate module procedure where
+  the pipeline does -- the submodule of the translation unit, or the module
+  file of a submodule compiled separately -- so it looks at the body the
+  kernel would be built from. Reading a module file at every compilation that
+  calls into it costs time; recording the facts the check needs (which
+  types a procedure uses, whether it does input/output) in the module file
+  instead would avoid that.
 
 ## Differences from the current implementation
 
@@ -587,8 +623,7 @@ host hands over, and it is never on the heap. Where it meets heap values:
   data that reaches a kernel, input/output statements), spread over
   several passes and the device code generator. They report a compile error
   rather than assert, because the check does not guarantee everything they
-  look at: symbols a rewrite introduces, the bodies of procedures only the
-  pipeline loads (separate compilation), widths that are not on the list
+  look at: symbols a rewrite introduces, widths that are not on the list
   (`integer(8)` on Metal), and a derived type with an unused `real(8)`
   component that is handed to the kernel whole (see the open questions).
 * Purity of procedures called from `do concurrent` is not enforced.

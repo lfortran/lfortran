@@ -259,7 +259,8 @@ public:
 } // namespace
 
 GpuUnsupportedConstruct gpu_find_unsupported_construct(
-        const ASR::OMPRegion_t &region, const GpuDeviceCapabilities &caps) {
+        const ASR::OMPRegion_t &region, const GpuDeviceCapabilities &caps,
+        GpuProcedureImplementations &implementations) {
     UnsupportedConstructFinder finder(caps);
     for (size_t i = 0; i < region.n_body; i++) {
         finder.visit_stmt(*region.m_body[i]);
@@ -267,13 +268,17 @@ GpuUnsupportedConstruct gpu_find_unsupported_construct(
     }
     // A procedure the loop calls, however deep, runs on the device too.
     for (ASR::Function_t *fn : reachable_routines(region.m_body,
-            region.n_body)) {
+            region.n_body, implementations)) {
         finder.routine = fn->m_name;
         finder.check_scope(fn->m_symtab);
         for (size_t i = 0; i < fn->n_body && !finder.found.found(); i++) {
             finder.visit_stmt(*fn->m_body[i]);
         }
-        if (finder.found.found()) return finder.found;
+        if (finder.found.found()) {
+            finder.found.routine_elsewhere =
+                implementations.read_from_module_file(fn);
+            return finder.found;
+        }
     }
     return finder.found;
 }
