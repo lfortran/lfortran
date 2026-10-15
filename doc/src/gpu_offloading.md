@@ -347,12 +347,13 @@ generates the device source. It never falls back to the CPU:
     allocates or checks the element the write picks, with the size the write
     gives it: the extents of the array assigned to the component, or those
     of the `allocate` or array assignment in `f` (in the body a submodule
-    gives it, for a separate module procedure), in terms of the actual
-    arguments of the call. A type-bound `f` called through an object of a
-    type that is not polymorphic (`net%infer(x)`) is the procedure its
-    binding names, with the object as its passed-object argument. An element the loop does not write is left as it is. The
-    limits of the loops are evaluated once, before this host code runs, and
-    the launch reads the same values.
+    gives it, for a separate module procedure), also inside a `block` or
+    `associate` construct of `f`, in terms of the actual arguments of the
+    call. A type-bound `f` called through an object of a type that is not
+    polymorphic (`net%infer(x)`) is the procedure its binding names, with
+    the object as its passed-object argument. An element the loop does not
+    write is left as it is. The limits of the loops are evaluated once,
+    before this host code runs, and the launch reads the same values.
   * The host does not guess what it cannot work out before the loop runs:
     * The size. It may come from a call (also one whose result `f`
       assigns whole, `r = g(x)`), from a value the loop itself writes
