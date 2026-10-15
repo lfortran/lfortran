@@ -4491,6 +4491,20 @@ public:
         return true;
     }
 
+    // Resolves the elements that the array section or the array with a vector
+    // subscript `object` of a DATA statement selects.
+    bool resolve_data_section(ASR::expr_t* object, DataSectionBounds& b) {
+        if (ASR::is_a<ASR::ArraySection_t>(*object)) {
+            ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(object);
+            return resolve_data_section(section->m_v, section->m_args,
+                section->n_args, b, object->base.loc);
+        }
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayItem_t>(*object));
+        ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(object);
+        return resolve_data_section(item->m_v, item->m_args, item->n_args, b,
+            object->base.loc);
+    }
+
     // Gives `v` the initial value `value` that a DATA statement specifies.
     // When `v` is in a common block, the view of the block gives initial
     // values to its storage from then on.
@@ -4632,23 +4646,17 @@ public:
             bool section_resolved = false;
 
             if (ASR::is_a<ASR::ArraySection_t>(*object)) {
-                ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(object);
                 subscripted = object;
-                section_resolved = resolve_data_section(section->m_v,
-                    section->m_args, section->n_args, section_bounds,
-                    object->base.loc);
+                section_resolved = resolve_data_section(object, section_bounds);
                 size_of_array = section_resolved ? (int) section_bounds.size : -1;
-                object = section->m_v;
+                object = ASR::down_cast<ASR::ArraySection_t>(object)->m_v;
             } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
                 // An array with a vector subscript, e.g. x([1, 3])
-                ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(object);
                 subscripted = object;
-                section_resolved = resolve_data_section(item->m_v,
-                    item->m_args, item->n_args, section_bounds,
-                    object->base.loc);
+                section_resolved = resolve_data_section(object, section_bounds);
                 size_of_array = section_resolved ? (int) section_bounds.size :
                     (int) (a->n_value - curr_value);
-                object = item->m_v;
+                object = ASR::down_cast<ASR::ArrayItem_t>(object)->m_v;
             } else {
                 size_of_array = ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
             }
@@ -4659,6 +4667,9 @@ public:
                 size_of_array = a->n_value - curr_value;
             }
             if (curr_value + (size_t) size_of_array > a->n_value) {
+                // Only reached when visit_DataStmt cannot count the elements
+                // of every object of the statement, e.g. of an implied-DO
+                // with non-constant bounds.
                 diag.add(Diagnostic(
                     "DATA statement element count mismatch: more elements on "
                     "left-hand side than " + std::to_string(a->n_value) +
@@ -5829,7 +5840,17 @@ public:
                 this->visit_expr(*a->m_object[j]);
                 ASR::expr_t* object = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
-                if (ASRUtils::is_array(obj_type)) {
+                if (ASR::is_a<ASR::ArraySection_t>(*object)
+                        || (ASR::is_a<ASR::ArrayItem_t>(*object)
+                            && ASRUtils::is_array(obj_type))) {
+                    // An array section or an array with a vector subscript
+                    DataSectionBounds section_bounds;
+                    if (!resolve_data_section(object, section_bounds)) {
+                        can_validate = false;
+                        break;
+                    }
+                    total_lhs_elements += section_bounds.size;
+                } else if (ASRUtils::is_array(obj_type)) {
                     // Get array size from ASR
                     int64_t array_size = ASRUtils::get_fixed_size_of_array(obj_type);
                     if (array_size > 0) {
