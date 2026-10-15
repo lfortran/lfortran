@@ -486,6 +486,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             alloc_collector.alloc_members) {
         if (involved_syms.find(struct_name) == involved_syms.end())
             continue;
+        if (alloc_collector.has_non_alloc_access.count(struct_name))
+            continue;
         for (auto &[mem_name, mem_info] : members) {
             std::string param_name = struct_name + "__" + mem_name;
             decomp_map[{struct_name, mem_name}] = param_name;
