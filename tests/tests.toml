@@ -4503,15 +4503,14 @@ filename = "../integration_tests/gpu_metal_332.f90"
 gpu_cuda_kernel = true
 options = "--realloc-lhs-arrays"
 
-# A `stop` in the concurrent body is a trap in the emitted kernel, which is
-# what lets the loop offload to CUDA at all.
+# An `error stop` in the concurrent body is a write to the launch's status
+# buffer and a return in the emitted kernel.
 [[test]]
 filename = "../integration_tests/gpu_metal_334.f90"
 gpu_cuda_kernel = true
 
-# The same trap, on a branch every thread takes. Registered here for the
-# warning the offload pass emits on the statement: the launch halts, but the
-# stop code the program named is not delivered.
+# The same, on a branch every thread takes, with a stop code the kernel
+# records for the host.
 [[test]]
 filename = "../integration_tests/gpu_metal_337.f90"
 gpu_cuda_kernel = true
@@ -4728,12 +4727,6 @@ gpu_offload_metal = true
 [[test]]
 filename = "../integration_tests/gpu_unsupported_07.f90"
 gpu_offload_cuda = true
-gpu_offload_metal = true
-
-# error stop in a pure function the loop calls: an error on Metal. On CUDA it
-# is offloaded, which the integration test checks.
-[[test]]
-filename = "../integration_tests/gpu_unsupported_08.f90"
 gpu_offload_metal = true
 
 [[test]]

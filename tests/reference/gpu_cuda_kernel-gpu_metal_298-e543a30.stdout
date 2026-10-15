@@ -6,8 +6,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
     int* a,
+    int* __gpu_stop_status,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
-    int* __workspace_2)
+    int* __workspace_3)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
@@ -25,7 +26,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int __gpu_sum_res;
         int k;
         int s;
-        int* tmp = __workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * 4;
+        int* tmp = __workspace_3 + (blockIdx.x * blockDim.x + threadIdx.x) * 4;
         __do_loop_end = n;
         k = (1 - 1);
         while (((k + 1) <= __do_loop_end)) {
@@ -43,7 +44,8 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         a[((int)(i) - (1))] = s;
     }
     if ((i < 0)) {
-        __trap();
+        __gpu_stop_status[((int)(1) - (1))] = 1;
+        return;
     }
 }
 
@@ -53,6 +55,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
     int* b,
+    int* __gpu_stop_status,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -66,7 +69,8 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     i = (__flat_idx + 1);
     b[((int)(i) - (1))] = (i * 2);
     if ((i < 0)) {
-        __trap();
+        __gpu_stop_status[((int)(1) - (1))] = 1;
+        return;
     }
 }
 
@@ -76,6 +80,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_2 {
 
 extern "C" __global__ void __lfortran_gpu_kernel_2(
     int* d,
+    int* __gpu_stop_status,
     __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -107,7 +112,8 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
         }
     }
     if ((i < 0)) {
-        __trap();
+        __gpu_stop_status[((int)(1) - (1))] = 1;
+        return;
     }
 }
 
@@ -117,6 +123,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_3 {
 
 extern "C" __global__ void __lfortran_gpu_kernel_3(
     int* e,
+    int* __gpu_stop_status,
     __ScalarArgs___lfortran_gpu_kernel_3 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -130,7 +137,8 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     i = (__flat_idx + 1);
     e[((int)(i) - (1))] = ((i + 1) + 1);
     if ((i < 0)) {
-        __trap();
+        __gpu_stop_status[((int)(1) - (1))] = 1;
+        return;
     }
 }
 

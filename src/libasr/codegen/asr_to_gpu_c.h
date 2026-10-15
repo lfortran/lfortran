@@ -3036,6 +3036,14 @@ public:
                     }
                     func_array_size_params[aname] = "(" + total + ")";
                 }
+            } else if (arg->m_intent == ASR::intentType::Out ||
+                    arg->m_intent == ASR::intentType::InOut) {
+                // A scalar the procedure writes is passed by reference, as
+                // Fortran passes it. The actual is a variable of the
+                // calling thread, such as the stop status a procedure
+                // that can stop hands back (see gpu_offload_stop.h).
+                src << space_prefix(ASR::memory_spaceType::Thread)
+                    << gpu_type(arg->m_type) << "& " << arg->m_name;
             } else {
                 src << gpu_type(arg->m_type) << " " << arg->m_name;
             }
@@ -3923,19 +3931,11 @@ public:
             }
             case ASR::stmtType::Stop:
             case ASR::stmtType::ErrorStop: {
-                // A Fortran STOP inside a kernel has no exit code to
-                // deliver -- a grid returns no status -- so what is left of
-                // the statement is the stopping, which the dialect spells
-                // as a trap. A device with no trap of its own never gets
-                // here: pass_replace_gpu_offload declines a loop holding a
-                // STOP unless the device says it can abort.
-                std::string trap = dialect.abort_stmt();
-                if (trap.empty()) {
-                    throw CodeGenError("gpu offload: this device has no way "
-                        "to stop a running kernel", stmt->base.loc);
-                }
-                src << get_indent() << trap << "\n";
-                break;
+                // The offload pass lowers every stop a kernel reaches into
+                // a write to the launch's status buffer and a return (see
+                // gpu_offload_stop.h), so none is left for a device.
+                throw CodeGenError("gpu offload: a stop statement reached "
+                    "the device code generator", stmt->base.loc);
             }
             case ASR::stmtType::Return: {
                 // A Fortran RETURN in a function hands back the result

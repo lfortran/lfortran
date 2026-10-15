@@ -44,11 +44,16 @@ entry states why it is there. Current proposal:
 | `real(8)` | Metal | the Metal Shading Language has no 64-bit float | emulate later |
 | `real(10)`, `real(16)` | all | no device has these widths | emulate, or never |
 | input/output statements, including internal-file I/O | all | no Fortran units or formats on a device | never, or a host-side buffer later |
-| `error stop`, `stop` | Metal | a Metal shader has no way to halt the program | a host-side status buffer later |
 
-`stop` is on the list for now. The standard and gfortran treat `stop` in a
-`do concurrent` body as invalid (it is an image control statement), so it will
-become a semantic error instead.
+`error stop` and `stop` are not on the list: every device runs them, through
+a status buffer the host reads after the launch (see
+[Stopping on the device](#stopping-on-the-device)). That covers a `stop` in a
+procedure the loop calls (purity is not enforced yet, see the open questions)
+and in an offloaded `!$omp parallel do` loop. A `stop` directly in a
+`do concurrent` body is invalid Fortran -- it is an image control statement,
+which the standard does not allow there and gfortran rejects -- and is to
+become a semantic error on every target, not an entry of this list; until
+then it runs like any other `stop`.
 
 Everything else is not on the list, even when it is not implemented yet. For
 example `integer(8)` on Metal (the Metal Shading Language has 64-bit integers),
@@ -82,8 +87,7 @@ check small:
   procedure cannot do external input/output or `stop`. So external I/O and
   `stop` can only appear directly in the loop body.
 * A pure procedure can still do internal-file I/O (`write` to a character
-  variable) and `error stop`, so those have to be looked for in the called
-  procedures too.
+  variable), so that has to be looked for in the called procedures too.
 * gfortran (`-std=f2018`) rejects `stop` in a `do concurrent` body as an image
   control statement, while `print` in the body and `error stop` in a pure
   procedure are accepted. (To be confirmed against the standard text.)
@@ -208,6 +212,48 @@ generates the device source. It never falls back to the CPU:
   * A `do concurrent` mask (`do concurrent (i = 1:n, mask(i))`) is currently
     ignored on every backend (#12778), and so is a `cycle` in an offloaded
     loop (#12856), so such a loop writes elements it should not.
+* A kernel cannot end the program, so a `stop` or `error stop` the kernel
+  reaches, in the loop body or in a procedure it calls, is split between the
+  device and the host (see the next section).
+
+### Stopping on the device
+
+Every launch of a kernel that reaches a `stop` or `error stop` is given a
+small status buffer, an extra argument of the kernel, which the host clears
+before the launch. The offload pass numbers each such statement (its site)
+and rewrites it, in ASR, before any backend sees it:
+
+* In the kernel, the statement records its stop code, when it has an integer
+  one, in the element of the buffer that belongs to its site, then its site
+  in the first element, and returns: that thread runs nothing more. The
+  other threads carry on; the program ends after the launch anyway.
+* A procedure the kernel calls that holds such a statement, or calls one
+  that does, gets two hidden scalar arguments, the site and the stop code.
+  The statement sets them and returns, and every call to such a procedure is
+  followed by a test that returns from the caller in turn when they are set.
+  The kernel records them in the buffer as if it had reached the statement
+  itself. A call in the condition of an `if`, `do while`, `select case` or in
+  the limits of a `do` loop is tested at the start of each body as well, so
+  no body runs with the value a stopped call returned. (The rest of the
+  statement that made the call does run with that value.)
+* After the launch the host reads the buffer, and if a site is recorded it
+  runs that same statement on the host, with the recorded stop code. The
+  program therefore prints what it prints on the CPU (`ERROR STOP 42`,
+  `ERROR STOP evaluate: unknown activation`) and ends with the same status.
+
+The code is written before the site, and only by a thread that reached that
+site, so whichever thread's site the host reads, the code next to it was
+written by a thread that reached the same site: no atomic operations are
+needed, and no backend has anything to lower but assignments and `return`.
+When several threads stop, which one is reported is not specified, as the
+iterations of a `do concurrent` have no order.
+
+A character stop code has to be a constant, which the host statement
+repeats. One computed at run time (`error stop "bad " // name`) is an error
+for now ("a character stop code that is not a constant"): it would have to
+be formatted on the device or copied back. Run-time checks in the kernel
+(bounds checking) would use the same buffer once the device code checks
+them; it does not yet.
 
 ## Testing
 
@@ -244,7 +290,7 @@ generates the device source. It never falls back to the CPU:
 ## Differences from the current implementation
 
 * The pipeline still has its own checks for device limits (the width of the
-  data that reaches a kernel, input/output and `stop` statements), spread over
+  data that reaches a kernel, input/output statements), spread over
   several passes and the device code generator. They report a compile error
   rather than assert, because the check does not guarantee everything they
   look at: symbols a rewrite introduces, the bodies of procedures only the
