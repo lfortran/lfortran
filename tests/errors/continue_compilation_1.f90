@@ -2972,3 +2972,26 @@ contains
             f=cc1_pclim_known_func)
     end subroutine cc1_pcoc2_use
 end module cc1_proc_component_of_constant_2_mod
+
+! A pointer component of a named constant cannot be a pointer object
+! either: a named constant is not a variable (C901).
+module cc1_proc_component_of_constant_3_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_func
+    use cc1_proc_component_of_constant_mod, only: cc1_pcoc_c, cc1_pcoc_cs
+    implicit none
+    type :: cc1_pcoc3_t
+        integer, pointer :: p => null()
+    end type
+    type(cc1_pcoc3_t), parameter :: cc1_pcoc3_c = cc1_pcoc3_t(null())
+contains
+    subroutine cc1_pcoc3_use()
+        procedure(cc1_pclim_known_func), pointer :: q
+        integer, target :: x
+        q => cc1_pclim_known_func
+        cc1_pcoc_c%f => q  ! {Error} Cannot assign to a constant variable
+        cc1_pcoc_cs(1)%f => null()  ! {Error} Cannot assign to a constant variable
+        nullify(cc1_pcoc_c%f)  ! {Error} Cannot assign to a constant variable
+        cc1_pcoc3_c%p => x  ! {Error} Cannot assign to a constant variable
+        nullify(cc1_pcoc3_c%p)  ! {Error} Cannot assign to a constant variable
+    end subroutine cc1_pcoc3_use
+end module cc1_proc_component_of_constant_3_mod
