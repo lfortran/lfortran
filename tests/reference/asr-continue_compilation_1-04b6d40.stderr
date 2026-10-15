@@ -1124,16 +1124,34 @@ semantic error: type mismatch in structure constructor: value of type FunctionTy
 2454 |     type(cc1_pcfm_t) :: cc1_pcfm_s = cc1_pcfm_t(cc1_pcfm_f)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
      |                                                 ^^^^^^^^^^ 
 
-semantic error: using the internal procedure 'cos', which is defined later, as a procedure interface is not supported yet
-    --> tests/errors/continue_compilation_1.f90:2468:9
+semantic error: component 'a' of type 'cc1_priv_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+    --> tests/errors/continue_compilation_1.f90:2525:48
      |
-2468 |         procedure(cos) :: f  ! {Error} using the internal procedure 'cos', which is defined later, as a procedure interface is not supported yet
+2525 |         type(cc1_priv_t) :: inner = cc1_priv_t(a=1)  ! {Error} component 'a' of type 'cc1_priv_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+     |                                                ^^^ 
+     |
+2474 |         integer :: a
+     |                    ~ 'a' is declared here
+
+semantic error: component 'a' of type 'cc1_priv_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+    --> tests/errors/continue_compilation_1.f90:2561:51
+     |
+2561 |     type(cc1_priv_t), parameter :: w = cc1_priv_t(1)  ! {Error} component 'a' of type 'cc1_priv_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+     |                                                   ^ 
+     |
+2474 |         integer :: a
+     |                    ~ 'a' is declared here
+
+semantic error: using the internal procedure 'cos', which is defined later, as a procedure interface is not supported yet
+    --> tests/errors/continue_compilation_1.f90:2571:9
+     |
+2571 |         procedure(cos) :: f  ! {Error} using the internal procedure 'cos', which is defined later, as a procedure interface is not supported yet
      |         ^^^^^^^^^^^^^^ 
 
 semantic error: using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
-    --> tests/errors/continue_compilation_1.f90:2479:5
+    --> tests/errors/continue_compilation_1.f90:2582:5
      |
-2479 |     procedure(tan) :: f  ! {Error} using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
+2582 |     procedure(tan) :: f  ! {Error} using the internal procedure 'tan', which is defined later, as a procedure interface is not supported yet
      |     ^^^^^^^^^^^^^^ 
 
 semantic error: Restriction type mismatch with provided function argument
@@ -3422,3 +3440,93 @@ semantic error: 'mask' argument of 'maxval' intrinsic must be logical
      |
 2395 |         print *, maxval(a, mask=[1, 2, 3])  ! {Error} 'mask' argument of 'maxval' intrinsic must be logical
      |                  ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: component 'x' of type 'cc1_priv_base_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+    --> tests/errors/continue_compilation_1.f90:2530:28
+     |
+2530 |         e = cc1_priv_ext_t(x=1, y=2)  ! {Error} component 'x' of type 'cc1_priv_base_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+     |                            ^^^ 
+     |
+2483 |         integer :: x = 0
+     |                    ~~~~~ 'x' is declared here
+
+semantic error: component 'x' of type 'cc1_priv_base_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+    --> tests/errors/continue_compilation_1.f90:2531:28
+     |
+2531 |         e = cc1_priv_ext_t(1, 2)  ! {Error} component 'x' of type 'cc1_priv_base_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+     |                            ^ 
+     |
+2483 |         integer :: x = 0
+     |                    ~~~~~ 'x' is declared here
+
+semantic error: component 'a' of type 'cc1_priv_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+    --> tests/errors/continue_compilation_1.f90:2542:20
+     |
+2542 |     v = cc1_priv_t(a=1)  ! {Error} component 'a' of type 'cc1_priv_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+     |                    ^^^ 
+     |
+2474 |         integer :: a
+     |                    ~ 'a' is declared here
+
+semantic error: component 'a' of type 'cc1_priv_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+    --> tests/errors/continue_compilation_1.f90:2544:20
+     |
+2544 |     v = cc1_priv_t(1, 2)  ! {Error} component 'b' of type 'cc1_priv_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+     |                    ^ 
+     |
+2474 |         integer :: a
+     |                    ~ 'a' is declared here
+
+semantic error: component 'b' of type 'cc1_priv_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+    --> tests/errors/continue_compilation_1.f90:2544:23
+     |
+2544 |     v = cc1_priv_t(1, 2)  ! {Error} component 'b' of type 'cc1_priv_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+     |                       ^ 
+     |
+2475 |         integer :: b = 0
+     |                    ~~~~~ 'b' is declared here
+
+semantic error: component 'q' of type 'cc1_priv_mixed_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+    --> tests/errors/continue_compilation_1.f90:2545:29
+     |
+2545 |     m = cc1_priv_mixed_t(5, 6)  ! {Error} component 'q' of type 'cc1_priv_mixed_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+     |                             ^ 
+     |
+2479 |         integer, private :: q = 3
+     |                             ~~~~~ 'q' is declared here
+
+semantic error: parent component 'cc1_priv_hidden_t' of type 'cc1_priv_child_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+    --> tests/errors/continue_compilation_1.f90:2546:27
+     |
+2546 |     ch = cc1_priv_child_t(cc1_priv_hidden_t=cc1_priv_hidden_value(), c=1)  ! {Error} parent component 'cc1_priv_hidden_t' of type 'cc1_priv_child_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+     |                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+warning: giving the parent component positionally in a structure constructor is an extension
+    --> tests/errors/continue_compilation_1.f90:2547:27
+     |
+2547 |     ch = cc1_priv_child_t(cc1_priv_hidden_var, 1)  ! {Error} parent component 'cc1_priv_hidden_t' of type 'cc1_priv_child_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+     |                           ^^^^^^^^^^^^^^^^^^^ use the parent component keyword instead: cc1_priv_hidden_t=...
+
+semantic error: parent component 'cc1_priv_hidden_t' of type 'cc1_priv_child_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+    --> tests/errors/continue_compilation_1.f90:2547:27
+     |
+2547 |     ch = cc1_priv_child_t(cc1_priv_hidden_var, 1)  ! {Error} parent component 'cc1_priv_hidden_t' of type 'cc1_priv_child_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+     |                           ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: component 'n' of type 'cc1_priv_overloaded_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+    --> tests/errors/continue_compilation_1.f90:2548:31
+     |
+2548 |     o = cc1_priv_overloaded_t(n=1)  ! {Error} component 'n' of type 'cc1_priv_overloaded_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+     |                               ^^^ 
+     |
+2494 |         integer :: n
+     |                    ~ 'n' is declared here
+
+semantic error: component 'a' of type 'cc1_priv_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+    --> tests/errors/continue_compilation_1.f90:2555:28
+     |
+2555 |     v = cc1_priv_renamed_t(a=1)  ! {Error} component 'a' of type 'cc1_priv_t' is private and cannot be specified in a structure constructor outside module 'cc1_priv_ctor_mod'
+     |                            ^^^ 
+     |
+2474 |         integer :: a
+     |                    ~ 'a' is declared here

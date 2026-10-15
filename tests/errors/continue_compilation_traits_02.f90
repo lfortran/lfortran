@@ -334,3 +334,27 @@ contains
         end block
     end subroutine
 end module
+
+! A runtime trait component that is private to its module cannot be given by
+! a structure constructor outside that module (F2018 7.5.10, C7102), which is
+! reported instead of the unimplemented runtime trait component value.
+module traits_component_body_error_private_types
+    use traits_component_body_error_types, only: IValue
+    private
+    public :: PrivateHolder
+    type :: PrivateHolder
+        private
+        class(IValue), allocatable :: item
+    end type
+end module
+
+module traits_component_body_error_private_constructor
+    use traits_component_body_error_types, only: Seed
+    use traits_component_body_error_private_types, only: PrivateHolder
+contains
+    subroutine build()
+        type(PrivateHolder) :: x
+        type(Seed) :: s
+        x = PrivateHolder(item=s)
+    end subroutine
+end module

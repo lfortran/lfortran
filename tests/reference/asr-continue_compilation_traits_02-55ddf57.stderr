@@ -116,6 +116,15 @@ semantic error: trait adoption currently requires a nonparameterized type in a m
 333 |                end type
     | ...^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: component 'item' of type 'privateholder' is private and cannot be specified in a structure constructor outside module 'traits_component_body_error_private_types'
+   --> tests/errors/continue_compilation_traits_02.f90:358:27
+    |
+358 |         x = PrivateHolder(item=s)
+    |                           ^^^^^^ 
+    |
+347 |         class(IValue), allocatable :: item
+    |                                       ~~~~ 'item' is declared here
+
 semantic error: Call to impure procedure 'overwrite' is not allowed inside a PURE procedure
    --> tests/errors/continue_compilation_traits_02.f90:168:9
     |

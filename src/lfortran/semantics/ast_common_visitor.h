@@ -13992,11 +13992,13 @@ public:
         }
     }
 
-    // A parent component of an extended type: the component's name and the
-    // ancestor type that is its type.
+    // A parent component of an extended type: the component's name, the
+    // ancestor type that is its type, and the type whose parent component it
+    // is.
     struct ParentComponent {
         std::string name;
         ASR::symbol_t* type;
+        ASR::Struct_t* extension;
     };
 
     // The parent components of the derived type `struct_sym`, its own and the
@@ -14012,7 +14014,7 @@ public:
             ASR::symbol_t* ancestor = ASRUtils::symbol_get_past_external(
                 struct_type->m_parent);
             parents.push_back({to_lower(ASRUtils::symbol_name(
-                struct_type->m_parent)), ancestor});
+                struct_type->m_parent)), ancestor, struct_type});
             struct_type = ASR::down_cast<ASR::Struct_t>(ancestor);
         }
         return parents;
@@ -14086,11 +14088,13 @@ public:
     // derived type `struct_sym`, whose components are `members`, into `vals`
     // and `null_args`, and returns how many leading components it gives: all
     // the components of an ancestor type when it is a value of that type (an
-    // extension, see `get_positional_ancestor()`), and the first component
-    // otherwise.
+    // extension, see `get_positional_ancestor()`), which is then stored in
+    // `ancestor`, and the first component otherwise.
     size_t visit_first_struct_constructor_arg(AST::fnarg_t& arg,
             ASR::symbol_t* struct_sym, const std::vector<ASR::symbol_t*>& members,
-            Vec<ASR::call_arg_t>& vals, std::vector<NullReference>& null_args) {
+            Vec<ASR::call_arg_t>& vals, std::vector<NullReference>& null_args,
+            ASR::symbol_t*& ancestor) {
+        ancestor = nullptr;
         visit_struct_constructor_args(&arg, 1, members, vals, null_args);
         ASR::expr_t* value = vals[0].m_value;
         ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
@@ -14098,7 +14102,7 @@ public:
         if (value == nullptr || struct_type->m_parent == nullptr) {
             return 1;
         }
-        ASR::symbol_t* ancestor = get_positional_ancestor(struct_sym, value,
+        ancestor = get_positional_ancestor(struct_sym, value,
             members.empty() ? nullptr : members[0]);
         if (ancestor == nullptr) {
             return 1;
@@ -14534,6 +14538,162 @@ public:
         return args[first_extra].m_end->base.loc;
     }
 
+    // Whether `scope` is in the module `module` or in one of its descendants,
+    // its submodules and theirs.
+    static bool is_in_module_or_descendant(SymbolTable* scope,
+            const ASR::Module_t* module) {
+        SymbolTable* tu_scope = ASRUtils::get_tu_symtab(scope);
+        for (SymbolTable* s = scope; s != nullptr && s != tu_scope; s = s->parent) {
+            if (s->asr_owner == nullptr || !ASR::is_a<ASR::symbol_t>(*s->asr_owner)
+                    || !ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(
+                        s->asr_owner))) {
+                continue;
+            }
+            // A submodule names its parent, a module or a submodule.
+            const ASR::Module_t* m = ASR::down_cast<ASR::Module_t>(
+                ASR::down_cast<ASR::symbol_t>(s->asr_owner));
+            while (m != module && m->m_parent_module != nullptr) {
+                ASR::symbol_t* parent = tu_scope->resolve_symbol(m->m_parent_module);
+                if (parent == nullptr || !ASR::is_a<ASR::Module_t>(*parent)) {
+                    break;
+                }
+                m = ASR::down_cast<ASR::Module_t>(parent);
+            }
+            return m == module;
+        }
+        return false;
+    }
+
+    // Whether the component `member`, which a structure constructor gives at
+    // `loc`, is accessible here, reporting it if not. A private component is
+    // accessible only in the module that defines its type and in the
+    // descendants of that module (F2018 7.5.4.8).
+    bool check_component_access(ASR::symbol_t* member, const Location& loc) {
+        if (member == nullptr || !ASR::is_a<ASR::Variable_t>(*member)) {
+            return true;
+        }
+        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(member);
+        if (var->m_access != ASR::accessType::Private) {
+            return true;
+        }
+        ASR::Module_t* module = ASRUtils::get_sym_module0(member);
+        if (module == nullptr || is_in_module_or_descendant(current_scope, module)) {
+            return true;
+        }
+        std::string name = var->m_name;
+        diag.add(Diagnostic("component '" + name + "' of type '"
+            + ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(
+                var->m_parent_symtab->asr_owner))
+            + "' is private and cannot be specified in a structure constructor "
+            "outside module '" + std::string(module->m_name) + "'",
+            Level::Error, Stage::Semantic, {
+                Label("", {loc}),
+                Label("'" + name + "' is declared here", {member->base.loc}, false)}));
+        if (!compiler_options.continue_compilation) {
+            throw SemanticAbort();
+        }
+        return false;
+    }
+
+    // Whether the parent component `parent`, which a structure constructor
+    // gives at `loc`, is accessible here, reporting it if not. In a module, a
+    // parent component is private if its type is private in the module that
+    // defines that type (F2018 7.5.7.2), and is then accessible only in the
+    // module that defines the extended type and in its descendants.
+    bool check_parent_component_access(const ParentComponent& parent,
+            const Location& loc) {
+        if (ASR::down_cast<ASR::Struct_t>(parent.type)->m_access
+                != ASR::accessType::Private) {
+            return true;
+        }
+        ASR::Module_t* module = ASRUtils::get_sym_module0(&parent.extension->base);
+        if (module == nullptr || is_in_module_or_descendant(current_scope, module)) {
+            return true;
+        }
+        diag.add(Diagnostic("parent component '" + parent.name + "' of type '"
+            + std::string(parent.extension->m_name)
+            + "' is private and cannot be specified in a structure constructor "
+            "outside module '" + std::string(module->m_name) + "'",
+            Level::Error, Stage::Semantic, {Label("", {loc})}));
+        if (!compiler_options.continue_compilation) {
+            throw SemanticAbort();
+        }
+        return false;
+    }
+
+    // A structure constructor can give a value only to the components that
+    // are accessible where it appears (F2018 7.5.10, C7102), by keyword or
+    // by position. A component it does not give, such as one with a default
+    // initialization or an allocatable one, need not be accessible, and
+    // neither do the components of a parent component it gives as a whole.
+    // Reports every component that the constructor `x` of the derived type
+    // `struct_sym`, whose components are described by `info`, cannot give
+    // here, and then aborts. `positional_ancestor` is the ancestor type whose
+    // parent component the first positional argument gives as a whole, if
+    // any, and `n_given` the number of leading components that argument
+    // gives. This is called once a generic interface with the name of the
+    // type did not accept the arguments, as such an interface may give the
+    // private components a value (F2018 7.5.10, C7103).
+    void check_struct_constructor_access(const AST::FuncCallOrArray_t& x,
+            ASR::symbol_t* struct_sym, const StructConstructorInfo& info,
+            ASR::symbol_t* positional_ancestor, size_t n_given) {
+        bool accessible = true;
+        std::vector<ParentComponent> parents = get_parent_components(struct_sym);
+        // The components that the positional arguments give in order. In
+        // `t(kind arguments)(component arguments)` the first list gives type
+        // parameters, which are not components and are always accessible.
+        AST::fnarg_t* args = x.m_args;
+        size_t n_args = x.n_args;
+        std::vector<ASR::symbol_t*> components;
+        if (!info.kind_indices.empty() && x.n_subargs > 0) {
+            args = x.m_subargs;
+            n_args = x.n_subargs;
+            for (size_t i = 0; i < info.members.size(); i++) {
+                if (std::find(info.kind_indices.begin(), info.kind_indices.end(), i)
+                        == info.kind_indices.end()) {
+                    components.push_back(info.members[i]);
+                }
+            }
+        } else {
+            components = info.members;
+        }
+        for (size_t i = 0; i < n_args; i++) {
+            const Location& arg_loc = args[i].m_end ? args[i].m_end->base.loc
+                : args[i].loc;
+            if (i == 0 && positional_ancestor != nullptr) {
+                auto parent = std::find_if(parents.begin(), parents.end(),
+                    [&](const ParentComponent& p) { return p.type == positional_ancestor; });
+                LCOMPILERS_ASSERT(parent != parents.end());
+                accessible = check_parent_component_access(*parent, arg_loc)
+                    && accessible;
+                continue;
+            }
+            size_t index = positional_ancestor != nullptr ? n_given + i - 1 : i;
+            if (index < components.size()) {
+                accessible = check_component_access(components[index], arg_loc)
+                    && accessible;
+            }
+        }
+        for (size_t i = 0; i < x.n_keywords; i++) {
+            std::string name = to_lower(x.m_keywords[i].m_arg);
+            auto member = std::find_if(info.members.begin(), info.members.end(),
+                [&](ASR::symbol_t* m) { return m && name == ASRUtils::symbol_name(m); });
+            if (member != info.members.end()) {
+                accessible = check_component_access(*member, x.m_keywords[i].loc)
+                    && accessible;
+            } else if (const ParentComponent* parent = find_parent_component(parents, name)) {
+                accessible = check_parent_component_access(*parent, x.m_keywords[i].loc)
+                    && accessible;
+            }
+        }
+        if (!accessible) {
+            // The value of the last argument visited is not the value of
+            // the constructor, which is abandoned.
+            tmp = nullptr;
+            throw SemanticAbort();
+        }
+    }
+
     ASR::asr_t* create_DerivedTypeConstructor(const AST::FuncCallOrArray_t& x,
             ASR::symbol_t *v, bool is_const = false) {
         const Location& loc = x.base.base.loc;
@@ -14566,6 +14726,10 @@ public:
             error_too_many_constructor_args(diag,
                 extra_argument_loc(x.m_args, x.n_args, info.members.size(), loc));
         }
+        // The ancestor type whose parent component the first positional
+        // argument gives, and how many leading components that argument gives.
+        ASR::symbol_t* positional_ancestor = nullptr;
+        size_t n_given = 1;
         if (has_component_list) {
             std::vector<ASR::symbol_t*> kind_members;
             for (size_t index : info.kind_indices) {
@@ -14578,8 +14742,8 @@ public:
             // The first argument of an extended type may give a whole
             // ancestor, so the arguments after it give the components from
             // the ones it covers on.
-            size_t n_given = visit_first_struct_constructor_arg(x.m_args[0], v,
-                info.members, vals, null_args);
+            n_given = visit_first_struct_constructor_arg(x.m_args[0], v,
+                info.members, vals, null_args, positional_ancestor);
             size_t n_rest = x.n_args - 1;
             if (n_given + n_rest > info.members.size()) {
                 error_too_many_constructor_args(diag, extra_argument_loc(x.m_args,
@@ -14632,6 +14796,10 @@ public:
             vals = combined;
             null_args = combined_null_args;
         }
+        // Before the keyword values are visited, so that a component that
+        // cannot be given here is reported rather than any problem of its
+        // value, such as an unimplemented runtime trait component value.
+        check_struct_constructor_access(x, v, info, positional_ancestor, n_given);
         if (is_pdt) {
             visit_kwargs(vals, x.m_keywords, x.n_keywords, loc, v, diag, false, false,
                 &null_args);
