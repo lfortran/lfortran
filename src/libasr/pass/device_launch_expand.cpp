@@ -797,6 +797,9 @@ class DeviceLaunchExpandVisitor :
                     writebacks.push_back(back.p[k]);
                 }
             }
+            // Every launch allocates the copy afresh, so it is released
+            // once copied back, ready for the next launch of the loop.
+            writebacks.push_back(b.Deallocate(tmp));
             return tmp;
         }
 
