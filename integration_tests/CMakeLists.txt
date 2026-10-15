@@ -5966,10 +5966,10 @@ RUN(NAME gpu_metal_202 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_203 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_204 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --gpu-allow-cpu-fallback)
 RUN(NAME gpu_metal_205 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_206 LABELS gfortran llvm)
+RUN(NAME gpu_metal_206 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_207 LABELS gfortran llvm)
-RUN(NAME gpu_metal_208 LABELS gfortran llvm)
-RUN(NAME gpu_metal_209 LABELS gfortran llvm)
+RUN(NAME gpu_metal_208 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_209 LABELS gfortran llvm metal cuda_cpu)
 # gpu_metal_210 onward were written against the Metal path. Twelve of
 # them are not labelled cuda_cpu: the CUDA lowering does not yet compile
 # them, and labelling a test for a backend that cannot run it says nothing
@@ -6187,6 +6187,7 @@ RUN(NAME gpu_metal_425 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_426 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_427 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_428 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_429 LABELS gfortran llvm metal cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for

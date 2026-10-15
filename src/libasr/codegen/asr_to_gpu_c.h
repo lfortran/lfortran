@@ -3041,10 +3041,15 @@ public:
             if (mem && ASR::is_a<ASR::Variable_t>(*mem)) {
                 ASR::Variable_t *mv = ASR::down_cast<ASR::Variable_t>(mem);
                 if (ASRUtils::is_allocatable(mv->m_type)) {
-                    // Allocatable members are passed as separate device
-                    // buffers. Emit a long placeholder matching the host
-                    // pointer size to keep the struct layout aligned.
-                    src << "    long " << mv->m_name << ";\n";
+                    // The device does not interpret an allocatable member:
+                    // an array is passed as separate device buffers, and a
+                    // scalar is never read there. Emit a placeholder the
+                    // size of its host representation to keep the struct
+                    // layout aligned.
+                    size_t words = gpu_opaque_component_words(mem);
+                    src << "    long " << mv->m_name;
+                    if (words > 1) src << "[" << words << "]";
+                    src << ";\n";
                 } else if (is_struct_type(mv->m_type)) {
                     // A component that is an array of a derived type keeps
                     // its extent: the element count is the same on the host,

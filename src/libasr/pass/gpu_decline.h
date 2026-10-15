@@ -168,7 +168,6 @@ enum class GpuDeclineReason {
     StructNonDataMember,
     StructPointerMember,
     StructAllocatableArrayMember,
-    StructAllocatableScalarMember,
     StructAssumedShapeArrayMember,
     StructMemberTypeWidth,
     StructMemberNotNumeric,
@@ -192,6 +191,12 @@ enum class GpuDeclineReason {
     LaunchVlaExtentNotRebuildable,
     KernelArgumentCountMismatch,
     NestedAllocatableComponent,
+    // The kernel names an allocatable scalar component, which reaches the
+    // device only as the host's bytes (see `gpu_component_is_opaque`).
+    AllocatableScalarComponentUse,
+    // The kernel assigns a whole value of a derived type holding an
+    // allocatable scalar component, which would have to be allocated.
+    AllocatableScalarComponentCopy,
     MissingArgument,
     ScalarTypeWidth,
     ScalarNotNumeric,
