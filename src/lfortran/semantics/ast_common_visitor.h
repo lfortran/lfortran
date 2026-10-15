@@ -16067,10 +16067,15 @@ public:
                 if (func_call->m_func != nullptr) {
                     // Fortran is case insensitive and symbols are stored
                     // lowercased, so the name must be lowered before lookup
+                    std::string func_name = to_lower(func_call->m_func);
                     ASR::symbol_t* sym_found =
-                        current_scope->resolve_symbol(to_lower(func_call->m_func));
+                        current_scope->resolve_symbol(func_name);
+                    // A generic interface named like the type takes
+                    // precedence over its structure constructor (F2018
+                    // 7.5.10, NOTE 1), so such a reference is visited below.
                     if (sym_found != nullptr && ASR::is_a<ASR::Struct_t>(
-                            *ASRUtils::symbol_get_past_external(sym_found))) {
+                            *ASRUtils::symbol_get_past_external(sym_found))
+                            && current_scope->resolve_symbol("~" + func_name) == nullptr) {
                         expr = ASRUtils::EXPR(create_DerivedTypeConstructor(
                             *func_call, sym_found, true));
                     }
