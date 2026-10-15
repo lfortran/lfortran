@@ -50,9 +50,11 @@ other, except that an access of only the bytes of a derived-type value itself
 (a polymorphic value the host copies for a launch) does not reach the data of
 its allocatable components. Asking about the shape of an array (`size`,
 `lbound`, `allocated`) does not access it. A call accesses its actual
-arguments, and may access every variable that is not a local or a dummy
-argument of the procedure without the `target` attribute (a module variable,
-a target, what a pointer may point to); a call to a procedure contained in
+arguments -- of a derived-type value, only the components the callee's body
+names, when it is known -- and may access every variable that is not a local
+or a dummy argument of the procedure without the `target` attribute (a
+module variable, a variable of a procedure this one is contained in, a
+target, what a pointer may point to); a call to a procedure contained in
 this one may access anything.
 
 Control flow is structured: `if`, `select case`, loops (to a fixed point),
@@ -156,6 +158,24 @@ bool aliasable(ASR::symbol_t *s) {
     if (ASR::is_a<ASR::unit_t>(*scope->asr_owner)) return true;
     ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
     return ASR::is_a<ASR::Module_t>(*owner);
+}
+
+// A root another procedure may access: one a pointer may point into, or a
+// variable that is not a local or dummy argument of `routine` -- a module
+// variable, or a variable of the procedure `routine` is contained in, which
+// the procedures contained there access by host association.
+bool reachable_elsewhere(ASR::symbol_t *s, SymbolTable *routine) {
+    if (aliasable(s)) return true;
+    SymbolTable *scope = ASR::down_cast<ASR::Variable_t>(s)->m_parent_symtab;
+    while (scope != nullptr && scope->asr_owner != nullptr
+            && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)
+            && (ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(
+                    scope->asr_owner))
+                || ASR::is_a<ASR::AssociateBlock_t>(
+                    *ASR::down_cast<ASR::symbol_t>(scope->asr_owner)))) {
+        scope = scope->parent;
+    }
+    return scope != routine;
 }
 
 bool same_storage_root(ASR::symbol_t *a, ASR::symbol_t *b) {
@@ -776,7 +796,9 @@ private:
         if (s.written.empty()) return false;
         if (acc.everything) return true;
         for (const Path &w : s.written) {
-            if (acc.globals && aliasable(w.root)) return true;
+            if (acc.globals && reachable_elsewhere(w.root, routine)) {
+                return true;
+            }
             for (const Path &a : acc.paths) {
                 if (overlap(a, w)) return true;
             }

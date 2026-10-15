@@ -693,8 +693,10 @@ for a launch) does not reach the data of its allocatable components. Asking
 about the shape of an array (`size`, `lbound`, `allocated`) does not access
 its elements. A call accesses its actual arguments, and may access every
 variable that a pointer may point to or that another procedure can reach (a
-module variable, a `target`); a call to a procedure contained in this one
-may access anything.
+module variable, a variable of a procedure this one is contained in, a
+`target`); a call to a procedure contained in this one may access anything.
+Of a derived-type value it is handed, a call whose callee's body is known
+accesses only the components the body names.
 
 The data the host copies for a launch itself -- a contiguous copy of a
 strided array, the components of an array of derived type, the arrays of a
