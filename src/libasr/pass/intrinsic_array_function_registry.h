@@ -6594,10 +6594,11 @@ namespace Pack {
         }
         ASR::ttype_t* ret_type = return_type;
         if (overload_id == 2) {
-            ret_type = ASRUtils::duplicate_type_with_empty_dims(
-                al, ASRUtils::type_get_past_pointer(
-                        ASRUtils::type_get_past_allocatable(return_type)),
-                ASR::array_physical_typeType::DescriptorArray, true);
+            ret_type = ArrIntrinsic::assumed_length_if_deferred(al,
+                ASRUtils::duplicate_type_with_empty_dims(
+                    al, ASRUtils::type_get_past_pointer(
+                            ASRUtils::type_get_past_allocatable(return_type)),
+                    ASR::array_physical_typeType::DescriptorArray, true));
         }
         ASR::expr_t *result;
         if (is_struct_type_arg) {
