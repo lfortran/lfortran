@@ -4983,6 +4983,7 @@ public:
                 current_der_type_name = get_type_key(der_symbol);
             }
         } else {
+            array_name = get_expr_name_for_runtime_message(x.m_v);
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
             this->visit_expr(*x.m_v);
@@ -15521,8 +15522,15 @@ public:
                 ASR::expr_t* target_size_asr = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.m_target->base.loc,
                     x.m_target, dim_asr, type32, nullptr));
 
-                ASR::expr_t* x_m_components_0_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, components[0]->base.loc,
-                    components[0], dim_asr, type32, nullptr));
+                // A constructor is not evaluated here, its type has its
+                // integer(4) size
+                ASR::expr_t* x_m_components_0_size = nullptr;
+                if (ASR::is_a<ASR::ArrayConstructor_t>(*components[0])) {
+                    x_m_components_0_size = component_dims[dim].m_length;
+                } else {
+                    x_m_components_0_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, components[0]->base.loc,
+                        components[0], dim_asr, type32, nullptr));
+                }
                 ASR::expr_t* target_size_value = ASRUtils::expr_value(target_size_asr);
                 ASR::expr_t* component_size_value = ASRUtils::expr_value(x_m_components_0_size);
                 if (target_size_value && component_size_value &&

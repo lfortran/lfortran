@@ -2893,3 +2893,18 @@ contains
         cc1_plnm_f = 0
     end function cc1_plnm_f
 end module cc1_procptr_later_nonproc_m
+
+! The elements that a DATA statement initializes must be inside the array and
+! match the number of values.
+subroutine cc1_data_section_errors(n)
+    implicit none
+    integer :: n, i
+    integer :: cc1_ds_a(4), cc1_ds_b(4), cc1_ds_c(4), cc1_ds_d(4), cc1_ds_e(3)
+    integer :: cc1_ds_s, cc1_ds_f(5)
+    data cc1_ds_a(1) /1/
+    data cc1_ds_a(3:5) /3, 4, 5/  ! {Error} Array index 5 is out of bounds (1 to 4) in dimension 1
+    data cc1_ds_b(1:3) /1, 2/  ! {Error} DATA statement element count mismatch: 3 elements on left-hand side, 2 values on right-hand side
+    data cc1_ds_c(1:2) /1, 2, 3/  ! {Error} DATA statement element count mismatch: 2 elements on left-hand side, 3 values on right-hand side
+    data cc1_ds_d(2:3), cc1_ds_s /1, 2/  ! {Error} DATA statement element count mismatch: 3 elements on left-hand side, 2 values on right-hand side
+    data cc1_ds_e(1:3), (cc1_ds_f(i), i=1,n) /1, 2/  ! {Error} DATA statement element count mismatch: more elements on left-hand side than 2 values on right-hand side
+end subroutine cc1_data_section_errors

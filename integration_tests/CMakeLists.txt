@@ -781,6 +781,7 @@ RUN(NAME array_02_pack LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME array_03_pack LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME array_04_pack LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME array_05_pack LABELS gfortran llvm)
+RUN(NAME array_06_pack LABELS gfortran llvm)
 RUN(NAME array_02_transfer LABELS gfortran)
 RUN(NAME array_03_transfer LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME array_04_transfer LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1135,6 +1136,7 @@ RUN(NAME array_constructor_05 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arra
 RUN(NAME array_constructor_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME array_constructor_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_constructor_08 LABELS gfortran llvm)
+RUN(NAME array_constructor_09 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME allocatble_c_ptr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_struct_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME hashmap_nested_dealloc_derived_pointer LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -1985,8 +1987,10 @@ RUN(NAME intrinsics_491 LABELS llvm EXTRAFILES intrinsics_491c.c) # get_command 
 RUN(NAME intrinsics_492 LABELS gfortran llvm fortran) # spread of a constant rank>1 array is not rejected as an invalid dim
 RUN(NAME intrinsics_493 LABELS gfortran llvm) # dot_product/pack/unpack of kind=1/2 constant arrays are not rejected
 RUN(NAME intrinsics_494 LABELS gfortran llvm NO_FAST_MATH) # aint/anint of values beyond integer(8) range and of infinity (#15040)
-RUN(NAME intrinsics_495 LABELS gfortran llvm) # pack/cshift/eoshift/maxval of a character array whose length is not a constant (#15132)
-RUN(NAME intrinsics_496 LABELS gfortran llvm) # eoshift of a character array without boundary fills with blanks of the element length (#15132)
+RUN(NAME intrinsics_495 LABELS gfortran llvm) # cshift/eoshift of deferred-length character arrays (#14451)
+RUN(NAME intrinsics_496 LABELS gfortran llvm) # transpose/spread of deferred-length character arrays (#14775)
+RUN(NAME intrinsics_497 LABELS gfortran llvm) # pack/cshift/eoshift/maxval of a character array whose length is not a constant (#15132)
+RUN(NAME intrinsics_498 LABELS gfortran llvm) # eoshift of a character array without boundary fills with blanks of the element length (#15132)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
@@ -2301,6 +2305,9 @@ RUN(NAME forall_06 LABELS gfortran llvm)
 RUN(NAME forall_07 LABELS gfortran llvm)
 RUN(NAME forall_08 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME forall_09 LABELS llvm EXTRA_ARGS --realloc-lhs-arrays) # GFortran assigns these FORALLs one index at a time
+RUN(NAME forall_10 LABELS llvm) # GFortran evaluates these vector subscripts one index at a time
+RUN(NAME forall_11 LABELS gfortran llvm)
+RUN(NAME forall_12 LABELS llvm EXTRA_ARGS --realloc-lhs-arrays) # GFortran does not reallocate these components in a FORALL
 
 RUN(NAME parsing_01 LABELS gfortran)
 RUN(NAME parsing_02 LABELS gfortran)
@@ -5162,6 +5169,7 @@ RUN(NAME elemental_23 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME elemental_24 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME elemental_25 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME elemental_26 LABELS gfortran llvm fortran)
+RUN(NAME elemental_27 LABELS gfortran llvm)
 
 RUN(NAME types_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME types_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -5682,6 +5690,9 @@ RUN(NAME random_number_02 LABELS gfortran llvm)
 RUN(NAME random_number_03 LABELS gfortran llvm EXTRA_ARGS --separate-compilation)
 RUN(NAME random_seed_01 LABELS gfortran llvm)
 RUN(NAME random_seed_02 LABELS gfortran llvm)
+RUN(NAME date_and_time_01 LABELS gfortran llvm)
+# GFortran rejects an assumed-size VALUES at run time (extent 0)
+RUN(NAME date_and_time_02 LABELS llvm)
 RUN(NAME srand_01 LABELS gfortran llvm)
 RUN(NAME pure_side_effects_01 LABELS gfortran llvm)
 RUN(NAME pure_side_effects_02 LABELS gfortran llvm)
@@ -6207,6 +6218,14 @@ RUN(NAME gpu_metal_434 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS $<$<STREQU
 RUN(NAME gpu_metal_436 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_437 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_438 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_439 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_440 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_441 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_442 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_443 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_444 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME gpu_metal_450 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_449 LABELS gfortran llvm metal cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for

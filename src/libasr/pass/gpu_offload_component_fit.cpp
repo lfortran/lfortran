@@ -408,9 +408,41 @@ public:
 
 // Whether every way through `body` that runs to its end gives the
 // component a shape.
-bool shaped_on_every_path(Allocator &al, ASR::stmt_t **body, size_t n_body,
-        ASR::symbol_t *r, const std::string &component) {
+// The statements of `body` that run each time it does, one after the
+// other: its own, with those of a `block` or `associate` construct in it in
+// place of the construct.
+std::vector<ASR::stmt_t*> sequential_statements(ASR::stmt_t **body,
+        size_t n_body) {
+    std::vector<ASR::stmt_t*> out;
     for (size_t i = 0; i < n_body; i++) {
+        ASR::symbol_t *construct = nullptr;
+        if (ASR::is_a<ASR::BlockCall_t>(*body[i])) {
+            construct = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::BlockCall_t>(body[i])->m_m);
+        } else if (ASR::is_a<ASR::AssociateBlockCall_t>(*body[i])) {
+            construct = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::AssociateBlockCall_t>(body[i])->m_m);
+        }
+        std::vector<ASR::stmt_t*> inner;
+        if (construct && ASR::is_a<ASR::Block_t>(*construct)) {
+            ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(construct);
+            inner = sequential_statements(b->m_body, b->n_body);
+        } else if (construct && ASR::is_a<ASR::AssociateBlock_t>(*construct)) {
+            ASR::AssociateBlock_t *b =
+                ASR::down_cast<ASR::AssociateBlock_t>(construct);
+            inner = sequential_statements(b->m_body, b->n_body);
+        } else {
+            inner.push_back(body[i]);
+        }
+        out.insert(out.end(), inner.begin(), inner.end());
+    }
+    return out;
+}
+
+bool shaped_on_every_path(Allocator &al, ASR::stmt_t **body_, size_t n_body_,
+        ASR::symbol_t *r, const std::string &component) {
+    std::vector<ASR::stmt_t*> body = sequential_statements(body_, n_body_);
+    for (size_t i = 0; i < body.size(); i++) {
         std::vector<ASR::expr_t*> extents;
         if (gives_shape(al, body[i], r, component, extents)) return true;
         if (ASR::is_a<ASR::If_t>(*body[i])) {
@@ -856,9 +888,9 @@ ComponentShape call_component_shape(Allocator &al, const ASR::Function_t &fn,
 
     size_t top_level = 0;
     std::vector<ASR::expr_t*> last;
-    for (size_t i = 0; i < fn.n_body; i++) {
+    for (ASR::stmt_t *stmt : sequential_statements(fn.m_body, fn.n_body)) {
         std::vector<ASR::expr_t*> extents;
-        if (gives_shape(al, fn.m_body[i], r, component, extents)) {
+        if (gives_shape(al, stmt, r, component, extents)) {
             top_level++;
             last = extents;
         }
@@ -1293,8 +1325,17 @@ class GpuComponentFit {
                     ASR::down_cast<ASR::FunctionCall_t>(value);
                 ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(
                     call->m_name);
-                if (call->m_dt || !callee ||
-                        !ASR::is_a<ASR::Function_t>(*callee)) {
+                if (callee && ASR::is_a<ASR::StructMethodDeclaration_t>(
+                        *callee)) {
+                    callee = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::StructMethodDeclaration_t>(
+                            callee)->m_proc);
+                }
+                // A polymorphic object may have a type that binds another
+                // procedure.
+                if (!callee || !ASR::is_a<ASR::Function_t>(*callee) ||
+                        (call->m_dt && ASRUtils::is_class_type(
+                            ASRUtils::expr_type(call->m_dt)))) {
                     continue;
                 }
                 // A separate module procedure shapes the component in its
@@ -1305,10 +1346,28 @@ class GpuComponentFit {
                         !ASR::is_a<ASR::Var_t>(*fn->m_return_var)) {
                     continue;
                 }
+                // The object of a type-bound call is the actual argument
+                // of its passed-object dummy argument, when the call does
+                // not list it among its arguments already.
+                bool passes_object = call->m_dt &&
+                    call->n_args + 1 == fn->n_args;
+                size_t object_index = passes_object
+                    ? ASRUtils::get_pass_arg_index(call->m_name) : 0;
+                Vec<ASR::call_arg_t> args;
+                args.reserve(al, call->n_args + 1);
+                for (size_t a = 0; a <= call->n_args; a++) {
+                    if (passes_object && a == object_index) {
+                        ASR::call_arg_t object;
+                        object.loc = call->m_dt->base.loc;
+                        object.m_value = call->m_dt;
+                        args.push_back(al, object);
+                    }
+                    if (a < call->n_args) args.push_back(al, call->m_args[a]);
+                }
                 write.shape = call_component_shape(al, *fn,
                     ASRUtils::symbol_get_past_external(ASR::down_cast<
                         ASR::Var_t>(fn->m_return_var)->m_v), name,
-                    call->m_args, call->n_args);
+                    args.p, args.n);
             } else if (ASR::is_a<ASR::StructConstructor_t>(*value)) {
                 // `t(i) = tt(...)`
                 ASR::expr_t *given = constructor_value(

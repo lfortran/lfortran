@@ -1,43 +1,33 @@
 program intrinsics_496
-! eoshift of a character array without boundary fills with blanks of the
-! element length (#15132)
-implicit none
-character(len=3) :: x(3), r(3)
-character(len=1) :: c(2)
-character(len=4) :: y(2, 2)
+    ! transpose and spread of deferred-length character arrays (#14775)
+    implicit none
+    character(:), allocatable :: s(:), t(:,:), r2(:,:)
 
-x = ['abc', 'def', 'ghi']
-r = eoshift(x, 1)
-print *, '[', r, ']'
-if (r(1) /= 'def' .or. r(2) /= 'ghi' .or. r(3) /= '   ') error stop
-if (len(eoshift(x, 1)) /= 3) error stop
+    allocate(character(2) :: s(4))
+    s = ["bb", "cc", "aa", "dd"]
+    allocate(character(2) :: t(2, 3))
+    t = reshape(["ab", "cd", "ef", "gh", "ij", "kl"], [2, 3])
 
-c = eoshift(['p', 'q'], -1)
-print *, '[', c, ']'
-if (c(1) /= ' ' .or. c(2) /= 'p') error stop
+    call check2(transpose(t), reshape(["ab", "ef", "ij", "cd", "gh", "kl"], [3, 2]))
+    call check2(transpose(t(1:2, 1:2)), reshape(["ab", "ef", "cd", "gh"], [2, 2]))
+    call check2(spread(s, 1, 2), reshape(["bb", "bb", "cc", "cc", "aa", "aa", "dd", "dd"], [2, 4]))
+    call check2(spread(s(1:2), 2, 2), reshape(["bb", "cc", "bb", "cc"], [2, 2]))
 
-y = reshape(['aaaa', 'bbbb', 'cccc', 'dddd'], [2, 2])
-y = eoshift(y, 1, dim=2)
-print *, '[', y, ']'
-if (y(1, 1) /= 'cccc' .or. y(2, 1) /= 'dddd') error stop
-if (y(1, 2) /= '    ' .or. y(2, 2) /= '    ') error stop
-
-call assumed_len(x)
+    allocate(character(2) :: r2(3, 2))
+    r2 = transpose(t)
+    call check2(r2, reshape(["ab", "ef", "ij", "cd", "gh", "kl"], [3, 2]))
+    deallocate(r2)
+    allocate(character(2) :: r2(2, 2))
+    r2 = spread(s(1:2), 1, 2)
+    call check2(r2, reshape(["bb", "bb", "cc", "cc"], [2, 2]))
 
 contains
 
-subroutine assumed_len(a)
-character(len=*), intent(in) :: a(:)
-character(len=3) :: s(3)
-character(len=2) :: t(3)
-
-s = eoshift(a, -1)
-print *, '[', s, ']'
-if (s(1) /= '   ' .or. s(2) /= 'abc' .or. s(3) /= 'def') error stop
-
-t = eoshift(a(:)(2:), 1)
-print *, '[', t, ']'
-if (t(1) /= 'ef' .or. t(2) /= 'hi' .or. t(3) /= '  ') error stop
-end subroutine
+    subroutine check2(res, expected)
+        character(*), intent(in) :: res(:,:), expected(:,:)
+        if (len(res) /= 2) error stop 1
+        if (any(shape(res) /= shape(expected))) error stop 2
+        if (any(res /= expected)) error stop 3
+    end subroutine
 
 end program
