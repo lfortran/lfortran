@@ -5683,6 +5683,8 @@ RUN(NAME random_number_03 LABELS gfortran llvm EXTRA_ARGS --separate-compilation
 RUN(NAME random_seed_01 LABELS gfortran llvm)
 RUN(NAME random_seed_02 LABELS gfortran llvm)
 RUN(NAME date_and_time_01 LABELS gfortran llvm)
+# GFortran rejects an assumed-size VALUES at run time (extent 0)
+RUN(NAME date_and_time_02 LABELS llvm)
 RUN(NAME srand_01 LABELS gfortran llvm)
 RUN(NAME pure_side_effects_01 LABELS gfortran llvm)
 RUN(NAME pure_side_effects_02 LABELS gfortran llvm)

@@ -59,6 +59,27 @@ typedef void (*verify_subroutine)(
     const ASR::IntrinsicImpureSubroutine_t&,
     diag::Diagnostics&);
 
+// The type of a dummy for a rank 1 array argument that is accessed element
+// by element from index 1: assumed shape, or assumed size for an assumed-size
+// actual argument, which has no extent to describe it with.
+static inline ASR::ttype_t* elementwise_array_dummy_type(Allocator& al,
+        const Location& loc, ASR::ttype_t* t) {
+    t = ASRUtils::type_get_past_allocatable_pointer(t);
+    if (ASRUtils::extract_physical_type(t) !=
+            ASR::array_physical_typeType::UnboundedPointerArray) {
+        return ASRUtils::duplicate_type_with_empty_dims(al, t);
+    }
+    Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+    ASR::dimension_t dim;
+    dim.loc = loc;
+    dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    dim.m_length = nullptr;
+    dims.push_back(al, dim);
+    return ASRUtils::duplicate_type(al, t, &dims,
+        ASR::array_physical_typeType::UnboundedPointerArray, true);
+}
+
 typedef ASR::expr_t* (*get_initial_value_sub)(Allocator&, ASR::ttype_t*);
 
 namespace GetCwd {
@@ -229,7 +250,7 @@ namespace RandomSeed {
         }
         if (!is_real(*arg_types[1])) {
             flag = 1;
-            ASR::ttype_t* put_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[1]);
+            ASR::ttype_t* put_type = elementwise_array_dummy_type(al, loc, arg_types[1]);
             fill_func_arg_sub("put", put_type, In);
             std::string put_func_name = "_lfortran_random_seed_put_i32";
             if (fn_symtab->get_symbol(put_func_name) == nullptr) {
@@ -260,7 +281,7 @@ namespace RandomSeed {
             fill_func_arg_sub("put", real32, In);
         }
         if (!is_real(*arg_types[2])) {
-            ASR::ttype_t* get_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[2]);
+            ASR::ttype_t* get_type = elementwise_array_dummy_type(al, loc, arg_types[2]);
             fill_func_arg_sub("get", get_type, Out);
             if (flag == 1) {
                 body.push_back(al, b.Assignment(args[2], args[1]));
@@ -1071,7 +1092,7 @@ namespace DateAndTime {
             fill_func_arg_sub("zone", real32, In);
         }
         if (!is_real(*arg_types[3])) {
-            ASR::ttype_t* values_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[3]);
+            ASR::ttype_t* values_type = elementwise_array_dummy_type(al, loc, arg_types[3]);
             fill_func_arg_sub("values", values_type, Out);
             std::vector<LCompilers::ASR::expr_t *> vals;
             ASR::symbol_t *s_4 = b.create_c_func_subroutines(c_func_name_4, fn_symtab, 1, int32);
