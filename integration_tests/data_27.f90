@@ -102,12 +102,19 @@ contains
         integer :: j
         block
             integer :: m, b(2)
+            complex :: z, zs(3)
             data m /0/
             data (b(j), j=1,2) /1, 2/
+            data z /(7.0, 8.0)/, zs(2:3) /(1.0, -1.0), (2.0, -2.0)/
             m = m + 1
             if (m /= call_number) error stop "BLOCK DATA lifetime"
             if (any(b /= [1, 2] + call_number - 1)) error stop "BLOCK implied-do DATA lifetime"
+            if (z /= cmplx(6 + call_number, 8)) error stop "BLOCK complex DATA lifetime"
+            if (any(zs /= [cmplx(call_number - 1, 0), cmplx(call_number, -1), &
+                    cmplx(1 + call_number, -2)])) error stop "BLOCK complex section DATA lifetime"
             b = b + 1
+            z = z + 1
+            zs = zs + 1
         end block
     end subroutine
 end program

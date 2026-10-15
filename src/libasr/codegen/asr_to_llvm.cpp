@@ -9556,21 +9556,36 @@ public:
         }
         collect_variable_types_and_struct_types(variable_type_names, struct_types, x_symtab->parent);
     }
+    // Whether the initial value of the SAVE variable `v` is a constant that
+    // becomes the static initializer of its global.
+    static bool is_static_save_initial_value(ASR::Variable_t* v) {
+        if (!v->m_value) return false;
+        if (ASR::is_a<ASR::Integer_t>(*v->m_type)
+                || ASR::is_a<ASR::Real_t>(*v->m_type)
+                || ASR::is_a<ASR::Logical_t>(*v->m_type)) {
+            return true;
+        }
+        if (ASR::is_a<ASR::Complex_t>(*v->m_type)) {
+            return ASR::is_a<ASR::ComplexConstant_t>(*v->m_value);
+        }
+        if (!ASR::is_a<ASR::ArrayConstant_t>(*v->m_value)
+                || !ASRUtils::is_array(v->m_type)
+                || ASRUtils::extract_physical_type(v->m_type)
+                    != ASR::array_physical_typeType::FixedSizeArray) {
+            return false;
+        }
+        ASR::ttype_t* element_type = ASRUtils::type_get_past_array(v->m_type);
+        return ASR::is_a<ASR::Integer_t>(*element_type)
+            || ASR::is_a<ASR::Real_t>(*element_type)
+            || ASR::is_a<ASR::Logical_t>(*element_type)
+            || ASR::is_a<ASR::Complex_t>(*element_type);
+    }
+
     // Whether the global of the SAVE variable `v` is created with its initial
     // value as the static initializer.
     static bool save_value_in_global_initializer(ASR::Variable_t* v) {
         return v->m_storage == ASR::storage_typeType::Save
-            && v->m_value
-            && ((ASR::is_a<ASR::Integer_t>(*v->m_type)
-            || ASR::is_a<ASR::Real_t>(*v->m_type)
-            || ASR::is_a<ASR::Logical_t>(*v->m_type))
-            || (ASR::is_a<ASR::ArrayConstant_t>(*v->m_value)
-            && ASRUtils::is_array(v->m_type)
-            && ASRUtils::extract_physical_type(v->m_type)
-                == ASR::array_physical_typeType::FixedSizeArray
-            && (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(v->m_type))
-                || ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(v->m_type))
-                || ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array(v->m_type)))))
+            && is_static_save_initial_value(v)
             && !v->m_is_volatile;
     }
 
@@ -9913,20 +9928,11 @@ public:
                     llvm::GlobalVariable *gptr = module->getNamedGlobal(global_name);
                     gptr->setLinkage(llvm::GlobalValue::InternalLinkage);
                     llvm::Constant *init_value;
-                    if (v->m_value
-                            && (ASR::is_a<ASR::Integer_t>(*v->m_type)
-                            || ASR::is_a<ASR::Real_t>(*v->m_type)
-                            || ASR::is_a<ASR::Logical_t>(*v->m_type))) {
+                    if (is_static_save_initial_value(v)
+                            && !ASRUtils::is_array(v->m_type)) {
                         this->visit_expr(*v->m_value);
                         init_value = llvm::dyn_cast<llvm::Constant>(tmp);
-                    } else if (v->m_value
-                            && ASR::is_a<ASR::ArrayConstant_t>(*v->m_value)
-                            && ASRUtils::is_array(v->m_type)
-                            && ASRUtils::extract_physical_type(v->m_type)
-                                == ASR::array_physical_typeType::FixedSizeArray
-                            && (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(v->m_type))
-                                || ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(v->m_type))
-                                || ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array(v->m_type)))) {
+                    } else if (is_static_save_initial_value(v)) {
                         llvm::Type* el_type = type->getArrayElementType();
                         init_value = get_const_array(v->m_value, el_type);
                     } else if (v->m_symbolic_value
