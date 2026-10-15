@@ -2100,13 +2100,42 @@ public:
                         }
                     }
                     if (has_null) {
-                        emit_per_dim_sizes_for_call(actual_arg, farr);
+                        std::vector<std::string> extents;
+                        if (!per_dim_size_strs(actual_arg, farr, extents)) {
+                            emit_array_size_expr(actual_arg);
+                            return;
+                        }
+                        for (size_t d = 0; d < extents.size(); d++) {
+                            if (d > 0) src << ", ";
+                            src << extents[d];
+                        }
+                        emit_descriptor_strides_for_call(actual_arg,
+                            extents);
                         return;
                     }
                 }
             }
         }
         emit_array_size_expr(actual_arg);
+    }
+
+    // The strides of the actual argument handed to a descriptor dummy, one
+    // per dimension: those a strided view was registered with, or the
+    // column-major products of the extents of a contiguous array.
+    void emit_descriptor_strides_for_call(ASR::expr_t *actual_arg,
+            const std::vector<std::string> &extents) {
+        std::string key = array_shape_key(actual_arg);
+        std::vector<std::string> strides;
+        if (!registered_strides(key, extents.size(), strides)) {
+            strides.clear();
+            std::string stride = "1";
+            for (size_t d = 0; d < extents.size(); d++) {
+                strides.push_back(stride);
+                stride = stride == "1" ? "(" + extents[d] + ")"
+                    : "(" + stride + " * (" + extents[d] + "))";
+            }
+        }
+        for (const std::string &stride : strides) src << ", " << stride;
     }
 
     // Emit the extents an allocatable dummy needs, one per dimension, at a
@@ -2124,6 +2153,23 @@ public:
     // DescriptorArray formal parameter with null dimension lengths.
     void emit_per_dim_sizes_for_call(ASR::expr_t *actual_arg,
             ASR::Array_t *formal_arr) {
+        std::vector<std::string> extents;
+        if (!per_dim_size_strs(actual_arg, formal_arr, extents)) {
+            // Fallback: single total size
+            emit_array_size_expr(actual_arg);
+            return;
+        }
+        for (size_t d = 0; d < extents.size(); d++) {
+            if (d > 0) src << ", ";
+            src << extents[d];
+        }
+    }
+
+    // The extent of each dimension of the formal `formal_arr` the actual
+    // argument gives it, as device source; false when the actual is not
+    // an array.
+    bool per_dim_size_strs(ASR::expr_t *actual_arg,
+            ASR::Array_t *formal_arr, std::vector<std::string> &extents) {
         // Unwrap ArrayPhysicalCast
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*actual_arg)) {
             actual_arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
@@ -2132,61 +2178,59 @@ public:
         ASR::ttype_t *atype = ASRUtils::expr_type(actual_arg);
         ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(atype));
-        bool first_dim = true;
-        if (ASR::is_a<ASR::Array_t>(*inner)) {
-            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
-            // Emit each dimension's length
-            for (size_t d = 0; d < formal_arr->n_dims; d++) {
-                if (!first_dim) src << ", ";
-                first_dim = false;
-                if (d < arr->n_dims && arr->m_dims[d].m_length) {
-                    visit_expr(arr->m_dims[d].m_length);
-                } else if (ASR::is_a<ASR::Var_t>(*actual_arg)) {
-                    // Assumed-shape: use __size_var_dimN from kernel
-                    ASR::symbol_t *vsym =
-                        ASRUtils::symbol_get_past_external(
-                            ASR::down_cast<ASR::Var_t>(actual_arg)->m_v);
-                    std::string vname = ASRUtils::symbol_name(vsym);
-                    const ASR::gpu_kernel_argument_t *extent =
-                        array_extent_params.find(vsym, d);
-                    auto dit = func_array_size_params.find(
-                        dim_size_key(vname, d));
-                    auto sect = ptr_section_dim_sizes.find(vname);
-                    if (extent) {
-                        src << kernel_parameter(extent);
-                    } else if (dit != func_array_size_params.end()) {
-                        src << dit->second;
-                    } else if (sect != ptr_section_dim_sizes.end()
-                            && d < sect->second.size()) {
-                        src << sect->second[d];
-                    } else if (local_alloc_arrays.count(vsym)) {
-                        auto ait = alloc_array_sizes.find(vname);
-                        if (ait != alloc_array_sizes.end()) {
-                            src << ait->second;
-                        } else {
-                            auto eit = alloc_array_size_exprs.find(
-                                vname);
-                            if (eit != alloc_array_size_exprs.end()) {
-                                src << eit->second;
-                            } else {
-                                src << GpuNames::dim_size(vname, d);
-                            }
-                        }
+        if (!ASR::is_a<ASR::Array_t>(*inner)) return false;
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
+        std::stringstream out;
+        out.swap(src);
+        for (size_t d = 0; d < formal_arr->n_dims; d++) {
+            src.str("");
+            if (d < arr->n_dims && arr->m_dims[d].m_length) {
+                visit_expr(arr->m_dims[d].m_length);
+            } else if (ASR::is_a<ASR::Var_t>(*actual_arg)) {
+                // Assumed-shape: use __size_var_dimN from kernel
+                ASR::symbol_t *vsym =
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(actual_arg)->m_v);
+                std::string vname = ASRUtils::symbol_name(vsym);
+                const ASR::gpu_kernel_argument_t *extent =
+                    array_extent_params.find(vsym, d);
+                auto dit = func_array_size_params.find(
+                    dim_size_key(vname, d));
+                auto sect = ptr_section_dim_sizes.find(vname);
+                if (extent) {
+                    src << kernel_parameter(extent);
+                } else if (dit != func_array_size_params.end()) {
+                    src << dit->second;
+                } else if (sect != ptr_section_dim_sizes.end()
+                        && d < sect->second.size()) {
+                    src << sect->second[d];
+                } else if (local_alloc_arrays.count(vsym)) {
+                    auto ait = alloc_array_sizes.find(vname);
+                    if (ait != alloc_array_sizes.end()) {
+                        src << ait->second;
                     } else {
-                        src << GpuNames::dim_size(vname, d);
+                        auto eit = alloc_array_size_exprs.find(
+                            vname);
+                        if (eit != alloc_array_size_exprs.end()) {
+                            src << eit->second;
+                        } else {
+                            src << GpuNames::dim_size(vname, d);
+                        }
                     }
-                } else if (ASR::is_a<ASR::StructInstanceMember_t>(
-                        *actual_arg)) {
-                    emit_struct_member_array_size_dim(actual_arg,
-                        (int64_t)(d + 1));
                 } else {
-                    src << "0";
+                    src << GpuNames::dim_size(vname, d);
                 }
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(
+                    *actual_arg)) {
+                emit_struct_member_array_size_dim(actual_arg,
+                    (int64_t)(d + 1));
+            } else {
+                src << "0";
             }
-        } else {
-            // Fallback: single total size
-            emit_array_size_expr(actual_arg);
+            extents.push_back(src.str());
         }
+        out.swap(src);
+        return true;
     }
 
     // Rank of an allocatable array component, or 0 when it is not one.
@@ -3310,6 +3354,17 @@ public:
                         func_array_size_params[dim_size_key(aname, d)]
                             = dim_name;
                     }
+                    // A descriptor carries how far apart the elements of
+                    // each dimension are, so that the routine can be
+                    // handed a section that is not contiguous.
+                    std::vector<std::string> strides;
+                    for (size_t d = 0; d < arr->n_dims; d++) {
+                        std::string stride_name = GpuNames::dim_stride(
+                            aname, d);
+                        src << ", int " << stride_name;
+                        strides.push_back(stride_name);
+                    }
+                    register_strides(aname, strides);
                     // Register total size as the product
                     std::string total = GpuNames::dim_size(aname, 0);
                     for (size_t d = 1; d < arr->n_dims; d++) {

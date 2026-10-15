@@ -393,6 +393,8 @@ public:
     void gather_strided_sections_in_body(ASR::stmt_t** &body,
             size_t &n_body, SymbolTable *scope, const GpuVaries &varies);
 
+    void gather_strided_sections_in_routine(ASR::Function_t &fn);
+
     void inline_elemental_array_var_assignment(ParallelLoopNest &nest);
 
     void inline_elemental_array_var_in_body(ASR::stmt_t** &body,
