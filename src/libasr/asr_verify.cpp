@@ -1606,7 +1606,11 @@ public:
                 is_struct = true;
             }
         }
-        if( symtab->parent != nullptr &&
+        // Classifying an initializer looks through ExternalSymbol, which is
+        // possible only once external symbols are resolved (a module file
+        // is verified with check_external=false before that), so the check
+        // runs then.
+        if( check_external && symtab->parent != nullptr &&
             !is_module && !is_struct) {
             // For now restrict this check only to variables which are present
             // inside symbols which have a body.
