@@ -42,9 +42,7 @@ __device__ inline float f_gpu_8(int n, float x, float* __gpu_heap_r4, int __gpu_
     r = __gpu_sum_res;
     __gpu_heap_a_base = -1;
     {
-        int q;
-        q = m;
-        q = (q + 4);
+        m = (m + 4);
     }
     __gpu_heap_a_lb1 = 1;
     __gpu_heap_a_n1 = (((m > 0)) ? (m) : (0));

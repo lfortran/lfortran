@@ -138,6 +138,15 @@ generates the device source. It never falls back to the CPU:
 * The pipeline does not repeat the unsupported-construct check. Where it needs
   a fact the check guarantees (for example that no `real(8)` reaches a Metal
   kernel), it asserts it.
+* An associate name bound to a variable -- a scalar, an element, a component
+  or a section -- is an alias of it, in the loop body and in a procedure the
+  loop calls, so what is written through the name reaches the variable: the
+  selector takes the place of a scalar name (and of every name in the loop
+  body), and an array name of a procedure points at the selector. A selector
+  designates the object it designates on entry to the construct, so a
+  subscript of it that the construct may change
+  (`associate (e => w(j)); j = 3; e = 1`) is read into a variable of its own
+  on entry.
 * An array an iteration needs whose size is known only at run time -- a
   local of a `block` with run-time extents, an allocatable local, or a
   temporary the compiler introduces, such as the result of a function or

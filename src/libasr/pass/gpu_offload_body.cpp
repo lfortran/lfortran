@@ -129,7 +129,10 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
                         resolver.current_expr = &value;
                         resolver.replace_expr(value);
                     }
-                    assoc_map[sym] = value;
+                    GpuAssociateScopeWrites writes(ab->m_body, ab->n_body,
+                        ai + 1);
+                    assoc_map[sym] = gpu_fix_selector_subscripts(al, value,
+                        writes, ab->m_symtab, resolved_stmts);
                 }
             } else if (ASR::is_a<ASR::AssociateBlockCall_t>(
                            *ab->m_body[ai])) {
@@ -189,7 +192,9 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
                             ->m_parent_symtab == ab->m_symtab &&
                         assoc_map.find(sym) == assoc_map.end() &&
                         is_single_assignment_binding(sym,
-                            ab->m_body, ab->n_body)) {
+                            ab->m_body, ab->n_body) &&
+                        !GpuAssociateScopeWrites(ab->m_body, ab->n_body,
+                            ai + 1).may_change(asgn->m_value)) {
                         assoc_map[sym] = asgn->m_value;
                     } else {
                         resolved_stmts.push_back(al,
