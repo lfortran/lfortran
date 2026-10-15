@@ -428,7 +428,7 @@ public:
         ASR::Array_t *arr = down_cast<ASR::Array_t>(type);
         ASR::ttype_t *value_type = ASRUtils::expr_type(value);
         if (arr->n_dims < 2 || !ASRUtils::is_array(value_type)
-                || ASRUtils::extract_n_dims_from_ttype(value_type) == arr->n_dims) {
+                || static_cast<size_t>(ASRUtils::extract_n_dims_from_ttype(value_type)) == arr->n_dims) {
             return value_src;
         }
         std::string r = "reshape(" + value_src + ", [";
