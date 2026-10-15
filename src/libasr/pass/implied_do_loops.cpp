@@ -1130,6 +1130,11 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             replacer.forall_indices.pop_back();
         }
 
+        // A shape check only reads the shapes of its operands; a constructor
+        // there carries its size in its type and is never evaluated
+        void visit_DebugCheckArrayBounds(const ASR::DebugCheckArrayBounds_t& /*x*/) {
+        }
+
         void visit_Assignment(const ASR::Assignment_t &x) {
             if( ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
                 ASR::is_a<ASR::GetPointer_t>(*x.m_value) ) {
