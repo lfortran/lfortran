@@ -259,8 +259,9 @@ ASR::expr_t* constructor_value(ASR::StructConstructor_t *x,
 
 // Whether a statement gives the component `component` of `r` a shape: an
 // allocate of it, or an assignment of an array to it or of a structure
-// constructor to `r`. `extents` are the extents it gives, empty when they
-// cannot be told.
+// constructor to `r`, or of any other value to `r`, which gives the
+// component the one the value has (`r = g(x)`). `extents` are the extents
+// it gives, empty when they cannot be told.
 bool gives_shape(Allocator &al, ASR::stmt_t *stmt, ASR::symbol_t *r,
         const std::string &component, std::vector<ASR::expr_t*> &extents) {
     extents.clear();
@@ -288,6 +289,8 @@ bool gives_shape(Allocator &al, ASR::stmt_t *stmt, ASR::symbol_t *r,
                 ASR::down_cast<ASR::StructConstructor_t>(x->m_value),
                 component);
             if (!value) return false;
+        } else if (names_variable(x->m_target, r)) {
+            return true;
         } else {
             return false;
         }
