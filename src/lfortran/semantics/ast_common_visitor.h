@@ -11510,6 +11510,17 @@ public:
                 "in a module or main program", x.base.base.loc);
         }
 
+        // The components of a type are public by default, unless the type
+        // definition has a private-components-stmt, whatever the default
+        // accessibility of the module is (F2018 7.5.4.8). Such a `private`
+        // statement sets `dflt_access` until the end of the type only.
+        struct Restore {
+            ASR::accessType &access;
+            ASR::accessType saved;
+            ~Restore() { access = saved; }
+        } restore_module_access{dflt_access, dflt_access};
+        dflt_access = ASR::accessType::Public;
+
         // Parameterized Derived Type: store as template for later monomorphization
         if (x.n_namelist > 0) {
 
@@ -11658,7 +11669,6 @@ public:
         data_member_names.reserve(al, 0);
         final_proc_names.reserve(al, 0);
         is_derived_type = true;
-        ASR::accessType dflt_access_copy = dflt_access;
         for (size_t i=0; i<x.n_items; i++) {
             try {
                 this->visit_decl_stmt(*x.m_items[i]);
@@ -11833,7 +11843,6 @@ public:
 
         current_scope = parent_scope;
         is_derived_type = false;
-        dflt_access = dflt_access_copy;
     }
 
     void visit_TraitDerivedType(const AST::TraitDerivedType_t &/*x*/) {

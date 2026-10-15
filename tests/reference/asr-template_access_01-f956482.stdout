@@ -370,7 +370,7 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
@@ -680,7 +680,7 @@
                                                                     )
                                                                     ()
                                                                     Source
-                                                                    Private
+                                                                    Public
                                                                     Required
                                                                     .false.
                                                                     .false.
