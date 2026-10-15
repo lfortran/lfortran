@@ -1266,8 +1266,12 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                         continue;
                     }
                 }
+                // A separate module procedure a routine of its module
+                // calls is named by its interface, whose body is in a
+                // submodule.
                 ASR::symbol_t *dup = sym_dup.duplicate_Function(
-                    ASR::down_cast<ASR::Function_t>(resolved),
+                    resolve_function_implementation(
+                        ASR::down_cast<ASR::Function_t>(resolved)),
                     kernel_scope);
                 if (dup) {
                     kernel_scope->add_symbol(func_name, dup);
