@@ -70,6 +70,9 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
     lfortran_gpu_ctx* ctx, const char* entry_point, int entry_point_len);
 void                 lfortran_gpu_release_kernel(lfortran_gpu_kernel* k);
 
+// The kernel sees the `size` bytes at `ptr`, and the host sees what the
+// kernel wrote there after the launch. A runtime that copies them into a
+// device buffer may keep that buffer for the next launch of the same kernel.
 void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
     void* ptr, size_t size);
 void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,

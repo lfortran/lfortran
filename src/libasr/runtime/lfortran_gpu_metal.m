@@ -8,6 +8,28 @@
 #define MAX_ARGS 32
 #define MAX_KERNELS 64
 
+// A buffer argument larger than this gets a new buffer at every launch
+// instead of a kept one (see buffer_cache). Compared with copying the
+// argument, creating a buffer costs most for a small one, and a large one
+// kept for a kernel launched once, as a setup loop is, would hold its memory
+// until the program ends.
+static const size_t CACHED_BUFFER_MAX = (size_t)1024 * 1024;
+
+// The device buffers of the arguments of one kernel, kept from one launch to
+// the next: creating and releasing a buffer for every argument of every
+// launch costs more than a small kernel runs. Argument `i` of every launch
+// uses buffers[i], grown when a launch needs more bytes; the host's bytes are
+// copied in before each launch and back after it, so every launch sees the
+// current host data. A kernel object owns the buffers from its load to its
+// release (`in_use`), so two launches of the same kernel never share them;
+// one loaded while they are taken gets buffers of its own for its launch.
+// Scratch buffers (the device heap arenas) are not kept: they are as large
+// as the heap, and a new one is created for every launch.
+typedef struct buffer_cache {
+    id<MTLBuffer> buffers[MAX_ARGS];
+    int in_use;
+} buffer_cache;
+
 // Registry of the shader sources emitted for each kernel, and the pipeline
 // compiled from each, once per run: a kernel is loaded at every launch, and
 // compiling its source again every time is slow and exhausts the driver's
@@ -16,6 +38,7 @@ static struct {
     const char *name;
     const char *source;
     id<MTLComputePipelineState> pipeline;
+    buffer_cache cache;
 } source_registry[MAX_KERNELS];
 static int n_registered = 0;
 
@@ -43,6 +66,9 @@ struct lfortran_gpu_kernel {
     int arg_is_scratch[MAX_ARGS];
     id<MTLBuffer> scratch_buffers[MAX_ARGS];
     int n_args;
+    // The buffers of the kernel's registry entry, or NULL when another
+    // kernel object of the same kernel holds them.
+    buffer_cache *cache;
 };
 
 lfortran_gpu_ctx* lfortran_gpu_init(void) {
@@ -63,6 +89,12 @@ lfortran_gpu_ctx* lfortran_gpu_init(void) {
 
 void lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx) {
     if (!ctx) return;
+    for (int i = 0; i < n_registered; i++) {
+        if (source_registry[i].cache.in_use) continue;
+        for (int j = 0; j < MAX_ARGS; j++) {
+            source_registry[i].cache.buffers[j] = nil;
+        }
+    }
     ctx->device = nil;
     ctx->queue = nil;
     ctx->last_command_buffer = nil;
@@ -146,11 +178,16 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
     k->pipeline = source_registry[entry].pipeline;
     k->ctx = ctx;
     k->n_args = 0;
+    buffer_cache *cache = &source_registry[entry].cache;
+    if (!__atomic_exchange_n(&cache->in_use, 1, __ATOMIC_ACQUIRE)) {
+        k->cache = cache;
+    }
     return k;
 }
 
 void lfortran_gpu_release_kernel(lfortran_gpu_kernel* k) {
     if (!k) return;
+    if (k->cache) __atomic_store_n(&k->cache->in_use, 0, __ATOMIC_RELEASE);
     for (int i = 0; i < k->n_args; i++) {
         if (!k->arg_is_buffer[i] && k->scalar_args[i].data) {
             free(k->scalar_args[i].data);
@@ -209,6 +246,34 @@ void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
     if (idx >= k->n_args) k->n_args = idx + 1;
 }
 
+// The kept buffer of argument `idx`, with room for at least `size` bytes.
+static id<MTLBuffer> cached_buffer(lfortran_gpu_ctx* ctx, buffer_cache *cache,
+    int idx, size_t size)
+{
+    id<MTLBuffer> buffer = cache->buffers[idx];
+    if (buffer && [buffer length] >= size) return buffer;
+    size_t length = size;
+    if (buffer) {
+        // Grow geometrically, so that an argument that grows a little at
+        // every launch does not get a new buffer at every launch.
+        size_t doubled = 2 * (size_t)[buffer length];
+        if (doubled > length && doubled <= CACHED_BUFFER_MAX) {
+            length = doubled;
+        }
+    }
+    // Release the old buffer before creating the larger one.
+    cache->buffers[idx] = nil;
+    buffer = [ctx->device newBufferWithLength:length
+                                      options:MTLResourceStorageModeShared];
+    if (!buffer) {
+        fprintf(stderr, "lfortran_gpu_launch: cannot allocate a device "
+            "buffer of %zu bytes\n", length);
+        exit(1);
+    }
+    cache->buffers[idx] = buffer;
+    return buffer;
+}
+
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3])
 {
@@ -246,10 +311,18 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                 [encoder setBuffer:buffer offset:0 atIndex:i];
             } else if (k->arg_is_buffer[i]) {
                 // Copy host data into a Metal buffer
-                id<MTLBuffer> buffer = [ctx->device
-                    newBufferWithBytes:k->buffer_ptrs[i]
-                                length:k->buffer_sizes[i]
-                               options:MTLResourceStorageModeShared];
+                id<MTLBuffer> buffer;
+                if (k->cache && k->buffer_sizes[i] <= CACHED_BUFFER_MAX) {
+                    buffer = cached_buffer(ctx, k->cache, i,
+                        k->buffer_sizes[i]);
+                    memcpy([buffer contents], k->buffer_ptrs[i],
+                        k->buffer_sizes[i]);
+                } else {
+                    buffer = [ctx->device
+                        newBufferWithBytes:k->buffer_ptrs[i]
+                                    length:k->buffer_sizes[i]
+                                   options:MTLResourceStorageModeShared];
+                }
                 buffers[i] = buffer;
                 [encoder setBuffer:buffer offset:0 atIndex:i];
             } else {
