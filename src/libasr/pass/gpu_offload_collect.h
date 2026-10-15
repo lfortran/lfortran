@@ -10,6 +10,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/exception.h>
 #include <libasr/codegen/gpu_utils.h>
+#include <libasr/pass/gpu_procedure_implementation.h>
 #include <libasr/pass/parallel_canonicalize.h>
 
 namespace LCompilers {
@@ -366,9 +367,11 @@ public:
     }
 };
 
-// Every routine a loop body reaches, however deep.
+// Every routine a loop body reaches, however deep: the implementation of
+// a separate module procedure, which `implementations` finds, in place of
+// the interface the call names.
 std::vector<ASR::Function_t*> reachable_routines(ASR::stmt_t **body,
-        size_t n_body);
+        size_t n_body, GpuProcedureImplementations &implementations);
 
 // Collects every parallel region reached from the statements walked,
 // descending into BLOCK and ASSOCIATE scopes so a loop nested there is
@@ -474,9 +477,27 @@ public:
             } else {
                 has_non_alloc_access.insert(struct_name);
             }
+            // The variable is the base of this reference, not a use of
+            // the whole value.
+            visit_ttype(*x.m_type);
+            if (x.m_value) visit_expr(*x.m_value);
+            return;
         }
         ASR::BaseWalkVisitor<GpuAllocStructMemberCollector>::
             visit_StructInstanceMember(x);
+    }
+
+    // A derived-type value used whole -- passed to a procedure, assigned
+    // -- reaches the kernel as a value, so the variable stays a kernel
+    // argument even when its allocatable components are also handed over
+    // as buffers of their own.
+    void visit_Var(const ASR::Var_t &x) {
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
+        if (ASR::is_a<ASR::Variable_t>(*sym) &&
+                ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(
+                    ASR::down_cast<ASR::Variable_t>(sym)->m_type))) {
+            has_non_alloc_access.insert(ASRUtils::symbol_name(x.m_v));
+        }
     }
 };
 

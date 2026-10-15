@@ -1,0 +1,13 @@
+{
+    "basename": "pass_forall-forall2-9bb1760",
+    "cmd": "lfortran --pass=forall --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/forall2.f90",
+    "infile_hash": "d03501e8f36161f00710cf67b4e919e53a4d189347e453107a1ef965",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_forall-forall2-9bb1760.stdout",
+    "stdout_hash": "fe88c73cfd89721c84dbc50a22ba7375e91931f3afba499bdb840655",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -102,6 +102,9 @@ set(SRC
     pass/gpu_offload_body.cpp
     pass/gpu_offload_decide.cpp
     pass/gpu_offload_launch.cpp
+    pass/gpu_offload_host_association.cpp
+    pass/gpu_procedure_implementation.cpp
+    pass/gpu_offload_stop.cpp
     pass/gpu_offload_component_fit.cpp
     pass/gpu_offload_designator.cpp
     pass/gpu_offload_preflight.cpp
@@ -118,6 +121,10 @@ set(SRC
     pass/gpu_data_layout.cpp
     pass/device_launch_expand.cpp
     pass/gpu_memory_space.cpp
+    pass/gpu_device_workspace.cpp
+    pass/gpu_struct_component_args.cpp
+    pass/gpu_device_heap.cpp
+    pass/gpu_device_struct_storage.cpp
     pass/coarray.cpp
 
     codegen/asr_to_metal.cpp

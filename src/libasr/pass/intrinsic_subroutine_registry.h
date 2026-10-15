@@ -24,6 +24,7 @@ inline std::string get_intrinsic_subroutine_name(int x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomSeed)
         INTRINSIC_SUBROUTINE_NAME_CASE(GetCommand)
         INTRINSIC_SUBROUTINE_NAME_CASE(GetCommandArgument)
+        INTRINSIC_SUBROUTINE_NAME_CASE(GetCwd)
         INTRINSIC_SUBROUTINE_NAME_CASE(GetEnvironmentVariable)
         INTRINSIC_SUBROUTINE_NAME_CASE(ExecuteCommandLine)
         INTRINSIC_SUBROUTINE_NAME_CASE(CpuTime)
@@ -66,6 +67,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&Srand::instantiate_Srand, &Srand::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand),
             {&GetCommand::instantiate_GetCommand, &GetCommand::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCwd),
+            {&GetCwd::instantiate_GetCwdSubroutine, &GetCwd::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommandArgument),
             {&GetCommandArgument::instantiate_GetCommandArgument, &GetCommandArgument::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::SystemClock),
@@ -114,6 +117,7 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"get_command_argument", &GetCommandArgument::create_GetCommandArgument},
                 // Legacy F77 alias for get_command_argument.
                 {"getarg", &GetCommandArgument::create_GetCommandArgument},
+                {"getcwd", &GetCwd::create_GetCwdSubroutine},
                 {"system_clock", &SystemClock::create_SystemClock},
                 {"get_environment_variable", &GetEnvironmentVariable::create_GetEnvironmentVariable},
                 {"execute_command_line", &ExecuteCommandLine::create_ExecuteCommandLine},

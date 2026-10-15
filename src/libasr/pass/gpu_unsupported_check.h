@@ -5,6 +5,7 @@
 
 #include <libasr/asr.h>
 #include <libasr/pass/gpu_decline.h>
+#include <libasr/pass/gpu_procedure_implementation.h>
 
 namespace LCompilers {
 
@@ -17,8 +18,10 @@ device:
 
 * a real kind wider than the widest floating point type of the device
   (`real(8)` on Metal, `real(10)` and `real(16)` everywhere);
-* an input/output statement, internal-file I/O included (every device);
-* `error stop` or `stop`, on a device that cannot halt the program (Metal).
+* an input/output statement, internal-file I/O included (every device).
+
+`stop` and `error stop` are not on the list: every device runs them (see
+gpu_offload_stop.h).
 
 A loop that passes is committed to the device. A loop that fails is either an
 error at the offending construct or, with `--gpu-allow-cpu-fallback`, assigned
@@ -38,8 +41,6 @@ enum class GpuUnsupportedKind {
     None,
     RealWidth,
     InputOutput,
-    ErrorStop,
-    Stop,
 };
 
 struct GpuUnsupportedConstruct {
@@ -59,14 +60,20 @@ struct GpuUnsupportedConstruct {
     // The procedure the construct is in, when the loop reaches it through a
     // call; empty for the loop itself.
     std::string routine;
+    // Whether that procedure was read from a module file, so that `loc` is
+    // in a file this compilation cannot show.
+    bool routine_elsewhere = false;
 
     bool found() const { return kind != GpuUnsupportedKind::None; }
 };
 
 // The first construct on the unsupported list of the device `caps` that the
 // parallel loop `region` uses, or one whose `found()` is false.
+// The procedures the loop calls are looked at in the bodies
+// `implementations` finds, which the offload pipeline builds the kernel from.
 GpuUnsupportedConstruct gpu_find_unsupported_construct(
-    const ASR::OMPRegion_t &region, const GpuDeviceCapabilities &caps);
+    const ASR::OMPRegion_t &region, const GpuDeviceCapabilities &caps,
+    GpuProcedureImplementations &implementations);
 
 // "the Metal GPU does not support real(8)": what the construct is and which
 // device lacks it.

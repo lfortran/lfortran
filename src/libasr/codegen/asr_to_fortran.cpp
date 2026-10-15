@@ -417,6 +417,30 @@ public:
         }
     }
 
+    // The initializer `value_src` of a variable of type `var_type`. An array
+    // constant initial value holds the elements in array element order with
+    // rank one, while the initializer of a multidimensional array must have
+    // its shape.
+    std::string reshape_to_variable_shape(ASR::ttype_t *var_type,
+            ASR::expr_t *value, const std::string &value_src) {
+        ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(var_type);
+        if (!ASR::is_a<ASR::Array_t>(*type)) return value_src;
+        ASR::Array_t *arr = down_cast<ASR::Array_t>(type);
+        ASR::ttype_t *value_type = ASRUtils::expr_type(value);
+        if (arr->n_dims < 2 || !ASRUtils::is_array(value_type)
+                || static_cast<size_t>(ASRUtils::extract_n_dims_from_ttype(value_type)) == arr->n_dims) {
+            return value_src;
+        }
+        std::string r = "reshape(" + value_src + ", [";
+        for (size_t i = 0; i < arr->n_dims; i++) {
+            LCOMPILERS_ASSERT(arr->m_dims[i].m_length);
+            if (i > 0) r += ", ";
+            visit_expr(*arr->m_dims[i].m_length);
+            r += src;
+        }
+        return r + "])";
+    }
+
     // The value list of a DATA statement that gives a variable the initial
     // value `value`: the elements of an array in array element order.
     std::string data_values(ASR::expr_t *value) {
@@ -775,7 +799,10 @@ public:
                 }
             }
         }
-        if (type->m_pure) {
+        // An elemental procedure is pure unless it is declared impure.
+        if (type->m_elemental && !type->m_pure) {
+            r += "impure ";
+        } else if (type->m_pure && !type->m_elemental) {
             r += "pure ";
         }
         if (type->m_elemental) {
@@ -1247,7 +1274,7 @@ public:
                 }
             }
             visit_expr(*x.m_value);
-            r += src;
+            r += reshape_to_variable_shape(x.m_type, x.m_value, src);
         } else if (x.m_symbolic_value) {
             r += " = ";
             visit_expr(*x.m_symbolic_value);
@@ -3436,6 +3463,13 @@ public:
 
     void visit_GpuBlockSize(const ASR::GpuBlockSize_t &x) {
         src = "gpu_block_size(" + std::to_string(x.m_dim) + ")";
+    }
+
+    void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t &x) {
+        visit_expr(*x.m_target);
+        std::string target = src;
+        visit_expr(*x.m_increment);
+        src = "gpu_atomic_fetch_add(" + target + ", " + src + ")";
     }
 
     /******************************* Case Stmt ********************************/

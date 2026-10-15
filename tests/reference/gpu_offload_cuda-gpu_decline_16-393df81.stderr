@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: the array 'w', passed for the allocatable dummy argument 'r' of 'total', on the device heap is not supported yet
+  --> tests/../integration_tests/gpu_decline_16.f90:21:1 - 30:6
+   |
+21 |    do concurrent (k = 1:2)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+30 |    end do
+   | ...^^^^^^ the array 'w', passed for the allocatable dummy argument 'r' of 'total', on the device heap is not supported yet
