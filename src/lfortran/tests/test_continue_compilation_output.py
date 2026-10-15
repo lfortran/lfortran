@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Check that `-c --continue-compilation` writes no output for invalid code.
+"""Check that `--continue-compilation` writes no output for invalid code.
 
 The errors must all be reported and the compiler must exit with a nonzero
-status, without writing an object file or module files (#14800, #14572).
+status, without writing an object file, module files or Python wrapper files
+(#14800, #14572). Valid code must still produce its output.
 """
 
 import argparse
@@ -48,30 +49,54 @@ end subroutine
 end module
 """
 
+VALID = """\
+module cc_output_ok
+implicit none
+contains
+subroutine s()
+integer :: i
+i = 1
+end subroutine
+end module
+"""
+
 EXPECTED_ERRORS = [
     "Type mismatch in assignment",
     "Variable 'undeclared_x' is not declared",
 ]
 
 
-def check(lfortran, workdir, backend, name, source):
+def check(lfortran, workdir, name, source, args, outputs=None):
+    """Run `lfortran args` on `source` saved as `name`.f90.
+
+    For invalid code (`outputs` is None) the compiler must fail, report all
+    errors and write no files. For valid code it must succeed and write the
+    files in `outputs`.
+    """
     with tempfile.TemporaryDirectory(dir=workdir) as cwd:
         src = name + ".f90"
         with open(os.path.join(cwd, src), "w") as f:
             f.write(source)
-        cmd = [lfortran, "--no-color", "--backend=" + backend,
-            "--continue-compilation", "-c", src, "-o", name + ".o"]
+        cmd = [lfortran, "--no-color"] + [a.format(name=name) for a in args]
         p = subprocess.run(cmd, cwd=cwd, stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT, universal_newlines=True)
         failures = []
-        if p.returncode == 0:
-            failures.append("exited with status 0")
-        for error in EXPECTED_ERRORS:
-            if error not in p.stdout:
-                failures.append("did not report %r" % error)
-        written = sorted(set(os.listdir(cwd)) - {src})
-        if written:
-            failures.append("wrote %s" % ", ".join(written))
+        written = set(os.listdir(cwd)) - {src}
+        if outputs is None:
+            if p.returncode == 0:
+                failures.append("exited with status 0")
+            for error in EXPECTED_ERRORS:
+                if error not in p.stdout:
+                    failures.append("did not report %r" % error)
+            if written:
+                failures.append("wrote %s" % ", ".join(sorted(written)))
+        else:
+            if p.returncode != 0:
+                failures.append("exited with status %d" % p.returncode)
+            missing = [o.format(name=name) for o in outputs]
+            missing = sorted(set(missing) - written)
+            if missing:
+                failures.append("did not write %s" % ", ".join(missing))
         if failures:
             return ["%s: %s\n%s" % (" ".join(cmd), "; ".join(failures),
                 p.stdout)]
@@ -82,14 +107,33 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--lfortran", required=True)
     parser.add_argument("--workdir", required=True)
+    parser.add_argument("--mlir", action="store_true",
+        help="LFortran is built with the MLIR backend")
     args = parser.parse_args()
     lfortran = os.path.abspath(args.lfortran)
     os.makedirs(args.workdir, exist_ok=True)
+    backends = ["llvm", "c", "cpp", "x86", "wasm", "fortran"]
+    if args.mlir:
+        backends.append("mlir")
+    cc = ["--continue-compilation"]
+    pywrap = cc + ["pywrap", "{name}.f90"]
+    invalid = [("program", PROGRAM), ("modules_only", MODULES_ONLY)]
     failures = []
-    for backend in ["llvm", "c", "cpp", "x86", "wasm", "fortran"]:
-        for name, source in [("program", PROGRAM),
-                ("modules_only", MODULES_ONLY)]:
-            failures += check(lfortran, args.workdir, backend, name, source)
+    for backend in backends:
+        compile_ = cc + ["--backend=" + backend, "-c", "{name}.f90",
+            "-o", "{name}.o"]
+        for name, source in invalid:
+            failures += check(lfortran, args.workdir, name, source, compile_)
+    for name, source in invalid:
+        failures += check(lfortran, args.workdir, name, source, pywrap)
+    pywrap_outputs = ["{name}.h", "{name}_pxd.pxd", "{name}.pyx"]
+    failures += check(lfortran, args.workdir, "valid", VALID, pywrap,
+        pywrap_outputs)
+    for backend in ["llvm"] + (["mlir"] if args.mlir else []):
+        compile_ = cc + ["--backend=" + backend, "-c", "{name}.f90",
+            "-o", "{name}.o"]
+        failures += check(lfortran, args.workdir, "valid", VALID, compile_,
+            ["{name}.o"])
     if failures:
         sys.exit("\n".join(failures))
     print("ok")
