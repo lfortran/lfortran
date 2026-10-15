@@ -585,7 +585,9 @@ bool parse_string(std::string &out, const std::string &s, size_t &pos,
 
     while (pos < s.size()) {
         if (fixed_form) {
-	    if (col > 72 || s[pos] == '\n') {
+	    bool line_end = s[pos] == '\n'
+		|| (s[pos] == '\r' && s[pos+1] == '\n');
+	    if (col > 72 || line_end) {
 		// The literal continues on the next continuation line, which
 		// may be preceded by comment or blank lines
 		size_t next = pos;
@@ -601,6 +603,8 @@ bool parse_string(std::string &out, const std::string &s, size_t &pos,
 		} else {
 		    return false;
 		}
+		// A line that ends before column 72 is padded with blanks
+		if (col <= 72) out.append(73 - col, ' ');
 		col = 7;
 		if (lm) {
 		    lm->files.back().out_start.push_back(out.size());
