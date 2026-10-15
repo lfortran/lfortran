@@ -180,37 +180,42 @@ public:
         ASR::BaseExprReplacer<GpuReplaceSymbols>::replace_StructConstructor(x);
     }
 
-    void replace_FunctionCall(ASR::FunctionCall_t *x) {
-        // Remap m_name to kernel scope symbol
-        std::string name = ASRUtils::symbol_name(x->m_name);
+    // The kernel's copy of the procedure a call names. A procedure
+    // reached through use association can be imported under its own
+    // name, or under a C-identifier version of the name of the
+    // ExternalSymbol when two modules define procedures of one name.
+    ASR::symbol_t *kernel_procedure(ASR::symbol_t *name_sym) {
+        std::string name = ASRUtils::symbol_name(name_sym);
         ASR::symbol_t *new_sym = lookup_symbol(name);
-        if (!new_sym && ASR::is_a<ASR::ExternalSymbol_t>(*x->m_name)) {
-            // Try sanitized ExternalSymbol name (handles disambiguated
-            // functions where different modules define same-named functions)
+        if (!new_sym && ASR::is_a<ASR::ExternalSymbol_t>(*name_sym)) {
             std::string sanitized = name;
             for (char &c : sanitized) {
                 if (c == '~' || c == '@') c = '_';
             }
             new_sym = lookup_symbol(sanitized);
             if (!new_sym) {
-                // ExternalSymbol name differs from resolved function name;
-                // try the underlying function's name (e.g., "construct"
-                // instead of "~mytype_t@construct").
-                std::string resolved_name = ASRUtils::symbol_name(
-                    ASRUtils::symbol_get_past_external(x->m_name));
-                new_sym = lookup_symbol(resolved_name);
+                new_sym = lookup_symbol(ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(name_sym)));
             }
         }
-        if (new_sym) {
-            x->m_name = new_sym;
+        return new_sym;
+    }
+
+    void retarget_call(ASR::symbol_t *&name, ASR::symbol_t *&original_name) {
+        if (ASR::symbol_t *new_sym = kernel_procedure(name)) {
+            name = new_sym;
         }
-        if (x->m_original_name) {
-            std::string orig_name = ASRUtils::symbol_name(x->m_original_name);
-            ASR::symbol_t *new_orig = lookup_symbol(orig_name);
+        if (original_name) {
+            ASR::symbol_t *new_orig = lookup_symbol(
+                ASRUtils::symbol_name(original_name));
             if (new_orig) {
-                x->m_original_name = new_orig;
+                original_name = new_orig;
             }
         }
+    }
+
+    void replace_FunctionCall(ASR::FunctionCall_t *x) {
+        retarget_call(x->m_name, x->m_original_name);
         // Call base to handle arguments, type, value, dt
         ASR::BaseExprReplacer<GpuReplaceSymbols>::replace_FunctionCall(x);
     }
@@ -347,7 +352,7 @@ public:
             if (ai != nullptr) {
                 host_item = ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
                     host_item, host_idx.p, host_idx.n, ai->m_type,
-                    ai->m_storage_format, nullptr));
+                    ai->m_storage_format, nullptr, false));
             }
             ASR::expr_t *host_member = ASRUtils::EXPR(
                 ASR::make_StructInstanceMember_t(al, loc, host_item,

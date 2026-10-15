@@ -1,0 +1,13 @@
+{
+    "basename": "wat-wasm_external_procedure-3f896f4",
+    "cmd": "lfortran --no-color --show-wat {infile}",
+    "infile": "tests/errors/wasm_external_procedure.f90",
+    "infile_hash": "0a778d5b8ff9648487a46d9ccf1ba744c9a0b30c00e0e0cd73a82f62",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "wat-wasm_external_procedure-3f896f4.stderr",
+    "stderr_hash": "1027e19d109ea00178d012faf46500df197ed3a9debef9fc6ba7ab5e",
+    "returncode": 1
+}

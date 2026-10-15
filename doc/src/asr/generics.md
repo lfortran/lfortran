@@ -160,6 +160,10 @@ function ~add_intrinsic(arg0, arg1) result(ret)
 end function
 ```
 
+The unary operators `operator(+)`, `operator(-)` and `operator(.not.)` can be passed in the same way for a deferred function with one argument. For example, `operator(-)` for a deferred function with one `integer` argument generates a function equivalent to `ret = -arg0`.
+
+For both unary and binary operators, a specific procedure of a user-defined operator of the same name (for example, an `interface operator(-)` for a derived type) that matches the interface of the deferred function is preferred over the intrinsic operator. When the intrinsic operator is used, the result of an arithmetic or a unary operator is converted to the result type of the deferred function. A unary operator that does not apply to the argument type, such as `.not.` on a `real` argument, is reported as an error.
+
 ### ASR Generation
 
 Instantiating the function as a function on the ASR level is simply a symbol replacement process.

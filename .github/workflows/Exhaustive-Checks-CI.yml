@@ -55,6 +55,9 @@ jobs:
         with:
           os: ${{ matrix.os }}
           llvm-version: ${{ matrix.llvm-version }}
+          # Quick saves this cache. A second ~1.5 GB copy per platform pushed
+          # the repository over its 10 GB cache limit and evicted other caches.
+          save-cache: 'false'
 
       - name: Test full platform coverage
         shell: bash -e -l {0}

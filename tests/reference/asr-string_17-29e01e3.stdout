@@ -52,6 +52,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -83,6 +84,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     len_string
@@ -100,7 +102,7 @@
                                         Implementation
                                         ()
                                         .true.
-                                        .false.
+                                        .true.
                                         .false.
                                         .false.
                                         .false.
@@ -204,6 +206,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             string:
                                                 (Variable
@@ -235,6 +238,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     maybe
@@ -357,6 +361,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     string_type

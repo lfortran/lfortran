@@ -178,7 +178,7 @@ ASR::expr_t* GpuOffloadVisitor::elementize_mask_multi(ASR::expr_t *e,
             ASRUtils::expr_type(as->m_v));
         return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
             as->m_v, new_args.p, new_args.n,
-            elem_type, ASR::arraystorageType::ColMajor, nullptr));
+            elem_type, ASR::arraystorageType::ColMajor, nullptr, false));
     } else if (ASR::is_a<ASR::Var_t>(*e)) {
         ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(
             ASRUtils::expr_type(e));
@@ -199,7 +199,7 @@ ASR::expr_t* GpuOffloadVisitor::elementize_mask_multi(ASR::expr_t *e,
             ASR::ttype_t *elem_type = ASRUtils::extract_type(type);
             return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
                 e, new_args.p, new_args.n,
-                elem_type, ASR::arraystorageType::ColMajor, nullptr));
+                elem_type, ASR::arraystorageType::ColMajor, nullptr, false));
         }
         return e;
     } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
@@ -696,7 +696,7 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             args.push_back(al, ai);
             return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, arr,
                 args.p, args.n, elem_type,
-                ASR::arraystorageType::ColMajor, nullptr));
+                ASR::arraystorageType::ColMajor, nullptr, false));
         };
 
         auto make_array_item_2d = [&](ASR::expr_t *arr,
@@ -717,7 +717,7 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             args.push_back(al, ai2);
             return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, arr,
                 args.p, args.n, elem_type,
-                ASR::arraystorageType::ColMajor, nullptr));
+                ASR::arraystorageType::ColMajor, nullptr, false));
         };
 
         auto make_do_loop = [&](ASR::expr_t *var, ASR::expr_t *start,
@@ -819,7 +819,7 @@ void GpuOffloadVisitor::inline_matmul_stmts(
                 }
                 return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
                     sec->m_v, args.p, args.n, elem_type,
-                    ASR::arraystorageType::ColMajor, nullptr));
+                    ASR::arraystorageType::ColMajor, nullptr, false));
             }
             if (ASR::is_a<ASR::FunctionCall_t>(*arr_expr)) {
                 ASR::FunctionCall_t *fc =
@@ -1421,7 +1421,7 @@ ASR::expr_t* GpuOffloadVisitor::index_array_expr(ASR::expr_t *expr,
     if (ASR::is_a<ASR::Var_t>(*expr)) {
         return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, expr,
             idx_p, idx_n, elem_type,
-            ASR::arraystorageType::ColMajor, nullptr));
+            ASR::arraystorageType::ColMajor, nullptr, false));
     }
     if (ASR::is_a<ASR::RealBinOp_t>(*expr)) {
         ASR::RealBinOp_t *op = ASR::down_cast<ASR::RealBinOp_t>(expr);
@@ -1460,7 +1460,7 @@ ASR::expr_t* GpuOffloadVisitor::index_array_expr(ASR::expr_t *expr,
     }
     return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, expr,
         idx_p, idx_n, elem_type,
-        ASR::arraystorageType::ColMajor, nullptr));
+        ASR::arraystorageType::ColMajor, nullptr, false));
 }
 
 // Inline IntrinsicArrayFunction Sum inside a parallel loop body.
@@ -2414,7 +2414,7 @@ void GpuOffloadVisitor::inline_intrinsic_transpose(ParallelLoopNest &nest) {
             args.push_back(al, ai2);
             return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, arr,
                 args.p, args.n, elem_type,
-                ASR::arraystorageType::ColMajor, nullptr));
+                ASR::arraystorageType::ColMajor, nullptr, false));
         };
 
         // a is (m, n) => b = transpose(a) is (n, m)

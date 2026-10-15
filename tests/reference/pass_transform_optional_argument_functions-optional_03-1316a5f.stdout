@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             __libasr_created_dummy_variable_1:
                                 (Variable
@@ -54,6 +55,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             __libasr_created_dummy_variable_2:
                                 (Variable
@@ -78,6 +80,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             __libasr_created_variable_pointer_:
                                 (Variable
@@ -104,6 +107,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             __libasr_created_variable_pointer_1:
                                 (Variable
@@ -130,6 +134,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             __libasr_created_variable_pointer_2:
                                 (Variable
@@ -156,6 +161,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             f1:
                                 (ExternalSymbol
@@ -192,6 +198,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             lfortran_tmp:
                                 (Variable
@@ -218,6 +225,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             lfortran_tmp1:
                                 (Variable
@@ -244,6 +252,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             my_sub:
                                 (ExternalSymbol
@@ -450,6 +459,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             r:
                                                 (Variable
@@ -476,6 +486,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -500,6 +511,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     f1
@@ -565,6 +577,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     my_sub

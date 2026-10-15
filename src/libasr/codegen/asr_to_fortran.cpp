@@ -364,6 +364,101 @@ public:
         }
     }
 
+    // The statements that put the variables of `symtab` into common
+    // blocks: the COMMON statement of each block, followed by the
+    // EQUIVALENCE statements of its associations, the SAVE statement of a
+    // saved block and the DATA statements of its initialized variables.
+    void append_common_block_declarations(SymbolTable *symtab, std::string &r) {
+        for (auto &item : symtab->get_scope()) {
+            if (!is_a<ASR::CommonBlock_t>(*item.second)) {
+                continue;
+            }
+            ASR::CommonBlock_t *block = down_cast<ASR::CommonBlock_t>(item.second);
+            std::string name = block->m_block_name ? block->m_block_name : "";
+            std::string line = indent + "common /" + name + "/ ";
+            for (size_t i = 0; i < block->n_members; i++) {
+                if (i > 0) line += ", ";
+                line += ASRUtils::symbol_name(block->m_members[i]);
+            }
+            handle_line_truncation(line, 2);
+            r += line + "\n";
+            if (block->m_abi == ASR::abiType::BindC) {
+                r += indent + "bind(c, name=\"" + std::string(block->m_link_name)
+                    + "\") :: /" + name + "/\n";
+            }
+            for (size_t i = 0; i < block->n_associations; i++) {
+                visit_expr(*block->m_associations[i].m_designator);
+                line = indent + "equivalence (" + src + ", ";
+                visit_expr(*block->m_associations[i].m_anchor);
+                line += src + ")";
+                handle_line_truncation(line, 2);
+                r += line + "\n";
+            }
+            // Blank common is always saved and cannot be named in a SAVE
+            // statement.
+            if (block->m_storage == ASR::storage_typeType::Save && block->m_block_name) {
+                r += indent + "save /" + name + "/\n";
+            }
+            auto data = [&](ASR::symbol_t *sym) {
+                ASR::Variable_t *v = down_cast<ASR::Variable_t>(sym);
+                ASR::expr_t *value = v->m_value ? v->m_value : v->m_symbolic_value;
+                if (value == nullptr) return;
+                std::string line = indent + "data " + std::string(v->m_name) + " / "
+                    + data_values(value) + " /";
+                handle_line_truncation(line, 2);
+                r += line + "\n";
+            };
+            for (size_t i = 0; i < block->n_members; i++) {
+                data(block->m_members[i]);
+            }
+            for (size_t i = 0; i < block->n_associations; i++) {
+                data(block->m_associations[i].m_variable);
+            }
+        }
+    }
+
+    // The value list of a DATA statement that gives a variable the initial
+    // value `value`: the elements of an array in array element order.
+    std::string data_values(ASR::expr_t *value) {
+        ASR::expr_t *constant = ASRUtils::expr_value(value);
+        if (constant != nullptr && ASR::is_a<ASR::ArrayConstant_t>(*constant)) {
+            ASR::ArrayConstant_t *array = down_cast<ASR::ArrayConstant_t>(constant);
+            size_t n = ASRUtils::get_fixed_size_of_array(array->m_type);
+            std::string r;
+            for (size_t i = 0; i < n; i++) {
+                if (i > 0) r += ", ";
+                r += array_constant_element(*array, i);
+            }
+            return r;
+        }
+        visit_expr(constant ? *constant : *value);
+        return src;
+    }
+
+    // The derived type, enum and union definitions of `symtab`, each after
+    // the ones it depends on.
+    void append_struct_definitions(SymbolTable *symtab, std::string &r) {
+        std::map<std::string, std::vector<std::string>> struct_dep_graph;
+        for (auto &item : symtab->get_scope()) {
+            if (ASR::is_a<ASR::Struct_t>(*item.second) ||
+                    ASR::is_a<ASR::Enum_t>(*item.second) ||
+                    ASR::is_a<ASR::Union_t>(*item.second)) {
+                std::vector<std::string> struct_deps_vec;
+                std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
+                for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
+                    struct_deps_vec.push_back(std::string(struct_deps_ptr.first[i]));
+                }
+                struct_dep_graph[item.first] = struct_deps_vec;
+            }
+        }
+        std::vector<std::string> struct_deps = ASRUtils::order_deps(struct_dep_graph);
+        for (auto &item : struct_deps) {
+            ASR::symbol_t* struct_sym = symtab->get_symbol(item);
+            visit_symbol(*struct_sym);
+            r += src;
+        }
+    }
+
     /********************************** Unit **********************************/
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         std::string r = "";
@@ -411,6 +506,14 @@ public:
             }
         }
 
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::BlockData_t>(*item.second)) {
+                visit_symbol(*item.second);
+                r += src;
+                r += "\n";
+            }
+        }
+
         // Main program
         bool has_program = false;
         for (auto &item : x.m_symtab->get_scope()) {
@@ -444,26 +547,7 @@ public:
         }
         r += indent + "implicit none";
         r += "\n";
-        std::map<std::string, std::vector<std::string>> struct_dep_graph;
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Struct_t>(*item.second) ||
-                    ASR::is_a<ASR::Enum_t>(*item.second) ||
-                    ASR::is_a<ASR::Union_t>(*item.second)) {
-                std::vector<std::string> struct_deps_vec;
-                std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
-                for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
-                    struct_deps_vec.push_back(std::string(struct_deps_ptr.first[i]));
-                }
-                struct_dep_graph[item.first] = struct_deps_vec;
-            }
-        }
-
-        std::vector<std::string> struct_deps = ASRUtils::order_deps(struct_dep_graph);
-        for (auto &item : struct_deps) {
-            ASR::symbol_t* struct_sym = x.m_symtab->get_symbol(item);
-            visit_symbol(*struct_sym);
-            r += src;
-        }
+        append_struct_definitions(x.m_symtab, r);
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
@@ -472,6 +556,7 @@ public:
                 r += src;
             }
         }
+        append_common_block_declarations(x.m_symtab, r);
         append_namelist_declarations(x.m_symtab, r);
 
         for (auto &item : x.m_symtab->get_scope()) {
@@ -546,26 +631,7 @@ public:
 
             }
         }
-        std::map<std::string, std::vector<std::string>> struct_dep_graph;
-        for (auto &item : x.m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Struct_t>(*item.second) ||
-                    ASR::is_a<ASR::Enum_t>(*item.second) ||
-                    ASR::is_a<ASR::Union_t>(*item.second)) {
-                std::vector<std::string> struct_deps_vec;
-                std::pair<char**, size_t> struct_deps_ptr = ASRUtils::symbol_dependencies(item.second);
-                for( size_t i = 0; i < struct_deps_ptr.second; i++ ) {
-                    struct_deps_vec.push_back(std::string(struct_deps_ptr.first[i]));
-                }
-                struct_dep_graph[item.first] = struct_deps_vec;
-            }
-        }
-
-        std::vector<std::string> struct_deps = ASRUtils::order_deps(struct_dep_graph);
-        for (auto &item : struct_deps) {
-            ASR::symbol_t* struct_sym = x.m_symtab->get_symbol(item);
-            visit_symbol(*struct_sym);
-            r += src;
-        }
+        append_struct_definitions(x.m_symtab, r);
         std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
         for (auto &item : var_order) {
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
@@ -574,6 +640,7 @@ public:
                 r += src;
             }
         }
+        append_common_block_declarations(x.m_symtab, r);
         append_namelist_declarations(x.m_symtab, r);
         std::vector<std::string> func_name;
         std::vector<std::string> interface_func_name;
@@ -622,6 +689,30 @@ public:
         r += " ";
         r.append(x.m_name);
         r += "\n";
+        src = r;
+    }
+
+    void visit_BlockData(const ASR::BlockData_t &x) {
+        std::string name = x.m_block_data_name ? " " + std::string(x.m_block_data_name) : "";
+        std::string r = "block data" + name + "\n";
+        for (auto &item : x.m_symtab->get_scope()) {
+            if (is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                visit_symbol(*item.second);
+                r += src;
+            }
+        }
+        r += indent + "implicit none\n";
+        append_struct_definitions(x.m_symtab, r);
+        std::vector<std::string> var_order = ASRUtils::determine_variable_declaration_order(x.m_symtab);
+        for (auto &item : var_order) {
+            ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
+            if (is_a<ASR::Variable_t>(*var_sym)) {
+                visit_symbol(*var_sym);
+                r += src;
+            }
+        }
+        append_common_block_declarations(x.m_symtab, r);
+        r += "end block data" + name + "\n";
         src = r;
     }
 
@@ -684,7 +775,10 @@ public:
                 }
             }
         }
-        if (type->m_pure) {
+        // An elemental procedure is pure unless it is declared impure.
+        if (type->m_elemental && !type->m_pure) {
+            r += "impure ";
+        } else if (type->m_pure && !type->m_elemental) {
             r += "pure ";
         }
         if (type->m_elemental) {
@@ -765,6 +859,7 @@ public:
                     variable_declaration += src;
                 }
             }
+            append_common_block_declarations(x.m_symtab, variable_declaration);
             append_namelist_declarations(x.m_symtab, variable_declaration);
             for (size_t i = 0; i < import_struct_type.size(); i ++) {
                 if (i == 0) {
@@ -1092,7 +1187,10 @@ public:
         }
         if (x.m_storage == ASR::storage_typeType::Parameter) {
             r += ", parameter";
-        } else if (x.m_storage == ASR::storage_typeType::Save && !in_struct_member_declaration) {
+        } else if (x.m_storage == ASR::storage_typeType::Save && !in_struct_member_declaration
+                && ASRUtils::get_common_block(&x) == nullptr) {
+            // A variable in a common block cannot have the SAVE attribute: it
+            // is saved with its block (`save /blk/`).
             r += ", save";
         }
         if (x.m_value_attr) {
@@ -1103,6 +1201,15 @@ public:
         }
         r += " :: ";
         r.append(x.m_name);
+        if (ASRUtils::get_common_block(&x) != nullptr) {
+            // A variable in a common block cannot be initialized in its
+            // declaration; a DATA statement gives it its initial value, see
+            // append_common_block_declarations.
+            handle_line_truncation(r, 2);
+            r += "\n";
+            src = r;
+            return;
+        }
         if (x.m_symbolic_value && x.m_value && ASR::is_a<ASR::StringChr_t>(*x.m_symbolic_value) && ASR::is_a<ASR::StringConstant_t>(*x.m_value)) {
             r += " = ";
             visit_expr(*x.m_symbolic_value);
@@ -2816,11 +2923,15 @@ public:
         visit_expr(*x.m_arg);
         r += src;
         r += "(";
-        visit_expr(*x.m_start);
-        r += src;
+        if (x.m_start) {
+            visit_expr(*x.m_start);
+            r += src;
+        }
         r += ":";
-        visit_expr(*x.m_end);
-        r += src;
+        if (x.m_end) {
+            visit_expr(*x.m_end);
+            r += src;
+        }
         r += ")";
         src = r;
     }
@@ -2953,6 +3064,24 @@ public:
         last_expr_precedence = Precedence::Ext;
     }
 
+    // The element `i` of an array constant, in array element order.
+    std::string array_constant_element(const ASR::ArrayConstant_t &x, size_t i) {
+        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable(x.m_type));
+        if (ASR::is_a<ASR::StructType_t>(*elem_type) || ASR::is_a<ASR::CPtr_t>(*elem_type)) {
+            visit_expr(*ASRUtils::fetch_ArrayConstant_value(al, x, i));
+            return src;
+        }
+        int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+        std::string kind_suffix = "";
+        if (ASR::is_a<ASR::Real_t>(*elem_type) && kind >= 8) {
+            kind_suffix = "_8";
+        } else if (ASR::is_a<ASR::Integer_t>(*elem_type) && kind != 4) {
+            kind_suffix = "_" + std::to_string(kind);
+        }
+        return ASRUtils::fetch_ArrayConstant_value(x, i) + kind_suffix;
+    }
+
     void visit_ArrayConstant(const ASR::ArrayConstant_t &x) {
         bool needs_reshape = false;
         ASR::Array_t* arr_type = nullptr;
@@ -2961,31 +3090,14 @@ public:
             needs_reshape = (arr_type->n_dims > 1);
         }
         size_t fixed_size = static_cast<size_t>(ASRUtils::get_fixed_size_of_array(x.m_type));
-        ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(
-            ASRUtils::type_get_past_allocatable(x.m_type));
-        int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
-        std::string kind_suffix = "";
-        if (ASR::is_a<ASR::Real_t>(*elem_type) && kind >= 8) {
-            kind_suffix = "_8";
-        } else if (ASR::is_a<ASR::Integer_t>(*elem_type) && kind != 4) {
-            kind_suffix = "_" + std::to_string(kind);
-        }
         std::string r = "";
         if (needs_reshape) r += "reshape(";
         if (fixed_size == 0) {
             r += "[" + get_array_constructor_type_spec(x.m_type) + " :: ]";
         } else {
             r += "[";
-            bool use_element_visitor = ASR::is_a<ASR::StructType_t>(*elem_type)
-                || ASR::is_a<ASR::CPtr_t>(*elem_type);
             for(size_t i = 0; i < fixed_size; i++) {
-                if (use_element_visitor) {
-                    ASR::expr_t* value = ASRUtils::fetch_ArrayConstant_value(al, x, i);
-                    visit_expr(*value);
-                    r += src;
-                } else {
-                    r += ASRUtils::fetch_ArrayConstant_value(x, i) + kind_suffix;
-                }
+                r += array_constant_element(x, i);
                 if (i < fixed_size - 1) r += ", ";
             }
             r += "]";

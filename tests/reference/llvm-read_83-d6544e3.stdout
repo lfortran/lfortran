@@ -39,7 +39,7 @@ target datalayout = "..."
 @string_const.14 = private global %string_descriptor { i8* getelementptr inbounds ([77 x i8], [77 x i8]* @string_const_data.13, i32 0, i32 0), i64 77 }
 @16 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
-define void @_lcompilers_get_command_argument_(i32* %number, i8* %value, i64 %__libasr_len_value) {
+define internal void @_lcompilers_get_command_argument_(i32* %number, i8* %value, i64 %__libasr_len_value) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %command_argument_holder = alloca %string_descriptor, align 8
@@ -54,7 +54,7 @@ define void @_lcompilers_get_command_argument_(i32* %number, i8* %value, i64 %__
   store %string_descriptor zeroinitializer, %string_descriptor* %command_argument_holder, align 8
   %length_to_allocate = alloca i32, align 4
   store i32 0, i32* %length_to_allocate, align 4
-  %4 = load i32, i32* %number, align 4
+  %4 = load i32, i32* %number, align 1
   %5 = call i32 @_lfortran_get_command_argument_length(i32 %4)
   store i32 %5, i32* %length_to_allocate, align 4
   %6 = load i32, i32* %length_to_allocate, align 4
@@ -80,7 +80,7 @@ ifcont:                                           ; preds = %else, %then
   %14 = getelementptr %string_descriptor, %string_descriptor* %command_argument_holder, i32 0, i32 1
   %15 = sext i32 %6 to i64
   store i64 %15, i64* %14, align 8
-  %16 = load i32, i32* %number, align 4
+  %16 = load i32, i32* %number, align 1
   %17 = getelementptr %string_descriptor, %string_descriptor* %command_argument_holder, i32 0, i32 0
   %18 = load i8*, i8** %17, align 8
   %19 = getelementptr %string_descriptor, %string_descriptor* %command_argument_holder, i32 0, i32 0
@@ -112,7 +112,7 @@ declare i32 @_lfortran_get_command_argument_length(i32)
 
 declare void @_lfortran_get_command_argument_value(i32, i8*)
 
-define i32 @_lcompilers_len_trim_str(i8* %str, i64 %__libasr_len_str) {
+define internal i32 @_lcompilers_len_trim_str(i8* %str, i64 %__libasr_len_str) {
 .entry:
   %StringItem = alloca %string_descriptor, align 8
   %str_desc = alloca %string_descriptor, align 8
@@ -193,7 +193,7 @@ FINALIZE_SYMTABLE__lcompilers_len_trim_str:       ; preds = %return
   ret i32 %28
 }
 
-define void @_lcompilers_trim_str(i8* %str, i8* %result, i64 %__libasr_len_str, i64 %__libasr_len_result) {
+define internal void @_lcompilers_trim_str(i8* %str, i8* %result, i64 %__libasr_len_str, i64 %__libasr_len_result) {
 .entry:
   %0 = call i8* @_lfortran_get_default_allocator()
   %StrSlice_StrView = alloca %string_descriptor, align 8
@@ -358,6 +358,7 @@ then3:                                            ; preds = %ifcont
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @4, i32 0, i32 0), i8* %44, i32 92, i32 1, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0), i32 1)
   %45 = alloca i32, align 4
   store i32 0, i32* %45, align 4
+  call void @_lfortran_connect_unit_for_read(i32 -2, i32 0, i32* null)
   %46 = alloca i32, align 4
   call void @_lfortran_empty_read(i32 -2, i32* %45, i32 1)
   %47 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.8, i32 0, i32 0), align 8
@@ -383,6 +384,7 @@ goto_target:                                      ; preds = %then3
   %56 = select i1 %55, i32 -2, i32 %54
   %57 = alloca i32, align 4
   store i32 0, i32* %57, align 4
+  call void @_lfortran_connect_unit_for_read(i32 %56, i32 0, i32* null)
   %58 = alloca i32, align 4
   call void @_lfortran_empty_read(i32 %56, i32* %57, i32 1)
   %59 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.14, i32 0, i32 0), align 8
@@ -424,5 +426,7 @@ declare i32 @str_compare(i8*, i64, i8*, i64)
 declare void @_lfortran_printf(i8*, i8*, i32, i32, i8*, i32)
 
 declare void @_lfortran_empty_read(i32, i32*, i32)
+
+declare void @_lfortran_connect_unit_for_read(i32, i32, i32*)
 
 declare void @_lfortran_internal_alloc_finalize()

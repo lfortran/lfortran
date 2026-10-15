@@ -1,0 +1,13 @@
+{
+    "basename": "asr-system_clock_f23_01-9110023",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/system_clock_f23_01.f90",
+    "infile_hash": "267676fa9abda07a88f690365518a7af479354d93211369250c787af",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-system_clock_f23_01-9110023.stderr",
+    "stderr_hash": "71ce12057d2a0e04ff80dffef2393f8028c2a88f2323e464a263b39d",
+    "returncode": 1
+}

@@ -68,6 +68,7 @@
 #include <libasr/pass/device_partition.h>
 #include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/gpu_memory_space.h>
+#include <libasr/pass/gpu_device_workspace.h>
 #include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
 #include <libasr/pass/replace_coarray.h>
@@ -136,6 +137,7 @@ namespace LCompilers {
             {"gpu_offload", &pass_replace_gpu_offload},
             {"device_partition", &pass_device_partition},
             {"device_launch_expand", &pass_device_launch_expand},
+            {"gpu_device_workspace", &pass_gpu_device_workspace},
             {"gpu_memory_space", &pass_gpu_memory_space},
             {"gpu_kernel_finalize", &pass_gpu_kernel_finalize},
             {"print_struct_type", &pass_replace_print_struct_type},
@@ -308,6 +310,10 @@ namespace LCompilers {
                 "device_partition",
                 "gpu_device_allocatable",
                 "conditional_expr",
+                // A FORALL becomes a DO CONCURRENT loop before temporaries
+                // are created, so that temporaries depending on its indices
+                // are evaluated inside each iteration.
+                "forall",
                 "array_struct_temporary",
                 "coarray",
                 // Every pass that can create a startup initializer has run,
@@ -316,7 +322,6 @@ namespace LCompilers {
                 "transform_optional_argument_functions",
                 "select_case",
                 "nested_vars",
-                "forall",
                 "class_constructor",
                 "pass_list_expr",
                 "where",
@@ -340,6 +345,10 @@ namespace LCompilers {
                 "print_list_tuple",
                 "print_struct_type",
                 "array_dim_intrinsics_update",
+                // A run-time sized local of a device routine becomes an
+                // argument its callers give it, up to the kernel, where the
+                // host sizes it before the launch.
+                "gpu_device_workspace",
                 // A device routine's address spaces are settled here, once
                 // every array of device code has the type it is emitted
                 // with, and before the code generators read those types.

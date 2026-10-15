@@ -113,6 +113,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             test_1d_to_nd:
                                 (Function
@@ -150,6 +151,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             b:
                                                 (Variable
@@ -180,6 +182,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             c:
                                                 (Variable
@@ -214,6 +217,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             d:
                                                 (Variable
@@ -244,6 +248,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             eps:
                                                 (Variable
@@ -268,6 +273,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             i:
                                                 (Variable
@@ -292,6 +298,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             j:
                                                 (Variable
@@ -316,6 +323,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             k:
                                                 (Variable
@@ -340,6 +348,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             l:
                                                 (Variable
@@ -364,6 +373,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             newshape:
                                                 (Variable
@@ -394,6 +404,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             newshape1:
                                                 (Variable
@@ -424,6 +435,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     test_1d_to_nd
@@ -528,6 +540,7 @@
                                                 (Real 8)
                                                 ColMajor
                                                 ()
+                                                .false.
                                             )
                                             (Cast
                                                 (RealBinOp
@@ -572,6 +585,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (IntegerConstant 16 (Integer 4) Decimal)
                                         ()
@@ -587,6 +601,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (IntegerConstant 16 (Integer 4) Decimal)
                                         ()
@@ -658,6 +673,7 @@
                                                                         (Real 8)
                                                                         ColMajor
                                                                         ()
+                                                                        .false.
                                                                     )
                                                                     Sub
                                                                     (Cast
@@ -737,6 +753,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (IntegerConstant 16 (Integer 4) Decimal)
                                         ()
@@ -752,6 +769,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (IntegerConstant 16 (Integer 4) Decimal)
                                         ()
@@ -767,6 +785,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (IntegerConstant 16 (Integer 4) Decimal)
                                         ()
@@ -850,6 +869,7 @@
                                                                                 (Real 8)
                                                                                 ColMajor
                                                                                 ()
+                                                                                .false.
                                                                             )
                                                                             Sub
                                                                             (Cast
@@ -981,6 +1001,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             b:
                                                 (Variable
@@ -1011,6 +1032,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             c:
                                                 (Variable
@@ -1045,6 +1067,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             d:
                                                 (Variable
@@ -1075,6 +1098,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             eps:
                                                 (Variable
@@ -1099,6 +1123,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             i:
                                                 (Variable
@@ -1123,6 +1148,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             j:
                                                 (Variable
@@ -1147,6 +1173,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             k:
                                                 (Variable
@@ -1171,6 +1198,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             l:
                                                 (Variable
@@ -1195,6 +1223,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             newshape:
                                                 (Variable
@@ -1225,6 +1254,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             newshape1:
                                                 (Variable
@@ -1255,6 +1285,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     test_nd_to_1d
@@ -1311,6 +1342,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (IntegerConstant 256 (Integer 4) Decimal)
                                         ()
@@ -1415,6 +1447,7 @@
                                                                     (Real 8)
                                                                     ColMajor
                                                                     ()
+                                                                    .false.
                                                                 )
                                                                 Sub
                                                                 (Cast
@@ -1504,6 +1537,7 @@
                                                         (Real 8)
                                                         ColMajor
                                                         ()
+                                                        .false.
                                                     )
                                                     (Cast
                                                         (RealBinOp
@@ -1576,6 +1610,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (IntegerConstant 4096 (Integer 4) Decimal)
                                         ()
@@ -1724,6 +1759,7 @@
                                                                         (Real 8)
                                                                         ColMajor
                                                                         ()
+                                                                        .false.
                                                                     )
                                                                     Sub
                                                                     (Cast
@@ -1833,6 +1869,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             d:
                                                 (Variable
@@ -1863,6 +1900,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             i:
                                                 (Variable
@@ -1887,6 +1925,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             j:
                                                 (Variable
@@ -1911,6 +1950,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             k:
                                                 (Variable
@@ -1935,6 +1975,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             l:
                                                 (Variable
@@ -1959,6 +2000,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     test_reshape_with_argument
@@ -2004,6 +2046,7 @@
                                                     (Real 8)
                                                     ColMajor
                                                     ()
+                                                    .false.
                                                 )
                                                 (Cast
                                                     (RealBinOp
@@ -2176,6 +2219,7 @@
                                                 (Real 8)
                                                 ColMajor
                                                 ()
+                                                .false.
                                             )
                                             (Cast
                                                 (RealBinOp

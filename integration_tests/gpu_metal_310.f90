@@ -1,7 +1,7 @@
 ! A device function with a run-time sized local, called from ASSOCIATE
-! inside do concurrent. The planner walks ASSOCIATE; the splice used not
-! to, so Metal was given a helper it cannot compile. The call must be
-! spliced or the loop must stay on the host, and the host result stands.
+! inside do concurrent, where it cannot be spliced into the kernel. The
+! call stays a call, and the local becomes an argument the kernel gives
+! the function, so Metal is never given a helper it cannot compile.
 program gpu_metal_310
 implicit none
 integer, parameter :: n = 3

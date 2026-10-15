@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.variable.common_block_sequence]: Variable 'p' is in a common block, so its derived type must have the SEQUENCE or the BIND(C) attribute
+  --> tests/asr/verify/common_block_variable_not_sequence.asr:22:18
+   |
+22 |             "p" (Variable
+   |                  ^^^^^^^^ failed here

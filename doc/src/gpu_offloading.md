@@ -44,11 +44,16 @@ entry states why it is there. Current proposal:
 | `real(8)` | Metal | the Metal Shading Language has no 64-bit float | emulate later |
 | `real(10)`, `real(16)` | all | no device has these widths | emulate, or never |
 | input/output statements, including internal-file I/O | all | no Fortran units or formats on a device | never, or a host-side buffer later |
-| `error stop`, `stop` | Metal | a Metal shader has no way to halt the program | a host-side status buffer later |
 
-`stop` is on the list for now. The standard and gfortran treat `stop` in a
-`do concurrent` body as invalid (it is an image control statement), so it will
-become a semantic error instead.
+`error stop` and `stop` are not on the list: every device runs them, through
+a status buffer the host reads after the launch (see
+[Stopping on the device](#stopping-on-the-device)). That covers a `stop` in a
+procedure the loop calls (purity is not enforced yet, see the open questions)
+and in an offloaded `!$omp parallel do` loop. A `stop` directly in a
+`do concurrent` body is invalid Fortran -- it is an image control statement,
+which the standard does not allow there and gfortran rejects -- and is to
+become a semantic error on every target, not an entry of this list; until
+then it runs like any other `stop`.
 
 Everything else is not on the list, even when it is not implemented yet. For
 example `integer(8)` on Metal (the Metal Shading Language has 64-bit integers),
@@ -82,8 +87,7 @@ check small:
   procedure cannot do external input/output or `stop`. So external I/O and
   `stop` can only appear directly in the loop body.
 * A pure procedure can still do internal-file I/O (`write` to a character
-  variable) and `error stop`, so those have to be looked for in the called
-  procedures too.
+  variable), so that has to be looked for in the called procedures too.
 * gfortran (`-std=f2018`) rejects `stop` in a `do concurrent` body as an image
   control statement, while `print` in the body and `error stop` in a pure
   procedure are accepted. (To be confirmed against the standard text.)
@@ -134,6 +138,104 @@ generates the device source. It never falls back to the CPU:
 * The pipeline does not repeat the unsupported-construct check. Where it needs
   a fact the check guarantees (for example that no `real(8)` reaches a Metal
   kernel), it asserts it.
+* An array an iteration needs whose size is known only at run time -- a
+  local of a `block` with run-time extents, an allocatable local, or a
+  temporary the compiler introduces, such as the result of a function or
+  the copy an overlapping assignment needs -- lives in a buffer the host
+  allocates before the launch, since a kernel cannot allocate. Every
+  thread uses a slice of it. When the size changes from one iteration to
+  the next (`allocate(w(m(k)))`, or `x(k)%values()` whose result has the
+  size of a component of the iteration's element), the host works it out
+  for every iteration before the launch, from the loop limits and the
+  values the kernel gives the loop indices, and gives every slice room for
+  the largest. Each thread uses the leading part its own size needs. The size
+  may read the loop indices, the arguments of the loop and the shapes of
+  arrays. A size that is the same in every iteration may also call a
+  function without side effects of the translation unit, such as the one an
+  array intrinsic (`maxval(n)`, `sum(n)`) is lowered to, which the host
+  calls before the launch as the device does. The copy an overlapping
+  assignment needs (`b(1:n(l),l) = ... b(1:n(l+1),l+1) ...`, anywhere in
+  the body) is sized by the whole of each dimension of the assigned array
+  whose extent changes inside the iteration, and uses its leading part. A
+  size may not read a value the loop writes, which the host does not know
+  before the launch: such a loop is an error ("workspace ... cannot be
+  sized on the host", or "a temporary array cannot be sized on the host"
+  for a temporary the compiler introduces).
+* A procedure the loop calls runs on the device as a procedure, wherever the
+  call is: in an expression, an `associate` selector, a condition, or
+  another procedure. A device without variable-length arrays or a heap
+  (Metal, CUDA) cannot declare a local array of such a procedure whose size
+  is known only at run time -- an allocatable local, an automatic array, or
+  a temporary the compiler introduces, such as the result of a function it
+  calls. Each such local becomes an argument of the procedure, and every
+  call passes an array of its own for it, with the extents of the local
+  written over the actual arguments of that call. Up the chain of calls this
+  ends in the kernel, where the array is a per-thread workspace like any
+  other (see the previous point). The extents may read the arguments of the
+  procedure and named constants, and are written as they are on entry to the
+  procedure: a name it binds once (an associate name, a scalar assigned once
+  and changed through no other name) stands for what it is bound to, the
+  extent of a section for the extents of its ranges, and a function without
+  side effects is called with arguments of that kind
+  (`allocate(a(maxval(n)))` with `associate (n => self%nodes_)`). The value
+  of an `intent(in)` argument is fixed for the call unless it is a pointer,
+  whose target the procedure may change. An extent that is evaluated after
+  entry -- of a local of a `block`, or of the array a call is given for its
+  callee -- may not read a dummy argument the procedure can change before
+  (`n = n + 4`), whose value the callers do not know. A procedure with such
+  a local that calls itself, directly or not, would need one array per level
+  of the recursion, and is an error, and so is an extent that reads anything
+  else ("workspace ... cannot be sized on the host"). A call that is the
+  whole right-hand side of an assignment is spliced into the kernel instead:
+  the body of the procedure replaces the call, with the actual arguments in
+  place of the dummy arguments, which more often makes the extents
+  constants. An allocatable dummy array that the procedure neither
+  allocates, deallocates, asks about with `allocated`, nor hands on to an
+  allocatable dummy, is handed over as a plain array, with the lower bounds
+  of the actual argument as arguments of their own. Inside device code an
+  allocatable local is given the shape of the `allocate`, reallocation or
+  move that gives it one, also when that shape is read from another such
+  local, and when several of them give it the same shape, as shared lowering
+  does when it allocates a temporary and then reallocates it to the shape it
+  already has. That shape has to be written as it is on entry, as an extent
+  is, so that it is one value at every allocation; any other allocatable of
+  device code is an error. A reallocation by an assignment gives the shape
+  of the array the assigned value takes its shape from: `r = 2*c(2:)` gives
+  `r` the shape of `c(2:)`, also when `r` is the result of a function. A
+  rank-one allocatable local whose extent is only known where it is
+  allocated -- inside a loop of the procedure, as the temporaries of
+  `v(1:n(l)) * a(1:n(l), l-1)` in `do l = 2, m` -- points instead to the
+  leading part of a buffer, which is a run-time sized local like those
+  above, of an upper bound of every such extent known on entry: the extent
+  of a section whose subscripts read the loop index is bounded by the extent
+  of its array in that dimension, as a section never has more elements
+  there. The local itself keeps the exact extent of each allocation.
+* A derived-type value that device code creates -- a local of a
+  procedure, or the result of a function such as a structure constructor,
+  `associate (t => tensor_t(x))` -- has no storage for an allocatable array
+  component on the device either. Each such component is stored in an
+  array of its own, of the shape the procedure gives the component: the
+  extents of its `allocate`, of the array an assignment reallocates it to,
+  of the same component of a value assigned to the whole variable, or the
+  shape a procedure gives the component of its `intent(out)` or
+  `intent(inout)` argument when the value is passed for it, in terms of the
+  actual arguments of that call. The shape is written as it is on entry to
+  the procedure, over its arguments: a name the procedure binds once (an
+  associate name, a scalar assigned once) stands for what it is bound to,
+  and the extent of a section for the extents of its ranges. The array is
+  then a run-time sized local like those above, given to the callers up to
+  the kernel and sized on the host; a procedure the value is passed to is
+  handed the array as the component, as it is handed the device buffer of a
+  component of a kernel argument. An assignment of the whole value copies
+  the component into that array. A component given several different
+  shapes, or a shape read from a value the procedure computes, is an error
+  ("the allocatable component ... cannot be sized on the host").
+* A derived-type argument a procedure defines (`intent(out)` or
+  `intent(inout)`) is passed by reference, to a value in the memory of the
+  calling thread, as the procedure's locals are. An element of a kernel
+  argument passed for one lives in device memory instead, so the kernel
+  copies it into a local of its own around the call; its allocatable
+  components are not copied, the procedure is handed their device buffers.
 * A kernel cannot allocate. When a loop writes an allocatable array component
   of an element of an array of derived type, the storage the kernel writes
   into has to exist before the launch. The write may be `t(i) = f(...)`,
@@ -208,6 +310,48 @@ generates the device source. It never falls back to the CPU:
   * A `do concurrent` mask (`do concurrent (i = 1:n, mask(i))`) is currently
     ignored on every backend (#12778), and so is a `cycle` in an offloaded
     loop (#12856), so such a loop writes elements it should not.
+* A kernel cannot end the program, so a `stop` or `error stop` the kernel
+  reaches, in the loop body or in a procedure it calls, is split between the
+  device and the host (see the next section).
+
+### Stopping on the device
+
+Every launch of a kernel that reaches a `stop` or `error stop` is given a
+small status buffer, an extra argument of the kernel, which the host clears
+before the launch. The offload pass numbers each such statement (its site)
+and rewrites it, in ASR, before any backend sees it:
+
+* In the kernel, the statement records its stop code, when it has an integer
+  one, in the element of the buffer that belongs to its site, then its site
+  in the first element, and returns: that thread runs nothing more. The
+  other threads carry on; the program ends after the launch anyway.
+* A procedure the kernel calls that holds such a statement, or calls one
+  that does, gets two hidden scalar arguments, the site and the stop code.
+  The statement sets them and returns, and every call to such a procedure is
+  followed by a test that returns from the caller in turn when they are set.
+  The kernel records them in the buffer as if it had reached the statement
+  itself. A call in the condition of an `if`, `do while`, `select case` or in
+  the limits of a `do` loop is tested at the start of each body as well, so
+  no body runs with the value a stopped call returned. (The rest of the
+  statement that made the call does run with that value.)
+* After the launch the host reads the buffer, and if a site is recorded it
+  runs that same statement on the host, with the recorded stop code. The
+  program therefore prints what it prints on the CPU (`ERROR STOP 42`,
+  `ERROR STOP evaluate: unknown activation`) and ends with the same status.
+
+The code is written before the site, and only by a thread that reached that
+site, so whichever thread's site the host reads, the code next to it was
+written by a thread that reached the same site: no atomic operations are
+needed, and no backend has anything to lower but assignments and `return`.
+When several threads stop, which one is reported is not specified, as the
+iterations of a `do concurrent` have no order.
+
+A character stop code has to be a constant, which the host statement
+repeats. One computed at run time (`error stop "bad " // name`) is an error
+for now ("a character stop code that is not a constant"): it would have to
+be formatted on the device or copied back. Run-time checks in the kernel
+(bounds checking) would use the same buffer once the device code checks
+them; it does not yet.
 
 ## Testing
 
@@ -244,7 +388,7 @@ generates the device source. It never falls back to the CPU:
 ## Differences from the current implementation
 
 * The pipeline still has its own checks for device limits (the width of the
-  data that reaches a kernel, input/output and `stop` statements), spread over
+  data that reaches a kernel, input/output statements), spread over
   several passes and the device code generator. They report a compile error
   rather than assert, because the check does not guarantee everything they
   look at: symbols a rewrite introduces, the bodies of procedures only the
@@ -252,3 +396,9 @@ generates the device source. It never falls back to the CPU:
   (`integer(8)` on Metal), and a derived type with an unused `real(8)`
   component that is handed to the kernel whole (see the open questions).
 * Purity of procedures called from `do concurrent` is not enforced.
+* A run-time sized local of a procedure the loop calls whose extent reads
+  the index of a `do` loop of the procedure is sized only when the extent
+  is that of a section (bounded by the extent of its array), and only for a
+  rank-one allocatable: `allocate(w(n(l)))` in `do l = 1, m`, or a local of
+  higher rank, cannot be sized yet, even when the host could work out the
+  largest value before the launch by going over the loop.

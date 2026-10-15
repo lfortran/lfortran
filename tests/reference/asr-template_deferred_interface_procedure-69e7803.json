@@ -1,0 +1,13 @@
+{
+    "basename": "asr-template_deferred_interface_procedure-69e7803",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/template_deferred_interface_procedure.f90",
+    "infile_hash": "1892695374100bc93eb26b354e518360820440df9acbf8304f9649f7",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-template_deferred_interface_procedure-69e7803.stderr",
+    "stderr_hash": "fdf5fa0b94e9984b92c924a3bed7ab33202a62f096e030c7a9d58a96",
+    "returncode": 2
+}

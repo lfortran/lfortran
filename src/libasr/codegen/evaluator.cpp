@@ -521,6 +521,35 @@ std::vector<std::string> get_arch_features(
         + triple.str() + "'");
 }
 
+#if LLVM_VERSION_MAJOR >= 18
+using CodeGenOptLevel = llvm::CodeGenOptLevel;
+#else
+using CodeGenOptLevel = llvm::CodeGenOpt::Level;
+#endif
+
+bool is_wasm_triple(const llvm::Triple &triple)
+{
+    return triple.getArch() == llvm::Triple::wasm32
+        || triple.getArch() == llvm::Triple::wasm64;
+}
+
+// Machine code generation follows clang and flang: the default mode is -O0,
+// which selects the -O0 instruction selector and the fast register allocator,
+// and `--fast` is -O3. The default mode runs no IR optimizations.
+CodeGenOptLevel codegen_opt_level(const LLVMTargetConfig &config)
+{
+    if (config.fast) {
+        return CodeGenOptLevel::Aggressive;
+    }
+    // At -O0 the WebAssembly backend skips register stackification and
+    // coloring, so every virtual register becomes a separate local, and large
+    // functions exceed the 50000 locals per function that engines accept.
+    if (is_wasm_triple(llvm::Triple(config.triple))) {
+        return CodeGenOptLevel::Default;
+    }
+    return CodeGenOptLevel::None;
+}
+
 std::unique_ptr<llvm::TargetMachine> create_target_machine(
     const LLVMTargetConfig &config)
 {
@@ -533,8 +562,7 @@ std::unique_ptr<llvm::TargetMachine> create_target_machine(
     // the WebAssembly backend lowers a call through a pointer that was just
     // loaded with a function's address as a direct `call` with a GOT
     // relocation, which produces an invalid module.
-    bool is_wasm = triple.getArch() == llvm::Triple::wasm32
-        || triple.getArch() == llvm::Triple::wasm64;
+    bool is_wasm = is_wasm_triple(triple);
     RM_OPTIONAL_TYPE<llvm::Reloc::Model> relocation_model
         = is_wasm ? llvm::Reloc::Model::Static : llvm::Reloc::Model::PIC_;
     RM_OPTIONAL_TYPE<llvm::CodeModel::Model> code_model;
@@ -545,17 +573,19 @@ std::unique_ptr<llvm::TargetMachine> create_target_machine(
         config.triple,
 #endif
         config.cpu, config.features, options, relocation_model, code_model,
-#if LLVM_VERSION_MAJOR >= 18
-        config.fast ? llvm::CodeGenOptLevel::Aggressive
-                    : llvm::CodeGenOptLevel::Default
-#else
-        config.fast ? llvm::CodeGenOpt::Aggressive
-                    : llvm::CodeGenOpt::Default
-#endif
-    );
+        codegen_opt_level(config));
     if (!machine) {
         throw LCompilersException("could not create target machine for '"
             + config.triple + "'");
+    }
+    // At -O0 the AArch64 backend selects GlobalISel (clang uses it too), whose
+    // localizer scans a basic block linearly for each value it moves, so code
+    // generation time is quadratic in the size of large blocks. Select
+    // FastISel instead, as on x86-64; it falls back to SelectionDAG for what
+    // it does not handle.
+    if (machine->getOptLevel() == CodeGenOptLevel::None
+            && triple.isAArch64()) {
+        machine->setGlobalISel(false);
     }
     return std::unique_ptr<llvm::TargetMachine>(machine);
 }
@@ -786,7 +816,8 @@ LLVMEvaluator::LLVMEvaluator(LLVMTargetConfig target_config_)
     TM = create_target_machine(target_config);
 
     // For some reason the JIT requires a different TargetMachine
-    jit = cantFail(llvm::orc::KaleidoscopeJIT::Create());
+    jit = cantFail(llvm::orc::KaleidoscopeJIT::Create(
+        codegen_opt_level(target_config)));
 
     _lfortran_stan(0.5);
 }

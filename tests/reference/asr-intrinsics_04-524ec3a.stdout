@@ -50,6 +50,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             z:
                                 (Variable
@@ -74,6 +75,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     intrinsics_04

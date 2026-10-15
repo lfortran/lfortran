@@ -351,7 +351,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("--gpu", compiler_options.gpu_backend, "Enable GPU offloading for do concurrent (metal, cuda, cuda_cpu)")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--device-compiler", compiler_options.device_compiler, "Toolchain driver used to compile and link GPU device code")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--gpu-offload-omp-loops", compiler_options.po.gpu_offload_omp_loops, "Offload an `!$omp parallel do` loop onto the GPU as well")->group(group_backend_codegen_options);
-        app.add_flag("--gpu-allow-cpu-fallback", compiler_options.po.gpu_allow_cpu_fallback, "Run a parallel loop that uses a construct the selected GPU does not support (real(8) on Metal, real(10) or real(16), input/output, or stop on Metal) on the CPU with a warning instead of failing compilation")->group(group_backend_codegen_options);
+        app.add_flag("--gpu-allow-cpu-fallback", compiler_options.po.gpu_allow_cpu_fallback, "Run a parallel loop that uses a construct the selected GPU does not support (real(8) on Metal, real(10) or real(16), or input/output) on the CPU with a warning instead of failing compilation")->group(group_backend_codegen_options);
 
         // Symbol and lookup-related flags
         app.add_flag("--lookup-name", compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR")->group(group_symbol_lookup_options);
@@ -454,6 +454,7 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.print_leading_space = true;
             compiler_options.logical_casting = false;
             compiler_options.po.realloc_lhs_arrays = true;
+            compiler_options.std_f23_conformance = true;
         } else if (opts.arg_standard == "legacy") {
             // f23
             compiler_options.show_style_suggestions = false;

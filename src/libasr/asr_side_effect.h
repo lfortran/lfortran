@@ -114,6 +114,16 @@ public:
         mark_found(x.base.base.loc, "Call to impure intrinsic subroutine");
     }
 
+    void visit_IntrinsicImpureFunction(const IntrinsicImpureFunction_t &x) {
+        if (found) return;
+        if (ASRUtils::IntrinsicImpureFunctionRegistry::has_side_effects(x.m_impure_intrinsic_id)) {
+            mark_found(x.base.base.loc, "call to impure intrinsic " +
+                to_lower(ASRUtils::get_impure_intrinsic_name(x.m_impure_intrinsic_id)));
+            return;
+        }
+        BaseWalkVisitor::visit_IntrinsicImpureFunction(x);
+    }
+
     void visit_FunctionCall(const FunctionCall_t &x) {
         if (found) return;
         if (x.m_name && check_call(x.base.base.loc, x.m_name)) {

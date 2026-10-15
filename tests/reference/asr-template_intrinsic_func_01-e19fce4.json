@@ -1,0 +1,13 @@
+{
+    "basename": "asr-template_intrinsic_func_01-e19fce4",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/template_intrinsic_func_01.f90",
+    "infile_hash": "0b513665d5ea656a0fd01934cd48f4f217a4732360cade162e973ccc",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-template_intrinsic_func_01-e19fce4.stdout",
+    "stdout_hash": "f7b7841a3c1f917c88a751072e950dda9288e815af6113f88b686aab",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

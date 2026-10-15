@@ -210,15 +210,14 @@ public:
                 ASRUtils::extract_kind_from_ttype_t(tb);
     }
 
+    // Whether the device can read the extent of a workspace dimension.
+    // Whether the host can size it is settled by the layout, which writes
+    // out what the host evaluates.
     bool workspace_dim_can_expand(const GpuVlaDim &dim,
             const ASR::Function_t *kernel) {
         if (dim.is_constant) return true;
         if (dim.is_struct_member_size) {
             if (dim.struct_member_key.empty()) return false;
-            if (dim.struct_member_elem_index < 0) {
-                return unsupported(GpuDecline(
-                    GpuDeclineReason::WorkspaceStructElementShape));
-            }
             const std::string &arr = dim.struct_member_key.base;
             const std::string &mem = dim.struct_member_key.member;
             for (size_t i = 0; i < kernel->n_args; i++) {
@@ -238,7 +237,7 @@ public:
             }
             return false;
         }
-        return dim.derived.ok();
+        return true;
     }
 
     class NestedAllocatableReadFinder :
@@ -530,6 +529,65 @@ public:
                 }
                 return b.ArrayItem_01(base, subs);
             }
+            case GpuExtentKind::Call: {
+                ASR::FunctionCall_t *call =
+                    ASR::down_cast<ASR::FunctionCall_t>(e.expr);
+                ASR::Function_t *callee = ASR::down_cast<ASR::Function_t>(
+                    ASRUtils::symbol_get_past_external(call->m_name));
+                Vec<ASR::call_arg_t> call_args;
+                call_args.reserve(al, e.children.size());
+                for (size_t i = 0; i < e.children.size(); i++) {
+                    ASR::call_arg_t arg;
+                    arg.loc = loc;
+                    arg.m_value = child(i);
+                    if (arg.m_value == nullptr || i >= callee->n_args) {
+                        return nullptr;
+                    }
+                    // The host hands an array over as the function takes
+                    // it, which is not how the host stores it.
+                    ASR::ttype_t *type = ASRUtils::expr_type(arg.m_value);
+                    ASR::ttype_t *dummy = ASRUtils::expr_type(
+                        callee->m_args[i]);
+                    if (ASRUtils::is_array(type) && ASRUtils::is_array(dummy)
+                            && ASRUtils::extract_physical_type(type) !=
+                                ASRUtils::extract_physical_type(dummy)) {
+                        ASR::array_physical_typeType physical =
+                            ASRUtils::extract_physical_type(dummy);
+                        arg.m_value = ASRUtils::EXPR(
+                            ASRUtils::make_ArrayPhysicalCast_t_util(al, loc,
+                                arg.m_value,
+                                ASRUtils::extract_physical_type(type),
+                                physical, ASRUtils::duplicate_type(al, type,
+                                    nullptr, physical, true), nullptr));
+                    }
+                    call_args.push_back(al, arg);
+                }
+                // The host calls the function as well as the device.
+                ASR::FunctionType_t *signature =
+                    ASRUtils::get_FunctionType(callee);
+                if (signature->m_exec_space == ASR::exec_spaceType::Device) {
+                    signature->m_exec_space = ASR::exec_spaceType::HostDevice;
+                }
+                return ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
+                    &callee->base, nullptr, call_args.p, call_args.n,
+                    call->m_type, nullptr, nullptr));
+            }
+            case GpuExtentKind::Designator: {
+                return host_designator(al, loc, kernel, args, n_args,
+                    e.array);
+            }
+            case GpuExtentKind::Element: {
+                ASR::expr_t *base = host_designator(al, loc, kernel, args,
+                    n_args, e.array);
+                if (base == nullptr) return nullptr;
+                std::vector<ASR::expr_t*> subs;
+                for (size_t i = 0; i < e.children.size(); i++) {
+                    ASR::expr_t *sub = child(i);
+                    if (sub == nullptr) return nullptr;
+                    subs.push_back(sub);
+                }
+                return b.ArrayItem_01(base, subs);
+            }
             case GpuExtentKind::ArrayDim: {
                 // The actual argument has the shape the parameter does,
                 // so the host asks it for the extent the kernel reads
@@ -598,8 +656,10 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
             return false;
         }
         active.insert(function);
-        for (ASR::Function_t *callee : gpu_callees(function->m_body,
-                function->n_body, true)) {
+        std::set<ASR::Function_t*> callees = gpu_callees(function->m_body,
+            function->n_body, true);
+        gpu_type_callees(function->m_symtab, callees);
+        for (ASR::Function_t *callee : callees) {
             if (callee == function) continue;
             if (!close_graph(callee)) return false;
         }
@@ -634,13 +694,38 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
         Vec<ASR::gpu_workspace_dimension_t> dims;
         dims.reserve(al, workspace.dims.size());
         for (const auto &dim : workspace.dims) {
-            ASR::expr_t *extent = dim.is_constant
-                ? b.i32(dim.constant_value)
-                : dim.is_struct_member_size ? dim.source_extent
-                : GpuExtentBuilder::build_host_extent(al, loc,
+            // An extent the host can evaluate once, for every thread, is
+            // written as that; one that changes from thread to thread is
+            // written over the thread index, and the launch sizes every
+            // thread's slice by its largest value.
+            ASR::expr_t *extent = nullptr;
+            if (dim.is_constant) {
+                extent = b.i32(dim.constant_value);
+            } else if (dim.is_struct_member_size) {
+                if (dim.struct_member_elem_index >= 0) {
+                    extent = dim.source_extent;
+                }
+            } else if (dim.derived.ok()) {
+                extent = GpuExtentBuilder::build_host_extent(al, loc,
                     &kernel, identity.p, identity.n, dim.derived);
-            if (!extent || !gpu_bind_kernel_expression(al, kernel,
-                    args, n_args, extent)) {
+            }
+            if (extent == nullptr) {
+                ASR::expr_t *source = dim.source_extent;
+                if (source == nullptr && dim.source_array != nullptr) {
+                    source = b.ArraySize(dim.source_array,
+                        dim.source_array_dim > 0
+                            ? b.i32(dim.source_array_dim) : nullptr, int32);
+                }
+                extent = gpu_kernel_per_thread_extent(al, kernel, source);
+            }
+            if (!extent) {
+                decline = GpuDecline(
+                    GpuDeclineReason::WorkspaceNotSizeableOnHost,
+                    workspace.var_name);
+                return false;
+            }
+            if (!gpu_bind_kernel_expression(al, kernel, args, n_args,
+                    extent)) {
                 decline = GpuDecline(
                     GpuDeclineReason::LaunchVlaExtentNotRebuildable,
                     workspace.var_name);

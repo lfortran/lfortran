@@ -1,0 +1,54 @@
+module character_35_mod
+implicit none
+
+contains
+
+subroutine mfeout(m, names)
+integer :: m
+character :: names(m)*(*)
+character :: work(m)*(m + 3)
+if (len(names) /= 6) error stop
+if (len(work) /= 6) error stop
+if (size(names) /= m) error stop
+if (names(1) /= "alpha") error stop
+if (names(m) /= "gamma") error stop
+end subroutine mfeout
+
+
+integer function total_len(a, b, c)
+character :: a(2)*(*)
+character, intent(in) :: b(:)*(*), c(2,*)*(*)
+total_len = len(a) + len(b) + len(c) + size(b)
+end function total_len
+
+
+subroutine set_names(names)
+character(len=*) :: names(:)
+character, parameter :: init(2)*(*) = ["xy", "zw"]
+character, parameter :: one*(*) = "q"
+names = init(1) // one
+end subroutine set_names
+
+end module character_35_mod
+
+
+program character_35
+use character_35_mod
+implicit none
+character :: names(3)*6
+character :: rec(3)*80
+character :: tbl(2,2)*4
+character :: s*3 = "abc", t(2)*2 = ["ab", "cd"]
+
+names = ["alpha ", "beta  ", "gamma "]
+call mfeout(3, names)
+
+if (len(rec) /= 80) error stop
+if (s /= "abc" .or. len(s) /= 3) error stop
+if (t(2) /= "cd" .or. len(t) /= 2) error stop
+if (total_len(names(1:2), rec, tbl) /= 93) error stop
+
+call set_names(names)
+if (any(names /= "xyq")) error stop
+print *, names
+end program character_35

@@ -58,6 +58,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     const_arrays

@@ -97,6 +97,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             publ:
                                 (Variable
@@ -127,6 +128,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     access_vars

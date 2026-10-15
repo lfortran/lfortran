@@ -85,6 +85,7 @@ particular **Module** came from.
         :pass_attr :NotMethod
         :self_argument nil
         :codims []
+        :common_block nil
       )
     }
   )
