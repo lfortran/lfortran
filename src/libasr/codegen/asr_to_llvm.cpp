@@ -1910,7 +1910,7 @@ public:
         } else {
             // Fallback to runtime call for pow and any other operations
             llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                    llvm::Type::getVoidTy(context), {
+                    llvm_utils->void_type, {
                         complex_type->getPointerTo(),
                         complex_type->getPointerTo(),
                         complex_type->getPointerTo()
@@ -1941,8 +1941,8 @@ public:
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
                 character_type, {
                     character_type,
-                    character_type, llvm::Type::getInt64Ty(context),
-                    character_type, llvm::Type::getInt64Ty(context)
+                    character_type, llvm_utils->i64,
+                    character_type, llvm_utils->i64
                 });
         llvm::Value* allocator = llvm_utils->get_allocator(module.get());
         std::vector<llvm::Value*> args = {allocator, left_arg, left_len, right_arg, right_len};
@@ -1955,9 +1955,9 @@ public:
     {
         std::string runtime_func_name = "str_compare";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                llvm::Type::getInt32Ty(context), {
-                    character_type, llvm::Type::getInt64Ty(context),
-                    character_type, llvm::Type::getInt64Ty(context)
+                llvm_utils->i32, {
+                    character_type, llvm_utils->i64,
+                    character_type, llvm_utils->i64
                 });
         std::vector<llvm::Value*> args = {left_arg, left_arg_len, right_arg, right_arg_len};
         return builder->CreateCall(fn, args);
@@ -1968,11 +1968,11 @@ public:
     {
         std::string runtime_func_name = "_lfortran_strrepeat_alloc";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                llvm::Type::getVoidTy(context), {
+                llvm_utils->void_type, {
                     character_type,
                     character_type,
-                    llvm::Type::getInt64Ty(context),
-                    llvm::Type::getInt32Ty(context),
+                    llvm_utils->i64,
+                    llvm_utils->i32,
                     character_type->getPointerTo()
                 });
         llvm::Value* allocator = llvm_utils->get_allocator(module.get());
@@ -1989,7 +1989,7 @@ public:
         }
         std::string runtime_func_name = "_lfortran_str_len";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                llvm::Type::getInt64Ty(context), {
+                llvm_utils->i64, {
                     character_type
                 });
         return builder->CreateCall(fn, {str});
@@ -1999,7 +1999,7 @@ public:
     {
         std::string runtime_func_name = "_lfortran_str_to_int";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                llvm::Type::getInt32Ty(context), {
+                llvm_utils->i32, {
                     character_type->getPointerTo()
                 });
         return builder->CreateCall(fn, {str});
@@ -2009,7 +2009,7 @@ public:
     {
         std::string runtime_func_name = "_lfortran_str_ord";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                llvm::Type::getInt32Ty(context), {
+                llvm_utils->i32, {
                     character_type->getPointerTo()
                 });
         return builder->CreateCall(fn, {str});
@@ -2021,7 +2021,7 @@ public:
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
                 character_type, {
                     character_type,
-                    llvm::Type::getInt8Ty(context)
+                    llvm_utils->i8
                 });
         llvm::Value* allocator = llvm_utils->get_allocator(module.get());
         return builder->CreateCall(fn, {allocator, str});
@@ -2035,8 +2035,8 @@ public:
                 {
                     character_type,
                     character_type /*str*/,
-                    llvm::Type::getInt64Ty(context) /*str_len*/,
-                    llvm::Type::getInt64Ty(context) /*idx*/
+                    llvm_utils->i64 /*str_len*/,
+                    llvm_utils->i64 /*idx*/
                 });
         llvm::Value* allocator = llvm_utils->get_allocator(module.get());
         idx1 = builder->CreateSExt(idx1, llvm::Type::getInt64Ty(context));
@@ -2052,10 +2052,10 @@ public:
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
                 character_type, {
                     character_type,
-                    character_type, llvm::Type::getInt64Ty(context),
-                    llvm::Type::getInt64Ty(context),
-                    llvm::Type::getInt64Ty(context), llvm::Type::getInt64Ty(context),
-                    llvm::Type::getInt1Ty(context), llvm::Type::getInt1Ty(context)
+                    character_type, llvm_utils->i64,
+                    llvm_utils->i64,
+                    llvm_utils->i64, llvm_utils->i64,
+                    llvm_utils->i1, llvm_utils->i1
                 });
         llvm::Value* allocator = llvm_utils->get_allocator(module.get());
         // Make sure they're int64 integers
@@ -2074,8 +2074,8 @@ public:
                 character_type, {
                     character_type,
                     character_type,
-                    llvm::Type::getInt64Ty(context), // Start
-                    llvm::Type::getInt64Ty(context) // End
+                    llvm_utils->i64, // Start
+                    llvm_utils->i64  // End
                 });
         llvm::Value* allocator = llvm_utils->get_allocator(module.get());
         // Make sure they're int64 integers
@@ -2108,7 +2108,7 @@ public:
         std::string runtime_func_name = "__lfortran_dynamic_cast";
         llvm::Function* fn = LLVM::get_or_declare_function(*module, runtime_func_name,
             llvm_utils->i8_ptr,
-            { llvm_utils->i8_ptr, llvm_utils->i8_ptr, llvm::Type::getInt1Ty(context) });
+            { llvm_utils->i8_ptr, llvm_utils->i8_ptr, llvm_utils->i1 });
         std::vector<llvm::Value*> args
             = { static_ptr,
                 dst_type,
@@ -3419,7 +3419,7 @@ public:
     llvm::Function* _Deallocate() {
         std::string func_name = "_lfortran_free_alloc";
         llvm::Function *free_fn = LLVM::get_or_declare_function(*module, func_name,
-                llvm::Type::getVoidTy(context), {
+                llvm_utils->void_type, {
                     character_type,
                     character_type
                 });
@@ -3429,11 +3429,11 @@ public:
     llvm::Function* _Allocate() {
         std::string func_name = "_lfortran_allocate_string";
         llvm::Function *alloc_fun = LLVM::get_or_declare_function(*module, func_name,
-                llvm::Type::getVoidTy(context), {
+                llvm_utils->void_type, {
                     character_type->getPointerTo(),
-                    llvm::Type::getInt64Ty(context),
-                    llvm::Type::getInt64Ty(context)->getPointerTo(),
-                    llvm::Type::getInt64Ty(context)->getPointerTo()
+                    llvm_utils->i64,
+                    llvm_utils->i64->getPointerTo(),
+                    llvm_utils->i64->getPointerTo()
                 });
         return alloc_fun;
     }
@@ -3793,7 +3793,7 @@ public:
         int int_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         std::string runtime_func_name = "_lpython_bit_length" + std::to_string(int_kind);
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                llvm::Type::getInt32Ty(context), {
+                llvm_utils->i32, {
                     llvm_utils->getIntType(int_kind)
                 });
         tmp = builder->CreateCall(fn, {int_val});
@@ -8278,8 +8278,8 @@ public:
             if (compiler_options.emit_debug_info) debug_emit_loc(x);
             llvm::Function *fn = LLVM::get_or_declare_function(
                 *module, "_lpython_call_initial_functions",
-                llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt32Ty(context),
+                llvm_utils->void_type, {
+                    llvm_utils->i32,
                     character_type->getPointerTo()
                 });
             std::vector<llvm::Value *> args;
@@ -8300,8 +8300,8 @@ public:
             if (compiler_options.emit_debug_info) debug_emit_loc(x);
             llvm::Function *fpe_fn = LLVM::get_or_declare_function(
                 *module, "_lfortran_enable_fpe_traps",
-                llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt32Ty(context)
+                llvm_utils->void_type, {
+                    llvm_utils->i32
                 });
             llvm::Value *mask_val = llvm::ConstantInt::get(context,
                 llvm::APInt(32, compiler_options.fpe_traps));
@@ -8312,8 +8312,8 @@ public:
         if (compiler_options.detect_leaks) {
             llvm::Function *fn = LLVM::get_or_declare_function(
                 *module, "_lfortran_set_cfi_debug_mode",
-                llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt32Ty(context)
+                llvm_utils->void_type, {
+                    llvm_utils->i32
                 });
             builder->CreateCall(fn, {llvm::ConstantInt::get(context, llvm::APInt(32, 1))});
         }
@@ -8322,8 +8322,8 @@ public:
             if (compiler_options.emit_debug_info) debug_emit_loc(x);
             llvm::Function *fn = LLVM::get_or_declare_function(
                 *module, "_lfortran_set_use_runtime_colors",
-                llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt32Ty(context)
+                llvm_utils->void_type, {
+                    llvm_utils->i32
                 });
             llvm::Value *use_colors = llvm::ConstantInt::get(context,
                 llvm::APInt(32, 1));
@@ -8377,12 +8377,12 @@ public:
         free_heap_fixed_size_arrays();
         {
             llvm::Function *fn_finalize = LLVM::get_or_declare_function(*module,
-                "_lfortran_internal_alloc_finalize", llvm::Type::getVoidTy(context), {});
+                "_lfortran_internal_alloc_finalize", llvm_utils->void_type, {});
             builder->CreateCall(fn_finalize, {});
         }
         if (compiler_options.detect_leaks) {
             llvm::Function *fn = LLVM::get_or_declare_function(*module, "dbg_report",
-                llvm::Type::getVoidTy(context), {});
+                llvm_utils->void_type, {});
             builder->CreateCall(fn, {});
         }
         if (interactive_program) {
@@ -13515,11 +13515,11 @@ public:
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
                 character_type, {
                     character_type,
-                    character_type, llvm::Type::getInt64Ty(context),
-                    character_type, llvm::Type::getInt64Ty(context),
-                    llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt32Ty(context), llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt1Ty(context), llvm::Type::getInt1Ty(context)
+                    character_type, llvm_utils->i64,
+                    character_type, llvm_utils->i64,
+                    llvm_utils->i32,
+                    llvm_utils->i32, llvm_utils->i32,
+                    llvm_utils->i1, llvm_utils->i1
                 });
         ASR::StringSection_t *ss = ASR::down_cast<ASR::StringSection_t>(target);
         llvm::Value *lp, *rp;
@@ -18221,7 +18221,7 @@ public:
                 "_lfortran_complex_pow_int_32" : "_lfortran_complex_pow_int_64";
             llvm::Type* i64_ty = llvm::Type::getInt64Ty(context);
             llvm::Function *fn = LLVM::get_or_declare_function(*module, fn_name,
-                    llvm::Type::getVoidTy(context), {
+                    llvm_utils->void_type, {
                         complex_type->getPointerTo(), i64_ty,
                         complex_type->getPointerTo()
                     });
@@ -20621,7 +20621,7 @@ public:
                         "for integer kind: " + std::to_string(a_kind));
                 }
                 fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                    llvm::Type::getVoidTy(context), {
+                    llvm_utils->void_type, {
                         type_arg->getPointerTo(),
                         llvm::Type::getInt32Ty(context),
                         llvm::Type::getInt32Ty(context)->getPointerTo()
@@ -20631,7 +20631,7 @@ public:
             case (ASR::ttypeType::String): {
                 std::string runtime_func_name = "_lfortran_read_char";
                 fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                    llvm::Type::getVoidTy(context), {
+                    llvm_utils->void_type, {
                         character_type->getPointerTo(), // Str_data
                         llvm::Type::getInt64Ty(context), // Str_len
                         llvm::Type::getInt32Ty(context), // Unit_num
@@ -20647,7 +20647,7 @@ public:
                 llvm::Type *type_arg = llvm::Type::getInt1Ty(context);
 
                 fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                    llvm::Type::getVoidTy(context), {
+                    llvm_utils->void_type, {
                         type_arg->getPointerTo(),
                         llvm::Type::getInt32Ty(context),
                         llvm::Type::getInt32Ty(context)->getPointerTo()
@@ -20666,7 +20666,7 @@ public:
                     type_arg = llvm::Type::getDoubleTy(context);
                 }
                 fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                    llvm::Type::getVoidTy(context), {
+                    llvm_utils->void_type, {
                         type_arg->getPointerTo(),
                         llvm::Type::getInt32Ty(context),
                         llvm::Type::getInt32Ty(context)->getPointerTo()
@@ -20688,7 +20688,7 @@ public:
                         "for complex kind: " + std::to_string(a_kind));
                 }
                 fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                    llvm::Type::getVoidTy(context), {
+                    llvm_utils->void_type, {
                         type_arg->getPointerTo(),
                         llvm::Type::getInt32Ty(context),
                         llvm::Type::getInt32Ty(context)->getPointerTo()
@@ -20753,33 +20753,33 @@ public:
                     // (char *p, int64_t len, int size, int unit, int32_t *iostat)
                     types = {
                         type_arg->getPointerTo(),
-                        llvm::Type::getInt64Ty(context),
-                        llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt32Ty(context)->getPointerTo()
+                        llvm_utils->i64,
+                        llvm_utils->i32,
+                        llvm_utils->i32,
+                        llvm_utils->i32->getPointerTo()
                     };
                 } else if (runtime_func_name == "_lfortran_read_array_logical") {
                     // (void *p, int size, int kind, int stride, int unit, int32_t *iostat)
                     types = {
                         type_arg->getPointerTo(),
-                        llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt32Ty(context)->getPointerTo()
+                        llvm_utils->i32,
+                        llvm_utils->i32,
+                        llvm_utils->i32,
+                        llvm_utils->i32,
+                        llvm_utils->i32->getPointerTo()
                     };
                 } else {
                     // (T *p, int size, int stride, int unit, int32_t *iostat)
                     types = {
                         type_arg->getPointerTo(),
-                        llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt32Ty(context)->getPointerTo()
+                        llvm_utils->i32,
+                        llvm_utils->i32,
+                        llvm_utils->i32,
+                        llvm_utils->i32->getPointerTo()
                     };
                 }
                 fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                    llvm::Type::getVoidTy(context), types);
+                    llvm_utils->void_type, types);
                 break;
             }
             default: {
@@ -20798,13 +20798,13 @@ public:
         std::string rt_name = "_lfortran_string_read_" +
             ASRUtils::type_to_str_python_expr(elem_type, value_expr);
         llvm::Function* str_fn = LLVM::get_or_declare_function(*module, rt_name,
-            llvm::Type::getVoidTy(context),
+            llvm_utils->void_type,
             { character_type,
-              llvm::Type::getInt64Ty(context),
+              llvm_utils->i64,
               character_type,
               llvm_elem_type->getPointerTo(),
-              llvm::Type::getInt32Ty(context)->getPointerTo(),
-              llvm::Type::getInt64Ty(context)->getPointerTo()
+              llvm_utils->i32->getPointerTo(),
+              llvm_utils->i64->getPointerTo()
             });
         llvm::Value* fmt = nullptr;
         if (ASR::is_a<ASR::Real_t>(*elem_type)) {
@@ -21271,12 +21271,12 @@ public:
                 if (is_string && ASRUtils::is_character(*elem_type)) {
                     std::string rt_name = "_lfortran_string_read_str";
                     llvm::Function* str_fn = LLVM::get_or_declare_function(*module, rt_name,
-                        llvm::Type::getVoidTy(context),
+                        llvm_utils->void_type,
                         { character_type,
-                          llvm::Type::getInt64Ty(context),
+                          llvm_utils->i64,
                           character_type,
-                          llvm::Type::getInt64Ty(context),
-                          llvm::Type::getInt64Ty(context)->getPointerTo()
+                          llvm_utils->i64,
+                          llvm_utils->i64->getPointerTo()
                         });
                     llvm::Value* dest_data, *dest_len;
                     std::tie(dest_data, dest_len) = llvm_utils->get_string_length_data(
@@ -21331,8 +21331,8 @@ public:
         std::tie(decimal_data, decimal_len) = get_string_data_and_length(decimal_expr);
         std::string func_name = "_lfortran_decimal_mode_from_str";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, func_name,
-                llvm::Type::getInt32Ty(context), {
-                    character_type, llvm::Type::getInt64Ty(context)
+                llvm_utils->i32, {
+                    character_type, llvm_utils->i64
                 });
         return builder->CreateCall(fn, {decimal_data, decimal_len});
     }
@@ -21342,8 +21342,8 @@ public:
     void emit_set_transfer_decimal_mode(llvm::Value* mode) {
         std::string func_name = "_lfortran_set_transfer_decimal_mode";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, func_name,
-                llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt32Ty(context)
+                llvm_utils->void_type, {
+                    llvm_utils->i32
                 });
         builder->CreateCall(fn, {mode});
     }
@@ -21410,43 +21410,43 @@ public:
             // Define item struct type (must match build_namelist_descriptor)
             llvm::StructType* item_type = llvm::StructType::get(
                 character_type,                               // name
-                llvm::Type::getInt32Ty(context),             // type
-                llvm::Type::getInt32Ty(context),             // rank
-                llvm::Type::getInt64Ty(context),             // elem_len
-                llvm::Type::getInt64Ty(context),             // stride
+                llvm_utils->i32,                              // type
+                llvm_utils->i32,                              // rank
+                llvm_utils->i64,                              // elem_len
+                llvm_utils->i64,                              // stride
                 llvm_utils->i8_ptr,                          // data
-                llvm::Type::getInt64Ty(context)->getPointerTo()  // shape
+                llvm_utils->i64->getPointerTo()               // shape
             );
             llvm::StructType* group_type = llvm::StructType::get(
                 character_type,
-                llvm::Type::getInt32Ty(context),
+                llvm_utils->i32,
                 item_type->getPointerTo()
             );
             std::vector<llvm::Type*> args;
             if (is_string_array) {
                 args = {
                     llvm_utils->i8_ptr,                     // data
-                    llvm::Type::getInt64Ty(context),        // elem_len
-                    llvm::Type::getInt64Ty(context),        // n_elems
-                    llvm::Type::getInt32Ty(context)->getPointerTo(), // iostat
+                    llvm_utils->i64,                        // elem_len
+                    llvm_utils->i64,                        // n_elems
+                    llvm_utils->i32->getPointerTo(),        // iostat
                     group_type->getPointerTo()              // group
                 };
             } else if (is_string) {
                 args = {
                     character_type,                         // data
-                    llvm::Type::getInt64Ty(context),        // data_len
-                    llvm::Type::getInt32Ty(context)->getPointerTo(), // iostat
+                    llvm_utils->i64,                        // data_len
+                    llvm_utils->i32->getPointerTo(),        // iostat
                     group_type->getPointerTo()              // group
                 };
             } else {
                 args = {
-                    llvm::Type::getInt32Ty(context),         // unit_num
-                    llvm::Type::getInt32Ty(context)->getPointerTo(), // iostat
+                    llvm_utils->i32,                        // unit_num
+                    llvm_utils->i32->getPointerTo(),        // iostat
                     group_type->getPointerTo()              // group
                 };
             }
             llvm::Function* fn = LLVM::get_or_declare_function(*module, func_name,
-                llvm::Type::getVoidTy(context), args);
+                llvm_utils->void_type, args);
 
             if (is_string_array) {
                 // Get array dimensions and element length
@@ -21589,10 +21589,10 @@ public:
                 llvm::Type::getInt32Ty(context), iostat);
             std::string func_name = "_lfortran_set_read_iomsg";
             llvm::Function *iomsg_fn = LLVM::get_or_declare_function(*module, func_name,
-                llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt32Ty(context),
+                llvm_utils->void_type, {
+                    llvm_utils->i32,
                     character_type,
-                    llvm::Type::getInt64Ty(context)
+                    llvm_utils->i64
                 });
             builder->CreateCall(iomsg_fn, {iostat_val, iomsg_data, iomsg_len});
         };
@@ -21629,10 +21629,10 @@ public:
 
             std::string runtime_func_name = "_lfortran_file_seek";
             llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                    llvm::Type::getVoidTy(context), {
-                        llvm::Type::getInt32Ty(context),  // unit
-                        llvm::Type::getInt64Ty(context),  // pos
-                        llvm::Type::getInt32Ty(context)->getPointerTo()  // iostat
+                    llvm_utils->void_type, {
+                        llvm_utils->i32,                // unit
+                        llvm_utils->i64,                // pos
+                        llvm_utils->i32->getPointerTo() // iostat
                     });
             builder->CreateCall(fn, {unit_val, pos_val, iostat});
         }
@@ -21898,13 +21898,13 @@ public:
                     llvm::FunctionType *function_type;
                     if(ASRUtils::is_string_only(type)){
                         function_type = llvm::FunctionType::get(
-                            llvm::Type::getVoidTy(context),
+                            llvm_utils->void_type,
                             {
                                 character_type /*src_data*/,
-                                llvm::Type::getInt64Ty(context) /*src_length*/,
+                                llvm_utils->i64 /*src_length*/,
                                 character_type /*dest_data*/,
-                                llvm::Type::getInt64Ty(context) /*dest_length*/,
-                                llvm::Type::getInt64Ty(context)->getPointerTo() /*offset*/
+                                llvm_utils->i64 /*dest_length*/,
+                                llvm_utils->i64->getPointerTo() /*offset*/
                             },
                             false);
                     } else if (ASRUtils::is_array(type)) {
@@ -21912,17 +21912,17 @@ public:
                             x.m_values[i], type);
                     } else {
                         function_type = llvm::FunctionType::get(
-                            llvm::Type::getVoidTy(context),
+                            llvm_utils->void_type,
                             {   character_type /*src_data*/,
-                                llvm::Type::getInt64Ty(context)/*src_length*/,
+                                llvm_utils->i64/*src_length*/,
                                 character_type,
                                 llvm_utils->get_type_from_ttype_t_util(
                                     x.m_values[i],
                                     ASRUtils::type_get_past_allocatable_pointer(type),
                                     module.get()
                                 )->getPointerTo(),
-                                llvm::Type::getInt32Ty(context)->getPointerTo() /*iostat*/,
-                                llvm::Type::getInt64Ty(context)->getPointerTo() /*offset*/
+                                llvm_utils->i32->getPointerTo() /*iostat*/,
+                                llvm_utils->i64->getPointerTo() /*offset*/
                             },
                             false);
                     }
@@ -22173,10 +22173,10 @@ public:
             if (!is_string || empty_read) {
             std::string runtime_func_name = "_lfortran_empty_read";
             llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                    llvm::Type::getVoidTy(context), {
-                        llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt32Ty(context)->getPointerTo(),
-                        llvm::Type::getInt32Ty(context)
+                    llvm_utils->void_type, {
+                        llvm_utils->i32,
+                        llvm_utils->i32->getPointerTo(),
+                        llvm_utils->i32
                     });
             // no_values flag: 1 if no values were read, 0 otherwise
             llvm::Value* no_values_flag = llvm::ConstantInt::get(
@@ -22205,9 +22205,9 @@ public:
                 std::string cmp_func_name = "_lfortran_is_streql_NCS";
                 llvm::Function *cmp_fn = LLVM::get_or_declare_function(
                     *module, cmp_func_name,
-                    llvm::Type::getInt1Ty(context), {
-                        character_type, llvm::Type::getInt64Ty(context),
-                        character_type, llvm::Type::getInt64Ty(context)
+                    llvm_utils->i1, {
+                        character_type, llvm_utils->i64,
+                        character_type, llvm_utils->i64
                     });
                 llvm::Value* is_advance_no = builder->CreateCall(cmp_fn,
                     {advance, advance_length, no_data, no_len});
@@ -22325,9 +22325,9 @@ public:
 
         std::string seek_name = "_lfortran_seek_record";
         llvm::Function *seek_fn = LLVM::get_or_declare_function(*module, seek_name,
-            llvm::Type::getVoidTy(context),
-            { llvm::Type::getInt32Ty(context), llvm::Type::getInt32Ty(context),
-              llvm::Type::getInt32Ty(context)->getPointerTo() });
+            llvm_utils->void_type,
+            { llvm_utils->i32, llvm_utils->i32,
+              llvm_utils->i32->getPointerTo() });
         builder->CreateCall(seek_fn, { unit_i32, rec_val, iostat });
     }
 
@@ -22475,19 +22475,19 @@ public:
             param_types.push_back(character_type);
             param_types.push_back(llvm::Type::getInt64Ty(context));
         } else {
-            param_types.push_back(llvm::Type::getInt32Ty(context));
+            param_types.push_back(llvm_utils->i32);
         }
-        param_types.push_back(llvm::Type::getInt32Ty(context)->getPointerTo());
-        param_types.push_back(llvm::Type::getInt32Ty(context)->getPointerTo());
+        param_types.push_back(llvm_utils->i32->getPointerTo());
+        param_types.push_back(llvm_utils->i32->getPointerTo());
         param_types.push_back(character_type);
-        param_types.push_back(llvm::Type::getInt64Ty(context));
+        param_types.push_back(llvm_utils->i64);
         param_types.push_back(character_type);
-        param_types.push_back(llvm::Type::getInt64Ty(context));
-        param_types.push_back(llvm::Type::getInt32Ty(context));
+        param_types.push_back(llvm_utils->i64);
+        param_types.push_back(llvm_utils->i32);
         param_types.push_back(character_type);
-        param_types.push_back(llvm::Type::getInt64Ty(context));
+        param_types.push_back(llvm_utils->i64);
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-            llvm::Type::getVoidTy(context), param_types, true);
+            llvm_utils->void_type, param_types, true);
         builder->CreateCall(fn, single_args);
     }
 
@@ -22941,10 +22941,10 @@ public:
         if (is_string_array) {
             runtime_func_name = "_lfortran_string_array_formatted_read";
             fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                    llvm::Type::getVoidTy(context), {
+                    llvm_utils->void_type, {
                         character_type,                                  // data
-                        llvm::Type::getInt64Ty(context),                 // elem_len
-                        llvm::Type::getInt64Ty(context),                 // n_elems
+                        llvm_utils->i64,                         // elem_len
+                        llvm_utils->i64,                         // n_elems
                 llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
                 llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
                 character_type,                                  // advance
@@ -22958,9 +22958,9 @@ public:
         } else if (is_string) {
             runtime_func_name = "_lfortran_string_formatted_read";
             fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                    llvm::Type::getVoidTy(context), {
+                    llvm_utils->void_type, {
                         character_type,                                  // src_data
-                        llvm::Type::getInt64Ty(context),                 // src_len
+                        llvm_utils->i64,                         // src_len
                 llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
                 llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
                 character_type,                                  // advance
@@ -22975,17 +22975,17 @@ public:
             // File read
             runtime_func_name = "_lfortran_formatted_read";
             fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                    llvm::Type::getVoidTy(context), {
-                        llvm::Type::getInt32Ty(context),                 // Unit
-                        llvm::Type::getInt32Ty(context)->getPointerTo(), // Iostat
-                        llvm::Type::getInt32Ty(context)->getPointerTo(), // Chunk
+                    llvm_utils->void_type, {
+                        llvm_utils->i32,                                 // Unit
+                        llvm_utils->i32->getPointerTo(),                 // Iostat
+                        llvm_utils->i32->getPointerTo(),                 // Chunk
                         character_type,                                  // advance
-                        llvm::Type::getInt64Ty(context),                 // advance_length
+                        llvm_utils->i64,                                 // advance_length
                         character_type,                                  // fmt
-                        llvm::Type::getInt64Ty(context),                 // fmt_len
-                        llvm::Type::getInt32Ty(context),                 // no_of_args
+                        llvm_utils->i64,                                 // fmt_len
+                        llvm_utils->i32,                                 // no_of_args
                         character_type,                                  // pad_data
-                        llvm::Type::getInt64Ty(context)                  // pad_len
+                        llvm_utils->i64                                  // pad_len
                     }, true);
         }
 
@@ -23121,22 +23121,22 @@ public:
 
         ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_open";
-        llvm::Type *i64 = llvm::Type::getInt64Ty(context);
+        llvm::Type *i64 = llvm_utils->i64;
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
                 i64,
-                {llvm::Type::getInt32Ty(context),
+                {llvm_utils->i32,
                     character_type, i64, //f_name, f_name_length
                     character_type, i64, //status, status_len
                     character_type, i64, //form, form_length
                     character_type, i64, //access, access_len
                     character_type, i64, //iomsg, iomsg_len
-                    llvm::Type::getInt32Ty(context)->getPointerTo(),
+                    llvm_utils->i32->getPointerTo(),
                     character_type, i64, // action, action_len
                     character_type, i64, // delim, delim_len
                     character_type, i64, // position, position_len
                     character_type, i64,  // blank, blank_len
                     character_type, i64, //encoding_data, encoding_len
-                    llvm::Type::getInt32Ty(context)->getPointerTo(), // recl
+                    llvm_utils->i32->getPointerTo(), // recl
                     character_type, i64,  // sign_data, sign_len
                     character_type, i64,  // decimal_data, decimal_len
                     character_type, i64,   // round_data, round_len
@@ -23718,41 +23718,41 @@ public:
 
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                llvm::Type::getVoidTy(context), {
-                    character_type, llvm::Type::getInt64Ty(context),
-                    llvm::Type::getInt1Ty(context)->getPointerTo(),
-                    llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt1Ty(context)->getPointerTo(),
-                    llvm::Type::getInt32Ty(context)->getPointerTo(),
-                    llvm::Type::getInt32Ty(context)->getPointerTo(),
-                    character_type, llvm::Type::getInt64Ty(context), // write_data, write_len
-                    character_type, llvm::Type::getInt64Ty(context), // read_data, read_len
-                    character_type, llvm::Type::getInt64Ty(context), // readwrite_data, readwrite_len
-                    character_type, llvm::Type::getInt64Ty(context), // access_data, access_len
-                    character_type, llvm::Type::getInt64Ty(context),  // name_data, name_len
-                    character_type, llvm::Type::getInt64Ty(context),  // blank_data, blank_len
-                    llvm::Type::getInt32Ty(context)->getPointerTo(), // recl
-                    llvm::Type::getInt32Ty(context)->getPointerTo(), // number
-                    llvm::Type::getInt1Ty(context)->getPointerTo(),  // named
-                    character_type, llvm::Type::getInt64Ty(context), // sequential, sequential_len
-                    character_type, llvm::Type::getInt64Ty(context), // direct, direct_len
-                    character_type, llvm::Type::getInt64Ty(context), // form, form_len
-                    character_type, llvm::Type::getInt64Ty(context), // formatted, formatted_len
-                    character_type, llvm::Type::getInt64Ty(context), // unformatted, unformatted_len
-                    llvm::Type::getInt32Ty(context)->getPointerTo(), // iostat
-                    llvm::Type::getInt32Ty(context)->getPointerTo(), // nextrec
-                    character_type, llvm::Type::getInt64Ty(context),  // decimal_data, decimal_len
-                    character_type, llvm::Type::getInt64Ty(context),   // sign_data, sign_len
-                    character_type, llvm::Type::getInt64Ty(context),   // encoding_data, encoding_len
-                    character_type, llvm::Type::getInt64Ty(context),   // stream_data, stream_len
-                    character_type, llvm::Type::getInt64Ty(context),    // iomsg_data, iomsg_len
-                    character_type, llvm::Type::getInt64Ty(context),    // round_data, round_len
-                    character_type, llvm::Type::getInt64Ty(context),    // pad_data, pad_len
-                    llvm::Type::getInt1Ty(context)->getPointerTo(),    // pending
-                    character_type, llvm::Type::getInt64Ty(context),    // asynchronous_data, asynchronous_len
-                    character_type, llvm::Type::getInt64Ty(context),   // action_data, action_len
-                    character_type, llvm::Type::getInt64Ty(context),    // position_data, position_len
-                    character_type, llvm::Type::getInt64Ty(context)    // delim_data, delim_len
+                llvm_utils->void_type, {
+                    character_type, llvm_utils->i64,
+                    llvm_utils->i1->getPointerTo(),
+                    llvm_utils->i32,
+                    llvm_utils->i1->getPointerTo(),
+                    llvm_utils->i32->getPointerTo(),
+                    llvm_utils->i32->getPointerTo(),
+                    character_type, llvm_utils->i64, // write_data, write_len
+                    character_type, llvm_utils->i64, // read_data, read_len
+                    character_type, llvm_utils->i64, // readwrite_data, readwrite_len
+                    character_type, llvm_utils->i64, // access_data, access_len
+                    character_type, llvm_utils->i64, // name_data, name_len
+                    character_type, llvm_utils->i64, // blank_data, blank_len
+                    llvm_utils->i32->getPointerTo(), // recl
+                    llvm_utils->i32->getPointerTo(), // number
+                    llvm_utils->i1->getPointerTo(),  // named
+                    character_type, llvm_utils->i64, // sequential, sequential_len
+                    character_type, llvm_utils->i64, // direct, direct_len
+                    character_type, llvm_utils->i64, // form, form_len
+                    character_type, llvm_utils->i64, // formatted, formatted_len
+                    character_type, llvm_utils->i64, // unformatted, unformatted_len
+                    llvm_utils->i32->getPointerTo(), // iostat
+                    llvm_utils->i32->getPointerTo(), // nextrec
+                    character_type, llvm_utils->i64, // decimal_data, decimal_len
+                    character_type, llvm_utils->i64, // sign_data, sign_len
+                    character_type, llvm_utils->i64, // encoding_data, encoding_len
+                    character_type, llvm_utils->i64, // stream_data, stream_len
+                    character_type, llvm_utils->i64, // iomsg_data, iomsg_len
+                    character_type, llvm_utils->i64, // round_data, round_len
+                    character_type, llvm_utils->i64, // pad_data, pad_len
+                    llvm_utils->i1->getPointerTo(),  // pending
+                    character_type, llvm_utils->i64, // asynchronous_data, asynchronous_len
+                    character_type, llvm_utils->i64, // action_data, action_len
+                    character_type, llvm_utils->i64, // position_data, position_len
+                    character_type, llvm_utils->i64  // delim_data, delim_len
                 });
         tmp = builder->CreateCall(fn, {f_name_data, f_name_len,
             exist_val, unit,
@@ -23861,10 +23861,10 @@ public:
         ptr_loads = ptr_copy;
         std::string runtime_func_name = "_lfortran_flush";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt32Ty(context)->getPointerTo(),
-                    character_type, llvm::Type::getInt64Ty(context)
+                llvm_utils->void_type, {
+                    llvm_utils->i32,
+                    llvm_utils->i32->getPointerTo(),
+                    character_type, llvm_utils->i64
                 });
         tmp = builder->CreateCall(fn, {unit_val, iostat, iomsg, iomsg_len});
     }
@@ -23897,11 +23897,11 @@ public:
 
         std::string runtime_func_name = "_lfortran_rewind";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt32Ty(context)->getPointerTo(),
+                llvm_utils->void_type, {
+                    llvm_utils->i32,
+                    llvm_utils->i32->getPointerTo(),
                     character_type,
-                    llvm::Type::getInt64Ty(context)
+                    llvm_utils->i64
                 });
         builder->CreateCall(fn, {unit_val, iostat, iomsg, iomsg_len});
     }
@@ -23934,11 +23934,11 @@ public:
 
         std::string runtime_func_name = "_lfortran_endfile";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt32Ty(context)->getPointerTo(),
+                llvm_utils->void_type, {
+                    llvm_utils->i32,
+                    llvm_utils->i32->getPointerTo(),
                     character_type,
-                    llvm::Type::getInt64Ty(context)
+                    llvm_utils->i64
                 });
         builder->CreateCall(fn, {unit_val, iostat, iomsg, iomsg_len});
     }
@@ -23971,11 +23971,11 @@ public:
 
         std::string runtime_func_name = "_lfortran_backspace";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-            llvm::Type::getVoidTy(context), {
-                llvm::Type::getInt32Ty(context),
-                llvm::Type::getInt32Ty(context)->getPointerTo(),
+            llvm_utils->void_type, {
+                llvm_utils->i32,
+                llvm_utils->i32->getPointerTo(),
                 character_type,
-                llvm::Type::getInt64Ty(context)
+                llvm_utils->i64
             });
         builder->CreateCall(fn, {unit_val, iostat, iomsg, iomsg_len});
     }
@@ -24018,9 +24018,9 @@ public:
         }
         std::string runtime_func_name = "_lfortran_close";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt32Ty(context),
-                    character_type, llvm::Type::getInt64Ty(context), llvm::Type::getInt32Ty(context)->getPointerTo()
+                llvm_utils->void_type, {
+                    llvm_utils->i32,
+                    character_type, llvm_utils->i64, llvm_utils->i32->getPointerTo()
                 });
         tmp = builder->CreateCall(fn, {unit_val, status, status_len, iostat});
     }
@@ -24107,9 +24107,9 @@ public:
             {
                 std::string func_name = "_lfortran_set_child_io";
                 llvm::Function *fn = LLVM::get_or_declare_function(*module, func_name,
-                    llvm::Type::getVoidTy(context),
-                    {llvm::Type::getInt32Ty(context),
-                     llvm::Type::getInt32Ty(context)});
+                    llvm_utils->void_type,
+                    {llvm_utils->i32,
+                     llvm_utils->i32});
                 llvm::Value *one = llvm::ConstantInt::get(
                     llvm::Type::getInt32Ty(context), llvm::APInt(32, 1, true));
                 builder->CreateCall(fn, {unit_val, one});
@@ -24130,8 +24130,8 @@ public:
             {
                 std::string func_name = "_lfortran_file_write_newline";
                 llvm::Function *fn = LLVM::get_or_declare_function(*module, func_name,
-                    llvm::Type::getVoidTy(context),
-                    {llvm::Type::getInt32Ty(context)});
+                    llvm_utils->void_type,
+                    {llvm_utils->i32});
                 builder->CreateCall(fn, {unit_val});
             }
 
@@ -24179,17 +24179,17 @@ public:
             }
             llvm::StructType* item_type = llvm::StructType::get(
                 character_type,
-                llvm::Type::getInt32Ty(context),
-                llvm::Type::getInt32Ty(context),
-                llvm::Type::getInt64Ty(context),
-                llvm::Type::getInt64Ty(context),
+                llvm_utils->i32,
+                llvm_utils->i32,
+                llvm_utils->i64,
+                llvm_utils->i64,
                 llvm_utils->i8_ptr,
-                llvm::Type::getInt64Ty(context)->getPointerTo()
+                llvm_utils->i64->getPointerTo()
             );
 
             llvm::StructType* group_type = llvm::StructType::get(
                 character_type,
-                llvm::Type::getInt32Ty(context),
+                llvm_utils->i32,
                 item_type->getPointerTo()
             );
 
@@ -24199,18 +24199,18 @@ public:
                     llvm_utils->i8_ptr,
                     llvm::Type::getInt64Ty(context),
                     llvm::Type::getInt64Ty(context),
-                    llvm::Type::getInt32Ty(context)->getPointerTo(),
+                    llvm_utils->i32->getPointerTo(),
                     group_type->getPointerTo()
                 };
             } else {
                 args = {
                     llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt32Ty(context)->getPointerTo(),
+                    llvm_utils->i32->getPointerTo(),
                     group_type->getPointerTo()
                 };
             }
             llvm::Function* fn = LLVM::get_or_declare_function(*module, func_name,
-                llvm::Type::getVoidTy(context), args);
+                llvm_utils->void_type, args);
 
             if (is_string_array) {
                 llvm::Value* data_ptr = builder->CreateStructGEP(string_descriptor, unit_val, 0);
@@ -24406,22 +24406,22 @@ public:
         if (!is_string) {
             std::string func_name = "_lfortran_get_decimal_mode";
             llvm::Function *fn = LLVM::get_or_declare_function(*module, func_name,
-                    llvm::Type::getInt32Ty(context), {
-                        llvm::Type::getInt32Ty(context)
+                    llvm_utils->i32, {
+                        llvm_utils->i32
                     });
             this->current_decimal_mode = builder->CreateCall(fn, {unit});
 
             std::string sign_func_name = "_lfortran_get_sign_mode";
             llvm::Function *sign_fn = LLVM::get_or_declare_function(*module, sign_func_name,
-                    llvm::Type::getInt32Ty(context), {
-                        llvm::Type::getInt32Ty(context)
+                    llvm_utils->i32, {
+                        llvm_utils->i32
                     });
             this->current_sign_mode = builder->CreateCall(sign_fn, {unit});
 
             std::string round_func_name = "_lfortran_get_round_mode";
             llvm::Function *round_fn = LLVM::get_or_declare_function(*module,
-                    round_func_name, llvm::Type::getInt32Ty(context), {
-                        llvm::Type::getInt32Ty(context)
+                    round_func_name, llvm_utils->i32, {
+                        llvm_utils->i32
                     });
             this->current_round_mode = builder->CreateCall(round_fn, {unit});
         }
@@ -24443,10 +24443,10 @@ public:
 
             std::string runtime_func_name = "_lfortran_file_seek";
             llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                    llvm::Type::getVoidTy(context), {
-                        llvm::Type::getInt32Ty(context),
-                        llvm::Type::getInt64Ty(context),
-                        llvm::Type::getInt32Ty(context)->getPointerTo()
+                    llvm_utils->void_type, {
+                        llvm_utils->i32,
+                        llvm_utils->i64,
+                        llvm_utils->i32->getPointerTo()
                     });
             builder->CreateCall(fn, {unit, pos_val, iostat});
         }
@@ -24738,7 +24738,7 @@ public:
         printf_args.push_back(fmt_len);
         printf_args.insert(printf_args.end(), args.begin(), args.end());
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                llvm::Type::getVoidTy(context), args_type, true);
+                llvm_utils->void_type, args_type, true);
         tmp = builder->CreateCall(fn, printf_args);
         for (llvm::Value* copy_ptr : unformatted_copies_to_free) {
             llvm_utils->lfortran_free(copy_ptr);
@@ -25344,7 +25344,7 @@ public:
         /* EXIT WITH CODE */
         {
             llvm::Function *fn_finalize = LLVM::get_or_declare_function(*module,
-                "_lfortran_internal_alloc_finalize", llvm::Type::getVoidTy(context), {});
+                "_lfortran_internal_alloc_finalize", llvm_utils->void_type, {});
             builder->CreateCall(fn_finalize, {});
         }
         if (stop_code_value) {
@@ -28400,7 +28400,7 @@ public:
                 llvm::Function *fn = LLVM::get_or_declare_function(
                     *module, "_lpython_get_argv",
                     character_type, {
-                        llvm::Type::getInt32Ty(context)
+                        llvm_utils->i32
                     });
                 args = convert_call_args(x, is_method /* skip_self */);
                 LCOMPILERS_ASSERT(args.size() > 0);
@@ -28425,7 +28425,7 @@ public:
                        sub_name == "_lcompilers_system_") {
                 llvm::Function *fn = LLVM::get_or_declare_function(
                     *module, "_lfortran_exec_command",
-                    llvm::Type::getInt32Ty(context), {
+                    llvm_utils->i32, {
                         character_type
                     });
                 args = convert_call_args(x, is_method /* skip_self */);
@@ -28435,8 +28435,8 @@ public:
             } else if (sub_name == "_lcompilers_sleep_") {
                 llvm::Function *fn = LLVM::get_or_declare_function(
                     *module, "_lfortran_sleep",
-                    llvm::Type::getVoidTy(context), {
-                        llvm::Type::getInt32Ty(context)
+                    llvm_utils->void_type, {
+                        llvm_utils->i32
                     });
                 args = convert_call_args(x, is_method /* skip_self */);
                 LCOMPILERS_ASSERT(args.size() > 0);
@@ -29024,7 +29024,7 @@ public:
                 } else if (func_name == "command_argument_count") {
                     llvm::Function *fn = LLVM::get_or_declare_function(
                         *module, "_lfortran_get_argc",
-                        llvm::Type::getInt32Ty(context), {});
+                        llvm_utils->i32, {});
                     tmp = builder->CreateCall(fn, {});
                     return;
                 } else if (func_name == "achar") {

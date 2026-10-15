@@ -396,6 +396,11 @@ class ASRToLLVMVisitor;
 #else
             llvm::PointerType* i8_ptr = llvm::Type::getInt8PtrTy(context);
 #endif
+            llvm::IntegerType* i1 = llvm::Type::getInt1Ty(context);
+            llvm::IntegerType* i8 = llvm::Type::getInt8Ty(context);
+            llvm::IntegerType* i32 = llvm::Type::getInt32Ty(context);
+            llvm::IntegerType* i64 = llvm::Type::getInt64Ty(context);
+            llvm::Type* void_type = llvm::Type::getVoidTy(context);
 
             LLVMUtils(llvm::LLVMContext& context,
                 llvm::IRBuilder<>* _builder, std::string& der_type_name_,

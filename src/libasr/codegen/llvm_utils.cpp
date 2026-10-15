@@ -232,7 +232,7 @@ namespace LCompilers {
     llvm::Value* LLVMUtils::lfortran_free(llvm::Value* ptr) {
         std::string func_name = "_lfortran_free_alloc";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, func_name,
-                llvm::Type::getVoidTy(context), {
+                void_type, {
                     i8_ptr,
                     i8_ptr
                 });
@@ -257,7 +257,7 @@ namespace LCompilers {
     llvm::Value* LLVMUtils::lfortran_free_alloc(llvm::Value* allocator, llvm::Value* ptr) {
         std::string func_name = "_lfortran_free_alloc";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, func_name,
-                llvm::Type::getVoidTy(context), {
+                void_type, {
                     i8_ptr,
                     i8_ptr
                 });
@@ -277,7 +277,7 @@ namespace LCompilers {
     llvm::Value* LLVMUtils::lfortran_free_nocheck(llvm::Value* ptr) {
         std::string func_name = "_lfortran_free_alloc";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, func_name,
-                llvm::Type::getVoidTy(context), {
+                void_type, {
                     i8_ptr,
                     i8_ptr
                 });
@@ -318,15 +318,15 @@ namespace LCompilers {
             *module, "_lcompilers_string_format_fortran",
             i8_ptr,
             {i8_ptr, // allocator
-            i8_ptr, llvm::Type::getInt64Ty(context),
+            i8_ptr, i64,
             i8_ptr,
-            llvm::Type::getInt64Ty(context)->getPointerTo(),
-            llvm::Type::getInt32Ty(context),
-            llvm::Type::getInt32Ty(context),
-            llvm::Type::getInt32Ty(context),
-            llvm::Type::getInt32Ty(context),
-            llvm::Type::getInt32Ty(context),
-            llvm::Type::getInt32Ty(context)}, true);
+            i64->getPointerTo(),
+            i32,
+            i32,
+            i32,
+            i32,
+            i32,
+            i32}, true);
 
         std::vector<llvm::Value*> full_args;
         full_args.push_back(get_allocator(module));
@@ -393,7 +393,6 @@ namespace LCompilers {
             const std::vector<RuntimeLabel> &labels, std::string &infile,
             LocationManager& lm, const std::vector<llvm::Value*> &args) {
         llvm::Type* i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
-        llvm::Type* i32 = llvm::Type::getInt32Ty(context);
         // These mirror `Span`, `lfortran_runtime_error_label` and
         // `lfortran_runtime_error_info` in lfortran_intrinsics.h
         llvm::StructType* span_type = llvm::StructType::get(context,
@@ -484,7 +483,7 @@ namespace LCompilers {
         call_args[0] = info;
 
         llvm::Function* error_fn = LLVM::get_or_declare_function(*module,
-            "_lcompilers_runtime_error_exit", llvm::Type::getVoidTy(context), {i8_ptr}, true);
+            "_lcompilers_runtime_error_exit", void_type, {i8_ptr}, true);
         error_fn->addFnAttr(llvm::Attribute::NoReturn);
         error_fn->addFnAttr(llvm::Attribute::NoUnwind);
         error_fn->addFnAttr(llvm::Attribute::Cold);
@@ -2272,7 +2271,7 @@ namespace LCompilers {
     llvm::Function* LLVMUtils::_Deallocate() {
         std::string func_name = "_lfortran_free_alloc";
         llvm::Function *free_fn = LLVM::get_or_declare_function(*module, func_name,
-                llvm::Type::getVoidTy(context), {
+                void_type, {
                     i8_ptr,
                     character_type
                 });
@@ -2339,7 +2338,7 @@ namespace LCompilers {
     {
         llvm::Type* character_type = llvm::Type::getInt8Ty(context)->getPointerTo();
         llvm::Function *fn = LLVM::get_or_declare_function(module, runtime_func_name,
-                llvm::Type::getInt1Ty(context), {
+                i1, {
                     character_type->getPointerTo(),
                     character_type->getPointerTo()
                 });
@@ -2966,7 +2965,6 @@ namespace LCompilers {
         }
         ASR::String_t* dest_str_type = ASRUtils::get_string_type(dest_type);
         ASR::String_t* src_str_type = ASRUtils::get_string_type(src_type);
-        llvm::Type* i64 = llvm::Type::getInt64Ty(context);
 
         llvm::Value* src_data = get_string_data(src_str_type, src);
         llvm::Value* src_len = get_string_length(src_str_type, src);
@@ -3009,14 +3007,14 @@ namespace LCompilers {
 
         std::string runtime_func_name = "_lfortran_strcpy_alloc";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
-                llvm::Type::getVoidTy(context),
+                void_type,
                 {
                     i8_ptr,
                     i8_ptr->getPointerTo(),
-                    llvm::Type::getInt64Ty(context)->getPointerTo(),
-                    llvm::Type::getInt8Ty(context), llvm::Type::getInt8Ty(context),
+                    i64->getPointerTo(),
+                    i8, i8,
                     i8_ptr,
-                    llvm::Type::getInt64Ty(context), llvm::Type::getInt32Ty(context)
+                    i64, i32
                 });
         llvm::Value* allocator = get_allocator(module);
         return builder->CreateCall(fn, {
