@@ -604,9 +604,13 @@ host hands over, and it is never on the heap. Where it meets heap values:
   routine looks the same. Either keep an allowlist of device-provided
   functions, or put every other call to a procedure with no body on the list.
 * **Separate compilation.** A called procedure can live in another file or
-  submodule. The facts the check needs about it (does internal I/O, which types
-  it uses) have to be available without its body, for example recorded in the
-  module file.
+  submodule. The check reads the body of a separate module procedure where
+  the pipeline does -- the submodule of the translation unit, or the module
+  file of a submodule compiled separately -- so it looks at the body the
+  kernel would be built from. Reading a module file at every compilation that
+  calls into it costs time; recording the facts the check needs (which
+  types a procedure uses, whether it does input/output) in the module file
+  instead would avoid that.
 
 ## Differences from the current implementation
 
@@ -614,8 +618,7 @@ host hands over, and it is never on the heap. Where it meets heap values:
   data that reaches a kernel, input/output statements), spread over
   several passes and the device code generator. They report a compile error
   rather than assert, because the check does not guarantee everything they
-  look at: symbols a rewrite introduces, the bodies of procedures only the
-  pipeline loads (separate compilation), widths that are not on the list
+  look at: symbols a rewrite introduces, widths that are not on the list
   (`integer(8)` on Metal), and a derived type with an unused `real(8)`
   component that is handed to the kernel whole (see the open questions).
 * Purity of procedures called from `do concurrent` is not enforced.

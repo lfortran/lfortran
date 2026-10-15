@@ -239,7 +239,7 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
         std::string in_routine;
         if (finder.reason == GpuDeclineReason::None) {
             for (ASR::Function_t *fn : reachable_routines(work.body,
-                    work.n_body)) {
+                    work.n_body, implementations)) {
                 GpuUnsupportedStatementFinder callee_finder(device_caps);
                 for (size_t i = 0; i < fn->n_body; i++) {
                     callee_finder.visit_stmt(*fn->m_body[i]);
