@@ -2758,3 +2758,156 @@ contains
         cc1_pcll_func = 0
     end function cc1_pcll_func
 end module cc1_proc_component_local_type_mod
+
+! GNU GETCWD needs a definable scalar default character output and a definable
+! scalar integer STATUS, and is impure. A user procedure named getcwd shadows it.
+subroutine cc1_getcwd_subroutine_errors(cc1_gc_in)
+    character(*), intent(in) :: cc1_gc_in
+    character(100) :: cc1_gc_c, cc1_gc_arr(2)
+    integer :: cc1_gc_i
+    real :: cc1_gc_r
+    call getcwd(cc1_gc_i)  ! {Error} getcwd requires a scalar default-kind character output variable
+    call getcwd(cc1_gc_arr)  ! {Error} getcwd requires a scalar default-kind character output variable
+    call getcwd('xxx')  ! {Error} getcwd requires a scalar default-kind character output variable
+    call getcwd(cc1_gc_in)  ! {Error} getcwd requires a scalar default-kind character output variable
+    call getcwd(cc1_gc_c, cc1_gc_r)  ! {Error} getcwd status must be a scalar integer output variable
+    call getcwd(cc1_gc_c, 0)  ! {Error} getcwd status must be a scalar integer output variable
+end subroutine cc1_getcwd_subroutine_errors
+
+subroutine cc1_getcwd_function_errors(cc1_gc_in)
+    character(*), intent(in) :: cc1_gc_in
+    character(100) :: cc1_gc_arr(2)
+    integer :: getcwd, cc1_gc_s
+    intrinsic :: getcwd
+    cc1_gc_s = getcwd(cc1_gc_s)  ! {Error} getcwd requires one scalar default-kind character output variable
+    cc1_gc_s = getcwd(cc1_gc_arr)  ! {Error} getcwd requires one scalar default-kind character output variable
+    cc1_gc_s = getcwd('xxx')  ! {Error} getcwd requires one scalar default-kind character output variable
+    cc1_gc_s = getcwd(cc1_gc_in)  ! {Error} getcwd requires one scalar default-kind character output variable
+end subroutine cc1_getcwd_function_errors
+
+pure subroutine cc1_getcwd_pure_subroutine(cc1_gc_c)
+    character(*), intent(out) :: cc1_gc_c
+    call getcwd(cc1_gc_c)  ! {Error} Call to impure intrinsic subroutine is not allowed inside a PURE procedure
+end subroutine cc1_getcwd_pure_subroutine
+
+pure subroutine cc1_getcwd_pure_function(cc1_gc_c, cc1_gc_s)
+    character(*), intent(out) :: cc1_gc_c
+    integer, intent(out) :: cc1_gc_s
+    integer :: getcwd
+    intrinsic :: getcwd
+    cc1_gc_s = getcwd(cc1_gc_c)  ! {Error} call to impure intrinsic getcwd is not allowed inside a PURE procedure
+end subroutine cc1_getcwd_pure_function
+
+subroutine cc1_getcwd_user_shadow()
+    character(4) :: cc1_gc_c
+    call getcwd(cc1_gc_c)
+contains
+    subroutine getcwd(c)
+        character(*), intent(out) :: c
+        c = 'okay'
+    end subroutine getcwd
+end subroutine cc1_getcwd_user_shadow
+
+! GETCWD's argument keywords are C and STATUS; the function form takes only C.
+subroutine cc1_getcwd_keyword_errors()
+    character(100) :: cc1_gk_c
+    integer :: getcwd, cc1_gk_s
+    intrinsic :: getcwd
+    call getcwd(cwd=cc1_gk_c)  ! {Error} Unrecognized keyword argument cwd passed to getcwd intrinsic.
+    cc1_gk_s = getcwd(cwd=cc1_gk_c)  ! {Error} Unrecognized keyword argument cwd passed to getcwd intrinsic.
+    cc1_gk_s = getcwd(cc1_gk_c, cc1_gk_s)  ! {Error} Incorrect number of arguments passed to the 'getcwd' intrinsic.
+end subroutine cc1_getcwd_keyword_errors
+
+! An elemental procedure without the IMPURE prefix is pure (Fortran 2018
+! 15.8.1), so it cannot do output; an impure elemental one can.
+elemental integer function cc1_elemental_print_error(n)
+    implicit none
+    integer, intent(in) :: n
+    print *, n  ! {Error} PRINT statement is not allowed inside a PURE procedure
+    cc1_elemental_print_error = n
+end function cc1_elemental_print_error
+
+impure elemental integer function cc1_impure_elemental_print(n)
+    implicit none
+    integer, intent(in) :: n
+    print *, n
+    cc1_impure_elemental_print = n
+end function cc1_impure_elemental_print
+
+! An array passed to a scalar dummy argument.
+subroutine cc1_array_to_scalar_dummy()
+    implicit none
+    integer :: a(3)
+    a = 1
+    call cc1_scalar_dummy(a)  ! {Error} rank mismatch in argument `n`: the dummy argument is a scalar but the actual argument is an array of rank 1
+contains
+    subroutine cc1_scalar_dummy(n)
+        integer, intent(in) :: n
+        print *, n
+    end subroutine
+end subroutine
+
+module cc1_procptr_later_init_a
+contains
+    integer function cc1_plia_int()
+        cc1_plia_int = 42
+    end function cc1_plia_int
+    real function cc1_plia_real()
+        cc1_plia_real = 0
+    end function cc1_plia_real
+end module cc1_procptr_later_init_a
+module cc1_procptr_later_init_m
+    use cc1_procptr_later_init_a
+    procedure(cc1_plim_real), pointer :: cc1_plim_p1 => cc1_plia_int  ! {Error} type mismatch in initialization: `FunctionType(return_type: integer)` cannot be assigned to `FunctionType(return_type: real) pointer`
+    procedure(cc1_plia_real), pointer :: cc1_plim_p2 => cc1_plim_int  ! {Error} type mismatch in initialization: `FunctionType(return_type: integer)` cannot be assigned to `FunctionType(return_type: real) pointer`
+contains
+    real function cc1_plim_real()
+        cc1_plim_real = 0
+    end function cc1_plim_real
+    integer function cc1_plim_int()
+        cc1_plim_int = 42
+    end function cc1_plim_int
+end module cc1_procptr_later_init_m
+module cc1_procptr_undefined_iface_m
+    procedure(cc1_puim_nosuch), pointer :: cc1_puim_q => cc1_puim_g  ! {Error} Interface 'cc1_puim_nosuch' is referenced but not defined
+contains
+    integer function cc1_puim_g()
+        cc1_puim_g = 1
+    end function cc1_puim_g
+end module cc1_procptr_undefined_iface_m
+module cc1_procptr_undefined_target_m
+    procedure(cc1_putm_nosuch), pointer :: cc1_putm_a => null()  ! {Error} Interface 'cc1_putm_nosuch' is referenced but not defined
+    procedure(cc1_putm_f), pointer :: cc1_putm_q => cc1_putm_nosuch
+    type :: cc1_putm_t
+        procedure(cc1_putm_f), pointer, nopass :: c => cc1_putm_nosuch
+    end type cc1_putm_t
+contains
+    integer function cc1_putm_f()
+        cc1_putm_f = 0
+    end function cc1_putm_f
+end module cc1_procptr_undefined_target_m
+module cc1_procptr_later_nonproc_a
+    interface cc1_plna_gen
+        module procedure cc1_plna_g
+    end interface cc1_plna_gen
+contains
+    real function cc1_plna_g()
+        cc1_plna_g = 0
+    end function cc1_plna_g
+end module cc1_procptr_later_nonproc_a
+module cc1_procptr_later_nonproc_m
+    use cc1_procptr_later_nonproc_a
+    integer :: cc1_plnm_x = 3
+    procedure(cc1_plnm_f), pointer :: cc1_plnm_p1 => cc1_plnm_x  ! {Error} type mismatch in initialization: `integer` cannot be assigned to `FunctionType() pointer`
+    procedure(cc1_plnm_f), pointer :: cc1_plnm_p2 => cc1_plnm_y  ! {Error} type mismatch in initialization: `integer` cannot be assigned to `FunctionType(return_type: integer) pointer`
+    procedure(cc1_plnm_f), pointer :: cc1_plnm_p3 => cc1_plnm_gen  ! {Error} Symbol 'cc1_plnm_gen' must be a variable or a procedure
+    procedure(cc1_plnm_f), pointer :: cc1_plnm_p4 => cc1_plna_gen  ! {Error} Symbol 'cc1_plna_gen' must be a variable or a procedure
+    integer :: cc1_plnm_y = 4
+    interface cc1_plnm_gen
+        module procedure cc1_plnm_f
+    end interface cc1_plnm_gen
+contains
+    integer function cc1_plnm_f()
+        cc1_plnm_f = 0
+    end function cc1_plnm_f
+end module cc1_procptr_later_nonproc_m

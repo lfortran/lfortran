@@ -231,6 +231,7 @@ LFORTRAN_API void _lfortran_strrepeat_alloc(lfortran_allocator_t* al, char* s, i
 LFORTRAN_API char* _lfortran_strrepeat_c_alloc(lfortran_allocator_t* al, char* s, int32_t n);
 LFORTRAN_API char* _lfortran_strcat_alloc(lfortran_allocator_t* al, char* s1, int64_t s1_len, char* s2, int64_t s2_len);
 LFORTRAN_API void _lfortran_strcpy_alloc(lfortran_allocator_t* al, char** lhs, int64_t* lhs_len, bool is_lhs_allocatable, bool is_lhs_deferred, char* rhs, int64_t rhs_len, int32_t char_kind);
+LFORTRAN_API int32_t _lfortran_getcwd(char* buffer, int64_t length);
 LFORTRAN_API void _lfortran_copy_str_and_pad(char* lhs, int64_t lhs_len, char* rhs, int64_t rhs_len, int32_t char_kind);
 LFORTRAN_API int64_t _lfortran_str_len(char* s);
 LFORTRAN_API int _lfortran_str_ord(char** s);
@@ -388,6 +389,7 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_
 LFORTRAN_API bool _lfortran_is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_len);
 LFORTRAN_API void _lfortran_set_read_iomsg(int32_t iostat, char* iomsg, int64_t iomsg_len);
 LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat);
+LFORTRAN_API void _lfortran_connect_unit_for_read(int32_t unit_num, int32_t unformatted, int32_t* iostat);
 LFORTRAN_API void _lpython_close(int64_t fd);
 LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status_len, int32_t* iostat);
 LFORTRAN_API int32_t _lfortran_ichar(char *c);

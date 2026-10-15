@@ -104,25 +104,43 @@ class ASRToLLVMVisitor;
         class Descriptor;
     }
 
+    namespace LLVM {
+        // Returns the function `name` in `module`, declaring it with `type` first if needed.
+        static inline llvm::Function* get_or_declare_function(llvm::Module &module,
+            const std::string &name, llvm::FunctionType *type)
+        {
+            llvm::Function *fn = module.getFunction(name);
+            if (!fn) {
+                fn = llvm::Function::Create(type, llvm::Function::ExternalLinkage,
+                    name, &module);
+            }
+            LCOMPILERS_ASSERT(fn->getFunctionType() == type);
+            return fn;
+        }
+
+        static inline llvm::Function* get_or_declare_function(llvm::Module &module,
+            const std::string &name, llvm::Type *return_type,
+            llvm::ArrayRef<llvm::Type*> param_types, bool is_vararg = false)
+        {
+            return get_or_declare_function(module, name,
+                llvm::FunctionType::get(return_type, param_types, is_vararg));
+        }
+    }
+
     static inline void printf(llvm::LLVMContext &context, llvm::Module &module,
         llvm::IRBuilder<> &builder, const std::vector<llvm::Value*> &args)
     {
-        llvm::Function *fn_printf = module.getFunction("_lfortran_printf");
-        if (!fn_printf) {
-            llvm::FunctionType* function_type = llvm::FunctionType::get(
-                llvm::Type::getVoidTy(context),
-                {
-                    llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // format
-                    llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // str
-                    llvm::Type::getInt32Ty(context),                               // str_len
-                    llvm::Type::getInt32Ty(context),                               // str_kind
-                    llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // end
-                    llvm::Type::getInt32Ty(context)                                // end_len
-                },
-                false);
-            fn_printf = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, "_lfortran_printf", &module);
-        }
+        llvm::Function *fn_printf = LLVM::get_or_declare_function(
+            module, "_lfortran_printf",
+            llvm::Type::getVoidTy(context),
+            {
+                llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // format
+                llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // str
+                llvm::Type::getInt32Ty(context),                               // str_len
+                llvm::Type::getInt32Ty(context),                               // str_kind
+                llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // end
+                llvm::Type::getInt32Ty(context)                                // end_len
+            });
         builder.CreateCall(fn_printf, args);
     }
 
@@ -130,27 +148,17 @@ class ASRToLLVMVisitor;
     static inline void print_error(llvm::LLVMContext &context, llvm::Module &module,
         llvm::IRBuilder<> &builder, const std::vector<llvm::Value*> &args)
     {
-        llvm::Function *fn_printf = module.getFunction("_lcompilers_print_error");
-        if (!fn_printf) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {llvm::Type::getInt8Ty(context)->getPointerTo()}, true);
-            fn_printf = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, "_lcompilers_print_error", &module);
-        }
+        llvm::Function *fn_printf = LLVM::get_or_declare_function(
+            module, "_lcompilers_print_error",
+                llvm::Type::getVoidTy(context), {llvm::Type::getInt8Ty(context)->getPointerTo()}, true);
         builder.CreateCall(fn_printf, args);
     }
 
     static inline void exit(llvm::LLVMContext &context, llvm::Module &module,
         llvm::IRBuilder<> &builder, llvm::Value* exit_code)
     {
-        llvm::Function *fn_exit = module.getFunction("exit");
-        if (!fn_exit) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {llvm::Type::getInt32Ty(context)},
-                    false);
-            fn_exit = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, "exit", &module);
-        }
+        llvm::Function *fn_exit = LLVM::get_or_declare_function(module, "exit",
+                llvm::Type::getVoidTy(context), {llvm::Type::getInt32Ty(context)});
         builder.CreateCall(fn_exit, {exit_code});
     }
 
@@ -189,17 +197,12 @@ class ASRToLLVMVisitor;
             llvm::Module &module, llvm::IRBuilder<> &builder,
             const std::vector<llvm::Value*> &args)
     {
-        llvm::Function *fn = module.getFunction("print_stacktrace_addresses");
-        if (!fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt8Ty(context)->getPointerTo(),
-                    llvm::Type::getInt1Ty(context)
-                }, true);
-            fn = llvm::Function::Create(function_type,
-                llvm::Function::ExternalLinkage, "print_stacktrace_addresses",
-                &module);
-        }
+        llvm::Function *fn = LLVM::get_or_declare_function(
+            module, "print_stacktrace_addresses",
+            llvm::Type::getVoidTy(context), {
+                llvm::Type::getInt8Ty(context)->getPointerTo(),
+                llvm::Type::getInt1Ty(context)
+            }, true);
         builder.CreateCall(fn, args);
     }
 
@@ -393,6 +396,11 @@ class ASRToLLVMVisitor;
 #else
             llvm::PointerType* i8_ptr = llvm::Type::getInt8PtrTy(context);
 #endif
+            llvm::IntegerType* i1 = llvm::Type::getInt1Ty(context);
+            llvm::IntegerType* i8 = llvm::Type::getInt8Ty(context);
+            llvm::IntegerType* i32 = llvm::Type::getInt32Ty(context);
+            llvm::IntegerType* i64 = llvm::Type::getInt64Ty(context);
+            llvm::Type* void_type = llvm::Type::getVoidTy(context);
 
             LLVMUtils(llvm::LLVMContext& context,
                 llvm::IRBuilder<>* _builder, std::string& der_type_name_,

@@ -3061,6 +3061,7 @@ public:
 
         struct ExtentVariables : ASR::BaseWalkVisitor<ExtentVariables> {
             std::set<ASR::symbol_t*> variables;
+            std::vector<std::string> calls;
             bool host_evaluable = true;
             void visit_expr(const ASR::expr_t &expression) {
                 switch (expression.type) {
@@ -3077,8 +3078,35 @@ public:
                     case ASR::exprType::ArrayItem:
                     case ASR::exprType::ArrayPhysicalCast:
                     case ASR::exprType::StructInstanceMember:
+                    // An extent that changes from thread to thread is
+                    // written over the thread index; the host evaluates it
+                    // for every thread of the launch.
+                    case ASR::exprType::GpuThreadIndex:
+                    case ASR::exprType::GpuBlockIndex:
+                    case ASR::exprType::GpuBlockSize:
                         ASR::BaseWalkVisitor<ExtentVariables>::visit_expr(expression);
                         break;
+                    // A function without side effects, which the host
+                    // calls before the launch.
+                    case ASR::exprType::FunctionCall: {
+                        const ASR::FunctionCall_t &call =
+                            (const ASR::FunctionCall_t &)expression;
+                        ASR::symbol_t *callee =
+                            ASRUtils::symbol_get_past_external(call.m_name);
+                        if (callee == nullptr ||
+                                !ASR::is_a<ASR::Function_t>(*callee)) {
+                            host_evaluable = false;
+                            break;
+                        }
+                        if (!ASRUtils::is_side_effect_free_function(
+                                *ASR::down_cast<ASR::Function_t>(callee))) {
+                            host_evaluable = false;
+                            break;
+                        }
+                        calls.push_back(ASRUtils::symbol_name(call.m_name));
+                        ASR::BaseWalkVisitor<ExtentVariables>::visit_expr(expression);
+                        break;
+                    }
                     default: host_evaluable = false;
                 }
             }
@@ -3124,6 +3152,9 @@ public:
                     "a GPU workspace extent must be an integer scalar expression");
                 ExtentVariables refs;
                 refs.visit_expr(*dim.m_extent);
+                // The kernel depends on what its layout calls.
+                function_dependencies.insert(function_dependencies.end(),
+                    refs.calls.begin(), refs.calls.end());
                 require_id(refs.host_evaluable,
                     "asr.verify.gpu_layout.host_evaluable_expression",
                     "a GPU workspace extent must contain only host-evaluable operations");
@@ -3164,7 +3195,89 @@ public:
                 "' must be a function that runs on the device");
         verify_gpu_kernel_launch_signature(x,
             *ASR::down_cast<ASR::Function_t>(x.m_kernel));
+        require_id(x.m_component_fit == nullptr ||
+                ASR::is_a<ASR::Block_t>(*x.m_component_fit),
+            "asr.verify.gpu_kernel_launch.component_fit_is_block",
+            "GpuKernelLaunch::m_component_fit must be a Block");
+        for (size_t i = 0; i < x.n_scratch; i++) {
+            const ASR::gpu_scratch_buffer_t &scratch = x.m_scratch[i];
+            bool in_range = scratch.m_argument_index >= 0 &&
+                (size_t)scratch.m_argument_index < x.n_args;
+            require_id(in_range,
+                "asr.verify.gpu_kernel_launch.scratch_argument",
+                "a GpuKernelLaunch scratch buffer must name an argument of "
+                "the launch");
+            if (!in_range) continue;
+            ASR::expr_t *actual =
+                x.m_args[scratch.m_argument_index].m_value;
+            require_id(actual != nullptr &&
+                    ASR::is_a<ASR::Var_t>(*actual) &&
+                    ASRUtils::is_allocatable(ASRUtils::expr_type(actual)) &&
+                    ASRUtils::is_array(ASRUtils::expr_type(actual)),
+                "asr.verify.gpu_kernel_launch.scratch_actual",
+                "the actual argument of a GpuKernelLaunch scratch buffer "
+                "must be an allocatable array variable");
+            require_id(ASRUtils::is_integer(*ASRUtils::expr_type(
+                    scratch.m_size)) && (scratch.m_read_back == nullptr ||
+                    ASRUtils::is_integer(*ASRUtils::expr_type(
+                        scratch.m_read_back))),
+                "asr.verify.gpu_kernel_launch.scratch_size",
+                "the size and read-back count of a GpuKernelLaunch scratch "
+                "buffer must be integers");
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_GpuKernelLaunch(x);
+    }
+
+    // The procedure whose code `scope` belongs to, past the BLOCK and
+    // ASSOCIATE constructs in it, or nullptr.
+    static const ASR::Function_t* enclosing_function(SymbolTable *scope) {
+        while (scope != nullptr && scope->asr_owner != nullptr &&
+                scope->asr_owner->type == ASR::asrType::symbol) {
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+                scope->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*owner)) {
+                return ASR::down_cast<ASR::Function_t>(owner);
+            }
+            if (!ASR::is_a<ASR::Block_t>(*owner) &&
+                    !ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+                return nullptr;
+            }
+            scope = scope->parent;
+        }
+        return nullptr;
+    }
+
+    // A device heap allocation takes its elements with an atomic add to
+    // the next free element of an arena, an element of the integer(4)
+    // heap state, and gets the old value back. Only device code has one.
+    void visit_GpuAtomicFetchAdd(const GpuAtomicFetchAdd_t &x) {
+        const ASR::Function_t *fn = enclosing_function(current_symtab);
+        require_id(fn != nullptr && ASRUtils::is_device_only_function(*fn),
+            "asr.verify.gpu_atomic_fetch_add.device_code",
+            "GpuAtomicFetchAdd is only allowed in device code");
+        ASR::expr_t *target = ASRUtils::get_past_array_physical_cast(
+            x.m_target);
+        require_id(ASR::is_a<ASR::ArrayItem_t>(*target),
+            "asr.verify.gpu_atomic_fetch_add.target_array_element",
+            "GpuAtomicFetchAdd::m_target must be an element of an array");
+        auto is_int4 = [](ASR::ttype_t *t) {
+            return t != nullptr && ASR::is_a<ASR::Integer_t>(*t) &&
+                ASR::down_cast<ASR::Integer_t>(t)->m_kind == 4;
+        };
+        require_id(is_int4(ASRUtils::expr_type(x.m_target)),
+            "asr.verify.gpu_atomic_fetch_add.target_type",
+            "GpuAtomicFetchAdd::m_target must be an integer(4) scalar");
+        require_id(is_int4(ASRUtils::expr_type(x.m_increment)),
+            "asr.verify.gpu_atomic_fetch_add.increment_type",
+            "GpuAtomicFetchAdd::m_increment must be an integer(4) scalar");
+        require_id(is_int4(x.m_type),
+            "asr.verify.gpu_atomic_fetch_add.result_type",
+            "GpuAtomicFetchAdd::m_type must be integer(4), the type of "
+            "its target");
+        require_id(x.m_value == nullptr,
+            "asr.verify.gpu_atomic_fetch_add.value",
+            "GpuAtomicFetchAdd has no compile-time value");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuAtomicFetchAdd(x);
     }
 
     void visit_SubroutineCall(const SubroutineCall_t &x) {
@@ -3271,6 +3384,7 @@ public:
 
     void visit_PointerNullConstant(const PointerNullConstant_t& x) {
         require(x.m_type != nullptr, "null() must have a type");
+        visit_ttype(*x.m_type);
         if ( x.m_var_expr != nullptr ) {
             visit_expr(*x.m_var_expr);
         }
@@ -3362,6 +3476,17 @@ public:
         _inside_call = true;
         BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicElementalFunction(x);
         _inside_call = _inside_call_copy;
+    }
+
+    void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t& x) {
+        if (check_external) {
+            ASRUtils::verify_impure_function verify_ = ASRUtils::IntrinsicImpureFunctionRegistry
+                ::get_verify_function(x.m_impure_intrinsic_id);
+            if (verify_) {
+                verify_(x, diagnostics);
+            }
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicImpureFunction(x);
     }
 
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {

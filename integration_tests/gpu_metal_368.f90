@@ -1,10 +1,9 @@
 program gpu_metal_368
 ! A function that changes a `value` dummy argument before it sizes the
 ! component of its result, which is not allocated before the loop. The host
-! cannot tell the size the changed value gives before the loop runs, so even
-! with --realloc-lhs-arrays it does not allocate the component with the
-! size of the actual argument: with bounds checking on, the launch stops
-! and asks to allocate the component before the loop.
+! cannot tell the size the changed value gives before the loop runs, so the
+! result is made on the device heap and copied into t(i) after the launch,
+! with the size the changed value gives it.
 implicit none
 type tt
     real, allocatable :: v(:)

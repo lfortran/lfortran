@@ -1339,31 +1339,10 @@ public:
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             if (is_equivalence_declaration(x.m_items[i])) continue;
             if (is_common_declaration(x.m_items[i])) continue;
-            if(AST::is_a<AST::Declaration_t>(*x.m_items[i])) {
-                AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_items[i]);
-                if(decl->m_vartype) {
-
-                    AST::AttrType_t* type = nullptr;
-                    if (AST::is_a<AST::AttrType_t>(*decl->m_vartype)) {
-                        type = AST::down_cast<AST::AttrType_t>(decl->m_vartype);
-                    } else if  (AST::is_a<AST::AttrTypeList_t>(*decl->m_vartype)){
-                        type = AST::down_cast<AST::AttrType_t>(
-                                AST::down_cast<AST::decl_attribute_t>(
-                                    AST::make_AttrType_t(
-                                    al, decl->m_vartype->base.loc, 
-                                    AST::decl_typeType::TypeType,
-                                    nullptr, 0, decl->m_vartype, 
-                                    nullptr, AST::symbolType::None)));
-                        
-                    } 
-
-                    LCOMPILERS_ASSERT(type);
-
-                    if(type && type->m_type == AST::decl_typeType::TypeProcedure) {
-                        procedure_decl_indices.push_back(al, i);
-                        continue;
-                    }
-                }
+            if (has_interface_declared_later(x.m_items, i, x.n_items,
+                    &contained_procedures)) {
+                procedure_decl_indices.push_back(al, i);
+                continue;
             }
             try {
                 visit_decl_stmt(*x.m_items[i]);
@@ -2481,12 +2460,15 @@ public:
             deftype = ASR::deftypeType::Interface;
         }
         bool is_pure = false, is_module = false, is_elemental = false;
+        bool is_impure = false;
         for( size_t i = 0; i < x.n_attributes; i++ ) {
             switch( x.m_attributes[i]->type ) {
                 case AST::decl_attributeType::SimpleAttribute: {
                     AST::SimpleAttribute_t* simple_attr = AST::down_cast<AST::SimpleAttribute_t>(x.m_attributes[i]);
                     if( simple_attr->m_attr == AST::simple_attributeType::AttrPure ) {
                         is_pure = true;
+                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrImpure ) {
+                        is_impure = true;
                     } else if( simple_attr->m_attr == AST::simple_attributeType::AttrModule ) {
                         is_module = true;
                     } else if( simple_attr->m_attr == AST::simple_attributeType::AttrElemental ) {
@@ -2500,6 +2482,11 @@ public:
                     break;
                 }
             }
+        }
+        // F2018 15.8.1: an elemental procedure without the IMPURE prefix is
+        // pure.
+        if( is_elemental && !is_impure ) {
+            is_pure = true;
         }
 
         bool update_gp = false;
@@ -3404,6 +3391,7 @@ public:
         }
 
         bool is_pure = false, is_module = false, is_elemental = false;
+        bool is_impure = false;
         for(size_t i = 0; i < x.n_attributes; i++) {
             switch( x.m_attributes[i]->type ) {
                 case AST::decl_attributeType::SimpleAttribute: {
@@ -3411,6 +3399,8 @@ public:
                         x.m_attributes[i]);
                     if( simple_attr->m_attr == AST::simple_attributeType::AttrPure ) {
                         is_pure = true;
+                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrImpure ) {
+                        is_impure = true;
                     } else if( simple_attr->m_attr == AST::simple_attributeType::AttrModule ) {
                         is_module = true;
                     } else if( simple_attr->m_attr == AST::simple_attributeType::AttrElemental ) {
@@ -3423,6 +3413,11 @@ public:
                     break;
                 }
             }
+        }
+        // F2018 15.8.1: an elemental procedure without the IMPURE prefix is
+        // pure.
+        if( is_elemental && !is_impure ) {
+            is_pure = true;
         }
 
         SetChar func_deps;
@@ -5476,6 +5471,12 @@ public:
     }
 
     void resolve_pending_proc_ptr_inits() {
+        // The target and the interface of each pointer are known now, unless
+        // one is still a placeholder that no procedure defines, which is
+        // reported afterwards instead. A target that is not a procedure or a
+        // variable, or a known target that does not match a known interface,
+        // is reported, every mismatch before compilation stops.
+        bool init_mismatch = false;
         for (auto &item : pending_proc_ptr_inits) {
             ASR::symbol_t *proc_sym = item.resolve_scope->resolve_symbol(item.proc_name);
             if (!proc_sym) {
@@ -5484,8 +5485,24 @@ public:
                     "'" + item.proc_name + "' is undeclared");
                 throw SemanticAbort();
             }
+            ASR::symbol_t *proc_past = ASRUtils::symbol_get_past_external(proc_sym);
+            if (!ASR::is_a<ASR::Function_t>(*proc_past)
+                    && !ASR::is_a<ASR::Variable_t>(*proc_past)) {
+                report_not_variable_or_procedure(item.proc_name, item.loc,
+                    proc_past);
+                init_mismatch = true;
+                continue;
+            }
             ASR::expr_t *init_expr = ASRUtils::EXPR(
                 ASR::make_Var_t(al, item.loc, proc_sym));
+            ASR::symbol_t *iface = item.var->m_type_declaration;
+            if (!is_pending_proc_placeholder(proc_sym)
+                    && !(iface && is_pending_proc_placeholder(iface))
+                    && !check_initializer_type(item.var->m_type,
+                        ASRUtils::expr_type(init_expr), init_expr)) {
+                init_mismatch = true;
+                continue;
+            }
             item.var->m_symbolic_value = init_expr;
             item.var->m_value = nullptr;
             SetChar variable_dependencies_vec;
@@ -5497,6 +5514,9 @@ public:
             item.var->n_dependencies = variable_dependencies_vec.n;
         }
         pending_proc_ptr_inits.clear();
+        if (init_mismatch && !compiler_options.continue_compilation) {
+            throw SemanticAbort();
+        }
     }
 
     // A type declared in a module procedure can bind a module procedure
