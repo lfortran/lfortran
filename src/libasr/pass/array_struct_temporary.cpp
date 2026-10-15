@@ -2159,7 +2159,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             // add it is because there is currently no integration test
             // for it
             if (!ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value))) {
-                ASR::Var_t* v1 = ASR::down_cast<ASR::Var_t>(xx.m_target);
+                ASR::symbol_t* target_sym = extract_symbol(xx.m_target);
                 bool create_temp_var_for_rhs = false;
                 Vec<ASR::expr_t*> array_vars; array_vars.reserve(al, 1);
                 ArrayVarCollector array_var_collector(al, array_vars);
@@ -2168,7 +2168,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 // there is any common variable
                 for (size_t i=0; i < array_vars.size(); i++) {
                     ASR::symbol_t* sym = extract_symbol(array_vars[i]);
-                    if (sym && sym == v1->m_v) {
+                    if (sym && sym == target_sym) {
                         create_temp_var_for_rhs = true;
                     }
                 }

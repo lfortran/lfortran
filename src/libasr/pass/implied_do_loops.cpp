@@ -1104,6 +1104,13 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             pass_result.reserve(al, 0);
         }
 
+        // The statements that evaluate an array constructor cannot be put
+        // inside a FORALL, and in front of it they would not see its
+        // indices. Its constructors are left to array_struct_temporary,
+        // which runs after the FORALL is lowered to loops.
+        void visit_ForAllSingle(const ASR::ForAllSingle_t & /*x*/) {
+        }
+
         void visit_Assignment(const ASR::Assignment_t &x) {
             if( ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_target)) &&
                 ASR::is_a<ASR::GetPointer_t>(*x.m_value) ) {

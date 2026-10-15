@@ -2299,6 +2299,7 @@ RUN(NAME forall_06 LABELS gfortran llvm)
 RUN(NAME forall_07 LABELS gfortran llvm)
 RUN(NAME forall_08 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME forall_09 LABELS llvm EXTRA_ARGS --realloc-lhs-arrays) # GFortran assigns these FORALLs one index at a time
+RUN(NAME forall_11 LABELS gfortran llvm)
 
 RUN(NAME parsing_01 LABELS gfortran)
 RUN(NAME parsing_02 LABELS gfortran)
