@@ -2460,12 +2460,15 @@ public:
             deftype = ASR::deftypeType::Interface;
         }
         bool is_pure = false, is_module = false, is_elemental = false;
+        bool is_impure = false;
         for( size_t i = 0; i < x.n_attributes; i++ ) {
             switch( x.m_attributes[i]->type ) {
                 case AST::decl_attributeType::SimpleAttribute: {
                     AST::SimpleAttribute_t* simple_attr = AST::down_cast<AST::SimpleAttribute_t>(x.m_attributes[i]);
                     if( simple_attr->m_attr == AST::simple_attributeType::AttrPure ) {
                         is_pure = true;
+                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrImpure ) {
+                        is_impure = true;
                     } else if( simple_attr->m_attr == AST::simple_attributeType::AttrModule ) {
                         is_module = true;
                     } else if( simple_attr->m_attr == AST::simple_attributeType::AttrElemental ) {
@@ -2479,6 +2482,11 @@ public:
                     break;
                 }
             }
+        }
+        // F2018 15.8.1: an elemental procedure without the IMPURE prefix is
+        // pure.
+        if( is_elemental && !is_impure ) {
+            is_pure = true;
         }
 
         bool update_gp = false;
@@ -3383,6 +3391,7 @@ public:
         }
 
         bool is_pure = false, is_module = false, is_elemental = false;
+        bool is_impure = false;
         for(size_t i = 0; i < x.n_attributes; i++) {
             switch( x.m_attributes[i]->type ) {
                 case AST::decl_attributeType::SimpleAttribute: {
@@ -3390,6 +3399,8 @@ public:
                         x.m_attributes[i]);
                     if( simple_attr->m_attr == AST::simple_attributeType::AttrPure ) {
                         is_pure = true;
+                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrImpure ) {
+                        is_impure = true;
                     } else if( simple_attr->m_attr == AST::simple_attributeType::AttrModule ) {
                         is_module = true;
                     } else if( simple_attr->m_attr == AST::simple_attributeType::AttrElemental ) {
@@ -3402,6 +3413,11 @@ public:
                     break;
                 }
             }
+        }
+        // F2018 15.8.1: an elemental procedure without the IMPURE prefix is
+        // pure.
+        if( is_elemental && !is_impure ) {
+            is_pure = true;
         }
 
         SetChar func_deps;

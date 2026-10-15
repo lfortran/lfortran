@@ -2932,6 +2932,7 @@ RUN(NAME derived_types_228 LABELS gfortran llvm)
 RUN(NAME derived_types_229 LABELS gfortran llvm)
 RUN(NAME derived_types_230 LABELS gfortran llvm)
 RUN(NAME derived_types_232 LABELS gfortran llvm)
+RUN(NAME derived_types_233 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_03 LABELS gfortran llvm)
@@ -5144,6 +5145,7 @@ RUN(NAME elemental_22 LABELS gfortran llvm)
 RUN(NAME elemental_23 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME elemental_24 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME elemental_25 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
+RUN(NAME elemental_26 LABELS gfortran llvm fortran)
 
 RUN(NAME types_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME types_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -5285,6 +5287,7 @@ RUN(NAME openmp_101 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_102 LABELS gfortran llvm_omp EXTRAFILES openmp_102b.f90 GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_103 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_104 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_105 LABELS gfortran llvm_omp GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_threadprivate_tls LABELS gfortran llvm_omp
     EXTRAFILES openmp_threadprivate_tls_mod.f90
     EXTRA_ARGS --separate-compilation GFORTRAN_ARGS -fopenmp)
@@ -6135,6 +6138,10 @@ RUN(NAME gpu_metal_379 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_380 LABELS llvm metal cuda_cpu) # gfortran on CI lacks reduce clause
 RUN(NAME gpu_metal_383 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_384 FAIL LABELS gfortran llvm metal cuda_cpu)
+# gpu_metal_381 has a BLOCK array whose extent is known only at run time,
+# which a Metal shader cannot declare yet, so it has no metal label.
+RUN(NAME gpu_metal_381 LABELS gfortran llvm cuda_cpu)
+RUN(NAME gpu_metal_382 LABELS gfortran llvm metal cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for

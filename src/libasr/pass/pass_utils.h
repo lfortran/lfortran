@@ -6,12 +6,31 @@
 #include <libasr/containers.h>
 #include <libasr/asr_pass_walk_visitor.h>
 
+#include <cctype>
 #include <deque>
 #include <functional>
 
 namespace LCompilers {
 
     namespace PassUtils {
+
+    // The name of a temporary a pass creates, `__libasr_created_` followed
+    // by `hint`, made unique in `scope`. The hint is often the name of the
+    // symbol a call is made through, which can be an alias that is not an
+    // identifier, such as `~tensor_t@construct` for a generic procedure
+    // named like a derived type; every character that cannot appear in an
+    // identifier is replaced by an underscore, so the temporary has a name
+    // every backend can declare.
+    static inline std::string temporary_name(SymbolTable *scope,
+            const std::string &hint) {
+        std::string name = "__libasr_created_" + hint;
+        for (char &c : name) {
+            if (!(std::isalnum(static_cast<unsigned char>(c)) || c == '_')) {
+                c = '_';
+            }
+        }
+        return scope->get_unique_name(name);
+    }
 
     // True when `sym` is a derived type or procedure that only a scope
     // inside a program or a procedure can name.
