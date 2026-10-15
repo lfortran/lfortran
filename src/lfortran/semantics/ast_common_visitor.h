@@ -5379,6 +5379,89 @@ public:
         return nullptr;
     }
 
+    // When the array `arr_var` already has a full-size constant initial
+    // value from an earlier DATA statement and `elements` are constants of
+    // its numeric or logical element type, gives it a copy of that value with
+    // the elements replaced and returns true. Copying the data of the
+    // constant keeps the cost of a DATA statement on a large array low.
+    bool update_data_array_constant(ASR::Variable_t* arr_var,
+            int64_t total_size, ASR::ttype_t* elem_type,
+            const std::vector<std::pair<int64_t, ASR::expr_t*>> &elements,
+            const Location &loc) {
+        if (!arr_var->m_value || !ASR::is_a<ASR::ArrayConstant_t>(*arr_var->m_value)) {
+            return false;
+        }
+        ASR::ArrayConstant_t* prev = ASR::down_cast<ASR::ArrayConstant_t>(arr_var->m_value);
+        if (ASRUtils::get_fixed_size_of_array(prev->m_type) != total_size
+                || !ASRUtils::types_equal(ASRUtils::type_get_past_array(prev->m_type),
+                    elem_type, nullptr, nullptr)) {
+            return false;
+        }
+        // The layout of the data of an ArrayConstant (set_ArrayConstant_data)
+        int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+        size_t elem_bytes = 0;
+        if (ASR::is_a<ASR::Integer_t>(*elem_type) && (kind == 1 || kind == 2
+                || kind == 4 || kind == 8)) {
+            elem_bytes = kind;
+        } else if (ASR::is_a<ASR::Real_t>(*elem_type) && (kind == 4 || kind == 8)) {
+            elem_bytes = kind;
+        } else if (ASR::is_a<ASR::Complex_t>(*elem_type) && (kind == 4 || kind == 8)) {
+            elem_bytes = 2 * kind;
+        } else if (ASR::is_a<ASR::Logical_t>(*elem_type)) {
+            elem_bytes = sizeof(bool);
+        } else {
+            return false;
+        }
+        for (const auto &element : elements) {
+            ASR::expr_t* value = element.second;
+            if (!ASRUtils::types_equal(ASRUtils::expr_type(value), elem_type,
+                        nullptr, nullptr)
+                    || !(ASR::is_a<ASR::IntegerConstant_t>(*value)
+                        || ASR::is_a<ASR::RealConstant_t>(*value)
+                        || ASR::is_a<ASR::ComplexConstant_t>(*value)
+                        || ASR::is_a<ASR::LogicalConstant_t>(*value))) {
+                return false;
+            }
+        }
+        char* data = al.allocate<char>(total_size * elem_bytes);
+        std::memcpy(data, prev->m_data, total_size * elem_bytes);
+        for (const auto &element : elements) {
+            LCOMPILERS_ASSERT(element.first >= 0 && element.first < total_size);
+            char* dst = data + element.first * elem_bytes;
+            auto put = [&](auto x, size_t offset) {
+                std::memcpy(dst + offset, &x, sizeof(x));
+            };
+            ASR::expr_t* value = element.second;
+            if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
+                int64_t n = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+                switch (kind) {
+                    case 1: put((int8_t) n, 0); break;
+                    case 2: put((int16_t) n, 0); break;
+                    case 4: put((int32_t) n, 0); break;
+                    default: put((int64_t) n, 0); break;
+                }
+            } else if (ASR::is_a<ASR::RealConstant_t>(*value)) {
+                double r = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+                if (kind == 4) put((float) r, 0); else put(r, 0);
+            } else if (ASR::is_a<ASR::ComplexConstant_t>(*value)) {
+                ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(value);
+                if (kind == 4) {
+                    put((float) c->m_re, 0);
+                    put((float) c->m_im, sizeof(float));
+                } else {
+                    put(c->m_re, 0);
+                    put(c->m_im, sizeof(double));
+                }
+            } else {
+                put((bool) ASR::down_cast<ASR::LogicalConstant_t>(value)->m_value, 0);
+            }
+        }
+        set_data_initial_value(arr_var, ASRUtils::EXPR(
+            ASRUtils::make_ArrayConstant_t_util(al, loc, data, prev->m_type,
+                prev->m_storage_format)));
+        return true;
+    }
+
     // Sets the elements `elements` (column-major position and value) of
     // the array `arr_var`, of compile-time size, in the initial value of the
     // whole array, whose other elements keep the values earlier DATA
@@ -5391,6 +5474,10 @@ public:
             ASRUtils::type_get_past_pointer(arr_var->m_type));
         int64_t total_size = ASRUtils::get_fixed_size_of_array(arr_ttype);
         ASR::ttype_t* elem_type = ASR::down_cast<ASR::Array_t>(arr_ttype)->m_type;
+        if (update_data_array_constant(arr_var, total_size, elem_type,
+                elements, loc)) {
+            return;
+        }
         std::vector<ASR::expr_t*> slots(total_size, nullptr);
         // Preserve values from a prior DATA statement
         if (arr_var->m_value && ASR::is_a<ASR::ArrayConstant_t>(*arr_var->m_value)) {
