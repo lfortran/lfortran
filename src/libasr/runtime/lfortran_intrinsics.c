@@ -11640,7 +11640,11 @@ static bool read_field(InputSource *inputSource, int read_width, bool advance_no
         exit(1);
     }
 
-    if (read_line(*buffer, read_width + 1, inputSource) == NULL) {
+    bool record_ended = *consumed_newline;
+    if (record_ended) {
+        // The record has ended, so the field is empty and gets blank padding.
+        (*buffer)[0] = '\0';
+    } else if (read_line(*buffer, read_width + 1, inputSource) == NULL) {
         if (iostat) {
             *iostat = -1;
         } else {
@@ -11661,7 +11665,7 @@ static bool read_field(InputSource *inputSource, int read_width, bool advance_no
         *consumed_newline = true;
     }
 
-    if (chunk) *chunk = (int32_t)(*field_len);
+    if (chunk && !record_ended) *chunk = (int32_t)(*field_len);
     if (advance_no && *consumed_newline && *field_len != read_width) {
         if (iostat) *iostat = -2;
     }
@@ -12324,6 +12328,7 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
 static void handle_read_X(InputSource *inputSource, int width, bool advance_no,
         int32_t *iostat, bool *consumed_newline)
 {
+    if (*consumed_newline) return;
     int skip = (width > 0) ? width : 1;
     for (int i = 0; i < skip; i++) {
         int c = read_character(inputSource);
@@ -12389,7 +12394,7 @@ static void init_record_state(InputSource *inputSource)
     }
 }
 
-static void handle_read_TL(InputSource *inputSource, int width)
+static void handle_read_TL(InputSource *inputSource, int width, bool *consumed_newline)
 {
     int move_left = (width > 0) ? width : 1;
     
@@ -12399,6 +12404,7 @@ static void handle_read_TL(InputSource *inputSource, int width)
         } else {
             inputSource->str.pos = 0;
         }
+        *consumed_newline = false;
     } else if (inputSource->inputMethod == INPUT_FILE) {
         if (inputSource->file) {
             // Move within current record, never crossing record boundary
@@ -12406,14 +12412,16 @@ static void handle_read_TL(InputSource *inputSource, int width)
             if (new_pos < 0) new_pos = 0;
             
             inputSource->pos_in_record = new_pos;
-            fseek(inputSource->file,
-                  inputSource->record_start_pos + new_pos,
-                  SEEK_SET);
+            if (fseek(inputSource->file,
+                    inputSource->record_start_pos + new_pos,
+                    SEEK_SET) == 0) {
+                *consumed_newline = false;
+            }
         }
     }
 }
 
-static void handle_read_T(InputSource *inputSource, int position)
+static void handle_read_T(InputSource *inputSource, int position, bool *consumed_newline)
 {
     if (position < 1) position = 1;
     
@@ -12423,6 +12431,7 @@ static void handle_read_T(InputSource *inputSource, int position)
             target_pos = (int)inputSource->str.len;
         }
         inputSource->str.pos = target_pos;
+        *consumed_newline = false;
     } else if (inputSource->inputMethod == INPUT_FILE) {
         if (inputSource->file) {
             // Convert 1-based position to 0-based offset
@@ -12434,9 +12443,11 @@ static void handle_read_T(InputSource *inputSource, int position)
                 target = inputSource->record_length;
             
             inputSource->pos_in_record = target;
-            fseek(inputSource->file,
-                  inputSource->record_start_pos + target,
-                  SEEK_SET);
+            if (fseek(inputSource->file,
+                    inputSource->record_start_pos + target,
+                    SEEK_SET) == 0) {
+                *consumed_newline = false;
+            }
         }
     }
 }
@@ -12837,10 +12848,10 @@ static void process_fmt_items_read(InputSource *inputSource,
                     if (tab_type == 'R') {
                         handle_read_X(inputSource, width, advance_no, iostat, consumed_newline);
                     } else if (tab_type == 'L') {
-                        handle_read_TL(inputSource, width);
+                        handle_read_TL(inputSource, width, consumed_newline);
                     }
                 } else {
-                    handle_read_T(inputSource, width);
+                    handle_read_T(inputSource, width, consumed_newline);
                 }
                 break;
             case 'A':
