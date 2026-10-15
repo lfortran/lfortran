@@ -1320,6 +1320,30 @@ semantic error: a procedure pointer component of a named constant cannot be an i
 3032 |     procedure(cc1_pclim_known_func), pointer :: cc1_pcoc4_q => cc1_pcoc_c%f  ! {Error} a procedure pointer component of a named constant cannot be an initial procedure target
      |                                                                ^^^^^^^^^^^^ `cc1_pcoc_c` is a named constant, not a variable
 
+semantic error: interface 'cc1_cpi_self' of dummy procedure 'g' depends on the characteristics of 'g'
+    --> tests/errors/continue_compilation_1.f90:3065:36
+     |
+3065 |         procedure(cc1_cpi_self) :: g  ! {Error} interface 'cc1_cpi_self' of dummy procedure 'g' depends on the characteristics of 'g'
+     |                                    ^ 'cc1_cpi_self' has dummy procedure 'g'
+
+semantic error: interface 'cc1_cpi_result_self' of procedure pointer result 'r' depends on the characteristics of 'r'
+    --> tests/errors/continue_compilation_1.f90:3079:52
+     |
+3079 |         procedure(cc1_cpi_result_self), pointer :: r  ! {Error} interface 'cc1_cpi_result_self' of procedure pointer result 'r' depends on the characteristics of 'r'
+     |                                                    ^ 'cc1_cpi_result_self' has procedure pointer result 'r'
+
+semantic error: interface 'cc1_cpi_a' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3061:33
+     |
+3061 |         procedure(cc1_cpi_a) :: k  ! {Error} interface 'cc1_cpi_a' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                 ^ 'cc1_cpi_a' has dummy procedure 'g' with interface 'cc1_cpi_b', which has dummy procedure 'k'
+
+semantic error: interface 'cc1_cpi_result_a' of procedure pointer result 'r' depends on the characteristics of 'r'
+    --> tests/errors/continue_compilation_1.f90:3074:49
+     |
+3074 |         procedure(cc1_cpi_result_a), pointer :: r  ! {Error} interface 'cc1_cpi_result_a' of procedure pointer result 'r' depends on the characteristics of 'r'
+     |                                                 ^ 'cc1_cpi_result_a' has procedure pointer result 'r' with interface 'cc1_cpi_result_b', which has procedure pointer result 'r'
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

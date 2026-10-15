@@ -2325,7 +2325,8 @@ public:
                     LCOMPILERS_ASSERT(type);
 
                     if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
-                           type->m_name && type->m_name == sym_name) {
+                           type->m_name && to_lower(type->m_name) == sym_name) {
+                        check_self_dependent_interface(decl, sym_name);
                         procedure_decl_indices.push_back(al, i);
                         continue;
                     }
@@ -2969,7 +2970,8 @@ public:
 
                     LCOMPILERS_ASSERT(type);
                     if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
-                           type->m_name && type->m_name == sym_name) {
+                           type->m_name && to_lower(type->m_name) == sym_name) {
+                        check_self_dependent_interface(decl, sym_name);
                         procedure_decl_indices.push_back(al, i);
                         continue;
                     }
@@ -5182,6 +5184,13 @@ public:
         std::set<ASR::Function_t*> stale_procedures;
         std::set<ASR::Variable_t*> completed_declarations;
         std::set<ASR::Function_t*> completed_procedures;
+        // The procedures whose signature is being completed, and the
+        // declarations whose interface is, innermost last.
+        std::set<ASR::Function_t*> procedures_in_progress;
+        std::vector<ASR::Variable_t*> declarations_in_progress;
+        // Whether a declaration has an interface that depends on its own
+        // characteristics, which is reported.
+        bool cyclic_interface = false;
 
         ProcedureInterfaceCompletion(
                 const std::map<ASR::symbol_t*, ASR::symbol_t*> &placeholder_to_real_)
@@ -5253,6 +5262,85 @@ public:
         }
     };
 
+    // Describes `name`, a dummy procedure or the procedure pointer result
+    // of a procedure, in a diagnostic.
+    static std::string signature_entity(const std::string &name,
+            bool is_result) {
+        return (is_result ? "procedure pointer result '"
+            : "dummy procedure '") + name + "'";
+    }
+
+    // Describes `var`, a dummy procedure or procedure pointer result.
+    static std::string signature_entity(ASR::Variable_t *var) {
+        ASR::Function_t *owner = ASR::down_cast<ASR::Function_t>(
+            ASR::down_cast<ASR::symbol_t>(var->m_parent_symtab->asr_owner));
+        return signature_entity(var->m_name, owner->m_return_var != nullptr
+            && ASRUtils::expr_to_variable_or_null(owner->m_return_var) == var);
+    }
+
+    // Reports the dummy procedures and procedure pointer result of the
+    // procedure `proc_name` that `decl`, a procedure declaration statement
+    // naming the procedure as their interface, declares: the interface
+    // depends on their own characteristics (Fortran 2023 15.4.3.6).
+    void check_self_dependent_interface(const AST::Declaration_t &decl,
+            const std::string &proc_name) {
+        bool reported = false;
+        for (size_t i = 0; i < decl.n_syms; i++) {
+            if (decl.m_syms[i].m_name == nullptr) continue;
+            std::string name = to_lower(decl.m_syms[i].m_name);
+            bool is_result = name == current_procedure_result;
+            if (!is_result && std::find(current_procedure_args.begin(),
+                    current_procedure_args.end(), name)
+                    == current_procedure_args.end()) {
+                continue;
+            }
+            std::string entity = signature_entity(name, is_result);
+            report_self_dependent_interface(proc_name, entity, name,
+                "'" + proc_name + "' has " + entity, decl.m_syms[i].loc);
+            reported = true;
+        }
+        if (reported) {
+            throw SemanticAbort();
+        }
+    }
+
+    // Reports that the interface `iface` of `entity`, a dummy procedure or
+    // procedure pointer result named `name`, depends on the characteristics
+    // of `name` (Fortran 2023 15.4.3.6), as `cycle` tells.
+    void report_self_dependent_interface(const std::string &iface,
+            const std::string &entity, const std::string &name,
+            const std::string &cycle, const Location &loc) {
+        diag.add(diag::Diagnostic("interface '" + iface + "' of " + entity
+            + " depends on the characteristics of '" + name + "'",
+            diag::Level::Error, diag::Stage::Semantic,
+            {diag::Label(cycle, {loc})}));
+    }
+
+    // Reports `var`, a dummy procedure or procedure pointer result whose
+    // interface `iface` is reached again while the signature of `iface` is
+    // being completed: through the declarations in progress since then,
+    // which `var` ends, the interface depends on the characteristics of
+    // `var`.
+    void report_cyclic_interface(ASR::Variable_t *var, ASR::Function_t *iface,
+            ProcedureInterfaceCompletion &c) {
+        std::string cycle;
+        for (ASR::Variable_t *decl : c.declarations_in_progress) {
+            if (cycle.empty()
+                    && decl->m_parent_symtab->asr_owner != &iface->base.base) {
+                continue;
+            }
+            cycle += (cycle.empty() ? "'" + std::string(iface->m_name)
+                + "' has " : ", which has ") + signature_entity(decl)
+                + " with interface '" + std::string(
+                    c.interface_of(decl)->m_name) + "'";
+        }
+        cycle += (cycle.empty() ? "'" + std::string(iface->m_name)
+            + "' has " : ", which has ") + signature_entity(var);
+        report_self_dependent_interface(iface->m_name, signature_entity(var),
+            var->m_name, cycle, var->base.base.loc);
+        c.cyclic_interface = true;
+    }
+
     // Makes `var`, a procedure pointer or dummy procedure whose interface
     // includes that of a replaced placeholder, take the completed
     // interface of the procedure it is declared with, imported into the
@@ -5271,9 +5359,21 @@ public:
             var->m_type_declaration = ASRUtils::import_type_declaration(al,
                 it->second, var->m_parent_symtab);
         }
-        complete_procedure_signature(iface, c);
-        ASR::ttype_t *real_func_type = ASRUtils::import_procedure_type(al,
-            iface->m_function_signature, var->m_parent_symtab);
+        ASR::ttype_t *real_func_type;
+        if (c.procedures_in_progress.count(iface) > 0) {
+            report_cyclic_interface(var, iface, c);
+            // `var` keeps its incomplete interface, copied so that it does
+            // not share the signature of `iface`, which is still being
+            // completed, and so cannot make the types cyclic.
+            real_func_type = ASRUtils::ExprStmtDuplicator(al).duplicate_ttype(
+                ASRUtils::type_get_past_pointer(var->m_type));
+        } else {
+            c.declarations_in_progress.push_back(var);
+            complete_procedure_signature(iface, c);
+            c.declarations_in_progress.pop_back();
+            real_func_type = ASRUtils::import_procedure_type(al,
+                iface->m_function_signature, var->m_parent_symtab);
+        }
         if (ASR::is_a<ASR::Pointer_t>(*var->m_type)) {
             var->m_type = ASRUtils::TYPE(
                 ASR::make_Pointer_t(al, var->base.base.loc, real_func_type));
@@ -5291,14 +5391,16 @@ public:
 
     // Makes the signature of `func` take the completed types of its dummy
     // procedures and result whose interface includes that of a replaced
-    // placeholder. A procedure reached again while its own signature is
-    // being completed, through a cycle of interfaces, is left as it is.
+    // placeholder. A declaration whose interface is reached again through
+    // a cycle of interfaces is reported, see
+    // `complete_procedure_declaration()`.
     void complete_procedure_signature(ASR::Function_t *func,
             ProcedureInterfaceCompletion &c) {
         if (c.stale_procedures.count(func) == 0
                 || !c.completed_procedures.insert(func).second) {
             return;
         }
+        c.procedures_in_progress.insert(func);
         ASR::FunctionType_t *func_ft = ASR::down_cast<ASR::FunctionType_t>(
             func->m_function_signature);
         for (auto &[i, var] : c.signature_variables(func)) {
@@ -5312,6 +5414,7 @@ public:
                 func_ft->m_return_var_type = var->m_type;
             }
         }
+        c.procedures_in_progress.erase(func);
     }
 
     // Makes everything in `scope` and in every scope nested in it, such as
@@ -5435,6 +5538,10 @@ public:
                 }
             }
             complete_procedure_interfaces(completion);
+            if (completion.cyclic_interface
+                    && !compiler_options.continue_compilation) {
+                throw SemanticAbort();
+            }
         }
         pending_proc_placeholders = std::move(unresolved_placeholders);
         // A procedure given to a procedure pointer component before the
