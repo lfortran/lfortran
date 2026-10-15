@@ -104,25 +104,43 @@ class ASRToLLVMVisitor;
         class Descriptor;
     }
 
+    namespace LLVM {
+        // Returns the function `name` in `module`, declaring it with `type` first if needed.
+        static inline llvm::Function* get_or_declare_function(llvm::Module &module,
+            const std::string &name, llvm::FunctionType *type)
+        {
+            llvm::Function *fn = module.getFunction(name);
+            if (!fn) {
+                fn = llvm::Function::Create(type, llvm::Function::ExternalLinkage,
+                    name, &module);
+            }
+            LCOMPILERS_ASSERT(fn->getFunctionType() == type);
+            return fn;
+        }
+
+        static inline llvm::Function* get_or_declare_function(llvm::Module &module,
+            const std::string &name, llvm::Type *return_type,
+            llvm::ArrayRef<llvm::Type*> param_types, bool is_vararg = false)
+        {
+            return get_or_declare_function(module, name,
+                llvm::FunctionType::get(return_type, param_types, is_vararg));
+        }
+    }
+
     static inline void printf(llvm::LLVMContext &context, llvm::Module &module,
         llvm::IRBuilder<> &builder, const std::vector<llvm::Value*> &args)
     {
-        llvm::Function *fn_printf = module.getFunction("_lfortran_printf");
-        if (!fn_printf) {
-            llvm::FunctionType* function_type = llvm::FunctionType::get(
-                llvm::Type::getVoidTy(context),
-                {
-                    llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // format
-                    llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // str
-                    llvm::Type::getInt32Ty(context),                               // str_len
-                    llvm::Type::getInt32Ty(context),                               // str_kind
-                    llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // end
-                    llvm::Type::getInt32Ty(context)                                // end_len
-                },
-                false);
-            fn_printf = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, "_lfortran_printf", &module);
-        }
+        llvm::Function *fn_printf = LLVM::get_or_declare_function(
+            module, "_lfortran_printf",
+            llvm::Type::getVoidTy(context),
+            {
+                llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // format
+                llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // str
+                llvm::Type::getInt32Ty(context),                               // str_len
+                llvm::Type::getInt32Ty(context),                               // str_kind
+                llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // end
+                llvm::Type::getInt32Ty(context)                                // end_len
+            });
         builder.CreateCall(fn_printf, args);
     }
 
@@ -130,27 +148,17 @@ class ASRToLLVMVisitor;
     static inline void print_error(llvm::LLVMContext &context, llvm::Module &module,
         llvm::IRBuilder<> &builder, const std::vector<llvm::Value*> &args)
     {
-        llvm::Function *fn_printf = module.getFunction("_lcompilers_print_error");
-        if (!fn_printf) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {llvm::Type::getInt8Ty(context)->getPointerTo()}, true);
-            fn_printf = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, "_lcompilers_print_error", &module);
-        }
+        llvm::Function *fn_printf = LLVM::get_or_declare_function(
+            module, "_lcompilers_print_error",
+                llvm::Type::getVoidTy(context), {llvm::Type::getInt8Ty(context)->getPointerTo()}, true);
         builder.CreateCall(fn_printf, args);
     }
 
     static inline void exit(llvm::LLVMContext &context, llvm::Module &module,
         llvm::IRBuilder<> &builder, llvm::Value* exit_code)
     {
-        llvm::Function *fn_exit = module.getFunction("exit");
-        if (!fn_exit) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {llvm::Type::getInt32Ty(context)},
-                    false);
-            fn_exit = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, "exit", &module);
-        }
+        llvm::Function *fn_exit = LLVM::get_or_declare_function(module, "exit",
+                llvm::Type::getVoidTy(context), {llvm::Type::getInt32Ty(context)});
         builder.CreateCall(fn_exit, {exit_code});
     }
 
@@ -189,17 +197,12 @@ class ASRToLLVMVisitor;
             llvm::Module &module, llvm::IRBuilder<> &builder,
             const std::vector<llvm::Value*> &args)
     {
-        llvm::Function *fn = module.getFunction("print_stacktrace_addresses");
-        if (!fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                llvm::Type::getVoidTy(context), {
-                    llvm::Type::getInt8Ty(context)->getPointerTo(),
-                    llvm::Type::getInt1Ty(context)
-                }, true);
-            fn = llvm::Function::Create(function_type,
-                llvm::Function::ExternalLinkage, "print_stacktrace_addresses",
-                &module);
-        }
+        llvm::Function *fn = LLVM::get_or_declare_function(
+            module, "print_stacktrace_addresses",
+            llvm::Type::getVoidTy(context), {
+                llvm::Type::getInt8Ty(context)->getPointerTo(),
+                llvm::Type::getInt1Ty(context)
+            }, true);
         builder.CreateCall(fn, args);
     }
 
@@ -355,6 +358,9 @@ class ASRToLLVMVisitor;
             LLVMSetInterface* set_api;
             LLVMArrUtils::Descriptor* arr_api;
             llvm::Module* module;
+            // Constant data of runtime errors, shared within `module`
+            std::unordered_map<std::string, llvm::Constant*> runtime_error_strings;
+            std::unordered_map<std::string, llvm::Constant*> runtime_error_infos;
             std::string& der_type_name;
             std::map<std::string, llvm::StructType*>& name2dertype;
             std::map<std::string, llvm::StructType*>& name2dercontext;
@@ -390,6 +396,11 @@ class ASRToLLVMVisitor;
 #else
             llvm::PointerType* i8_ptr = llvm::Type::getInt8PtrTy(context);
 #endif
+            llvm::IntegerType* i1 = llvm::Type::getInt1Ty(context);
+            llvm::IntegerType* i8 = llvm::Type::getInt8Ty(context);
+            llvm::IntegerType* i32 = llvm::Type::getInt32Ty(context);
+            llvm::IntegerType* i64 = llvm::Type::getInt64Ty(context);
+            llvm::Type* void_type = llvm::Type::getVoidTy(context);
 
             LLVMUtils(llvm::LLVMContext& context,
                 llvm::IRBuilder<>* _builder, std::string& der_type_name_,
@@ -470,116 +481,27 @@ class ASRToLLVMVisitor;
                 }
             };
 
+            // Returns a constant string for a runtime error message or
+            // argument, shared by all runtime errors in the module
+            llvm::Constant* get_runtime_error_string(const std::string &str);
+
+            /*
+             * Branches on `cond` to a call of the runtime helper that formats
+             * and prints the error and exits. The message, labels and spans
+             * are emitted as constant data; only the format arguments (first
+             * those of `message`, then those of each label) are passed.
+             */
+            void generate_runtime_error(llvm::Value* cond, const std::string &message,
+                const std::vector<RuntimeLabel> &labels, std::string &infile,
+                LocationManager& lm, const std::vector<llvm::Value*> &args);
+
             template<typename... Args>
-            void generate_runtime_error(llvm::Value* cond, std::string message, std::vector<RuntimeLabel> labels, std::string &infile, LocationManager& lm, Args... args)
+            void generate_runtime_error(llvm::Value* cond, const std::string &message,
+                const std::vector<RuntimeLabel> &labels, std::string &infile,
+                LocationManager& lm, Args... args)
             {
-                llvm::Function *fn = builder->GetInsertBlock()->getParent();
-
-                llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
-                llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
-
-                builder->CreateCondBr(cond, thenBB, mergeBB);
-                builder->SetInsertPoint(thenBB); {
-                        llvm::Type *span_type = llvm::StructType::get(context, llvm::ArrayRef<llvm::Type *>({
-                            llvm::Type::getInt8Ty(context)->getPointerTo(),
-                            llvm::Type::getInt32Ty(context),
-                            llvm::Type::getInt32Ty(context),
-                            llvm::Type::getInt32Ty(context),
-                            llvm::Type::getInt32Ty(context),
-                        }));
-                        llvm::Type *label_type = llvm::StructType::get(context, llvm::ArrayRef<llvm::Type *>({
-                            llvm::Type::getInt1Ty(context),
-                            llvm::Type::getInt8Ty(context)->getPointerTo(),
-                            span_type->getPointerTo(),
-                            llvm::Type::getInt32Ty(context),
-                        }));
-                        llvm::Function* lcompilers_snprintf_fn = module->getFunction("_lcompilers_snprintf_alloc");
-                        if (!lcompilers_snprintf_fn) {
-                            llvm::FunctionType* snprintf_fn_type = llvm::FunctionType::get(
-                                llvm::Type::getInt8Ty(context)->getPointerTo(),
-                                {llvm::Type::getInt8Ty(context)->getPointerTo(),
-                                 llvm::Type::getInt8Ty(context)->getPointerTo()},
-                                true);
-                            lcompilers_snprintf_fn = llvm::Function::Create(snprintf_fn_type,
-                                llvm::Function::ExternalLinkage, "_lcompilers_snprintf_alloc", module);
-                        }
-
-                        // Allocate and populate labels and spans
-                        llvm::Type *label_arr_type = llvm::ArrayType::get(label_type, labels.size());
-                        llvm::Value *labels_v = builder->CreateAlloca(label_arr_type);
-                        for (size_t i = 0; i < labels.size(); i++) {
-                            llvm::Value *idx = llvm::ConstantInt::get(context, llvm::APInt(32, i));
-
-                            llvm::Type *span_arr_type = llvm::ArrayType::get(span_type, labels[i].spans.size());
-                            llvm::Value *spans_v = builder->CreateAlloca(span_arr_type);
-                            for (size_t j = 0; j < labels[i].spans.size(); j++) {
-                                llvm::Value *span_idx = llvm::ConstantInt::get(context, llvm::APInt(32, j));
-                                llvm::Value *span_j = LLVMUtils::CreateInBoundsGEP2(span_arr_type, spans_v, {llvm::ConstantInt::get(context, llvm::APInt(32, 0)), span_idx});
-
-                                uint32_t start_l, start_c, last_l, last_c;
-                                lm.pos_to_linecol(lm.output_to_input_pos(labels[i].spans[j].loc.first, false), start_l, start_c, infile);
-                                lm.pos_to_linecol(lm.output_to_input_pos(labels[i].spans[j].loc.last, false), last_l, last_c, infile);
-
-                                builder->CreateStore(LCompilers::create_global_string_ptr(context, *module, *builder, infile),
-                                        LLVMUtils::CreateGEP2(span_type, span_j, 0));
-                                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, start_l)),
-                                        LLVMUtils::CreateGEP2(span_type, span_j, 1));
-                                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, start_c)),
-                                        LLVMUtils::CreateGEP2(span_type, span_j, 2));
-                                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, last_l)),
-                                        LLVMUtils::CreateGEP2(span_type, span_j, 3));
-                                builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, last_c)),
-                                        LLVMUtils::CreateGEP2(span_type, span_j, 4));
-                            }
-
-                            std::vector<llvm::Value*> snprintf_args;
-                            snprintf_args.push_back(get_allocator(module));
-                            snprintf_args.push_back(LCompilers::create_global_string_ptr(context, *module, *builder, labels[i].message));
-                            snprintf_args.insert(snprintf_args.end(), labels[i].args.begin(), labels[i].args.end());
-                            llvm::Value* formatted_message = builder->CreateCall(lcompilers_snprintf_fn, snprintf_args);
-
-                            llvm::Value *label_i = LLVMUtils::CreateInBoundsGEP2(label_arr_type, labels_v, {llvm::ConstantInt::get(context, llvm::APInt(32, 0)), idx});
-                            llvm::Value *span_arr = LLVMUtils::CreateGEP2(span_arr_type, spans_v, 0);
-                            llvm::Value *label_spans = LLVMUtils::CreateGEP2(label_type, label_i, 2);
-                            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(1, labels[i].primary)),
-                                    LLVMUtils::CreateGEP2(label_type, label_i, 0));
-                            builder->CreateStore(formatted_message,
-                                    LLVMUtils::CreateGEP2(label_type, label_i, 1));
-                            builder->CreateStore(span_arr, label_spans);
-                            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, labels[i].spans.size())),
-                                    LLVMUtils::CreateGEP2(label_type, label_i, 3));
-                        }
-
-
-                        llvm::Value* formatted_msg = create_global_string_ptr(context, *module, *builder, message);
-                        llvm::Function* print_error_fn = module->getFunction("_lcompilers_runtime_error");
-                        if (!print_error_fn) {
-                            llvm::FunctionType* error_fn_type = llvm::FunctionType::get(
-                                llvm::Type::getVoidTy(context),
-                                {llvm::Type::getInt8Ty(context)->getPointerTo(),
-                                 label_type->getPointerTo(), llvm::Type::getInt32Ty(context), llvm::Type::getInt8Ty(context)->getPointerTo()},
-                                true);
-                            print_error_fn = llvm::Function::Create(error_fn_type,
-                                llvm::Function::ExternalLinkage, "_lcompilers_runtime_error", module);
-                        }
-
-                        std::vector<llvm::Value*> vec = {get_allocator(module), LLVMUtils::CreateGEP2(label_arr_type, labels_v, 0), llvm::ConstantInt::get(context, llvm::APInt(32, labels.size())), formatted_msg, args...};
-                        builder->CreateCall(print_error_fn, vec);
-
-                        llvm::Function* exit_fn = module->getFunction("exit");
-                        if (!exit_fn) {
-                            llvm::FunctionType* exit_fn_type = llvm::FunctionType::get(
-                                llvm::Type::getVoidTy(context),
-                                {llvm::Type::getInt32Ty(context)},
-                                false);
-                            exit_fn = llvm::Function::Create(exit_fn_type,
-                                llvm::Function::ExternalLinkage, "exit", module);
-                        }
-
-                        builder->CreateCall(exit_fn, {llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1)});
-                        builder->CreateUnreachable();
-                }
-                start_new_block(mergeBB);
+                generate_runtime_error(cond, message, labels, infile, lm,
+                    std::vector<llvm::Value*>{args...});
             }
             std::string get_llvm_type_as_string(llvm::Type* type);
             /*
@@ -3399,7 +3321,7 @@ class ASRToLLVMVisitor;
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
                 bool use_defined_assignment = false, bool finalize_dest = true);
 
-            // Copy dimension descriptors and rank from src to dest array descriptor.
+            // Copy dimension descriptors, rank and offset from src to dest array descriptor.
             void copy_dimension_descriptors(
                 llvm::Type* llvm_array_type, llvm::Value* src, llvm::Value* dest,
                 llvm::Module* module);

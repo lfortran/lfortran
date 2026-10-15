@@ -54,13 +54,6 @@ struct MetalDialect {
         return double_to_scientific(value);
     }
 
-    // A Metal shader has no trap and no way to end the program, so there is
-    // nothing to spell here. The offload pass declines a loop holding a
-    // STOP for this device, so no such statement reaches the emitter.
-    std::string abort_stmt() const {
-        return "";
-    }
-
     // The grid position already accounts for the block, so a kernel that
     // asks for its block coordinates is asking about a grid Metal does not
     // divide up: the block is the whole grid and its index is zero.
@@ -71,6 +64,13 @@ struct MetalDialect {
 
     std::string uint_type() const {
         return "uint";
+    }
+
+    // A relaxed atomic add to an `int` in device memory, giving the old value.
+    std::string atomic_fetch_add(const std::string &address,
+            const std::string &increment) const {
+        return "atomic_fetch_add_explicit((device atomic_int*)(" + address
+            + "), " + increment + ", memory_order_relaxed)";
     }
 
     // The scalars a kernel takes travel together in one read-only buffer.

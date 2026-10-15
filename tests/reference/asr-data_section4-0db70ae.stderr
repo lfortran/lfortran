@@ -1,0 +1,5 @@
+semantic error: DATA statement element count mismatch: 3 elements on left-hand side, 2 values on right-hand side
+ --> tests/errors/data_section4.f90:4:5
+  |
+4 |     data x(2:3), y /1, 2/
+  |     ^^^^^^^^^^^^^^^^^^^^^ 

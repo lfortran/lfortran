@@ -452,6 +452,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -492,6 +493,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -532,6 +534,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -572,6 +575,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -612,6 +616,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealUnaryMinus
@@ -659,6 +664,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealUnaryMinus
@@ -706,6 +712,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant
@@ -746,6 +753,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant

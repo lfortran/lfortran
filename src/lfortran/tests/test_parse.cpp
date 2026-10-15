@@ -707,9 +707,20 @@ TEST_CASE("Tokenizer") {
     };
     CHECK(tokens(al, s) == ref);
 
+    // An integer followed by a name at the start of a line is a statement
+    // label, both at the start of the input and after a newline.
     s = "2 x";
     ref = {
-        tt::TK_INTEGER,
+        tt::TK_LABEL,
+        tt::TK_NAME,
+        tt::END_OF_FILE,
+    };
+    CHECK(tokens(al, s) == ref);
+
+    s = "\n2 x";
+    ref = {
+        tt::TK_NEWLINE,
+        tt::TK_LABEL,
         tt::TK_NAME,
         tt::END_OF_FILE,
     };

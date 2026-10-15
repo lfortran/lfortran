@@ -54,7 +54,7 @@ void fixup_len(Vec<uint8_t> &code, Allocator &al, uint32_t len_idx) {
     emit_u32_b32_idx(code, al, len_idx, section_len);
 }
 
-void save_js_glue_wasi(std::string filename) {
+bool save_js_glue_wasi(std::string filename) {
     std::string js_glue =
 R"(async function main() {
     const fs = require("fs");
@@ -81,13 +81,15 @@ main();
     std::ofstream out(filename);
     out << js_glue;
     out.close();
+    return bool(out);
 }
 
-void save_bin(Vec<uint8_t> &code, std::string filename) {
+// Returns false if the module or its JavaScript glue could not be written.
+bool save_bin(Vec<uint8_t> &code, std::string filename) {
     std::ofstream out(filename);
     out.write((const char *)code.p, code.size());
     out.close();
-    save_js_glue_wasi(filename);
+    return out && save_js_glue_wasi(filename);
 }
 
 }  // namespace wasm

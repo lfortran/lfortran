@@ -1,9 +1,8 @@
 ! An allocatable function result built from an array constructor whose
 ! implied-do has a run-time trip count, called from a `do concurrent`.
 ! The constructor becomes a run-time sized local of the callee, which a
-! Metal device function has no declaration for; the loop has to either
-! splice the callee into the kernel or stay on the host, never emit a
-! shader that cannot be loaded.
+! Metal device function has no declaration for, so it becomes an argument
+! the kernel gives the callee: the shader never declares it.
 module gpu_metal_277_m
    implicit none
 contains

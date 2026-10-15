@@ -1,0 +1,13 @@
+{
+    "basename": "asr-array_item_in_bounds_02-3bce357",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/array_item_in_bounds_02.f90",
+    "infile_hash": "5c1b54ca7c780422e96408bf2fbb5e82912d115919c1c8914aef8733",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-array_item_in_bounds_02-3bce357.stdout",
+    "stdout_hash": "078b44f4a5599833248bc10921449a2c52cbc59834561e2d65ca4e54",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

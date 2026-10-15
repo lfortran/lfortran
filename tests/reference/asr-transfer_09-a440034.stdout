@@ -207,6 +207,7 @@
                                 (Integer 4)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             (Var 2 a)
                             ()
@@ -228,6 +229,7 @@
                                 (Integer 4)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             (Var 2 b)
                             ()
@@ -249,6 +251,7 @@
                                 (Integer 4)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             (Var 2 c)
                             ()
@@ -370,6 +373,7 @@
                                         (Integer 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     NotEq
                                     (ArrayItem
@@ -380,6 +384,7 @@
                                         (Integer 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     (Logical 4)
                                     ()
@@ -394,6 +399,7 @@
                                         (Integer 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     NotEq
                                     (ArrayItem
@@ -404,6 +410,7 @@
                                         (Integer 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     (Logical 4)
                                     ()
@@ -421,6 +428,7 @@
                                     (Integer 4)
                                     ColMajor
                                     ()
+                                    .true.
                                 )
                                 NotEq
                                 (ArrayItem
@@ -431,6 +439,7 @@
                                     (Integer 4)
                                     ColMajor
                                     ()
+                                    .true.
                                 )
                                 (Logical 4)
                                 ()
@@ -456,6 +465,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     NotEq
                                     (Var 2 a)
@@ -472,6 +482,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     NotEq
                                     (Var 2 b)
@@ -491,6 +502,7 @@
                                     (Real 4)
                                     ColMajor
                                     ()
+                                    .true.
                                 )
                                 NotEq
                                 (Var 2 c)

@@ -16,6 +16,9 @@ endmacro(ADDTESTC)
 
 if (NOT XEUS_LFORTRAN_WASM_BUILD)
     ADDTESTC(test_cwrapper lfortran_c)
+    if (NOT WIN32 AND NOT EMSCRIPTEN)
+        ADDTESTC(test_system_clock lfortran_runtime_static)
+    endif()
     ADDTEST(test_stacktrace)
 endif()
 
@@ -151,6 +154,11 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
     find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
     if (LFORTRAN_TEST_PYTHON)
         add_test(
+            NAME test_dwarf_convert
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_CURRENT_SOURCE_DIR}/test_dwarf_convert.py
+        )
+        add_test(
             NAME test_asr_text_edn_conformance
             COMMAND ${LFORTRAN_TEST_PYTHON}
                 ${CMAKE_SOURCE_DIR}/tests/asr/check_edn.py
@@ -212,6 +220,21 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
             COMMAND ${LFORTRAN_TEST_PYTHON}
                 ${CMAKE_SOURCE_DIR}/tests/asr/test_edn.py
         )
+        # Invalid code compiled with `-c --continue-compilation` (or wrapped
+        # with `pywrap`) must fail without writing an object, .mod or wrapper
+        # file.
+        set(CONTINUE_COMPILATION_OUTPUT_ARGS)
+        if (HAVE_LFORTRAN_MLIR)
+            set(CONTINUE_COMPILATION_OUTPUT_ARGS --mlir)
+        endif()
+        add_test(
+            NAME test_continue_compilation_output
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_CURRENT_SOURCE_DIR}/test_continue_compilation_output.py
+                --lfortran $<TARGET_FILE:lfortran>
+                --workdir ${PROJECT_BINARY_DIR}/continue-compilation-output
+                ${CONTINUE_COMPILATION_OUTPUT_ARGS}
+        )
         add_test(
             NAME test_asr_llvm_constructor_coverage
             COMMAND ${LFORTRAN_TEST_PYTHON}
@@ -220,6 +243,16 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 --llvm ${CMAKE_SOURCE_DIR}/src/libasr/codegen/asr_to_llvm.cpp
                 --manifest ${CMAKE_SOURCE_DIR}/tests/asr/llvm_constructor_coverage.toml
         )
+        # The prompt is driven through a pipe on the other platforms only;
+        # this test has not been run on Windows.
+        if (NOT WIN32)
+            add_test(
+                NAME test_repl
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
+                    --lfortran $<TARGET_FILE:lfortran>
+            )
+        endif()
     endif()
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"

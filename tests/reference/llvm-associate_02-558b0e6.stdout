@@ -7,7 +7,7 @@ target datalayout = "..."
 
 @associate_02.t1 = internal global i32 2
 @associate_02.t2 = internal global double 2.000000e+00
-@associate_02.t3 = internal global %complex_4 zeroinitializer
+@associate_02.t3 = internal global %complex_4 <{ float 2.000000e+00, float 3.000000e+00 }>
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
@@ -51,7 +51,6 @@ define i32 @main(i32 %0, i8** %1) {
   store double* null, double** %p2, align 8
   %p3 = alloca %complex_4*, align 8
   store %complex_4* null, %complex_4** %p3, align 8
-  store %complex_4 <{ float 2.000000e+00, float 3.000000e+00 }>, %complex_4* @associate_02.t3, align 1
   store i32* @associate_02.t1, i32** %p1, align 8
   store double* @associate_02.t2, double** %p2, align 8
   store %complex_4* @associate_02.t3, %complex_4** %p3, align 8

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-continue_compilation_external_procedure-eb05d6f",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/continue_compilation_external_procedure.f90",
+    "infile_hash": "ccef726c1421a1e585b46ad40e820330fec5be502473d7fdf6f4cebe",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-continue_compilation_external_procedure-eb05d6f.stderr",
+    "stderr_hash": "2710be51a9000865565fd5858c95e3e754a7c942dbe2c3058d2bbd65",
+    "returncode": 1
+}
