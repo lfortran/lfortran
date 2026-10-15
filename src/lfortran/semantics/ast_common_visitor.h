@@ -5001,13 +5001,56 @@ public:
         }
     }
 
+    // An element of a local array that an implied-DO in a DATA statement of
+    // a procedure or BLOCK initializes.
+    struct DataLocalElement {
+        ASR::Variable_t* array;
+        int64_t flat;               // column-major position in `array`
+        ASR::expr_t* element_value; // compile-time value
+        ASR::ArrayItem_t* target;
+        ASR::expr_t* value;
+    };
+
+    void emit_data_element_assignment(const AST::DataStmt_t &data_stmt,
+            ASR::expr_t* target, ASR::expr_t* value) {
+        ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
+        ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
+                                                                            target, value, nullptr, compiler_options.po.realloc_lhs_arrays, false)
+                                                     );
+        LCOMPILERS_ASSERT(current_body != nullptr)
+        current_body->push_back(al, assignStatement);
+    }
+
+    // Gives each array of `elements` its initial value once. The elements of
+    // an array that this does not save are also assigned on every execution.
+    void set_data_local_elements_value(const AST::DataStmt_t &data_stmt,
+            const std::vector<DataLocalElement> &elements) {
+        std::vector<ASR::Variable_t*> arrays;
+        std::map<ASR::Variable_t*, std::vector<std::pair<int64_t, ASR::expr_t*>>> values;
+        for (const DataLocalElement &e : elements) {
+            auto &array_values = values[e.array];
+            if (array_values.empty()) arrays.push_back(e.array);
+            array_values.push_back({e.flat, e.element_value});
+        }
+        for (ASR::Variable_t* array : arrays) {
+            set_data_array_elements_value(array, values[array],
+                data_stmt.base.base.loc);
+        }
+        for (const DataLocalElement &e : elements) {
+            if (!data_object_has_saved_initializer(&e.target->base)) {
+                emit_data_element_assignment(data_stmt, &e.target->base, e.value);
+            }
+        }
+    }
+
     void handle_implied_do_loop_data_stmt(const AST::DataStmt_t &data_stmt,
                                           AST::DataStmtSet_t *data_stmt_set,
                                           ASR::expr_t* implied_do_loop_expr,
                                           size_t &value_index,
                                           Vec<ASR::expr_t*>* collected_values = nullptr,
                                           Vec<int64_t>* collected_indices = nullptr,
-                                          ASR::Variable_t* target_variable = nullptr) {
+                                          ASR::Variable_t* target_variable = nullptr,
+                                          std::vector<DataLocalElement>* local_elements = nullptr) {
         ASR::ImpliedDoLoop_t *implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_do_loop_expr);
         ASR::expr_t* loop_start_expr = implied_do_loop->m_start;
         ASR::expr_t* loop_end_expr = implied_do_loop->m_end;
@@ -5086,6 +5129,15 @@ public:
                 }
             }
         }
+        // In a procedure or BLOCK, the elements of local arrays are collected
+        // for the whole statement, so that each array gets its initial value
+        // once instead of once per element.
+        std::vector<DataLocalElement> statement_local_elements;
+        bool outermost_local_loop = !top_level_module_scope
+            && collected_values == nullptr && local_elements == nullptr;
+        if (outermost_local_loop) {
+            local_elements = &statement_local_elements;
+        }
 
         ASRUtils::ExprStmtDuplicator exprDuplicator(al);
         for (int64_t loop_var = loop_start; loop_var <= loop_end; loop_var += loop_increment) {
@@ -5096,7 +5148,7 @@ public:
                     // Substitute the current loop variable in nested loop before recursing
                     ASR::ImpliedDoLoop_t* nested_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(duplicatedExpr);
                     substitute_var_in_implied_do_loop(nested_idl, loop_var_sym, loop_var, integer_type);
-                    handle_implied_do_loop_data_stmt(data_stmt, data_stmt_set, duplicatedExpr, value_index, collected_values, collected_indices, target_variable);
+                    handle_implied_do_loop_data_stmt(data_stmt, data_stmt_set, duplicatedExpr, value_index, collected_values, collected_indices, target_variable, local_elements);
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*duplicatedExpr)) {
                     ASR::ArrayItem_t* array_item_expr = ASR::down_cast<ASR::ArrayItem_t>(duplicatedExpr);
                     for (size_t arg_index = 0; arg_index < array_item_expr->n_args; arg_index++) {
@@ -5164,23 +5216,19 @@ public:
                             collected_indices->push_back(al, indices_valid ? flat : (int64_t)-1);
                         }
                     } else {
-                        ASR::symbol_t* owner = ASRUtils::get_asr_owner(array_item_expr->m_v);
-                        if (is_data_saved_local_owner(owner)
-                                && set_data_array_element_value(array_item_expr,
-                                [&](ASR::expr_t* /*previous*/) {
-                                    return ASRUtils::expr_value(value);
-                                }, data_stmt.base.base.loc)
-                                && data_object_has_saved_initializer(
-                                    &array_item_expr->base)) {
+                        ASR::Variable_t* arr_var = nullptr;
+                        int64_t flat = 0;
+                        ASR::expr_t* element_value = ASRUtils::expr_value(value);
+                        if (element_value && is_data_saved_local_owner(
+                                    ASRUtils::get_asr_owner(array_item_expr->m_v))
+                                && data_array_element_position(array_item_expr,
+                                    arr_var, flat)) {
+                            local_elements->push_back({arr_var, flat,
+                                element_value, array_item_expr, value});
                             continue;
                         }
-                        ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item_expr);
-                        ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
-                        ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
-                                                                                            target, value, nullptr, compiler_options.po.realloc_lhs_arrays, false)
-                                                                     );
-                        LCOMPILERS_ASSERT(current_body != nullptr)
-                        current_body->push_back(al, assignStatement);
+                        emit_data_element_assignment(data_stmt,
+                            ASRUtils::EXPR((ASR::asr_t*) array_item_expr), value);
                     }
                 } else {
                     diag.add(Diagnostic(
@@ -5191,6 +5239,10 @@ public:
                     throw SemanticAbort();
                 }
             }
+        }
+
+        if (outermost_local_loop) {
+            set_data_local_elements_value(data_stmt, statement_local_elements);
         }
 
         //In module scope, set the collected values on the array variable as a
@@ -5220,33 +5272,13 @@ public:
             }
 
             if (indices_ok) {
-                ASR::ttype_t* elem_type = ASR::down_cast<ASR::Array_t>(tv_arr_ttype)->m_type;
-                std::vector<ASR::expr_t*> slots(total_size, nullptr);
-
-                // Preserve values from a prior DATA statement if any.
-                if (v2->m_value && ASR::is_a<ASR::ArrayConstant_t>(*v2->m_value)) {
-                    ASR::ArrayConstant_t* prev = ASR::down_cast<ASR::ArrayConstant_t>(v2->m_value);
-                    int64_t prev_size = ASRUtils::get_fixed_size_of_array(prev->m_type);
-                    for (int64_t k = 0; k < prev_size && k < total_size; k++) {
-                        slots[k] = ASRUtils::fetch_ArrayConstant_value(al, prev, (int)k);
-                    }
-                }
+                std::vector<std::pair<int64_t, ASR::expr_t*>> elements;
+                elements.reserve(local_collected_values.size());
                 for (size_t k = 0; k < local_collected_values.size(); k++) {
-                    slots[local_collected_indices[k]] = local_collected_values[k];
+                    elements.push_back({local_collected_indices[k],
+                        local_collected_values[k]});
                 }
-                Vec<ASR::expr_t*> full_values;
-                full_values.reserve(al, (size_t)total_size);
-                for (int64_t k = 0; k < total_size; k++) {
-                    if (slots[k] == nullptr) {
-                        slots[k] = ASRUtils::get_constant_zero_with_given_type(al, elem_type);
-                    }
-                    full_values.push_back(al, slots[k]);
-                }
-                ASR::asr_t* arr_constructor = ASRUtils::make_ArrayConstructor_t_util(
-                    al, data_stmt.base.base.loc, full_values.p,
-                    full_values.size(), v2->m_type,
-                    ASR::arraystorageType::ColMajor);
-                set_data_initial_value(v2, ASRUtils::EXPR(arr_constructor));
+                set_data_array_elements_value(v2, elements, data_stmt.base.base.loc);
             } else {
                 // Fallback: old behavior (1D ArrayConstructor sized to
                 // collected values). Used when we can't compute flat indices
@@ -5270,17 +5302,12 @@ public:
         }
     }
 
-    // Sets the element `arr_item` of an array in the initial value of the
-    // whole array, whose other elements keep the values earlier DATA
-    // statements gave them or are zero. `element_value` gives the value of
-    // the element from its earlier value, nullptr if it had none, or returns
-    // nullptr when it cannot be determined. Returns whether the element is
-    // set: it is not when the array or the element cannot be determined at
-    // compile time.
-    bool set_data_array_element_value(ASR::ArrayItem_t* arr_item,
-            const std::function<ASR::expr_t*(ASR::expr_t*)> &element_value,
-            const Location &loc) {
-        ASR::Variable_t* arr_var = nullptr;
+    // The array of the element `arr_item` and the column-major position of
+    // the element in it. Returns false when the array or the position cannot
+    // be determined at compile time.
+    bool data_array_element_position(ASR::ArrayItem_t* arr_item,
+            ASR::Variable_t*& arr_var, int64_t& flat) {
+        arr_var = nullptr;
         if (ASR::is_a<ASR::Var_t>(*arr_item->m_v)) {
             arr_var = ASR::down_cast<ASR::Variable_t>(
                 ASR::down_cast<ASR::Var_t>(arr_item->m_v)->m_v);
@@ -5301,7 +5328,7 @@ public:
         }
         ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(arr_ttype);
         // Compute flat (ColMajor) index
-        int64_t flat = 0;
+        flat = 0;
         int64_t stride = 1;
         bool idx_ok = (arr_t->n_dims == arr_item->n_args);
         for (size_t d = 0; d < arr_t->n_dims && idx_ok; d++) {
@@ -5325,10 +5352,34 @@ public:
             flat += (idx_val - start_val) * stride;
             stride *= dim_size;
         }
-        if (!idx_ok || flat < 0 || flat >= total_size) {
-            return false;
+        return idx_ok && flat >= 0 && flat < total_size;
+    }
+
+    // The element at the column-major position `flat` of the initial value
+    // of the array `arr_var`, or nullptr if no DATA statement gave it one.
+    ASR::expr_t* data_array_initial_element(ASR::Variable_t* arr_var,
+            int64_t flat) {
+        if (arr_var->m_value && ASR::is_a<ASR::ArrayConstant_t>(*arr_var->m_value)) {
+            ASR::ArrayConstant_t* prev = ASR::down_cast<ASR::ArrayConstant_t>(arr_var->m_value);
+            if (flat < ASRUtils::get_fixed_size_of_array(prev->m_type)) {
+                return ASRUtils::fetch_ArrayConstant_value(al, prev, (int)flat);
+            }
         }
-        ASR::ttype_t* elem_type = arr_t->m_type;
+        return nullptr;
+    }
+
+    // Sets the elements `elements` (column-major position and value) of
+    // the array `arr_var`, of compile-time size, in the initial value of the
+    // whole array, whose other elements keep the values earlier DATA
+    // statements gave them or are zero. A later element at the same
+    // position replaces an earlier one.
+    void set_data_array_elements_value(ASR::Variable_t* arr_var,
+            const std::vector<std::pair<int64_t, ASR::expr_t*>> &elements,
+            const Location &loc) {
+        ASR::ttype_t* arr_ttype = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(arr_var->m_type));
+        int64_t total_size = ASRUtils::get_fixed_size_of_array(arr_ttype);
+        ASR::ttype_t* elem_type = ASR::down_cast<ASR::Array_t>(arr_ttype)->m_type;
         std::vector<ASR::expr_t*> slots(total_size, nullptr);
         // Preserve values from a prior DATA statement
         if (arr_var->m_value && ASR::is_a<ASR::ArrayConstant_t>(*arr_var->m_value)) {
@@ -5338,11 +5389,10 @@ public:
                 slots[k] = ASRUtils::fetch_ArrayConstant_value(al, prev, (int)k);
             }
         }
-        ASR::expr_t* value = element_value(slots[flat]);
-        if (value == nullptr) {
-            return false;
+        for (const auto &element : elements) {
+            LCOMPILERS_ASSERT(element.first >= 0 && element.first < total_size);
+            slots[element.first] = element.second;
         }
-        slots[flat] = value;
         Vec<ASR::expr_t*> full_values;
         full_values.reserve(al, (size_t)total_size);
         for (int64_t k = 0; k < total_size; k++) {
@@ -5356,6 +5406,29 @@ public:
             full_values.size(), arr_var->m_type,
             ASR::arraystorageType::ColMajor);
         set_data_initial_value(arr_var, ASRUtils::EXPR(arr_constructor));
+    }
+
+    // Sets the element `arr_item` of an array in the initial value of the
+    // whole array, whose other elements keep the values earlier DATA
+    // statements gave them or are zero. `element_value` gives the value of
+    // the element from its earlier value, nullptr if it had none, or returns
+    // nullptr when it cannot be determined. Returns whether the element is
+    // set: it is not when the array or the element cannot be determined at
+    // compile time.
+    bool set_data_array_element_value(ASR::ArrayItem_t* arr_item,
+            const std::function<ASR::expr_t*(ASR::expr_t*)> &element_value,
+            const Location &loc) {
+        ASR::Variable_t* arr_var = nullptr;
+        int64_t flat = 0;
+        if (!data_array_element_position(arr_item, arr_var, flat)) {
+            return false;
+        }
+        ASR::expr_t* value = element_value(
+            data_array_initial_element(arr_var, flat));
+        if (value == nullptr) {
+            return false;
+        }
+        set_data_array_elements_value(arr_var, {{flat, value}}, loc);
         return true;
     }
 
