@@ -5381,6 +5381,7 @@ RUN(NAME structure_constructor_args_23 LABELS llvm) # gfortran 13 miscompiles un
 RUN(NAME structure_constructor_args_24 LABELS llvm) # gfortran 13 miscompiles unallocated scalar allocatable data sources
 RUN(NAME structure_constructor_args_25 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_28 LABELS gfortran llvm)
+RUN(NAME structure_constructor_args_29 LABELS gfortran llvm)
 
 RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
 RUN(NAME func_call_in_decl_02 LABELS gfortran llvm)
