@@ -475,6 +475,31 @@ void set_allocation_size_elemental_function(
     }
 }
 
+// The character length of the result of these intrinsics is that of their
+// first argument. Taking it from that argument avoids evaluating the
+// intrinsic itself, which is later implemented by a subroutine.
+static ASR::expr_t* intrinsic_array_result_len(Allocator& al,
+        const Location& loc, ASR::expr_t* value) {
+    if( !ASR::is_a<ASR::IntrinsicArrayFunction_t>(*value) ||
+            !ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
+        return nullptr;
+    }
+    ASR::IntrinsicArrayFunction_t* intrinsic_array_function =
+        ASR::down_cast<ASR::IntrinsicArrayFunction_t>(value);
+    switch( intrinsic_array_function->m_arr_intrinsic_id ) {
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Cshift):
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Eoshift):
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Pack):
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Spread):
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Transpose): {
+            ASRUtils::ASRBuilder b(al, loc);
+            return b.StringLen(intrinsic_array_function->m_args[0]);
+        }
+        default:
+            return nullptr;
+    }
+}
+
 bool set_allocation_size(
     Allocator& al, ASR::expr_t* value,
     ASR::expr_t* temporary_var,
@@ -508,6 +533,8 @@ bool set_allocation_size(
                 ASRUtils::expr_type(value));
             if( str_type->m_len ) {
                 len_allocte_expr = str_type->m_len;
+            } else if( ASR::expr_t* len = intrinsic_array_result_len(al, loc, value) ) {
+                len_allocte_expr = len;
             } else {
                 ASRUtils::ASRBuilder b(al, loc);
                 len_allocte_expr = ASRUtils::StringConcat::get_safe_string_len(al, loc, value, ASRUtils::expr_type(value), b);
@@ -785,6 +812,7 @@ bool set_allocation_size(
         case ASR::exprType::IntrinsicArrayFunction: {
             ASR::IntrinsicArrayFunction_t* intrinsic_array_function =
                 ASR::down_cast<ASR::IntrinsicArrayFunction_t>(value);
+            len_allocte_expr = intrinsic_array_result_len(al, loc, value);
             switch (intrinsic_array_function->m_arr_intrinsic_id) {
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::All):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Any):
@@ -870,10 +898,6 @@ bool set_allocation_size(
                         allocate_dim.m_length = size_i_1;
                         allocate_dims.push_back(al, allocate_dim);
                     }
-                    if (ASRUtils::is_character(*ASRUtils::expr_type(value))) {
-                        ASRUtils::ASRBuilder b(al, loc);
-                        len_allocte_expr = b.StringLen(intrinsic_array_function->m_args[0]);
-                    }
                     break;
                 }
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape): {
@@ -944,10 +968,6 @@ bool set_allocation_size(
 
                         allocate_dim.m_length = size_i;
                         allocate_dims.push_back(al, allocate_dim);
-                    }
-                    if( ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
-                        ASRUtils::ASRBuilder b(al, loc);
-                        len_allocte_expr = b.StringLen(intrinsic_array_function->m_args[0]);
                     }
                     break;
                 }
