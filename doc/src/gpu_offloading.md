@@ -638,15 +638,19 @@ for. The CUDA runtime keeps the same table and orders copies and launches
 on one stream.
 
 The Metal runtime encodes the launches one after another into one compute
-encoder, whose dispatches the device runs in order, and commits its command
-buffer every 64 launches and at every wait: encoding a dispatch costs the
-host about 2 us, committing a command buffer several times that, and each
-command buffer has an overhead of its own on the device. At most three
-committed command buffers are pending; a host that launches faster than the
-device runs waits for the oldest, which also bounds how many buffers the
-pending launches hold. A scratch buffer is kept per kernel and argument and
-used by every launch of the kernel: the device runs them in order, and what
-a launch leaves in it is dead when the launch ends.
+encoder and commits its command buffer every 64 launches and at every wait:
+encoding a dispatch costs the host about 2 us, committing a command buffer
+several times that, and each command buffer has an overhead of its own on
+the device. The encoder runs its dispatches concurrently, with a barrier
+before a dispatch that uses a device buffer that a dispatch since the last
+barrier writes, or writes one that such a dispatch reads: launches that do
+not depend on each other overlap, and the others run in launch order. At
+most three committed command buffers are pending; a host that launches
+faster than the device runs waits for the oldest, which also bounds how many
+buffers the pending launches hold. A scratch buffer is kept per kernel and
+argument and used by every launch of the kernel, which writes it, so
+launches of one kernel never overlap, and what a launch leaves in it is dead
+when it ends.
 
 ### Where the host waits
 

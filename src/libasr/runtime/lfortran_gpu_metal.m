@@ -32,12 +32,16 @@ Launches are asynchronous, and the device keeps what a kernel writes.
   may still run: a copy into a resident buffer still in use goes into a fresh
   buffer instead, and pooled buffers are reused only once the launches that
   used them have completed.
-* Launches are encoded one after another into one compute encoder, whose
-  dispatches run in order, and the command buffer is committed every
+* Launches are encoded one after another into one compute encoder, and the
+  command buffer is committed every
   LAUNCHES_PER_COMMIT launches and at a sync: encoding a dispatch costs a
   fraction of what committing a command buffer and its overhead on the GPU
-  do. The queue holds a bounded number of committed command buffers, so a
-  host that launches faster than the GPU runs waits for it there.
+  do. The encoder runs dispatches concurrently, with a barrier before a
+  dispatch that uses a buffer an earlier one since the last barrier writes,
+  or writes one it reads: so independent launches overlap, and the device
+  runs the launches as if in order. At most MAX_PENDING_COMMITS committed
+  command buffers are pending: a host that launches faster than the GPU
+  runs waits for it there.
 */
 
 // A read-only argument up to this size is copied into the encoder.
@@ -51,6 +55,13 @@ enum { POOL_MAX = 128, MAX_RESIDENT = 1024, HASH_SIZE = 4096 };
 // than the device runs waits for the oldest. Few pending launches keep the
 // buffers they hold few, so that the pool can give them out again.
 enum { LAUNCHES_PER_COMMIT = 64, MAX_PENDING_COMMITS = 3 };
+// Buffers whose use since the last barrier is remembered.
+enum { MAX_TRACKED = 256 };
+
+typedef struct buffer_use {
+    void *buffer;
+    int write;
+} buffer_use;
 
 // Registry of the shader sources emitted for each kernel, and the pipeline
 // compiled from each, once per run: a kernel is loaded at every launch, and
@@ -109,6 +120,11 @@ struct lfortran_gpu_ctx {
     uint64_t lru_clock;
     // How many times the host has synced.
     uint64_t n_syncs;
+    // The device buffers the dispatches since the last barrier of the open
+    // encoder read and write.
+    void *reads[MAX_TRACKED];
+    void *writes[MAX_TRACKED];
+    int n_reads, n_writes;
 };
 
 static resident entries[MAX_RESIDENT];
@@ -544,6 +560,40 @@ void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
 
 static void commit_open(lfortran_gpu_ctx *ctx);
 
+static int listed(void *const *list, int n, void *buffer) {
+    for (int i = 0; i < n; i++) {
+        if (list[i] == buffer) return 1;
+    }
+    return 0;
+}
+
+// The encoder runs its dispatches concurrently: a dispatch that reads what
+// one since the last barrier writes, or writes what one reads or writes,
+// gets a barrier before it, so that the device runs the launches as if one
+// after another.
+static void order_after_dependences(lfortran_gpu_ctx *ctx,
+    id<MTLComputeCommandEncoder> encoder, const buffer_use *uses, int n)
+{
+    int barrier = ctx->n_reads + n > MAX_TRACKED
+        || ctx->n_writes + n > MAX_TRACKED;
+    for (int i = 0; i < n && !barrier; i++) {
+        barrier = listed(ctx->writes, ctx->n_writes, uses[i].buffer)
+            || (uses[i].write
+                && listed(ctx->reads, ctx->n_reads, uses[i].buffer));
+    }
+    if (barrier) {
+        [encoder memoryBarrierWithScope:MTLBarrierScopeBuffers];
+        ctx->n_reads = ctx->n_writes = 0;
+    }
+    for (int i = 0; i < n; i++) {
+        if (uses[i].write) {
+            ctx->writes[ctx->n_writes++] = uses[i].buffer;
+        } else {
+            ctx->reads[ctx->n_reads++] = uses[i].buffer;
+        }
+    }
+}
+
 // The scratch buffer of argument `slot` of the kernel `entry`, with room for
 // `size` bytes. One larger than the pool keeps -- the device heap -- is made
 // for the launch.
@@ -673,15 +723,23 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         k->serial = serial;
         if (!ctx->open_command_buffer) {
             ctx->open_command_buffer = [ctx->queue commandBuffer];
-            ctx->encoder = [ctx->open_command_buffer computeCommandEncoder];
+            ctx->encoder = [ctx->open_command_buffer
+                computeCommandEncoderWithDispatchType:
+                    MTLDispatchTypeConcurrent];
+            ctx->n_reads = ctx->n_writes = 0;
         }
         id<MTLComputeCommandEncoder> encoder = ctx->encoder;
         [encoder setComputePipelineState:k->pipeline];
+        // The device buffers this dispatch reads and writes.
+        buffer_use uses[MAX_ARGS];
+        int n_uses = 0;
 
         for (int i = 0; i < k->n_args; i++) {
             if (!written[i]) continue;
             entries[find_entry(k->ptrs[i])].last_use = serial;
             [encoder setBuffer:written[i] offset:0 atIndex:i];
+            uses[n_uses].buffer = (__bridge void *)written[i];
+            uses[n_uses++].write = 1;
         }
         for (int i = 0; i < k->n_args; i++) {
             switch (k->kind[i]) {
@@ -698,6 +756,8 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                         k->sizes[i]);
                     if (buffer) {
                         entries[find_entry(k->ptrs[i])].last_use = serial;
+                        uses[n_uses].buffer = (__bridge void *)buffer;
+                        uses[n_uses++].write = 0;
                         [encoder setBuffer:buffer offset:0 atIndex:i];
                     } else if (k->sizes[i] <= INLINE_BYTES_MAX) {
                         [encoder setBytes:k->ptrs[i] length:k->sizes[i]
@@ -718,6 +778,8 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                     id<MTLBuffer> buffer = scratch_buffer(ctx, k->entry, i,
                         k->sizes[i]);
                     k->scratch_buffers[i] = buffer;
+                    uses[n_uses].buffer = (__bridge void *)buffer;
+                    uses[n_uses++].write = 1;
                     [encoder setBuffer:buffer offset:0 atIndex:i];
                     break;
                 }
@@ -736,6 +798,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         if (threads_per_group > max_threads) {
             threads_per_group = max_threads;
         }
+        order_after_dependences(ctx, encoder, uses, n_uses);
         [encoder dispatchThreads:MTLSizeMake(total_threads, 1, 1)
             threadsPerThreadgroup:MTLSizeMake(threads_per_group, 1, 1)];
         if (++ctx->n_encoded >= LAUNCHES_PER_COMMIT) commit_open(ctx);
