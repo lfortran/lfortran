@@ -1071,7 +1071,8 @@ namespace DateAndTime {
             fill_func_arg_sub("zone", real32, In);
         }
         if (!is_real(*arg_types[3])) {
-            fill_func_arg_sub("values", arg_types[3], Out);
+            ASR::ttype_t* values_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[3]);
+            fill_func_arg_sub("values", values_type, Out);
             std::vector<LCompilers::ASR::expr_t *> vals;
             ASR::symbol_t *s_4 = b.create_c_func_subroutines(c_func_name_4, fn_symtab, 1, int32);
             fn_symtab->add_symbol(c_func_name_4, s_4);
@@ -1088,7 +1089,12 @@ namespace DateAndTime {
                 }
                 vals.push_back(xx_casted);
             }
-            body.push_back(al, b.Assignment(args[3], b.ArrayConstant(vals, extract_type(arg_types[3]), false)));
+            // `values` can be larger than 8, the values are stored into its
+            // first elements
+            for (size_t i = 0; i < vals.size(); i++) {
+                std::vector<ASR::expr_t*> idx = {b.i32(i + 1)};
+                body.push_back(al, b.Assignment(b.ArrayItem_01(args[3], idx), vals[i]));
+            }
         } else {
             fill_func_arg_sub("values", real32, In);
         }
