@@ -271,6 +271,11 @@ GpuDevice gpu_device_selected(const PassOptions &pass_options);
 GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device);
 GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options);
 
+// Whether `name` is one the program can have written, which a diagnostic
+// may show. A Fortran name begins with a letter (F2018 6.2.2), and every
+// name the compiler makes up for a temporary does not.
+bool gpu_source_name(const std::string &name);
+
 // The whole clause the diagnostic reads, lowercase and naming nothing
 // internal. This is the only place the wording of a decline is written.
 std::string gpu_decline_message(const GpuDecline &decline);

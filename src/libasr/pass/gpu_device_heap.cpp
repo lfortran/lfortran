@@ -1480,8 +1480,8 @@ public:
             }
             // A temporary of the compiler, such as the result of a
             // function, is not named.
-            std::string named = view->second.rfind("__", 0) == 0
-                ? "" : "'" + view->second + "', ";
+            std::string named = gpu_source_name(view->second)
+                ? "'" + view->second + "', " : "";
             unsupported = named + "passed for the allocatable dummy "
                 "argument '" + std::string(ASRUtils::symbol_name(d)) +
                 "' of '" + std::string(callee->m_name) + "',";
@@ -3686,9 +3686,11 @@ private:
             Image *img = types.by_symbol.count(v->m_type_declaration)
                 ? types.by_symbol[v->m_type_declaration] : nullptr;
             if (img == nullptr && !arena_element(*v)) {
+                std::string named = gpu_source_name(v->m_name)
+                    ? "'" + std::string(v->m_name) + "', " : "";
                 heap.decline(kernel, loc, GpuDecline(
-                    GpuDeclineReason::HeapArrayUse, "'" +
-                    std::string(v->m_name) + "', of a type no arena holds,"));
+                    GpuDeclineReason::HeapArrayUse, named +
+                    "of a type no arena holds,"));
                 return;
             }
             Descriptor h;

@@ -107,10 +107,7 @@ static std::string article(const std::string &word) {
     }
 }
 
-// Whether `name` is one the program can have written, which a diagnostic
-// may show. A Fortran name begins with a letter (F2018 6.2.2), and every
-// name the compiler makes up for a temporary does not.
-static bool gpu_source_name(const std::string &name) {
+bool gpu_source_name(const std::string &name) {
     return !name.empty() && std::isalpha(static_cast<unsigned char>(name[0]))
         && !ASRUtils::is_compiler_generated_name(name);
 }
