@@ -154,6 +154,15 @@ generates the device source. It never falls back to the CPU:
   (`associate (n => size(a))`), is the value the expression had when the
   construct was entered, which the kernel is handed as a scalar: the
   expression is not evaluated again, and what it reads is not handed over.
+* A call of a function that returns an array, in an array statement of the
+  loop body (`a(1:n, p) = x(p)%values() * 2`, `sum(x(p)%values())`, an
+  operand of `matmul`), is made once, before the statement, and its result
+  assigned to an array of the iteration, which the statement then reads
+  element by element; so is the call an associate name of a construct in
+  the loop is bound to (`associate (y => x(p)%values())`), on entry. The
+  array, like any allocatable of device code assigned the result of a
+  function, takes the shape the function gives its result, over the
+  actual arguments of the call.
 * An array an iteration needs whose size is known only at run time -- a
   local of a `block` with run-time extents, an allocatable local, or a
   temporary the compiler introduces, such as the result of a function or
