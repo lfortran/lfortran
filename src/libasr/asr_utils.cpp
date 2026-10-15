@@ -5432,19 +5432,28 @@ ASR::asr_t* make_ArraySize_t_util(
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable(array_item_t->m_type) &&
                               !ASRUtils::is_pointer(array_item_t->m_type));
         }
+        // Only the vector subscripts are dimensions of the result; a
+        // scalar subscript selects a single position.
+        std::vector<ASR::expr_t*> vector_subscripts;
+        for( size_t i = 0; i < array_item_t->n_args; i++ ) {
+            ASR::expr_t* subscript = array_item_t->m_args[i].m_right;
+            if( subscript && ASRUtils::is_array(ASRUtils::expr_type(subscript)) ) {
+                vector_subscripts.push_back(subscript);
+            }
+        }
         if( a_dim == nullptr ) {
             ASR::asr_t* const1 = ASR::make_IntegerConstant_t(al, a_loc, 1, a_type);
             ASR::asr_t* size = const1;
-            for( size_t i = 0; i < array_item_t->n_args; i++ ) {
+            for( ASR::expr_t* subscript: vector_subscripts ) {
                 ASR::expr_t* end = ASRUtils::EXPR(make_ArraySize_t_util(al, a_loc,
-                    array_item_t->m_args[i].m_right, a_dim, a_type, nullptr, for_type));
+                    subscript, a_dim, a_type, nullptr, for_type));
                 size = ASR::make_IntegerBinOp_t(al, a_loc, ASRUtils::EXPR(size),
                     ASR::binopType::Mul, end, a_type, nullptr);
             }
             return size;
-        } else if( is_dimension_constant ) {
-            return make_ArraySize_t_util(al, a_loc,
-                array_item_t->m_args[dim].m_right,
+        } else if( is_dimension_constant && dim >= 1
+                && (size_t) dim <= vector_subscripts.size() ) {
+            return make_ArraySize_t_util(al, a_loc, vector_subscripts[dim - 1],
                 nullptr, a_type, nullptr, for_type);
         }
     }

@@ -1662,6 +1662,27 @@ ASR::symbol_t* extract_symbol(ASR::expr_t* expr) {
     }
 }
 
+// The variable that `e` (a variable, or a component, element or section of
+// one) is part of, e.g. `u` for `u(i)%arr`
+ASR::symbol_t* get_root_var(ASR::expr_t* e) {
+    if (e == nullptr) return nullptr;
+    switch (e->type) {
+        case ASR::exprType::Var:
+            return ASR::down_cast<ASR::Var_t>(e)->m_v;
+        case ASR::exprType::StructInstanceMember:
+            return get_root_var(
+                ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v);
+        case ASR::exprType::ArrayItem:
+            return get_root_var(
+                ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
+        case ASR::exprType::ArraySection:
+            return get_root_var(
+                ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
+        default:
+            return nullptr;
+    }
+}
+
 bool is_common_symbol_present_in_lhs_and_rhs(Allocator &al, ASR::expr_t* lhs, ASR::expr_t* rhs) {
     if (lhs == nullptr) {
         return false;
@@ -2159,7 +2180,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             // add it is because there is currently no integration test
             // for it
             if (!ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value))) {
-                ASR::Var_t* v1 = ASR::down_cast<ASR::Var_t>(xx.m_target);
+                ASR::symbol_t* target_sym = extract_symbol(xx.m_target);
                 bool create_temp_var_for_rhs = false;
                 Vec<ASR::expr_t*> array_vars; array_vars.reserve(al, 1);
                 ArrayVarCollector array_var_collector(al, array_vars);
@@ -2168,9 +2189,17 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 // there is any common variable
                 for (size_t i=0; i < array_vars.size(); i++) {
                     ASR::symbol_t* sym = extract_symbol(array_vars[i]);
-                    if (sym && sym == v1->m_v) {
+                    if (sym && sym == target_sym) {
                         create_temp_var_for_rhs = true;
                     }
+                }
+                // An element of the variable, such as `u(i)%arr(j)` in
+                // `u(i)%arr = [(u(i)%arr(j), j=1,n)]` (left in a FORALL by
+                // implied_do_loops), is read after the reallocation too.
+                ASR::symbol_t* target_root = get_root_var(xx.m_target);
+                if (target_root &&
+                        ASRUtils::expr_references_symbol(xx.m_value, target_root)) {
+                    create_temp_var_for_rhs = true;
                 }
 
                 if (create_temp_var_for_rhs) {
@@ -2216,25 +2245,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         // mid-copy (especially via reallocation of nested allocatable
         // components), producing incorrect results / segfaults.
         {
-            std::function<ASR::symbol_t*(ASR::expr_t*)> get_root_var =
-                [&](ASR::expr_t* e) -> ASR::symbol_t* {
-                if (e == nullptr) return nullptr;
-                switch (e->type) {
-                    case ASR::exprType::Var:
-                        return ASR::down_cast<ASR::Var_t>(e)->m_v;
-                    case ASR::exprType::StructInstanceMember:
-                        return get_root_var(
-                            ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v);
-                    case ASR::exprType::ArrayItem:
-                        return get_root_var(
-                            ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
-                    case ASR::exprType::ArraySection:
-                        return get_root_var(
-                            ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
-                    default:
-                        return nullptr;
-                }
-            };
             if (ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value)) &&
                 !ASRUtils::is_array(ASRUtils::expr_type(xx.m_value)) &&
                 !ASRUtils::is_array(ASRUtils::expr_type(xx.m_target)) &&
