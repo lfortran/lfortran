@@ -125,6 +125,10 @@ ASR::stmt_t* inline_in_block(Allocator &al, const Location &loc,
     std::vector<InlineScope> scopes;
     if (!collect_scopes({function.m_symtab, function.m_body, function.n_body},
             scopes)) return nullptr;
+    // A local initialized on entry (e.g. the extent of an explicit-shape
+    // dummy) references the dummies, which are bound by `before`. It is
+    // assigned after them instead, in declaration order.
+    std::map<ASR::symbol_t*, ASR::expr_t*> entry_values;
     for (const auto &source : scopes) {
         for (const auto &item : source.symbols->get_scope()) {
             if (substitutions.count(item.second)) continue;
@@ -137,6 +141,10 @@ ASR::stmt_t* inline_in_block(Allocator &al, const Location &loc,
                 variable->m_symbolic_value);
             ASR::expr_t *value = duplicator.duplicate_expr(variable->m_value);
             if (!duplicator.success) return nullptr;
+            if (ASRUtils::is_entry_initialized_local(*variable)) {
+                entry_values.emplace(item.second, initial);
+                initial = nullptr;
+            }
             std::string name = inline_local_name(scope, variable->m_name);
             ASR::symbol_t *copy = ASR::down_cast<ASR::symbol_t>(
                 ASRUtils::make_Variable_t_util(al, loc, scope, s2c(al, name),
@@ -158,16 +166,27 @@ ASR::stmt_t* inline_in_block(Allocator &al, const Location &loc,
     }
     ASRUtils::ExprStmtDuplicator duplicator(al);
     Vec<ASR::stmt_t*> body;
-    body.reserve(al, function.n_body + before.size() + after.size() + 1);
+    body.reserve(al, function.n_body + before.size() + after.size() + 1
+        + entry_values.size());
     for (ASR::stmt_t *statement : before) body.push_back(al, statement);
     size_t start = body.n;
+    ASRUtils::ASRBuilder b(al, loc);
+    for (const auto &source : scopes) {
+        for (auto &name : ASRUtils::determine_variable_declaration_order(
+                source.symbols)) {
+            auto value = entry_values.find(source.symbols->get_symbol(name));
+            if (value != entry_values.end()) {
+                body.push_back(al, b.Assignment(substitutions.at(value->first),
+                    value->second));
+            }
+        }
+    }
     if (!clone_body(al, scopes.front(), duplicator, body)) return nullptr;
     for (size_t i = start; i < body.n; i++) replace.visit_stmt(*body[i]);
     for (ASR::stmt_t *statement : after) body.push_back(al, statement);
     if (function.m_return_var) {
         LCOMPILERS_ASSERT(target);
         auto *result = ASR::down_cast<ASR::Var_t>(function.m_return_var)->m_v;
-        ASRUtils::ASRBuilder b(al, loc);
         body.push_back(al, b.Assignment(target, substitutions.at(result)));
     }
     std::string name = scope->parent->get_unique_name(

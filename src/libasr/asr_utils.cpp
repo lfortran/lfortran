@@ -14026,6 +14026,15 @@ void ReplaceWithFunctionParamVisitor::replace_Var(ASR::Var_t* x) {
         *current_expr = ASRUtils::EXPR(ASR::make_FunctionParam_t(
                             al, m_args[arg_idx]->base.loc, arg_idx,
                             t_, nullptr));
+    } else if (ASR::is_a<ASR::Variable_t>(*x->m_v) &&
+            is_entry_initialized_local(*ASR::down_cast<ASR::Variable_t>(x->m_v))) {
+        // A local initialized on entry (e.g. the extent of an
+        // explicit-shape dummy) stands for its initializer, which is
+        // given in terms of the arguments.
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        *current_expr = duplicator.duplicate_expr(
+            ASR::down_cast<ASR::Variable_t>(x->m_v)->m_symbolic_value);
+        replace_expr(*current_expr);
     } else if (ASRUtils::expr_value((ASR::expr_t*)x)){//  Replace Constant args
         *current_expr = ASRUtils::expr_value((ASR::expr_t*)x); 
     }

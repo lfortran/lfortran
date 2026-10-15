@@ -1,7 +1,7 @@
 ! Explicit-shape extents are zero when the upper bound precedes the lower.
 program automatic_array_05
     implicit none
-    integer :: n, lo, hi, i, input(2, 3)
+    integer :: n, lo, hi, i, k, input(2, 3)
     if (size(seq(-2)) /= 0) error stop 1
     if (size(seq(0)) /= 0) error stop 2
     if (any(seq(3) /= [1, 2, 3])) error stop 3
@@ -13,6 +13,9 @@ program automatic_array_05
         if (any(trimmed(input, n) /= 7)) error stop 17
         call check_local(n)
         call check_wide(int(n, 8))
+        k = n
+        call check_entry_extent(k, input(1, :))
+        if (k /= n + 5) error stop 35
         if (size(seq(n)) /= max(0, n)) error stop 13
         call check_assumed(seq(n), max(0, n))
         lo = 4
@@ -62,6 +65,22 @@ contains
         if (size(a) /= max(0, n)) error stop 8
         if (any(shape(a) /= [max(0, n)])) error stop 20
         call check_assumed(a, max(0, n))
+        if (sized(n, a) /= 10*max(0, n) + min(1, max(0, n))) error stop 37
+    end subroutine
+    ! Small enough to be inlined with --fast.
+    integer function sized(n, x)
+        integer, intent(in) :: n, x(n)
+        sized = 10*size(x)
+        if (n > 0) sized = sized + x(1)
+    end function
+    ! The extent is that on entry, even if the bound changes later.
+    subroutine check_entry_extent(k, a)
+        integer, intent(inout) :: k
+        integer, intent(in) :: a(k)
+        integer :: e
+        e = max(0, k)
+        k = k + 5
+        if (size(a) /= e .or. ubound(a, 1) /= e) error stop 34
     end subroutine
     subroutine check_char(n)
         integer, intent(in) :: n
