@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <cstdint>
+#include <functional>
 #include <map>
 #include <memory>
 #include <set>
@@ -958,6 +959,9 @@ struct ComponentWrite {
 class GpuComponentFit {
     Allocator &al;
     SymbolTable *scope;
+    // The procedure with the body of a separate module procedure the loop
+    // calls, which its interface does not have.
+    std::function<ASR::Function_t*(ASR::Function_t*)> implementation;
     bool realloc;
     bool checks;
     const ParallelLoopNest &loop;
@@ -1290,7 +1294,10 @@ class GpuComponentFit {
                         !ASR::is_a<ASR::Function_t>(*callee)) {
                     continue;
                 }
-                ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(callee);
+                // A separate module procedure shapes the component in its
+                // body, which its interface does not have.
+                ASR::Function_t *fn = implementation(
+                    ASR::down_cast<ASR::Function_t>(callee));
                 if (!fn->m_return_var ||
                         !ASR::is_a<ASR::Var_t>(*fn->m_return_var)) {
                     continue;
@@ -1752,11 +1759,14 @@ class GpuComponentFit {
     }
 
 public:
-    GpuComponentFit(Allocator &al, SymbolTable *scope, bool realloc,
+    GpuComponentFit(Allocator &al, SymbolTable *scope,
+            std::function<ASR::Function_t*(ASR::Function_t*)>
+                implementation, bool realloc,
             bool checks, const ParallelLoopNest &loop,
             const std::vector<ASR::expr_t*> &starts,
             const std::vector<ASR::expr_t*> &ends)
-        : al(al), scope(scope), realloc(realloc), checks(checks),
+        : al(al), scope(scope), implementation(std::move(implementation)),
+          realloc(realloc), checks(checks),
           loop(loop), starts(starts), ends(ends) {}
 
     ASR::symbol_t* build(const Location &loc) {
@@ -1823,7 +1833,12 @@ public:
 ASR::symbol_t* GpuOffloadVisitor::build_component_fit(
         const ParallelLoopNest &loop, const std::vector<ASR::expr_t*> &starts,
         const std::vector<ASR::expr_t*> &ends, const Location &loc) {
-    GpuComponentFit fit(al, current_scope, pass_options.realloc_lhs_arrays,
+    GpuComponentFit fit(al, current_scope,
+        [this](ASR::Function_t *fn) {
+            ASR::Function_t *impl = resolve_function_implementation(fn);
+            return impl != nullptr ? impl : fn;
+        },
+        pass_options.realloc_lhs_arrays,
         pass_options.bounds_checking, loop, starts, ends);
     return fit.build(loc);
 }
