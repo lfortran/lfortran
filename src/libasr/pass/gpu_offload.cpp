@@ -2020,16 +2020,13 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         ASR::make_IntegerConstant_t(al, loc, 1, int_type,
             ASR::integerbozType::Decimal));
 
-    // Compute total flat size for guard
+    // Compute total flat size for guard. Every thread past it returns, so
+    // the per-dim ranges below are only computed when none is empty.
     ASR::expr_t *total_size_kernel = nullptr;
     for (size_t d = 0; d < n_dims; d++) {
-        // dim_range = kernel_end - kernel_start + 1
-        ASR::expr_t *dim_range = ASRUtils::EXPR(
-            ASR::make_IntegerBinOp_t(al, loc,
-                ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                    kernel_ends[d], ASR::binopType::Sub,
-                    kernel_starts[d], int_type, nullptr)),
-                ASR::binopType::Add, one_const, int_type, nullptr));
+        // dim_range = max(0, kernel_end - kernel_start + 1)
+        ASR::expr_t *dim_range = gpu_loop_extent(al, loc,
+            kernel_starts[d], kernel_ends[d], int_type);
         if (total_size_kernel == nullptr) {
             total_size_kernel = dim_range;
         } else {
