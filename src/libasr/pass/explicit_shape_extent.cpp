@@ -35,8 +35,9 @@ Every later use then reads the locals instead of evaluating the bound
 expressions again, and redefining a variable of a bound in the body changes
 neither the bounds nor the extent. The code generators set these locals
 before they set up the dummies from their types. The only arrays that keep
-an expression, max(0, length), as their extent are temporaries that a pass
-created for a statement of the body (see visit_Variable).
+an expression, max(0, length), as their extent are the dummies and the result
+of an interface body, which has no body to evaluate it in, and temporaries
+that a pass created for a statement of the body (see visit_Variable).
 
 An ArrayPhysicalCast of such an array (for example, to pass it to an
 assumed-shape dummy) was given a copy of the declared length by semantics. Its
@@ -60,10 +61,14 @@ private:
     Allocator& al;
     std::set<const ASR::Variable_t*>& clamped;
 
-    // True if `x` is a dummy, the result or an automatic object of a host
+    enum class Owner { None, Interface, Body };
+
+    // Body if `x` is a dummy, the result or an automatic object of a host
     // procedure, or an automatic object of a BLOCK of one or of the main
-    // program. The GPU passes size the objects of device code themselves.
-    static bool is_host_procedure_object(const ASR::Variable_t& x) {
+    // program; Interface if it is a dummy or the result of an interface
+    // body (which includes the declaration of a separate module procedure).
+    // The GPU passes size the objects of device code themselves.
+    static Owner get_owner(const ASR::Variable_t& x) {
         SymbolTable* scope = x.m_parent_symtab;
         while (scope != nullptr && scope->asr_owner != nullptr
                 && ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
@@ -71,19 +76,22 @@ private:
                 scope->asr_owner);
             if (ASR::is_a<ASR::Function_t>(*owner)) {
                 ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(owner);
+                if (ASRUtils::is_device_only_function(*f)) {
+                    return Owner::None;
+                }
                 return ASRUtils::get_FunctionType(f)->m_deftype
                         == ASR::deftypeType::Implementation
-                    && !ASRUtils::is_device_only_function(*f);
+                    ? Owner::Body : Owner::Interface;
             }
             if (ASR::is_a<ASR::Program_t>(*owner)) {
-                return true;
+                return Owner::Body;
             }
             if (!ASR::is_a<ASR::Block_t>(*owner)) {
-                return false;
+                return Owner::None;
             }
             scope = scope->parent;
         }
-        return false;
+        return Owner::None;
     }
 
     static bool is_runtime(ASR::expr_t* bound) {
@@ -195,16 +203,23 @@ public:
             return;
         }
         ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(x.m_type);
-        if (!has_runtime_bound(*array) || !is_host_procedure_object(x)) {
+        if (!has_runtime_bound(*array)) {
             return;
         }
+        Owner owner = get_owner(x);
+        if (owner == Owner::None) {
+            return;
+        }
+        // An interface body has no body to evaluate the bounds on entry in,
+        // so it keeps them with the extent max(0, length), the value that
+        // the procedure computes on entry. Callers, which size the result
+        // and check the arguments with this type, then agree with it.
         // function_call_in_declaration captured each bound of an automatic
         // object that the body can change (outside the scopes it leaves
         // alone), so a local with a bound that can still change is a
         // temporary that a later pass created for a statement of the body.
-        // It keeps the bounds of that statement, with the extent
-        // max(0, length), instead of the values they have on entry.
-        bool temporary = false;
+        // It is treated in the same way.
+        bool temporary = owner == Owner::Interface;
         for (size_t i = 0; i < array->n_dims; i++) {
             temporary = temporary || (x.m_intent == ASR::intentType::Local
                 && (bound_may_change(array->m_dims[i].m_start)

@@ -12912,6 +12912,36 @@ void insert_self_arg(
     n_args = new_args.size();
 }
 
+// The type of a function reference whose result is an explicit-shape array
+// with a constant length below zero, which the actual arguments can give
+// (`f(-3)` for a result `r(n)`), has the extent zero there.
+static ASR::ttype_t* clamp_constant_result_extents(Allocator &al,
+        ASR::ttype_t* type) {
+    if (!ASR::is_a<ASR::Array_t>(*type)) {
+        return type;
+    }
+    ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(type);
+    Vec<ASR::dimension_t> dims;
+    dims.reserve(al, array->n_dims);
+    bool clamped = false;
+    for (size_t i = 0; i < array->n_dims; i++) {
+        ASR::dimension_t dim = array->m_dims[i];
+        ASR::expr_t* value = dim.m_length ? ASRUtils::expr_value(dim.m_length) : nullptr;
+        int64_t length = 0;
+        if (value && ASRUtils::extract_value(value, length) && length < 0) {
+            dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                dim.m_length->base.loc, 0, ASRUtils::expr_type(dim.m_length)));
+            clamped = true;
+        }
+        dims.push_back(al, dim);
+    }
+    if (!clamped) {
+        return type;
+    }
+    return ASRUtils::TYPE(ASR::make_Array_t(al, type->base.loc, array->m_type,
+        dims.p, dims.size(), array->m_physical_type, array->m_memory_space));
+}
+
 ASR::asr_t* make_FunctionCall_t_util(
     Allocator &al, const Location &a_loc, ASR::symbol_t* a_name,
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
@@ -12961,7 +12991,7 @@ ASR::asr_t* make_FunctionCall_t_util(
     }
 
     return ASR::make_FunctionCall_t(al, a_loc, a_name, a_original_name,
-            a_args, n_args, a_type, a_value, a_dt);
+            a_args, n_args, clamp_constant_result_extents(al, a_type), a_value, a_dt);
 }
 
 ASR::asr_t* make_SubroutineCall_t_util(

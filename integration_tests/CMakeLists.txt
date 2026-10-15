@@ -3296,6 +3296,7 @@ RUN(NAME automatic_allocation_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc E
 RUN(NAME automatic_array_01 LABELS gfortran llvm cuda)
 RUN(NAME automatic_array_02 LABELS gfortran llvm)
 RUN(NAME automatic_array_03 LABELS gfortran llvm)
+RUN(NAME automatic_array_04 LABELS gfortran llvm)
 RUN(NAME automatic_array_05 LABELS gfortran llvm)
 
 RUN(NAME block_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -5798,6 +5799,7 @@ RUN(NAME separate_compilation_63 LABELS llvm EXTRAFILES separate_compilation_63a
 RUN(NAME separate_compilation_64 LABELS llvm EXTRAFILES separate_compilation_64a.f90 EXTRA_ARGS --separate-compilation) # component of a named constant holding a procedure-pointer component targeting an imported procedure (#14794) (gfortran 13 at CI rejects procedure targets in initializer structure constructors)
 RUN(NAME separate_compilation_65 LABELS llvm EXTRAFILES separate_compilation_65a.f90 EXTRA_ARGS --separate-compilation) # data component of a named constant holding a procedure-pointer component targeting an imported procedure (#14794) (gfortran 13 at CI rejects procedure targets in initializer structure constructors)
 RUN(NAME separate_compilation_66 LABELS llvm EXTRAFILES separate_compilation_66a.f90 EXTRA_ARGS --separate-compilation) # procedure-local procedure pointer and saved derived-type initializers targeting an imported procedure (#14793) (gfortran 13 at CI rejects procedure targets in initializer structure constructors)
+RUN(NAME separate_compilation_67 LABELS gfortran llvm EXTRAFILES separate_compilation_67a.f90 EXTRA_ARGS --separate-compilation) # zero extent of an explicit-shape result of a separate module procedure and of an external procedure through an interface body, called from another translation unit (#13475)
 RUN(NAME separate_compilation_68 LABELS gfortran llvm EXTRAFILES separate_compilation_68a.f90 EXTRA_ARGS --separate-compilation) # zero extent of an explicit-shape result and dummy of a module procedure called from another translation unit (#13475)
 RUN(NAME separate_compilation_69 LABELS gfortran llvm EXTRAFILES separate_compilation_69a.f90)
 RUN(NAME separate_compilation_70 LABELS gfortran llvm EXTRAFILES separate_compilation_70a.f90)
