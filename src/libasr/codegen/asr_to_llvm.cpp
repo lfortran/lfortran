@@ -742,8 +742,8 @@ public:
     std::map<uint64_t, llvm::Value*> llvm_symtab; // llvm_symtab_value
     std::map<std::pair<uint64_t, SymbolTable*>, llvm::Value*> llvm_symtab_deep_copy;
     // The locals of the procedure being generated that setup_entry_values
-    // has already set.
-    std::set<ASR::symbol_t*> entry_locals_set;
+    // has already declared.
+    std::set<ASR::symbol_t*> locals_declared_on_entry;
     std::map<uint64_t, llvm::Function*> llvm_symtab_fn;
     std::map<std::string, uint64_t> llvm_symtab_fn_names;
     // Hashes of LLVM functions created for a bare ImplicitInterface
@@ -10219,7 +10219,7 @@ public:
             // which declare_common_block_storage laid out.
             if (is_a<ASR::Variable_t>(*var_sym) &&
                     ASR::down_cast<ASR::Variable_t>(var_sym)->m_common_block == nullptr &&
-                    entry_locals_set.find(var_sym) == entry_locals_set.end()) {
+                    locals_declared_on_entry.find(var_sym) == locals_declared_on_entry.end()) {
                 process_Variable(var_sym, x, debug_arg_count);
             }
         }
@@ -10758,7 +10758,9 @@ public:
     //
     // The locals initialized on entry (ASRUtils::is_entry_initialized_local)
     // are set here too, before the array dummies are set up from their
-    // types, which can refer to them (e.g. a lower bound or an extent).
+    // types, which can refer to them (e.g. a lower bound or an extent). A
+    // local that such an initial value refers to (`work(2*size(tmp))`) is
+    // declared here before it, and declare_vars skips it.
     void setup_entry_values(const ASR::Function_t& x) {
         struct Dummy {
             llvm::Value* desc;
@@ -10792,7 +10794,7 @@ public:
             state[&arg->base] = 0;
             order.push_back(&arg->base);
         }
-        entry_locals_set.clear();
+        locals_declared_on_entry.clear();
         for (auto &name: ASRUtils::determine_variable_declaration_order(x.m_symtab)) {
             ASR::symbol_t* s = x.m_symtab->get_symbol(name);
             if (ASR::is_a<ASR::Variable_t>(*s) && ASRUtils::is_entry_initialized_local(
@@ -10802,10 +10804,11 @@ public:
             }
         }
         // A declared length or an initial value can depend on the length of
-        // another such dummy (`character(len=len(a)*2) :: b`) or on another
+        // another such dummy (`character(len=len(a)*2) :: b`), on another
         // such local, also through the type of a variable that it refers to
-        // (`character(len=size(a)) :: c`), which can come later, so those it
-        // depends on are set first.
+        // (`character(len=size(a)) :: c`), or on another local
+        // (`work(2*size(tmp))`), which can come later, so those it depends on
+        // are set or declared first.
         uint32_t debug_arg_count = 0;
         std::set<ASR::symbol_t*> types_seen;
         std::function<void(ASR::symbol_t*)> set;
@@ -10814,11 +10817,20 @@ public:
             for (ASR::symbol_t* r: referenced.variables) {
                 if (state.find(r) != state.end()) {
                     set(r);
-                } else if (ASR::is_a<ASR::Variable_t>(*r)
-                        && ASR::down_cast<ASR::Variable_t>(r)->m_parent_symtab == x.m_symtab
-                        && types_seen.insert(r).second) {
+                    continue;
+                }
+                if (!ASR::is_a<ASR::Variable_t>(*r)) continue;
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(r);
+                if (v->m_parent_symtab != x.m_symtab) continue;
+                if ((v->m_intent == ASR::intentType::Local
+                        || v->m_intent == ASR::intentType::ReturnVar)
+                        && v->m_common_block == nullptr
+                        && !is_argument(v, x.m_args, x.n_args)) {
+                    state[r] = 0;
+                    set(r);
+                } else if (types_seen.insert(r).second) {
                     ReferencedVariables in_type;
-                    in_type.visit_ttype(*ASR::down_cast<ASR::Variable_t>(r)->m_type);
+                    in_type.visit_ttype(*v->m_type);
                     set_referenced(in_type);
                 }
             }
@@ -10828,15 +10840,22 @@ public:
             state[s] = 1;
             auto dummy = dummies.find(s);
             ReferencedVariables referenced;
-            referenced.visit_expr(dummy != dummies.end() ? *dummy->second.str->m_len
-                : *ASR::down_cast<ASR::Variable_t>(s)->m_symbolic_value);
+            if (dummy != dummies.end()) {
+                referenced.visit_expr(*dummy->second.str->m_len);
+            } else {
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(s);
+                referenced.visit_ttype(*v->m_type);
+                if (ASRUtils::is_entry_initialized_local(*v)) {
+                    referenced.visit_expr(*v->m_symbolic_value);
+                }
+            }
             set_referenced(referenced);
             if (dummy != dummies.end()) {
                 setup_string_length(dummy->second.desc, dummy->second.str,
                     dummy->second.str->m_len);
             } else {
                 process_Variable(s, x, debug_arg_count);
-                entry_locals_set.insert(s);
+                locals_declared_on_entry.insert(s);
             }
             state[s] = 2;
         };
