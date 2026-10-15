@@ -1,0 +1,133 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_view_argument.f90:13:5 - 17:18
+   |
+13 |        abstract interface :: IEstimates
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+17 |        end interface
+   | ...^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+  --> tests/errors/continue_compilation_traits_view_argument.f90:84:5
+   |
+84 |     class(IOwning), allocatable :: allocatable_argument
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+  --> tests/errors/continue_compilation_traits_view_argument.f90:85:5
+   |
+85 |     class(IPointing), allocatable :: pointer_argument
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+  --> tests/errors/continue_compilation_traits_view_argument.f90:86:5
+   |
+86 |     class(ITargeting), allocatable :: target_argument
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+  --> tests/errors/continue_compilation_traits_view_argument.f90:87:5
+   |
+87 |     class(IFeeding), allocatable :: generic_argument
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: argument 'estimates' does not match trait method 'update': expected class(iestimates), got class(iother)
+  --> tests/errors/continue_compilation_traits_view_argument.f90:73:5 - 75:19
+   |
+73 |        implements ICoeffs :: Mismatched
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+75 |        end implements
+   | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   --> tests/errors/continue_compilation_traits_view_argument.f90:108:23
+    |
+108 |         call c%update(fixed)
+    |                       ^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   --> tests/errors/continue_compilation_traits_view_argument.f90:112:23
+    |
+112 |         call c%update(Tally(3))
+    |                       ^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   --> tests/errors/continue_compilation_traits_view_argument.f90:116:23
+    |
+116 |         call c%update(make_estimates())
+    |                       ^^^^^^^^^^^^^^^^ 
+
+semantic error: Argument `e` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_view_argument.f90:121:23
+    |
+121 |         call c%update(e)
+    |                       ^ 
+
+semantic error: Argument `h` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_view_argument.f90:126:23
+    |
+126 |         call c%update(h%cell)
+    |                       ^^^^^^ 
+
+semantic error: Argument `h` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_view_argument.f90:131:33
+    |
+131 |         call c%update(estimates=h%item)
+    |                                 ^^^^^^ 
+
+semantic error: Argument `e` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_view_argument.f90:136:23
+    |
+136 |         call c%update(e)
+    |                       ^ 
+
+semantic error: Argument `e` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_view_argument.f90:141:23
+    |
+141 |         call c%update(e)
+    |                       ^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+   --> tests/errors/continue_compilation_traits_view_argument.f90:148:27
+    |
+148 |             call c%update(alias)
+    |                           ^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   --> tests/errors/continue_compilation_traits_view_argument.f90:154:24
+    |
+154 |         call c%update((e))
+    |                        ^ 
+
+semantic error: the associate name 'alias' is associated with an expression, not a variable, so it cannot be associated with an intent(inout) trait object
+   --> tests/errors/continue_compilation_traits_view_argument.f90:159:27
+    |
+159 |             call c%update(alias)
+    |                           ^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'iestimates'
+   --> tests/errors/continue_compilation_traits_view_argument.f90:165:23
+    |
+165 |         call c%update(o)
+    |                       ^ 
+
+semantic error: no visible nominal implementation of trait 'iestimates' for type 'unrelated'
+   --> tests/errors/continue_compilation_traits_view_argument.f90:170:23
+    |
+170 |         call c%update(u)
+    |                       ^ 
+
+semantic error: Argument `c` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_view_argument.f90:175:9
+    |
+175 |         call c%update(e)
+    |         ^^^^^^^^^^^^^^^^ 
+
+semantic error: Argument `e` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_view_argument.f90:180:23
+    |
+180 |         call c%update(e)
+    |                       ^ 

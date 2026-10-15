@@ -14,7 +14,10 @@ TraitFunctionCall(symbol name, int slot, call_arg* args, ttype type)
 implementation. `args[0]` is the borrowed view; the remaining arguments have
 the message's normal types, order, and association attributes, including
 read-only assumed-shape numeric or logical array descriptors passed by
-reference. `type` is its scalar integer, real or logical result type.
+reference and, for a message that is not generic, bare `intent(in)` or
+`intent(inout)` views of runtime traits associated as in
+[TraitSubroutineCall](../statement_nodes/TraitSubroutineCall.md). `type` is its
+scalar integer, real or logical result type.
 For a closed generic message, `slot` is the member slot whose `type_arguments`
 equal the call's concrete type arguments, so its arguments and result are
 ordinary concrete values; a still-generic caller uses

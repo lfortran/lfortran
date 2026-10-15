@@ -1695,6 +1695,8 @@ or constant-length character results, and subroutines. Arguments are scalar
 integer, real, complex, logical, character, or nonpolymorphic derived-type
 values, or read-only, required, nonallocatable, nonpointer assumed-shape arrays
 of an intrinsic numeric or logical type or of character of a constant length.
+A message that is not generic may also take bare views of runtime traits as
+arguments other than its receiver (see "Trait-object arguments" below).
 Array descriptors pass by reference, so strided, reversed and empty sections
 reach the implementation without a copy. Normal argument
 intents, kinds, keyword names, and the ordinary Fortran calling convention
@@ -1813,6 +1815,71 @@ pointer targets and owners through an `intent(inout)` combination view; and
 compiles the contract-only consumer before both providers in fresh processes,
 checks unresolved ASR and indirect LLVM calls, and links/runs with an unchanged
 provider archive. It is registered in CTest in normal and fast configurations.
+
+### Trait-object arguments
+
+A message may take a view of a runtime trait as an argument that is not its
+receiver, such as the estimates that `ICoeffs` updates:
+
+```fortran
+abstract interface :: ICoeffs
+    subroutine update(self, estimates)
+        type(itself), pass, intent(inout) :: self
+        class(IEstimates), intent(inout) :: estimates
+    end subroutine update
+end interface
+
+type :: MyType
+    class(ICoeffs), allocatable :: coeffs
+    class(IEstimates), allocatable :: estimates
+end type MyType
+...
+call self%coeffs%update(self%estimates)
+```
+
+Such an argument is a bare view dummy of the message, with the rules of the
+bare view dummies of ordinary procedures above: an explicit `intent(in)` or
+`intent(inout)`, required, without VALUE, and here also without TARGET or
+VOLATILE. The `update` slot of `class(ICoeffs)` takes the `IEstimates` view
+after its receiver, and every call of `update`, dynamically through a view,
+owner or pointer, statically on a concrete receiver, or in generic code,
+associates the actual as an ordinary call associates a bare view dummy: an
+owner such as the allocatable component `self%estimates`, a pointer's target
+or a concrete variable is borrowed with its selected witness, a value only by
+an `intent(in)` argument, a view of a child trait is projected and a view is
+forwarded, in explicit `TraitBorrow`, `TraitPack` and `TraitProject` nodes.
+Nothing is copied, finalized, allocated or reassociated. The slot passes the
+view by reference and the witness adapter passes it on unchanged, so the
+implementation sees the original payload address, dynamic type and selected
+implementations. The argument's INTENT is independent of the receiver's
+(TD-36): a message with a read-only receiver can modify an `intent(inout)` view
+argument, whose actual must be definable as in any call, and a read-only
+argument also accepts a value. An implementation declares the argument with
+exactly the message's contract and INTENT. The argument's trait needs a runtime
+contract where the message is declared, so a message of a trait that takes a
+view of that same trait is diagnosed as not implemented, as are allocatable or
+pointer view arguments, TARGET or VOLATILE ones, and view arguments of generic
+messages. An open generic message whose binder such a trait constrains erases
+the binder to its view as for any other trait, and the operation wrappers
+forward the views.
+
+`traits_runtime_view_argument_01` runs the reported `MyType`, whose private
+`coefficients` binding borrows the allocated `estimates` component for
+`update`, and borrows concrete variables, array elements, owners, pointer
+targets (also through `intent(in)` pointers), forwarded views and projected
+child-trait owners at their original addresses with their own implementations:
+by position and keyword, with named non-first PASS and NOPASS, with read-only
+receivers and arguments, statically, and without finalization.
+`traits_runtime_view_argument_01_oracle` checks the same calls with standard
+CLASS; LFortran rejects its `intent(in)` pointer forwarding (#14252), so it is
+registered for GFortran only. `traits_runtime_view_argument_02` forwards view
+arguments through a static generic procedure and through the operation
+wrappers of an erased generic message. `traits_runtime_view_argument_separate_01`
+compiles the argument's trait, the message's trait, a contract-only consumer
+and two providers of same-named types separately. The diagnostics are checked
+by `continue_compilation_traits_view_argument`, and the reference test
+`traits_view_argument_mytype.F90` compiles the reported module, unchanged,
+with `-c`.
 
 ## Scalar allocatable ownership, slots and results (R2)
 

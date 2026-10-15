@@ -1,0 +1,9 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/traits_view_argument_mytype.F90:8:4 - 13:4
+   |
+ 8 |       abstract interface :: IEstimates
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+13 |       
+   | ...^^^^ LFortran extension

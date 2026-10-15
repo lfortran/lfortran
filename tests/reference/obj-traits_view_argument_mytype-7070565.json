@@ -1,0 +1,13 @@
+{
+    "basename": "obj-traits_view_argument_mytype-7070565",
+    "cmd": "lfortran --no-color -c {infile} -o output.o",
+    "infile": "tests/traits_view_argument_mytype.F90",
+    "infile_hash": "94bec302dad42f6abaeb6edae486b89dff5595e7ad236e7e97801acc",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "obj-traits_view_argument_mytype-7070565.stderr",
+    "stderr_hash": "f8ef3159bf3c49f80951db16a8369f70ffd7dff1f1ee81450bc1ac66",
+    "returncode": 0
+}

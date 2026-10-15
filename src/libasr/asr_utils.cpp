@@ -6980,7 +6980,10 @@ static bool runtime_trait_character(ASR::ttype_t *type)
 // signature with each binder replaced by its member: scalar arguments, read-only
 // assumed-shape numeric, logical or constant-length character arrays, and scalar
 // numeric, logical or constant-length character results. A length wildcard
-// member has no finite set of slots.
+// member has no finite set of slots. A message that is not generic may also
+// take borrowed views of runtime traits other than as its receiver: bare,
+// required `class(T)` arguments with intent(in) or intent(inout), passed by
+// reference like the bare view dummies of ordinary procedures.
 static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
         const std::map<std::string, ASR::ttype_t*> &members)
 {
@@ -7005,6 +7008,15 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
         auto *symbol = symbol_get_past_external(ASR::down_cast<ASR::Var_t>(method.m_args[i])->m_v);
         if (!ASR::is_a<ASR::Variable_t>(*symbol)) return false;
         auto *arg = ASR::down_cast<ASR::Variable_t>(symbol);
+        if (ASR::is_a<ASR::TraitObjectType_t>(*arg->m_type)) {
+            if (trait_method_template(method) ||
+                    (arg->m_intent != ASR::intentType::In &&
+                     arg->m_intent != ASR::intentType::InOut) ||
+                    arg->m_presence != ASR::presenceType::Required ||
+                    arg->m_value_attr || arg->m_target_attr || arg->m_is_volatile ||
+                    arg->n_codims) return false;
+            continue;
+        }
         if (ASR::is_a<ASR::Array_t>(*arg->m_type)) {
             auto *array = ASR::down_cast<ASR::Array_t>(arg->m_type);
             auto *element = member(array->m_type);

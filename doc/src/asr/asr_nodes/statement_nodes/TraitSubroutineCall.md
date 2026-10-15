@@ -20,15 +20,20 @@ assumed-shape arrays of an intrinsic numeric or logical type, of any rank and
 optionally with a declared lower bound such as `x(0:)`; they are passed by
 reference as descriptors. As in an ordinary call, an actual array of another
 physical representation, such as a fixed-size array, reaches its dummy through
-an explicit `ArrayPhysicalCast`.
+an explicit `ArrayPhysicalCast`. A message that is not generic may also take
+bare `intent(in)` or `intent(inout)` views of runtime traits; each such actual
+is a view of the dummy's exact contract, an explicit `TraitBorrow`, `TraitPack`
+or `TraitProject` or a forwarded view, as for a bare view dummy of an ordinary
+call, and is passed by reference.
 
 Unlike [TraitFunctionCall](../expression_nodes/TraitFunctionCall.md), the call
 has no result, and `slot` is always an ordinary slot without type arguments:
 member slots of closed generic messages, erased generic slots, and
 `TraitDeferredCall` exist only for functions. Generic subroutine messages,
 BIND(C) messages, and messages with any other dummy, such as an optional,
-polymorphic, allocatable, pointer, explicit-shape, assumed-size, or
-assumed-rank one or an array that is not `intent(in)`, are outside the runtime
+allocatable, pointer, explicit-shape, assumed-size, or assumed-rank one, a
+polymorphic dummy of a derived type, an allocatable, pointer, TARGET or
+VOLATILE view, or an array that is not `intent(in)`, are outside the runtime
 slot surface: a trait with such a message has no runtime contract, and using it
 as a runtime view is diagnosed as not implemented.
 

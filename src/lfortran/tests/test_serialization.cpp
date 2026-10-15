@@ -2700,6 +2700,119 @@ TEST_CASE("Runtime trait ASR round trips and checked borrowing") {
     }
 }
 
+TEST_CASE("Trait-object arguments of runtime messages are explicit, verified borrows") {
+    namespace ASR = LCompilers::ASR;
+    namespace ASRUtils = LCompilers::ASRUtils;
+    const std::string source = R"(
+module trait_view_argument_m
+    implicit none
+    abstract interface :: IEstimates
+        subroutine some_method(self)
+            type(itself), pass, intent(inout) :: self
+        end subroutine some_method
+    end interface
+    abstract interface :: ICoeffs
+        subroutine update(self, estimates)
+            type(itself), pass, intent(inout) :: self
+            class(IEstimates), intent(inout) :: estimates
+        end subroutine update
+    end interface
+    type :: Coeffs
+        integer :: updates = 0
+    end type Coeffs
+    implements ICoeffs :: Coeffs
+        procedure, pass :: update => coeffs_update
+    end implements
+contains
+    subroutine coeffs_update(self, estimates)
+        class(Coeffs), intent(inout) :: self
+        class(IEstimates), intent(inout) :: estimates
+        self%updates = self%updates + 1
+        call estimates%some_method()
+    end subroutine coeffs_update
+    subroutine refresh(coeffs, estimates)
+        class(ICoeffs), intent(inout) :: coeffs
+        class(IEstimates), allocatable, intent(inout) :: estimates
+        call coeffs%update(estimates)
+    end subroutine refresh
+end module trait_view_argument_m
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source);
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("trait_view_argument_m"));
+    auto function = [&](const std::string &name) {
+        return ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol(name));
+    };
+    auto *contract = ASRUtils::trait_runtime_contract(module->m_symtab->get_symbol("icoeffs"));
+    REQUIRE(contract);
+    REQUIRE(contract->n_slots == 1);
+    // The slot takes the view of the message's own argument contract after
+    // the receiver's view, with the argument's declared intent.
+    auto *slot = ASR::down_cast<ASR::Function_t>(contract->m_slots[0].m_procedure);
+    REQUIRE(slot->n_args == 2);
+    auto *argument = ASRUtils::EXPR2VAR(slot->m_args[1]);
+    CHECK(argument->m_intent == ASR::intentType::InOut);
+    REQUIRE(ASR::is_a<ASR::TraitObjectType_t>(*argument->m_type));
+    CHECK(ASRUtils::trait_runtime_contract(argument->m_type) ==
+        ASRUtils::trait_runtime_contract(module->m_symtab->get_symbol("iestimates")));
+    ASR::TraitWitness_t *witness = nullptr;
+    for (auto &entry : module->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::TraitWitness_t>(*entry.second)) {
+            witness = ASR::down_cast<ASR::TraitWitness_t>(entry.second);
+        }
+    }
+    REQUIRE(witness);
+    REQUIRE(witness->n_procedures == 1);
+    auto *adapter = ASR::down_cast<ASR::Function_t>(
+        ASRUtils::symbol_get_past_external(witness->m_procedures[0]));
+    // The owner actual is borrowed explicitly.
+    auto *refresh = function("refresh");
+    REQUIRE(refresh->n_body == 1);
+    auto *call = ASR::down_cast<ASR::TraitSubroutineCall_t>(refresh->m_body[0]);
+    REQUIRE(call->n_args == 2);
+    REQUIRE(ASR::is_a<ASR::TraitBorrow_t>(*call->m_args[1].m_value));
+    auto *borrow = ASR::down_cast<ASR::TraitBorrow_t>(call->m_args[1].m_value);
+
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        REQUIRE(!invalid.diagnostics.empty());
+        CHECK(invalid.diagnostics.back().code == code);
+    };
+    SUBCASE("an owner is not a view argument") {
+        call->m_args[1].m_value = borrow->m_owner;
+        rejects("asr.verify.trait_owner.argument");
+    }
+    SUBCASE("an intent(inout) view argument borrows a definable payload") {
+        ASRUtils::EXPR2VAR(borrow->m_owner)->m_intent = ASR::intentType::In;
+        rejects("asr.verify.trait_view.definable_actual");
+    }
+    SUBCASE("a TARGET view argument is outside the runtime slot surface") {
+        // Consistently in the message, its slot, its adapter and the bound
+        // procedure, so that only the slot surface is wrong.
+        auto *message = ASRUtils::trait_method_function(contract->m_slots[0].m_origins[0]);
+        for (auto *procedure : {message, slot, adapter, function("coeffs_update")}) {
+            ASR::down_cast<ASR::Variable_t>(
+                procedure->m_symtab->get_symbol("estimates"))->m_target_attr = true;
+        }
+        rejects("asr.verify.trait_contract.surface");
+    }
+}
+
 TEST_CASE("Named constants are borrowed as the constructors of their values") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;

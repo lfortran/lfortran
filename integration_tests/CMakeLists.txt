@@ -4266,6 +4266,17 @@ RUN(NAME traits_receiver_intent_separate_01 LABELS llvm llvm2 NO_STD_F23
         traits_receiver_intent_separate_01_consumer.f90
         traits_receiver_intent_separate_01_a.f90 traits_receiver_intent_separate_01_b.f90)
 RUN(NAME traits_receiver_intent_separate_01_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_view_argument_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_view_argument_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+# LFortran rejects modifying the target of an intent(in) pointer dummy (#14252).
+RUN(NAME traits_runtime_view_argument_01_oracle LABELS gfortran)
+RUN(NAME traits_runtime_view_argument_separate_01 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_view_argument_separate_01_estimates.f90
+        traits_runtime_view_argument_separate_01_contracts.f90
+        traits_runtime_view_argument_separate_01_consumer.f90
+        traits_runtime_view_argument_separate_01_a.f90
+        traits_runtime_view_argument_separate_01_b.f90)
 RUN(NAME class_nominal_separate_01 LABELS gfortran llvm llvm2
     EXTRAFILES class_nominal_separate_01_a.f90 class_nominal_separate_01_b.f90)
 RUN(NAME traits_static_01_oracle LABELS gfortran llvm)

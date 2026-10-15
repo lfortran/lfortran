@@ -2816,6 +2816,12 @@ public:
                         "The origins of a runtime slot must agree on their receivers: " +
                             receivers.message);
                     if (!ASRUtils::trait_method_template(*method)) {
+                        // The slot surface is part of the contract: a view
+                        // argument, for example, is a bare intent(in) or
+                        // intent(inout) view, never an owner or a pointer.
+                        require_id(ASRUtils::runtime_trait_method_supported(*method),
+                            "asr.verify.trait_contract.surface",
+                            "A runtime slot's message must have a supported runtime signature");
                         TraitDeclaredForm form;
                         auto mismatch = trait_declared_form(*method, *procedure, 1, form)
                             ? ASRUtils::trait_method_mismatch(*method, form.procedure, 0, 1)
