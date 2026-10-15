@@ -27,7 +27,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __1__data_self_op__a = __scalar_args.__1__data_self_op__a;
     int __flat_idx;
     int i;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((3 - 1) + 1))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 3)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
@@ -53,7 +53,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     int __1__data_self_op__a = __scalar_args.__1__data_self_op__a;
     int __flat_idx;
     int i;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((3 - 1) + 1))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 3)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
