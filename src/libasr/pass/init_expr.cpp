@@ -249,7 +249,8 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
                    ASR::is_a<ASR::ArrayBroadcast_t>(*symbolic_value) ||
                    ASR::is_a<ASR::ArrayReshape_t>(*symbolic_value))) ||
                 (x.m_storage == ASR::storage_typeType::Save &&
-                ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)))) {
+                (ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)) ||
+                 ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))))) {
                 return ;
             }
 

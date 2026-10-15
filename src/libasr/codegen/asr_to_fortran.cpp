@@ -417,6 +417,30 @@ public:
         }
     }
 
+    // The initializer `value_src` of a variable of type `var_type`. An array
+    // constant initial value holds the elements in array element order with
+    // rank one, while the initializer of a multidimensional array must have
+    // its shape.
+    std::string reshape_to_variable_shape(ASR::ttype_t *var_type,
+            ASR::expr_t *value, const std::string &value_src) {
+        ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(var_type);
+        if (!ASR::is_a<ASR::Array_t>(*type)) return value_src;
+        ASR::Array_t *arr = down_cast<ASR::Array_t>(type);
+        ASR::ttype_t *value_type = ASRUtils::expr_type(value);
+        if (arr->n_dims < 2 || !ASRUtils::is_array(value_type)
+                || static_cast<size_t>(ASRUtils::extract_n_dims_from_ttype(value_type)) == arr->n_dims) {
+            return value_src;
+        }
+        std::string r = "reshape(" + value_src + ", [";
+        for (size_t i = 0; i < arr->n_dims; i++) {
+            LCOMPILERS_ASSERT(arr->m_dims[i].m_length);
+            if (i > 0) r += ", ";
+            visit_expr(*arr->m_dims[i].m_length);
+            r += src;
+        }
+        return r + "])";
+    }
+
     // The value list of a DATA statement that gives a variable the initial
     // value `value`: the elements of an array in array element order.
     std::string data_values(ASR::expr_t *value) {
@@ -1250,7 +1274,7 @@ public:
                 }
             }
             visit_expr(*x.m_value);
-            r += src;
+            r += reshape_to_variable_shape(x.m_type, x.m_value, src);
         } else if (x.m_symbolic_value) {
             r += " = ";
             visit_expr(*x.m_symbolic_value);
