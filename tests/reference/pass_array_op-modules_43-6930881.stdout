@@ -392,7 +392,12 @@
                                             .false.
                                             .false.
                                         )]
-                                        [(Assignment
+                                        [(DebugCheckArrayBounds
+                                            (Var 4 sources)
+                                            []
+                                            .false.
+                                        )
+                                        (Assignment
                                             (Var 4 __1__libasr_index_)
                                             (ArrayBound
                                                 (Var 4 sources)

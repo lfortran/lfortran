@@ -15471,9 +15471,11 @@ public:
                 components.push_back(al, component);
             }
             // Check for errors in array operations in the RHS of the assignment
-            generate_binop_checks(components.p, components.size());
+            if (components.size() > 0) {
+                generate_binop_checks(components.p, components.size());
+            }
 
-            ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, components[0]->base.loc, 4));
+            ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.m_target->base.loc, 4));
 
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
             bool is_allocatable_descriptor_target = ASRUtils::is_array(target_type) &&
@@ -15482,6 +15484,9 @@ public:
             if (is_allocatable_descriptor_target && !x.m_move_allocation) {
                 llvm::Value* is_not_allocated = expr_is_unallocated(x.m_target);
                 generate_unallocated_array_runtime_error(is_not_allocated, x.m_target);
+            }
+            if (components.size() == 0) {
+                return;
             }
             ASR::dimension_t* m_dims = nullptr;
             size_t rank = ASRUtils::extract_dimensions_from_ttype(target_type, m_dims);

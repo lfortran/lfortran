@@ -2200,7 +2200,7 @@ public:
         if (check_external) {
             require(ASRUtils::is_array(ASRUtils::expr_type(x.m_target)), "DebugCheckArrayBounds::m_target must have an Array type");
 
-            require(x.n_components > 0, "DebugCheckArrayBounds::n_components should be greater than 0");
+            // Without components only the allocation of the target is checked
             for (size_t i = 0; i < x.n_components; i++) {
                 require(ASR::is_a<ASR::Var_t>(*x.m_components[i]) ||
                         ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_components[i]) ||

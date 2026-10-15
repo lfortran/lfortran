@@ -2819,12 +2819,35 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                     al, idl->base.base.loc, args.p, args.size(),
                     idl->m_type, nullptr, ASR::arraystorageType::ColMajor, nullptr));
             }
+            // The constructor is stored into the variable element by
+            // element, so an allocatable variable that is not reallocated
+            // is checked to be allocated first, as for a whole array
+            bool check_allocated = bounds_checking &&
+                ASR::is_a<ASR::ArrayConstructor_t>(*xx.m_value) &&
+                ASRUtils::is_allocatable(ASRUtils::expr_type(xx.m_target)) &&
+                !realloc_lhs && !xx.m_realloc_lhs && !xx.m_move_allocation &&
+                !should_auto_realloc_component_assignment(xx.m_target);
             replacer.result_expr = xx.m_target;
             ASR::expr_t** current_expr_copy = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&xx.m_value);
             this->call_replacer();
             current_expr = current_expr_copy;
             replacer.result_expr = nullptr;
+            if (check_allocated) {
+                ASRUtils::ExprStmtDuplicator expr_duplicator(al);
+                Vec<ASR::stmt_t*> stmts;
+                stmts.reserve(al, pass_result.size() + 1);
+                stmts.push_back(al, ASRUtils::STMT(ASR::make_DebugCheckArrayBounds_t(
+                    al, x.base.base.loc, expr_duplicator.duplicate_expr(xx.m_target),
+                    nullptr, 0, false)));
+                if (pass_result.size() == 0 && !remove_original_stmt) {
+                    stmts.push_back(al, const_cast<ASR::stmt_t*>(&x.base));
+                }
+                for (size_t i = 0; i < pass_result.size(); i++) {
+                    stmts.push_back(al, pass_result[i]);
+                }
+                pass_result.from_pointer_n_copy(al, stmts.p, stmts.size());
+            }
             return ;
         }
 
