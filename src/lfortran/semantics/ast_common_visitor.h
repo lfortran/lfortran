@@ -4373,6 +4373,193 @@ public:
         }
     }
 
+    // The procedure local that `object` initializes, if its value can be static.
+    ASR::Variable_t* data_saved_variable(ASR::expr_t* object) {
+        if (current_scope->asr_owner == nullptr
+                || !ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)
+                || !ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(
+                    current_scope->asr_owner))) {
+            return nullptr;
+        }
+        if (ASR::is_a<ASR::StringSection_t>(*object)) {
+            object = ASR::down_cast<ASR::StringSection_t>(object)->m_arg;
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*object)
+                && !ASRUtils::is_array(ASRUtils::expr_type(object))) {
+            object = ASR::down_cast<ASR::ArrayItem_t>(object)->m_v;
+        } else if (ASR::is_a<ASR::ArraySection_t>(*object)) {
+            object = ASR::down_cast<ASR::ArraySection_t>(object)->m_v;
+        }
+        if (!ASR::is_a<ASR::Var_t>(*object)
+                || !ASR::is_a<ASR::Variable_t>(*ASR::down_cast<ASR::Var_t>(object)->m_v)) {
+            return nullptr;
+        }
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
+            ASR::down_cast<ASR::Var_t>(object)->m_v);
+        ASR::ttype_t* type = ASRUtils::type_get_past_array(v->m_type);
+        ASR::String_t* str = ASR::is_a<ASR::String_t>(*type)
+            ? ASR::down_cast<ASR::String_t>(type) : nullptr;
+        int64_t len = 0;
+        bool static_type = ASR::is_a<ASR::Integer_t>(*type)
+            || ASR::is_a<ASR::Logical_t>(*type)
+            || (ASR::is_a<ASR::Real_t>(*type)
+                && (ASR::down_cast<ASR::Real_t>(type)->m_kind == 4
+                    || ASR::down_cast<ASR::Real_t>(type)->m_kind == 8))
+            || (str && str->m_kind == 1 && str->m_len
+                && ASRUtils::extract_value(ASRUtils::expr_value(str->m_len), len));
+        if (!static_type || v->m_parent_symtab != current_scope
+                || v->m_intent != ASRUtils::intent_local
+                || v->m_storage == ASR::storage_typeType::Parameter
+                || v->m_common_block != nullptr
+                || ASRUtils::is_pointer(v->m_type)
+                || ASRUtils::is_allocatable(v->m_type)
+                || (ASRUtils::is_array(v->m_type)
+                    && (ASRUtils::extract_physical_type(v->m_type)
+                            != (str ? ASR::array_physical_typeType::PointerArray
+                                : ASR::array_physical_typeType::FixedSizeArray)
+                        || ASRUtils::get_fixed_size_of_array(v->m_type) <= 0))) {
+            return nullptr;
+        }
+        return v;
+    }
+
+    bool has_whole_constant_value(ASR::Variable_t* v) {
+        ASR::expr_t* value = v->m_value;
+        if (value == nullptr) {
+            return false;
+        }
+        if (ASRUtils::is_array(v->m_type)) {
+            return ASR::is_a<ASR::ArrayConstant_t>(*value)
+                && ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(value))
+                    == ASRUtils::get_fixed_size_of_array(v->m_type);
+        }
+        return ASR::is_a<ASR::IntegerConstant_t>(*value)
+            || ASR::is_a<ASR::RealConstant_t>(*value)
+            || ASR::is_a<ASR::LogicalConstant_t>(*value)
+            || ASR::is_a<ASR::StringConstant_t>(*value);
+    }
+
+    // Gives `v` the SAVE attribute that DATA implies (F2023 8.4).
+    bool save_data_variable(ASR::Variable_t* v) {
+        if (v == nullptr || !has_whole_constant_value(v)) {
+            return false;
+        }
+        if (ASRUtils::extract_n_dims_from_ttype(v->m_type) > 1) {
+            // The initializer gets the shape of the variable.
+            ASR::ArrayConstant_t* value = ASR::down_cast<ASR::ArrayConstant_t>(v->m_value);
+            v->m_value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.base.loc,
+                value->m_n_data, value->m_data, ASRUtils::duplicate_type(al, v->m_type),
+                value->m_storage_format));
+            v->m_symbolic_value = v->m_value;
+        }
+        v->m_storage = ASR::storage_typeType::Save;
+        return true;
+    }
+
+    // The DATA value `value` as a constant of type `type`, or nullptr.
+    ASR::expr_t* data_constant_value(ASR::expr_t* value, ASR::ttype_t* type,
+            const Location &loc) {
+        ImplicitCastRules::set_converted_value(al, loc, &value,
+            ASRUtils::expr_type(value), type, diag);
+        if (!ASRUtils::types_equal(ASRUtils::expr_type(value), type, nullptr, nullptr)) {
+            return nullptr;
+        }
+        value = ASRUtils::expr_value(value);
+        if (value == nullptr || !ASRUtils::is_value_constant(value)) {
+            return nullptr;
+        }
+        int64_t type_len = 0, value_len = 0;
+        if (ASR::is_a<ASR::StringConstant_t>(*value)
+                && ASRUtils::extract_value(ASRUtils::expr_value(
+                    ASRUtils::get_string_type(type)->m_len), type_len)
+                && ASRUtils::extract_value(ASRUtils::expr_value(
+                    ASRUtils::get_string_type(ASRUtils::expr_type(value))->m_len), value_len)
+                && type_len != value_len) {
+            value = ASRUtils::adjust_character_length(value, type_len, value_len, loc, al);
+        }
+        return value;
+    }
+
+    struct DataSavedElement {
+        ASR::Variable_t* v;
+        int64_t offset;
+        ASR::expr_t* value;
+    };
+
+    bool add_data_saved_element(ASR::ArrayItem_t* item, ASR::expr_t* value,
+            std::vector<DataSavedElement> &elements) {
+        ASR::Variable_t* v = data_saved_variable(ASRUtils::EXPR((ASR::asr_t*) item));
+        if (v == nullptr || !ASRUtils::is_array(v->m_type)
+                || (v->m_value != nullptr && !has_whole_constant_value(v))) {
+            return false;
+        }
+        ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(v->m_type);
+        if (item->n_args != array->n_dims) {
+            return false;
+        }
+        auto constant_of = [](ASR::expr_t* e, int64_t &n) {
+            ASR::expr_t* c = e ? ASRUtils::expr_value(e) : nullptr;
+            return ASRUtils::extract_value(c ? c : e, n);
+        };
+        int64_t offset = 0, stride = 1;
+        for (size_t d = 0; d < array->n_dims; d++) {
+            int64_t index = 0, lower = 1, extent = 0;
+            if (item->m_args[d].m_left || item->m_args[d].m_step
+                    || !constant_of(item->m_args[d].m_right, index)
+                    || (array->m_dims[d].m_start
+                        && !constant_of(array->m_dims[d].m_start, lower))
+                    || !constant_of(array->m_dims[d].m_length, extent)
+                    || index < lower || index >= lower + extent) {
+                return false;
+            }
+            offset += (index - lower) * stride;
+            stride *= extent;
+        }
+        ASR::expr_t* constant = data_constant_value(value, array->m_type,
+            item->base.base.loc);
+        if (constant == nullptr) {
+            return false;
+        }
+        elements.push_back({v, offset, constant});
+        return true;
+    }
+
+    void set_data_saved_elements(const std::vector<DataSavedElement> &elements,
+            const Location &loc) {
+        std::vector<ASR::Variable_t*> variables;
+        std::map<ASR::Variable_t*, std::vector<ASR::expr_t*>> slots;
+        for (const DataSavedElement &e : elements) {
+            auto it = slots.find(e.v);
+            if (it == slots.end()) {
+                variables.push_back(e.v);
+                std::vector<ASR::expr_t*> values(
+                    ASRUtils::get_fixed_size_of_array(e.v->m_type), nullptr);
+                if (e.v->m_value != nullptr) {
+                    ASR::ArrayConstant_t* previous = ASR::down_cast<ASR::ArrayConstant_t>(
+                        e.v->m_value);
+                    for (size_t k = 0; k < values.size(); k++) {
+                        values[k] = ASRUtils::fetch_ArrayConstant_value(al, previous, (int) k);
+                    }
+                }
+                it = slots.emplace(e.v, std::move(values)).first;
+            }
+            it->second[e.offset] = e.value;
+        }
+        for (ASR::Variable_t* v : variables) {
+            ASR::ttype_t* element_type = ASRUtils::type_get_past_array(v->m_type);
+            Vec<ASR::expr_t*> values;
+            values.reserve(al, slots[v].size());
+            for (ASR::expr_t* value : slots[v]) {
+                values.push_back(al, value ? value
+                    : ASRUtils::get_constant_zero_with_given_type(al, element_type));
+            }
+            set_data_initial_value(v, ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(
+                al, loc, values.p, values.size(), v->m_type,
+                ASR::arraystorageType::ColMajor)));
+            save_data_variable(v);
+        }
+    }
+
     void handle_array_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t* a, ASR::ttype_t* obj_type, ASR::expr_t* object, size_t &curr_value) {
         ASR::ttype_t* array_ttype = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(obj_type));
@@ -4436,6 +4623,7 @@ public:
                     ASR::Var_t *v = ASR::down_cast<ASR::Var_t>(object);
                     v2 = ASR::down_cast<ASR::Variable_t>(v->m_v);
                 }
+                bool saved = false;
                 if (v2 && !ASR::is_a<ASR::Pointer_t>(*v2->m_type)) {
                     int size_of_array = ASRUtils::get_fixed_size_of_array(
                         array_type->m_dims, array_type->n_dims);
@@ -4462,12 +4650,15 @@ public:
                                 body.p, body.size(), arr_type,
                                 ASR::arraystorageType::ColMajor));
                         set_data_initial_value(v2, arr_const);
+                        saved = save_data_variable(data_saved_variable(object));
                     }
                 }
-                ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
-                ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
-                                                            object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
-                current_body->push_back(al, assignment_stmt);
+                if (!saved) {
+                    ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
+                    ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
+                                                                object, expression_value, nullptr, compiler_options.po.realloc_lhs_arrays, false));
+                    current_body->push_back(al, assignment_stmt);
+                }
             } else {
                 diag.add(Diagnostic(
                     "The value in data must be a constant",
@@ -4481,6 +4672,7 @@ public:
             body.reserve(al, a->n_value);
             int size_of_array = 0;
             ASR::ArraySection_t* array_section = nullptr;
+            ASR::Variable_t* saved_variable = data_saved_variable(object);
 
             if (ASR::is_a<ASR::ArraySection_t>(*object)) {
                 array_section = ASR::down_cast<ASR::ArraySection_t>(object);
@@ -4770,6 +4962,7 @@ public:
                 if (!merged) {
                     set_data_initial_value(v2, ASRUtils::EXPR(tmp));
                 }
+                save_data_variable(saved_variable);
             }
         }
     }
@@ -4865,7 +5058,13 @@ public:
                                           size_t &value_index,
                                           Vec<ASR::expr_t*>* collected_values = nullptr,
                                           Vec<int64_t>* collected_indices = nullptr,
-                                          ASR::Variable_t* target_variable = nullptr) {
+                                          ASR::Variable_t* target_variable = nullptr,
+                                          std::vector<DataSavedElement>* saved_elements = nullptr) {
+        std::vector<DataSavedElement> local_saved_elements;
+        bool outermost = saved_elements == nullptr;
+        if (outermost) {
+            saved_elements = &local_saved_elements;
+        }
         ASR::ImpliedDoLoop_t *implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_do_loop_expr);
         ASR::expr_t* loop_start_expr = implied_do_loop->m_start;
         ASR::expr_t* loop_end_expr = implied_do_loop->m_end;
@@ -4914,8 +5113,13 @@ public:
         ASR::symbol_t* loop_var_sym = ASRUtils::symbol_get_past_external(
             ASR::down_cast<ASR::Var_t>(implied_do_loop->m_var)->m_v);
 
+        ASR::expr_t* first_val = implied_do_loop->m_values[0];
+        while (ASR::is_a<ASR::ImpliedDoLoop_t>(*first_val)) {
+            first_val = ASR::down_cast<ASR::ImpliedDoLoop_t>(first_val)->m_values[0];
+        }
         //collect values when in top level module scope or block data instead of runtime assignments for data stmts
-        bool top_level_module_scope = ((current_module != nullptr || in_block_data) && collected_values == nullptr);
+        bool top_level_module_scope = ((current_module != nullptr || in_block_data)
+            && collected_values == nullptr && data_saved_variable(first_val) == nullptr);
         Vec<ASR::expr_t*> local_collected_values;
         Vec<int64_t> local_collected_indices;
         if (top_level_module_scope) {
@@ -4925,10 +5129,6 @@ public:
             collected_indices = &local_collected_indices;
             // Determine the target Variable from the first ArrayItem so we can
             // compute flat (ColMajor) indices and preserve the full array shape.
-            ASR::expr_t* first_val = implied_do_loop->m_values[0];
-            while (ASR::is_a<ASR::ImpliedDoLoop_t>(*first_val)) {
-                first_val = ASR::down_cast<ASR::ImpliedDoLoop_t>(first_val)->m_values[0];
-            }
             if (ASR::is_a<ASR::ArrayItem_t>(*first_val)) {
                 ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(first_val);
                 ASR::symbol_t* sym = nullptr;
@@ -4954,7 +5154,7 @@ public:
                     // Substitute the current loop variable in nested loop before recursing
                     ASR::ImpliedDoLoop_t* nested_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(duplicatedExpr);
                     substitute_var_in_implied_do_loop(nested_idl, loop_var_sym, loop_var, integer_type);
-                    handle_implied_do_loop_data_stmt(data_stmt, data_stmt_set, duplicatedExpr, value_index, collected_values, collected_indices, target_variable);
+                    handle_implied_do_loop_data_stmt(data_stmt, data_stmt_set, duplicatedExpr, value_index, collected_values, collected_indices, target_variable, saved_elements);
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*duplicatedExpr)) {
                     ASR::ArrayItem_t* array_item_expr = ASR::down_cast<ASR::ArrayItem_t>(duplicatedExpr);
                     for (size_t arg_index = 0; arg_index < array_item_expr->n_args; arg_index++) {
@@ -5021,7 +5221,7 @@ public:
                             }
                             collected_indices->push_back(al, indices_valid ? flat : (int64_t)-1);
                         }
-                    } else {
+                    } else if (!add_data_saved_element(array_item_expr, value, *saved_elements)) {
                         ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item_expr);
                         ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
                         ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
@@ -5039,6 +5239,9 @@ public:
                     throw SemanticAbort();
                 }
             }
+        }
+        if (outermost) {
+            set_data_saved_elements(local_saved_elements, data_stmt.base.base.loc);
         }
 
         //In module scope, set the collected values on the array variable as a
@@ -5380,6 +5583,7 @@ public:
                 }));
             throw SemanticAbort();
         }
+        bool value_set = false;
         if (ASR::is_a<ASR::StructInstanceMember_t>(*object)) {
             ASR::StructInstanceMember_t *mem = ASR::down_cast<ASR::StructInstanceMember_t>(object);
             ASR::Variable_t* v2 = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(mem->m_m));
@@ -5395,6 +5599,7 @@ public:
             // as it causes issues in LLVM codegen - rely on assignment instead
             if (!ASR::is_a<ASR::Pointer_t>(*v2->m_type)) {
                 set_data_initial_value(v2, symbolic_expr);
+                value_set = true;
             }
         } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
             // This is the following case:
@@ -5403,7 +5608,7 @@ public:
             // i.e., x(2) = 2.
             // Additionally, update the variable's m_value so that compile-time
             // initialization (e.g. in BLOCK DATA) works correctly.
-            set_data_array_element_value(ASR::down_cast<ASR::ArrayItem_t>(object),
+            value_set = set_data_array_element_value(ASR::down_cast<ASR::ArrayItem_t>(object),
                 [&](ASR::expr_t* /*previous*/) { return symbolic_expr; },
                 x.base.base.loc);
         } else if (ASR::is_a<ASR::StringSection_t>(*object)) {
@@ -5411,9 +5616,10 @@ public:
             // s(2:3) / 'ab' /
             // As for an array item, the characters are given both by an
             // assignment and in the initial value of the whole variable.
-            if (!set_data_substring_value(
-                    ASR::down_cast<ASR::StringSection_t>(object),
-                    symbolic_expr, x.base.base.loc) && in_block_data) {
+            value_set = set_data_substring_value(
+                ASR::down_cast<ASR::StringSection_t>(object),
+                symbolic_expr, x.base.base.loc);
+            if (!value_set && in_block_data) {
                 diag.add(Diagnostic(
                     "a DATA statement of a BLOCK DATA program unit can only "
                     "initialize a substring with constant bounds of a "
@@ -5433,6 +5639,9 @@ public:
             throw SemanticAbort();
         }
 
+        if (value_set && save_data_variable(data_saved_variable(object))) {
+            return;
+        }
         LCOMPILERS_ASSERT(current_body != nullptr);
         if (!ASRUtils::is_pointer(obj_type)) {
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
