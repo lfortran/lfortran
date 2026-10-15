@@ -6671,3 +6671,7 @@ options = "--std=f23"
 filename = "../integration_tests/legacy_array_sections_26.f90"
 semantics_only_cc = true
 options = "--legacy-array-sections"
+
+[[test]]
+filename = "../integration_tests/real128_literal_02.f90"
+semantics_only_cc = true
