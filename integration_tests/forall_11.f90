@@ -10,7 +10,7 @@ type :: alloc_st
     integer, allocatable :: arr(:)
 end type
 type(st) :: s(3)
-type(alloc_st) :: t(3)
+type(alloc_st) :: t(3), t0(3)
 integer :: x(3), y(3,4), m(3,2,2), i, j
 
 x = 0
@@ -51,6 +51,14 @@ if (any(x /= [3, 2, 1])) error stop 7
 forall (i = 1:3) m(i,:,:) = reshape([(j, j = 1, 4)], [2, 2])
 do i = 1, 3
     if (any(m(i,:,1) /= [1, 2]) .or. any(m(i,:,2) /= [3, 4])) error stop 8
+end do
+
+do i = 1, 3
+    allocate(t0(i)%arr(0:1))
+end do
+forall (i = 1:3) t0(i)%arr = [i, 10*i]
+do i = 1, 3
+    if (any(t0(i)%arr /= [i, 10*i])) error stop 9
 end do
 
 print *, "ok"

@@ -490,8 +490,13 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
         fix_type_visitor.visit_ttype(*result_element_type);
 
         ASRUtils::ASRBuilder builder(al, loc);
+        // The elements are stored from the lower bound of the variable
         ASR::dimension_t* m_dims = nullptr;
-        ASRUtils::extract_dimensions_from_ttype(arr_type, m_dims);
+        ASRUtils::extract_dimensions_from_ttype(result_type, m_dims);
+        ASR::expr_t* start = m_dims[0].m_start;
+        if (start == nullptr) {
+            start = PassUtils::get_bound(result_expr, 1, "lbound", al);
+        }
 
         for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(arr_type); i++ ) {
             ASR::expr_t* x_i = nullptr;
@@ -506,8 +511,9 @@ class ReplaceArrayOp: public ASR::BaseExprReplacer<ReplaceArrayOp> {
             ASR::array_index_t array_index_arg;
             array_index_arg.loc = loc;
             array_index_arg.m_left = nullptr;
-            array_index_arg.m_right = builder.Add(m_dims[0].m_start, make_ConstantWithKind(
-                make_IntegerConstant_t, make_Integer_t, i, 4, loc));
+            array_index_arg.m_right = builder.Add(start, make_ConstantWithKind(
+                make_IntegerConstant_t, make_Integer_t, i,
+                ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(start)), loc));
             array_index_arg.m_step = nullptr;
             array_index_args.push_back(al, array_index_arg);
             ASR::expr_t* y_i = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
