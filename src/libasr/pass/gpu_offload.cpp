@@ -14,6 +14,7 @@
 #include <libasr/string_utils.h>
 #include <libasr/pass/gpu_data_layout.h>
 #include <libasr/pass/gpu_decline.h>
+#include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/symbol_expr_substitution.h>
@@ -1156,6 +1157,19 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                             transitive_collector.visit_stmt(
                                 *fn_impl->m_body[i]);
                         }
+                        // A function the declaration of a local calls,
+                        // `real :: w(f(n))`, is called on entry.
+                        std::vector<SymbolTable*> scopes;
+                        gpu_routine_scopes(fn_impl->m_symtab, scopes);
+                        for (SymbolTable *scope : scopes) {
+                            for (auto &local : scope->get_scope()) {
+                                if (ASR::is_a<ASR::Variable_t>(
+                                        *local.second)) {
+                                    transitive_collector.visit_symbol(
+                                        *local.second);
+                                }
+                            }
+                        }
                     }
                 }
                 for (auto &[name, sym] : transitive_collector.functions) {
@@ -1851,6 +1865,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             // left naming the original. Point every such extent at the
             // copy's own symbols.
             retarget_local_extents(func->m_symtab);
+            retarget_declaration_calls(func->m_symtab, *kernel_scope);
             GpuReplaceSymbolsVisitor fn_replacer(*kernel_scope);
             fn_replacer.replacer.skip_scopes.insert(func->m_symtab);
             for (size_t bi = 0; bi < func->n_body; bi++) {
@@ -1874,6 +1889,15 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     }
                 }
             }
+        }
+    }
+
+    // Which allocatable dummies a routine hands on to another routine is
+    // read from the calls, so they have to name the kernel's copies first.
+    for (auto &item : kernel_scope->get_scope()) {
+        if (ASR::is_a<ASR::Function_t>(*item.second)) {
+            plain_allocatable_dummies(
+                ASR::down_cast<ASR::Function_t>(item.second));
         }
     }
 

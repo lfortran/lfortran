@@ -135,11 +135,13 @@ private:
         }
     }
 
-    // What device code inside `fn` reaches: what its body calls, and the
-    // routines it contains, which are reachable from nowhere else.
+    // What device code inside `fn` reaches: what its body calls, what the
+    // extents of its arrays call, and the routines it contains, which are
+    // reachable from nowhere else.
     static std::set<ASR::Function_t*> reached_by(ASR::Function_t *fn) {
         std::set<ASR::Function_t*> reached = gpu_callees(fn->m_body,
             fn->n_body, true);
+        gpu_type_callees(fn->m_symtab, reached);
         for (auto &item : fn->m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 reached.insert(ASR::down_cast<ASR::Function_t>(item.second));

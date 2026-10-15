@@ -576,6 +576,18 @@ public:
                 return host_designator(al, loc, kernel, args, n_args,
                     e.array);
             }
+            case GpuExtentKind::Element: {
+                ASR::expr_t *base = host_designator(al, loc, kernel, args,
+                    n_args, e.array);
+                if (base == nullptr) return nullptr;
+                std::vector<ASR::expr_t*> subs;
+                for (size_t i = 0; i < e.children.size(); i++) {
+                    ASR::expr_t *sub = child(i);
+                    if (sub == nullptr) return nullptr;
+                    subs.push_back(sub);
+                }
+                return b.ArrayItem_01(base, subs);
+            }
             case GpuExtentKind::ArrayDim: {
                 // The actual argument has the shape the parameter does,
                 // so the host asks it for the extent the kernel reads
@@ -644,8 +656,10 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
             return false;
         }
         active.insert(function);
-        for (ASR::Function_t *callee : gpu_callees(function->m_body,
-                function->n_body, true)) {
+        std::set<ASR::Function_t*> callees = gpu_callees(function->m_body,
+            function->n_body, true);
+        gpu_type_callees(function->m_symtab, callees);
+        for (ASR::Function_t *callee : callees) {
             if (callee == function) continue;
             if (!close_graph(callee)) return false;
         }

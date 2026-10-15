@@ -58,10 +58,12 @@ struct GpuDeviceCapabilities {
     int max_real_kind = 8;
 
     // Whether a device function may declare a local array whose extent is
-    // only known once the kernel runs. Where it may not, the pass splices
-    // such a callee into the kernel body instead, so that the local becomes
-    // a kernel-level one and the per-thread workspace machinery can bind it
-    // to a slice of a device buffer.
+    // only known once the kernel runs. Where it may not, such a local
+    // becomes an argument that every caller gives the function, up to the
+    // kernel, where the per-thread workspace machinery binds it to a slice
+    // of a device buffer (gpu_device_workspace.cpp). A callee that is the
+    // whole value of an assignment is spliced into the kernel body instead,
+    // which turns its locals into kernel-level ones directly.
     bool device_function_runtime_sized_locals = true;
 
     // Whether the device has a scalar type of the same in-memory width as
@@ -136,6 +138,10 @@ enum class GpuDeclineReason {
     FunctionResultAllocation,
     NestedArraySection,
     WorkspaceNotSizeableOnHost,
+    // An allocatable array component of a derived-type local of device
+    // code, which has no heap to allocate it from, whose shape cannot be
+    // told on entry to the routine (see gpu_device_struct_storage.cpp).
+    StructComponentNotSizeable,
 
     // --- what the device has no type for ---
     LocalTypeWidth,

@@ -4454,7 +4454,6 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_310.f90"
 gpu_cuda_kernel = true
-gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_315.f90"
@@ -4593,7 +4592,7 @@ gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_167.f90"
-gpu_offload_cuda = true
+gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_175.f90"
@@ -4605,7 +4604,7 @@ gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_177.f90"
-gpu_offload_cuda = true
+gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_204.f90"
@@ -4650,7 +4649,7 @@ gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_277.f90"
-gpu_offload_cuda = true
+gpu_cuda_kernel = true
 options = "--realloc-lhs-arrays"
 
 [[test]]
@@ -4722,6 +4721,30 @@ gpu_offload_metal = true
 # does not name it.
 [[test]]
 filename = "../integration_tests/gpu_metal_391.f90"
+gpu_offload_cuda = true
+gpu_offload_metal = true
+
+# A run-time sized array of device code whose extent reads a dummy argument
+# the routine changes before the call the array is passed to: the host cannot
+# size it before the launch, an error on every device.
+[[test]]
+filename = "../integration_tests/gpu_metal_406.f90"
+gpu_offload_cuda = true
+gpu_offload_metal = true
+
+# A local of a device routine whose extent calls a function of a module:
+# the kernel's copy of the routine calls the kernel's copy of the function,
+# which the host cannot call to size the array before the launch.
+[[test]]
+filename = "../integration_tests/gpu_metal_407.f90"
+gpu_offload_cuda = true
+gpu_offload_metal = true
+
+# An allocatable of a device routine allocated twice with a shape that reads
+# a local the routine changes in between, through an associate name: the
+# shape is not known on entry, an error on every device.
+[[test]]
+filename = "../integration_tests/gpu_metal_408.f90"
 gpu_offload_cuda = true
 gpu_offload_metal = true
 

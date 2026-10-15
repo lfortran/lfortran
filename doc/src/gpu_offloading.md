@@ -161,6 +161,81 @@ generates the device source. It never falls back to the CPU:
   before the launch: such a loop is an error ("workspace ... cannot be
   sized on the host", or "a temporary array cannot be sized on the host"
   for a temporary the compiler introduces).
+* A procedure the loop calls runs on the device as a procedure, wherever the
+  call is: in an expression, an `associate` selector, a condition, or
+  another procedure. A device without variable-length arrays or a heap
+  (Metal, CUDA) cannot declare a local array of such a procedure whose size
+  is known only at run time -- an allocatable local, an automatic array, or
+  a temporary the compiler introduces, such as the result of a function it
+  calls. Each such local becomes an argument of the procedure, and every
+  call passes an array of its own for it, with the extents of the local
+  written over the actual arguments of that call. Up the chain of calls this
+  ends in the kernel, where the array is a per-thread workspace like any
+  other (see the previous point). The extents may read the arguments of the
+  procedure and named constants, and are written as they are on entry to the
+  procedure: a name it binds once (an associate name, a scalar assigned once
+  and changed through no other name) stands for what it is bound to, the
+  extent of a section for the extents of its ranges, and a function without
+  side effects is called with arguments of that kind
+  (`allocate(a(maxval(n)))` with `associate (n => self%nodes_)`). The value
+  of an `intent(in)` argument is fixed for the call unless it is a pointer,
+  whose target the procedure may change. An extent that is evaluated after
+  entry -- of a local of a `block`, or of the array a call is given for its
+  callee -- may not read a dummy argument the procedure can change before
+  (`n = n + 4`), whose value the callers do not know. A procedure with such
+  a local that calls itself, directly or not, would need one array per level
+  of the recursion, and is an error, and so is an extent that reads anything
+  else ("workspace ... cannot be sized on the host"). A call that is the
+  whole right-hand side of an assignment is spliced into the kernel instead:
+  the body of the procedure replaces the call, with the actual arguments in
+  place of the dummy arguments, which more often makes the extents
+  constants. An allocatable dummy array that the procedure neither
+  allocates, deallocates, asks about with `allocated`, nor hands on to an
+  allocatable dummy, is handed over as a plain array, with the lower bounds
+  of the actual argument as arguments of their own. Inside device code an
+  allocatable local is given the shape of the `allocate`, reallocation or
+  move that gives it one, also when that shape is read from another such
+  local, and when several of them give it the same shape, as shared lowering
+  does when it allocates a temporary and then reallocates it to the shape it
+  already has. That shape has to be written as it is on entry, as an extent
+  is, so that it is one value at every allocation; any other allocatable of
+  device code is an error. A reallocation by an assignment gives the shape
+  of the array the assigned value takes its shape from: `r = 2*c(2:)` gives
+  `r` the shape of `c(2:)`, also when `r` is the result of a function. A
+  rank-one allocatable local whose extent is only known where it is
+  allocated -- inside a loop of the procedure, as the temporaries of
+  `v(1:n(l)) * a(1:n(l), l-1)` in `do l = 2, m` -- points instead to the
+  leading part of a buffer, which is a run-time sized local like those
+  above, of an upper bound of every such extent known on entry: the extent
+  of a section whose subscripts read the loop index is bounded by the extent
+  of its array in that dimension, as a section never has more elements
+  there. The local itself keeps the exact extent of each allocation.
+* A derived-type value that device code creates -- a local of a
+  procedure, or the result of a function such as a structure constructor,
+  `associate (t => tensor_t(x))` -- has no storage for an allocatable array
+  component on the device either. Each such component is stored in an
+  array of its own, of the shape the procedure gives the component: the
+  extents of its `allocate`, of the array an assignment reallocates it to,
+  of the same component of a value assigned to the whole variable, or the
+  shape a procedure gives the component of its `intent(out)` or
+  `intent(inout)` argument when the value is passed for it, in terms of the
+  actual arguments of that call. The shape is written as it is on entry to
+  the procedure, over its arguments: a name the procedure binds once (an
+  associate name, a scalar assigned once) stands for what it is bound to,
+  and the extent of a section for the extents of its ranges. The array is
+  then a run-time sized local like those above, given to the callers up to
+  the kernel and sized on the host; a procedure the value is passed to is
+  handed the array as the component, as it is handed the device buffer of a
+  component of a kernel argument. An assignment of the whole value copies
+  the component into that array. A component given several different
+  shapes, or a shape read from a value the procedure computes, is an error
+  ("the allocatable component ... cannot be sized on the host").
+* A derived-type argument a procedure defines (`intent(out)` or
+  `intent(inout)`) is passed by reference, to a value in the memory of the
+  calling thread, as the procedure's locals are. An element of a kernel
+  argument passed for one lives in device memory instead, so the kernel
+  copies it into a local of its own around the call; its allocatable
+  components are not copied, the procedure is handed their device buffers.
 * A kernel cannot allocate. When a loop writes an allocatable array component
   of an element of an array of derived type, the storage the kernel writes
   into has to exist before the launch. The write may be `t(i) = f(...)`,
@@ -321,3 +396,9 @@ them; it does not yet.
   (`integer(8)` on Metal), and a derived type with an unused `real(8)`
   component that is handed to the kernel whole (see the open questions).
 * Purity of procedures called from `do concurrent` is not enforced.
+* A run-time sized local of a procedure the loop calls whose extent reads
+  the index of a `do` loop of the procedure is sized only when the extent
+  is that of a section (bounded by the extent of its array), and only for a
+  rank-one allocatable: `allocate(w(n(l)))` in `do l = 1, m`, or a local of
+  higher rank, cannot be sized yet, even when the host could work out the
+  largest value before the launch by going over the loop.

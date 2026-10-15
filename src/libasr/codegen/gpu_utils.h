@@ -35,6 +35,8 @@ enum class GpuExtentKind {
     ArgScalar,  // the value of the kernel parameter `arg_index`
     ArgMember,  // the component `member_path` of parameter `arg_index`
     ArgElement, // the element at subscripts children[0..] of `arg_index`
+    Element,    // the element at subscripts children[0..] of `array`, a
+                // designator the host can read, such as a component
     ArrayDim,   // extent `int_value` (0-based) of array parameter `arg_index`
     Size,       // size(`array`, `dim`), with children[0] the derived `dim`
     Call,       // a call of the pure function of `expr` the host can call
@@ -1117,6 +1119,43 @@ inline std::set<ASR::Function_t*> gpu_callees(ASR::stmt_t **body,
     return ASRUtils::get_called_functions(body, n_body, procedure_values);
 }
 
+// The functions the extents of the arrays of a scope call, and of the
+// BLOCK and ASSOCIATE scopes inside it: an array of device code sized by
+// `maxval(n)` has the routine shared lowering gives the intrinsic in its
+// type, which the device evaluates for the array's extent.
+inline void gpu_type_callees(SymbolTable *scope,
+        std::set<ASR::Function_t*> &callees) {
+    struct Collector : ASR::BaseWalkVisitor<Collector> {
+        std::set<ASR::Function_t*> &callees;
+        explicit Collector(std::set<ASR::Function_t*> &callees)
+            : callees(callees) {}
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(
+                x.m_name);
+            if (callee) callee = ASRUtils::symbol_get_past_StructMethodDeclaration(
+                callee);
+            if (callee && ASR::is_a<ASR::Function_t>(*callee)) {
+                callees.insert(ASR::down_cast<ASR::Function_t>(callee));
+            }
+            ASR::BaseWalkVisitor<Collector>::visit_FunctionCall(x);
+        }
+    };
+    Collector collector(callees);
+    for (auto &item : scope->get_scope()) {
+        ASR::symbol_t *sym = item.second;
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            collector.visit_ttype(*ASR::down_cast<ASR::Variable_t>(sym)
+                ->m_type);
+        } else if (ASR::is_a<ASR::Block_t>(*sym)) {
+            gpu_type_callees(ASR::down_cast<ASR::Block_t>(sym)->m_symtab,
+                callees);
+        } else if (ASR::is_a<ASR::AssociateBlock_t>(*sym)) {
+            gpu_type_callees(ASR::down_cast<ASR::AssociateBlock_t>(sym)
+                ->m_symtab, callees);
+        }
+    }
+}
+
 // Counts the writes to one scalar in a statement list, keeping the value of
 // the last one. A name written exactly once stands for that value
 // everywhere.
@@ -1627,13 +1666,37 @@ inline GpuExtent gpu_derive_extent(ASR::expr_t *e,
     }
     if (ASR::is_a<ASR::ArrayBound_t>(*v)) {
         ASR::ArrayBound_t *bd = ASR::down_cast<ASR::ArrayBound_t>(v);
-        if (gpu_designator_is_host_readable(bd->m_v, scope)) {
+        ASR::expr_t *array = bd->m_v;
+        // A bound of a name bound to an array, as `size` of one is above:
+        // an ASSOCIATE name, or the pointer shared lowering binds to a
+        // section it hands to a routine. A section's bounds run from 1 to
+        // its extent.
+        if (ASR::is_a<ASR::Var_t>(*array)) {
+            ASR::expr_t *bound = gpu_local_array_binding(
+                ASR::down_cast<ASR::Var_t>(array)->m_v, scope.body,
+                scope.n_body);
+            if (bound != nullptr) {
+                array = bound;
+                std::vector<ASR::array_index_t*> ranges =
+                    gpu_section_extent_ranges(array, bd->m_dim);
+                if (ranges.size() == 1) {
+                    if (bd->m_bound == ASR::arrayboundType::LBound) {
+                        return gpu_extent_literal(1);
+                    }
+                    GpuExtent out = gpu_derive_range_extent(ranges[0],
+                        scope, depth + 1);
+                    if (out.ok()) return out;
+                    return none;
+                }
+            }
+        }
+        if (gpu_designator_is_host_readable(array, scope)) {
             GpuExtent d = gpu_derive_extent(bd->m_dim, scope, depth);
             if (d.ok()) {
                 GpuExtent out;
                 out.kind = GpuExtentKind::Bound;
                 out.expr = v;
-                out.array = bd->m_v;
+                out.array = array;
                 out.dim = bd->m_dim;
                 out.bound = bd->m_bound;
                 out.children.push_back(std::move(d));
@@ -1679,15 +1742,22 @@ inline GpuExtent gpu_derive_extent(ASR::expr_t *e,
     if (ASR::is_a<ASR::ArrayItem_t>(*v)) {
         ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(v);
         ASR::expr_t *base = ASRUtils::get_past_array_physical_cast(item->m_v);
-        if (!ASR::is_a<ASR::Var_t>(*base)) return none;
-        std::string name = ASRUtils::symbol_name(
-            ASR::down_cast<ASR::Var_t>(base)->m_v);
-        size_t idx = 0;
-        if (!scope.is_arg(name, idx)) return none;
         GpuExtent out;
-        out.kind = GpuExtentKind::ArgElement;
         out.expr = v;
-        out.arg_index = idx;
+        size_t idx = 0;
+        if (ASR::is_a<ASR::Var_t>(*base) && scope.is_arg(ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(base)->m_v), idx)) {
+            out.kind = GpuExtentKind::ArgElement;
+            out.arg_index = idx;
+        } else if (!ASR::is_a<ASR::Var_t>(*base) &&
+                gpu_designator_is_host_readable(base, scope)) {
+            // An element of a component of a parameter, which the host
+            // reads out of the actual argument.
+            out.kind = GpuExtentKind::Element;
+            out.array = base;
+        } else {
+            return none;
+        }
         for (size_t i = 0; i < item->n_args; i++) {
             if (item->m_args[i].m_left || item->m_args[i].m_step) return none;
             GpuExtent sub = gpu_derive_extent(item->m_args[i].m_right, scope,

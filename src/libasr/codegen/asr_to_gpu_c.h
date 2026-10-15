@@ -5,6 +5,7 @@
 #include <libasr/containers.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_kernel_abi.h>
+#include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/codegen/gpu_symbol_map.h>
 #include <libasr/codegen/c_utils.h>
 #include <libasr/exception.h>
@@ -1937,6 +1938,31 @@ public:
         func_array_size_params[name] = "(" + total + ")";
     }
 
+    // A component of a derived-type local of device code is stored in an
+    // array of its own (see gpu_device_struct_storage.cpp). Handing the
+    // local to a procedure hands that array over as the component's data,
+    // with its extents, as for a component of a dummy argument.
+    void bind_struct_component_storage(
+            ASR::StructInstanceMember_t *component, ASR::expr_t *storage) {
+        std::string key = std::string(ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(component->m_v)->m_v)) + "."
+            + ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+                component->m_m));
+        func_array_data_params[key] = expr_str(storage);
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
+            ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(storage)));
+        std::string total;
+        for (size_t d = 0; d < arr->n_dims; d++) {
+            std::string len = "(" + expr_str(arr->m_dims[d].m_length) + ")";
+            if (arr->n_dims > 1) {
+                func_array_size_params[dim_size_key(key, d)] = len;
+            }
+            total += total.empty() ? len : (" * " + len);
+        }
+        func_array_size_params[key] = "(" + total + ")";
+    }
+
     // True when the callee's signature carries a synthesised size parameter
     // for this argument.
     bool formal_has_size_param(ASR::Function_t *fn, size_t arg_idx) {
@@ -2228,6 +2254,62 @@ public:
             func_array_size_params[e.first] = e.second;
         }
     }
+
+    // The tables above are keyed by name, so an entry about a variable a
+    // block declares holds only while that block is emitted, as the
+    // declaration the block emits does. Two blocks may declare variables of
+    // one name -- a routine inlined twice brings two copies of its locals --
+    // and an entry the first left behind would describe the second's
+    // variable; a variable of the block may also hide one of the same name
+    // outside it, whose entries return once the block is closed.
+    class BlockNameScope {
+        ASRToGpuCVisitor &v;
+        SymbolTable *block;
+        std::vector<std::pair<std::map<std::string, std::string>*,
+            std::map<std::string, std::string>>> hidden;
+
+        std::vector<std::map<std::string, std::string>*> tables() {
+            return {&v.func_array_size_params, &v.func_array_data_params};
+        }
+
+        // Whether `key` describes a variable `block` declares: its name,
+        // "var.member" for a component of it, either with the mark of one
+        // dimension.
+        bool declared_in_block(const std::string &key) const {
+            std::string base = key.substr(0, key.find('.'));
+            std::string array;
+            size_t d = 0;
+            if (dim_size_key_parts(base, array, d)) base = array;
+            return block->get_symbol(base) != nullptr;
+        }
+
+        std::map<std::string, std::string> take_block_entries(
+                std::map<std::string, std::string> &table) const {
+            std::map<std::string, std::string> taken;
+            for (auto it = table.begin(); it != table.end();) {
+                if (declared_in_block(it->first)) {
+                    taken.insert(*it);
+                    it = table.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+            return taken;
+        }
+    public:
+        BlockNameScope(ASRToGpuCVisitor &v, SymbolTable *block)
+                : v(v), block(block) {
+            for (auto *table : tables()) {
+                hidden.push_back({table, take_block_entries(*table)});
+            }
+        }
+        ~BlockNameScope() {
+            for (auto &h : hidden) {
+                take_block_entries(*h.first);
+                h.first->insert(h.second.begin(), h.second.end());
+            }
+        }
+    };
 
     // Name of the kernel/function parameter holding that extent.
     static std::string struct_member_dim_param(const std::string &var_name,
@@ -2661,6 +2743,11 @@ public:
                         kf.m_symtab, emitted_structs, ordered_structs);
                 }
             }
+            // A derived type the kernel's routines declare a value of,
+            // such as a local a constructor gives a value, is laid out on
+            // the device like one handed to the kernel.
+            collect_variable_structs(kf.m_symtab, emitted_structs,
+                ordered_structs);
         }
         for (ASR::Struct_t *st : ordered_structs) {
             emit_struct_def(st);
@@ -2806,6 +2893,36 @@ public:
         }
     }
 
+    // The derived types of the variables of a scope and of every scope it
+    // contains, collected as collect_structs_ordered does.
+    void collect_variable_structs(SymbolTable *scope,
+            std::set<std::string> &emitted,
+            std::vector<ASR::Struct_t*> &ordered) {
+        for (auto &item : scope->get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                if (is_struct_type(var->m_type)) {
+                    if (ASR::Struct_t *st = get_struct_decl(var)) {
+                        collect_structs_ordered(st, scope, emitted, ordered);
+                    }
+                }
+            } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+                collect_variable_structs(
+                    ASR::down_cast<ASR::Function_t>(sym)->m_symtab,
+                    emitted, ordered);
+            } else if (ASR::is_a<ASR::Block_t>(*sym)) {
+                collect_variable_structs(
+                    ASR::down_cast<ASR::Block_t>(sym)->m_symtab,
+                    emitted, ordered);
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*sym)) {
+                collect_variable_structs(
+                    ASR::down_cast<ASR::AssociateBlock_t>(sym)->m_symtab,
+                    emitted, ordered);
+            }
+        }
+    }
+
     // Collect struct definitions in dependency order (nested structs first)
     void collect_structs_ordered(ASR::Struct_t *st, SymbolTable *scope,
             std::set<std::string> &emitted,
@@ -2895,13 +3012,14 @@ public:
                 && !is_array_type(arg->m_type)) {
                 if (!first) src << ", ";
                 first = false;
-                // Out/InOut struct args are passed by reference
-                // using device address space since they typically
-                // originate from device buffer arrays in kernels
+                // Out/InOut struct args are passed by reference to a
+                // value in the calling thread's memory: a kernel copies
+                // one that lives in device memory around the call (see
+                // gpu_memory_space.cpp).
                 if (arg->m_intent == ASR::intentType::Out ||
                     arg->m_intent == ASR::intentType::InOut) {
-                    src << global_prefix() << get_struct_name(arg) << "& "
-                        << arg->m_name;
+                    src << space_prefix(ASR::memory_spaceType::Thread)
+                        << get_struct_name(arg) << "& " << arg->m_name;
                 } else {
                     src << get_struct_name(arg) << " " << arg->m_name;
                 }
@@ -3342,6 +3460,34 @@ public:
                             struct_from_array_elem[tgt_name] =
                                 {arr_name, idx_str};
                         }
+                    }
+                }
+                // A copy of a derived-type value made for a call (see
+                // gpu_memory_space.cpp) hands the routine the buffers of
+                // the allocatable components of the original.
+                if (ASR::is_a<ASR::Var_t>(*a->m_target) &&
+                        ASR::is_a<ASR::Var_t>(*a->m_value) &&
+                        is_struct_type(ASRUtils::expr_type(a->m_target)) &&
+                        !is_array_type(ASRUtils::expr_type(a->m_target))) {
+                    std::string from = std::string(ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(a->m_value)->m_v)) + ".";
+                    std::string to = std::string(ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(a->m_target)->m_v)) + ".";
+                    for (auto *table : {&func_array_data_params,
+                            &func_array_size_params}) {
+                        std::vector<std::pair<std::string, std::string>>
+                            copies;
+                        for (auto &entry : *table) {
+                            // A target with components of its own keeps
+                            // them: the assignment copies into them.
+                            if (entry.first.compare(0, from.size(), from)
+                                    == 0 && !table->count(to
+                                        + entry.first.substr(from.size()))) {
+                                copies.push_back({to + entry.first.substr(
+                                    from.size()), entry.second});
+                            }
+                        }
+                        for (auto &c : copies) (*table)[c.first] = c.second;
                     }
                 }
 
@@ -4012,6 +4158,7 @@ public:
                 ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(stmt);
                 ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
                 GpuEmissionScope emission_scope(active_scope, block->m_symtab);
+                BlockNameScope block_names(*this, block->m_symtab);
                 src << get_indent() << "{\n";
                 indent_level++;
                 for (ASR::Variable_t *v : gpu_scope_declaration_order(
@@ -4077,6 +4224,7 @@ public:
                 ASR::AssociateBlock_t *ab =
                     ASR::down_cast<ASR::AssociateBlock_t>(abc->m_m);
                 GpuEmissionScope emission_scope(active_scope, ab->m_symtab);
+                BlockNameScope block_names(*this, ab->m_symtab);
                 src << get_indent() << "{\n";
                 indent_level++;
                 for (ASR::Variable_t *v : gpu_scope_declaration_order(
@@ -4216,6 +4364,13 @@ public:
             }
             case ASR::stmtType::Associate: {
                 ASR::Associate_t *assoc = ASR::down_cast<ASR::Associate_t>(stmt);
+                ASR::StructInstanceMember_t *stored_component = nullptr;
+                ASR::expr_t *storage = nullptr;
+                if (gpu_struct_component_storage(stmt, stored_component,
+                        storage)) {
+                    bind_struct_component_storage(stored_component, storage);
+                    break;
+                }
                 last_section_size.clear();
                 last_section_dropped_step = false;
                 src << get_indent();

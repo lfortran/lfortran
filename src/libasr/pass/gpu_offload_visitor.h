@@ -111,13 +111,13 @@ public:
     // an `inline` device function cannot declare a local whose extent is
     // only known at run time. A kernel *can* have one: the extent is
     // evaluated on the host at launch and a device buffer is bound for
-    // it (`analyze_gpu_vla_workspaces`). So instead of teaching the
-    // device-function boundary to carry such a workspace through every
-    // address-space overload, splice the callee's body into the loop
-    // body: its locals become kernel-scope locals and the existing
-    // workspace machinery applies unchanged, while its dummy arguments
-    // are replaced by the actual arguments -- which often makes the
-    // extent a compile-time constant outright.
+    // it. Every such local of a device function becomes an argument its
+    // callers give it, up to the kernel (gpu_device_workspace.cpp),
+    // wherever the function is called from. A call that is the whole
+    // value of an assignment is spliced into the loop body instead: the
+    // callee's locals become kernel-scope locals, while its dummy
+    // arguments are replaced by the actual arguments -- which often
+    // makes the extent a compile-time constant outright.
     // ---------------------------------------------------------------
 
     // Functions whose bodies must be spliced into the loop body for this
@@ -154,6 +154,19 @@ public:
     std::set<ASR::Function_t*> device_reachable_functions;
 
     void mark_regions_device_code_runs();
+
+    void plain_allocatable_dummies(ASR::Function_t *fn);
+    // The routines plain_allocatable_dummies has looked at, or is looking
+    // at: a routine is looked at once, after the routines it calls.
+    std::set<ASR::Function_t*> plain_dummies_decided;
+
+    // The allocatable dummy arrays plain_allocatable_dummies declared as
+    // plain arrays, per routine, until pass_plain_dummy_lower_bounds
+    // gives them the lower bounds of their actual arguments.
+    std::map<ASR::Function_t*, std::vector<ASR::symbol_t*>>
+        plain_allocatable_dummy_args;
+
+    void pass_plain_dummy_lower_bounds(ASR::Function_t &kernel);
 
     static ASR::expr_t* strip_array_casts(ASR::expr_t *e);
 
@@ -446,6 +459,9 @@ public:
             ASRUtils::ExprStmtDuplicator &dup);
 
     void retarget_local_extents(SymbolTable *scope);
+
+    void retarget_declaration_calls(SymbolTable *scope,
+        SymbolTable &kernel_scope);
 
     void remap_associate_to_own_scope(ASR::AssociateBlock_t *ab);
 
