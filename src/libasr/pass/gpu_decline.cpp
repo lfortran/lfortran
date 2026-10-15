@@ -1,3 +1,5 @@
+#include <cctype>
+
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_decline.h>
@@ -103,6 +105,14 @@ static std::string article(const std::string &word) {
         default:
             return "a ";
     }
+}
+
+// Whether `name` is one the program can have written, which a diagnostic
+// may show. A Fortran name begins with a letter (F2018 6.2.2), and every
+// name the compiler makes up for a temporary does not.
+static bool gpu_source_name(const std::string &name) {
+    return !name.empty() && std::isalpha(static_cast<unsigned char>(name[0]))
+        && !ASRUtils::is_compiler_generated_name(name);
 }
 
 // The routine an unsupported statement was found in, when it was reached
@@ -212,6 +222,9 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::NestedArraySection:
             return "a nested array section cannot be addressed on the gpu";
         case GpuDeclineReason::WorkspaceNotSizeableOnHost:
+            if (!gpu_source_name(decline.name)) {
+                return "a temporary array cannot be sized on the host";
+            }
             return "workspace '" + decline.name +
                 "' cannot be sized on the host";
 
@@ -283,11 +296,8 @@ std::string gpu_decline_message(const GpuDecline &decline) {
                 ", which has no gpu type of the same width";
         case GpuDeclineReason::ArrayElementNotNumeric:
             return unsupported + "an array whose elements are not numbers";
-        case GpuDeclineReason::WorkspaceStructElementShape:
-            return unsupported + "a workspace sized from a struct element "
-                "whose shape may differ per thread";
         case GpuDeclineReason::LaunchVlaExtentNotRebuildable:
-            if (!decline.name.empty()) {
+            if (gpu_source_name(decline.name)) {
                 return unsupported + "the per-thread workspace for `" +
                     decline.name + "`, whose extent cannot be rebuilt on "
                     "the host";

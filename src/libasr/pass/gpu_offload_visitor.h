@@ -20,6 +20,8 @@
 
 namespace LCompilers {
 
+struct GpuExtentScope;
+
 // Hands a body rewrite the loop's statements and writes whatever it made
 // of them back into the loop. The rewrites report their result by moving
 // the pointers they were given, and a nest holds those pointers twice --
@@ -266,20 +268,39 @@ public:
 
     bool alias_temp_is_fixed_size(ASR::expr_t *target);
 
+    // Whether an expression reads a value that changes from one
+    // iteration of the offloaded loop to the next.
+    using GpuVaries = std::function<bool(ASR::expr_t*)>;
+
+    ASR::expr_t *whole_dim_extent(const Location &loc, ASR::expr_t *base,
+            size_t dim);
+
     bool alias_temp_extents(ASR::expr_t *target,
+            const GpuVaries &host_sizable, Vec<ASR::expr_t*> &sizes,
             Vec<ASR::expr_t*> &extents);
+
+    GpuVaries alias_extent_host_sizable(const ParallelLoopNest &work,
+            const std::vector<std::string> &arg_names);
 
     bool alias_temp_extents_resolvable(ASR::expr_t *target,
             ASR::expr_t **extents, size_t n_extents,
+            const GpuExtentScope &scope);
+
+    bool body_needs_unsupported_alias_temp(const ParallelLoopNest &work,
             const std::vector<std::string> &arg_names);
 
-    bool body_needs_unsupported_alias_temp(ASR::stmt_t **body,
-            size_t n_body, bool top_level,
-            const std::vector<std::string> &arg_names);
+    bool body_needs_unsupported_alias_temp_in(ASR::stmt_t **body,
+            size_t n_body, const GpuVaries &host_sizable,
+            const GpuExtentScope &scope);
 
     void size_scope_array_temporaries(ASR::stmt_t **body, size_t n_body);
 
-    void materialize_runtime_alias_blocks(ParallelLoopNest &nest);
+    void materialize_runtime_alias_blocks(ParallelLoopNest &nest,
+            const std::vector<std::string> &arg_names);
+
+    void materialize_runtime_alias_in_body(ASR::stmt_t** &body,
+            size_t &n_body, SymbolTable *scope,
+            const GpuVaries &host_sizable);
 
     void materialize_aliased_assignments(ParallelLoopNest &nest);
 
@@ -333,10 +354,6 @@ public:
     ASR::ArraySection_t* strided_section_actual(ASR::expr_t *e);
 
     bool strided_section_is_gatherable(ASR::ArraySection_t *as);
-
-    // Whether an expression reads a value that changes from one
-    // iteration of the offloaded loop to the next.
-    using GpuVaries = std::function<bool(ASR::expr_t*)>;
 
     bool gather_strided_section_arg(const Location &loc,
             SymbolTable *block_scope, ASR::expr_t **slot, bool writable,

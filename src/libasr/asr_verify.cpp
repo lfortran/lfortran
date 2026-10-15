@@ -3061,6 +3061,7 @@ public:
 
         struct ExtentVariables : ASR::BaseWalkVisitor<ExtentVariables> {
             std::set<ASR::symbol_t*> variables;
+            std::vector<std::string> calls;
             bool host_evaluable = true;
             void visit_expr(const ASR::expr_t &expression) {
                 switch (expression.type) {
@@ -3077,8 +3078,35 @@ public:
                     case ASR::exprType::ArrayItem:
                     case ASR::exprType::ArrayPhysicalCast:
                     case ASR::exprType::StructInstanceMember:
+                    // An extent that changes from thread to thread is
+                    // written over the thread index; the host evaluates it
+                    // for every thread of the launch.
+                    case ASR::exprType::GpuThreadIndex:
+                    case ASR::exprType::GpuBlockIndex:
+                    case ASR::exprType::GpuBlockSize:
                         ASR::BaseWalkVisitor<ExtentVariables>::visit_expr(expression);
                         break;
+                    // A function without side effects, which the host
+                    // calls before the launch.
+                    case ASR::exprType::FunctionCall: {
+                        const ASR::FunctionCall_t &call =
+                            (const ASR::FunctionCall_t &)expression;
+                        ASR::symbol_t *callee =
+                            ASRUtils::symbol_get_past_external(call.m_name);
+                        if (callee == nullptr ||
+                                !ASR::is_a<ASR::Function_t>(*callee)) {
+                            host_evaluable = false;
+                            break;
+                        }
+                        if (!ASRUtils::is_side_effect_free_function(
+                                *ASR::down_cast<ASR::Function_t>(callee))) {
+                            host_evaluable = false;
+                            break;
+                        }
+                        calls.push_back(ASRUtils::symbol_name(call.m_name));
+                        ASR::BaseWalkVisitor<ExtentVariables>::visit_expr(expression);
+                        break;
+                    }
                     default: host_evaluable = false;
                 }
             }
@@ -3124,6 +3152,9 @@ public:
                     "a GPU workspace extent must be an integer scalar expression");
                 ExtentVariables refs;
                 refs.visit_expr(*dim.m_extent);
+                // The kernel depends on what its layout calls.
+                function_dependencies.insert(function_dependencies.end(),
+                    refs.calls.begin(), refs.calls.end());
                 require_id(refs.host_evaluable,
                     "asr.verify.gpu_layout.host_evaluable_expression",
                     "a GPU workspace extent must contain only host-evaluable operations");
