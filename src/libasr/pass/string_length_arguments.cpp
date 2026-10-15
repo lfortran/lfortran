@@ -238,8 +238,9 @@ public:
             return;
         }
         ASR::Variable_t &xx = const_cast<ASR::Variable_t&>(x);
-        ASR::ttype_t *signature =
-            down_cast<ASR::Function_t>(decl)->m_function_signature;
+        ASR::ttype_t *signature = ASRUtils::import_procedure_type(al,
+            down_cast<ASR::Function_t>(decl)->m_function_signature,
+            xx.m_parent_symtab);
         if (ASRUtils::is_pointer(xx.m_type)) {
             xx.m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
                 xx.base.base.loc, signature));

@@ -352,7 +352,8 @@ private :
      *  EXAMPLE ::: return_var_type ==> ` (String 1 (foo()) ExpressionLength DescriptorString) `
      *    
      *  An ExternalSymbol should be already in the current scope, but we might not be able 
-     *  to get it due to name mangling -- So just create a one.
+     *  to get it by name due to name mangling -- So import the symbol's definition,
+     *  reusing an existing import of it.
      */
     ASR::symbol_t* get_resolved_symbol(ASR::symbol_t* sym){
         ASR::Module_t *sym_mod = ASRUtils::get_sym_module(sym);
@@ -368,15 +369,8 @@ private :
             return sym;
         }
 
-        /* Not Found In Current Scope -- Create An External Symbol */
-        char* const unique_name = s2c(al_, current_scope_->get_unique_name(ASRUtils::symbol_name(sym)));
-        auto ext_sym = ASR::down_cast<ASR::symbol_t>(
-                ASR::make_ExternalSymbol_t(al_, sym->base.loc, 
-                                    current_scope_, unique_name, sym,
-                                    sym_mod->m_name, nullptr, 0,
-                                    ASRUtils::symbol_name(sym), ASR::Private));
-        current_scope_->add_symbol(unique_name, ext_sym);
-        return ext_sym;
+        /* Not Found In Current Scope -- Import Its Definition */
+        return ASRUtils::import_symbol(al_, sym, current_scope_);
     }
 
 public : 
