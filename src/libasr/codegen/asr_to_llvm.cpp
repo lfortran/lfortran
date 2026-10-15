@@ -20475,7 +20475,7 @@ public:
                             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(item_type_asr, dims);
                             // Allocate array to store runtime dimensions
                             llvm::ArrayType* shape_arr_type = llvm::ArrayType::get(llvm::Type::getInt64Ty(context), n_dims);
-                            llvm::Value* shape_arr = llvm_utils->CreateAlloca(*builder, shape_arr_type);
+                            llvm::Value* shape_arr = llvm_utils->CreateAlloca(shape_arr_type);
 
                             for (size_t d = 0; d < n_dims; d++) {
                                 llvm::Value* dim_idx = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), d + 1); // 1-based
@@ -20526,7 +20526,7 @@ public:
             }
 
             // Create lfortran_nml_item_t struct
-            llvm::Value* item = llvm_utils->CreateAlloca(*builder, item_type);
+            llvm::Value* item = llvm_utils->CreateAlloca(item_type);
             llvm::Value* item_name_ptr = LCompilers::create_global_string_ptr(
                 context, *module, *builder, LCompilers::to_lower(item_name));
             builder->CreateStore(item_name_ptr, builder->CreateStructGEP(item_type, item, 0));
@@ -20563,7 +20563,7 @@ public:
 
         // Create items array
         llvm::ArrayType* items_array_type = llvm::ArrayType::get(item_type, nml_items.size());
-        llvm::Value* items_array = llvm_utils->CreateAlloca(*builder, items_array_type);
+        llvm::Value* items_array = llvm_utils->CreateAlloca(items_array_type);
 
         // Copy items into array
         for (size_t i = 0; i < nml_items.size(); i++) {
@@ -20583,7 +20583,7 @@ public:
             item_type->getPointerTo()                // items
         );
 
-        llvm::Value* group = llvm_utils->CreateAlloca(*builder, group_type);
+        llvm::Value* group = llvm_utils->CreateAlloca(group_type);
         builder->CreateStore(group_name_ptr, builder->CreateStructGEP(group_type, group, 0));
         builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), nml_items.size()),
                            builder->CreateStructGEP(group_type, group, 1));
@@ -20826,7 +20826,7 @@ public:
                 LCompilers::create_global_string_ptr(context, *module, *builder, " (%lf,%lf)");
         }
         llvm::Function* parent_fn = builder->GetInsertBlock()->getParent();
-        llvm::Value* idx = llvm_utils->CreateAlloca(*builder,
+        llvm::Value* idx = llvm_utils->CreateAlloca(
             llvm::Type::getInt32Ty(context), nullptr, "str_read_idx");
         builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), idx);
         llvm::BasicBlock* loop_cond = llvm::BasicBlock::Create(context, "str_idl.cond", parent_fn);
@@ -21234,7 +21234,7 @@ public:
         uint32_t loop_var_hash = get_hash((ASR::asr_t*)loop_var_sym);
         llvm::Value* loop_var_ptr;
         if (llvm_symtab.find(loop_var_hash) == llvm_symtab.end()) {
-            loop_var_ptr = builder->CreateAlloca(start_val->getType(), nullptr,
+            loop_var_ptr = llvm_utils->CreateAlloca(start_val->getType(), nullptr,
                 loop_var_sym->m_name);
             llvm_symtab[loop_var_hash] = loop_var_ptr;
         } else {
@@ -21294,7 +21294,7 @@ public:
                 } else {
                     llvm::Function* read_fn = get_read_function(elem_type);
                     if (ASRUtils::is_logical(*elem_type)) {
-                        llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
+                        llvm::Value* tmp_bool = llvm_utils->CreateAlloca(
                             llvm::Type::getInt1Ty(context));
                         builder->CreateCall(read_fn, {tmp_bool, unit_val, iostat});
                         int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
@@ -21554,7 +21554,7 @@ public:
             builder->CreateStore(zero_val, iostat_user);
             if (iostat_kind != 4) {
                 // use temporary i32 for iostat
-                iostat = llvm_utils->CreateAlloca(*builder,
+                iostat = llvm_utils->CreateAlloca(
                     llvm::Type::getInt32Ty(context), nullptr, "tmp_iostat");
                 builder->CreateStore(
                     llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
@@ -21568,7 +21568,7 @@ public:
             iostat = llvm::ConstantPointerNull::get(
                         llvm::Type::getInt32Ty(context)->getPointerTo());
             // Create internal iostat for empty_read
-            iostat_for_empty_read = llvm_utils->CreateAlloca(*builder,
+            iostat_for_empty_read = llvm_utils->CreateAlloca(
                         llvm::Type::getInt32Ty(context));
             builder->CreateStore(
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0),
@@ -21624,7 +21624,7 @@ public:
             ptr_loads = ptr_copy;
             read_size = tmp;
         } else {
-            read_size = llvm_utils->CreateAlloca(*builder,
+            read_size = llvm_utils->CreateAlloca(
                         llvm::Type::getInt32Ty(context));
         }
 
@@ -21659,7 +21659,7 @@ public:
             bool is_string_array_unit = false;
             llvm::Value *str_src_elem_len = nullptr;
             if (is_string) {
-                str_offset = llvm_utils->CreateAlloca(*builder,
+                str_offset = llvm_utils->CreateAlloca(
                     llvm::Type::getInt64Ty(context), nullptr, "str_read_offset");
                 builder->CreateStore(
                     llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0),
@@ -22001,7 +22001,7 @@ public:
                             llvm::Value* record_start = builder->CreateSub(saved_offset, elem_offset);
                             llvm::Value* record_data = llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), str_src_data, record_start);
                             llvm::Value* record_len = builder->CreateSub(str_src_elem_len, elem_offset);
-                            llvm::Value* record_offset = llvm_utils->CreateAlloca(*builder,llvm::Type::getInt64Ty(context), nullptr, "str_record_offset");
+                            llvm::Value* record_offset = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context), nullptr, "str_record_offset");
                             builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0),record_offset);
                             builder->CreateCall(fn, { record_data, record_len, fmt,var_to_read_into, iostat, record_offset });
                             llvm::Value* consumed = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), record_offset);
@@ -22150,7 +22150,7 @@ public:
                             // fields in list-directed I/O preserve the existing value.
                             int kind = ASRUtils::extract_kind_from_ttype_t(
                                 ASRUtils::type_get_past_allocatable_pointer(val_type));
-                            llvm::Value* tmp_bool = llvm_utils->CreateAlloca(*builder,
+                            llvm::Value* tmp_bool = llvm_utils->CreateAlloca(
                                 llvm::Type::getInt1Ty(context));
                             llvm::Value* cur_val = llvm_utils->CreateLoad2(
                                 llvm_utils->getIntType(kind), var_to_read_into);
@@ -22545,7 +22545,7 @@ public:
         llvm::Value* no_advance_str = builder->CreateBitCast(no_advance_global, character_type);
         llvm::Value* no_advance_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 2);
 
-        llvm::AllocaInst* loop_iostat = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "loop_iostat");
+        llvm::AllocaInst* loop_iostat = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "loop_iostat");
         builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0), loop_iostat);
 
         for (size_t i = 0; i < n_values; i++) {
@@ -22593,7 +22593,7 @@ public:
                     loop_step = llvm_utils->convert_kind(loop_step, llvm::Type::getInt64Ty(context));
                 }
 
-                llvm::AllocaInst* loop_var_alloca = builder->CreateAlloca(
+                llvm::AllocaInst* loop_var_alloca = llvm_utils->CreateAlloca(
                     llvm::Type::getInt64Ty(context), nullptr);
                 builder->CreateStore(loop_start, loop_var_alloca);
 
@@ -22627,7 +22627,7 @@ public:
                     cur_val = llvm_utils->convert_kind(cur_val, loop_var_type);
 
                     ASR::symbol_t* loop_var_sym = ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v;
-                    llvm::AllocaInst* temp_loop_var = builder->CreateAlloca(loop_var_type, nullptr);
+                    llvm::AllocaInst* temp_loop_var = llvm_utils->CreateAlloca(loop_var_type, nullptr);
                     builder->CreateStore(cur_val, temp_loop_var);
 
                     uint64_t var_hash = (uint64_t)loop_var_sym;
@@ -23107,7 +23107,7 @@ public:
             llvm::Value *recl_val = llvm_utils->convert_kind(
                 tmp, llvm::Type::getInt32Ty(context));
             llvm::AllocaInst *alloc =                        
-                builder->CreateAlloca(llvm::Type::getInt32Ty(context));
+                llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
             builder->CreateStore(recl_val, alloc);            
             recl = alloc;                                  
         } else {
@@ -23232,7 +23232,7 @@ public:
             exist_actual = tmp;
             ptr_loads = ptr_loads_copy;
         }
-        exist_val = llvm_utils->CreateAlloca(*builder,
+        exist_val = llvm_utils->CreateAlloca(
                         llvm::Type::getInt1Ty(context));
 
         if (x.m_unit) {
@@ -23250,7 +23250,7 @@ public:
             opened_actual = tmp;
             ptr_loads = ptr_loads_copy;
         }
-        opened_val = llvm_utils->CreateAlloca(*builder,
+        opened_val = llvm_utils->CreateAlloca(
                         llvm::Type::getInt1Ty(context));
 
         llvm::Value *size_orig_ptr = nullptr;
@@ -23266,11 +23266,11 @@ public:
                 size_val = tmp;
             } else {
                 size_orig_ptr = tmp;
-                size_val = llvm_utils->CreateAlloca(*builder,
+                size_val = llvm_utils->CreateAlloca(
                                 llvm::Type::getInt32Ty(context));
             }
         } else {
-            size_val = llvm_utils->CreateAlloca(*builder,
+            size_val = llvm_utils->CreateAlloca(
                             llvm::Type::getInt32Ty(context));
         }
 
@@ -23288,11 +23288,11 @@ public:
                 pos_val = tmp;
             } else {
                 pos_orig_ptr = tmp;
-                pos_val = llvm_utils->CreateAlloca(*builder,
+                pos_val = llvm_utils->CreateAlloca(
                                 llvm::Type::getInt32Ty(context));
             }
         } else {
-            pos_val = llvm_utils->CreateAlloca(*builder,
+            pos_val = llvm_utils->CreateAlloca(
                             llvm::Type::getInt32Ty(context));
         }
 
@@ -23383,7 +23383,7 @@ public:
                 recl = tmp;
             } else {
                 recl_orig_ptr = tmp;
-                recl = llvm_utils->CreateAlloca(*builder,llvm::Type::getInt32Ty(context));
+                recl = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
             }
         } else {
             recl = llvm::ConstantPointerNull::get(
@@ -23544,7 +23544,7 @@ public:
             named_actual = tmp;
             ptr_loads = ptr_loads_copy;
         }
-        named = llvm_utils->CreateAlloca(*builder,
+        named = llvm_utils->CreateAlloca(
                     llvm::Type::getInt1Ty(context));
 
         if (x.m_sequential) {
@@ -23718,7 +23718,7 @@ public:
             pending_actual = tmp;
             ptr_loads = ptr_loads_copy;
         }
-        pending_val = llvm_utils->CreateAlloca(*builder,
+        pending_val = llvm_utils->CreateAlloca(
                         llvm::Type::getInt1Ty(context));
 
         if (x.m_asynchronous) {
@@ -24422,7 +24422,7 @@ public:
             ptr_loads = ptr_copy;
             iostat = tmp;
         } else {
-            iostat = llvm_utils->CreateAlloca(*builder,
+            iostat = llvm_utils->CreateAlloca(
                         llvm::Type::getInt32Ty(context)->getPointerTo());
             builder->CreateStore(llvm::ConstantInt::getNullValue(
                 llvm::Type::getInt32Ty(context)->getPointerTo()), iostat);
@@ -24642,7 +24642,7 @@ public:
                     }
                     llvm::Type* int_type = llvm::Type::getIntNTy(context, kind * 8);
                     llvm::Value* logical_ext = llvm_utils->convert_kind(logical_val, int_type);
-                    llvm::Value* logical_ptr = llvm_utils->CreateAlloca(*builder, int_type);
+                    llvm::Value* logical_ptr = llvm_utils->CreateAlloca(int_type);
                     builder->CreateStore(logical_ext, logical_ptr);
                     args.push_back(logical_ptr);
                     continue;
@@ -24650,7 +24650,7 @@ public:
                     args.push_back(kind_val);
                     this->visit_expr_wrapper(m_values[i], true);
                     llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(m_values[i], ASRUtils::expr_type(m_values[i]), module.get());
-                    llvm::Value* llvm_arg = llvm_utils->CreateAlloca(*builder, type);
+                    llvm::Value* llvm_arg = llvm_utils->CreateAlloca(type);
                     builder->CreateStore(tmp, llvm_arg);
                     args.push_back(llvm_arg);
                     continue;
@@ -29629,7 +29629,7 @@ public:
             args.push_back(serialization_info);
 
             // Create and Push a pointer to int64 to store the result size in
-            llvm::Value *result_size_ptr = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt64Ty(context));
+            llvm::Value *result_size_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt64Ty(context));
             args.push_back(result_size_ptr);
 
             // Check unallocated arguments
@@ -29755,7 +29755,7 @@ public:
                     visit_expr_load_wrapper(x.m_args[i], 0);
                     LCOMPILERS_ASSERT(llvm_utils->get_StringType(expr_type(x.m_args[i])) == llvm::Type::getInt8Ty(context))
                     LCOMPILERS_ASSERT(tmp->getType()->isPointerTy()); // atleast not `char`
-                    llvm::Value* tmp_ptr = builder->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo());
+                    llvm::Value* tmp_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo());
                     builder->CreateStore(tmp, tmp_ptr);
                     tmp = tmp_ptr;
                 } else {
@@ -29796,7 +29796,7 @@ public:
                 if(!tmp->getType()->isPointerTy() ||
                     ASR::is_a<ASR::PointerToCPtr_t>(*x.m_args[i])){
                     tmp = logical_store_val(tmp, x.m_args[i]);
-                    llvm::Value* tmp_ptr = builder->CreateAlloca(tmp->getType());
+                    llvm::Value* tmp_ptr = llvm_utils->CreateAlloca(tmp->getType());
                     builder->CreateStore(tmp, tmp_ptr);
                     tmp = tmp_ptr;
                 }
