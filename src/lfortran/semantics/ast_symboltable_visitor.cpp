@@ -5354,10 +5354,11 @@ public:
     // depends on its own characteristics, and returns it, or returns null
     // if `iface` is a subroutine or its result cannot be declared without
     // `iface`. A procedure pointer result, whose interface can lead back to
-    // `iface`, points to an interface without dummy arguments or result. An
-    // array result whose bounds depend on other entities, such as dummies
-    // of `iface`, is declared allocatable, and a result whose type
-    // parameters do is not declared.
+    // `iface`, points to an interface without dummy arguments or result. A
+    // result whose array bounds or character length depend on other
+    // entities, such as dummies of `iface`, is declared allocatable, with
+    // deferred bounds and length, and a result whose other type parameters
+    // do is not declared.
     ASR::expr_t *declare_result_of_cyclic_interface(ASR::Function_t *iface,
             SymbolTable *scope) {
         ASR::Variable_t *result = ASRUtils::expr_to_variable_or_null(
@@ -5381,8 +5382,23 @@ public:
             type = ASRUtils::ExprStmtDuplicator(al).duplicate_ttype(
                 result->m_type);
             if (type_has_dependencies(type)) {
-                if (!ASR::is_a<ASR::Array_t>(*type) || type_has_dependencies(
-                        ASR::down_cast<ASR::Array_t>(type)->m_type)) {
+                ASR::ttype_t *element = ASRUtils::type_get_past_array(type);
+                if (ASR::is_a<ASR::String_t>(*element)
+                        && type_has_dependencies(element)) {
+                    ASR::String_t *str = ASR::down_cast<ASR::String_t>(
+                        element);
+                    element = ASRUtils::TYPE(ASR::make_String_t(al, loc,
+                        str->m_kind, nullptr,
+                        ASR::string_length_kindType::DeferredLength,
+                        str->m_physical_type));
+                    if (ASR::is_a<ASR::Array_t>(*type)) {
+                        ASR::down_cast<ASR::Array_t>(type)->m_type = element;
+                    } else {
+                        type = element;
+                    }
+                }
+                if (type_has_dependencies(ASRUtils::type_get_past_array(
+                        type))) {
                     return nullptr;
                 }
                 type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al,

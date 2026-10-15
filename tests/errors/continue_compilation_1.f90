@@ -3127,3 +3127,75 @@ contains
         i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
     end subroutine cc1_cpu_uses
 end module cc1_cyclic_procedure_interface_uses
+
+! A function whose interface depends on its own characteristics keeps its
+! result after the error: a result with argument-dependent array bounds or
+! character length becomes allocatable with deferred bounds and length.
+module cc1_cyclic_interface_results
+implicit none
+type :: cc1_cir_t
+    integer :: i
+end type cc1_cir_t
+contains
+    function cc1_cir_chr_f(g, n) result(r)
+        procedure(cc1_cir_chr_h) :: g
+        integer, intent(in) :: n
+        character(len=n) :: r
+        r = "x"
+    end function cc1_cir_chr_f
+
+    function cc1_cir_chr_h(k, n) result(r)
+        procedure(cc1_cir_chr_f) :: k  ! {Error} interface 'cc1_cir_chr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        integer, intent(in) :: n
+        character(len=n) :: r
+        r = k()
+    end function cc1_cir_chr_h
+
+    function cc1_cir_chr_arr_f(g, n) result(r)
+        procedure(cc1_cir_chr_arr_h) :: g
+        integer, intent(in) :: n
+        character(len=n) :: r(n)
+        r = "x"
+    end function cc1_cir_chr_arr_f
+
+    function cc1_cir_chr_arr_h(k, n) result(r)
+        procedure(cc1_cir_chr_arr_f) :: k  ! {Error} interface 'cc1_cir_chr_arr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        integer, intent(in) :: n
+        character(len=n) :: r(n)
+        r = k()
+    end function cc1_cir_chr_arr_h
+
+    function cc1_cir_arr_f(g, n) result(r)
+        procedure(cc1_cir_arr_h) :: g
+        integer, intent(in) :: n
+        integer :: r(n)
+        r = 1
+    end function cc1_cir_arr_f
+
+    integer function cc1_cir_arr_h(k, n) result(r)
+        procedure(cc1_cir_arr_f) :: k  ! {Error} interface 'cc1_cir_arr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        integer, intent(in) :: n
+        r = sum(k())
+    end function cc1_cir_arr_h
+
+    function cc1_cir_dt_f(g) result(r)
+        procedure(cc1_cir_dt_h) :: g
+        type(cc1_cir_t) :: r
+        r%i = 1
+    end function cc1_cir_dt_f
+
+    function cc1_cir_dt_h(k) result(r)
+        procedure(cc1_cir_dt_f) :: k  ! {Error} interface 'cc1_cir_dt_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        type(cc1_cir_t) :: r
+        r = k()
+    end function cc1_cir_dt_h
+
+    subroutine cc1_cir_Case(g)
+        procedure(CC1_CIR_CASE) :: g  ! {Error} interface 'cc1_cir_case' of dummy procedure 'g' depends on the characteristics of 'g'
+    end subroutine cc1_cir_Case
+
+    subroutine cc1_cir_later()
+        integer :: i
+        i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+    end subroutine cc1_cir_later
+end module cc1_cyclic_interface_results
