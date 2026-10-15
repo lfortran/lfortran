@@ -49,6 +49,17 @@ end subroutine
 end module
 """
 
+# The parser recovers from the syntax error, so the semantic error must
+# still be reported.
+SYNTAX_AND_SEMANTIC = """\
+program cc_output_syntax
+implicit none
+integer :: i
+i = "a"
+print *, 1 +
+end program
+"""
+
 VALID = """\
 module cc_output_ok
 implicit none
@@ -60,17 +71,22 @@ end subroutine
 end module
 """
 
-EXPECTED_ERRORS = [
+SEMANTIC_ERRORS = [
     "Type mismatch in assignment",
     "Variable 'undeclared_x' is not declared",
 ]
 
+SYNTAX_AND_SEMANTIC_ERRORS = [
+    "syntax error: Newline is unexpected here",
+    "Type mismatch in assignment",
+]
 
-def check(lfortran, workdir, name, source, args, outputs=None):
+
+def check(lfortran, workdir, name, source, args, outputs=None, errors=()):
     """Run `lfortran args` on `source` saved as `name`.f90.
 
     For invalid code (`outputs` is None) the compiler must fail, report all
-    errors and write no files. For valid code it must succeed and write the
+    `errors` and write no files. For valid code it must succeed and write the
     files in `outputs`.
     """
     with tempfile.TemporaryDirectory(dir=workdir) as cwd:
@@ -85,7 +101,7 @@ def check(lfortran, workdir, name, source, args, outputs=None):
         if outputs is None:
             if p.returncode == 0:
                 failures.append("exited with status 0")
-            for error in EXPECTED_ERRORS:
+            for error in errors:
                 if error not in p.stdout:
                     failures.append("did not report %r" % error)
             if written:
@@ -117,15 +133,21 @@ def main():
         backends.append("mlir")
     cc = ["--continue-compilation"]
     pywrap = cc + ["pywrap", "{name}.f90"]
-    invalid = [("program", PROGRAM), ("modules_only", MODULES_ONLY)]
+    invalid = [
+        ("program", PROGRAM, SEMANTIC_ERRORS),
+        ("modules_only", MODULES_ONLY, SEMANTIC_ERRORS),
+        ("syntax", SYNTAX_AND_SEMANTIC, SYNTAX_AND_SEMANTIC_ERRORS),
+    ]
     failures = []
     for backend in backends:
         compile_ = cc + ["--backend=" + backend, "-c", "{name}.f90",
             "-o", "{name}.o"]
-        for name, source in invalid:
-            failures += check(lfortran, args.workdir, name, source, compile_)
-    for name, source in invalid:
-        failures += check(lfortran, args.workdir, name, source, pywrap)
+        for name, source, errors in invalid:
+            failures += check(lfortran, args.workdir, name, source, compile_,
+                errors=errors)
+    for name, source, errors in invalid:
+        failures += check(lfortran, args.workdir, name, source, pywrap,
+            errors=errors)
     pywrap_outputs = ["{name}.h", "{name}_pxd.pxd", "{name}.pyx"]
     failures += check(lfortran, args.workdir, "valid", VALID, pywrap,
         pywrap_outputs)

@@ -1499,6 +1499,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
+    bool ast_has_error = false;
     {
         auto t1 = std::chrono::high_resolution_clock::now();
         LCompilers::Result<LCompilers::LFortran::AST::TranslationUnit_t*>
@@ -1507,7 +1508,10 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         time_src_to_ast = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
         std::cerr << diagnostics.render(lm, compiler_options);
-        if (result.ok && !diagnostics.has_error()) {
+        // With --continue-compilation, the parser may recover from syntax
+        // errors; continue to report semantic errors, but write no output.
+        ast_has_error = diagnostics.has_error();
+        if (result.ok) {
             ast = result.result;
         } else {
             LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1525,10 +1529,10 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         time_ast_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
         std::cerr << diagnostics.render(lm, compiler_options);
-        if (result.ok && !diagnostics.has_error()) {
+        if (result.ok && !ast_has_error && !diagnostics.has_error()) {
             asr = result.result;
         } else {
-            LCOMPILERS_ASSERT(diagnostics.has_error())
+            LCOMPILERS_ASSERT(ast_has_error || diagnostics.has_error())
             return 2;
         }
     }
@@ -1600,6 +1604,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
+    bool ast_has_error = false;
     {
         auto t1 = std::chrono::high_resolution_clock::now();
         LCompilers::Result<LCompilers::LFortran::AST::TranslationUnit_t*>
@@ -1608,7 +1613,10 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         time_src_to_ast = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
         std::cerr << diagnostics.render(lm, compiler_options);
-        if (result.ok && !diagnostics.has_error()) {
+        // With --continue-compilation, the parser may recover from syntax
+        // errors; continue to report semantic errors, but write no output.
+        ast_has_error = diagnostics.has_error();
+        if (result.ok) {
             ast = result.result;
         } else {
             LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1626,10 +1634,10 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         time_ast_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
         std::cerr << diagnostics.render(lm, compiler_options);
-        if (result.ok && !diagnostics.has_error()) {
+        if (result.ok && !ast_has_error && !diagnostics.has_error()) {
             asr = result.result;
         } else {
-            LCOMPILERS_ASSERT(diagnostics.has_error())
+            LCOMPILERS_ASSERT(ast_has_error || diagnostics.has_error())
             return 2;
         }
     }
