@@ -66,21 +66,25 @@ public:
                 handle_finalizable_result(*x_ptr);
             }
 
-            /* Visit Functions In Current SymTable */
-            for (auto &str_sym_pair : x.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Function_t>(*str_sym_pair.second)) {
-                    this->visit_Function(*down_cast<ASR::Function_t>(str_sym_pair.second));
-                } else if (ASR::is_a<ASR::Template_t>(*str_sym_pair.second)) {
-                    this->visit_Template(*down_cast<ASR::Template_t>(str_sym_pair.second));
-                }
-            }
+            visit_procedures_in_scope_and_constructs(x.m_symtab);
+        }
 
-            for (auto &a : x.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Variable_t>(*a.second) && 
-                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(a.second)))) {
-                    this->visit_Variable(*down_cast<ASR::Variable_t>(a.second));
+        /* Visit the procedures and procedure variables declared in a
+           procedure or program, including in its BLOCK constructs */
+        void visit_procedures_in_scope_and_constructs(SymbolTable *scope) {
+            ASRUtils::for_each_symbol_in_scope_and_constructs(scope, [&](ASR::symbol_t *sym) {
+                if (ASR::is_a<ASR::Function_t>(*sym)) {
+                    this->visit_Function(*down_cast<ASR::Function_t>(sym));
+                } else if (ASR::is_a<ASR::Template_t>(*sym)) {
+                    this->visit_Template(*down_cast<ASR::Template_t>(sym));
                 }
-            }
+            });
+            ASRUtils::for_each_symbol_in_scope_and_constructs(scope, [&](ASR::symbol_t *sym) {
+                if (ASR::is_a<ASR::Variable_t>(*sym) &&
+                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(sym)))) {
+                    this->visit_Variable(*down_cast<ASR::Variable_t>(sym));
+                }
+            });
         }
 
         // The result became the last dummy argument, with intent(out). A
@@ -118,20 +122,7 @@ public:
         }
 
         void visit_Program(const ASR::Program_t &x){ // Avoid visiting Body + Just Visit Functions
-            /* Visit Functions In Current SymTable */
-            for (auto &str_sym_pair : x.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Function_t>(*str_sym_pair.second)) {
-                    this->visit_Function(*down_cast<ASR::Function_t>(str_sym_pair.second));
-                } else if (ASR::is_a<ASR::Template_t>(*str_sym_pair.second)) {
-                    this->visit_Template(*down_cast<ASR::Template_t>(str_sym_pair.second));
-                }
-            }
-            for (auto &str_sym_pair : x.m_symtab->get_scope()) {
-                if (ASR::is_a<ASR::Variable_t>(*str_sym_pair.second) && 
-                    ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(str_sym_pair.second)))) {
-                    this->visit_Variable(*down_cast<ASR::Variable_t>(str_sym_pair.second));
-                }
-            }
+            visit_procedures_in_scope_and_constructs(x.m_symtab);
         }
 
         void visit_Module(const ASR::Module_t &x) {
@@ -361,7 +352,8 @@ private :
      *  EXAMPLE ::: return_var_type ==> ` (String 1 (foo()) ExpressionLength DescriptorString) `
      *    
      *  An ExternalSymbol should be already in the current scope, but we might not be able 
-     *  to get it due to name mangling -- So just create a one.
+     *  to get it by name due to name mangling -- So import the symbol's definition,
+     *  reusing an existing import of it.
      */
     ASR::symbol_t* get_resolved_symbol(ASR::symbol_t* sym){
         ASR::Module_t *sym_mod = ASRUtils::get_sym_module(sym);
@@ -377,15 +369,8 @@ private :
             return sym;
         }
 
-        /* Not Found In Current Scope -- Create An External Symbol */
-        char* const unique_name = s2c(al_, current_scope_->get_unique_name(ASRUtils::symbol_name(sym)));
-        auto ext_sym = ASR::down_cast<ASR::symbol_t>(
-                ASR::make_ExternalSymbol_t(al_, sym->base.loc, 
-                                    current_scope_, unique_name, sym,
-                                    sym_mod->m_name, nullptr, 0,
-                                    ASRUtils::symbol_name(sym), ASR::Private));
-        current_scope_->add_symbol(unique_name, ext_sym);
-        return ext_sym;
+        /* Not Found In Current Scope -- Import Its Definition */
+        return ASRUtils::import_symbol(al_, sym, current_scope_);
     }
 
 public : 

@@ -28,8 +28,11 @@ public:
     cpp_symtab macro_definitions;
     CPreprocessor(CompilerOptions &compiler_options);
     std::string token(unsigned char *tok, unsigned char* cur) const;
+    // `macro_expansion` is true when `input` is a macro expansion or a macro
+    // argument rather than source lines (no fixed-form comment lines there)
     Result<std::string> run(const std::string &input, LocationManager &lm,
-        cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics) const;
+        cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics,
+        bool macro_expansion=false) const;
 
     // Return the current token's location
     void token_loc(Location &loc, unsigned char *tok, unsigned char* cur,

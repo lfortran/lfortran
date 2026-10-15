@@ -1,0 +1,5 @@
+tokenizer error: Expecting terminating symbol for derived type
+ --> tests/errors/fixed_form_13.f:5:1
+  |
+5 | 
+  | ^ 

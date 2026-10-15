@@ -50,6 +50,7 @@ FunctionCall
 FunctionParam
 FunctionPointerCast
 GetPointer
+GpuAtomicFetchAdd
 GpuBlockIndex
 GpuBlockSize
 GpuThreadIndex

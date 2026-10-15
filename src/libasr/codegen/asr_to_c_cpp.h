@@ -447,6 +447,20 @@ public:
         }
     }
 
+    // The elements of the array constant `a`, in array element order, as
+    // a C initializer list.
+    std::string array_constant_initializer(ASR::ArrayConstant_t *a) {
+        Allocator al(1024);
+        std::string r = "{";
+        int64_t n = ASRUtils::get_fixed_size_of_array(a->m_type);
+        for (int64_t i = 0; i < n; i++) {
+            if (i > 0) r += ", ";
+            self().visit_expr(*ASRUtils::fetch_ArrayConstant_value(al, a, i));
+            r += src;
+        }
+        return r + "}";
+    }
+
     // The initializer of the field of `v` in the initial value of the
     // storage of its common block: the constant `v` is initialized with, as
     // any constant of the program is written, or the elements of an array
@@ -461,14 +475,7 @@ public:
             if (ASRUtils::get_fixed_size_of_array(a->m_type) == n &&
                     (ASRUtils::extract_n_dims_from_ttype(v.m_type) == 1 ||
                      a->m_storage_format == ASR::arraystorageType::ColMajor)) {
-                Allocator al(1024);
-                std::string r = "{";
-                for (int64_t i = 0; i < n; i++) {
-                    if (i > 0) r += ", ";
-                    self().visit_expr(*ASRUtils::fetch_ArrayConstant_value(al, a, i));
-                    r += src;
-                }
-                return r + "}";
+                return array_constant_initializer(a);
             }
         } else if (value != nullptr && !ASRUtils::is_array(v.m_type)
                 && ASRUtils::is_value_constant(value)) {

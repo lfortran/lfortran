@@ -113,7 +113,7 @@ stmt
     | DictClear(expr a)
     | SetClear(expr a)
     | Expr(expr expression)
-    | GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size, call_arg* args)
+    | GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size, call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch)
     | GpuSync()
 
 expr
@@ -187,7 +187,7 @@ expr
     | FunctionParam(int param_number, ttype type, expr? value)
     | ArrayConstructor(expr* args, ttype type, expr? value, arraystorage storage_format, expr? struct_var)
     | ArrayConstant(int n_data, void data, ttype type, arraystorage storage_format)
-    | ArrayItem(expr v, array_index* args, ttype type, arraystorage storage_format, expr? value)
+    | ArrayItem(expr v, array_index* args, ttype type, arraystorage storage_format, expr? value, bool in_bounds)
     | ArraySection(expr v, array_index* args, ttype type, expr? value)
     | CoarrayRef(expr var, coarray_index* coindices, ttype type, expr? value)
     | ArraySize(expr v, expr? dim, ttype type, expr? value)
@@ -237,6 +237,7 @@ expr
     | GpuThreadIndex(int dim, ttype type, expr? value)
     | GpuBlockIndex(int dim, ttype type, expr? value)
     | GpuBlockSize(int dim, ttype type, expr? value)
+    | GpuAtomicFetchAdd(expr target, expr increment, ttype type, expr? value)
 
 ttype
     = Integer(int kind)
@@ -298,6 +299,7 @@ gpu_argument_kind = GpuArray | GpuStruct | GpuClass | GpuMemberData | GpuMemberO
 gpu_kernel_argument = (symbol variable, symbol? member, ttype type, gpu_argument_kind kind, int argument_index, int dimension)
 gpu_workspace_dimension = (expr extent, symbol? parameter)
 gpu_workspace = (symbol variable, gpu_workspace_dimension* dims, int buffer_index, int element_size)
+gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 gpu_kernel_layout = (gpu_kernel_argument* buffers, gpu_kernel_argument* scalars, gpu_workspace* workspaces, bool packed, int source_argument_count, symbol* device_functions)
 reduction_expr = (reduction_op op, expr arg)
 tbind = Bind(string lang, string name)

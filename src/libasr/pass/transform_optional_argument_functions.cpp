@@ -268,20 +268,26 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
             }
         }
 
+        // The procedures declared in a procedure, program or module,
+        // including in its BLOCK constructs
+        void transform_procedures_in_scope_and_constructs(SymbolTable *scope) {
+            ASRUtils::for_each_symbol_in_scope_and_constructs(scope, [&](ASR::symbol_t *sym) {
+                if (is_a<ASR::Function_t>(*sym)) {
+                    ASR::Function_t *s = down_cast<ASR::Function_t>(sym);
+                    if (is_optional_argument_present(s)) {
+                        transform_functions_with_optional_arguments(s);
+                    }
+                }
+            });
+        }
+
         void visit_Program(const ASR::Program_t &x) {
             // FIXME: this is a hack, we need to pass in a non-const `x`,
             // which requires to generate a TransformVisitor.
             ASR::Program_t &xx = const_cast<ASR::Program_t&>(x);
             current_scope = xx.m_symtab;
 
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);
-                    if (is_optional_argument_present(s)) {
-                        transform_functions_with_optional_arguments(s);
-                    }
-                }
-            }
+            transform_procedures_in_scope_and_constructs(x.m_symtab);
 
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::AssociateBlock_t>(*item.second)) {
@@ -305,14 +311,7 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
             ASR::Module_t &xx = const_cast<ASR::Module_t&>(x);
             current_scope = xx.m_symtab;
 
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);
-                    if (is_optional_argument_present(s)) {
-                        transform_functions_with_optional_arguments(s);
-                    }
-                }
-            }
+            transform_procedures_in_scope_and_constructs(x.m_symtab);
 
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::AssociateBlock_t>(*item.second)) {
@@ -333,14 +332,7 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
             ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
             current_scope = xx.m_symtab;
 
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);
-                    if (is_optional_argument_present(s)) {
-                        transform_functions_with_optional_arguments(s);
-                    }
-                }
-            }
+            transform_procedures_in_scope_and_constructs(x.m_symtab);
 
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::AssociateBlock_t>(*item.second)) {
@@ -427,13 +419,15 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 std::string m_arg_i_name = scope->get_unique_name("__libasr_created_variable_");
                 ASR::ttype_t* arg_type = ASRUtils::duplicate_type(al, func_arg_j->m_type);
                 if(ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(arg_type))){// Create String type with dummy len info.
-                    arg_type = ASRUtils::duplicate_type(al, arg_type); // New-duplicated node
                     ASR::String_t* str = ASR::down_cast<ASR::String_t>(
                         ASRUtils::extract_type(arg_type));
-                    if( str->m_len &&
-                        !ASR::is_a<ASR::IntegerConstant_t>(*str->m_len)){
+                    // The absent argument is represented by a local, which
+                    // cannot inherit an assumed length from the dummy.
+                    if( str->m_len_kind == ASR::AssumedLength ||
+                        (str->m_len && !ASR::is_a<ASR::IntegerConstant_t>(*str->m_len))){
                         str->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arg_type->base.loc, 0,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, arg_type->base.loc, 4))));
+                        str->m_len_kind = ASR::ExpressionLength;
                     }
                 }
                 ASR::symbol_t* arg_decl = func_arg_j->m_type_declaration;

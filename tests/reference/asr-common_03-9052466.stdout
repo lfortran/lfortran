@@ -586,6 +586,7 @@
                                         (Real 4)
                                         ColMajor
                                         ()
+                                        .true.
                                     )
                                     Sub
                                     (RealConstant

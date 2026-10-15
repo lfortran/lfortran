@@ -282,9 +282,10 @@ int emit_tokens2(const std::string &input, std::vector<std::string>
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = "input";
-        // `input` is only used for error rendering
-        std::ofstream out("input");
-        out << input;
+        // The text is only quoted by the error rendering, which takes it from
+        // here; writing it to a file would clobber any `input` in the user's
+        // directory.
+        fl.source = input;
         lm.files.push_back(fl);
         lm.init_simple(input);
         lm.file_ends.push_back(input.size());
@@ -731,7 +732,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (result.ok) {
+    if (result.ok && !diagnostics.has_error()) {
         asr = result.result;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1186,7 +1187,9 @@ int handle_mlir(const std::string &infile,
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (result.ok) {
+    // With --continue-compilation, the ASR is returned despite errors; no
+    // object file may be written from it.
+    if (result.ok && (emit_mlir || emit_llvm || !diagnostics.has_error())) {
         asr = result.result;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1330,9 +1333,10 @@ int compile_src_to_object_file(const std::string &infile,
     lcompilers_unique_ID_separate_compilation = compiler_options.separate_compilation ? LCOMPILERS_UNIQUE_ID : "";
 
     time_src_to_asr = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-    bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (result.ok) {
+    // With --continue-compilation, the ASR is returned despite errors; no
+    // .mod or object file may be written from it.
+    if (result.ok && !diagnostics.has_error()) {
         asr = result.result;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1414,7 +1418,7 @@ int compile_src_to_object_file(const std::string &infile,
         compiler_options.po.vector_of_time_report.push_back(message);
     }
 
-    return has_error_w_cc;
+    return 0;
 }
 
 int compile_llvm_to_object_file(const std::string& infile,
@@ -1495,6 +1499,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
+    bool ast_has_error = false;
     {
         auto t1 = std::chrono::high_resolution_clock::now();
         LCompilers::Result<LCompilers::LFortran::AST::TranslationUnit_t*>
@@ -1503,6 +1508,9 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         time_src_to_ast = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
         std::cerr << diagnostics.render(lm, compiler_options);
+        // With --continue-compilation, the parser may recover from syntax
+        // errors; continue to report semantic errors, but write no output.
+        ast_has_error = diagnostics.has_error();
         if (result.ok) {
             ast = result.result;
         } else {
@@ -1521,10 +1529,10 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         time_ast_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
         std::cerr << diagnostics.render(lm, compiler_options);
-        if (result.ok) {
+        if (result.ok && !ast_has_error && !diagnostics.has_error()) {
             asr = result.result;
         } else {
-            LCOMPILERS_ASSERT(diagnostics.has_error())
+            LCOMPILERS_ASSERT(ast_has_error || diagnostics.has_error())
             return 2;
         }
     }
@@ -1596,6 +1604,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
+    bool ast_has_error = false;
     {
         auto t1 = std::chrono::high_resolution_clock::now();
         LCompilers::Result<LCompilers::LFortran::AST::TranslationUnit_t*>
@@ -1604,6 +1613,9 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         time_src_to_ast = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
         std::cerr << diagnostics.render(lm, compiler_options);
+        // With --continue-compilation, the parser may recover from syntax
+        // errors; continue to report semantic errors, but write no output.
+        ast_has_error = diagnostics.has_error();
         if (result.ok) {
             ast = result.result;
         } else {
@@ -1622,10 +1634,10 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         time_ast_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
         std::cerr << diagnostics.render(lm, compiler_options);
-        if (result.ok) {
+        if (result.ok && !ast_has_error && !diagnostics.has_error()) {
             asr = result.result;
         } else {
-            LCOMPILERS_ASSERT(diagnostics.has_error())
+            LCOMPILERS_ASSERT(ast_has_error || diagnostics.has_error())
             return 2;
         }
     }
@@ -1725,7 +1737,7 @@ int compile_to_object_file_cpp(const std::string &infile,
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (result.ok) {
+    if (result.ok && !diagnostics.has_error()) {
         asr = result.result;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1856,7 +1868,7 @@ int compile_to_object_file_c(const std::string &infile,
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         r = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (!r.ok) {
+    if (!r.ok || diagnostics.has_error()) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 2;
     }
@@ -1972,7 +1984,7 @@ int compile_to_binary_fortran(const std::string &infile,
     }
     LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics, pass_manager);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (!src.ok) {
+    if (!src.ok || diagnostics.has_error()) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
     }
@@ -2552,8 +2564,7 @@ namespace wasm {
                         { \
                             LCompilers::LocationManager::FileLocations fl; \
                             fl.in_filename = "input"; \
-                            std::ofstream out("input"); \
-                            out << input; \
+                            fl.source = input; \
                             lm.files.push_back(fl); \
                             lm.file_ends.push_back(strlen(input)); \
                         }

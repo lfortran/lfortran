@@ -414,8 +414,8 @@
                                                     10
                                                     1_rbox_v
                                                     9 v
-                                                    rbox
-                                                    []
+                                                    template_access_01_inst_m
+                                                    [rbox]
                                                     v
                                                     Public
                                                 ),
@@ -828,8 +828,9 @@
                                                                     6
                                                                     1_box_v
                                                                     4 v
-                                                                    box
-                                                                    []
+                                                                    template_access_01_tmpl_m
+                                                                    [t_tmpl
+                                                                    box]
                                                                     v
                                                                     Public
                                                                 ),

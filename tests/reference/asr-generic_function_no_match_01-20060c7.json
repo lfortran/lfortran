@@ -1,0 +1,13 @@
+{
+    "basename": "asr-generic_function_no_match_01-20060c7",
+    "cmd": "lfortran --show-asr --implicit-interface --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/generic_function_no_match_01.f90",
+    "infile_hash": "37b83d8ec22fb1ea3023bf6b415c4bf138025e24f8b0631b62e263bb",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-generic_function_no_match_01-20060c7.stderr",
+    "stderr_hash": "4c2457a8b1b867d290d79cc90760c2d1ff5a5beec1e22ad6b2d5a61d",
+    "returncode": 2
+}

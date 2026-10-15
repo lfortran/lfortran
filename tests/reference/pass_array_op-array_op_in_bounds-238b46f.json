@@ -1,0 +1,13 @@
+{
+    "basename": "pass_array_op-array_op_in_bounds-238b46f",
+    "cmd": "lfortran --pass=array_op --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/array_op_in_bounds.f90",
+    "infile_hash": "c41a4c6e2992ab5624b67e24beaf3ba31497d467dd0bd5499fb5f5b5",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_array_op-array_op_in_bounds-238b46f.stdout",
+    "stdout_hash": "46f2178d709b946b1e24bcec865a8f2de5551156c30c96bd0e310c0a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -36,8 +36,12 @@ of Metal, its arguments are bound as buffers, and it returns nothing.
 
 Only the kernels are marked by the frontend. The `device_partition` pass takes
 the closure of the call graph from them and gives every procedure it reaches
-the space it belongs in, so a procedure called from both a kernel and the host
-becomes `HostDevice`.
+the space it belongs in. A procedure with a body called from both a kernel
+and the host is cloned: the device code calls the `Device` clone and the host
+keeps the original, since the device passes rewrite device procedures in
+place. A procedure without a body there, such as a `bind(c)` interface,
+becomes `HostDevice`, and so does a device procedure the host calls before a
+launch to size a kernel's workspace.
 
 ## See Also
 

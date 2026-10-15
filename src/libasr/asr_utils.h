@@ -308,6 +308,13 @@ static inline const uint8_t* real_constant_get_r10_bytes(
     return real_constant_unpack_r10(c->m_r);
 }
 
+// Read the value of a kind=10 RealConstant as a host long double.
+static inline long double real_constant_get_r10(const ASR::RealConstant_t* c) {
+    long double v;
+    std::memcpy(&v, real_constant_get_r10_bytes(c), sizeof(long double));
+    return v;
+}
+
 static inline double real_constant_pack_r10(const uint8_t* bytes) {
     uintptr_t addr = reinterpret_cast<uintptr_t>(bytes);
     double m_r;
@@ -908,7 +915,8 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s, bool add
             const ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(&s);
             ASR::ttype_t *base_type = ASRUtils::extract_type(v->m_type);
             std::string res = type_to_str_fortran_symbol(base_type, v->m_type_declaration, true);
-            if (ASR::is_a<ASR::StructType_t>(*base_type)) {
+            if (ASR::is_a<ASR::StructType_t>(*base_type) &&
+                    !ASR::down_cast<ASR::StructType_t>(base_type)->m_is_unlimited_polymorphic) {
                 const ASR::StructType_t *stype = ASR::down_cast<ASR::StructType_t>(base_type);
                 if (stype->m_is_cstruct) {
                     res = "type(" + res + ")";
@@ -1398,6 +1406,13 @@ static inline std::string type_to_str_fortran_symbol(const ASR::ttype_t* t,
             return "tuple";
         }
         case ASR::ttypeType::StructType: {
+            if (ASR::down_cast<ASR::StructType_t>(t)->m_is_unlimited_polymorphic) {
+                if (struct_sym != nullptr && std::string(ASRUtils::symbol_name(
+                        ASRUtils::symbol_get_past_external(struct_sym))) == "~assumed_type") {
+                    return "type(*)";
+                }
+                return "class(*)";
+            }
             if (struct_sym == nullptr) {
                 return "derived_type";
             }
@@ -1520,6 +1535,10 @@ static inline std::string type_to_str_with_kind(const ASR::ttype_t* t, ASR::expr
         case ASR::ttypeType::Complex: {
             ASR::Complex_t* complex_t = ASR::down_cast<ASR::Complex_t>(t);
             return "complex(" + std::to_string(complex_t->m_kind) + ")";
+        }
+        case ASR::ttypeType::Logical: {
+            ASR::Logical_t* logical_t = ASR::down_cast<ASR::Logical_t>(t);
+            return "logical(" + std::to_string(logical_t->m_kind) + ")";
         }
         case ASR::ttypeType::Pointer: {
             return type_to_str_with_kind(ASRUtils::type_get_past_pointer(
@@ -1775,6 +1794,23 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
     }
 }
 
+// The scope of the procedure, program, module, ... that `scope` belongs to:
+// `scope` itself, unless it is the scope of a BLOCK or ASSOCIATE construct,
+// which belongs to the procedure, program, ... it is nested in.
+static inline SymbolTable *scope_past_constructs(SymbolTable *scope)
+{
+    while (scope->parent && scope->asr_owner &&
+            ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+        if (!ASR::is_a<ASR::AssociateBlock_t>(*owner) &&
+                !ASR::is_a<ASR::Block_t>(*owner)) {
+            break;
+        }
+        scope = scope->parent;
+    }
+    return scope;
+}
+
 // Returns the `symbol`'s symtab, or nullptr if the symbol has no symtab
 static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
 {
@@ -1838,6 +1874,23 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
             return nullptr;
         }
         default : throw LCompilersException("Not implemented");
+    }
+}
+
+// Calls `f` with each symbol of `scope` and, recursively, of the scopes of
+// the BLOCK and ASSOCIATE constructs in it. The procedures declared by an
+// interface block in a BLOCK construct are in the scope of the BLOCK, so a
+// pass that transforms the procedures declared in a procedure or program
+// has to visit these scopes too.
+template <typename F>
+static inline void for_each_symbol_in_scope_and_constructs(SymbolTable *scope, const F &f)
+{
+    for (auto &item : scope->get_scope()) {
+        f(item.second);
+        if (ASR::is_a<ASR::Block_t>(*item.second) ||
+                ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+            for_each_symbol_in_scope_and_constructs(symbol_symtab(item.second), f);
+        }
     }
 }
 
@@ -3593,6 +3646,12 @@ static inline bool is_const(ASR::expr_t *x) {
 ASR::expr_t* get_struct_member_value_from_constant(ASR::expr_t* value,
                             ASR::symbol_t* member);
 
+// Whether the constant `value` of derived type names a procedure, as the
+// value of an associated procedure pointer component does. The procedure is
+// named by a symbol of the scope that wrote the constant, so the constant
+// cannot stand in for its named constant in another scope.
+bool struct_constant_names_procedure(ASR::expr_t* value);
+
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                             ASR::asr_t* v_var, ASR::symbol_t *v,
                             ASR::symbol_t* member, SymbolTable* current_scope);
@@ -3605,7 +3664,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     SetChar& current_module_dependencies,
                     const std::function<void (const std::string &, const Location &)> err);
 
-bool use_overloaded_unary_minus(ASR::expr_t* operand,
+bool use_overloaded_unary_op(ASR::expr_t* operand, const std::string& op_name,
     SymbolTable* curr_scope, ASR::asr_t*& asr, Allocator &al,
     const Location& loc, SetChar& current_function_dependencies,
     SetChar& current_module_dependencies,
@@ -5443,6 +5502,49 @@ inline int extract_kind_str(char* m_n, char *&kind_str) {
     return 4;
 }
 
+// True if `v` is a deferred constant, i.e. a named constant that is a
+// deferred argument of a template, templated procedure or requirement. The
+// symbol owning the scope that declares it is only created once its
+// specification part has been visited, so it cannot be looked up while the
+// template is being defined. A deferred argument is declared like a dummy
+// argument of that scoping unit, though, which a named constant otherwise
+// cannot be.
+static inline bool is_deferred_constant(const ASR::Variable_t* v) {
+    return v->m_storage == ASR::storage_typeType::Parameter
+        && v->m_intent == ASR::intentType::Unspecified
+        && v->m_value == nullptr && v->m_symbolic_value == nullptr;
+}
+
+// True if the named constant `v` has no value because its initializer uses a
+// deferred constant, directly or through other such named constants.
+bool depends_on_deferred_constant(const ASR::Variable_t* v);
+
+// A deferred constant, or a named constant initialized with one, has no value
+// until its template is instantiated, and a symbolic kind is not supported
+// yet. With --continue-compilation, a named constant whose initializer is
+// invalid has no value either.
+template <typename SemanticAbort>
+[[noreturn]] inline void report_valueless_kind_parameter(
+        const ASR::Variable_t* kind_variable, const Location& loc,
+        diag::Diagnostics &diag) {
+    std::string name = kind_variable->m_name;
+    std::string message;
+    std::string label = "`" + name + "` has no value until the template is instantiated";
+    if (is_deferred_constant(kind_variable)) {
+        message = "using a deferred constant as a kind parameter is not supported yet";
+    } else if (depends_on_deferred_constant(kind_variable)) {
+        message = "using a named constant that depends on a deferred constant "
+            "as a kind parameter is not supported yet";
+    } else {
+        message = "the kind parameter `" + name + "` is not a constant expression";
+        label = "";
+    }
+    diag.add(diag::Diagnostic(message,
+        diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label(label, {loc})}));
+    throw SemanticAbort();
+}
+
 // this function only extract's the 'kind' and raises an error when it's of
 // inappropriate type (e.g. float), but doesn't ensure 'kind' is appropriate
 // for whose kind it is
@@ -5464,7 +5566,10 @@ inline int extract_kind(ASR::expr_t* kind_expr, const Location& loc, diag::Diagn
                 return ASRUtils::extract_kind_from_ttype_t(kind_variable->m_type);
             } else if( kind_variable->m_storage == ASR::storage_typeType::Parameter ) {
                 if( kind_variable->m_type->type == ASR::ttypeType::Integer ) {
-                    LCOMPILERS_ASSERT( kind_variable->m_value != nullptr );
+                    if( kind_variable->m_value == nullptr ) {
+                        report_valueless_kind_parameter<SemanticAbort>(
+                            kind_variable, loc, diag);
+                    }
                     return ASR::down_cast<ASR::IntegerConstant_t>(kind_variable->m_value)->m_n;
                 } else {
                     diag.add(diag::Diagnostic(
@@ -5662,14 +5767,13 @@ inline bool is_parent(ASR::Struct_t* a, ASR::Struct_t* b) {
     return false;
 }
 /**
- * Check if two derived types are :
- * 1) the same, or
- * 2) one is parent of another, or
- * 3) both are unlimited polymorphic types
+ * Check if two derived type definitions specify the same type: they are the
+ * same definition, or (F2018 7.5.2.4) different definitions with the same
+ * name that both have the SEQUENCE attribute or both have the BIND attribute
+ * and whose components agree.
  */
-inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
-    if (a == b || is_parent(a, b) || is_parent(b, a) ||
-        (is_unlimited_polymorphic_type(a) && is_unlimited_polymorphic_type(b))) {
+inline bool is_same_derived_type(ASR::Struct_t* a, ASR::Struct_t* b) {
+    if (a == b) {
         return true;
     }
 
@@ -5681,6 +5785,17 @@ inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
     }
 
     return false;
+}
+
+/**
+ * Check if two derived types are :
+ * 1) the same, or
+ * 2) one is parent of another, or
+ * 3) both are unlimited polymorphic types
+ */
+inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
+    return is_same_derived_type(a, b) || is_parent(a, b) || is_parent(b, a) ||
+        (is_unlimited_polymorphic_type(a) && is_unlimited_polymorphic_type(b));
 }
 
 // Can we pass this ARGUMENT of this derivedtype --> to this PARAMETER of this derivedtype?
@@ -6390,6 +6505,16 @@ inline bool can_pass_class_argument(ASR::expr_t* param_expr, ASR::expr_t* passed
     return check_class_assignment_compatibility(param_expr, passed_arg);
 }
 
+// An unlimited polymorphic value is type compatible only with an unlimited
+// polymorphic variable or dummy argument, although `types_equal` accepts it
+// on either side.
+inline bool is_unlimited_polymorphic_to_specific_type(ASR::ttype_t* variable_type,
+        ASR::ttype_t* value_type) {
+    return is_unlimited_polymorphic_type(value_type) &&
+        !is_unlimited_polymorphic_type(variable_type) &&
+        !is_type_parameter(*type_get_past_allocatable_pointer(variable_type));
+}
+
 static inline bool is_elemental(ASR::symbol_t* x) {
     ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(x);
     if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)) {
@@ -6540,6 +6665,52 @@ static inline ASR::ttype_t* get_type_parameter(ASR::ttype_t* t) {
     }
 }
 
+// If the derived type of the component that the ExternalSymbol `e` refers to
+// is defined in a module, directly or in a procedure or block of it, names
+// that module in `e` and the path from it to the type (e.g. `[run, t]`) in its
+// scope names, so that deserialization does not resolve the type by a name
+// that something else may stand for in `e`'s scope, e.g. a module of the same
+// name or a dummy argument. Returns false, leaving `e` unchanged, if there is
+// no such module, or if an enclosing procedure is still being declared and so
+// has no symbol yet.
+static inline bool set_struct_member_owner_path(Allocator& al,
+        ASR::ExternalSymbol_t* e) {
+    ASR::symbol_t* struct_t = ASRUtils::get_asr_owner(
+        ASRUtils::symbol_get_past_external(e->m_external));
+    std::vector<ASR::symbol_t*> path = {struct_t};
+    ASR::symbol_t* owner = ASRUtils::get_asr_owner(struct_t);
+    while (owner != nullptr && !ASR::is_a<ASR::Module_t>(*owner)) {
+        path.push_back(owner);
+        owner = ASRUtils::get_asr_owner(owner);
+    }
+    if (owner == nullptr) {
+        return false;
+    }
+    e->m_module_name = s2c(al, ASRUtils::symbol_name(owner));
+    e->n_scope_names = path.size();
+    e->m_scope_names = al.allocate<char*>(e->n_scope_names);
+    for (size_t i = 0; i < e->n_scope_names; i++) {
+        e->m_scope_names[i] = s2c(al,
+            ASRUtils::symbol_name(path[e->n_scope_names - 1 - i]));
+    }
+    return true;
+}
+
+// An ExternalSymbol `name` in `scope` for the component `struct_member`,
+// naming its type by a path from a module (set_struct_member_owner_path), or
+// otherwise by `struct_local_name`, the type's name in `scope`.
+static inline ASR::symbol_t* make_struct_member_external_symbol(Allocator& al,
+        const Location& loc, SymbolTable* scope, const std::string& name,
+        ASR::symbol_t* struct_member, const std::string& struct_local_name,
+        ASR::accessType access) {
+    struct_member = ASRUtils::symbol_get_past_external(struct_member);
+    ASR::symbol_t* e = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+        loc, scope, s2c(al, name), struct_member, s2c(al, struct_local_name),
+        nullptr, 0, s2c(al, ASRUtils::symbol_name(struct_member)), access));
+    set_struct_member_owner_path(al, ASR::down_cast<ASR::ExternalSymbol_t>(e));
+    return e;
+}
+
 static inline ASR::symbol_t* import_struct_instance_member(Allocator& al,
                                                            ASR::symbol_t* struct_member,
                                                            SymbolTable* scope)
@@ -6597,34 +6768,9 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al,
 
     std::string struct_member_external_symbol_name = "1_" + struct_t_name + "_" + struct_member_name;
     if (scope->get_symbol(struct_member_external_symbol_name) == nullptr) {
-        std::string member_module_name = struct_external_symbol_name;
-        char** scope_names_arr = nullptr;
-        size_t n_scope_names = 0;
-
-        // Use the owning module's name as module_name and encode the struct
-        // name in scope_names. This avoids ambiguity during deserialization
-        // when a struct and a top-level module share the same name (the
-        // deserializer would otherwise find the Module instead of the Struct).
-        ASR::symbol_t* struct_t_actual = ASRUtils::symbol_get_past_external(struct_t);
-        ASR::symbol_t* struct_t_owner = ASRUtils::get_asr_owner(struct_t_actual);
-        if (struct_t_owner != nullptr && ASR::is_a<ASR::Module_t>(*struct_t_owner)) {
-            member_module_name = ASRUtils::symbol_name(struct_t_owner);
-            scope_names_arr = al.allocate<char*>(1);
-            scope_names_arr[0] = s2c(al, struct_t_name);
-            n_scope_names = 1;
-        }
-
-        ASR::symbol_t* struct_member_external_symbol = ASR::down_cast<ASR::symbol_t>(
-                                                        ASR::make_ExternalSymbol_t(al,
-                                                                                struct_member->base.loc,
-                                                                                scope,
-                                                                                s2c(al, struct_member_external_symbol_name),
-                                                                                ASRUtils::symbol_get_past_external(struct_member),
-                                                                                s2c(al, member_module_name),
-                                                                                scope_names_arr,
-                                                                                n_scope_names,
-                                                                                s2c(al, struct_member_name),
-                                                                                ASR::accessType::Public));
+        ASR::symbol_t* struct_member_external_symbol = make_struct_member_external_symbol(
+            al, struct_member->base.loc, scope, struct_member_external_symbol_name,
+            struct_member, struct_external_symbol_name, ASR::accessType::Public);
         scope->add_symbol(struct_member_external_symbol_name, struct_member_external_symbol);
     }
 
@@ -6798,7 +6944,7 @@ static inline ASR::expr_t* externalize_struct_refs_in_init(Allocator& al,
             ext_sym, new_args.p, new_args.size(), new_type, new_value));
     } else if (ASR::is_a<ASR::PointerNullConstant_t>(*init_expr)) {
         ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(init_expr);
-        ASR::ttype_t* pnc_type = pnc->m_type;
+        ASR::ttype_t* pnc_type = import_procedure_type(al, pnc->m_type, scope);
         if (pnc->m_var_expr != nullptr) {
             // The var_expr references a type-identity symbol in another scope
             // which may not be accessible from the current scope. Replace it
@@ -7456,7 +7602,12 @@ class SymbolDuplicator {
     // copy of that symbol, so the copy does not refer into the original.
     // The same holds for a variable of a scope nested in the copy (a BLOCK,
     // ASSOCIATE or contained procedure) declared by a symbol of any
-    // enclosing copied scope.
+    // enclosing copied scope. Such a variable also reads the copies of the
+    // variables of the enclosing copied scopes in its type and values, such
+    // as the extent `n` of `real :: w(n)` in a BLOCK of a routine with the
+    // dummy argument `n`: a nested scope is copied before the variables of
+    // its enclosing scope may exist, so remap_local_references, which
+    // resolves names in the variable's own scope, cannot do it.
     void fixup_local_type_declarations(SymbolTable *new_scope,
             SymbolTable *orig_scope) {
         std::vector<std::pair<SymbolTable*, SymbolTable*>> copied_scopes;
@@ -7466,10 +7617,32 @@ class SymbolDuplicator {
     void fixup_type_declarations_in_scope(SymbolTable *new_scope,
             SymbolTable *orig_scope,
             std::vector<std::pair<SymbolTable*, SymbolTable*>> &copied_scopes) {
+        class RetargetToCopies : public ASR::BaseWalkVisitor<RetargetToCopies> {
+        public:
+            const std::vector<std::pair<SymbolTable*, SymbolTable*>> &scopes;
+            RetargetToCopies(const std::vector<std::pair<SymbolTable*,
+                    SymbolTable*>> &scopes) : scopes(scopes) {}
+            void visit_Var(const ASR::Var_t &x) {
+                SymbolTable *parent = ASRUtils::symbol_parent_symtab(x.m_v);
+                for (auto &s : scopes) {
+                    if (parent != s.first) continue;
+                    ASR::symbol_t *copy = s.second->get_symbol(
+                        ASRUtils::symbol_name(x.m_v));
+                    if (copy != nullptr && copy->type == x.m_v->type) {
+                        const_cast<ASR::Var_t&>(x).m_v = copy;
+                    }
+                    return;
+                }
+            }
+        };
         copied_scopes.push_back({orig_scope, new_scope});
+        RetargetToCopies retarget(copied_scopes);
         for (auto &item : new_scope->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if (copied_scopes.size() > 1) {
+                    retarget.visit_symbol(*item.second);
+                }
                 if (v->m_type_declaration == nullptr) continue;
                 SymbolTable *declared_in =
                     ASRUtils::symbol_parent_symtab(v->m_type_declaration);
@@ -7557,7 +7730,7 @@ class SymbolDuplicator {
 
         ASRUtils::ExprStmtWithScopeDuplicator scoped_node_duplicator(al, function_symtab);
         scoped_node_duplicator.allow_procedure_calls = true;
-        scoped_node_duplicator.allow_reshape = false;
+        scoped_node_duplicator.allow_reshape = true;
 
         for( size_t i = 0; i < function->n_body; i++ ) {
             scoped_node_duplicator.success = true;
@@ -7965,6 +8138,11 @@ bool fold_logical_binop(ASR::logicalbinopType op, bool left, bool right,
 // initialized with an expression of one.
 bool reads_valueless_parameter(ASR::expr_t* e);
 
+// True if `e` reads the value of a variable that is not a named constant, so
+// that it is not a constant expression even once every named constant has a
+// value. Inquiries about a variable, e.g. `size(a)`, do not read its value.
+bool reads_variable_value(ASR::expr_t* e);
+
 static inline ASR::expr_t* compute_length_from_start_end(Allocator& al, ASR::expr_t* start, ASR::expr_t* end) {
     ASR::expr_t* start_value = nullptr;
     ASR::expr_t* end_value = nullptr;
@@ -8189,15 +8367,16 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
         // The following if check determines whether the i-th argument
         // can be called by just passing the data pointer and
         // dimensional information spearately via extra arguments.
-        // Exclude assumed-size arrays (UnboundedPointerArray) since they
-        // don't pass dimension info by design.
+        // Only descriptor arguments qualify: assumed-size and bind(C)
+        // arrays (UnboundedPointerArray, PointerArray) are already passed
+        // as a bare data pointer and carry no dimension info by design.
         ASR::array_physical_typeType phys_type = ASR::array_physical_typeType::DescriptorArray;
         if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(argi->m_type))) {
             phys_type = ASR::down_cast<ASR::Array_t>(
                 ASRUtils::type_get_past_allocatable_pointer(argi->m_type))->m_physical_type;
         }
         if( n_dims > 0 && ASRUtils::is_dimension_empty(dims, n_dims) &&
-            phys_type != ASR::array_physical_typeType::UnboundedPointerArray &&
+            phys_type == ASR::array_physical_typeType::DescriptorArray &&
             (argi->m_intent == ASRUtils::intent_in ||
              argi->m_intent == ASRUtils::intent_out ||
              argi->m_intent == ASRUtils::intent_inout) &&
@@ -8600,6 +8779,67 @@ static inline bool is_allocatable(ASR::ttype_t* type) {
 
 static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
     return is_allocatable(type) || is_pointer(type);
+}
+
+// Whether `to` is type compatible with `from` (F2018 7.3.2.3) and has the
+// same kind type parameters, as MOVE_ALLOC requires (F2018 16.9.137). The
+// requirement that `to` be polymorphic if `from` is is not checked here.
+static inline bool is_move_alloc_type_compatible(ASR::expr_t* from,
+        ASR::expr_t* to) {
+    ASR::ttype_t* from_type = extract_type(expr_type(from));
+    ASR::ttype_t* to_type = extract_type(expr_type(to));
+    if (is_unlimited_polymorphic_type(to_type)) {
+        return true;
+    }
+    if (is_unlimited_polymorphic_type(from_type)) {
+        return false;
+    }
+    bool is_from_struct = ASR::is_a<ASR::StructType_t>(*from_type);
+    bool is_to_struct = ASR::is_a<ASR::StructType_t>(*to_type);
+    if (is_from_struct != is_to_struct) {
+        return false;
+    }
+    if (!is_to_struct) {
+        return check_equal_type(to_type, from_type, to, from);
+    }
+    if (is_class_type(to_type)) {
+        return check_class_assignment_compatibility(to, from);
+    }
+    ASR::symbol_t* from_sym = symbol_get_past_external(
+        get_struct_sym_from_struct_expr(from));
+    ASR::symbol_t* to_sym = symbol_get_past_external(
+        get_struct_sym_from_struct_expr(to));
+    if (ASR::is_a<ASR::Struct_t>(*from_sym) && ASR::is_a<ASR::Struct_t>(*to_sym)) {
+        return is_same_derived_type(ASR::down_cast<ASR::Struct_t>(from_sym),
+            ASR::down_cast<ASR::Struct_t>(to_sym));
+    }
+    return from_sym == to_sym;
+}
+
+// Whether an Assignment with move_allocation can transfer the allocation of
+// `value` to `target`: both are allocatable descriptor arrays, or both are
+// allocatable noncharacter scalars and `target` is type compatible with
+// `value` (F2018 16.9.137), so that the object keeps its representation.
+static inline bool is_move_allocation_pair(ASR::expr_t* target,
+        ASR::expr_t* value) {
+    ASR::ttype_t* target_type = expr_type(target);
+    ASR::ttype_t* value_type = expr_type(value);
+    if (!is_allocatable(target_type) || !is_allocatable(value_type)) {
+        return false;
+    }
+    if (is_array(target_type) || is_array(value_type)) {
+        return is_array(target_type) && is_array(value_type) &&
+            extract_physical_type(target_type) == ASR::array_physical_typeType::DescriptorArray &&
+            extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray;
+    }
+    if (is_character(*target_type) || is_character(*value_type)) {
+        return false;
+    }
+    if (is_class_type(extract_type(value_type)) &&
+            !is_class_type(extract_type(target_type))) {
+        return false;
+    }
+    return is_move_alloc_type_compatible(value, target);
 }
 
 // Reports whether a value of the derived type `st` has a constant byte
@@ -9152,6 +9392,76 @@ inline ASR::expr_t* fetch_ArrayConstant_value(Allocator &al, const ASR::ArrayCon
     return fetch_ArrayConstant_value_helper(al, x.base.base.loc, x.m_data, type, i);
 }
 
+// The compile-time value of the element `array(indices)`, or nullptr unless
+// `array` has a constant value and every index is a constant subscript
+// within its bounds.
+inline ASR::expr_t* fold_ArrayItem_value(Allocator &al, ASR::expr_t* array,
+        ASR::array_index_t* indices, size_t n_indices) {
+    if (n_indices == 0) {
+        return nullptr;
+    }
+    ASR::expr_t* base_value = ASRUtils::expr_value(array);
+    if (base_value == nullptr &&
+            ASR::is_a<ASR::StructInstanceMember_t>(*array)) {
+        ASR::StructInstanceMember_t* member_expr =
+            ASR::down_cast<ASR::StructInstanceMember_t>(array);
+        base_value = ASRUtils::get_struct_member_value_from_constant(
+            ASRUtils::expr_value(member_expr->m_v),
+            member_expr->m_m);
+    }
+    if (base_value == nullptr || !ASR::is_a<ASR::ArrayConstant_t>(*base_value)) {
+        return nullptr;
+    }
+    ASR::ArrayConstant_t* array_constant =
+        ASR::down_cast<ASR::ArrayConstant_t>(base_value);
+    ASR::dimension_t* dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+        ASRUtils::expr_type(array), dims);
+    if (n_dims != n_indices) {
+        return nullptr;
+    }
+    int64_t flat_index = 0;
+    int64_t stride = 1;
+    for (size_t i = 0; i < n_indices; i++) {
+        if (indices[i].m_left != nullptr
+                || indices[i].m_step != nullptr
+                || indices[i].m_right == nullptr) {
+            return nullptr;
+        }
+        ASR::expr_t* index_value =
+            ASRUtils::expr_value(indices[i].m_right);
+        if (index_value == nullptr ||
+                !ASR::is_a<ASR::IntegerConstant_t>(*index_value)) {
+            return nullptr;
+        }
+        int64_t lower_bound = 1;
+        if (dims[i].m_start) {
+            ASR::expr_t* lb_value =
+                ASRUtils::expr_value(dims[i].m_start);
+            if (lb_value &&
+                    !ASRUtils::extract_value(lb_value, lower_bound)) {
+                return nullptr;
+            }
+        }
+        int64_t length = 0;
+        if (dims[i].m_length == nullptr ||
+                !ASRUtils::extract_value(dims[i].m_length, length)) {
+            return nullptr;
+        }
+        int64_t index = ASR::down_cast<ASR::IntegerConstant_t>(
+            index_value)->m_n - lower_bound;
+        flat_index += index * stride;
+        stride *= length;
+    }
+    size_t index_unsigned = flat_index;
+    if (flat_index < 0 || index_unsigned >= (size_t)
+            ASRUtils::get_fixed_size_of_array(array_constant->m_type)) {
+        return nullptr;
+    }
+    return ASRUtils::fetch_ArrayConstant_value(al, array_constant,
+        index_unsigned);
+}
+
 template<typename T>
 T* set_data_int(T* data, ASR::expr_t** a_args, size_t n_args) {
     for (size_t i = 0; i < n_args; i++) {
@@ -9301,6 +9611,100 @@ inline ASR::asr_t* make_ArrayConstant_t_util(Allocator &al,
     LCOMPILERS_ASSERT(n_data == 0 || data != nullptr);
     return ASR::make_ArrayConstant_t(
         al, loc, n_data, data, array_type, storage_format);
+}
+
+// pad (with ' ') or trim character string 'value'
+inline ASR::expr_t* adjust_character_length(ASR::expr_t* value, int64_t lhs_len, int64_t rhs_len, const Location& loc, Allocator& al) {
+    value = ASRUtils::expr_value(value);
+    ASR::StringConstant_t* string_constant = ASR::down_cast<ASR::StringConstant_t>(value);
+    char* original_str = string_constant->m_s;
+    size_t new_length = static_cast<size_t>(lhs_len);
+    char* adjusted_str = al.allocate<char>(new_length + 1);
+
+    if (lhs_len < rhs_len) { // trim
+        std::memcpy(adjusted_str, original_str, new_length);
+    } else { // pad
+        std::memcpy(adjusted_str, original_str, rhs_len);
+        std::memset(adjusted_str + rhs_len, ' ', new_length - rhs_len);
+    }
+    adjusted_str[new_length] = '\0'; // null-terminate the string
+
+    ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_String_t(
+        al, loc, 1,
+        ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+            al, loc, new_length, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::DescriptorString));
+
+    return ASRUtils::EXPR(ASR::make_StringConstant_t(
+        al, loc, adjusted_str, value_type));
+}
+
+inline ASR::expr_t* adjust_array_character_length(ASR::expr_t* value, int64_t lhs_len, int64_t rhs_len, Allocator& al) {
+    ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(value));
+    Vec<ASR::expr_t*> body;
+    size_t array_size = ASRUtils::get_fixed_size_of_array(array_constant->m_type);
+
+    body.reserve(al, array_size);
+
+    for (size_t i = 0; i < array_size; i++) {
+        ASR::expr_t* item = ASRUtils::fetch_ArrayConstant_value(al, array_constant, i);
+
+        if (ASR::is_a<ASR::ArrayConstant_t>(*item)) {
+            item = adjust_array_character_length(item, lhs_len, rhs_len,  al);
+        } else {
+            item = adjust_character_length(item, lhs_len, rhs_len, item->base.loc, al);
+        }
+
+        body.push_back(al, item);
+    }
+
+    {
+        ASR::String_t* str_t = ASRUtils::get_string_type(array_constant->m_type);
+        LCOMPILERS_ASSERT(ASRUtils::is_value_constant(str_t->m_len))
+        ASR::down_cast<ASR::IntegerConstant_t>(str_t->m_len)->m_n = lhs_len;
+    }
+    array_constant->m_data = ASRUtils::set_ArrayConstant_data(
+            body.p, body.size(), ASRUtils::extract_type(array_constant->m_type));
+    array_constant->m_n_data = ASRUtils::get_ArrayConstant_data_size(array_constant->m_type);
+
+    return value;
+}
+
+// Returns the character constant `value` (a scalar or an array) with its
+// length set to `len`, blank padded or truncated, as for
+// `character(len=3) :: c = "hi"`. Returns nullptr if the length is
+// already `len` or is not constant.
+inline ASR::expr_t* conform_character_constant_length(ASR::expr_t* value,
+        int64_t len, const Location& loc, Allocator& al) {
+    ASR::String_t* value_str = ASRUtils::get_string_type(ASRUtils::expr_type(value));
+    int64_t value_len = 0;
+    if (value_str == nullptr || value_str->m_len == nullptr
+            || !ASRUtils::extract_value(ASRUtils::expr_value(value_str->m_len), value_len)
+            || value_len == len) {
+        return nullptr;
+    }
+    if (ASR::is_a<ASR::StringConstant_t>(*value)) {
+        return adjust_character_length(value, len, value_len, loc, al);
+    }
+    if (!ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+        return nullptr;
+    }
+    ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
+    if (ASRUtils::get_fixed_size_of_array(array->m_type) < 0
+            || !ASR::is_a<ASR::Array_t>(*array->m_type)) {
+        return nullptr;
+    }
+    // `adjust_array_character_length` rewrites the constant and the
+    // length in its type in place, and `value` may be a named constant's
+    // value, so adjust a copy with its own length.
+    ASR::ttype_t* adjusted_type = ASRUtils::duplicate_type(al, array->m_type);
+    ASRUtils::get_string_type(adjusted_type)->m_len = ASRUtils::EXPR(
+        ASR::make_IntegerConstant_t(al, loc, value_len,
+            ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    ASR::expr_t* adjusted = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, loc,
+        array->m_data, adjusted_type, array->m_storage_format));
+    return adjust_array_character_length(adjusted, len, value_len, al);
 }
 
 inline void flatten_ArrayConstant_data(Allocator &al, Vec<ASR::expr_t*> &data, ASR::expr_t** a_args, size_t n_args, ASR::ttype_t* a_type, int &curr_idx, ASR::ArrayConstant_t* x = nullptr) {
@@ -10450,7 +10854,8 @@ static inline ASR::ttype_t* create_array_type_with_empty_dims(Allocator& al,
 
 static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_v, ASR::array_index_t* a_args, size_t n_args, ASR::ttype_t* a_type,
-    ASR::arraystorageType a_storage_format, ASR::expr_t* a_value) {
+    ASR::arraystorageType a_storage_format, ASR::expr_t* a_value,
+    bool a_in_bounds = false) {
     if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_v) && !(ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_old == ASR::array_physical_typeType::AssumedRankArray)) {
         a_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
     }
@@ -10472,7 +10877,7 @@ static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a
     ASRUtils::ExprStmtDuplicator type_duplicator(al);
     a_type = type_duplicator.duplicate_ttype(a_type);
     return ASR::make_ArrayItem_t(al, a_loc, a_v, a_args,
-        n_args, a_type, a_storage_format, a_value);
+        n_args, a_type, a_storage_format, a_value, a_in_bounds);
 }
 
 inline ASR::ttype_t* make_Pointer_t_util(Allocator& al, const Location& loc, ASR::ttype_t* type) {
@@ -10763,6 +11168,112 @@ inline std::set<ASR::Function_t*> get_called_functions(ASR::stmt_t **body,
     return collector.callees;
 }
 
+// Whether calling the function `fn` has no effect but its result: it is
+// pure, or it reads its arguments only (all of them `intent(in)`), defines
+// nothing but its own locals and result, and calls only such functions --
+// as the routines shared lowering gives an intrinsic, such as `maxval`,
+// are written. Such a call can be evaluated anywhere its arguments can,
+// any number of times.
+inline bool is_side_effect_free_function(ASR::Function_t &fn,
+        std::set<ASR::Function_t*> &visiting) {
+    ASR::FunctionType_t *type = get_FunctionType(fn);
+    if (type->m_pure) return true;
+    if (type->m_deftype != ASR::deftypeType::Implementation ||
+            fn.m_return_var == nullptr || !visiting.insert(&fn).second) {
+        return false;
+    }
+    for (size_t i = 0; i < fn.n_args; i++) {
+        if (!ASR::is_a<ASR::Var_t>(*fn.m_args[i])) return false;
+        ASR::symbol_t *arg = ASR::down_cast<ASR::Var_t>(fn.m_args[i])->m_v;
+        if (!ASR::is_a<ASR::Variable_t>(*arg) ||
+                ASR::down_cast<ASR::Variable_t>(arg)->m_intent !=
+                    ASR::intentType::In) {
+            return false;
+        }
+    }
+    struct Effects : BlockBodyWalkVisitor<Effects> {
+        ASR::Function_t &fn;
+        std::set<ASR::Function_t*> &visiting;
+        bool free = true;
+        Effects(ASR::Function_t &fn, std::set<ASR::Function_t*> &visiting)
+            : fn(fn), visiting(visiting) {}
+        void visit_stmt(const ASR::stmt_t &x) {
+            switch (x.type) {
+                case ASR::stmtType::Assignment:
+                case ASR::stmtType::DoLoop:
+                case ASR::stmtType::WhileLoop:
+                case ASR::stmtType::If:
+                case ASR::stmtType::Select:
+                case ASR::stmtType::Exit:
+                case ASR::stmtType::Cycle:
+                case ASR::stmtType::Return:
+                case ASR::stmtType::BlockCall:
+                case ASR::stmtType::AssociateBlockCall:
+                    BlockBodyWalkVisitor<Effects>::visit_stmt(x);
+                    break;
+                default:
+                    free = false;
+            }
+        }
+        void visit_Assignment(const ASR::Assignment_t &x) {
+            ASR::expr_t *target = x.m_target;
+            while (true) {
+                if (ASR::is_a<ASR::ArrayItem_t>(*target)) {
+                    target = ASR::down_cast<ASR::ArrayItem_t>(target)->m_v;
+                } else if (ASR::is_a<ASR::ArraySection_t>(*target)) {
+                    target = ASR::down_cast<ASR::ArraySection_t>(target)->m_v;
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
+                    target = ASR::down_cast<ASR::StructInstanceMember_t>(
+                        target)->m_v;
+                } else {
+                    break;
+                }
+            }
+            if (!ASR::is_a<ASR::Var_t>(*target)) {
+                free = false;
+            } else {
+                ASR::symbol_t *s = ASR::down_cast<ASR::Var_t>(target)->m_v;
+                if (!ASR::is_a<ASR::Variable_t>(*s)) {
+                    free = false;
+                } else {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+                    SymbolTable *scope = v->m_parent_symtab;
+                    while (scope != nullptr && scope != fn.m_symtab) {
+                        scope = scope->parent;
+                    }
+                    if (scope == nullptr || (v->m_intent !=
+                            ASR::intentType::Local && v->m_intent !=
+                            ASR::intentType::ReturnVar) ||
+                            v->m_storage == ASR::storage_typeType::Save) {
+                        free = false;
+                    }
+                }
+            }
+            BlockBodyWalkVisitor<Effects>::visit_Assignment(x);
+        }
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            ASR::symbol_t *callee = symbol_get_past_external(x.m_name);
+            if (callee == nullptr || !ASR::is_a<ASR::Function_t>(*callee) ||
+                    !is_side_effect_free_function(
+                        *ASR::down_cast<ASR::Function_t>(callee), visiting)) {
+                free = false;
+            }
+            BlockBodyWalkVisitor<Effects>::visit_FunctionCall(x);
+        }
+    };
+    Effects effects(fn, visiting);
+    for (size_t i = 0; i < fn.n_body && effects.free; i++) {
+        effects.visit_stmt(*fn.m_body[i]);
+    }
+    visiting.erase(&fn);
+    return effects.free;
+}
+
+inline bool is_side_effect_free_function(ASR::Function_t &fn) {
+    std::set<ASR::Function_t*> visiting;
+    return is_side_effect_free_function(fn, visiting);
+}
+
 // Whether a member of `s`, of one of its parents, or of one of its derived
 // type members, cannot be described by static data and so has to be set up by
 // executable code: an array member needs a descriptor of its own or its
@@ -10928,22 +11439,18 @@ static inline bool has_link_time_address(ASR::expr_t* d) {
     }
 }
 
-// `p => tgt` in a declaration that a backend lays out as the variable's own
-// static initializer instead of assigning it with a statement: the address of
-// the target is a link-time constant, so the association needs no executable
-// code at all and the unit it is declared in needs no startup initializer
-// because of it.
+// `p => tgt` in the declaration of the pointer `v`, a variable or a
+// component, whose initial value is the address of the target, a link-time
+// constant.
 //
 // An array pointer is deliberately not one of these. It is a descriptor --
 // data pointer, bounds and strides -- rather than a bare address, and the
 // descriptor is filled in from the target by the association itself. Neither
 // is a character pointer, whose descriptor carries the length as well, nor a
-// polymorphic pointer, whose type pointer is not the target's. Nor is a
-// pointer of a procedure, of a block or of a program, whose declaration
-// initializer becomes a statement of that scope whatever shape it has, nor
-// one whose target is a coarray, whose storage the run time allocates.
-static inline bool is_static_pointer_association(const ASR::Variable_t &v) {
-    if (!is_module_variable(v) || !is_pointer(v.m_type)
+// polymorphic pointer, whose type pointer is not the target's, nor one whose
+// target is a coarray, whose storage the run time allocates.
+static inline bool has_static_pointer_target(const ASR::Variable_t &v) {
+    if (!is_pointer(v.m_type)
             || !is_pointer_association_initializer(v.m_symbolic_value)) {
         return false;
     }
@@ -10952,6 +11459,48 @@ static inline bool is_static_pointer_association(const ASR::Variable_t &v) {
         return false;
     }
     return has_link_time_address(v.m_symbolic_value);
+}
+
+// `p => tgt` in a declaration that a backend lays out as the variable's own
+// static initializer instead of assigning it with a statement (see
+// `has_static_pointer_target`), so the association needs no executable code
+// at all and the unit it is declared in needs no startup initializer because
+// of it. A pointer of a procedure, of a block or of a program is not one of
+// these: its declaration initializer becomes a statement of that scope
+// whatever shape it has.
+static inline bool is_static_pointer_association(const ASR::Variable_t &v) {
+    return is_module_variable(v) && has_static_pointer_target(v);
+}
+
+// Every default initial target of a data pointer component of the derived
+// type `struct_sym`, of its parents and of its derived type components is
+// one that `has_static_pointer_target` lays out as static data.
+static inline bool has_only_static_component_targets(ASR::symbol_t* struct_sym) {
+    ASR::Struct_t* s = ASR::down_cast<ASR::Struct_t>(
+        symbol_get_past_external(struct_sym));
+    if (s->m_parent != nullptr
+            && !has_only_static_component_targets(s->m_parent)) {
+        return false;
+    }
+    for (size_t i = 0; i < s->n_members; i++) {
+        ASR::symbol_t* sym = s->m_symtab->get_symbol(s->m_members[i]);
+        if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) {
+            continue;
+        }
+        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+        if (is_pointer(var->m_type)
+                && is_pointer_association_initializer(var->m_symbolic_value)
+                && !has_static_pointer_target(*var)) {
+            return false;
+        }
+        if (ASR::is_a<ASR::StructType_t>(*var->m_type)
+                && !is_class_type(var->m_type)
+                && var->m_type_declaration != nullptr
+                && !has_only_static_component_targets(var->m_type_declaration)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // The code that describes a scalar of `type` to the runtime's formatted output

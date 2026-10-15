@@ -87,7 +87,8 @@ public:
                              bool declare_value, bool is_fixed_size,
                              bool is_pointer,
                              ASR::abiType m_abi,
-                             bool is_simd_array) {
+                             bool is_simd_array,
+                             const std::string &data_init = "") {
         std::string indent(indentation_level*indentation_spaces, ' ');
         std::string type_name_copy = type_name;
         std::string original_type_name = type_name;
@@ -115,7 +116,7 @@ public:
                     }
                 } else {
                     sub += indent + format_type_c(dims, type_name_copy, std::string(v_m_name) + "_data",
-                                                use_ref, dummy) + ";\n";
+                                                use_ref, dummy) + data_init + ";\n";
                 }
                 sub += indent + std::string(v_m_name) + "->data = " + std::string(v_m_name) + "_data;\n";
                 sub += indent + std::string(v_m_name) + "->n_dims = " + std::to_string(n_dims) + ";\n";
@@ -216,6 +217,13 @@ public:
                 bool is_simd_array = (ASR::is_a<ASR::Array_t>(*v.m_type) &&
                     ASR::down_cast<ASR::Array_t>(v.m_type)->m_physical_type
                         == ASR::array_physical_typeType::SIMDArray);
+                // The elements of a named constant are its initial value.
+                std::string data_init;
+                if (v.m_storage == ASR::storage_typeType::Parameter && n_dims == 1 &&
+                        v.m_value && ASR::is_a<ASR::ArrayConstant_t>(*v.m_value)) {
+                    data_init = " = " + array_constant_initializer(
+                        ASR::down_cast<ASR::ArrayConstant_t>(v.m_value));
+                }
                 generate_array_decl(sub, force_declare_name, type_name, dims,
                                     encoded_type_name, m_dims, n_dims,
                                     use_ref, dummy,
@@ -224,7 +232,8 @@ public:
                                     v.m_intent != ASRUtils::intent_out &&
                                     v.m_intent != ASRUtils::intent_unspecified &&
                                     !is_struct_type_member && !is_module_var) || force_declare,
-                                    is_fixed_size, false, ASR::abiType::Source, is_simd_array);
+                                    is_fixed_size, false, ASR::abiType::Source, is_simd_array,
+                                    data_init);
             }
         } else {
             bool is_fixed_size = true;
