@@ -250,9 +250,18 @@ class DeviceLaunchExpandVisitor :
             }
             ASR::ttype_t *element = gpu_size_of_type_argument(al, arg,
                 ASRUtils::type_get_past_array(type));
-            return b.Mul(b.i2i_t(b.ArraySize(arg, nullptr, int32), int64),
+            ASR::expr_t *size = b.Mul(
+                b.i2i_t(b.ArraySize(arg, nullptr, int32), int64),
                 ASRUtils::EXPR(ASR::make_SizeOfType_t(al, loc, element,
                     int64, nullptr)));
+            // An allocatable the loop only uses when it is allocated -- a
+            // local allocated when an optional argument is present -- is
+            // handed over as no storage at all when it is not.
+            if (ASRUtils::is_allocatable(ASRUtils::expr_type(arg))) {
+                size = ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                    is_allocated(loc, arg), size, b.i64(0), int64, nullptr));
+            }
+            return size;
         }
 
         // Builds, once per kernel, the struct that carries every scalar

@@ -682,6 +682,17 @@ public:
     }
 };
 
+// `present(x)` of an optional dummy argument of the procedure a loop is in
+// is the same in every iteration, and only the host can tell it: whether
+// an absent argument is passed is a fact about the call, not about any
+// storage the kernel is handed. Each such test in `body` becomes a logical
+// local of `host_scope`, set by a statement appended to `before_launch`,
+// which the kernel reads like any other scalar of the host. The argument
+// itself is then no longer named by the loop just for the test, so a loop
+// that names it only in such tests runs when it is absent too.
+void gpu_hoist_present_tests(Allocator &al, SymbolTable *host_scope,
+    ASR::stmt_t **body, size_t n_body, Vec<ASR::stmt_t*> &before_launch);
+
 } // namespace LCompilers
 
 #endif // LIBASR_PASS_GPU_OFFLOAD_REWRITE_H

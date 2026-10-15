@@ -224,6 +224,14 @@ generates the device source. It never falls back to the CPU:
   of a section whose subscripts read the loop index is bounded by the extent
   of its array in that dimension, as a section never has more elements
   there. The local itself keeps the exact extent of each allocation.
+* `present(x)` of an optional dummy argument of the procedure the loop is
+  in is evaluated by the host before the launch, and the kernel reads the
+  result like any other scalar of the host: the loop runs whether the
+  argument is present or not. An allocatable the loop only uses when it is
+  allocated (`if (present(cost)) c(i) = ...`, with `c` allocated only when
+  `cost` is present) is handed to the kernel as no storage when it is not
+  allocated. A loop that names an optional argument other than in
+  `present` is launched only when the argument is present, for now.
 * An internal procedure the loop calls reads the variables and named
   constants of its host by host association, which device code does not
   have. The kernel's copy of the procedure is given them instead: a named

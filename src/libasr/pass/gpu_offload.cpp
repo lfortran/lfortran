@@ -160,6 +160,8 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             GpuDecline(GpuDeclineReason::StructElementGather));
         return;
     }
+    gpu_hoist_present_tests(al, current_scope, work.body, work.n_body,
+        gather_stmts);
 
     // What can be asked of the loop as it was written is asked before the
     // inline_* helpers below rewrite the body, so that an error names what
