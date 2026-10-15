@@ -6364,6 +6364,8 @@ struct UNIT_FILE {
     // Pending bytes for sequential unformatted records (shared by all types).
     int32_t seq_unf_pending;
     int32_t seq_unf_record_len;
+    // Set by ENDFILE or a READ that hit end of file: the unit is after the end-of-file record.
+    bool after_endfile;
     // Pending list-directed null-repeat state.
     int32_t lf_list_dir_null_remaining;
     // Child I/O mode (for DTIO: suppress record terminators in child writes).
@@ -6387,6 +6389,7 @@ static inline void seq_unf_state_reset(struct UNIT_FILE *uf) {
     if (!uf) return;
     uf->seq_unf_pending = 0;
     uf->seq_unf_record_len = 0;
+    uf->after_endfile = false;
 }
 
 // Begin reading from a sequential unformatted record if not already in one.
@@ -6397,7 +6400,9 @@ static inline int seq_unf_begin_record(int32_t unit_num, FILE* filep) {
     if (uf->seq_unf_pending == 0) {
         int32_t marker = 0;
         if (fread(&marker, sizeof(int32_t), 1, filep) != 1) {
-            return feof(filep) ? -1 : 1;
+            if (!feof(filep)) return 1;
+            uf->after_endfile = true;
+            return -1;
         }
         if (marker < 0) return 1;
         uf->seq_unf_pending = marker;
@@ -8166,6 +8171,8 @@ LFORTRAN_API void _lfortran_endfile(int32_t unit_num, int32_t *iostat, char *iom
     if (pos >= 0) {
         (void)!ftruncate(fileno(filep), pos);
     }
+    struct UNIT_FILE *uf = find_unit(unit_num);
+    if (uf) uf->after_endfile = true;
 }
 
 LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *iomsg,  int64_t iomsg_len)
@@ -8178,7 +8185,8 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *i
         pad_with_spaces(iomsg, 0, iomsg_len);
     }
     bool unit_file_bin;
-    FILE* fd = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    int access_id = -1;
+    FILE* fd = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (fd == NULL) {
         if (iostat != NULL) {
             *iostat = 5001;
@@ -8190,6 +8198,33 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *i
         }
         fprintf(stderr, "Specified UNIT %d in BACKSPACE is not created or connected.\n", unit_num);
         exit(1);
+    }
+
+    if (unit_file_bin && access_id == 0) {
+        struct UNIT_FILE *uf = find_unit(unit_num);
+        bool after_endfile = uf->after_endfile;
+        seq_unf_state_reset(uf);
+        // Only step back over the end-of-file record
+        if (after_endfile) {
+            clearerr(fd);
+            return;
+        }
+        long pos = ftell(fd);
+        if (pos == 0) {
+            return;
+        }
+        int32_t marker = -1;
+        long marker_size = (long)sizeof(int32_t);
+        if (pos < 2 * marker_size
+                || fseek(fd, pos - marker_size, SEEK_SET) != 0
+                || fread(&marker, sizeof(int32_t), 1, fd) != 1
+                || marker < 0 || (long)marker > pos - 2 * marker_size
+                || fseek(fd, pos - 2 * marker_size - (long)marker, SEEK_SET) != 0) {
+            if (iostat != NULL) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid record marker in BACKSPACE on unit %d.\n", unit_num);
+            exit(1);
+        }
+        return;
     }
 
     fflush(fd);
@@ -9786,6 +9821,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
             if (find_unit(unit_num)->seq_unf_pending == 0) {
                 int32_t marker = 0;
                 if (fread(&marker, sizeof(int32_t), 1, filep) != 1) {
+                    if (feof(filep)) find_unit(unit_num)->after_endfile = true;
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     printf("Error reading record marker from file.\n");
                     exit(1);
@@ -13323,8 +13359,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         }
     }
     if (unit_file_bin) { // Unformatted
-        if (access_id == 0) {  // 0 = SEQUENTIAL access: always append
-            fseek(filep, 0, SEEK_END);
+        if (access_id == 0) {  // C needs a seek between a read and a write
+            fseek(filep, 0, SEEK_CUR);
         }
         va_list args;
         va_start(args, format_len);
