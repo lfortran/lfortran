@@ -157,6 +157,20 @@ void Tokenizer::add_rel_warning(diag::Diagnostics &diagnostics, bool fixed_form,
     }
 }
 
+void Tokenizer::add_q_exponent_warning(diag::Diagnostics &diagnostics) const {
+    std::string value = token();
+    value = value.substr(0, value.find('_'));
+    size_t q_pos = value.find_first_of("qQ");
+    if (q_pos == std::string::npos) return;
+    value[q_pos] = (value[q_pos] == 'q') ? 'e' : 'E';
+    Location loc;
+    token_loc(loc);
+    diagnostics.tokenizer_warning_label(
+        "the exponent letter 'q' is not standard Fortran (LFortran extension)",
+        {loc},
+        "help: write this as '" + value + "_16'");
+}
+
 static bool is_omp_blank(unsigned char c)
 {
     return c == ' ' || c == '\t' || c == '\v' || c == '\r';
@@ -343,7 +357,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             defop = "."[a-zA-Z]+".";
             kind = digit+ | name;
             significand = (digit+"."digit*) | ("."digit+);
-            exp = [edED][-+]? digit+;
+            exp = [edqEDQ][-+]? digit+;
             integer = digit+ ("_" kind)?;
             real = ((significand exp?) | (digit+ exp)) ("_" kind)?;
             string1 = (kind "_")? '"' ('""'|[^"\x00])* '"';
@@ -734,7 +748,10 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             }
 
 
-            real { token(yylval.string); RET(TK_REAL) }
+            real {
+                add_q_exponent_warning(diagnostics);
+                token(yylval.string); RET(TK_REAL)
+            }
             integer / (whitespace name) {
                 if (last_token == yytokentype::TK_NEWLINE) {
                     uint64_t u;
