@@ -1,3 +1,5 @@
+#include <cctype>
+
 #include <libasr/asr_utils.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_decline.h>
@@ -41,9 +43,6 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // so a device function cannot declare a local whose extent is
             // only known once the kernel runs.
             caps.device_function_runtime_sized_locals = false;
-            // A Metal shader has no way to halt the program: the shading
-            // language has no trap.
-            caps.device_abort = false;
             break;
         case GpuDevice::Cuda:
             caps.name = "CUDA";
@@ -55,8 +54,6 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // whose size the compiler has to know -- so a run-time sized
             // local has to be moved to kernel scope here too.
             caps.device_function_runtime_sized_locals = false;
-            // A CUDA kernel has a trap it can raise, so it keeps that
-            // default.
             break;
         case GpuDevice::None:
             break;
@@ -108,6 +105,14 @@ static std::string article(const std::string &word) {
         default:
             return "a ";
     }
+}
+
+// Whether `name` is one the program can have written, which a diagnostic
+// may show. A Fortran name begins with a letter (F2018 6.2.2), and every
+// name the compiler makes up for a temporary does not.
+static bool gpu_source_name(const std::string &name) {
+    return !name.empty() && std::isalpha(static_cast<unsigned char>(name[0]))
+        && !ASRUtils::is_compiler_generated_name(name);
 }
 
 // The routine an unsupported statement was found in, when it was reached
@@ -217,8 +222,23 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::NestedArraySection:
             return "a nested array section cannot be addressed on the gpu";
         case GpuDeclineReason::WorkspaceNotSizeableOnHost:
+            if (!gpu_source_name(decline.name)) {
+                return "a temporary array cannot be sized on the host";
+            }
             return "workspace '" + decline.name +
                 "' cannot be sized on the host";
+        case GpuDeclineReason::StructComponentNotSizeable: {
+            // `value%component`: a temporary value is not named.
+            std::string component = decline.name;
+            size_t at = component.find('%');
+            if (at != std::string::npos &&
+                    !gpu_source_name(component.substr(0, at))) {
+                component = component.substr(at + 1);
+            }
+            return "the allocatable component '" + component +
+                "' of a derived-type value of device code cannot be sized "
+                "on the host";
+        }
 
         case GpuDeclineReason::LocalTypeWidth:
             return "local '" + decline.name +
@@ -232,8 +252,12 @@ std::string gpu_decline_message(const GpuDecline &decline) {
 
         case GpuDeclineReason::StatementIo:
             return unsupported + "input or output" + in_routine(decline);
-        case GpuDeclineReason::StatementStop:
-            return unsupported + "stop" + in_routine(decline);
+        case GpuDeclineReason::StopCodeNotConstant:
+            return unsupported + "a character stop code that is not a "
+                "constant" + in_routine(decline);
+        case GpuDeclineReason::StoppingProcedureShared:
+            return unsupported + "procedure '" + decline.name + "', which "
+                "can stop, passed as an argument or shared with the host";
 
         case GpuDeclineReason::StructDeclarationUnknown:
             return unsupported +
@@ -284,11 +308,8 @@ std::string gpu_decline_message(const GpuDecline &decline) {
                 ", which has no gpu type of the same width";
         case GpuDeclineReason::ArrayElementNotNumeric:
             return unsupported + "an array whose elements are not numbers";
-        case GpuDeclineReason::WorkspaceStructElementShape:
-            return unsupported + "a workspace sized from a struct element "
-                "whose shape may differ per thread";
         case GpuDeclineReason::LaunchVlaExtentNotRebuildable:
-            if (!decline.name.empty()) {
+            if (gpu_source_name(decline.name)) {
                 return unsupported + "the per-thread workspace for `" +
                     decline.name + "`, whose extent cannot be rebuilt on "
                     "the host";

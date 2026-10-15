@@ -6944,7 +6944,7 @@ static inline ASR::expr_t* externalize_struct_refs_in_init(Allocator& al,
             ext_sym, new_args.p, new_args.size(), new_type, new_value));
     } else if (ASR::is_a<ASR::PointerNullConstant_t>(*init_expr)) {
         ASR::PointerNullConstant_t* pnc = ASR::down_cast<ASR::PointerNullConstant_t>(init_expr);
-        ASR::ttype_t* pnc_type = pnc->m_type;
+        ASR::ttype_t* pnc_type = import_procedure_type(al, pnc->m_type, scope);
         if (pnc->m_var_expr != nullptr) {
             // The var_expr references a type-identity symbol in another scope
             // which may not be accessible from the current scope. Replace it
@@ -7602,7 +7602,12 @@ class SymbolDuplicator {
     // copy of that symbol, so the copy does not refer into the original.
     // The same holds for a variable of a scope nested in the copy (a BLOCK,
     // ASSOCIATE or contained procedure) declared by a symbol of any
-    // enclosing copied scope.
+    // enclosing copied scope. Such a variable also reads the copies of the
+    // variables of the enclosing copied scopes in its type and values, such
+    // as the extent `n` of `real :: w(n)` in a BLOCK of a routine with the
+    // dummy argument `n`: a nested scope is copied before the variables of
+    // its enclosing scope may exist, so remap_local_references, which
+    // resolves names in the variable's own scope, cannot do it.
     void fixup_local_type_declarations(SymbolTable *new_scope,
             SymbolTable *orig_scope) {
         std::vector<std::pair<SymbolTable*, SymbolTable*>> copied_scopes;
@@ -7612,10 +7617,32 @@ class SymbolDuplicator {
     void fixup_type_declarations_in_scope(SymbolTable *new_scope,
             SymbolTable *orig_scope,
             std::vector<std::pair<SymbolTable*, SymbolTable*>> &copied_scopes) {
+        class RetargetToCopies : public ASR::BaseWalkVisitor<RetargetToCopies> {
+        public:
+            const std::vector<std::pair<SymbolTable*, SymbolTable*>> &scopes;
+            RetargetToCopies(const std::vector<std::pair<SymbolTable*,
+                    SymbolTable*>> &scopes) : scopes(scopes) {}
+            void visit_Var(const ASR::Var_t &x) {
+                SymbolTable *parent = ASRUtils::symbol_parent_symtab(x.m_v);
+                for (auto &s : scopes) {
+                    if (parent != s.first) continue;
+                    ASR::symbol_t *copy = s.second->get_symbol(
+                        ASRUtils::symbol_name(x.m_v));
+                    if (copy != nullptr && copy->type == x.m_v->type) {
+                        const_cast<ASR::Var_t&>(x).m_v = copy;
+                    }
+                    return;
+                }
+            }
+        };
         copied_scopes.push_back({orig_scope, new_scope});
+        RetargetToCopies retarget(copied_scopes);
         for (auto &item : new_scope->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+                if (copied_scopes.size() > 1) {
+                    retarget.visit_symbol(*item.second);
+                }
                 if (v->m_type_declaration == nullptr) continue;
                 SymbolTable *declared_in =
                     ASRUtils::symbol_parent_symtab(v->m_type_declaration);
@@ -7703,7 +7730,7 @@ class SymbolDuplicator {
 
         ASRUtils::ExprStmtWithScopeDuplicator scoped_node_duplicator(al, function_symtab);
         scoped_node_duplicator.allow_procedure_calls = true;
-        scoped_node_duplicator.allow_reshape = false;
+        scoped_node_duplicator.allow_reshape = true;
 
         for( size_t i = 0; i < function->n_body; i++ ) {
             scoped_node_duplicator.success = true;
@@ -11141,6 +11168,112 @@ inline std::set<ASR::Function_t*> get_called_functions(ASR::stmt_t **body,
     return collector.callees;
 }
 
+// Whether calling the function `fn` has no effect but its result: it is
+// pure, or it reads its arguments only (all of them `intent(in)`), defines
+// nothing but its own locals and result, and calls only such functions --
+// as the routines shared lowering gives an intrinsic, such as `maxval`,
+// are written. Such a call can be evaluated anywhere its arguments can,
+// any number of times.
+inline bool is_side_effect_free_function(ASR::Function_t &fn,
+        std::set<ASR::Function_t*> &visiting) {
+    ASR::FunctionType_t *type = get_FunctionType(fn);
+    if (type->m_pure) return true;
+    if (type->m_deftype != ASR::deftypeType::Implementation ||
+            fn.m_return_var == nullptr || !visiting.insert(&fn).second) {
+        return false;
+    }
+    for (size_t i = 0; i < fn.n_args; i++) {
+        if (!ASR::is_a<ASR::Var_t>(*fn.m_args[i])) return false;
+        ASR::symbol_t *arg = ASR::down_cast<ASR::Var_t>(fn.m_args[i])->m_v;
+        if (!ASR::is_a<ASR::Variable_t>(*arg) ||
+                ASR::down_cast<ASR::Variable_t>(arg)->m_intent !=
+                    ASR::intentType::In) {
+            return false;
+        }
+    }
+    struct Effects : BlockBodyWalkVisitor<Effects> {
+        ASR::Function_t &fn;
+        std::set<ASR::Function_t*> &visiting;
+        bool free = true;
+        Effects(ASR::Function_t &fn, std::set<ASR::Function_t*> &visiting)
+            : fn(fn), visiting(visiting) {}
+        void visit_stmt(const ASR::stmt_t &x) {
+            switch (x.type) {
+                case ASR::stmtType::Assignment:
+                case ASR::stmtType::DoLoop:
+                case ASR::stmtType::WhileLoop:
+                case ASR::stmtType::If:
+                case ASR::stmtType::Select:
+                case ASR::stmtType::Exit:
+                case ASR::stmtType::Cycle:
+                case ASR::stmtType::Return:
+                case ASR::stmtType::BlockCall:
+                case ASR::stmtType::AssociateBlockCall:
+                    BlockBodyWalkVisitor<Effects>::visit_stmt(x);
+                    break;
+                default:
+                    free = false;
+            }
+        }
+        void visit_Assignment(const ASR::Assignment_t &x) {
+            ASR::expr_t *target = x.m_target;
+            while (true) {
+                if (ASR::is_a<ASR::ArrayItem_t>(*target)) {
+                    target = ASR::down_cast<ASR::ArrayItem_t>(target)->m_v;
+                } else if (ASR::is_a<ASR::ArraySection_t>(*target)) {
+                    target = ASR::down_cast<ASR::ArraySection_t>(target)->m_v;
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
+                    target = ASR::down_cast<ASR::StructInstanceMember_t>(
+                        target)->m_v;
+                } else {
+                    break;
+                }
+            }
+            if (!ASR::is_a<ASR::Var_t>(*target)) {
+                free = false;
+            } else {
+                ASR::symbol_t *s = ASR::down_cast<ASR::Var_t>(target)->m_v;
+                if (!ASR::is_a<ASR::Variable_t>(*s)) {
+                    free = false;
+                } else {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+                    SymbolTable *scope = v->m_parent_symtab;
+                    while (scope != nullptr && scope != fn.m_symtab) {
+                        scope = scope->parent;
+                    }
+                    if (scope == nullptr || (v->m_intent !=
+                            ASR::intentType::Local && v->m_intent !=
+                            ASR::intentType::ReturnVar) ||
+                            v->m_storage == ASR::storage_typeType::Save) {
+                        free = false;
+                    }
+                }
+            }
+            BlockBodyWalkVisitor<Effects>::visit_Assignment(x);
+        }
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            ASR::symbol_t *callee = symbol_get_past_external(x.m_name);
+            if (callee == nullptr || !ASR::is_a<ASR::Function_t>(*callee) ||
+                    !is_side_effect_free_function(
+                        *ASR::down_cast<ASR::Function_t>(callee), visiting)) {
+                free = false;
+            }
+            BlockBodyWalkVisitor<Effects>::visit_FunctionCall(x);
+        }
+    };
+    Effects effects(fn, visiting);
+    for (size_t i = 0; i < fn.n_body && effects.free; i++) {
+        effects.visit_stmt(*fn.m_body[i]);
+    }
+    visiting.erase(&fn);
+    return effects.free;
+}
+
+inline bool is_side_effect_free_function(ASR::Function_t &fn) {
+    std::set<ASR::Function_t*> visiting;
+    return is_side_effect_free_function(fn, visiting);
+}
+
 // Whether a member of `s`, of one of its parents, or of one of its derived
 // type members, cannot be described by static data and so has to be set up by
 // executable code: an array member needs a descriptor of its own or its
@@ -11306,22 +11439,18 @@ static inline bool has_link_time_address(ASR::expr_t* d) {
     }
 }
 
-// `p => tgt` in a declaration that a backend lays out as the variable's own
-// static initializer instead of assigning it with a statement: the address of
-// the target is a link-time constant, so the association needs no executable
-// code at all and the unit it is declared in needs no startup initializer
-// because of it.
+// `p => tgt` in the declaration of the pointer `v`, a variable or a
+// component, whose initial value is the address of the target, a link-time
+// constant.
 //
 // An array pointer is deliberately not one of these. It is a descriptor --
 // data pointer, bounds and strides -- rather than a bare address, and the
 // descriptor is filled in from the target by the association itself. Neither
 // is a character pointer, whose descriptor carries the length as well, nor a
-// polymorphic pointer, whose type pointer is not the target's. Nor is a
-// pointer of a procedure, of a block or of a program, whose declaration
-// initializer becomes a statement of that scope whatever shape it has, nor
-// one whose target is a coarray, whose storage the run time allocates.
-static inline bool is_static_pointer_association(const ASR::Variable_t &v) {
-    if (!is_module_variable(v) || !is_pointer(v.m_type)
+// polymorphic pointer, whose type pointer is not the target's, nor one whose
+// target is a coarray, whose storage the run time allocates.
+static inline bool has_static_pointer_target(const ASR::Variable_t &v) {
+    if (!is_pointer(v.m_type)
             || !is_pointer_association_initializer(v.m_symbolic_value)) {
         return false;
     }
@@ -11330,6 +11459,48 @@ static inline bool is_static_pointer_association(const ASR::Variable_t &v) {
         return false;
     }
     return has_link_time_address(v.m_symbolic_value);
+}
+
+// `p => tgt` in a declaration that a backend lays out as the variable's own
+// static initializer instead of assigning it with a statement (see
+// `has_static_pointer_target`), so the association needs no executable code
+// at all and the unit it is declared in needs no startup initializer because
+// of it. A pointer of a procedure, of a block or of a program is not one of
+// these: its declaration initializer becomes a statement of that scope
+// whatever shape it has.
+static inline bool is_static_pointer_association(const ASR::Variable_t &v) {
+    return is_module_variable(v) && has_static_pointer_target(v);
+}
+
+// Every default initial target of a data pointer component of the derived
+// type `struct_sym`, of its parents and of its derived type components is
+// one that `has_static_pointer_target` lays out as static data.
+static inline bool has_only_static_component_targets(ASR::symbol_t* struct_sym) {
+    ASR::Struct_t* s = ASR::down_cast<ASR::Struct_t>(
+        symbol_get_past_external(struct_sym));
+    if (s->m_parent != nullptr
+            && !has_only_static_component_targets(s->m_parent)) {
+        return false;
+    }
+    for (size_t i = 0; i < s->n_members; i++) {
+        ASR::symbol_t* sym = s->m_symtab->get_symbol(s->m_members[i]);
+        if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) {
+            continue;
+        }
+        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+        if (is_pointer(var->m_type)
+                && is_pointer_association_initializer(var->m_symbolic_value)
+                && !has_static_pointer_target(*var)) {
+            return false;
+        }
+        if (ASR::is_a<ASR::StructType_t>(*var->m_type)
+                && !is_class_type(var->m_type)
+                && var->m_type_declaration != nullptr
+                && !has_only_static_component_targets(var->m_type_declaration)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 // The code that describes a scalar of `type` to the runtime's formatted output

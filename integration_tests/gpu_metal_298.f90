@@ -1,17 +1,14 @@
 program gpu_metal_298
-  ! Test: what the offload pass has to give back after it has already
-  ! rewritten the nest, then turned the loop down.
+  ! Test: loops the offload pass rewrites -- by splicing a callee with a
+  ! run-time sized local into the kernel as a `__gpu_inl_*` Block, or by
+  ! inlining a bare ASSOCIATE -- next to an `error stop` they never reach.
   !
-  ! The first loop is declined (`stop` is not something a device can run)
-  ! only after a callee with a run-time sized local has been spliced into
-  ! this scope as a `__gpu_inl_*` Block. That Block has to go back: it is
-  ! still a symbol of the enclosing function, so the next pass round would
-  ! walk into it, splice again, and never reach a fixed point. The loop
-  ! still has to compute what Fortran says it computes, on the host.
-  !
-  ! The second loop is the same decline after a bare ASSOCIATE in the
-  ! concurrent body has been inlined. The host nest still names that
-  ! ASSOCIATE, so the inliner must rewrite a copy, not erase the original.
+  ! The `error stop` once kept these loops off the device after the rewrite,
+  ! which then had to be given back. It is now lowered into a write to the
+  ! launch's status buffer, so the loops are offloaded with the rewrite in
+  ! place, and the inliner must still rewrite a copy of the ASSOCIATE the
+  ! host nest names rather than the original. Every loop has to compute
+  ! what Fortran says it computes.
   implicit none
 
   integer, parameter :: n = 4

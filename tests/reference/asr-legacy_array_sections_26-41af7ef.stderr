@@ -1,0 +1,11 @@
+warning: rank mismatch in argument `n`: the dummy argument is a scalar but the actual argument is an array of rank 1; as a legacy extension, only its first element is passed
+  --> tests/../integration_tests/legacy_array_sections_26.f90:12:42
+   |
+12 |     call legacy_array_sections_26_before(iw)
+   |                                          ^^ pass one element of the array instead
+
+warning: rank mismatch in argument `n`: the dummy argument is a scalar but the actual argument is an array of rank 1; as a legacy extension, only its first element is passed
+  --> tests/../integration_tests/legacy_array_sections_26.f90:13:41
+   |
+13 |     call legacy_array_sections_26_after(iw)
+   |                                         ^^ pass one element of the array instead

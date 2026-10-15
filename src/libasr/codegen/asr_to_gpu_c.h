@@ -5,6 +5,7 @@
 #include <libasr/containers.h>
 #include <libasr/codegen/gpu_utils.h>
 #include <libasr/pass/gpu_kernel_abi.h>
+#include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/codegen/gpu_symbol_map.h>
 #include <libasr/codegen/c_utils.h>
 #include <libasr/exception.h>
@@ -190,14 +191,29 @@ public:
         in_workspace_extent = outer;
     }
 
-    // The element count of one thread's slice of a workspace: the product
-    // of its extents, as the shader spells them. Empty when the shader
-    // cannot spell one of them.
+    // The element count of an array backed by a workspace: the product of
+    // its extents, as the shader spells them. Empty when the shader cannot
+    // spell one of them.
     std::string workspace_extent_str(const GpuVlaWorkspace &ws) {
         std::string out;
         for (size_t d = 0; d < ws.dims.size(); d++) {
             std::string one = workspace_dim_str(ws.var, d);
             if (one.empty()) return "";
+            out = out.empty() ? one : out + " * " + one;
+        }
+        return out;
+    }
+
+    // The element count of one thread's slice of a workspace, which the
+    // host sized the buffer by. It is the array's own element count unless
+    // an extent changes from thread to thread: every slice then has room
+    // for the largest one, and the thread uses the leading part of it.
+    std::string workspace_slice_str(const GpuVlaWorkspace &ws) {
+        std::string out;
+        for (const GpuVlaDim &dim : ws.dims) {
+            std::string one = dim.is_constant
+                ? std::to_string(dim.constant_value)
+                : ASRUtils::symbol_name(dim.extent_parameter);
             out = out.empty() ? one : out + " * " + one;
         }
         return out;
@@ -212,6 +228,11 @@ public:
             const GpuVlaDim &dim = ws.dims[d];
             if (dim.is_constant) return std::to_string(dim.constant_value);
             LCOMPILERS_ASSERT(dim.extent_parameter != nullptr);
+            // Written over the kernel's parameters and the thread index
+            // alone, so it means the same wherever the kernel reads it.
+            if (dim.per_thread) {
+                return "(" + expr_str(dim.source_extent) + ")";
+            }
             return ASRUtils::symbol_name(dim.extent_parameter);
         }
         return "";
@@ -816,7 +837,7 @@ public:
                         << "* " << vname << " = "
                         << gpu_workspace_buffer_name(vla_it->buffer_index)
                         << " + " << dialect.global_thread_id() << " * ("
-                        << extent << ");\n";
+                        << workspace_slice_str(*vla_it) << ");\n";
                     local_alloc_arrays.insert(&var->base);
                     int64_t total_const_size = 1;
                     bool all_const = true;
@@ -1917,6 +1938,31 @@ public:
         func_array_size_params[name] = "(" + total + ")";
     }
 
+    // A component of a derived-type local of device code is stored in an
+    // array of its own (see gpu_device_struct_storage.cpp). Handing the
+    // local to a procedure hands that array over as the component's data,
+    // with its extents, as for a component of a dummy argument.
+    void bind_struct_component_storage(
+            ASR::StructInstanceMember_t *component, ASR::expr_t *storage) {
+        std::string key = std::string(ASRUtils::symbol_name(
+            ASR::down_cast<ASR::Var_t>(component->m_v)->m_v)) + "."
+            + ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+                component->m_m));
+        func_array_data_params[key] = expr_str(storage);
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(
+            ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(storage)));
+        std::string total;
+        for (size_t d = 0; d < arr->n_dims; d++) {
+            std::string len = "(" + expr_str(arr->m_dims[d].m_length) + ")";
+            if (arr->n_dims > 1) {
+                func_array_size_params[dim_size_key(key, d)] = len;
+            }
+            total += total.empty() ? len : (" * " + len);
+        }
+        func_array_size_params[key] = "(" + total + ")";
+    }
+
     // True when the callee's signature carries a synthesised size parameter
     // for this argument.
     bool formal_has_size_param(ASR::Function_t *fn, size_t arg_idx) {
@@ -2208,6 +2254,62 @@ public:
             func_array_size_params[e.first] = e.second;
         }
     }
+
+    // The tables above are keyed by name, so an entry about a variable a
+    // block declares holds only while that block is emitted, as the
+    // declaration the block emits does. Two blocks may declare variables of
+    // one name -- a routine inlined twice brings two copies of its locals --
+    // and an entry the first left behind would describe the second's
+    // variable; a variable of the block may also hide one of the same name
+    // outside it, whose entries return once the block is closed.
+    class BlockNameScope {
+        ASRToGpuCVisitor &v;
+        SymbolTable *block;
+        std::vector<std::pair<std::map<std::string, std::string>*,
+            std::map<std::string, std::string>>> hidden;
+
+        std::vector<std::map<std::string, std::string>*> tables() {
+            return {&v.func_array_size_params, &v.func_array_data_params};
+        }
+
+        // Whether `key` describes a variable `block` declares: its name,
+        // "var.member" for a component of it, either with the mark of one
+        // dimension.
+        bool declared_in_block(const std::string &key) const {
+            std::string base = key.substr(0, key.find('.'));
+            std::string array;
+            size_t d = 0;
+            if (dim_size_key_parts(base, array, d)) base = array;
+            return block->get_symbol(base) != nullptr;
+        }
+
+        std::map<std::string, std::string> take_block_entries(
+                std::map<std::string, std::string> &table) const {
+            std::map<std::string, std::string> taken;
+            for (auto it = table.begin(); it != table.end();) {
+                if (declared_in_block(it->first)) {
+                    taken.insert(*it);
+                    it = table.erase(it);
+                } else {
+                    ++it;
+                }
+            }
+            return taken;
+        }
+    public:
+        BlockNameScope(ASRToGpuCVisitor &v, SymbolTable *block)
+                : v(v), block(block) {
+            for (auto *table : tables()) {
+                hidden.push_back({table, take_block_entries(*table)});
+            }
+        }
+        ~BlockNameScope() {
+            for (auto &h : hidden) {
+                take_block_entries(*h.first);
+                h.first->insert(h.second.begin(), h.second.end());
+            }
+        }
+    };
 
     // Name of the kernel/function parameter holding that extent.
     static std::string struct_member_dim_param(const std::string &var_name,
@@ -2641,6 +2743,11 @@ public:
                         kf.m_symtab, emitted_structs, ordered_structs);
                 }
             }
+            // A derived type the kernel's routines declare a value of,
+            // such as a local a constructor gives a value, is laid out on
+            // the device like one handed to the kernel.
+            collect_variable_structs(kf.m_symtab, emitted_structs,
+                ordered_structs);
         }
         for (ASR::Struct_t *st : ordered_structs) {
             emit_struct_def(st);
@@ -2786,6 +2893,36 @@ public:
         }
     }
 
+    // The derived types of the variables of a scope and of every scope it
+    // contains, collected as collect_structs_ordered does.
+    void collect_variable_structs(SymbolTable *scope,
+            std::set<std::string> &emitted,
+            std::vector<ASR::Struct_t*> &ordered) {
+        for (auto &item : scope->get_scope()) {
+            ASR::symbol_t *sym = item.second;
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                if (is_struct_type(var->m_type)) {
+                    if (ASR::Struct_t *st = get_struct_decl(var)) {
+                        collect_structs_ordered(st, scope, emitted, ordered);
+                    }
+                }
+            } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+                collect_variable_structs(
+                    ASR::down_cast<ASR::Function_t>(sym)->m_symtab,
+                    emitted, ordered);
+            } else if (ASR::is_a<ASR::Block_t>(*sym)) {
+                collect_variable_structs(
+                    ASR::down_cast<ASR::Block_t>(sym)->m_symtab,
+                    emitted, ordered);
+            } else if (ASR::is_a<ASR::AssociateBlock_t>(*sym)) {
+                collect_variable_structs(
+                    ASR::down_cast<ASR::AssociateBlock_t>(sym)->m_symtab,
+                    emitted, ordered);
+            }
+        }
+    }
+
     // Collect struct definitions in dependency order (nested structs first)
     void collect_structs_ordered(ASR::Struct_t *st, SymbolTable *scope,
             std::set<std::string> &emitted,
@@ -2875,13 +3012,14 @@ public:
                 && !is_array_type(arg->m_type)) {
                 if (!first) src << ", ";
                 first = false;
-                // Out/InOut struct args are passed by reference
-                // using device address space since they typically
-                // originate from device buffer arrays in kernels
+                // Out/InOut struct args are passed by reference to a
+                // value in the calling thread's memory: a kernel copies
+                // one that lives in device memory around the call (see
+                // gpu_memory_space.cpp).
                 if (arg->m_intent == ASR::intentType::Out ||
                     arg->m_intent == ASR::intentType::InOut) {
-                    src << global_prefix() << get_struct_name(arg) << "& "
-                        << arg->m_name;
+                    src << space_prefix(ASR::memory_spaceType::Thread)
+                        << get_struct_name(arg) << "& " << arg->m_name;
                 } else {
                     src << get_struct_name(arg) << " " << arg->m_name;
                 }
@@ -3036,6 +3174,14 @@ public:
                     }
                     func_array_size_params[aname] = "(" + total + ")";
                 }
+            } else if (arg->m_intent == ASR::intentType::Out ||
+                    arg->m_intent == ASR::intentType::InOut) {
+                // A scalar the procedure writes is passed by reference, as
+                // Fortran passes it. The actual is a variable of the
+                // calling thread, such as the stop status a procedure
+                // that can stop hands back (see gpu_offload_stop.h).
+                src << space_prefix(ASR::memory_spaceType::Thread)
+                    << gpu_type(arg->m_type) << "& " << arg->m_name;
             } else {
                 src << gpu_type(arg->m_type) << " " << arg->m_name;
             }
@@ -3314,6 +3460,34 @@ public:
                             struct_from_array_elem[tgt_name] =
                                 {arr_name, idx_str};
                         }
+                    }
+                }
+                // A copy of a derived-type value made for a call (see
+                // gpu_memory_space.cpp) hands the routine the buffers of
+                // the allocatable components of the original.
+                if (ASR::is_a<ASR::Var_t>(*a->m_target) &&
+                        ASR::is_a<ASR::Var_t>(*a->m_value) &&
+                        is_struct_type(ASRUtils::expr_type(a->m_target)) &&
+                        !is_array_type(ASRUtils::expr_type(a->m_target))) {
+                    std::string from = std::string(ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(a->m_value)->m_v)) + ".";
+                    std::string to = std::string(ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(a->m_target)->m_v)) + ".";
+                    for (auto *table : {&func_array_data_params,
+                            &func_array_size_params}) {
+                        std::vector<std::pair<std::string, std::string>>
+                            copies;
+                        for (auto &entry : *table) {
+                            // A target with components of its own keeps
+                            // them: the assignment copies into them.
+                            if (entry.first.compare(0, from.size(), from)
+                                    == 0 && !table->count(to
+                                        + entry.first.substr(from.size()))) {
+                                copies.push_back({to + entry.first.substr(
+                                    from.size()), entry.second});
+                            }
+                        }
+                        for (auto &c : copies) (*table)[c.first] = c.second;
                     }
                 }
 
@@ -3923,19 +4097,11 @@ public:
             }
             case ASR::stmtType::Stop:
             case ASR::stmtType::ErrorStop: {
-                // A Fortran STOP inside a kernel has no exit code to
-                // deliver -- a grid returns no status -- so what is left of
-                // the statement is the stopping, which the dialect spells
-                // as a trap. A device with no trap of its own never gets
-                // here: pass_replace_gpu_offload declines a loop holding a
-                // STOP unless the device says it can abort.
-                std::string trap = dialect.abort_stmt();
-                if (trap.empty()) {
-                    throw CodeGenError("gpu offload: this device has no way "
-                        "to stop a running kernel", stmt->base.loc);
-                }
-                src << get_indent() << trap << "\n";
-                break;
+                // The offload pass lowers every stop a kernel reaches into
+                // a write to the launch's status buffer and a return (see
+                // gpu_offload_stop.h), so none is left for a device.
+                throw CodeGenError("gpu offload: a stop statement reached "
+                    "the device code generator", stmt->base.loc);
             }
             case ASR::stmtType::Return: {
                 // A Fortran RETURN in a function hands back the result
@@ -3992,6 +4158,7 @@ public:
                 ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(stmt);
                 ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
                 GpuEmissionScope emission_scope(active_scope, block->m_symtab);
+                BlockNameScope block_names(*this, block->m_symtab);
                 src << get_indent() << "{\n";
                 indent_level++;
                 for (ASR::Variable_t *v : gpu_scope_declaration_order(
@@ -4023,6 +4190,7 @@ public:
                         // Emit a device pointer into the per-thread slice
                         std::string extent =
                             workspace_extent_str(*vla_it);
+                        std::string slice = workspace_slice_str(*vla_it);
                         src << get_indent() << global_prefix()
                             << elem_type_str << "* " << vname
                             << " = " << gpu_workspace_buffer_name(
@@ -4030,9 +4198,9 @@ public:
                             << " + " << dialect.global_thread_id()
                             << " * ";
                         if (vla_it->dims.size() == 1) {
-                            src << extent;
+                            src << slice;
                         } else {
-                            src << "(" << extent << ")";
+                            src << "(" << slice << ")";
                         }
                         src << ";\n";
                         local_alloc_arrays.insert(&v->base);
@@ -4056,6 +4224,7 @@ public:
                 ASR::AssociateBlock_t *ab =
                     ASR::down_cast<ASR::AssociateBlock_t>(abc->m_m);
                 GpuEmissionScope emission_scope(active_scope, ab->m_symtab);
+                BlockNameScope block_names(*this, ab->m_symtab);
                 src << get_indent() << "{\n";
                 indent_level++;
                 for (ASR::Variable_t *v : gpu_scope_declaration_order(
@@ -4195,6 +4364,13 @@ public:
             }
             case ASR::stmtType::Associate: {
                 ASR::Associate_t *assoc = ASR::down_cast<ASR::Associate_t>(stmt);
+                ASR::StructInstanceMember_t *stored_component = nullptr;
+                ASR::expr_t *storage = nullptr;
+                if (gpu_struct_component_storage(stmt, stored_component,
+                        storage)) {
+                    bind_struct_component_storage(stored_component, storage);
+                    break;
+                }
                 last_section_size.clear();
                 last_section_dropped_step = false;
                 src << get_indent();

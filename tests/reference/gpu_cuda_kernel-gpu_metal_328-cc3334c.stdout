@@ -64,21 +64,19 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     results[((int)(i) - (1))] = __gpu_sum_res;
 }
 
-__device__ inline void reallocated_result_device_t_gpu_34(int n, float* r, int __size_r_dim1) {
+__device__ inline void reallocated_result_device_t_gpu_34(int n, float* r) {
     int __do_loop_end;
     int __do_loop_end1;
     int __libasr_index_0_;
     int __libasr_index_0_1;
-    if (1) {
-    }
-    __do_loop_end = __size_r_dim1;
-    __libasr_index_0_ = (1 - 1);
+    __do_loop_end = ((((int)2) + ((int)1)) - 1);
+    __libasr_index_0_ = (((int)1) - 1);
     while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
         __libasr_index_0_ = (__libasr_index_0_ + 1);
         r[((int)(__libasr_index_0_) - (1))] = (-(((float)n)));
     }
-    __do_loop_end1 = __size_r_dim1;
-    __libasr_index_0_1 = (1 - 1);
+    __do_loop_end1 = ((((int)2) + ((int)1)) - 1);
+    __libasr_index_0_1 = (((int)1) - 1);
     while (((__libasr_index_0_1 + 1) <= __do_loop_end1)) {
         __libasr_index_0_1 = (__libasr_index_0_1 + 1);
         r[((int)(__libasr_index_0_1) - (1))] = ((float)n);
@@ -92,7 +90,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     int __gpu_sum_k1;
     float __gpu_sum_res1;
     float __libasr_created__function_call_reallocated_result[2];
-    float __libasr_created__subroutine_from_function_[2];
     int i;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((4 - 1) + 1))) {
         return;
@@ -103,9 +100,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     __gpu_sum_k1 = (1 - 1);
     while (((__gpu_sum_k1 + 1) <= 2)) {
         __gpu_sum_k1 = (__gpu_sum_k1 + 1);
-        reallocated_result_device_t_gpu_34(i, __libasr_created__subroutine_from_function_, 2);
-        __libasr_created__function_call_reallocated_result[0] = __libasr_created__subroutine_from_function_[0];
-        __libasr_created__function_call_reallocated_result[1] = __libasr_created__subroutine_from_function_[1];
+        reallocated_result_device_t_gpu_34(i, __libasr_created__function_call_reallocated_result);
         __gpu_sum_res1 = (__gpu_sum_res1 + __libasr_created__function_call_reallocated_result[((int)(__gpu_sum_k1) - (1))]);
     }
     reallocated[((int)(i) - (1))] = __gpu_sum_res1;

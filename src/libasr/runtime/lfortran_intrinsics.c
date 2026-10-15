@@ -33,6 +33,7 @@ typedef enum {
 #  include <winsock2.h>
 #  include <windows.h>
 #  include <io.h>
+#  include <direct.h>
 #  define ftruncate _chsize_s
 #else
 #  include <unistd.h>
@@ -2731,8 +2732,13 @@ void set_string_length(Serialization_Info* s_info){
         s_info->current_arg_info.current_string_len = 
             transform_string_size_into_int(s_info);
     } else {
-        if(s_info->current_element_type == CHAR_PTR_TYPE ||
-            s_info->current_element_type == STRING_DESCRIPTOR_TYPE ) return; // Array. length already set (Consumed from array of lengths).
+        // Empty arrays have no descriptor to inspect.
+        if (!stack_empty(s_info->array_sizes_stack) &&
+            get_stack_top(s_info->array_sizes_stack) == 0) return;
+        if (!stack_empty(s_info->array_sizes_stack) &&
+            get_stack_top(s_info->array_sizes_stack) > 0 &&
+            (s_info->current_element_type == CHAR_PTR_TYPE ||
+             s_info->current_element_type == STRING_DESCRIPTOR_TYPE)) return; // Character array has a shared element length.
             ASSERT_MSG(s_info->current_element_type != CHAR_PTR_TYPE,
                     "ICE:%s\n","Not supported -- Can't deduce length for CCHAR");
             s_info->current_arg_info.current_string_len = 
@@ -3002,7 +3008,8 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
             }
         } else if (cur == '(' || cur == '{') { // StructStart, complexStart
             s_info->current_arg_info.is_complex = (cur == '{');
-            push_stack(s_info->array_sizes_stack, -1000000); // dummy size. needed to know when to move from arg* to another.
+            // Keep empty arrays empty while walking a contained struct.
+            push_stack(s_info->array_sizes_stack, zero_size ? 0 : -1000000); // dummy size. needed to know when to move from arg* to another.
             ++s_info->current_stop;
         } else if (cur == ')' || cur == '}') { // StructEnd, ComplexEnd
             s_info->current_arg_info.is_complex = false;
@@ -6357,6 +6364,8 @@ struct UNIT_FILE {
     // Pending bytes for sequential unformatted records (shared by all types).
     int32_t seq_unf_pending;
     int32_t seq_unf_record_len;
+    // Set by ENDFILE or a READ that hit end of file: the unit is after the end-of-file record.
+    bool after_endfile;
     // Pending list-directed null-repeat state.
     int32_t lf_list_dir_null_remaining;
     // Child I/O mode (for DTIO: suppress record terminators in child writes).
@@ -6380,6 +6389,7 @@ static inline void seq_unf_state_reset(struct UNIT_FILE *uf) {
     if (!uf) return;
     uf->seq_unf_pending = 0;
     uf->seq_unf_record_len = 0;
+    uf->after_endfile = false;
 }
 
 // Begin reading from a sequential unformatted record if not already in one.
@@ -6390,7 +6400,9 @@ static inline int seq_unf_begin_record(int32_t unit_num, FILE* filep) {
     if (uf->seq_unf_pending == 0) {
         int32_t marker = 0;
         if (fread(&marker, sizeof(int32_t), 1, filep) != 1) {
-            return feof(filep) ? -1 : 1;
+            if (!feof(filep)) return 1;
+            uf->after_endfile = true;
+            return -1;
         }
         if (marker < 0) return 1;
         uf->seq_unf_pending = marker;
@@ -6420,11 +6432,6 @@ static inline int seq_unf_finish_record(int32_t unit_num, FILE* filep) {
 static inline void list_dir_state_reset(struct UNIT_FILE *uf) {
     if (!uf) return;
     uf->lf_list_dir_null_remaining = 0;
-}
-
-LFORTRAN_API void _lfortran_set_child_io(int32_t unit_num, int32_t is_child) {
-    struct UNIT_FILE *uf = find_unit(unit_num);
-    if (uf) uf->lf_child_io_mode = is_child;
 }
 
 // Pre-connect standard Fortran units at program startup.
@@ -6485,6 +6492,12 @@ static void _lfortran_init_standard_units(void) {
     unit_to_file[2].pad_mode = 1;
 
     last_index_used = 2;
+}
+
+LFORTRAN_API void _lfortran_set_child_io(int32_t unit_num, int32_t is_child) {
+    _lfortran_init_standard_units();
+    struct UNIT_FILE *uf = find_unit(unit_num);
+    if (uf) uf->lf_child_io_mode = is_child;
 }
 
 LFORTRAN_API void _lfortran_file_write_newline(int32_t unit_num) {
@@ -8158,6 +8171,8 @@ LFORTRAN_API void _lfortran_endfile(int32_t unit_num, int32_t *iostat, char *iom
     if (pos >= 0) {
         (void)!ftruncate(fileno(filep), pos);
     }
+    struct UNIT_FILE *uf = find_unit(unit_num);
+    if (uf) uf->after_endfile = true;
 }
 
 LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *iomsg,  int64_t iomsg_len)
@@ -8170,7 +8185,8 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *i
         pad_with_spaces(iomsg, 0, iomsg_len);
     }
     bool unit_file_bin;
-    FILE* fd = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    int access_id = -1;
+    FILE* fd = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (fd == NULL) {
         if (iostat != NULL) {
             *iostat = 5001;
@@ -8182,6 +8198,33 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *i
         }
         fprintf(stderr, "Specified UNIT %d in BACKSPACE is not created or connected.\n", unit_num);
         exit(1);
+    }
+
+    if (unit_file_bin && access_id == 0) {
+        struct UNIT_FILE *uf = find_unit(unit_num);
+        bool after_endfile = uf->after_endfile;
+        seq_unf_state_reset(uf);
+        // Only step back over the end-of-file record
+        if (after_endfile) {
+            clearerr(fd);
+            return;
+        }
+        long pos = ftell(fd);
+        if (pos == 0) {
+            return;
+        }
+        int32_t marker = -1;
+        long marker_size = (long)sizeof(int32_t);
+        if (pos < 2 * marker_size
+                || fseek(fd, pos - marker_size, SEEK_SET) != 0
+                || fread(&marker, sizeof(int32_t), 1, fd) != 1
+                || marker < 0 || (long)marker > pos - 2 * marker_size
+                || fseek(fd, pos - 2 * marker_size - (long)marker, SEEK_SET) != 0) {
+            if (iostat != NULL) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid record marker in BACKSPACE on unit %d.\n", unit_num);
+            exit(1);
+        }
+        return;
     }
 
     fflush(fd);
@@ -9778,6 +9821,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
             if (find_unit(unit_num)->seq_unf_pending == 0) {
                 int32_t marker = 0;
                 if (fread(&marker, sizeof(int32_t), 1, filep) != 1) {
+                    if (feof(filep)) find_unit(unit_num)->after_endfile = true;
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     printf("Error reading record marker from file.\n");
                     exit(1);
@@ -11483,6 +11527,47 @@ static void parse_character_from_buffer(char* buffer, int field_len,
     }
 }
 
+static inline int read_character(InputSource *inputSource)
+{
+    switch (inputSource->inputMethod) {
+
+    case INPUT_FILE: {
+        int c = fgetc(inputSource->file);
+#if defined(__EMSCRIPTEN__)
+        // Recover a spurious EOF on interactive stdin: a record
+        // boundary at the very start of this read looks like end of
+        // file on the first attempt; the retry pulls the next line.
+        if (c == EOF && inputSource->file == stdin) {
+            clearerr(inputSource->file);
+            c = fgetc(inputSource->file);
+        }
+#endif
+        // CRLF is one external sequential/stream record terminator.
+        // A lone CR remains data, as do characters in internal/direct files.
+        if (c == '\r' && inputSource->access_id != 2) {
+            int next = fgetc(inputSource->file);
+            if (next == '\n') {
+                c = '\n';
+            } else if (next != EOF) {
+                ungetc(next, inputSource->file);
+            }
+        }
+        if (c != EOF && c != '\n') {
+            inputSource->pos_in_record++;
+        }
+        return c;
+    }
+
+    case INPUT_STRING:
+        if (inputSource->str.pos < inputSource->str.len) {
+            return (unsigned char)inputSource->str.buf[inputSource->str.pos++];
+        }
+        return EOF;
+    }
+
+    return EOF;
+}
+
 static inline char* read_line(char *buf, int size, InputSource *inputSource)
 {
     if (size <= 0) {
@@ -11533,22 +11618,35 @@ static inline char* read_line(char *buf, int size, InputSource *inputSource)
             ret = fgets(buf, size, inputSource->file);
         }
 #endif
-        if (ret != NULL) {
-            // Keep record-local cursor in sync for T/TL/TR editing.
-            // Count only non-newline chars consumed from current record.
-            size_t n = strlen(buf);
-            size_t consumed = 0;
-            for (size_t j = 0; j < n; j++) {
-                if (buf[j] == '\n') break;
-                consumed++;
-            }
-            inputSource->pos_in_record += (long)consumed;
-            if (inputSource->record_length >= 0 &&
-                    inputSource->pos_in_record > inputSource->record_length) {
-                inputSource->pos_in_record = inputSource->record_length;
+        if (ret == NULL) {
+            return NULL;
+        }
+        size_t n = strlen(buf);
+        // CRLF is one external sequential/stream record terminator.
+        // A lone CR remains data, as do characters in direct files.
+        if (inputSource->access_id != 2 && n > 0) {
+            if (n >= 2 && buf[n - 1] == '\n' && buf[n - 2] == '\r') {
+                buf[n - 2] = '\n';
+                buf[--n] = '\0';
+            } else if (buf[n - 1] == '\r') {
+                // The LF may follow just past the end of the buffer.
+                int next = fgetc(inputSource->file);
+                if (next == '\n') {
+                    buf[n - 1] = '\n';
+                } else if (next != EOF) {
+                    ungetc(next, inputSource->file);
+                }
             }
         }
-        return ret;
+        // Keep record-local cursor in sync for T/TL/TR editing.
+        // Count only non-newline chars consumed from current record.
+        char *nl = (char*)memchr(buf, '\n', n);
+        inputSource->pos_in_record += (long)(nl ? (size_t)(nl - buf) : n);
+        if (inputSource->record_length >= 0 &&
+                inputSource->pos_in_record > inputSource->record_length) {
+            inputSource->pos_in_record = inputSource->record_length;
+        }
+        return buf;
     }
     case INPUT_STRING:
         while (i < size - 1 && inputSource->str.pos < inputSource->str.len) {
@@ -11568,37 +11666,6 @@ static inline char* read_line(char *buf, int size, InputSource *inputSource)
     return NULL;
 }
 
-static inline int read_character(InputSource *inputSource)
-{
-    switch (inputSource->inputMethod) {
-
-    case INPUT_FILE: {
-        int c = fgetc(inputSource->file);
-#if defined(__EMSCRIPTEN__)
-        // Same spurious-EOF recovery as in read_line above: a record
-        // boundary at the very start of this read looks like end of
-        // file on the first attempt; the retry pulls the next line.
-        if (c == EOF && inputSource->file == stdin) {
-            clearerr(inputSource->file);
-            c = fgetc(inputSource->file);
-        }
-#endif
-        if (c != EOF && c != '\n') {
-            inputSource->pos_in_record++;
-        }
-        return c;
-    }
-
-    case INPUT_STRING:
-        if (inputSource->str.pos < inputSource->str.len) {
-            return (unsigned char)inputSource->str.buf[inputSource->str.pos++];
-        }
-        return EOF;
-    }
-
-    return EOF;
-}
-
 static bool read_field(InputSource *inputSource, int read_width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline,
         char **buffer, int *field_len, bool pad_no)
@@ -11609,7 +11676,11 @@ static bool read_field(InputSource *inputSource, int read_width, bool advance_no
         exit(1);
     }
 
-    if (read_line(*buffer, read_width + 1, inputSource) == NULL) {
+    bool record_ended = *consumed_newline;
+    if (record_ended) {
+        // The record has ended, so the field is empty and gets blank padding.
+        (*buffer)[0] = '\0';
+    } else if (read_line(*buffer, read_width + 1, inputSource) == NULL) {
         if (iostat) {
             *iostat = -1;
         } else {
@@ -11630,7 +11701,7 @@ static bool read_field(InputSource *inputSource, int read_width, bool advance_no
         *consumed_newline = true;
     }
 
-    if (chunk) *chunk = (int32_t)(*field_len);
+    if (chunk && !record_ended) *chunk = (int32_t)(*field_len);
     if (advance_no && *consumed_newline && *field_len != read_width) {
         if (iostat) *iostat = -2;
     }
@@ -12293,6 +12364,7 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
 static void handle_read_X(InputSource *inputSource, int width, bool advance_no,
         int32_t *iostat, bool *consumed_newline)
 {
+    if (*consumed_newline) return;
     int skip = (width > 0) ? width : 1;
     for (int i = 0; i < skip; i++) {
         int c = read_character(inputSource);
@@ -12329,9 +12401,13 @@ static void init_record_state(InputSource *inputSource)
                 fseek(inputSource->file, inputSource->record_start_pos, SEEK_SET);
                 
                 inputSource->record_length = 0;
-                int c;
+                int c, previous = EOF;
                 while ((c = fgetc(inputSource->file)) != EOF && c != '\n') {
                     inputSource->record_length++;
+                    previous = c;
+                }
+                if (c == '\n' && previous == '\r') {
+                    inputSource->record_length--;
                 }
                 
                 // Restore position to start of record
@@ -12354,7 +12430,7 @@ static void init_record_state(InputSource *inputSource)
     }
 }
 
-static void handle_read_TL(InputSource *inputSource, int width)
+static void handle_read_TL(InputSource *inputSource, int width, bool *consumed_newline)
 {
     int move_left = (width > 0) ? width : 1;
     
@@ -12364,6 +12440,7 @@ static void handle_read_TL(InputSource *inputSource, int width)
         } else {
             inputSource->str.pos = 0;
         }
+        *consumed_newline = false;
     } else if (inputSource->inputMethod == INPUT_FILE) {
         if (inputSource->file) {
             // Move within current record, never crossing record boundary
@@ -12371,14 +12448,16 @@ static void handle_read_TL(InputSource *inputSource, int width)
             if (new_pos < 0) new_pos = 0;
             
             inputSource->pos_in_record = new_pos;
-            fseek(inputSource->file,
-                  inputSource->record_start_pos + new_pos,
-                  SEEK_SET);
+            if (fseek(inputSource->file,
+                    inputSource->record_start_pos + new_pos,
+                    SEEK_SET) == 0) {
+                *consumed_newline = false;
+            }
         }
     }
 }
 
-static void handle_read_T(InputSource *inputSource, int position)
+static void handle_read_T(InputSource *inputSource, int position, bool *consumed_newline)
 {
     if (position < 1) position = 1;
     
@@ -12388,6 +12467,7 @@ static void handle_read_T(InputSource *inputSource, int position)
             target_pos = (int)inputSource->str.len;
         }
         inputSource->str.pos = target_pos;
+        *consumed_newline = false;
     } else if (inputSource->inputMethod == INPUT_FILE) {
         if (inputSource->file) {
             // Convert 1-based position to 0-based offset
@@ -12399,9 +12479,11 @@ static void handle_read_T(InputSource *inputSource, int position)
                 target = inputSource->record_length;
             
             inputSource->pos_in_record = target;
-            fseek(inputSource->file,
-                  inputSource->record_start_pos + target,
-                  SEEK_SET);
+            if (fseek(inputSource->file,
+                    inputSource->record_start_pos + target,
+                    SEEK_SET) == 0) {
+                *consumed_newline = false;
+            }
         }
     }
 }
@@ -12802,10 +12884,10 @@ static void process_fmt_items_read(InputSource *inputSource,
                     if (tab_type == 'R') {
                         handle_read_X(inputSource, width, advance_no, iostat, consumed_newline);
                     } else if (tab_type == 'L') {
-                        handle_read_TL(inputSource, width);
+                        handle_read_TL(inputSource, width, consumed_newline);
                     }
                 } else {
-                    handle_read_T(inputSource, width);
+                    handle_read_T(inputSource, width, consumed_newline);
                 }
                 break;
             case 'A':
@@ -13142,6 +13224,32 @@ LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* io
     }
 }
 
+LFORTRAN_API void _lfortran_connect_unit_for_read(int32_t unit_num, int32_t unformatted, int32_t* iostat)
+{
+    if (unit_num < 0) return;
+    if (get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)) return;
+    // Implicit open: READ from an unconnected unit opens "fort.<unit>" and creates it if missing
+    char fort_filename[64];
+    snprintf(fort_filename, sizeof(fort_filename), "fort.%d", unit_num);
+    bool write_access = true;
+    FILE* filep = fopen(fort_filename, unformatted ? "r+b" : "r+");
+    if (!filep && errno == ENOENT) {
+        filep = fopen(fort_filename, unformatted ? "w+b" : "w+");
+    } else if (!filep) {
+        filep = fopen(fort_filename, unformatted ? "rb" : "r");
+        write_access = false;
+    }
+    if (!filep) {
+        if (iostat) { *iostat = 5004; return; }
+        fprintf(stderr, "Runtime Error: Cannot open file '%s' for implicit unit %d.\n",
+            fort_filename, unit_num);
+        exit(1);
+    }
+    char* fname = (char*)internal_malloc(strlen(fort_filename) + 1);
+    strcpy(fname, fort_filename);
+    store_unit_file(unit_num, fname, filep, unformatted != 0, 0, true, write_access, 0, false, 0, 0, 0, 0, 0, 1);
+}
+
 LFORTRAN_API char* _lpython_read_alloc(lfortran_allocator_t* al, int64_t fd, int64_t n)
 {
     char *c = (char *) ALLOCATOR_ALLOC(al, n);
@@ -13251,8 +13359,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         }
     }
     if (unit_file_bin) { // Unformatted
-        if (access_id == 0) {  // 0 = SEQUENTIAL access: always append
-            fseek(filep, 0, SEEK_END);
+        if (access_id == 0) {  // C needs a seek between a read and a write
+            fseek(filep, 0, SEEK_CUR);
         }
         va_list args;
         va_start(args, format_len);
@@ -14427,6 +14535,31 @@ LFORTRAN_API int32_t _lfortran_get_argc() {
 
 LFORTRAN_API char *_lpython_get_argv(int32_t index) {
     return _argv[index];
+}
+
+// getcwd (GNU extension)
+LFORTRAN_API int32_t _lfortran_getcwd(char* buffer, int64_t length) {
+    if (length <= 0) return EINVAL;
+    if ((uint64_t)length >= SIZE_MAX) return ENOMEM;
+    memset(buffer, ' ', (size_t)length);
+    // libc needs a trailing NUL; the Fortran buffer may fit the path exactly.
+    size_t capacity = (size_t)length + 1;
+#if defined(_WIN32)
+    if (capacity > INT_MAX) return ERANGE;
+#endif
+    char* path = internal_malloc(capacity);
+    if (!path) return ENOMEM;
+#if defined(_WIN32)
+    char* result = _getcwd(path, (int)capacity);
+#else
+    char* result = getcwd(path, capacity);
+#endif
+    int32_t status = result ? 0 : errno;
+    if (result) {
+        _lfortran_copy_str_and_pad(buffer, length, path, (int64_t)strlen(path), 1);
+    }
+    internal_free(path);
+    return status;
 }
 
 // get_command_argument

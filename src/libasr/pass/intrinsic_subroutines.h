@@ -41,6 +41,7 @@ enum class IntrinsicImpureSubroutines : int64_t {
     CoMin,
     CoBroadcast,
     Exit,
+    GetCwd,
     // ...
 };
 
@@ -59,6 +60,65 @@ typedef void (*verify_subroutine)(
     diag::Diagnostics&);
 
 typedef ASR::expr_t* (*get_initial_value_sub)(Allocator&, ASR::ttype_t*);
+
+namespace GetCwd {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x,
+            diag::Diagnostics& diagnostics) {
+        require_impl(x.n_args == 1 || x.n_args == 2,
+            "getcwd requires one or two arguments", x.base.base.loc, diagnostics);
+        if (x.n_args > 0) {
+            require_impl(valid_output(x.m_args[0]),
+                "getcwd requires a scalar default-kind character output variable", x.base.base.loc, diagnostics);
+        }
+        if (x.n_args == 2) {
+            ASR::ttype_t* type = expr_type(x.m_args[1]);
+            require_impl(is_integer(*type) && !is_array(type) && definable_output(x.m_args[1]),
+                "getcwd status must be a scalar integer output variable", x.base.base.loc, diagnostics);
+        }
+    }
+
+    static inline ASR::asr_t* create_GetCwdSubroutine(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        if (!valid_output(args[0])) {
+            append_error(diag, "getcwd requires a scalar default-kind character output variable", loc);
+            return nullptr;
+        }
+        Vec<ASR::expr_t*> actuals; actuals.reserve(al, 2);
+        actuals.push_back(al, args[0]);
+        if (args[1]) {
+            ASR::ttype_t* type = expr_type(args[1]);
+            if (!is_integer(*type) || is_array(type) || !definable_output(args[1])) {
+                append_error(diag, "getcwd status must be a scalar integer output variable", loc);
+                return nullptr;
+            }
+            actuals.push_back(al, args[1]);
+        }
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc,
+            static_cast<int64_t>(IntrinsicImpureSubroutines::GetCwd), actuals.p, actuals.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_GetCwdSubroutine(Allocator& al, const Location& loc,
+            SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_getcwd_subroutine");
+        fill_func_arg_sub("buffer", b.String(nullptr, ASR::AssumedLength), Out);
+        ASR::expr_t* status = runtime_call(al, loc, fn_symtab, args[0], dep);
+        if (arg_types.n == 2) {
+            fill_func_arg_sub("status", arg_types[1], Out);
+            status = CastingUtil::perform_casting(status, arg_types[1], al, loc);
+            body.push_back(al, b.Assignment(args[1], status));
+        } else {
+            ASR::expr_t* ignored = declare("status", int32, Local);
+            body.push_back(al, b.Assignment(ignored, status));
+        }
+        ASR::symbol_t* subroutine = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, subroutine);
+        return b.SubroutineCall(subroutine, new_args);
+    }
+
+} // namespace GetCwd
 
 namespace RandomInit {
 
