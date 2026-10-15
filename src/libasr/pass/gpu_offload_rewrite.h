@@ -260,6 +260,14 @@ public:
         replacer.current_expr = current_expr;
         replacer.replace_expr(*current_expr);
     }
+
+    // A call statement names its procedure as a function reference does.
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        ASR::SubroutineCall_t &xx = const_cast<ASR::SubroutineCall_t&>(x);
+        replacer.retarget_call(xx.m_name, xx.m_original_name);
+        ASR::CallReplacerOnExpressionsVisitor<GpuReplaceSymbolsVisitor>
+            ::visit_SubroutineCall(x);
+    }
 };
 
 // Resolves associate variable references to their original targets.
