@@ -9,6 +9,7 @@ program data_27
         call arrays(i)
         call characters(i)
         call partial_sections(i)
+        call block_construct(i)
     end do
 contains
     integer function counter(expected) result(value)
@@ -94,5 +95,19 @@ contains
         row(2,:) = row(2,:) + 1
         strided(1:5:2) = strided(1:5:2) + 1
         vector([3, 1]) = vector([3, 1]) + 1
+    end subroutine
+
+    subroutine block_construct(call_number)
+        integer, intent(in) :: call_number
+        integer :: j
+        block
+            integer :: m, b(2)
+            data m /0/
+            data (b(j), j=1,2) /1, 2/
+            m = m + 1
+            if (m /= call_number) error stop "BLOCK DATA lifetime"
+            if (any(b /= [1, 2] + call_number - 1)) error stop "BLOCK implied-do DATA lifetime"
+            b = b + 1
+        end block
     end subroutine
 end program

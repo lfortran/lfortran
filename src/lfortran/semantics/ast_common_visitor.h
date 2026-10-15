@@ -4356,7 +4356,14 @@ public:
         return in_bounds;
     }
 
-    // Whether a DATA object is held in a procedure's initialized SAVE storage.
+    // Whether DATA gives the local variables of `owner` the SAVE attribute,
+    // as declaration initialization does for procedure and BLOCK locals.
+    static bool is_data_saved_local_owner(ASR::symbol_t* owner) {
+        return owner && (ASR::is_a<ASR::Function_t>(*owner)
+            || ASR::is_a<ASR::Block_t>(*owner));
+    }
+
+    // Whether a DATA object is held in a local's initialized SAVE storage.
     bool data_object_has_saved_initializer(ASR::expr_t* object) {
         if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
             return data_object_has_saved_initializer(
@@ -4369,7 +4376,7 @@ public:
         ASR::Variable_t* v = ASRUtils::expr_to_variable_or_null(object);
         if (!v) return false;
         ASR::symbol_t* owner = ASRUtils::get_asr_owner(&v->base);
-        return owner && ASR::is_a<ASR::Function_t>(*owner)
+        return is_data_saved_local_owner(owner)
             && v->m_storage == ASR::storage_typeType::Save
             && v->m_symbolic_value != nullptr && v->m_common_block == nullptr;
     }
@@ -4494,7 +4501,7 @@ public:
         // initialization. COMMON storage and derived-type members are owned
         // by their enclosing objects instead.
         ASR::symbol_t* owner = ASRUtils::get_asr_owner(&v->base);
-        if (owner && ASR::is_a<ASR::Function_t>(*owner)
+        if (is_data_saved_local_owner(owner)
                 && v->m_intent == ASR::intentType::Local
                 && v->m_common_block == nullptr
                 && v->m_storage == ASR::storage_typeType::Default) {
@@ -5158,7 +5165,7 @@ public:
                         }
                     } else {
                         ASR::symbol_t* owner = ASRUtils::get_asr_owner(array_item_expr->m_v);
-                        if (owner && ASR::is_a<ASR::Function_t>(*owner)
+                        if (is_data_saved_local_owner(owner)
                                 && set_data_array_element_value(array_item_expr,
                                 [&](ASR::expr_t* /*previous*/) {
                                     return ASRUtils::expr_value(value);
