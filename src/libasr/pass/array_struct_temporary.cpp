@@ -2326,6 +2326,21 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_FileWrite(const ASR::FileWrite_t& x) {
         ASR::FileWrite_t& xx = const_cast<ASR::FileWrite_t&>(x);
+        if( xx.m_unit && ASR::is_a<ASR::ArraySection_t>(*xx.m_unit) &&
+                xx.m_nml == nullptr ) {
+            // An internal file that is an array section is written through a contiguous copy.
+            LCOMPILERS_ASSERT(body_after_curr_stmt != nullptr && !inside_where);
+            visit_expr(*xx.m_unit);
+            ASR::expr_t* section_pointer = create_and_allocate_temporary_variable_for_array(
+                xx.m_unit, "_file_write_unit_pointer_", al, current_body, current_scope,
+                exprs_with_target, true);
+            xx.m_unit = create_and_allocate_temporary_variable_for_array(
+                section_pointer, "_file_write_unit_", al, current_body, current_scope,
+                exprs_with_target);
+            body_after_curr_stmt->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+                al, section_pointer->base.loc, section_pointer, xx.m_unit, nullptr,
+                exprs_with_target)));
+        }
         visit_IO(xx.m_values, xx.n_values, "file_write");
         CallReplacerOnExpressionsVisitor::visit_FileWrite(x);
     }
