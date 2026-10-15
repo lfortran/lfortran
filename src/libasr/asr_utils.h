@@ -7656,11 +7656,13 @@ class SymbolDuplicator {
     // The same holds for a variable of a scope nested in the copy (a BLOCK,
     // ASSOCIATE or contained procedure) declared by a symbol of any
     // enclosing copied scope. Such a variable also reads the copies of the
-    // variables of the enclosing copied scopes in its type and values, such
-    // as the extent `n` of `real :: w(n)` in a BLOCK of a routine with the
-    // dummy argument `n`: a nested scope is copied before the variables of
-    // its enclosing scope may exist, so remap_local_references, which
-    // resolves names in the variable's own scope, cannot do it.
+    // variables, and calls the copies of the functions, of the enclosing
+    // copied scopes in its type and values, such as the extent `n` of
+    // `real :: w(n)` in a BLOCK of a routine with the dummy argument `n`, or
+    // the extent getter of `real :: x(n)` with a use-associated `n` in an
+    // interface body: a nested scope is copied before the symbols of its
+    // enclosing scope may exist, so remap_local_references, which resolves
+    // names in the variable's own scope, cannot do it.
     void fixup_local_type_declarations(SymbolTable *new_scope,
             SymbolTable *orig_scope) {
         std::vector<std::pair<SymbolTable*, SymbolTable*>> copied_scopes;
@@ -7675,17 +7677,28 @@ class SymbolDuplicator {
             const std::vector<std::pair<SymbolTable*, SymbolTable*>> &scopes;
             RetargetToCopies(const std::vector<std::pair<SymbolTable*,
                     SymbolTable*>> &scopes) : scopes(scopes) {}
-            void visit_Var(const ASR::Var_t &x) {
-                SymbolTable *parent = ASRUtils::symbol_parent_symtab(x.m_v);
+            void retarget(ASR::symbol_t *&sym) {
+                SymbolTable *parent = ASRUtils::symbol_parent_symtab(sym);
                 for (auto &s : scopes) {
                     if (parent != s.first) continue;
                     ASR::symbol_t *copy = s.second->get_symbol(
-                        ASRUtils::symbol_name(x.m_v));
-                    if (copy != nullptr && copy->type == x.m_v->type) {
-                        const_cast<ASR::Var_t&>(x).m_v = copy;
+                        ASRUtils::symbol_name(sym));
+                    if (copy != nullptr && copy->type == sym->type) {
+                        sym = copy;
                     }
                     return;
                 }
+            }
+            void visit_Var(const ASR::Var_t &x) {
+                retarget(const_cast<ASR::Var_t&>(x).m_v);
+            }
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                ASR::FunctionCall_t &call = const_cast<ASR::FunctionCall_t&>(x);
+                retarget(call.m_name);
+                if (call.m_original_name != nullptr) {
+                    retarget(call.m_original_name);
+                }
+                ASR::BaseWalkVisitor<RetargetToCopies>::visit_FunctionCall(x);
             }
         };
         copied_scopes.push_back({orig_scope, new_scope});
