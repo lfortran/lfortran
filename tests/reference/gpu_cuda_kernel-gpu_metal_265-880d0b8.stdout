@@ -184,7 +184,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
             t[((int)(k) - (1))] = (a[((int)(j) - (__lb_a_0))] * ((float)k));
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
-        __do_loop_end1 = (1 + (((n) % (3)) + 2) - 1);
+        __do_loop_end1 = __workspace_extent;
         __gpu_sum_k = (1 - 1);
         while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
             __gpu_sum_k = (__gpu_sum_k + 1);

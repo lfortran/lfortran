@@ -2694,6 +2694,28 @@ void GpuOffloadVisitor::gather_strided_section_arguments(
         current_scope, varies);
 }
 
+// A device routine hands a section that is not contiguous to a procedure
+// the same way the kernel does: gathered into a contiguous temporary, as
+// the procedure addresses its dummy by its extents alone. The temporary is
+// a run-time sized local of the routine, which gpu_device_workspace gives
+// to its callers. What varies is what the routine changes: an extent read
+// from one of its dummies is known on entry.
+void GpuOffloadVisitor::gather_strided_sections_in_routine(
+        ASR::Function_t &fn) {
+    auto varying = std::make_shared<GpuIterationVaryingSymbols>();
+    for (size_t i = 0; i < fn.n_body; i++) {
+        varying->visit_stmt(*fn.m_body[i]);
+    }
+    GpuVaries varies = [varying](ASR::expr_t *e) {
+        if (!e) return false;
+        GpuIterationVaryingUse use(*varying);
+        use.visit_expr(*e);
+        return use.found;
+    };
+    gather_strided_sections_in_body(fn.m_body, fn.n_body, fn.m_symtab,
+        varies);
+}
+
 // `scope` owns the statements in `body`: the new BLOCK has to be
 // registered there, not in the procedure, or it will not resolve from
 // the BlockCall that replaces the statement. Each gather brackets the

@@ -31,11 +31,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             work[((int)(__gpu_bc_i) - (1))] = i;
         }
         __gpu_sum_res = 0;
-        __do_loop_end1 = (1 + ((((blockIdx.x * blockDim.x) + threadIdx.x) + 1) + 1) - 1);
+        __do_loop_end1 = (((((blockIdx.x * blockDim.x) + threadIdx.x) + 1) + 1));
         __gpu_sum_k = (1 - 1);
         while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
             __gpu_sum_k = (__gpu_sum_k + 1);
-            __gpu_sum_res = (__gpu_sum_res + work[((int)(__gpu_sum_k) - (1))]);
+            __gpu_sum_res = (__gpu_sum_res + work[((int)((1 + (__gpu_sum_k - 1))) - (1))]);
         }
         values[((int)(i) - (1))] = __gpu_sum_res;
     }

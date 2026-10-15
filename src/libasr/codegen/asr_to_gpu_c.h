@@ -424,6 +424,13 @@ public:
     // by visit_expr when emitting ArraySize.
     std::map<std::string, std::string> func_array_size_params;
 
+    // The lower bound of each dimension of an array whose type does not
+    // carry it, keyed as a per-dimension extent of func_array_size_params
+    // is (see dim_size_key): an allocatable component of a derived-type
+    // argument, `key` "var.member", and a name bound to one. A dimension
+    // with no entry starts at one.
+    std::map<std::string, std::string> func_array_lb_params;
+
     // Maps "struct_var.member" to the device-pointer parameter name
     // for allocatable array members passed alongside the struct. Holds a
     // scalar struct argument's components and a device function's own
@@ -1747,43 +1754,53 @@ public:
     // array, emits: z + linearized_index_of_section_start
     // Also records the section size in last_section_size for later use.
     void emit_array_section_pointer(ASR::expr_t *expr) {
+        last_section_strides.clear();
         if (!ASR::is_a<ASR::ArraySection_t>(*expr)) {
             visit_expr(expr);
             return;
         }
         ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(expr);
-        // A section of a name that is already stepping through its own base
-        // compounds the address this cannot express, so it is refused here
-        // as an indexed use would be.
-        reject_strided_section_use(as->m_v, as->base.base.loc);
-        last_section_dropped_step = false;
-        for (size_t d = 0; d < as->n_args; d++) {
-            bool is_range = as->m_args[d].m_left && as->m_args[d].m_right
-                && as->m_args[d].m_step;
-            if (is_range && !section_step_is_one(as->m_args[d].m_step)) {
-                last_section_dropped_step = true;
-            }
-        }
         std::string arr_name;
         if (ASR::is_a<ASR::Var_t>(*as->m_v)) {
             arr_name = ASRUtils::symbol_name(
                 ASR::down_cast<ASR::Var_t>(as->m_v)->m_v);
         }
-        ASR::ttype_t *arr_type = ASRUtils::expr_type(as->m_v);
+        ASR::ttype_t *arr_type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(as->m_v));
         ASR::Array_t *arr = nullptr;
         if (ASR::is_a<ASR::Array_t>(*arr_type)) {
             arr = ASR::down_cast<ASR::Array_t>(arr_type);
         }
-        // Compute linearized offset of the section's first element
-        // and the section size using column-major layout.
-        // For range dims, use the lower bound as the index.
-        // Section size is the product of range extents.
+        // How far apart consecutive elements of each dimension of the base
+        // are: what the base was registered with when it is itself a
+        // strided view, the column-major products of its extents
+        // otherwise. The extent is the one dim_extent_str() settles on,
+        // the same one an ArrayItem is strided by: an array bound to a
+        // workspace carries no extents in its own type and reads them off
+        // the workspace the host sized the buffer from.
+        std::vector<std::string> base_strides;
+        if (!registered_strides(arr_name, as->n_args, base_strides)) {
+            base_strides.clear();
+            std::string stride = "1";
+            for (size_t d = 0; d < as->n_args; d++) {
+                base_strides.push_back(stride);
+                if (arr && d + 1 < as->n_args && d < arr->n_dims) {
+                    std::string len_str = dim_extent_str(arr, d, arr_name,
+                        as->base.base.loc);
+                    stride = stride == "1" ? len_str
+                        : "(" + stride + " * " + len_str + ")";
+                }
+            }
+        }
+        // The section starts at the element its first subscripts select,
+        // and steps through the base by the stride of each ranged
+        // dimension times its step: a pointer to the first element and
+        // these strides describe it, contiguous or not.
         std::stringstream size_ss;
         bool first_size = true;
         last_section_dim_sizes.clear();
         src << arr_name << " + ";
         bool first_dim = true;
-        std::string stride = "1";
         for (size_t d = 0; d < as->n_args; d++) {
             bool is_range = as->m_args[d].m_left && as->m_args[d].m_right
                 && as->m_args[d].m_step;
@@ -1791,10 +1808,12 @@ public:
                 ? as->m_args[d].m_left
                 : (as->m_args[d].m_right
                     ? as->m_args[d].m_right : as->m_args[d].m_left);
+            const std::string &stride = base_strides[d];
             if (idx_expr) {
                 if (!first_dim) src << " + ";
                 first_dim = false;
-                std::string lb = get_lower_bound_str(arr, d, arr_name);
+                std::string lb = arr ? deferred_lower_bound_str(as->m_v,
+                    arr, d) : std::string("1");
                 if (stride == "1") {
                     src << "((int)(";
                     visit_expr(idx_expr);
@@ -1805,34 +1824,18 @@ public:
                     src << ") - (" << lb << ")))";
                 }
             }
-            // Compute section extent for range dims
             if (is_range) {
-                std::stringstream save;
-                save << src.str();
-                src.str("");
-                emit_section_range_extent(&as->m_args[d]);
-                std::string dim_size = src.str();
-                src.str("");
-                src << save.str();
+                std::string dim_size = expr_str_of_range_extent(
+                    &as->m_args[d]);
                 if (!first_size) size_ss << " * ";
                 first_size = false;
                 size_ss << dim_size;
                 last_section_dim_sizes.push_back(dim_size);
-            }
-            // Update stride for next dimension. The extent is the one
-            // dim_extent_str() settles on, the same one an ArrayItem is
-            // strided by: an array bound to a workspace carries no extents
-            // in its own type and reads them off the workspace the host
-            // sized the buffer from, and one that carries an extent *and*
-            // has a workspace must not be strided by one here and sized by
-            // the other there.
-            if (arr && d < arr->n_dims) {
-                std::string len_str = dim_extent_str(arr, d, arr_name,
-                    as->base.base.loc);
-                if (stride == "1") {
-                    stride = len_str;
+                if (section_step_is_one(as->m_args[d].m_step)) {
+                    last_section_strides.push_back(stride);
                 } else {
-                    stride = "(" + stride + " * " + len_str + ")";
+                    last_section_strides.push_back("(" + stride + " * ("
+                        + expr_str(as->m_args[d].m_step) + "))");
                 }
             }
         }
@@ -1842,27 +1845,53 @@ public:
         }
     }
 
+    // The extent of a ranged section dimension as device source.
+    std::string expr_str_of_range_extent(ASR::array_index_t *index) {
+        std::stringstream save;
+        save << src.str();
+        src.str("");
+        emit_section_range_extent(index);
+        std::string out = src.str();
+        src.str("");
+        src << save.str();
+        return out;
+    }
+
+    // The strides, in elements, of the ranged dimensions of the section
+    // last rendered by emit_array_section_pointer.
+    std::vector<std::string> last_section_strides;
+
+    // The stride of each dimension of the array `name`, when it is a view
+    // whose elements are not laid out by its own extents -- a pointer to a
+    // section, or a descriptor dummy handed one -- registered under the
+    // keys its extents are (see dim_size_key).
+    std::map<std::string, std::string> func_array_stride_params;
+
+    bool registered_strides(const std::string &name, size_t rank,
+            std::vector<std::string> &strides) {
+        strides.clear();
+        if (name.empty()) return false;
+        for (size_t d = 0; d < rank; d++) {
+            auto it = func_array_stride_params.find(dim_size_key(name, d));
+            if (it == func_array_stride_params.end()) return false;
+            strides.push_back(it->second);
+        }
+        return rank > 0;
+    }
+
+    void register_strides(const std::string &name,
+            const std::vector<std::string> &strides) {
+        for (size_t d = 0; d < strides.size(); d++) {
+            func_array_stride_params[dim_size_key(name, d)] = strides[d];
+        }
+    }
+
     std::string last_section_size;
 
     // The extent of each ranged dimension of the section last rendered by
     // emit_array_section_pointer, so that a routine the section is passed to
     // can be given them one by one.
     std::vector<std::string> last_section_dim_sizes;
-
-    // Whether the section last rendered by emit_array_section_pointer steps
-    // through its base array by something other than one.
-    bool last_section_dropped_step = false;
-
-    // The names an Associate bound to such a section. A device pointer is an
-    // address and nothing else: it cannot carry a step, so walking one reads
-    // consecutive elements of the base array rather than every step-th one.
-    // The element *count* is right -- an extent is derived through
-    // gpu_device_range_extent(), which does honour the step -- so the wrong
-    // elements get read exactly the right number of times, which is a wrong
-    // answer with nothing to show for it. Sizing such a name is still exact,
-    // and `size(p)` is what most of them are for, so the name is recorded
-    // here and only indexing it is refused.
-    std::set<ASR::symbol_t*> section_pointers_dropping_step;
 
     // Whether `e` names a step the device pointer can express, which is a
     // step of one: absent, or folding to the literal 1. A step only known at
@@ -1874,21 +1903,6 @@ public:
             return false;
         }
         return value == 1;
-    }
-
-    // Refuses an indexed read or write through a name bound to a section the
-    // device pointer cannot express. Called wherever such a name could be
-    // subscripted, so that the shape is a compile error rather than a silent
-    // wrong answer.
-    void reject_strided_section_use(ASR::expr_t *base, const Location &loc) {
-        if (base == nullptr || !ASR::is_a<ASR::Var_t>(*base)) return;
-        ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(base)->m_v;
-        if (section_pointers_dropping_step.count(sym) == 0) return;
-        throw CodeGenError(std::string("gpu offload: '")
-            + ASRUtils::symbol_name(sym) + "' is associated with an array "
-            "section whose stride is not one, and a gpu kernel addresses it "
-            "with a pointer that cannot carry a stride; only its size can be "
-            "used inside the kernel", loc);
     }
 
     // Renders an expression to device source without disturbing the output
@@ -1968,6 +1982,8 @@ public:
             if (arr->n_dims > 1) {
                 func_array_size_params[dim_size_key(key, d)] = len;
             }
+            func_array_lb_params[dim_size_key(key, d)] =
+                get_lower_bound_str(arr, d);
             total += total.empty() ? len : (" * " + len);
         }
         func_array_size_params[key] = "(" + total + ")";
@@ -2084,13 +2100,42 @@ public:
                         }
                     }
                     if (has_null) {
-                        emit_per_dim_sizes_for_call(actual_arg, farr);
+                        std::vector<std::string> extents;
+                        if (!per_dim_size_strs(actual_arg, farr, extents)) {
+                            emit_array_size_expr(actual_arg);
+                            return;
+                        }
+                        for (size_t d = 0; d < extents.size(); d++) {
+                            if (d > 0) src << ", ";
+                            src << extents[d];
+                        }
+                        emit_descriptor_strides_for_call(actual_arg,
+                            extents);
                         return;
                     }
                 }
             }
         }
         emit_array_size_expr(actual_arg);
+    }
+
+    // The strides of the actual argument handed to a descriptor dummy, one
+    // per dimension: those a strided view was registered with, or the
+    // column-major products of the extents of a contiguous array.
+    void emit_descriptor_strides_for_call(ASR::expr_t *actual_arg,
+            const std::vector<std::string> &extents) {
+        std::string key = array_shape_key(actual_arg);
+        std::vector<std::string> strides;
+        if (!registered_strides(key, extents.size(), strides)) {
+            strides.clear();
+            std::string stride = "1";
+            for (size_t d = 0; d < extents.size(); d++) {
+                strides.push_back(stride);
+                stride = stride == "1" ? "(" + extents[d] + ")"
+                    : "(" + stride + " * (" + extents[d] + "))";
+            }
+        }
+        for (const std::string &stride : strides) src << ", " << stride;
     }
 
     // Emit the extents an allocatable dummy needs, one per dimension, at a
@@ -2108,6 +2153,23 @@ public:
     // DescriptorArray formal parameter with null dimension lengths.
     void emit_per_dim_sizes_for_call(ASR::expr_t *actual_arg,
             ASR::Array_t *formal_arr) {
+        std::vector<std::string> extents;
+        if (!per_dim_size_strs(actual_arg, formal_arr, extents)) {
+            // Fallback: single total size
+            emit_array_size_expr(actual_arg);
+            return;
+        }
+        for (size_t d = 0; d < extents.size(); d++) {
+            if (d > 0) src << ", ";
+            src << extents[d];
+        }
+    }
+
+    // The extent of each dimension of the formal `formal_arr` the actual
+    // argument gives it, as device source; false when the actual is not
+    // an array.
+    bool per_dim_size_strs(ASR::expr_t *actual_arg,
+            ASR::Array_t *formal_arr, std::vector<std::string> &extents) {
         // Unwrap ArrayPhysicalCast
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*actual_arg)) {
             actual_arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
@@ -2116,61 +2178,59 @@ public:
         ASR::ttype_t *atype = ASRUtils::expr_type(actual_arg);
         ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(atype));
-        bool first_dim = true;
-        if (ASR::is_a<ASR::Array_t>(*inner)) {
-            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
-            // Emit each dimension's length
-            for (size_t d = 0; d < formal_arr->n_dims; d++) {
-                if (!first_dim) src << ", ";
-                first_dim = false;
-                if (d < arr->n_dims && arr->m_dims[d].m_length) {
-                    visit_expr(arr->m_dims[d].m_length);
-                } else if (ASR::is_a<ASR::Var_t>(*actual_arg)) {
-                    // Assumed-shape: use __size_var_dimN from kernel
-                    ASR::symbol_t *vsym =
-                        ASRUtils::symbol_get_past_external(
-                            ASR::down_cast<ASR::Var_t>(actual_arg)->m_v);
-                    std::string vname = ASRUtils::symbol_name(vsym);
-                    const ASR::gpu_kernel_argument_t *extent =
-                        array_extent_params.find(vsym, d);
-                    auto dit = func_array_size_params.find(
-                        dim_size_key(vname, d));
-                    auto sect = ptr_section_dim_sizes.find(vname);
-                    if (extent) {
-                        src << kernel_parameter(extent);
-                    } else if (dit != func_array_size_params.end()) {
-                        src << dit->second;
-                    } else if (sect != ptr_section_dim_sizes.end()
-                            && d < sect->second.size()) {
-                        src << sect->second[d];
-                    } else if (local_alloc_arrays.count(vsym)) {
-                        auto ait = alloc_array_sizes.find(vname);
-                        if (ait != alloc_array_sizes.end()) {
-                            src << ait->second;
-                        } else {
-                            auto eit = alloc_array_size_exprs.find(
-                                vname);
-                            if (eit != alloc_array_size_exprs.end()) {
-                                src << eit->second;
-                            } else {
-                                src << GpuNames::dim_size(vname, d);
-                            }
-                        }
+        if (!ASR::is_a<ASR::Array_t>(*inner)) return false;
+        ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(inner);
+        std::stringstream out;
+        out.swap(src);
+        for (size_t d = 0; d < formal_arr->n_dims; d++) {
+            src.str("");
+            if (d < arr->n_dims && arr->m_dims[d].m_length) {
+                visit_expr(arr->m_dims[d].m_length);
+            } else if (ASR::is_a<ASR::Var_t>(*actual_arg)) {
+                // Assumed-shape: use __size_var_dimN from kernel
+                ASR::symbol_t *vsym =
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(actual_arg)->m_v);
+                std::string vname = ASRUtils::symbol_name(vsym);
+                const ASR::gpu_kernel_argument_t *extent =
+                    array_extent_params.find(vsym, d);
+                auto dit = func_array_size_params.find(
+                    dim_size_key(vname, d));
+                auto sect = ptr_section_dim_sizes.find(vname);
+                if (extent) {
+                    src << kernel_parameter(extent);
+                } else if (dit != func_array_size_params.end()) {
+                    src << dit->second;
+                } else if (sect != ptr_section_dim_sizes.end()
+                        && d < sect->second.size()) {
+                    src << sect->second[d];
+                } else if (local_alloc_arrays.count(vsym)) {
+                    auto ait = alloc_array_sizes.find(vname);
+                    if (ait != alloc_array_sizes.end()) {
+                        src << ait->second;
                     } else {
-                        src << GpuNames::dim_size(vname, d);
+                        auto eit = alloc_array_size_exprs.find(
+                            vname);
+                        if (eit != alloc_array_size_exprs.end()) {
+                            src << eit->second;
+                        } else {
+                            src << GpuNames::dim_size(vname, d);
+                        }
                     }
-                } else if (ASR::is_a<ASR::StructInstanceMember_t>(
-                        *actual_arg)) {
-                    emit_struct_member_array_size_dim(actual_arg,
-                        (int64_t)(d + 1));
                 } else {
-                    src << "0";
+                    src << GpuNames::dim_size(vname, d);
                 }
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(
+                    *actual_arg)) {
+                emit_struct_member_array_size_dim(actual_arg,
+                    (int64_t)(d + 1));
+            } else {
+                src << "0";
             }
-        } else {
-            // Fallback: single total size
-            emit_array_size_expr(actual_arg);
+            extents.push_back(src.str());
         }
+        out.swap(src);
+        return true;
     }
 
     // Rank of an allocatable array component, or 0 when it is not one.
@@ -2186,23 +2246,30 @@ public:
     }
 
     // The sizes buffer of an allocatable component of a struct-array kernel
-    // argument holds the extents of the component, one entry per dimension
-    // per element (see `gpu_struct_member_rank` in gpu_utils.h). These two
-    // render the extent of one dimension and the element count of a whole
-    // element out of it; a rank-one component reads back exactly the single
-    // entry it has always had.
+    // argument holds `2 * rank` entries per element (see
+    // device_launch_expand.cpp): the extent of each dimension, then its
+    // lower bound. These render the extent and the lower bound of one
+    // dimension and the element count of a whole element out of it.
     static std::string struct_member_extent_expr(
             const std::string &sizes_param, const std::string &idx_str,
             size_t rank, size_t d) {
-        if (rank <= 1) return sizes_param + "[" + idx_str + "]";
         return sizes_param + "[(" + idx_str + ") * "
-            + std::to_string(rank) + " + " + std::to_string(d) + "]";
+            + std::to_string(2 * rank) + " + " + std::to_string(d) + "]";
+    }
+
+    static std::string struct_member_lower_bound_expr(
+            const std::string &sizes_param, const std::string &idx_str,
+            size_t rank, size_t d) {
+        return struct_member_extent_expr(sizes_param, idx_str, rank,
+            rank + d);
     }
 
     static std::string struct_member_total_size_expr(
             const std::string &sizes_param, const std::string &idx_str,
             size_t rank) {
-        if (rank <= 1) return sizes_param + "[" + idx_str + "]";
+        if (rank <= 1) {
+            return struct_member_extent_expr(sizes_param, idx_str, rank, 0);
+        }
         std::string res;
         for (size_t d = 0; d < rank; d++) {
             if (d > 0) res += " * ";
@@ -2263,6 +2330,95 @@ public:
         for (auto &e : copied) {
             func_array_size_params[e.first] = e.second;
         }
+        copied.clear();
+        for (auto &entry : func_array_lb_params) {
+            std::string base;
+            size_t d = 0;
+            if (!dim_size_key_parts(entry.first, base, d)) continue;
+            if (base != from) continue;
+            copied.push_back({dim_size_key(to, d), entry.second});
+        }
+        for (auto &e : copied) {
+            func_array_lb_params[e.first] = e.second;
+        }
+        copied.clear();
+        for (auto &entry : func_array_stride_params) {
+            std::string base;
+            size_t d = 0;
+            if (!dim_size_key_parts(entry.first, base, d)) continue;
+            if (base != from) continue;
+            copied.push_back({dim_size_key(to, d), entry.second});
+        }
+        for (auto &e : copied) {
+            func_array_stride_params[e.first] = e.second;
+        }
+    }
+
+    // The key the shape of an array designator is registered under: the
+    // name of a variable, or "var.member" for a component of one.
+    static std::string array_shape_key(ASR::expr_t *e) {
+        while (e && ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+        }
+        if (e == nullptr) return "";
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            return ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(e)->m_v);
+        }
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            ASR::StructInstanceMember_t *sm =
+                ASR::down_cast<ASR::StructInstanceMember_t>(e);
+            if (!ASR::is_a<ASR::Var_t>(*sm->m_v)) return "";
+            return std::string(ASRUtils::symbol_name(
+                ASR::down_cast<ASR::Var_t>(sm->m_v)->m_v)) + "."
+                + ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(sm->m_m));
+        }
+        return "";
+    }
+
+    // The lower bound of dimension `d` of the deferred-shape array `e`: a
+    // component of an element of an array of a derived type reads it from
+    // the sizes buffer of the component, anything else from what is
+    // registered under its shape key.
+    std::string deferred_lower_bound_str(ASR::expr_t *e, ASR::Array_t *arr,
+            size_t d) {
+        ASR::expr_t *v = e;
+        while (v && ASR::is_a<ASR::ArrayPhysicalCast_t>(*v)) {
+            v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(v)->m_arg;
+        }
+        if (v && ASR::is_a<ASR::StructInstanceMember_t>(*v)) {
+            ASR::StructInstanceMember_t *sm =
+                ASR::down_cast<ASR::StructInstanceMember_t>(v);
+            if (ASR::is_a<ASR::ArrayItem_t>(*sm->m_v)) {
+                ASR::ArrayItem_t *arr_ai =
+                    ASR::down_cast<ASR::ArrayItem_t>(sm->m_v);
+                if (ASR::is_a<ASR::Var_t>(*arr_ai->m_v)) {
+                    const GpuComponentLayout *component =
+                        struct_components.find(ASR::down_cast<ASR::Var_t>(
+                            arr_ai->m_v)->m_v, sm->m_m);
+                    std::string idx_str =
+                        struct_array_element_index_str(arr_ai);
+                    if (component && component->sizes && !idx_str.empty()) {
+                        return struct_member_lower_bound_expr(
+                            kernel_parameter(component->sizes), idx_str,
+                            component->rank, d);
+                    }
+                }
+            }
+        }
+        return get_lower_bound_str(arr, d, array_shape_key(e));
+    }
+
+    // A name bound to the component `key` ("var.member") has its shape:
+    // its element count, and the extent and lower bound of each dimension.
+    void bind_component_alias(const std::string &key,
+            const std::string &alias) {
+        auto it = func_array_size_params.find(key);
+        if (it != func_array_size_params.end()
+                && !func_array_size_params.count(alias)) {
+            func_array_size_params[alias] = it->second;
+        }
+        copy_dim_size_keys(key, alias);
     }
 
     // The tables above are keyed by name, so an entry about a variable a
@@ -2412,8 +2568,9 @@ public:
         }
         return gpu_linearized_index_str(subscripts,
             [&](size_t d) {
-                return get_lower_bound_str(mem_arr, d,
-                    arr_name + "%" + mem_name);
+                if (sizes_param.empty()) return std::string("1");
+                return struct_member_lower_bound_expr(sizes_param,
+                    arr_idx_str, rank, d);
             },
             [&](size_t d) {
                 return struct_member_extent_expr(sizes_param, arr_idx_str,
@@ -2567,6 +2724,8 @@ public:
                                 arr_name, mem_name, d);
                         }
                     }
+                    emit_component_lower_bounds(component, idx_str, key,
+                        rank);
                 }
                 return;
             }
@@ -2686,6 +2845,37 @@ public:
                     }
                 }
             }
+
+            // The lower bound of each dimension, matching the callee
+            // signature.
+            if (arr_it != struct_from_array_elem.end()) {
+                std::string arr_name = arr_it->second.first;
+                emit_component_lower_bounds(
+                    struct_components.find(arr_name, &mv->base),
+                    arr_it->second.second, arr_name + "." + mem_name, rank);
+            } else {
+                emit_component_lower_bounds(nullptr, "",
+                    var_name + "." + mem_name, rank);
+            }
+        }
+    }
+
+    // The lower bounds of a component, one argument per dimension: those
+    // of the element `element_index` of an array of a derived type in its
+    // sizes buffer, or those registered under `key` ("var.member").
+    void emit_component_lower_bounds(const GpuComponentLayout *component,
+            const std::string &element_index, const std::string &key,
+            size_t rank) {
+        for (size_t d = 0; d < rank; d++) {
+            if (component && component->sizes && !element_index.empty()) {
+                src << ", " << struct_member_lower_bound_expr(
+                    kernel_parameter(component->sizes), element_index,
+                    rank, d);
+                continue;
+            }
+            auto it = func_array_lb_params.find(dim_size_key(key, d));
+            src << ", " << (it != func_array_lb_params.end()
+                ? it->second : std::string("1"));
         }
     }
 
@@ -3010,6 +3200,8 @@ public:
             const std::string &device_name) {
         GpuEmissionScope emission_scope(active_scope, fn->m_symtab);
         func_array_size_params.clear();
+        func_array_lb_params.clear();
+        func_array_stride_params.clear();
         func_array_data_params.clear();
         func_array_params.clear();
         // A device function is emitted before the kernel that calls it
@@ -3109,6 +3301,15 @@ public:
                                         = dim_name;
                                 }
                             }
+                            // The lower bound of each dimension.
+                            for (size_t d = 0; d < rank; d++) {
+                                std::string lb_name =
+                                    GpuNames::member_lower_bound(
+                                        arg->m_name, mem_name, d);
+                                src << ", int " << lb_name;
+                                func_array_lb_params[dim_size_key(key, d)]
+                                    = lb_name;
+                            }
                         }
                     }
                 }
@@ -3153,6 +3354,17 @@ public:
                         func_array_size_params[dim_size_key(aname, d)]
                             = dim_name;
                     }
+                    // A descriptor carries how far apart the elements of
+                    // each dimension are, so that the routine can be
+                    // handed a section that is not contiguous.
+                    std::vector<std::string> strides;
+                    for (size_t d = 0; d < arr->n_dims; d++) {
+                        std::string stride_name = GpuNames::dim_stride(
+                            aname, d);
+                        src << ", int " << stride_name;
+                        strides.push_back(stride_name);
+                    }
+                    register_strides(aname, strides);
                     // Register total size as the product
                     std::string total = GpuNames::dim_size(aname, 0);
                     for (size_t d = 1; d < arr->n_dims; d++) {
@@ -3331,12 +3543,8 @@ public:
                         if (ASR::is_a<ASR::Var_t>(*sm->m_v)) {
                             std::string struct_name = ASRUtils::symbol_name(
                                 ASR::down_cast<ASR::Var_t>(sm->m_v)->m_v);
-                            std::string key = struct_name + "." + mem_name;
-                            auto spit = func_array_size_params.find(key);
-                            if (spit != func_array_size_params.end() &&
-                                    !func_array_size_params.count(tgt_name)) {
-                                func_array_size_params[tgt_name] = spit->second;
-                            }
+                            bind_component_alias(
+                                struct_name + "." + mem_name, tgt_name);
                         }
                         continue;
                     }
@@ -3380,6 +3588,8 @@ public:
         indent_level--;
         src << "}\n\n";
         func_array_size_params.clear();
+        func_array_lb_params.clear();
+        func_array_stride_params.clear();
         func_array_data_params.clear();
         alloc_pointer_params.clear();
         func_array_params.clear();
@@ -3503,7 +3713,7 @@ public:
                     std::string to = std::string(ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(a->m_target)->m_v)) + ".";
                     for (auto *table : {&func_array_data_params,
-                            &func_array_size_params}) {
+                            &func_array_size_params, &func_array_lb_params}) {
                         std::vector<std::pair<std::string, std::string>>
                             copies;
                         for (auto &entry : *table) {
@@ -3546,18 +3756,8 @@ public:
                                 ASRUtils::symbol_name(
                                     ASR::down_cast<ASR::Var_t>(
                                         sm->m_v)->m_v);
-                            std::string key =
-                                struct_name + "." + mem_name;
-                            if (!func_array_size_params.count(
-                                    tgt_name)) {
-                                auto spit =
-                                    func_array_size_params.find(key);
-                                if (spit !=
-                                        func_array_size_params.end()) {
-                                    func_array_size_params[tgt_name]
-                                        = spit->second;
-                                }
-                            }
+                            bind_component_alias(
+                                struct_name + "." + mem_name, tgt_name);
                         }
                     } else if (ASR::is_a<ASR::Var_t>(*val)) {
                         std::string val_name = ASRUtils::symbol_name(
@@ -4401,7 +4601,6 @@ public:
                     break;
                 }
                 last_section_size.clear();
-                last_section_dropped_step = false;
                 src << get_indent();
                 visit_expr(assoc->m_target);
                 src << " = ";
@@ -4409,20 +4608,15 @@ public:
                 src << ";\n";
                 if (ASR::is_a<ASR::Var_t>(*assoc->m_target)) {
                     // The pointer just written holds the address of the
-                    // section's first element. Where the section steps by
-                    // more than one that address is all it holds, so record
-                    // the name: its size is still exact, and every indexed
-                    // use of it is refused.
-                    if (last_section_dropped_step) {
-                        section_pointers_dropping_step.insert(
-                            ASR::down_cast<ASR::Var_t>(assoc->m_target)->m_v);
-                    }
+                    // section's first element; the section's extents and
+                    // strides describe the rest of it.
                     std::string tgt_name = ASRUtils::symbol_name(
                         ASR::down_cast<ASR::Var_t>(assoc->m_target)->m_v);
                     if (!last_section_size.empty()) {
                         ptr_section_sizes[tgt_name] = last_section_size;
                         ptr_section_dim_sizes[tgt_name] =
                             last_section_dim_sizes;
+                        register_strides(tgt_name, last_section_strides);
                     }
                     // For pointer-to-local-alloc associations, record
                     // the allocatable's size for later use
@@ -4448,21 +4642,8 @@ public:
                                 ASRUtils::symbol_name(
                                     ASR::down_cast<ASR::Var_t>(
                                         sm->m_v)->m_v);
-                            std::string key =
-                                struct_name + "." + mem_name;
-                            if (!func_array_size_params.count(
-                                    tgt_name)) {
-                                auto spit =
-                                    func_array_size_params.find(
-                                        key);
-                                if (spit !=
-                                        func_array_size_params
-                                            .end()) {
-                                    func_array_size_params[
-                                        tgt_name]
-                                        = spit->second;
-                                }
-                            }
+                            bind_component_alias(
+                                struct_name + "." + mem_name, tgt_name);
                         }
                     } else if (ASR::is_a<ASR::Var_t>(*assoc_val)) {
                         std::string val_name = ASRUtils::symbol_name(
@@ -4687,14 +4868,34 @@ public:
                                     ab->m_dim)->m_n - 1;
                             }
                         }
+                        // A deferred-shape array -- a component of a
+                        // derived-type argument, or a name bound to one --
+                        // has its lower bound registered with its extents.
+                        std::string registered_lb = arr->n_dims > 0
+                            && dim_idx >= 0 && (size_t)dim_idx < arr->n_dims
+                            && !arr->m_dims[dim_idx].m_start
+                            && !arr->m_dims[dim_idx].m_length
+                            ? deferred_lower_bound_str(ab->m_v, arr,
+                                dim_idx)
+                            : "1";
                         if (dim_idx >= 0 && (size_t)dim_idx < arr->n_dims) {
                             if (ab->m_bound == ASR::arrayboundType::LBound) {
                                 if (arr->m_dims[dim_idx].m_start) {
                                     visit_expr(arr->m_dims[dim_idx].m_start);
                                 } else {
-                                    src << "1";
+                                    src << registered_lb;
                                 }
                             } else {
+                                // The branches below without a length
+                                // render the extent of the dimension,
+                                // which is its upper bound when it starts
+                                // at one.
+                                bool offset_extent =
+                                    !arr->m_dims[dim_idx].m_length
+                                    && registered_lb != "1";
+                                if (offset_extent) {
+                                    src << "((" << registered_lb << ") + ";
+                                }
                                 // UBound = start + length - 1
                                 if (arr->m_dims[dim_idx].m_length) {
                                     src << "(";
@@ -4743,6 +4944,7 @@ public:
                                 } else {
                                     unresolved_upper_bound(ab->base.base.loc, "");
                                 }
+                                if (offset_extent) src << " - 1)";
                             }
                         } else {
                             src << "/* dim out of range */";
@@ -4932,10 +5134,6 @@ public:
             }
             case ASR::exprType::ArrayItem: {
                 ASR::ArrayItem_t *ai = ASR::down_cast<ASR::ArrayItem_t>(expr);
-                // Refused here rather than in emit_linearized_index below:
-                // a rank-1 subscript is written out directly and never
-                // reaches it.
-                reject_strided_section_use(ai->m_v, ai->base.base.loc);
                 // For allocatable struct member access like s%a(i),
                 // use the separate data pointer parameter instead of
                 // the struct member (which is not a valid array in device code).
@@ -5026,10 +5224,17 @@ public:
                         if (ASR::is_a<ASR::Array_t>(*inner_1d)) {
                             arr_1d = ASR::down_cast<ASR::Array_t>(inner_1d);
                         }
-                        std::string lb = get_lower_bound_str(arr_1d, 0);
+                        std::string lb = get_lower_bound_str(arr_1d, 0,
+                            array_shape_key(ai->m_v));
+                        std::vector<std::string> strides;
+                        bool strided = registered_strides(
+                            array_shape_key(ai->m_v), 1, strides)
+                            && strides[0] != "1";
+                        if (strided) src << "(" << strides[0] << " * ";
                         src << "((int)(";
                         visit_expr(idx);
                         src << ") - (" << lb << "))";
+                        if (strided) src << ")";
                     } else {
                         src << "0";
                     }
@@ -5197,6 +5402,10 @@ public:
                                 bool first_dim = true;
                                 src << "(";
                                 for (size_t d = 0; d < arr->n_dims; d++) {
+                                    if (dim_value > 0
+                                            && (int64_t)d + 1 != dim_value) {
+                                        continue;
+                                    }
                                     if (arr->m_dims[d].m_length) {
                                         if (!first_dim) src << " * ";
                                         first_dim = false;
@@ -5353,7 +5562,14 @@ public:
     // counting from 1 instead would address a different element.
     std::string get_lower_bound_str(ASR::Array_t *arr, size_t d,
             const std::string &arr_var_name = "") {
-        if (!arr || d >= arr->n_dims || !arr->m_dims[d].m_start) return "1";
+        if (!arr || d >= arr->n_dims || !arr->m_dims[d].m_start) {
+            auto it = func_array_lb_params.find(
+                dim_size_key(arr_var_name, d));
+            if (!arr_var_name.empty() && it != func_array_lb_params.end()) {
+                return it->second;
+            }
+            return "1";
+        }
         ASR::expr_t *start = arr->m_dims[d].m_start;
         if (ASR::is_a<ASR::IntegerConstant_t>(*start)) {
             return std::to_string(
@@ -5373,24 +5589,38 @@ public:
 
     void emit_linearized_index(ASR::ArrayItem_t *ai,
                                ASR::ttype_t *arr_type) {
-        reject_strided_section_use(ai->m_v, ai->base.base.loc);
         ASR::Array_t *arr = nullptr;
         ASR::ttype_t *inner = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(arr_type));
         if (ASR::is_a<ASR::Array_t>(*inner)) {
             arr = ASR::down_cast<ASR::Array_t>(inner);
         }
-        // Extract array variable name for assumed-shape __size_ parameters
-        std::string arr_var_name;
-        if (ASR::is_a<ASR::Var_t>(*ai->m_v)) {
-            arr_var_name = ASRUtils::symbol_name(
-                ASR::down_cast<ASR::Var_t>(ai->m_v)->m_v);
-        }
+        // The key the extents and lower bounds of the array are
+        // registered under: an assumed-shape dummy's own name, or
+        // "var.member" for a component of a derived-type argument.
+        std::string arr_var_name = array_shape_key(ai->m_v);
         std::vector<std::string> subscripts;
         for (size_t d = 0; d < ai->n_args; d++) {
             ASR::expr_t *idx = ai->m_args[d].m_right
                 ? ai->m_args[d].m_right : ai->m_args[d].m_left;
             subscripts.push_back(idx ? expr_str(idx) : "");
+        }
+        // A view whose elements are not laid out by its own extents is
+        // stepped through by the strides it was registered with.
+        std::vector<std::string> strides;
+        if (registered_strides(arr_var_name, ai->n_args, strides)) {
+            std::string out;
+            for (size_t d = 0; d < subscripts.size(); d++) {
+                if (subscripts[d].empty()) continue;
+                std::string term = "((int)(" + subscripts[d] + ") - ("
+                    + get_lower_bound_str(arr, d, arr_var_name) + "))";
+                if (strides[d] != "1") {
+                    term = "(" + strides[d] + " * " + term + ")";
+                }
+                out += out.empty() ? term : (" + " + term);
+            }
+            src << out;
+            return;
         }
         src << gpu_linearized_index_str(subscripts,
             [&](size_t d) {

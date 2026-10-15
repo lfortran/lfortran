@@ -6106,10 +6106,7 @@ RUN(NAME gpu_metal_334 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_335 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_336 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_337 FAIL LABELS gfortran llvm metal cuda_cpu)
-# Refused by every gpu backend on purpose -- see the reference test in
-# tests/tests.toml for the diagnostic. Registered here for the answer the
-# host gives, which is the one the kernel used to get wrong in silence.
-RUN(NAME gpu_metal_338 LABELS gfortran llvm)
+RUN(NAME gpu_metal_338 LABELS gfortran llvm metal cuda_cpu)
 # No gfortran label: `reduce` is F2023, and the gfortran the CI builds with
 # rejects it outright ("Syntax error in DO statement"). Same reason
 # gpu_metal_21 above carries none. Checked by hand against gfortran 16,
@@ -6183,6 +6180,13 @@ RUN(NAME gpu_metal_420 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_417 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_418 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_421 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_422 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_423 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_424 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_425 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_426 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_427 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_428 LABELS gfortran llvm metal cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
