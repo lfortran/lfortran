@@ -3528,6 +3528,10 @@ filename = "errors/continue_compilation_initial_proc_target.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/continue_compilation_proc_component_constant.f90"
+continue_compilation = true
+
+[[test]]
 filename = "errors/namelist_implicit_type_01.f90"
 semantics_only_cc = true
 options = "--implicit-typing"
