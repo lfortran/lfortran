@@ -3394,11 +3394,11 @@ public:
         }
         is_invalid = check_procedure_component_of_constant(value,
             "a pointer assignment target") || is_invalid;
-        tmp = nullptr;
         // With --continue-compilation, drop the reported statement.
         if (is_invalid) {
-            return;
+            throw SemanticAbort();
         }
+        tmp = nullptr;
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
         if (ASR::is_a<ASR::ArraySection_t>(*target)) {
@@ -9273,8 +9273,7 @@ public:
         if (check_procedure_component_of_constant(v_expr, final_sym,
                 x.base.base.loc, "called")) {
             // With --continue-compilation, drop the reported call.
-            tmp = nullptr;
-            return;
+            throw SemanticAbort();
         }
         ASRUtils::insert_self_arg(al, final_sym, call_args, n_call_args, v_expr);
         tmp = ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
