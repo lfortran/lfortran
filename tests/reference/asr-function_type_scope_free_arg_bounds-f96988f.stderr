@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.function_type.scope_free_arg_bounds]: the bounds of array argument 1 of a procedure type must not reference a symbol
+  --> tests/asr/verify/function_type_scope_free_arg_bounds.asr:62:36
+   |
+62 |               :function_signature (FunctionType
+   |                                    ^^^^^^^^^^^^ failed here

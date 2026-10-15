@@ -1832,7 +1832,7 @@ namespace LCompilers {
                 arg_types.reserve(al, a_args.n);
                 for(auto &e: a_args) {
                     ASRUtils::ReplaceWithFunctionParamVisitor replacer(al, x->m_args, x->n_args);
-                    arg_types.push_back(al, replacer.replace_args_with_FunctionParam(
+                    arg_types.push_back(al, replacer.replace_arg_type_with_FunctionParam(
                                                 ASRUtils::expr_type(e), x->m_symtab));
                 }
                 s_func_type->m_arg_types = arg_types.p;

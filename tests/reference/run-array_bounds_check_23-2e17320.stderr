@@ -1,0 +1,8 @@
+runtime error: Runtime error: Array shape mismatch in subroutine 'q'
+
+Tried to match size 1 of dimension 1 of argument number 1, but expected size is 2
+
+  --> tests/errors/array_bounds_check_23.f90:27:12
+   |
+27 |     call q(a)
+   |            ^

@@ -1,0 +1,8 @@
+runtime error: Runtime error: Array shape mismatch in subroutine 'fb'
+
+Tried to match size 4 of dimension 1 of argument number 1, but expected size is 5
+
+  --> tests/errors/array_bounds_check_24.f90:34:13
+   |
+34 |     call fb(y)
+   |             ^

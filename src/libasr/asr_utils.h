@@ -7221,6 +7221,51 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
 };
 
 
+// Whether an expression references no symbol, so that it means the same in
+// every scope: constants, FunctionParams and intrinsic operations on them.
+class ScopeFreeExprVisitor: public ASR::BaseWalkVisitor<ScopeFreeExprVisitor> {
+public:
+    bool scope_free = true;
+
+    void visit_Var(const ASR::Var_t&) { scope_free = false; }
+    void visit_FunctionCall(const ASR::FunctionCall_t&) { scope_free = false; }
+    void visit_StructConstructor(const ASR::StructConstructor_t&) { scope_free = false; }
+    void visit_StructConstant(const ASR::StructConstant_t&) { scope_free = false; }
+    void visit_EnumConstructor(const ASR::EnumConstructor_t&) { scope_free = false; }
+    void visit_UnionConstructor(const ASR::UnionConstructor_t&) { scope_free = false; }
+    void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t&) { scope_free = false; }
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t&) { scope_free = false; }
+    void visit_StructStaticMember(const ASR::StructStaticMember_t&) { scope_free = false; }
+    void visit_EnumStaticMember(const ASR::EnumStaticMember_t&) { scope_free = false; }
+    void visit_UnionInstanceMember(const ASR::UnionInstanceMember_t&) { scope_free = false; }
+    void visit_EnumType(const ASR::EnumType_t&) { scope_free = false; }
+};
+
+static inline bool is_scope_free_expr(ASR::expr_t* x) {
+    ScopeFreeExprVisitor v;
+    v.visit_expr(*x);
+    return v.scope_free;
+}
+
+// A procedure type records only the array bounds of a dummy argument that
+// are scope free. The others are dropped here, keeping the physical type,
+// from a type `t` the caller owns: they are taken from the interface where
+// they are needed.
+static inline void make_array_bounds_scope_free(ASR::ttype_t* t) {
+    t = type_get_past_allocatable_pointer(t);
+    if (!ASR::is_a<ASR::Array_t>(*t)) return;
+    ASR::Array_t* a = ASR::down_cast<ASR::Array_t>(t);
+    auto scope_free = [](ASR::expr_t* bound) -> ASR::expr_t* {
+        if (bound == nullptr || is_scope_free_expr(bound)) return bound;
+        ASR::expr_t* value = expr_value(bound);
+        return (value && is_scope_free_expr(value)) ? value : nullptr;
+    };
+    for (size_t i = 0; i < a->n_dims; i++) {
+        a->m_dims[i].m_start = scope_free(a->m_dims[i].m_start);
+        a->m_dims[i].m_length = scope_free(a->m_dims[i].m_length);
+    }
+}
+
 class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithFunctionParamVisitor> {
 
     private:
@@ -7253,7 +7298,7 @@ class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithF
 
         if( idx_found ) {
             LCOMPILERS_ASSERT(current_expr);
-            ASR::ttype_t* t_ = replace_args_with_FunctionParam(
+            ASR::ttype_t* t_ = replace_arg_type_with_FunctionParam(
                                 ASRUtils::symbol_type(x->m_v), current_scope);
             *current_expr = ASRUtils::EXPR(ASR::make_FunctionParam_t(
                                 al, m_args[arg_idx]->base.loc, arg_idx,
@@ -7278,6 +7323,14 @@ class ReplaceWithFunctionParamVisitor: public ASR::BaseExprReplacer<ReplaceWithF
         return t;
     }
 
+    // The type of a dummy argument in a procedure type.
+    ASR::ttype_t* replace_arg_type_with_FunctionParam(ASR::ttype_t* t,
+            SymbolTable* current_scope) {
+        t = replace_args_with_FunctionParam(t, current_scope);
+        make_array_bounds_scope_free(t);
+        return t;
+    }
+
 };
 
 inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
@@ -7293,7 +7346,7 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
     for( size_t i = 0; i < n_args; i++ ) {
         // We need to substitute all direct argument variable references with
         // FunctionParam.
-        ASR::ttype_t *t = replacer.replace_args_with_FunctionParam(
+        ASR::ttype_t *t = replacer.replace_arg_type_with_FunctionParam(
                             expr_type(a_args[i]), current_scope);
         arg_types.push_back(al, t);
     }
@@ -7603,11 +7656,13 @@ class SymbolDuplicator {
     // The same holds for a variable of a scope nested in the copy (a BLOCK,
     // ASSOCIATE or contained procedure) declared by a symbol of any
     // enclosing copied scope. Such a variable also reads the copies of the
-    // variables of the enclosing copied scopes in its type and values, such
-    // as the extent `n` of `real :: w(n)` in a BLOCK of a routine with the
-    // dummy argument `n`: a nested scope is copied before the variables of
-    // its enclosing scope may exist, so remap_local_references, which
-    // resolves names in the variable's own scope, cannot do it.
+    // variables, and calls the copies of the functions, of the enclosing
+    // copied scopes in its type and values, such as the extent `n` of
+    // `real :: w(n)` in a BLOCK of a routine with the dummy argument `n`, or
+    // the extent getter of `real :: x(n)` with a use-associated `n` in an
+    // interface body: a nested scope is copied before the symbols of its
+    // enclosing scope may exist, so remap_local_references, which resolves
+    // names in the variable's own scope, cannot do it.
     void fixup_local_type_declarations(SymbolTable *new_scope,
             SymbolTable *orig_scope) {
         std::vector<std::pair<SymbolTable*, SymbolTable*>> copied_scopes;
@@ -7622,17 +7677,28 @@ class SymbolDuplicator {
             const std::vector<std::pair<SymbolTable*, SymbolTable*>> &scopes;
             RetargetToCopies(const std::vector<std::pair<SymbolTable*,
                     SymbolTable*>> &scopes) : scopes(scopes) {}
-            void visit_Var(const ASR::Var_t &x) {
-                SymbolTable *parent = ASRUtils::symbol_parent_symtab(x.m_v);
+            void retarget(ASR::symbol_t *&sym) {
+                SymbolTable *parent = ASRUtils::symbol_parent_symtab(sym);
                 for (auto &s : scopes) {
                     if (parent != s.first) continue;
                     ASR::symbol_t *copy = s.second->get_symbol(
-                        ASRUtils::symbol_name(x.m_v));
-                    if (copy != nullptr && copy->type == x.m_v->type) {
-                        const_cast<ASR::Var_t&>(x).m_v = copy;
+                        ASRUtils::symbol_name(sym));
+                    if (copy != nullptr && copy->type == sym->type) {
+                        sym = copy;
                     }
                     return;
                 }
+            }
+            void visit_Var(const ASR::Var_t &x) {
+                retarget(const_cast<ASR::Var_t&>(x).m_v);
+            }
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                ASR::FunctionCall_t &call = const_cast<ASR::FunctionCall_t&>(x);
+                retarget(call.m_name);
+                if (call.m_original_name != nullptr) {
+                    retarget(call.m_original_name);
+                }
+                ASR::BaseWalkVisitor<RetargetToCopies>::visit_FunctionCall(x);
             }
         };
         copied_scopes.push_back({orig_scope, new_scope});
@@ -10029,6 +10095,66 @@ inline bool is_stringToArray_cast_needed(ASR::ttype_t* const argument_ty, ASR::t
 
 ASR::Cast_t* cast_string_to_array(Allocator &al, ASR::expr_t* const string_expr, ASR::ttype_t* const array_type);
 
+// Sets `dims` to the bounds `dummy_dims` of a dummy argument of `func` as
+// seen from `scope` at a call with `args`: the dummy arguments are replaced
+// by the actual arguments and the module procedures called are imported.
+// Returns false if a bound is missing or references a symbol that cannot be
+// named from `scope`.
+static inline bool call_site_dummy_dims(Allocator &al, ASR::Function_t* func,
+        ASR::call_arg_t* args, size_t n_args, ASR::dimension_t* dummy_dims,
+        Vec<ASR::dimension_t>& dims, const Location &loc, SymbolTable* scope,
+        SetChar& function_dependencies) {
+    Vec<ASR::call_arg_t> args_vec;
+    args_vec.from_pointer_n(args, n_args);
+    SetChar module_dependencies;
+    module_dependencies.reserve(al, 1);
+    ReplaceArgVisitor arg_replacer(al, scope, func, args_vec,
+        function_dependencies, module_dependencies);
+    CheckSymbolReplacer checker(al, scope, function_dependencies);
+    ExprStmtDuplicator duplicator(al);
+    duplicator.allow_procedure_calls = true;
+    auto at_call_site = [&](ASR::expr_t* bound) -> ASR::expr_t* {
+        if (bound == nullptr) return nullptr;
+        duplicator.success = true;
+        ASR::expr_t* copy = duplicator.duplicate_expr(bound);
+        arg_replacer.current_expr = &copy;
+        arg_replacer.replace_expr(copy);
+        // The actual arguments are shared with the call.
+        copy = duplicator.duplicate_expr(copy);
+        LCOMPILERS_ASSERT(duplicator.success);
+        return copy;
+    };
+    for (size_t i = 0; i < dims.size(); i++) {
+        dims.p[i].loc = loc;
+        dims.p[i].m_start = at_call_site(dummy_dims[i].m_start);
+        dims.p[i].m_length = at_call_site(dummy_dims[i].m_length);
+        if (!checker.check_and_update_symbols(dims.p[i].m_length) ||
+                !checker.check_and_update_symbols(dims.p[i].m_start)) {
+            return false;
+        }
+    }
+    // A module calling a procedure of another module depends on it.
+    SymbolTable* s = scope;
+    while (s->parent != nullptr && !is_tu_scope(s) &&
+            !ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(s->asr_owner))) {
+        s = s->parent;
+    }
+    if (module_dependencies.size() > 0 && s->parent != nullptr && !is_tu_scope(s)) {
+        ASR::Module_t* m = ASR::down_cast2<ASR::Module_t>(s->asr_owner);
+        SetChar deps;
+        deps.from_pointer_n_copy(al, m->m_dependencies, m->n_dependencies);
+        for (size_t i = 0; i < module_dependencies.size(); i++) {
+            if (std::string(module_dependencies[i]) != m->m_name &&
+                    !LCompilers::present(deps, module_dependencies[i])) {
+                deps.push_back(al, module_dependencies[i]);
+            }
+        }
+        m->m_dependencies = deps.p;
+        m->n_dependencies = deps.size();
+    }
+    return true;
+}
+
 static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt,
     bool implicit_argument_casting, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt) {
@@ -10309,44 +10435,29 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     // type is a proper Array, not a bare element type.
                     dimensions = &dimension_;
                 } else if (current_scope) {
-                      // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
-                      // Self is already in a_args (at the PASS position), so
-                      // FunctionParam indices align 1:1 with a_args indices.
-                      ReplaceFunctionParamWithArg r(al, a_args, n_args);
-                      SetChar temp_function_dependencies;
-                      CheckSymbolReplacer c(al, current_scope, temp_function_dependencies);
-    
-                      // 1. Initialize the caller's duplicator
-                      ASRUtils::ExprStmtDuplicator caller_dup(al);
-                      caller_dup.allow_procedure_calls = true;
-                      caller_dup.success = true;
-
-                      bool valid_symbols = true;
-                      for (size_t i = 0; i < dimension_.size(); i++) {
-                          dimension_.p[i].loc = arg->base.loc;
-        
-                          // 2. Safely extract the replaced memory (optimized or mutated)
-                          ASR::expr_t* replaced_length = r.replace_FunctionParam_with_arg(dimension_[i].m_length);
-                          ASR::expr_t* replaced_start = r.replace_FunctionParam_with_arg(dimension_[i].m_start);
-        
-                          // 3. Caller takes responsibility for duplication to prevent the DAG crash
-                          dimension_.p[i].m_length = (replaced_length == dimension_.p[i].m_length) ? caller_dup.duplicate_expr(replaced_length) : replaced_length;
-                          dimension_.p[i].m_start = (replaced_start == dimension_.p[i].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
-                          valid_symbols = c.check_and_update_symbols(dimension_[i].m_length) && c.check_and_update_symbols(dimension_[i].m_start);
-
-                          if (!valid_symbols) {
-                            break;
-                          }
-                        }
-                          // If the symbols are valid then include the dimension in ArrayPhysicalCast
-                       if (valid_symbols) {
-                          dimensions = &dimension_;
-                           if (current_function_dependencies.has_value()) {
+                    // The procedure type does not record the extents that
+                    // depend on a scope, so they are taken from the dummy.
+                    // Self is already in a_args (at the PASS position), so
+                    // the dummy arguments align 1:1 with a_args.
+                    ASR::dimension_t* dummy_dims = nullptr;
+                    size_t dummy_n_dims = 0;
+                    if (i < func->n_args && ASR::is_a<ASR::Var_t>(*func->m_args[i])) {
+                        dummy_n_dims = extract_dimensions_from_ttype(expr_type(
+                            func->m_args[i]), dummy_dims);
+                    }
+                    SetChar temp_function_dependencies;
+                    temp_function_dependencies.reserve(al, 1);
+                    if (dummy_n_dims == dimension_.size() &&
+                            call_site_dummy_dims(al, func, a_args, n_args,
+                                dummy_dims, dimension_, arg->base.loc,
+                                current_scope, temp_function_dependencies)) {
+                        dimensions = &dimension_;
+                        if (current_function_dependencies.has_value()) {
                             for (size_t j = 0; j < temp_function_dependencies.n; j++) {
                                 current_function_dependencies->get().push_back(al, temp_function_dependencies[j]);
                             }
-                          }
-                        } else {
+                        }
+                    } else {
                         dimensions = nullptr;
                     }
                 }
