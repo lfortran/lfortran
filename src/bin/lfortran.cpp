@@ -732,7 +732,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (result.ok) {
+    if (result.ok && !diagnostics.has_error()) {
         asr = result.result;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1187,7 +1187,9 @@ int handle_mlir(const std::string &infile,
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (result.ok) {
+    // With --continue-compilation, the ASR is returned despite errors; no
+    // object file may be written from it.
+    if (result.ok && (emit_mlir || emit_llvm || !diagnostics.has_error())) {
         asr = result.result;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
