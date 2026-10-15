@@ -5612,6 +5612,29 @@ int str_compare(char *s1, int64_t s1_len, char *s2, int64_t s2_len){
     return 0;
 }
 
+/* Same as str_compare, but for character(kind=4): lengths are in characters
+   and every character is a 32-bit code point. */
+int str_compare_ucs4(int32_t *s1, int64_t s1_len, int32_t *s2, int64_t s2_len){
+    int64_t lim = MIN(s1_len, s2_len);
+    int64_t i;
+    for (i = 0; i < lim; i++) {
+        if (s1[i] != s2[i]) {
+            return ((uint32_t)s1[i] < (uint32_t)s2[i]) ? -1 : 1;
+        }
+    }
+    for (i = lim; i < s1_len; i++) {
+        if (s1[i] != (int32_t)' ') {
+            return ((uint32_t)s1[i] < (uint32_t)' ') ? -1 : 1;
+        }
+    }
+    for (i = lim; i < s2_len; i++) {
+        if (s2[i] != (int32_t)' ') {
+            return ((uint32_t)' ' < (uint32_t)s2[i]) ? -1 : 1;
+        }
+    }
+    return 0;
+}
+
 LFORTRAN_API char* _lfortran_float_to_str4_alloc(lfortran_allocator_t* al, float num)
 {
     char* res = (char*)ALLOCATOR_ALLOC(al, 40);
