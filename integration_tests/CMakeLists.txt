@@ -5573,6 +5573,7 @@ RUN(NAME proc_ptr_34 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implici
 RUN(NAME proc_ptr_35 LABELS gfortran llvm)
 RUN(NAME proc_ptr_36 LABELS llvm) # gfortran 13 at CI rejects procedure targets in initializer structure constructors
 RUN(NAME proc_ptr_37 LABELS gfortran llvm)
+RUN(NAME proc_ptr_38 LABELS gfortran llvm)
 RUN(NAME proc_ptr_39 LABELS gfortran llvm)
 RUN(NAME proc_ptr_40 LABELS gfortran llvm) # interface result length calls a function use associated only in the interface (#15004)
 RUN(NAME proc_ptr_nopass_02 LABELS gfortran llvm)
