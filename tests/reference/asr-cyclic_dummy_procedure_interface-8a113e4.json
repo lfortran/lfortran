@@ -1,0 +1,13 @@
+{
+    "basename": "asr-cyclic_dummy_procedure_interface-8a113e4",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/cyclic_dummy_procedure_interface.f90",
+    "infile_hash": "8000ce7d3b292d64bbeccc01f471dac316a059ef75b49cc511739e89",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-cyclic_dummy_procedure_interface-8a113e4.stderr",
+    "stderr_hash": "de805acdcab691343de44b31b70db5144184e4b2c4833568220bb42a",
+    "returncode": 1
+}

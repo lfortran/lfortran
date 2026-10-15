@@ -3080,3 +3080,50 @@ contains
         r => null()
     end function cc1_cpi_result_self
 end module cc1_cyclic_procedure_interfaces
+
+! Later uses of procedures with an interface that depends on its own
+! characteristics are checked after the interface is reported.
+module cc1_cyclic_procedure_interface_uses
+use cc1_cyclic_procedure_interfaces, only: cc1_cpi_a, cc1_cpi_result_a
+implicit none
+type :: cc1_cpu_holder
+    procedure(cc1_cpu_f), pointer, nopass :: pf => null()
+end type cc1_cpu_holder
+interface cc1_cpu_generic
+    procedure cc1_cpu_f
+end interface cc1_cpu_generic
+contains
+    subroutine cc1_cpu_f(g)
+        procedure(cc1_cpu_h) :: g
+        procedure(cc1_cpu_h), pointer :: q
+        q => g
+    end subroutine cc1_cpu_f
+
+    subroutine cc1_cpu_h(k)
+        procedure(cc1_cpu_f) :: k  ! {Error} interface 'cc1_cpu_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    end subroutine cc1_cpu_h
+
+    integer function cc1_cpu_fn_f(g)
+        procedure(cc1_cpu_fn_h) :: g
+        cc1_cpu_fn_f = 1
+    end function cc1_cpu_fn_f
+
+    integer function cc1_cpu_fn_h(k)
+        procedure(cc1_cpu_fn_f) :: k  ! {Error} interface 'cc1_cpu_fn_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        cc1_cpu_fn_h = k() + 1
+    end function cc1_cpu_fn_h
+
+    subroutine cc1_cpu_uses()
+        procedure(cc1_cpu_f), pointer :: pp
+        procedure(cc1_cpi_a), pointer :: pa
+        procedure(cc1_cpi_result_a), pointer :: pr
+        type(cc1_cpu_holder) :: p
+        integer :: i
+        pp => cc1_cpu_f
+        p%pf => cc1_cpu_f
+        pa => cc1_cpi_a
+        pr => cc1_cpi_result_a
+        call cc1_cpu_generic(cc1_cpu_h)
+        i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+    end subroutine cc1_cpu_uses
+end module cc1_cyclic_procedure_interface_uses

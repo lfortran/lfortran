@@ -5341,6 +5341,108 @@ public:
         c.cyclic_interface = true;
     }
 
+    // Returns whether `type` refers to other entities, such as dummies of
+    // the procedure declaring an entity of that type.
+    bool type_has_dependencies(ASR::ttype_t *type) {
+        SetChar dependencies;
+        dependencies.reserve(al, 1);
+        ASRUtils::collect_variable_dependencies(al, dependencies, type);
+        return dependencies.size() > 0;
+    }
+
+    // Declares in `scope` the result of `iface`, a procedure whose interface
+    // depends on its own characteristics, and returns it, or returns null
+    // if `iface` is a subroutine or its result cannot be declared without
+    // `iface`. A procedure pointer result, whose interface can lead back to
+    // `iface`, points to an interface without dummy arguments or result. An
+    // array result whose bounds depend on other entities, such as dummies
+    // of `iface`, is declared allocatable, and a result whose type
+    // parameters do is not declared.
+    ASR::expr_t *declare_result_of_cyclic_interface(ASR::Function_t *iface,
+            SymbolTable *scope) {
+        ASR::Variable_t *result = ASRUtils::expr_to_variable_or_null(
+            iface->m_return_var);
+        if (result == nullptr) {
+            return nullptr;
+        }
+        const Location &loc = result->base.base.loc;
+        ASR::ttype_t *type;
+        ASR::symbol_t *type_declaration;
+        if (ASR::is_a<ASR::FunctionType_t>(
+                *ASRUtils::extract_type(result->m_type))) {
+            if (!ASR::is_a<ASR::Pointer_t>(*result->m_type)) {
+                return nullptr;
+            }
+            type_declaration = declare_unknown_interface(iface, scope, false);
+            type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
+                ASR::down_cast<ASR::Function_t>(
+                    type_declaration)->m_function_signature));
+        } else {
+            type = ASRUtils::ExprStmtDuplicator(al).duplicate_ttype(
+                result->m_type);
+            if (type_has_dependencies(type)) {
+                if (!ASR::is_a<ASR::Array_t>(*type) || type_has_dependencies(
+                        ASR::down_cast<ASR::Array_t>(type)->m_type)) {
+                    return nullptr;
+                }
+                type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al,
+                    loc, type));
+            }
+            type_declaration = ASRUtils::import_type_declaration(al,
+                result->m_type_declaration, scope);
+            if (type_declaration != nullptr
+                    && !ASRUtils::is_named_from(type_declaration, scope)) {
+                return nullptr;
+            }
+        }
+        ASR::symbol_t *declared = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Variable_t_util(al, loc, scope, result->m_name,
+                nullptr, 0, ASR::intentType::ReturnVar, nullptr, nullptr,
+                result->m_storage, type, type_declaration, result->m_abi,
+                result->m_access, result->m_presence, result->m_value_attr));
+        scope->add_symbol(result->m_name, declared);
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, declared));
+    }
+
+    // Declares in `scope` an interface without dummy arguments standing for
+    // `iface`, a procedure whose interface depends on its own
+    // characteristics, and returns it. With `keep_result`, it keeps the
+    // result of `iface` where possible, see
+    // `declare_result_of_cyclic_interface()`.
+    ASR::symbol_t *declare_unknown_interface(ASR::Function_t *iface,
+            SymbolTable *scope, bool keep_result) {
+        SymbolTable *iface_scope = al.make_new<SymbolTable>(scope);
+        std::string name = scope->get_unique_name(
+            generated_symbol_name(iface->m_name, "unknown_interface"), false);
+        ASR::symbol_t *decl = ASR::down_cast<ASR::symbol_t>(
+            ASRUtils::make_Function_t_util(al, iface->base.base.loc,
+                iface_scope, s2c(al, name), nullptr, 0, nullptr, 0, nullptr, 0,
+                keep_result
+                    ? declare_result_of_cyclic_interface(iface, iface_scope)
+                    : nullptr,
+                ASR::abiType::Source, ASR::accessType::Private,
+                ASR::deftypeType::Interface, nullptr, false, false, false,
+                false, false, nullptr, 0, false, false, false));
+        scope->add_symbol(name, decl);
+        return decl;
+    }
+
+    // Makes `var`, a dummy procedure or procedure pointer result reported
+    // for an interface `iface` that depends on its own characteristics,
+    // declare its type with an interface without dummy arguments, as a
+    // procedure declared with an undefined interface does, and returns its
+    // type. Its type then names no procedure leading back to `var`, so it
+    // agrees with the procedure naming it wherever they are compared. The
+    // interface keeps the result of `iface` where possible, so that `var`
+    // is still referenced as a function.
+    ASR::ttype_t *declare_unknown_interface(ASR::Variable_t *var,
+            ASR::Function_t *iface) {
+        var->m_type_declaration = declare_unknown_interface(iface,
+            var->m_parent_symtab, true);
+        return ASR::down_cast<ASR::Function_t>(
+            var->m_type_declaration)->m_function_signature;
+    }
+
     // Makes `var`, a procedure pointer or dummy procedure whose interface
     // includes that of a replaced placeholder, take the completed
     // interface of the procedure it is declared with, imported into the
@@ -5362,11 +5464,7 @@ public:
         ASR::ttype_t *real_func_type;
         if (c.procedures_in_progress.count(iface) > 0) {
             report_cyclic_interface(var, iface, c);
-            // `var` keeps its incomplete interface, copied so that it does
-            // not share the signature of `iface`, which is still being
-            // completed, and so cannot make the types cyclic.
-            real_func_type = ASRUtils::ExprStmtDuplicator(al).duplicate_ttype(
-                ASRUtils::type_get_past_pointer(var->m_type));
+            real_func_type = declare_unknown_interface(var, iface);
         } else {
             c.declarations_in_progress.push_back(var);
             complete_procedure_signature(iface, c);

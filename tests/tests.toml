@@ -5652,6 +5652,7 @@ asr = true
 [[test]]
 filename = "errors/cyclic_dummy_procedure_interface.f90"
 asr = true
+semantics_only_cc = true
 
 [[test]]
 filename = "errors/template_deferred_interface_procedure.f90"
