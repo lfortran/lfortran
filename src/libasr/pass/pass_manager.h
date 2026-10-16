@@ -69,6 +69,7 @@
 #include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/gpu_launch_sync.h>
 #include <libasr/pass/gpu_array_statements.h>
+#include <libasr/pass/dead_array_store.h>
 #include <libasr/pass/gpu_memory_space.h>
 #include <libasr/pass/gpu_device_workspace.h>
 #include <libasr/pass/gpu_struct_component_args.h>
@@ -137,6 +138,7 @@ namespace LCompilers {
             {"openmp", &pass_replace_openmp},
             {"parallel_canonicalize", &pass_parallel_canonicalize},
             {"parallel_dispatch", &pass_parallel_dispatch},
+            {"dead_array_store", &pass_dead_array_store},
             {"gpu_array_statements", &pass_gpu_array_statements},
             {"omp_region_flatten", &pass_flatten_omp_regions},
             {"gpu_offload", &pass_replace_gpu_offload},
@@ -299,6 +301,9 @@ namespace LCompilers {
                 // region.
                 "parallel_canonicalize",
                 "parallel_dispatch",
+                // A whole-array assignment that is assigned again before
+                // anything reads it goes, before it can cost a launch.
+                "dead_array_store",
                 // A whole-array assignment in a host loop that launches
                 // kernels, on the data they use, runs on the device too.
                 "gpu_array_statements",

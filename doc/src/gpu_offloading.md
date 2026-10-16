@@ -764,6 +764,10 @@ An assignment is sent to the device when all of this holds:
 The host still evaluates the bounds of the loop (`size`, `lbound`), which
 read only the shape of the arrays.
 
+An assignment whose every element is assigned again before anything reads it
+(`dcdw = 0.` followed by `dcdw = sum(reduce_dcdw, dim=4)`) is removed before
+this, by the `dead_array_store` pass, so it costs no launch at all.
+
 ### Deliberate relaxations
 
 Two relaxations are deliberate. A pure procedure the host calls while a

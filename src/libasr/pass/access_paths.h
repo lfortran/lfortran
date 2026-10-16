@@ -592,6 +592,57 @@ public:
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         call(x.m_name, x.m_args, x.n_args, x.m_dt);
     }
+
+    // A namelist input/output statement accesses every variable of the
+    // group, which it does not name.
+    void namelist(ASR::symbol_t *nml) {
+        if (nml == nullptr) return;
+        nml = ASRUtils::symbol_get_past_external(nml);
+        if (!ASR::is_a<ASR::Namelist_t>(*nml)) {
+            acc.everything = true;
+            return;
+        }
+        ASR::Namelist_t *group = ASR::down_cast<ASR::Namelist_t>(nml);
+        for (size_t i = 0; i < group->n_var_list; i++) {
+            ASR::symbol_t *v = ASRUtils::symbol_get_past_external(
+                group->m_var_list[i]);
+            Path p;
+            p.root = v;
+            acc.paths.push_back(p);
+            if (is_pointer_variable(v)) acc.globals = true;
+        }
+    }
+    void visit_FileRead(const ASR::FileRead_t &x) {
+        namelist(x.m_nml);
+        BaseWalkVisitor::visit_FileRead(x);
+    }
+    void visit_FileWrite(const ASR::FileWrite_t &x) {
+        namelist(x.m_nml);
+        BaseWalkVisitor::visit_FileWrite(x);
+    }
+
+    // A `block` or `associate` construct accesses what the declarations of
+    // its locals evaluate on entry, and what its body does.
+    void declarations(SymbolTable *scope) {
+        for (auto &item : scope->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+            visit_ttype(*v->m_type);
+            if (v->m_symbolic_value) visit_expr(*v->m_symbolic_value);
+        }
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(
+            ASRUtils::symbol_get_past_external(x.m_m));
+        declarations(b->m_symtab);
+        for (size_t i = 0; i < b->n_body; i++) visit_stmt(*b->m_body[i]);
+    }
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::AssociateBlock_t *b = ASR::down_cast<ASR::AssociateBlock_t>(
+            ASRUtils::symbol_get_past_external(x.m_m));
+        declarations(b->m_symtab);
+        for (size_t i = 0; i < b->n_body; i++) visit_stmt(*b->m_body[i]);
+    }
 };
 
 inline Accesses expression_accesses(ASR::expr_t *e, SymbolTable *routine,
