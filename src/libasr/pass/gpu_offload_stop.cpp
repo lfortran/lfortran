@@ -567,11 +567,31 @@ GpuDecline gpu_lower_device_stops(Allocator &al, const Location &loc,
             kernel.m_symtab->get_unique_name("__gpu_stop_code"), int4);
     }
     lowering.lower_kernel(kernel, site, code);
-    if (site != nullptr) {
+    {
+        // A launch does not wait for the kernel, and the host reads the
+        // buffer only when it next waits (see gpu_launch_sync.cpp), so a
+        // later launch of the kernel can start after an earlier one
+        // stopped. The program has ended at that stop: the later launch
+        // runs nothing, and leaves the site and code the stop recorded.
+        Vec<ASR::array_index_t> first;
+        first.reserve(al, 1);
+        ASR::array_index_t ai;
+        ai.loc = loc;
+        ai.m_left = nullptr;
+        ai.m_right = b.i32(1);
+        ai.m_step = nullptr;
+        first.push_back(al, ai);
+        ASR::expr_t *recorded = ASRUtils::EXPR(ASR::make_ArrayItem_t(al,
+            loc, b.Var(status), first.p, first.n, int4,
+            ASR::arraystorageType::ColMajor, nullptr, false));
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, kernel.n_body + 2);
-        body.push_back(al, b.Assignment(b.Var(site), b.i32(0)));
-        body.push_back(al, b.Assignment(b.Var(code), b.i32(0)));
+        body.reserve(al, kernel.n_body + 3);
+        body.push_back(al, b.If(b.NotEq(recorded, b.i32(0)),
+            {ASRUtils::STMT(ASR::make_Return_t(al, loc))}, {}));
+        if (site != nullptr) {
+            body.push_back(al, b.Assignment(b.Var(site), b.i32(0)));
+            body.push_back(al, b.Assignment(b.Var(code), b.i32(0)));
+        }
         for (size_t i = 0; i < kernel.n_body; i++) {
             body.push_back(al, kernel.m_body[i]);
         }
@@ -583,8 +603,9 @@ GpuDecline gpu_lower_device_stops(Allocator &al, const Location &loc,
     ASR::down_cast<ASR::Variable_t>(status)->m_type =
         status_type(al, loc, n_sites + 1, true);
 
-    // The host side: the status is cleared before the launch, and the
-    // statement a thread recorded is run after it.
+    // The host side: the statement a thread recorded is run once the host
+    // has waited for the launch. The status is cleared once, on entry to
+    // the procedure that launches the kernel (see gpu_launch_sync.cpp).
     stops.host_status = gpu_new_variable(al, loc, host_scope,
         host_scope->get_unique_name("__gpu_stop_status"),
         status_type(al, loc, n_sites + 1, true));
@@ -601,7 +622,6 @@ GpuDecline gpu_lower_device_stops(Allocator &al, const Location &loc,
             b.Var(stops.host_status), args.p, args.n, int4,
             ASR::arraystorageType::ColMajor, nullptr, false));
     };
-    stops.before_launch.push_back(b.Assignment(host_item(1), b.i32(0)));
 
     ASR::stmt_t *replay = nullptr;
     for (int64_t k = n_sites; k >= 1; k--) {

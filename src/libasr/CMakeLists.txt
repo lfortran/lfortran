@@ -120,6 +120,7 @@ set(SRC
     pass/gpu_kernel_plan.cpp
     pass/gpu_data_layout.cpp
     pass/device_launch_expand.cpp
+    pass/gpu_launch_sync.cpp
     pass/gpu_memory_space.cpp
     pass/gpu_device_workspace.cpp
     pass/gpu_struct_component_args.cpp

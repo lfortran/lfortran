@@ -30,6 +30,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* __gpu_heap_view___libasr_created__function_call_ramp;
     int i;
     const int m = 8;
+    if ((__gpu_stop_status[((int)(1) - (1))] != 0)) {
+        return;
+    }
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }

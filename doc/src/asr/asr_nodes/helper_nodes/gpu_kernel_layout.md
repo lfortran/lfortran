@@ -11,7 +11,7 @@ gpu_kernel_layout = (gpu_kernel_argument* buffers, gpu_kernel_argument* scalars,
     gpu_workspace* workspaces, bool packed, int source_argument_count,
     symbol* device_functions)
 gpu_kernel_argument = (symbol variable, symbol? member, ttype type,
-    gpu_argument_kind kind, int argument_index, int dimension)
+    gpu_argument_kind kind, int argument_index, int dimension, bool written)
 gpu_workspace = (symbol variable, gpu_workspace_dimension* dims,
     int buffer_index, int element_size)
 gpu_workspace_dimension = (expr extent, symbol? parameter)
@@ -23,7 +23,11 @@ gpu_workspace_dimension = (expr extent, symbol? parameter)
 dummy by symbol and argument position. A decomposed derived-type component
 also names its member symbol. `type` is the explicit scalar or buffer element
 type. `dimension` identifies an array dimension or a packed-buffer offset,
-according to the entry's role.
+according to the entry's role. `written` says whether the kernel may write a
+buffer: it is false only when every reference of the kernel to the dummy
+only reads it. The runtime keeps a buffer the kernel may write on the
+device after the launch, and copies one it only reads when the launch is
+made (see [GPU offloading](../../../gpu_offloading.md)).
 
 A workspace names a distinct local array, even when another scope declares
 an array with the same name. Its slot follows the argument bindings and its

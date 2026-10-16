@@ -404,7 +404,7 @@ generates the device source. It never falls back to the CPU:
 
 Every launch of a kernel that reaches a `stop` or `error stop` is given a
 small status buffer, an extra argument of the kernel, which the host clears
-before the launch. The offload pass numbers each such statement (its site)
+once, on entry to the procedure that launches it. The offload pass numbers each such statement (its site)
 and rewrites it, in ASR, before any backend sees it:
 
 * In the kernel, the statement records its stop code, when it has an integer
@@ -420,10 +420,15 @@ and rewrites it, in ASR, before any backend sees it:
   the limits of a `do` loop is tested at the start of each body as well, so
   no body runs with the value a stopped call returned. (The rest of the
   statement that made the call does run with that value.)
-* After the launch the host reads the buffer, and if a site is recorded it
-  runs that same statement on the host, with the recorded stop code. The
-  program therefore prints what it prints on the CPU (`ERROR STOP 42`,
-  `ERROR STOP evaluate: unknown activation`) and ends with the same status.
+* When the host next waits for the launch (see
+  [Asynchronous launches and data residency](#asynchronous-launches-and-data-residency))
+  it reads the buffer, and if a site is recorded it runs that same statement
+  on the host, with the recorded stop code. The program therefore prints
+  what it prints on the CPU (`ERROR STOP 42`, `ERROR STOP evaluate: unknown
+  activation`) and ends with the same status.
+* A kernel that finds a site already recorded, by an earlier launch of it the
+  host has not waited for yet, returns at once: the program has ended at that
+  stop, and the first launch that stopped is the one reported.
 
 The code is written before the site, and only by a thread that reached that
 site, so whichever thread's site the host reads, the code next to it was
@@ -589,6 +594,105 @@ host hands over, and it is never on the heap. Where it meets heap values:
   image, which the record holds; before, it is copied in from the buffers
   the host handed over. (`outs(i) = f(ins(i))` after `ins(i) = g(...)` in
   one iteration reads the new `ins(i)`.)
+
+## Asynchronous launches and data residency
+
+A launch does not wait for its kernel, and the data a kernel writes stays on
+the device until the host needs it. The host waits only where a host
+statement needs what a kernel wrote, so a host loop that launches kernels
+over and over (a training loop) runs without waiting for the device in
+every iteration. The decisions are made in ASR, by the passes below; the
+runtimes only act on what the compiler tells them.
+
+### What the runtime does
+
+Every buffer argument of a launch is handed to the runtime with how the
+kernel uses it, which `gpu_kernel_finalize` records in the kernel's layout
+(`gpu_kernel_argument.written`): a buffer is *read-only* when every
+reference of the kernel to it only reads it -- an operand, a subscript, the
+value of an assignment, an inquiry about its shape, an actual argument of
+an `intent(in)` dummy -- and *written* otherwise.
+
+* The host bytes of a read-only buffer are copied when the launch is made,
+  so the host may change or free them right after the launch.
+* A written buffer is *resident*: the runtime keeps a device buffer for its
+  host range in a table. When the device does not hold newer values than the
+  host (the entry is not *dirty*), the host bytes are copied in; after the
+  launch the entry is dirty. A later launch handed the same range -- to read
+  or to write -- uses the same device buffer, without copying anything.
+* `lfortran_gpu_sync` waits for every launch, copies every dirty entry back
+  to the host, and marks it clean.
+* `lfortran_gpu_discard` forgets the dirty entries of a host range that is
+  about to be freed, without copying anything back.
+* A range that overlaps a dirty one without being the same range makes the
+  runtime wait first, so that the bytes it copies are current.
+* The runtime never writes a device buffer that a pending launch may still
+  use: a copy into a resident buffer that is still in use goes into a fresh
+  buffer, and pooled buffers are reused once the launches that used them
+  have completed. A scratch buffer -- a run-time sized local of the kernel
+  (a workspace), an arena of the device heap -- is only on the device.
+
+On the CPU emulation (`--gpu=cuda_cpu`) a launch runs the kernel on the
+host's memory before it returns, so there is never anything to copy or wait
+for. The CUDA runtime keeps the same table and orders copies and launches
+on one stream. The Metal runtime commits one command buffer per launch.
+
+### Where the host waits
+
+The `gpu_launch_sync` pass, which runs just before `device_launch_expand`,
+places the `GpuSync` statements. In each procedure that launches a kernel it
+follows the statements in order -- through `if`, `select case`, `block`,
+`associate`, `exit` and `cycle`, and to a fixed point through loops -- and
+keeps what pending launches may write and which of them may have recorded a
+stop. It waits:
+
+* before a host statement that may read or write, allocate or reallocate
+  storage a pending launch may write. Storage that a launch only reads needs
+  no wait;
+* before a statement that acts outside the program -- input/output, `stop`,
+  or a call to a procedure that is not pure and whose body may do
+  input/output or stop -- while a launch that may have recorded a stop is
+  pending, so that the stop the kernel recorded ends the program first;
+* before a launch of a kernel that can stop while a launch of another such
+  kernel is pending, so that the stop reported is the first one;
+* before `return`, `goto` and the end of the procedure while any launch is
+  pending;
+* before any statement it does not know.
+
+A wait in a loop that launches nothing is placed before the loop instead.
+After every `GpuSync` the pass runs the stop replay of each launch that may
+be pending there (`GpuKernelLaunch.stop_replay`), in launch order.
+
+Storage that a pending launch writes and the host frees is not waited for:
+a local of a `block` at the end of the block, or where `exit` or `cycle`
+leaves it, and an array the host deallocates, get a `GpuDiscard` instead,
+since nothing can read those values any more.
+
+What a statement accesses is worked out over *access paths*: a variable and
+a chain of components (`workspace%dcdw`), whatever the subscripts. A pointer
+the procedure associates with one designator only -- an associate name, or a
+pointer the compiler creates for a section -- stands for it. Two paths
+overlap when one is a prefix of the other, except that a copy of only the
+bytes of a derived-type value itself (a polymorphic value the host copies
+for a launch) does not reach the data of its allocatable components. Asking
+about the shape of an array (`size`, `lbound`, `allocated`) does not access
+its elements. A call accesses its actual arguments, and may access every
+variable that a pointer may point to or that another procedure can reach (a
+module variable, a `target`); a call to a procedure contained in this one
+may access anything.
+
+The data the host copies for a launch itself -- a contiguous copy of a
+strided array, the components of an array of derived type, the arrays of a
+packed launch, the plain components of a polymorphic value -- are host
+accesses of the launch, and `device_launch_expand` waits after the launch
+itself before it copies any of them back.
+
+Two relaxations are deliberate. A pure procedure the host calls while a
+launch that may have recorded a stop is pending is not waited for, although
+it may itself `error stop`: when both stop, the program reports the
+procedure's stop. And an error of a kernel (a fault, the watchdog) is
+reported where the host next waits, and not at all when the program ends
+with a `stop` before that.
 
 ## Testing
 

@@ -155,7 +155,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         }
     }
 
-    // 7. Replace the region with GpuKernelLaunch + GpuSync
+    // 7. Replace the region with its GpuKernelLaunch
     // Collect all launch-related statements into a temporary Vec.
     // If any involved variable is optional, wrap them in a
     // present() guard so the host never reads a null descriptor.
@@ -310,10 +310,11 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             ASR::down_cast<ASR::symbol_t>(plan.kernel_func),
             grid_size, block_size_const,
             plan.call_args.p, plan.call_args.n, component_fit, nullptr,
-            0)));
+            0, nullptr, nullptr, 0)));
 
-    launch_stmts.push_back(al, ASRUtils::STMT(
-        ASR::make_GpuSync_t(al, loc)));
+    // The launch does not wait for the kernel. What follows reads what the
+    // kernel wrote, so the `gpu_launch_sync` pass puts the GpuSync that
+    // waits for it in front of it.
 
     // Put every gathered element the kernel wrote into back over the
     // original, before anything on the host can read it again.

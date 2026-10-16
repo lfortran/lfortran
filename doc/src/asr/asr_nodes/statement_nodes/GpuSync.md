@@ -21,7 +21,8 @@ None.
 ## Description
 
 **GpuSync** blocks the host until every kernel launched so far has completed,
-so results written by a kernel can be read afterwards.
+and the host has what they wrote, so results written by a kernel can be read
+afterwards. A launch keeps what its kernel writes on the device until then.
 
 ## Examples
 
@@ -37,4 +38,4 @@ It comes from this complete ASR text document:
 
 ## See Also
 
-[GpuKernelLaunch](GpuKernelLaunch.md), [exec_space](../enum_nodes/exec_space.md)
+[GpuKernelLaunch](GpuKernelLaunch.md), [GpuDiscard](GpuDiscard.md), [exec_space](../enum_nodes/exec_space.md)

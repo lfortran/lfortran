@@ -480,18 +480,8 @@ public:
 
     void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x);
 
-    void visit_GpuSync(const ASR::GpuSync_t &x) {
-        if (pending_after.empty()) return;
-        pass_result.reserve(al, pending_after.size() + 1);
-        pass_result.push_back(al, const_cast<ASR::stmt_t*>(
-            &x.base));
-        for (ASR::stmt_t *s : pending_after) pass_result.push_back(al, s);
-        pending_after.clear();
-    }
-
 private:
     DeviceHeap &heap;
-    std::vector<ASR::stmt_t*> pending_after;
     std::map<std::pair<ASR::Function_t*, Image*>, ASR::Function_t*>
         copy_out_routines;
     std::map<ASR::Function_t*, GpuDeviceStops> kernel_stops;
@@ -4396,43 +4386,60 @@ void HeapLaunches::visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
     // once; a copy of the procedure that launches it (pass_array_by_data
     // makes some) launches it again, with a status buffer of its own.
     GpuDeviceStops stops;
+    // The status buffer outlives every block the launch is in: the host
+    // reads it when it next waits, which can be after the block is left.
+    SymbolTable *procedure_scope = current_scope;
+    while (procedure_scope->parent != nullptr
+            && procedure_scope->asr_owner != nullptr
+            && ASR::is_a<ASR::symbol_t>(*procedure_scope->asr_owner)
+            && (ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(
+                    procedure_scope->asr_owner))
+                || ASR::is_a<ASR::AssociateBlock_t>(
+                    *ASR::down_cast<ASR::symbol_t>(
+                        procedure_scope->asr_owner)))) {
+        procedure_scope = procedure_scope->parent;
+    }
     auto lowered = kernel_stops.find(kernel);
     if (lowered == kernel_stops.end()) {
         GpuDecline decline = gpu_lower_device_stops(al, loc, *kernel,
-            current_scope, stops);
+            procedure_scope, stops);
         if (decline.declined()) heap.decline(kernel, loc, decline);
         kernel_stops[kernel] = stops;
     } else if (lowered->second.host_status != nullptr) {
         const GpuDeviceStops &first = lowered->second;
         ASR::Variable_t *status = ASR::down_cast<ASR::Variable_t>(
             first.host_status);
-        ASR::expr_t *mine = b.Variable(current_scope,
-            current_scope->get_unique_name("__gpu_stop_status", false),
+        ASR::expr_t *mine = b.Variable(procedure_scope,
+            procedure_scope->get_unique_name("__gpu_stop_status", false),
             ASRUtils::duplicate_type(al, status->m_type),
             ASR::intentType::Local);
         stops.host_status = ASR::down_cast<ASR::Var_t>(mine)->m_v;
         std::map<ASR::symbol_t*, ASR::symbol_t*> renamed = {
             {first.host_status, stops.host_status}};
-        for (ASR::stmt_t *x : first.before_launch) {
-            stops.before_launch.push_back(renamed_copy(x, renamed));
-        }
         for (ASR::stmt_t *x : first.after_launch) {
             stops.after_launch.push_back(renamed_copy(x, renamed));
         }
     }
+    Vec<ASR::stmt_t*> replay;
+    replay.reserve(al, stops.after_launch.size());
     if (stops.host_status != nullptr) {
         extra_args.push_back(ASRUtils::EXPR(ASR::make_Var_t(al, loc,
             stops.host_status)));
-        for (ASR::stmt_t *s : stops.before_launch) before.push_back(s);
-        // A thread that stopped ends the program here, as the statement
-        // it reached does on the host, before anything the kernel wrote
-        // is used.
-        for (ASR::stmt_t *s : stops.after_launch) after.push_back(s);
+        // A thread that stopped ends the program where the host next
+        // waits for the launch, as the statement it reached does on the
+        // host, before anything the kernel wrote is used.
+        for (ASR::stmt_t *s : stops.after_launch) replay.push_back(al, s);
     }
     for (ASR::stmt_t *s : copied_out) after.push_back(s);
     for (ASR::stmt_t *s : release) after.push_back(s);
 
     if (extra_args.empty() && before.empty() && after.empty()) return;
+    if (stops.host_status != nullptr) {
+        launch.m_stop_status = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+            stops.host_status));
+        launch.m_stop_replay = replay.p;
+        launch.n_stop_replay = replay.n;
+    }
     Vec<ASR::call_arg_t> args;
     args.reserve(al, launch.n_args + extra_args.size());
     for (size_t i = 0; i < launch.n_args; i++) {
@@ -4448,10 +4455,12 @@ void HeapLaunches::visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
     launch.n_args = args.n;
     launch.m_scratch = scratch_buffers.p;
     launch.n_scratch = scratch_buffers.n;
-    pass_result.reserve(al, before.size() + 1);
+    pass_result.reserve(al, before.size() + 1 + after.size());
     for (ASR::stmt_t *s : before) pass_result.push_back(al, s);
     pass_result.push_back(al, &launch.base);
-    pending_after = after;
+    // These read what the kernel wrote: the `gpu_launch_sync` pass waits
+    // for the launch in front of them.
+    for (ASR::stmt_t *s : after) pass_result.push_back(al, s);
 }
 
 void DeviceHeap::finalize(const std::vector<ASR::Function_t*> &kernels,

@@ -134,6 +134,8 @@
                   ]
                   :component_fit nil
                   :scratch []
+                  :stop_status nil
+                  :stop_replay []
                 )
                 (GpuSync)
               ]

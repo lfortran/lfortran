@@ -20,8 +20,8 @@
 namespace LCompilers {
 
 /*
-Expands the high level GpuKernelLaunch and GpuSync statements into explicit
-ASR that calls the `lfortran_gpu_*` runtime, so that the host side of a
+Expands the high level GpuKernelLaunch, GpuSync and GpuDiscard statements
+into explicit ASR that calls the `lfortran_gpu_*` runtime, so that the host side of a
 kernel launch is ordinary ASR: it shows up in --show-asr, every backend can
 lower it, and later passes can optimise it.
 
@@ -30,7 +30,8 @@ generators (asr_to_metal.cpp and asr_to_cuda.cpp) expect:
 
     ctx    = lfortran_gpu_init()
     kernel = lfortran_gpu_load_kernel(ctx, "<kernel name>", <name length>)
-    call lfortran_gpu_set_buffer_arg(kernel, 0, c_loc(a), size_in_bytes(a))
+    call lfortran_gpu_set_buffer_arg(kernel, 0, c_loc(a), size_in_bytes(a),
+                                     access)    ! does the kernel write `a`?
     ...
     scalars%x = x                       ! one struct holding every scalar
     call lfortran_gpu_set_scalar_arg(kernel, n, c_loc(scalars), sizeof(scalars))
@@ -38,6 +39,15 @@ generators (asr_to_metal.cpp and asr_to_cuda.cpp) expect:
     block = [block_size, 1, 1]
     call lfortran_gpu_launch(ctx, kernel, c_loc(grid), c_loc(block))
     call lfortran_gpu_release_kernel(kernel)
+
+The launch does not wait for the kernel. An argument the kernel may write
+stays on the device until a GpuSync (lfortran_gpu_sync) copies it back; the
+`gpu_launch_sync` pass, which runs before this one, places those. Only the
+copies this pass makes itself -- a contiguous copy of a strided argument, the
+components of an array of derived type, the combined buffer of a packed
+launch -- are waited for right after the launch, when the kernel may write
+them, before they are copied back. A run-time sized local of the kernel (a
+workspace) is a scratch buffer.
 
 A scratch buffer of the launch (GpuKernelLaunch.scratch), which only the
 device holds, is set with lfortran_gpu_set_scratch_arg instead, read back
@@ -84,6 +94,30 @@ class DeviceLaunchExpandVisitor :
             pass_result.push_back(al, b.SubroutineCall(
                 runtime_subroutine(loc, "lfortran_gpu_sync", {b.CPtr()},
                     {true}), args));
+        }
+
+        // lfortran_gpu_discard(ctx, c_loc(v), size_in_bytes(v)) for each
+        // variable: the host is about to free it, and what a pending launch
+        // writes into it is not needed.
+        void visit_GpuDiscard(const ASR::GpuDiscard_t &x) {
+            const Location &loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::expr_t *ctx = declare_local(loc, "gpu_ctx", b.CPtr());
+            pass_result.reserve(al, x.n_vars + 1);
+            pass_result.push_back(al, b.Assignment(ctx, gpu_init_call(loc)));
+            ASR::symbol_t *discard = runtime_subroutine(loc,
+                "lfortran_gpu_discard", {b.CPtr(), b.CPtr(), int64},
+                {true, true, true});
+            for (size_t i = 0; i < x.n_vars; i++) {
+                Vec<ASR::call_arg_t> args;
+                args.reserve(al, 3);
+                args.push_back(al, call_arg(loc, ctx));
+                args.push_back(al, call_arg(loc, address_of(loc,
+                    x.m_vars[i])));
+                args.push_back(al, call_arg(loc, buffer_byte_size(loc,
+                    x.m_vars[i])));
+                pass_result.push_back(al, b.SubroutineCall(discard, args));
+            }
         }
 
     private:
@@ -310,7 +344,8 @@ class DeviceLaunchExpandVisitor :
                 ASR::symbol_t *parameter,
                 std::vector<BufferArg> &buffers,
                 std::vector<ASR::stmt_t*> &writebacks,
-                const ASR::Function_t &kernel) {
+                std::vector<ASR::stmt_t*> &cleanups,
+                const ASR::Function_t &kernel, bool written) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::Struct_t *st = gpu_struct_definition(
                 ASRUtils::get_struct_sym_from_struct_expr(arg));
@@ -437,7 +472,8 @@ class DeviceLaunchExpandVisitor :
                 buffers.push_back({sizes, address_of(loc, sizes),
                     sizes_bytes});
 
-                if (!element_is_empty) {
+                // Copied back only when the kernel may have written it.
+                if (!element_is_empty && written) {
                     writebacks.push_back(b.DoLoop(k, b.i32(1), n, {
                         copy_if_allocated(loc, may_be_unallocated,
                             struct_member(loc, arg, k, member),
@@ -449,9 +485,9 @@ class DeviceLaunchExpandVisitor :
                                 member_byte_size(loc, sizes, k, rank,
                                     element_bytes)))}));
                 }
-                writebacks.push_back(b.Deallocate(data));
-                writebacks.push_back(b.Deallocate(offsets));
-                writebacks.push_back(b.Deallocate(sizes));
+                cleanups.push_back(b.Deallocate(data));
+                cleanups.push_back(b.Deallocate(offsets));
+                cleanups.push_back(b.Deallocate(sizes));
             }
         }
 
@@ -707,20 +743,11 @@ class DeviceLaunchExpandVisitor :
         // type's own components into a plain local and hand that over.
         ASR::expr_t* plain_struct_argument(const Location &loc,
                 Vec<ASR::stmt_t*> &out, ASR::expr_t *arg,
-                ASR::Variable_t *kparam,
+                ASR::Variable_t *kparam, bool written,
                 std::vector<ASR::stmt_t*> &writebacks) {
-            ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
-            if (ASRUtils::is_array(arg_type)) return arg;
-            ASR::ttype_t *bare = ASRUtils::extract_type(arg_type);
-            if (!ASR::is_a<ASR::StructType_t>(*bare)) return arg;
-            if (!ASRUtils::is_class_type(bare)) return arg;
-            if (ASRUtils::is_unlimited_polymorphic_type(arg_type)) return arg;
+            if (!gpu_argument_is_polymorphic_value(arg)) return arg;
             ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
                 ASRUtils::get_struct_sym_from_struct_expr(arg));
-            if (struct_sym == nullptr
-                    || !ASR::is_a<ASR::Struct_t>(*struct_sym)) {
-                return arg;
-            }
             ASR::ttype_t *plain_type = ASRUtils::make_StructType_t_util(al,
                 loc, struct_sym, true);
             ASR::expr_t *tmp = declare_local(loc, "gpu_plain_arg",
@@ -737,7 +764,7 @@ class DeviceLaunchExpandVisitor :
                     + std::string(kparam->m_name) + "' to a gpu kernel");
             }
             for (ASR::stmt_t *stmt : forward) out.push_back(al, stmt);
-            if (kparam->m_intent != ASR::intentType::In) {
+            if (written) {
                 for (ASR::stmt_t *stmt : back) writebacks.push_back(stmt);
             }
             return tmp;
@@ -746,8 +773,7 @@ class DeviceLaunchExpandVisitor :
         // `arg` itself when the device can read it as it stands, or a
         // contiguous copy of it when it cannot.
         ASR::expr_t* contiguous_argument(const Location &loc,
-                Vec<ASR::stmt_t*> &out, ASR::expr_t *arg,
-                ASR::Variable_t *kparam,
+                Vec<ASR::stmt_t*> &out, ASR::expr_t *arg, bool written,
                 std::vector<ASR::stmt_t*> &writebacks) {
             ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
             if (!ASRUtils::is_array(arg_type)) return arg;
@@ -755,7 +781,7 @@ class DeviceLaunchExpandVisitor :
                     *ASRUtils::extract_type(arg_type))) {
                 return arg;
             }
-            if (!may_be_strided(arg)) return arg;
+            if (!gpu_argument_may_be_strided(arg)) return arg;
             ASRUtils::ASRBuilder b(al, loc);
             ASR::dimension_t *dims = nullptr;
             int rank = ASRUtils::extract_dimensions_from_ttype(
@@ -789,7 +815,7 @@ class DeviceLaunchExpandVisitor :
                         ->m_intent != ASR::intentType::In;
                 }
             }
-            if (kparam->m_intent != ASR::intentType::In && arg_is_writable) {
+            if (written && arg_is_writable) {
                 Vec<ASR::stmt_t*> back;
                 back.reserve(al, 1);
                 copy_elementwise(loc, back, tmp, arg, rank, true);
@@ -801,29 +827,6 @@ class DeviceLaunchExpandVisitor :
             // once copied back, ready for the next launch of the loop.
             writebacks.push_back(b.Deallocate(tmp));
             return tmp;
-        }
-
-        // Whether the elements of `arg` may not be laid out end to end.
-        // Only an array the caller reaches through a descriptor can be: a
-        // dummy declared assumed-shape, or a pointer, either of which may
-        // be bound to a section of something larger.
-        static bool may_be_strided(ASR::expr_t *arg) {
-            if (!ASR::is_a<ASR::Var_t>(*arg)) return false;
-            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::Var_t>(arg)->m_v);
-            if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
-            ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
-            if (ASRUtils::is_pointer(var->m_type)) return true;
-            if (var->m_intent == ASR::intentType::Local) return false;
-            ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
-                var->m_type);
-            if (!ASR::is_a<ASR::Array_t>(*t)) return false;
-            ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(t);
-            // Assumed shape: no extent of its own to lay out.
-            for (size_t d = 0; d < arr->n_dims; d++) {
-                if (arr->m_dims[d].m_length == nullptr) return true;
-            }
-            return false;
         }
 
         // False when a shape only the passes after `gpu_offload` create
@@ -842,7 +845,10 @@ class DeviceLaunchExpandVisitor :
             std::vector<BufferArg> buffers;
             std::vector<std::pair<std::string, ASR::ttype_t*>> scalar_fields;
             std::vector<ASR::expr_t*> scalar_values;
+            // What the host does with what the kernel wrote, and the
+            // temporaries it frees, after the launch.
             std::vector<ASR::stmt_t*> writebacks;
+            std::vector<ASR::stmt_t*> cleanups;
 
             ASR::expr_t *ctx = declare_local(loc, "gpu_ctx", b.CPtr());
             ASR::expr_t *gpu_kernel = declare_local(loc, "gpu_kernel",
@@ -922,9 +928,9 @@ class DeviceLaunchExpandVisitor :
                     // contiguous temporary first, and copied back after
                     // when the kernel writes it.
                     ASR::expr_t *buffer_arg = plain_struct_argument(loc,
-                        out, arg, kparam, writebacks);
+                        out, arg, kparam, entry.m_written, writebacks);
                     buffer_arg = contiguous_argument(loc, out,
-                        buffer_arg, kparam, writebacks);
+                        buffer_arg, entry.m_written, writebacks);
                     buffers.push_back({buffer_arg,
                         address_of(loc, buffer_arg),
                         buffer_byte_size(loc, buffer_arg)});
@@ -934,16 +940,26 @@ class DeviceLaunchExpandVisitor :
                         // the actual need not be a plain variable: a
                         // component chain names one array just as well.
                         decompose_struct_members(loc, out, arg,
-                            entry.m_variable, buffers, writebacks, *kernel);
+                            entry.m_variable, buffers, writebacks, cleanups,
+                            *kernel, entry.m_written);
                     }
                 }
             }
             LCOMPILERS_ASSERT(buffers.size() == layout.n_buffers);
 
+            // How the kernel uses each buffer, which decides whether the
+            // device keeps it after the launch (lfortran_gpu_runtime.h).
+            auto access = [&](bool written) {
+                return b.i32(written ? 1 : 0);
+            };
+            bool any_written = false;
+            for (size_t i = 0; i < layout.n_buffers; i++) {
+                any_written |= layout.m_buffers[i].m_written;
+            }
             ASR::symbol_t *set_buffer_sym = runtime_subroutine(loc,
                 "lfortran_gpu_set_buffer_arg",
-                {b.CPtr(), int32, b.CPtr(), int64},
-                {true, true, true, true});
+                {b.CPtr(), int32, b.CPtr(), int64, int32},
+                {true, true, true, true, true});
             int buffer_idx = 0;
             std::vector<std::pair<BufferArg, int>> read_backs;
             std::vector<PackedBuffer> packed_buffers;
@@ -981,16 +997,18 @@ class DeviceLaunchExpandVisitor :
                         address_of(loc, buffer.arg), buffer.byte_size));
                 }
                 Vec<ASR::call_arg_t> args;
-                args.reserve(al, 4);
+                args.reserve(al, 5);
                 args.push_back(al, call_arg(loc, gpu_kernel));
                 args.push_back(al, call_arg(loc, b.i32(buffer_idx++)));
                 args.push_back(al, call_arg(loc, address_of(loc, packed)));
                 args.push_back(al, call_arg(loc, packed_size));
+                args.push_back(al, call_arg(loc, access(any_written)));
                 out.push_back(al, b.SubroutineCall(set_buffer_sym, args));
             } else {
-                for (auto &buffer : buffers) {
+                for (size_t i = 0; i < buffers.size(); i++) {
+                    BufferArg &buffer = buffers[i];
                     Vec<ASR::call_arg_t> args;
-                    args.reserve(al, 4);
+                    args.reserve(al, 5);
                     args.push_back(al, call_arg(loc, gpu_kernel));
                     if (buffer.scratch != nullptr) {
                         read_backs.push_back({buffer, buffer_idx});
@@ -1007,6 +1025,8 @@ class DeviceLaunchExpandVisitor :
                     args.push_back(al, call_arg(loc, b.i32(buffer_idx++)));
                     args.push_back(al, call_arg(loc, buffer.address));
                     args.push_back(al, call_arg(loc, buffer.byte_size));
+                    args.push_back(al, call_arg(loc,
+                        access(layout.m_buffers[i].m_written)));
                     out.push_back(al, b.SubroutineCall(set_buffer_sym, args));
                 }
             }
@@ -1071,8 +1091,8 @@ class DeviceLaunchExpandVisitor :
 
             // A block local variable length array in the kernel becomes an
             // extra device buffer holding one instance per thread, because
-            // the device languages have no variable length arrays.
-            std::vector<ASR::expr_t*> workspaces;
+            // the device languages have no variable length arrays. Nothing
+            // of it is copied in or back, so only the device holds it.
             for (size_t w = 0; w < layout.n_workspaces; w++) {
                 const ASR::gpu_workspace_t &workspace = layout.m_workspaces[w];
                 ASR::expr_t *n_elements = b.Mul(
@@ -1088,18 +1108,15 @@ class DeviceLaunchExpandVisitor :
                 }
                 ASR::expr_t *n_bytes = b.Mul(n_elements,
                     b.i64(workspace.m_element_size));
-                ASR::expr_t *buffer = declare_local(loc, "gpu_workspace",
-                    b.allocatable(b.Array({-1}, int8)));
-                out.push_back(al, allocate_bytes(loc, buffer, n_bytes));
                 Vec<ASR::call_arg_t> args;
-                args.reserve(al, 4);
+                args.reserve(al, 3);
                 args.push_back(al, call_arg(loc, gpu_kernel));
                 args.push_back(al, call_arg(loc,
                     b.i32(workspace.m_buffer_index)));
-                args.push_back(al, call_arg(loc, address_of(loc, buffer)));
                 args.push_back(al, call_arg(loc, n_bytes));
-                out.push_back(al, b.SubroutineCall(set_buffer_sym, args));
-                workspaces.push_back(buffer);
+                out.push_back(al, b.SubroutineCall(runtime_subroutine(loc,
+                    "lfortran_gpu_set_scratch_arg", {b.CPtr(), int32, int64},
+                    {true, true, true}), args));
             }
 
             Vec<ASR::call_arg_t> launch_args;
@@ -1112,6 +1129,24 @@ class DeviceLaunchExpandVisitor :
                 "lfortran_gpu_launch",
                 {b.CPtr(), b.CPtr(), b.CPtr(), b.CPtr()},
                 {true, true, true, true}), launch_args));
+            // The launch does not wait for the kernel. What the host reads
+            // back below -- the copies it made of its own, and the part of
+            // a scratch buffer the kernel used, which a value the kernel
+            // wrote counts -- needs the kernel to be done: wait for it
+            // here. The arguments the device keeps are waited for where the
+            // host next uses them (gpu_launch_sync.cpp).
+            bool reads_back = false;
+            for (auto &read_back : read_backs) {
+                reads_back |= read_back.first.scratch->m_read_back != nullptr;
+            }
+            if ((!packed_buffers.empty() && any_written)
+                    || !writebacks.empty() || reads_back) {
+                Vec<ASR::call_arg_t> sync_args;
+                sync_args.reserve(al, 1);
+                sync_args.push_back(al, call_arg(loc, ctx));
+                out.push_back(al, b.SubroutineCall(runtime_subroutine(loc,
+                    "lfortran_gpu_sync", {b.CPtr()}, {true}), sync_args));
+            }
             // The host reads back the leading part of a scratch buffer the
             // launch says it reads, into the array it allocates for it.
             for (auto &read_back : read_backs) {
@@ -1151,7 +1186,9 @@ class DeviceLaunchExpandVisitor :
             out.push_back(al, b.SubroutineCall(runtime_subroutine(loc,
                 "lfortran_gpu_release_kernel", {b.CPtr()}, {true}),
                 release_args));
-            for (auto &buffer : packed_buffers) {
+            for (size_t i = 0; i < packed_buffers.size(); i++) {
+                if (!layout.m_buffers[i].m_written) continue;
+                const PackedBuffer &buffer = packed_buffers[i];
                 out.push_back(al, memcpy_call(loc,
                     address_of(loc, buffer.arg),
                     address_of(loc, b.ArrayItem_01(packed,
@@ -1165,8 +1202,8 @@ class DeviceLaunchExpandVisitor :
             for (ASR::stmt_t *writeback : writebacks) {
                 out.push_back(al, writeback);
             }
-            for (ASR::expr_t *workspace : workspaces) {
-                out.push_back(al, b.Deallocate(workspace));
+            for (ASR::stmt_t *cleanup : cleanups) {
+                out.push_back(al, cleanup);
             }
             return true;
         }
@@ -1187,6 +1224,118 @@ class DeviceLaunchExpandVisitor :
 
 
 
+
+ASR::expr_t* gpu_associate_selector(ASR::symbol_t *name) {
+    name = ASRUtils::symbol_get_past_external(name);
+    if (!ASR::is_a<ASR::Variable_t>(*name)) return nullptr;
+    SymbolTable *scope = ASR::down_cast<ASR::Variable_t>(name)
+        ->m_parent_symtab;
+    if (scope == nullptr || scope->asr_owner == nullptr
+            || !ASR::is_a<ASR::symbol_t>(*scope->asr_owner)) {
+        return nullptr;
+    }
+    ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(scope->asr_owner);
+    if (!ASR::is_a<ASR::AssociateBlock_t>(*owner)) return nullptr;
+    ASR::AssociateBlock_t *block = ASR::down_cast<ASR::AssociateBlock_t>(
+        owner);
+    ASR::expr_t *selector = nullptr;
+    for (size_t i = 0; i < block->n_body; i++) {
+        if (!ASR::is_a<ASR::Associate_t>(*block->m_body[i])) continue;
+        ASR::Associate_t *a = ASR::down_cast<ASR::Associate_t>(
+            block->m_body[i]);
+        if (!ASR::is_a<ASR::Var_t>(*a->m_target)
+                || ASR::down_cast<ASR::Var_t>(a->m_target)->m_v != name) {
+            continue;
+        }
+        if (selector != nullptr) return nullptr;
+        selector = a->m_value;
+    }
+    return selector;
+}
+
+// Whether `e` designates array elements laid out end to end.
+static bool designates_contiguous(ASR::expr_t *e) {
+    switch (e->type) {
+        case ASR::exprType::Var:
+            return !gpu_argument_may_be_strided(e);
+        case ASR::exprType::ArrayPhysicalCast:
+            return designates_contiguous(
+                ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg);
+        case ASR::exprType::StructInstanceMember: {
+            ASR::StructInstanceMember_t *m =
+                ASR::down_cast<ASR::StructInstanceMember_t>(e);
+            ASR::ttype_t *type = ASRUtils::symbol_type(m->m_m);
+            if (ASRUtils::is_pointer(type)) return false;
+            // A component of one value: an allocatable one is its own
+            // block of memory, and one of a fixed shape is part of the
+            // value.
+            return !ASRUtils::is_array(ASRUtils::expr_type(m->m_v));
+        }
+        default:
+            return false;
+    }
+}
+
+bool gpu_argument_may_be_strided(ASR::expr_t *arg) {
+    if (!ASR::is_a<ASR::Var_t>(*arg)) return false;
+    ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(arg)->m_v);
+    if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
+    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+    if (ASRUtils::is_pointer(var->m_type)) {
+        // An associate name is what it is bound to.
+        ASR::expr_t *selector = gpu_associate_selector(sym);
+        return selector == nullptr || !designates_contiguous(selector);
+    }
+    if (var->m_intent == ASR::intentType::Local) return false;
+    ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+        var->m_type);
+    if (!ASR::is_a<ASR::Array_t>(*t)) return false;
+    ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(t);
+    // Assumed shape: no extent of its own to lay out.
+    for (size_t d = 0; d < arr->n_dims; d++) {
+        if (arr->m_dims[d].m_length == nullptr) return true;
+    }
+    return false;
+}
+
+bool gpu_argument_is_polymorphic_value(ASR::expr_t *arg) {
+    ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+    if (ASRUtils::is_array(arg_type)) return false;
+    ASR::ttype_t *bare = ASRUtils::extract_type(arg_type);
+    if (!ASR::is_a<ASR::StructType_t>(*bare)) return false;
+    if (!ASRUtils::is_class_type(bare)) return false;
+    if (ASRUtils::is_unlimited_polymorphic_type(arg_type)) return false;
+    ASR::symbol_t *struct_sym = ASRUtils::symbol_get_past_external(
+        ASRUtils::get_struct_sym_from_struct_expr(arg));
+    return struct_sym != nullptr && ASR::is_a<ASR::Struct_t>(*struct_sym);
+}
+
+GpuBufferHandling gpu_launch_buffer_handling(
+        const ASR::GpuKernelLaunch_t &launch,
+        const ASR::gpu_kernel_argument_t &entry) {
+    for (size_t i = 0; i < launch.n_scratch; i++) {
+        if (launch.m_scratch[i].m_argument_index == entry.m_argument_index) {
+            return GpuBufferHandling::Scratch;
+        }
+    }
+    const ASR::Function_t *kernel = ASR::down_cast<ASR::Function_t>(
+        ASRUtils::symbol_get_past_external(launch.m_kernel));
+    if (kernel->m_gpu->m_packed || entry.m_member != nullptr) {
+        return GpuBufferHandling::HostCopy;
+    }
+    ASR::expr_t *arg = launch.m_args[entry.m_argument_index].m_value;
+    if (gpu_argument_is_polymorphic_value(arg)) {
+        return GpuBufferHandling::HostCopyShallow;
+    }
+    ASR::ttype_t *type = ASRUtils::expr_type(arg);
+    if (ASRUtils::is_array(type)
+            && !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))
+            && gpu_argument_may_be_strided(arg)) {
+        return GpuBufferHandling::HostCopy;
+    }
+    return GpuBufferHandling::Storage;
+}
 
 void pass_device_launch_expand(Allocator &al, ASR::TranslationUnit_t &unit,
                                const LCompilers::PassOptions &pass_options) {
