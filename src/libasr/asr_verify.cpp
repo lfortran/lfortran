@@ -4361,6 +4361,11 @@ public:
         ASR::ttype_t* cast_type = ASRUtils::type_get_past_allocatable(x.m_type);
         require(ASR::is_a<ASR::String_t>(*cast_type), "StringPhysicalCast should be of string type");
         ASR::String_t* str = ASR::down_cast<ASR::String_t>(cast_type);
+        require(x.m_old == ASRUtils::get_string_type(
+                ASRUtils::expr_type(x.m_arg))->m_physical_type,
+            "StringPhysicalCast old physical type must match its argument");
+        require(x.m_new == str->m_physical_type,
+            "StringPhysicalCast new physical type must match its result");
         require(!str->m_len,
             "StringPhysicalCast return type shouldn't have length "
             "(Length should be implicit).")

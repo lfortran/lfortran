@@ -384,6 +384,18 @@ public:
     void replace_IntrinsicImpureFunction(ASR::IntrinsicImpureFunction_t *x) {
         hoist(&x->base);
     }
+
+    void replace_StringPhysicalCast(ASR::StringPhysicalCast_t *x) {
+        ASR::BaseExprReplacer<HoistImpureCalls>::replace_StringPhysicalCast(x);
+        ASR::string_physical_typeType physical =
+            ASRUtils::get_string_type(ASRUtils::expr_type(x->m_arg))->m_physical_type;
+        if (physical == x->m_new) {
+            *current_expr = x->m_arg;
+        } else if (physical != x->m_old) {
+            *current_expr = ASRUtils::create_string_physical_cast(al,
+                x->m_arg, x->m_new, ASRUtils::is_allocatable(x->m_type));
+        }
+    }
 };
 
 class FindImpureCall: public ASR::BaseWalkVisitor<FindImpureCall> {
