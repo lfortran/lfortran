@@ -296,7 +296,19 @@ const std::vector<std::string> declarators{
             "type",
             "class",
             "public",
-            "private"
+            "private",
+            "allocatable",
+            "asynchronous",
+            "bind",
+            "codimension",
+            "contiguous",
+            "intent",
+            "optional",
+            "pointer",
+            "protected",
+            "target",
+            "value",
+            "volatile"
         };
 
 std::vector<std::string> lines{};

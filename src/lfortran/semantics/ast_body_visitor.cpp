@@ -3601,31 +3601,6 @@ public:
             (ASRUtils::is_opaque_procedure_type(target_type) ||
                 ASRUtils::is_opaque_procedure_type(value_type));
         if (tmp == nullptr && !implicit_procedure_assignment) {
-            auto procedure_to_str = [](ASR::expr_t* e) {
-                ASR::symbol_t* sym = nullptr;
-                if (ASR::is_a<ASR::Var_t>(*e)) {
-                    sym = ASR::down_cast<ASR::Var_t>(e)->m_v;
-                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
-                    sym = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m;
-                }
-                if (sym) {
-                    sym = ASRUtils::symbol_get_past_external(sym);
-                    if (ASR::is_a<ASR::Variable_t>(*sym)) {
-                        sym = ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
-                    }
-                }
-                if (sym) {
-                    sym = ASRUtils::symbol_get_past_external(sym);
-                }
-                if (sym && ASR::is_a<ASR::Function_t>(*sym)) {
-                    std::string name = ASRUtils::symbol_name(sym);
-                    // Skip compiler-generated interface names.
-                    if (name.rfind("__", 0) != 0) {
-                        return "procedure(" + name + ")";
-                    }
-                }
-                return std::string("procedure");
-            };
             auto pointer_type_to_str = [&](ASR::ttype_t* t, ASR::expr_t* e) {
                 t = ASRUtils::type_get_past_allocatable_pointer(t);
                 ASR::ttype_t* elem = ASRUtils::type_get_past_array(t);
@@ -3654,7 +3629,7 @@ public:
                     return res;
                 }
                 if (ASR::is_a<ASR::FunctionType_t>(*elem)) {
-                    return procedure_to_str(e);
+                    return procedure_interface_to_str(procedure_interface(e));
                 }
                 if (ASR::is_a<ASR::String_t>(*elem)) {
                     return ASRUtils::type_to_str_fortran_symbol(t, nullptr, true);
@@ -9139,32 +9114,37 @@ public:
             for (size_t i = 0; i + offset < f->n_args; i++) {
                 ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(f->m_args[i + offset]);
 
+                // An optional dummy procedure is a Variable_t, so a dummy
+                // procedure that is still a Function_t is always required.
+                bool is_required = ASR::is_a<ASR::Function_t>(*var->m_v) ||
+                    (ASR::is_a<ASR::Variable_t>(*var->m_v) &&
+                     ASR::down_cast<ASR::Variable_t>(var->m_v)->m_presence
+                        != ASR::presenceType::Optional);
+                if (is_required && i >= args.size()) {
+                    std::string arg_name = ASRUtils::symbol_name(var->m_v);
+                    if (args.empty()) {
+                        diag.add(diag::Diagnostic(
+                            "Required argument `" + arg_name +
+                            "` is missing in procedure call",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {x.base.base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+
+                    const Location args_loc { ASRUtils::get_vec_loc(args) };
+                    diag.add(diag::Diagnostic(
+                        "Required argument `" + arg_name +
+                        "` at position " + std::to_string(i + 1) +
+                        " is missing in procedure call",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {args_loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
                 if (ASR::is_a<ASR::Variable_t>(*var->m_v)) {
                     ASR::Variable_t* v = ASRUtils::EXPR2VAR(f->m_args[i + offset]);
-
-                    if (v->m_presence != ASR::presenceType::Optional) {
-                        if (i >= args.size()) {
-                            if (args.empty()) {
-                                diag.add(diag::Diagnostic(
-                                    "Required argument `" + std::string(v->m_name) +
-                                    "` is missing in procedure call",
-                                    diag::Level::Error, diag::Stage::Semantic, {
-                                        diag::Label("", {x.base.base.loc})
-                                    }));
-                                throw SemanticAbort();
-                            }
-
-                            const Location args_loc { ASRUtils::get_vec_loc(args) };
-                            diag.add(diag::Diagnostic(
-                                "Required argument `" + std::string(v->m_name) +
-                                "` at position " + std::to_string(i + 1) +
-                                " is missing in procedure call",
-                                diag::Level::Error, diag::Stage::Semantic, {
-                                    diag::Label("", {args_loc})
-                                }));
-                            throw SemanticAbort();
-                        }
-                    }
                     if (i < args.size() && args[i].m_value != nullptr) {
                         ASR::expr_t* passed_arg = args[i].m_value;
                         ASR::ttype_t* passed_type = ASRUtils::expr_type(passed_arg);

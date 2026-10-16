@@ -1,6 +1,7 @@
 #include "libasr/utils.h"
 #include <chrono>
 #include <iostream>
+#include <stdio.h>
 #include <stdlib.h>
 #include <filesystem>
 #include <random>
@@ -415,7 +416,6 @@ bool determine_completeness(std::string command)
 
 int prompt(bool verbose, CompilerOptions &cu)
 {
-    Terminal term(true, false);
     std::cout << "Interactive Fortran. Experimental prototype, not ready for end users." << std::endl;
     std::string version = LFORTRAN_VERSION;
     std::cout << "LFortran version: " << version << std::endl;
@@ -432,7 +432,15 @@ int prompt(bool verbose, CompilerOptions &cu)
     std::vector<std::string> history;
     std::function<bool(std::string)> iscomplete = determine_completeness;
     while (true) {
-        std::string input = prompt0(term, ">>> ", history, iscomplete);
+        std::string input;
+        {
+            // The terminal is in raw mode only while a line is edited, so
+            // that the cell can read the terminal as usual (#15284).
+            Terminal term(true, false);
+            input = prompt0(term, ">>> ", history, iscomplete);
+        }
+        // A READ ended by Ctrl-D in an earlier cell must not end later READs
+        clearerr(stdin);
         if (input.size() == 1 && input[0] == CTRL_KEY('d')) {
             std::cout << std::endl;
             std::cout << "Exiting." << std::endl;

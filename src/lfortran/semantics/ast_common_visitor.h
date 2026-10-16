@@ -6726,6 +6726,16 @@ public:
             bool is_subroutine = false;
             external_procedures.push_back(sym);
             ASR::symbol_t *sym_ = current_scope->resolve_symbol(sym);
+            ASR::symbol_t *local_sym = current_scope->get_symbol(sym);
+            bool is_optional_dummy = (local_sym &&
+                ASR::is_a<ASR::Variable_t>(*local_sym) &&
+                ASR::down_cast<ASR::Variable_t>(local_sym)->m_presence ==
+                    ASR::presenceType::Optional) ||
+                (!local_sym && assgnd_presence.count(sym) &&
+                assgnd_presence[sym] == ASR::presenceType::Optional &&
+                std::find(current_procedure_args.begin(),
+                    current_procedure_args.end(), sym)
+                    != current_procedure_args.end());
             // Respect the default accessibility of the enclosing scope (e.g. a
             // module `private` statement) as well as any explicit access already
             // assigned to this name. An external procedure declared in a
@@ -6848,8 +6858,13 @@ public:
                 ASR::deftypeType::ImplicitInterface,
                 nullptr, false, false, false, false, false, nullptr, 0,
                 false, false, false);
-            parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
             current_scope = parent_scope;
+            if (is_optional_dummy) {
+                make_optional_procedure_dummy(sym,
+                    ASR::down_cast2<ASR::Function_t>(tmp), loc);
+                return;
+            }
+            parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
         } else {
             diag.add(Diagnostic(
                 "function interface must be specified explicitly; you can enable implicit interfaces with `--implicit-interface`",
@@ -10235,16 +10250,26 @@ public:
                             s_access, s_abi, bindc_name)) {
                     continue;
                 }
-                if ( current_scope->get_symbol( sym ) != nullptr && ( is_external && !is_attr_external ) ) {
+                ASR::symbol_t *ext_sym = current_scope->get_symbol(sym);
+                if ( ext_sym != nullptr && ( is_external && !is_attr_external ) ) {
                     /*
                         return type of external function is specified
                         external :: x
                         integer :: x -> we are handling this case
                     */
-                    ASR::symbol_t *sym_ = current_scope->get_symbol(sym);
-                    LCOMPILERS_ASSERT( sym_ != nullptr );
+                    ASR::Function_t *f = nullptr;
+                    if (ASR::is_a<ASR::Variable_t>(*ext_sym) &&
+                            ASR::down_cast<ASR::Variable_t>(ext_sym)->m_presence ==
+                                ASR::presenceType::Optional) {
+                        // Optional dummy procedure: update its interface.
+                        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(ext_sym);
+                        f = ASR::down_cast<ASR::Function_t>(
+                            ASRUtils::symbol_get_past_external(v->m_type_declaration));
+                        LCOMPILERS_ASSERT(v->m_type == f->m_function_signature);
+                    } else {
+                        f = ASR::down_cast<ASR::Function_t>(ext_sym);
+                    }
                     // set function return type as `type`
-                    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym_);
                     if (f->m_return_var == nullptr) {
                         std::string return_var_name = sym + "_return_var_name";
                         SetChar variable_dependencies_vec;
@@ -10267,6 +10292,18 @@ public:
                         ASRUtils::EXPR2VAR(f->m_return_var)->m_type = type;
                         ASR::FunctionType_t *ft = ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
                         ft->m_return_var_type = type;
+                    }
+                }
+                // A Function symbol cannot carry presence, so an optional
+                // external dummy procedure becomes an optional procedure
+                // variable, e.g. `integer, external, optional :: p`.
+                if (is_external && is_argument &&
+                        s_presence == ASR::presenceType::Optional) {
+                    ASR::symbol_t *proc_sym = current_scope->get_symbol(sym);
+                    if (proc_sym && ASR::is_a<ASR::Function_t>(*proc_sym)) {
+                        make_optional_procedure_dummy(sym,
+                            ASR::down_cast<ASR::Function_t>(proc_sym),
+                            x.m_syms[i].loc);
                     }
                 }
                 current_variable_type_ = type;
@@ -14675,31 +14712,89 @@ public:
             current_struct_type_var_expr));
     }
 
+    // The procedure whose interface the procedure, procedure pointer or
+    // procedure pointer component `sym` has, if any.
+    static ASR::Function_t* procedure_interface(ASR::symbol_t* sym) {
+        if (sym != nullptr) {
+            sym = ASRUtils::symbol_get_past_external(sym);
+            if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                sym = ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
+            }
+        }
+        if (sym != nullptr) {
+            sym = ASRUtils::symbol_get_past_external(sym);
+        }
+        if (sym == nullptr || !ASR::is_a<ASR::Function_t>(*sym)) {
+            return nullptr;
+        }
+        return ASR::down_cast<ASR::Function_t>(sym);
+    }
+
+    static ASR::Function_t* procedure_interface(ASR::expr_t* e) {
+        if (ASR::is_a<ASR::Var_t>(*e)) {
+            return procedure_interface(ASR::down_cast<ASR::Var_t>(e)->m_v);
+        } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            return procedure_interface(
+                ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_m);
+        }
+        return nullptr;
+    }
+
+    // The interface of a procedure as written in a diagnostic,
+    // `procedure(name)` for the procedure `iface` declaring it, or just
+    // `procedure`.
+    static std::string procedure_interface_to_str(ASR::Function_t* iface) {
+        if (iface != nullptr) {
+            std::string name = iface->m_name;
+            // Skip compiler-generated interface names.
+            if (name.rfind("__", 0) != 0) {
+                return "procedure(" + name + ")";
+            }
+        }
+        return "procedure";
+    }
+
     // Whether the procedure `arg` can be the value of the procedure pointer
-    // component `member_var`, reporting it if not: a function cannot be the
-    // value of a component with a subroutine interface, nor the other way
-    // around.
+    // component `member_var`, reporting it if not. As in a pointer
+    // assignment, the value of a component with an explicit interface must
+    // have the same characteristics (Fortran 2018 7.5.10, 10.2.2.4), unless
+    // either has an implicit interface.
     bool procedure_component_value_matches(ASR::Variable_t* member_var,
             ASR::expr_t* arg) {
         ASR::FunctionType_t* member_func_type =
             ASRUtils::get_procedure_pointer_component_type(member_var);
         ASR::FunctionType_t* arg_func_type =
             ASRUtils::get_procedure_type_from_expr(arg);
-        if (member_func_type == nullptr || arg_func_type == nullptr) {
+        if (member_func_type == nullptr || arg_func_type == nullptr
+                || ASRUtils::is_opaque_procedure_type(&member_func_type->base)
+                || ASRUtils::is_opaque_procedure_type(&arg_func_type->base)) {
             return true;
         }
-        bool member_is_subroutine = member_func_type->m_return_var_type == nullptr;
-        bool arg_is_subroutine = arg_func_type->m_return_var_type == nullptr;
-        if (member_is_subroutine == arg_is_subroutine) {
+        ASR::Function_t* member_iface = procedure_interface(&member_var->base);
+        ASR::Function_t* arg_iface = procedure_interface(arg);
+        // Derived-type dummy arguments are told apart through the procedures
+        // declaring the interfaces, when both are known.
+        ASR::expr_t* member_expr = nullptr;
+        ASR::expr_t* arg_expr = nullptr;
+        if (member_iface != nullptr && arg_iface != nullptr
+                && member_iface->n_args == member_func_type->n_arg_types
+                && arg_iface->n_args == arg_func_type->n_arg_types) {
+            member_expr = ASRUtils::EXPR(ASR::make_Var_t(al, arg->base.loc,
+                &member_iface->base));
+            arg_expr = ASRUtils::EXPR(ASR::make_Var_t(al, arg->base.loc,
+                &arg_iface->base));
+        }
+        if (ASRUtils::types_equal(&member_func_type->base,
+                &arg_func_type->base, member_expr, arg_expr)) {
             return true;
         }
-        diag.add(Diagnostic("type mismatch in structure constructor: value of type "
-            + ASRUtils::type_to_str_with_kind(ASRUtils::expr_type(arg), arg)
-            + " cannot be the value of pointer component '"
-            + std::string(member_var->m_name) + "' of type "
-            + struct_component_type_to_str(member_var),
+        diag.add(Diagnostic("interface mismatch for procedure pointer component '"
+            + std::string(member_var->m_name) + "' in structure constructor",
             Level::Error, Stage::Semantic, {
-                Label("", {arg->base.loc})}));
+                Label("incompatible interfaces ("
+                    + procedure_interface_to_str(member_iface) + " and "
+                    + procedure_interface_to_str(arg_iface) + ")",
+                    {arg->base.loc})}));
         return false;
     }
 
