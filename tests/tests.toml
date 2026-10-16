@@ -1875,6 +1875,12 @@ julia = true
 c = true
 cpp = true
 
+# A whole-array assignment assigned again before anything reads it is
+# removed; one that is read is kept.
+[[test]]
+filename = "../integration_tests/dead_array_store_01.f90"
+pass = "dead_array_store"
+
 [[test]]
 filename = "../integration_tests/case_07.f90"
 pass = "select_case"

@@ -122,6 +122,7 @@ set(SRC
     pass/device_launch_expand.cpp
     pass/gpu_launch_sync.cpp
     pass/gpu_array_statements.cpp
+    pass/dead_array_store.cpp
     pass/gpu_memory_space.cpp
     pass/gpu_device_workspace.cpp
     pass/gpu_struct_component_args.cpp
