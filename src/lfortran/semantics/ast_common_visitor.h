@@ -13351,6 +13351,17 @@ public:
                     int64_t char_len;
                     bool has_len = ASRUtils::extract_value(str_type->m_len, char_len);
                     if (!has_len || char_len != 1) {
+                        if (!is_argument && var_sym && current_scope->asr_owner &&
+                            ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) &&
+                            ASR::is_a<ASR::Module_t>(
+                                *ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
+                            diag.add(Diagnostic(
+                                "bind(c) variable `" + sym + "` must have character length one",
+                                Level::Error, Stage::Semantic, {
+                                    Label("", {var_sym->loc})
+                                }));
+                            throw SemanticAbort();
+                        }
                         diag.add(Diagnostic(
                             "Character dummy argument `" + sym +
                             "` must be of constant length of one or assumed length, "

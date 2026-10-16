@@ -2063,9 +2063,11 @@ inline void classify_vla_dim(ASR::expr_t *dim, const GpuExtentScope &scope,
 // memory instead.
 inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
         ASR::Array_t *arr, const std::string &var_name,
-        const GpuExtentScope &scope, GpuVlaWorkspace &ws) {
+        const GpuExtentScope &scope, GpuVlaWorkspace &ws,
+        bool include_fixed_global = false) {
     bool has_runtime_dim = false;
     for (size_t d = 0; d < alloc_arg.n_dims; d++) {
+        if (include_fixed_global && !alloc_arg.m_dims[d].m_length) return false;
         if (alloc_arg.m_dims[d].m_length &&
                 !ASR::is_a<ASR::IntegerConstant_t>(
                     *alloc_arg.m_dims[d].m_length)) {
@@ -2073,7 +2075,8 @@ inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
             break;
         }
     }
-    if (!has_runtime_dim) return false;
+    if (!has_runtime_dim && !(include_fixed_global &&
+            arr->m_memory_space == ASR::memory_spaceType::Global)) return false;
     ws.var_name = var_name;
     ws.elem_size = gpu_vla_elem_size(arr);
     if (ws.elem_size <= 0) return false;
@@ -2103,9 +2106,10 @@ inline bool alloc_shape_to_vla_workspace(ASR::alloc_arg_t &alloc_arg,
 // instead.
 inline bool declared_shape_to_vla_workspace(ASR::Array_t *arr,
         const std::string &var_name, const GpuExtentScope &scope,
-        GpuVlaWorkspace &ws) {
+        GpuVlaWorkspace &ws, bool include_fixed_global = false) {
     bool has_runtime_dim = false;
     for (size_t d = 0; d < arr->n_dims; d++) {
+        if (include_fixed_global && !arr->m_dims[d].m_length) return false;
         if (arr->m_dims[d].m_length &&
                 !ASR::is_a<ASR::IntegerConstant_t>(
                     *arr->m_dims[d].m_length)) {
@@ -2113,7 +2117,8 @@ inline bool declared_shape_to_vla_workspace(ASR::Array_t *arr,
             break;
         }
     }
-    if (!has_runtime_dim) return false;
+    if (!has_runtime_dim && !(include_fixed_global &&
+            arr->m_memory_space == ASR::memory_spaceType::Global)) return false;
     ws.var_name = var_name;
     ws.elem_size = gpu_vla_elem_size(arr);
     if (ws.elem_size <= 0) return false;
@@ -2289,7 +2294,8 @@ inline void scan_kernel_scope_alloc_vlas(
         const ASR::Function_t &kernel,
         const std::vector<std::string> &arg_names,
         int &buffer_idx,
-        std::vector<GpuVlaWorkspace> &result) {
+        std::vector<GpuVlaWorkspace> &result,
+        bool include_fixed_global = false) {
     std::set<std::string> arg_set(arg_names.begin(), arg_names.end());
     std::set<ASR::symbol_t*> handled;
     for (auto &ws : result) handled.insert(ws.var);
@@ -2298,6 +2304,8 @@ inline void scan_kernel_scope_alloc_vlas(
         if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
         ASR::Variable_t *var =
             ASR::down_cast<ASR::Variable_t>(item.second);
+        if (var->m_intent != ASR::intentType::Local ||
+                var->m_storage != ASR::storage_typeType::Default) continue;
         ASR::ttype_t *inner =
             ASRUtils::type_get_past_allocatable(var->m_type);
         if (!ASR::is_a<ASR::Array_t>(*inner)) continue;
@@ -2313,7 +2321,7 @@ inline void scan_kernel_scope_alloc_vlas(
             // when it enters the kernel.
             have = declared_shape_to_vla_workspace(arr, vname,
                 GpuExtentScope{&kernel, arg_names, kernel.m_symtab,
-                    kernel.m_body, kernel.n_body}, ws);
+                    kernel.m_body, kernel.n_body}, ws, include_fixed_global);
             if (!have) continue;
             ws.buffer_index = buffer_idx++;
             result.push_back(std::move(ws));
@@ -2327,7 +2335,7 @@ inline void scan_kernel_scope_alloc_vlas(
             if (!target_arg) continue;
             have = alloc_shape_to_vla_workspace(*target_arg, arr, vname,
                 GpuExtentScope{&kernel, arg_names, kernel.m_symtab,
-                    kernel.m_body, kernel.n_body}, ws);
+                    kernel.m_body, kernel.n_body}, ws, include_fixed_global);
         } else {
             // No Allocate: this is a function-call result temporary whose
             // size depends on a struct member's allocatable array.
@@ -2429,7 +2437,8 @@ inline ASR::Variable_t* find_gpu_vla_variable(const ASR::Function_t &kernel,
 // Every per-thread workspace a GPU kernel needs, with buffer indices assigned
 // sequentially from `buffer_idx`.
 inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
-        const ASR::Function_t &kernel, int buffer_idx) {
+        const ASR::Function_t &kernel, int buffer_idx,
+        bool include_fixed_global = false) {
     // The kernel argument names, so that a workspace extent that is one of
     // them can be read on the host at dispatch time.
     std::vector<std::string> arg_names;
@@ -2452,6 +2461,8 @@ inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
                 if (!ASR::is_a<ASR::Variable_t>(*item.second)) continue;
                 ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(
                     item.second);
+                if (var->m_intent != ASR::intentType::Local ||
+                        var->m_storage != ASR::storage_typeType::Default) continue;
                 if (!ASR::is_a<ASR::Array_t>(*var->m_type)) continue;
                 ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(var->m_type);
 
@@ -2459,7 +2470,8 @@ inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
                 ws.var = item.second;
                 if (!declared_shape_to_vla_workspace(arr, var->m_name,
                         GpuExtentScope{&kernel, arg_names, symtab,
-                            kernel.m_body, kernel.n_body}, ws)) {
+                            kernel.m_body, kernel.n_body}, ws,
+                        include_fixed_global)) {
                     continue;
                 }
                 ws.buffer_index = buffer_idx++;
@@ -2474,6 +2486,8 @@ inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
                 if (!ASR::is_a<ASR::Variable_t>(*item2.second)) continue;
                 ASR::Variable_t *var2 = ASR::down_cast<ASR::Variable_t>(
                     item2.second);
+                if (var2->m_intent != ASR::intentType::Local ||
+                        var2->m_storage != ASR::storage_typeType::Default) continue;
                 if (!ASRUtils::is_allocatable(var2->m_type)) continue;
                 ASR::ttype_t *inner =
                     ASRUtils::type_get_past_allocatable(var2->m_type);
@@ -2496,7 +2510,8 @@ inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
                     if (target_arg) {
                         have = alloc_shape_to_vla_workspace(*target_arg, arr2,
                             vname, GpuExtentScope{&kernel, arg_names, symtab,
-                                kernel.m_body, kernel.n_body}, ws);
+                                kernel.m_body, kernel.n_body}, ws,
+                            include_fixed_global);
                     }
                 }
                 if (!have) {
@@ -2509,7 +2524,8 @@ inline std::vector<GpuVlaWorkspace> collect_gpu_vla_workspaces(
             }
         });
 
-    scan_kernel_scope_alloc_vlas(kernel, arg_names, buffer_idx, result);
+    scan_kernel_scope_alloc_vlas(kernel, arg_names, buffer_idx, result,
+        include_fixed_global);
 
     return result;
 }

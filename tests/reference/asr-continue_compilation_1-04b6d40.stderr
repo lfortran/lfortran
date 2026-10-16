@@ -1416,6 +1416,18 @@ semantic error: interface mismatch for procedure pointer component 'f' in struct
 3356 |     type(cc1_pci_t) :: cc1_pci_s = cc1_pci_t(f=cc1_pci_real_func)  ! {Error} interface mismatch for procedure pointer component 'f' in structure constructor
      |                                                ^^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pci_func_iface) and procedure(cc1_pci_real_func))
 
+semantic error: bind(c) variable `s` must have character length one
+    --> tests/errors/continue_compilation_1.f90:3432:34
+     |
+3432 |     character(len=5), bind(c) :: s  ! {Error} bind(c) variable `s` must have character length one
+     |                                  ^ 
+
+semantic error: bind(c) variable `a` must have character length one
+    --> tests/errors/continue_compilation_1.f90:3433:34
+     |
+3433 |     character(len=5), bind(c) :: a(3)  ! {Error} bind(c) variable `a` must have character length one
+     |                                  ^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

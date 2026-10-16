@@ -86,6 +86,12 @@ the launch, which the `gpu_launch_sync` pass places, copies of them after
 each GpuSync the launch may still be pending at; that pass also clears the
 first element of `stop_status` once, on entry to the procedure.
 
+Private array storage is placed after shared lowering by `gpu_kernel_storage`,
+before address-space specialization. Fixed-size arrays that fit the device's
+stack budget have `Thread` memory space. Larger arrays have `Global` memory
+space and the kernel layout records their per-thread workspace slices. This
+placement never turns an iteration-private value into a shared value.
+
 ## Examples
 
 ```clojure

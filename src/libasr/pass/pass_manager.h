@@ -151,6 +151,7 @@ namespace LCompilers {
             {"gpu_device_heap", &pass_gpu_device_heap},
             {"gpu_memory_space", &pass_gpu_memory_space},
             {"gpu_kernel_finalize", &pass_gpu_kernel_finalize},
+            {"gpu_kernel_storage", &pass_gpu_kernel_storage},
             {"gpu_vector_lanes", &pass_gpu_vector_lanes},
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
@@ -374,6 +375,9 @@ namespace LCompilers {
                 // argument its callers give it, up to the kernel, where the
                 // host sizes it before the launch.
                 "gpu_device_workspace",
+                // Place the actual lowered arrays before specializing device
+                // calls by the address spaces of their storage.
+                "gpu_kernel_storage",
                 // A device routine's address spaces are settled here, once
                 // every array of device code has the type it is emitted
                 // with, and before the code generators read those types.

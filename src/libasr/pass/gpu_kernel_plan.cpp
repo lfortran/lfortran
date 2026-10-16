@@ -1081,7 +1081,7 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
     };
     if (!close_graph(&kernel)) return false;
     GpuLaunchSupport support(decline);
-    auto workspaces = collect_gpu_vla_workspaces(kernel, 0);
+    auto workspaces = collect_gpu_vla_workspaces(kernel, 0, true);
     if (!support.supported(&kernel.base, args, n_args, workspaces,
             device_functions)) {
         return false;

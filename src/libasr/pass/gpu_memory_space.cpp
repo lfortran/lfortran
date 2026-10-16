@@ -85,6 +85,15 @@ class GpuMemorySpaceAssigner {
 public:
     explicit GpuMemorySpaceAssigner(Allocator &al_) : al(al_) {}
 
+    void materialize_struct_arguments(ASR::TranslationUnit_t &unit) {
+        only_struct_arguments = true;
+        for (auto &item : unit.m_symtab->get_scope()) {
+            if (!ASRUtils::is_device_kernel(item.second)) continue;
+            copy_reference_arguments(
+                *ASR::down_cast<ASR::Function_t>(item.second), true);
+        }
+    }
+
     void assign(ASR::TranslationUnit_t &unit) {
         std::vector<ASR::Function_t*> kernels;
         for (auto &item : unit.m_symtab->get_scope()) {
@@ -103,6 +112,7 @@ public:
 
 private:
     Allocator &al;
+    bool only_struct_arguments = false;
     std::set<ASR::Function_t*> processed;
     // (original routine, memory-space signature) -> clone
     std::map<std::pair<ASR::symbol_t*, std::vector<ASR::memory_spaceType>>,
@@ -439,7 +449,8 @@ private:
                 }
                 copy_name = "__gpu_struct_argument";
                 type_declaration = argument->m_type_declaration;
-            } else if (is_intrinsic_scalar(dummy->m_type) &&
+            } else if (!only_struct_arguments &&
+                    is_intrinsic_scalar(dummy->m_type) &&
                     is_intrinsic_scalar(actual_type)) {
                 if (in_thread_memory(actual, parameters)) continue;
                 copy_name = "__gpu_scalar_argument";
@@ -467,7 +478,7 @@ private:
 
         std::set<ASR::symbol_t*> device_backed;
         if (is_kernel) {
-            for (auto &workspace : collect_gpu_vla_workspaces(*fn, 0)) {
+            for (auto &workspace : collect_gpu_vla_workspaces(*fn, 0, true)) {
                 device_backed.insert(workspace.var);
             }
         }
@@ -626,6 +637,12 @@ private:
 };
 
 } // namespace
+
+void gpu_materialize_struct_arguments(Allocator &al,
+        ASR::TranslationUnit_t &unit) {
+    GpuMemorySpaceAssigner materializer(al);
+    materializer.materialize_struct_arguments(unit);
+}
 
 void pass_gpu_memory_space(Allocator &al, ASR::TranslationUnit_t &unit,
         const PassOptions &/*pass_options*/) {
