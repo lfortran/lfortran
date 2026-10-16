@@ -467,7 +467,7 @@ private:
 
         std::set<ASR::symbol_t*> device_backed;
         if (is_kernel) {
-            for (auto &workspace : collect_gpu_vla_workspaces(*fn, 0)) {
+            for (auto &workspace : collect_gpu_vla_workspaces(*fn, 0, true)) {
                 device_backed.insert(workspace.var);
             }
         }

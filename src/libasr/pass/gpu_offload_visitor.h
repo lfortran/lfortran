@@ -534,8 +534,6 @@ public:
         std::vector<GpuReductionInfo> reductions;
         std::vector<DimInfo> dim_info;
         std::vector<ASR::symbol_t*> optional_syms;
-        // GpuKernelLaunch::m_stack_bound.
-        int64_t stack_bound = -1;
     };
 
     void decline(const ASR::OMPRegion_t &x);
@@ -553,9 +551,8 @@ public:
     // Gives each iteration its own copy of an array of unspecified
     // locality that the iteration defines whole before it references it,
     // by making it a local of a BLOCK around the body (see
-    // gpu_offload_privatize.cpp). Returns a bound on the bytes of fixed-size
-    // arrays a thread of the kernel holds on its stack, -1 if none is known.
-    int64_t privatize_iteration_arrays(const ASR::OMPRegion_t &region,
+    // gpu_offload_privatize.cpp).
+    void privatize_iteration_arrays(const ASR::OMPRegion_t &region,
             ParallelLoopNest &work,
             const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
 

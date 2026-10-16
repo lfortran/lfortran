@@ -114,7 +114,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // when resolving inner AssociateBlockCalls in the loop body.
     std::map<ASR::symbol_t*, ASR::expr_t*> enclosing_assoc_map;
     resolve_enclosing_associates(work, n_dims, enclosing_assoc_map);
-    int64_t stack_bound = privatize_iteration_arrays(region, work,
+    privatize_iteration_arrays(region, work,
         enclosing_assoc_map);
 
     // Detect if the do concurrent is inside a Block scope. If so,
@@ -2568,7 +2568,6 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     plan.reductions = pending_reductions;
     plan.dim_info = dim_info;
     plan.optional_syms = optional_syms;
-    plan.stack_bound = stack_bound;
     build_kernel_launch(region, work, loc, plan);
 }
 

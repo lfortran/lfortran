@@ -3216,67 +3216,6 @@ public:
             "every generated GPU parameter must belong to a workspace dimension");
     }
 
-    // The bytes of the fixed-size arrays a thread running `kernel` holds on
-    // its stack: the local arrays of the kernel, of the BLOCK and ASSOCIATE
-    // constructs in it and of the device functions its layout lists, each
-    // scope counted once, which bounds what any chain of calls holds at
-    // once. An allocatable or pointer array is on the heap, a workspace
-    // in a device buffer, and a parameter, a saved array or one in shared
-    // or constant memory is not the thread's own.
-    static int64_t gpu_thread_stack_array_bytes(const Function_t &kernel) {
-        std::set<ASR::symbol_t*> workspaces;
-        for (size_t i = 0; i < kernel.m_gpu->n_workspaces; i++) {
-            workspaces.insert(kernel.m_gpu->m_workspaces[i].m_variable);
-        }
-        std::function<int64_t(SymbolTable*)> scope_bytes =
-                [&](SymbolTable *scope) {
-            int64_t bytes = 0;
-            for (auto &item : scope->get_scope()) {
-                ASR::symbol_t *s = item.second;
-                if (ASR::is_a<ASR::Block_t>(*s)) {
-                    bytes += scope_bytes(
-                        ASR::down_cast<ASR::Block_t>(s)->m_symtab);
-                    continue;
-                }
-                if (ASR::is_a<ASR::AssociateBlock_t>(*s)) {
-                    bytes += scope_bytes(
-                        ASR::down_cast<ASR::AssociateBlock_t>(s)->m_symtab);
-                    continue;
-                }
-                if (!ASR::is_a<ASR::Variable_t>(*s) || workspaces.count(s)) {
-                    continue;
-                }
-                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
-                if ((v->m_intent != ASR::intentType::Local &&
-                        v->m_intent != ASR::intentType::ReturnVar) ||
-                        v->m_storage == ASR::storage_typeType::Parameter ||
-                        v->m_storage == ASR::storage_typeType::Save ||
-                        !ASR::is_a<ASR::Array_t>(*v->m_type)) {
-                    continue;
-                }
-                ASR::memory_spaceType space = ASR::down_cast<ASR::Array_t>(
-                    v->m_type)->m_memory_space;
-                if (space == ASR::memory_spaceType::Shared ||
-                        space == ASR::memory_spaceType::Constant) {
-                    continue;
-                }
-                bytes += std::max<int64_t>(
-                    ASRUtils::compute_type_size_align(v->m_type).first, 0);
-            }
-            return bytes;
-        };
-        int64_t bytes = scope_bytes(kernel.m_symtab);
-        for (size_t i = 0; i < kernel.m_gpu->n_device_functions; i++) {
-            ASR::symbol_t *f = ASRUtils::symbol_get_past_external(
-                kernel.m_gpu->m_device_functions[i]);
-            if (f && ASR::is_a<ASR::Function_t>(*f)) {
-                bytes += scope_bytes(
-                    ASR::down_cast<ASR::Function_t>(f)->m_symtab);
-            }
-        }
-        return bytes;
-    }
-
     void visit_GpuKernelLaunch(const GpuKernelLaunch_t &x) {
         require_id(ASRUtils::is_device_kernel(x.m_kernel),
             "asr.verify.gpu_kernel_launch.kernel_runs_on_device",
@@ -3289,25 +3228,6 @@ public:
                 ASR::is_a<ASR::Block_t>(*x.m_component_fit),
             "asr.verify.gpu_kernel_launch.component_fit_is_block",
             "GpuKernelLaunch::m_component_fit must be a Block");
-        // The bound is what the pass that built the kernel relied on when
-        // it decided what a thread holds on its stack, before the passes
-        // that create the kernel's temporaries ran; once the kernel is laid
-        // out, what they made must stay within it.
-        require_id(x.m_stack_bound >= -1,
-            "asr.verify.gpu_kernel_launch.stack_bound",
-            "GpuKernelLaunch::m_stack_bound must be a number of bytes, or -1");
-        const ASR::Function_t &kernel =
-            *ASR::down_cast<ASR::Function_t>(x.m_kernel);
-        if (x.m_stack_bound >= 0 && kernel.m_gpu) {
-            int64_t held = gpu_thread_stack_array_bytes(kernel);
-            require_id(held <= x.m_stack_bound,
-                "asr.verify.gpu_kernel_launch.stack_within_bound",
-                "kernel '" + std::string(kernel.m_name) + "' holds " +
-                    std::to_string(held) + " bytes of fixed-size arrays on "
-                    "a thread's stack, more than the " +
-                    std::to_string(x.m_stack_bound) + " bytes its launch "
-                    "was bounded to");
-        }
         for (size_t i = 0; i < x.n_scratch; i++) {
             const ASR::gpu_scratch_buffer_t &scratch = x.m_scratch[i];
             bool in_range = scratch.m_argument_index >= 0 &&

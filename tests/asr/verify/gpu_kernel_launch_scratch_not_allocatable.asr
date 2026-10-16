@@ -148,7 +148,6 @@
                   ]
                   :stop_status nil
                   :stop_replay []
-                  :stack_bound -1
                 )
                 (GpuSync)
               ]

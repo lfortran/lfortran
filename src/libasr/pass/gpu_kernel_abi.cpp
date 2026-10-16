@@ -5,6 +5,7 @@
 #include <libasr/pass/pass_utils.h>
 
 #include <utility>
+#include <algorithm>
 
 namespace LCompilers {
 
@@ -513,6 +514,73 @@ ASR::expr_t* gpu_kernel_per_thread_extent(Allocator &al,
     reader.visit_expr(*out);
     if (reader.found) return nullptr;
     return out;
+}
+
+void pass_gpu_kernel_storage(Allocator &al, ASR::TranslationUnit_t &unit,
+        const PassOptions &options) {
+    const auto caps = gpu_device_capabilities(options);
+    if (!caps.device_selected()) return;
+    // Leave room for the device compiler's frames and register spills.
+    const int64_t budget = std::max<int64_t>(caps.thread_stack_bytes - 8192, 0);
+    for (auto &item : unit.m_symtab->get_scope()) {
+        if (!ASRUtils::is_device_kernel(item.second)) continue;
+        auto &kernel = *ASR::down_cast<ASR::Function_t>(item.second);
+        auto arrays = collect_gpu_vla_workspaces(kernel, 0, true);
+
+        // These are the actual remaining device routines, not a prediction
+        // of the routines gpu_offload might inline. Count each scope once.
+        int64_t remaining = budget;
+        std::set<ASR::Function_t*> visited;
+        std::function<void(ASR::Function_t*)> callees =
+            [&](ASR::Function_t *fn) {
+            if (!visited.insert(fn).second) return;
+            if (fn != &kernel) {
+                for (const auto &ws : collect_gpu_vla_workspaces(*fn, 0, true)) {
+                    int64_t bytes = ws.elem_size;
+                    bool fixed = true;
+                    for (const auto &dim : ws.dims) {
+                        if (!dim.is_constant) { fixed = false; break; }
+                        int64_t extent = std::max<int64_t>(dim.constant_value, 0);
+                        bytes = extent > 0 && bytes > budget / extent
+                            ? budget + 1 : bytes * extent;
+                    }
+                    if (fixed) remaining = std::max<int64_t>(remaining - bytes, 0);
+                }
+            }
+            for (auto *callee : gpu_callees(fn->m_body, fn->n_body, true)) {
+                callees(callee);
+            }
+        };
+        callees(&kernel);
+        std::vector<std::pair<int64_t, ASR::symbol_t*>> fixed;
+        for (const auto &ws : arrays) {
+            int64_t bytes = ws.elem_size;
+            bool constant = true;
+            for (const auto &dim : ws.dims) {
+                if (!dim.is_constant) { constant = false; break; }
+                int64_t extent = std::max<int64_t>(dim.constant_value, 0);
+                bytes = extent > 0 && bytes > budget / extent
+                    ? budget + 1 : bytes * extent;
+            }
+            if (constant) fixed.emplace_back(bytes, ws.var);
+        }
+        std::sort(fixed.begin(), fixed.end(), [](const auto &a, const auto &b) {
+            if (a.first != b.first) return a.first < b.first;
+            return std::string(ASRUtils::symbol_name(a.second))
+                < std::string(ASRUtils::symbol_name(b.second));
+        });
+        for (auto &array : fixed) {
+            auto *var = ASR::down_cast<ASR::Variable_t>(array.second);
+            var->m_type = ASRUtils::duplicate_type(al, var->m_type);
+            auto *type = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable(var->m_type));
+            // Global here means private storage in a workspace, not a
+            // shared value. The ABI planner records its per-thread slice.
+            type->m_memory_space = array.first <= remaining
+                ? ASR::memory_spaceType::Thread : ASR::memory_spaceType::Global;
+            if (array.first <= remaining) remaining -= array.first;
+        }
+    }
 }
 
 void pass_gpu_kernel_finalize(Allocator &al, ASR::TranslationUnit_t &unit,
