@@ -311,7 +311,7 @@ public:
     void materialize_aliased_assignments(ParallelLoopNest &nest);
 
     void materialize_aliased_in_body(ASR::stmt_t** &body, size_t &n_body,
-            bool &changed);
+            SymbolTable *scope, bool &changed);
 
     void inline_array_section_assignment(ParallelLoopNest &nest);
 
