@@ -990,6 +990,57 @@ static int fmt_snprintf_e(char* buf, size_t size, int prec, fmt_real val,
                     : snprintf(buf, size, "%.*e", prec, (double)val);
 }
 
+// The mantissa of the E editing of G editing for the nonzero `x`, with the
+// scale factor `scale` and `decimals` digits after the decimal point, and
+// its exponent in `*exp`. The digits come from a single conversion of `x`
+// rounded to the significant digits shown, so a rounding carry moves into
+// the exponent (0.99999 is 0.1000E+01, not 1.0000E+00). Returns false,
+// leaving `buf` and `*exp` unchanged, when no significant digit is shown.
+static bool fmt_g_e_mantissa(char* buf, size_t size, fmt_real x, int scale,
+                             int decimals, bool extended, int* exp) {
+    int sig = scale > 0 ? scale + decimals : decimals + scale;
+    int needed = scale > 0 ? sig + 3 : decimals + 4;
+    if (sig < 1 || sig > 40 || (size_t)needed > size) {
+        return false;
+    }
+    char e[64];
+    fmt_snprintf_e(e, sizeof(e), sig - 1, fmt_fabs(x), extended);
+    char digits[48];
+    int n = 0;
+    const char* p = e;
+    for (; *p != '\0' && *p != 'e'; p++) {
+        if (isdigit((unsigned char)*p)) digits[n++] = *p;
+    }
+    if (*p != 'e' || n != sig) return false;
+    int pos = 0;
+    if (x < 0) buf[pos++] = '-';
+    if (scale > 0) {
+        for (int i = 0; i < scale; i++) buf[pos++] = digits[i];
+        buf[pos++] = '.';
+        for (int i = scale; i < n; i++) buf[pos++] = digits[i];
+    } else {
+        buf[pos++] = '0';
+        buf[pos++] = '.';
+        for (int i = 0; i < -scale; i++) buf[pos++] = '0';
+        for (int i = 0; i < n; i++) buf[pos++] = digits[i];
+    }
+    buf[pos] = '\0';
+    *exp = atoi(p + 1) + 1 - scale;
+    return true;
+}
+
+// The exponent s with 10^(s-1) <= r < 10^s, where r is the nonzero `x`
+// rounded to `digits` significant digits. Rounding can carry into the next
+// power of ten: 0.9999999 rounded to 5 digits is 1.0000, so s is 1, not 0.
+// No real kind has 40 significant digits, so more digits cannot carry.
+static int fmt_rounded_decimal_exponent(fmt_real x, int digits, bool extended) {
+    char buf[64];
+    if (digits > 40) digits = 40;
+    fmt_snprintf_e(buf, sizeof(buf), digits - 1, fmt_fabs(x), extended);
+    const char* e = strchr(buf, 'e');
+    return (e != NULL ? atoi(e + 1) : 0) + 1;
+}
+
 void handle_float(FloatFormatType format_type, char* format, fmt_real val, bool extended, int scale, char** result, bool use_sign_plus, char rounding_mode) {
     if (format_type == FLOAT_FORMAT_F64) {
         char* float_str = (char*)internal_malloc(64 * sizeof(char));
@@ -4083,6 +4134,14 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                     if (s_info.current_element_type == FLOAT_32_TYPE ||
                             s_info.current_element_type == FLOAT_64_TYPE ||
                             s_info.current_element_type == FLOAT_80_TYPE) {
+                        // The exponent s of the value rounded to d significant
+                        // digits: F editing applies if 0 <= s <= d.
+                        int rounded_exp = 0;
+                        if (real_val != 0.0 && isfinite(real_val)) {
+                            rounded_exp = precision > 0
+                                ? fmt_rounded_decimal_exponent(real_val, precision, extended)
+                                : fmt_floor_log10(fmt_fabs(real_val), extended) + 1;
+                        }
                         if (isnan(real_val)) {
                             snprintf(formatted, sizeof(formatted), "NaN");
                         } else if (isinf(real_val)) {
@@ -4101,14 +4160,15 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                             } else {
                                 format_long_double_fortran(formatted, real_val);
                             }
-                        } else if (real_val == 0.0 || (fmt_fabs(real_val) >= 0.1 && fmt_fabs(real_val) < fmt_pow10(precision, extended))) {
+                        } else if (real_val == 0.0 || (rounded_exp >= 0 && rounded_exp <= precision)) {
                             // G format F-mode: use F(w-n).(d-k) followed by n blanks
                             // where n = e+2 (if e specified) or 4, and k is determined
-                            // by the magnitude range [10^(k-1), 10^k)
+                            // by the range [10^(k-1), 10^k) of the value rounded
+                            // to d significant digits.
                             // For zero, the standard defines k=1.
                             int k = 1;
                             if (real_val != 0.0) {
-                                k = fmt_floor_log10(fmt_fabs(real_val), extended) + 1;
+                                k = rounded_exp;
                             }
                             int dec_places = precision - k;
                             if (dec_places < 0) dec_places = 0;
@@ -4131,9 +4191,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, c
                                 adjusted_precision = precision - scale + 1;
                             }
                             if (adjusted_precision < 0) adjusted_precision = 0;
-                            fmt_real final_val = fmt_mul_pow10(real_val, -exp, extended);
                             char mantissa[64], exponent[16];
-                            fmt_snprintf_f(mantissa, sizeof(mantissa), false, adjusted_precision, final_val, extended);
+                            if (!fmt_g_e_mantissa(mantissa, sizeof(mantissa), real_val,
+                                    scale, adjusted_precision, extended, &exp)) {
+                                fmt_real final_val = fmt_mul_pow10(real_val, -exp, extended);
+                                fmt_snprintf_f(mantissa, sizeof(mantissa), false, adjusted_precision, final_val, extended);
+                            }
                             if (exp_digits > 0) {
                                 int exp_width = exp_digits + 1;
                                 // Keep width bounded so snprintf target size is provably safe.
