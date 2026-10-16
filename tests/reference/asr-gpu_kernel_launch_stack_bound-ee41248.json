@@ -1,0 +1,13 @@
+{
+    "basename": "asr-gpu_kernel_launch_stack_bound-ee41248",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/gpu_kernel_launch_stack_bound.asr",
+    "infile_hash": "2a5b86a7b042402e0beb93a84f9a10d723d4b22d85e8f902accbee76",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-gpu_kernel_launch_stack_bound-ee41248.stderr",
+    "stderr_hash": "bb63b1d1d7a0206510c11a7f22de15acb8b32266f75c4e26ce5284cc",
+    "returncode": 2
+}

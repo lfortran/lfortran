@@ -9,7 +9,7 @@ Launches a GPU kernel.
 ```text
 GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size,
     call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch,
-    expr? stop_status, stmt* stop_replay)
+    expr? stop_status, stmt* stop_replay, int stack_bound)
 gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 ```
 
@@ -25,6 +25,7 @@ gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 | `scratch` | the arguments that are buffers only the device holds (below). |
 | `stop_status` | the host array passed as the status buffer of a kernel that can `stop`, or `nil`. |
 | `stop_replay` | the host statements that run the `stop` a thread of the launch recorded (below). |
+| `stack_bound` | a bound, in bytes, on the fixed-size arrays a thread of the kernel holds on its stack, or -1 when none is known (below). |
 
 ### Return values
 
@@ -86,6 +87,15 @@ the launch, which the `gpu_launch_sync` pass places, copies of them after
 each GpuSync the launch may still be pending at; that pass also clears the
 first element of `stop_status` once, on entry to the procedure.
 
+`stack_bound` is what `gpu_offload` relied on when it gave each thread its own
+copy of an array an iteration defines before it uses it: it counts those
+arrays, the locals of the loop body and of what it calls, and the temporaries
+the passes after it may create, before they run. Once the kernel has its
+layout, the verifier checks that the fixed-size local arrays of the kernel, of
+the BLOCK and ASSOCIATE constructs in it and of its device functions, a
+workspace aside, take no more than `stack_bound` bytes. A launch that does not
+know such a bound has -1.
+
 ## Examples
 
 ```clojure
@@ -116,6 +126,7 @@ first element of `stop_status` once, on entry to the procedure.
   :scratch []
   :stop_status nil
   :stop_replay []
+  :stack_bound -1
 )
 ```
 

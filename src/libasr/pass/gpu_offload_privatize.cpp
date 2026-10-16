@@ -12,6 +12,7 @@
 #include <libasr/pass/access_paths.h>
 #include <libasr/pass/array_struct_temporary.h>
 #include <libasr/pass/gpu_offload_collect.h>
+#include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/gpu_offload_visitor.h>
 #include <libasr/pass/symbol_expr_substitution.h>
@@ -102,6 +103,40 @@ public:
     void visit_IfArithmetic(const ASR::IfArithmetic_t &) { found = true; }
 };
 
+// The most elements an ALLOCATE of `array` gives it with extents that are
+// compile-time constants.
+class GpuConstantAllocations
+        : public ASRUtils::BlockBodyWalkVisitor<GpuConstantAllocations> {
+public:
+    ASR::symbol_t *array;
+    int64_t elements = 0;
+
+    explicit GpuConstantAllocations(ASR::symbol_t *array_) : array(array_) {}
+
+    void visit_Allocate(const ASR::Allocate_t &x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            const ASR::alloc_arg_t &a = x.m_args[i];
+            if (!a.m_a || !ASR::is_a<ASR::Var_t>(*a.m_a) ||
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(a.m_a)->m_v) != array) {
+                continue;
+            }
+            int64_t n = 1;
+            for (size_t d = 0; d < a.n_dims && n > 0; d++) {
+                int64_t extent = 0;
+                if (a.m_dims[d].m_length == nullptr ||
+                        !ASRUtils::extract_value(ASRUtils::expr_value(
+                            a.m_dims[d].m_length), extent)) {
+                    n = 0;
+                } else {
+                    n *= std::max<int64_t>(extent, 0);
+                }
+            }
+            if (a.n_dims > 0) elements = std::max(elements, n);
+        }
+    }
+};
+
 // What a loop leaves of a thread's stack to the frames the device compiler
 // adds: the kernel's own, its register spills, a device function it does
 // not inline. On Metal the kernel's own frame measured under 1 KiB: a kernel
@@ -118,9 +153,16 @@ constexpr int64_t gpu_stack_frame_reserve_bytes = 8 * 1024;
 // statements of those compute (`cshift(b, j)`, `reshape(...)`, a section
 // gathered for a call), which are locals of the kernel or of the procedure
 // as well. Each scope counts once, so the sum bounds what any chain of
-// calls holds at once. An allocatable or pointer lives on the heap and a
-// run-time sized array in a workspace, not on the stack; an associate name
-// is its selector, which the pass writes in its place.
+// calls holds at once. A run-time sized array lives in a workspace or on
+// the device heap, not on the stack; an allocatable or pointer array is
+// a local array where it is allocated with a size known at compile time
+// (allocated_bytes); an associate name is its selector, which the pass
+// writes in its place.
+//
+// The bound is a prediction of what passes that have not run yet will
+// make. The launch records it (GpuKernelLaunch::m_stack_bound), and ASR
+// verification checks the laid-out kernel against it, so that a pass that
+// makes more than this predicts is caught by every test that offloads.
 //
 // A temporary counts for every array value a pass after this one may give
 // storage of its own, wherever it nests, whether it is made in the end or
@@ -134,8 +176,10 @@ constexpr int64_t gpu_stack_frame_reserve_bytes = 8 * 1024;
 //     element into what uses it;
 //   - of a section without a vector subscript, only a copy: of one whose
 //     elements are not adjacent, as an actual argument
-//     (gather_strided_section_arg), or of one of the array an assignment
-//     defines (is_common_symbol_present_in_lhs_and_rhs); anywhere else the
+//     (gather_strided_section_arg), of one a function the pass may splice
+//     into the body sections in turn (spliced_section_copy), or of one of
+//     the array an assignment defines
+//     (is_common_symbol_present_in_lhs_and_rhs); anywhere else the
 //     section is read in place;
 //   - the target of an assignment whose value reads the target's storage
 //     through another designator, when that temporary has a compile-time
@@ -201,8 +245,9 @@ public:
                     ASR::down_cast<ASR::ArraySection_t>(e))) {
             // A section is read in place, except where it is copied (see
             // the class comment).
-            if (argument && gpu.section_is_noncontiguous(
-                    ASR::down_cast<ASR::ArraySection_t>(e))) {
+            if (argument && (spliced_copies.count(e) ||
+                    gpu.section_is_noncontiguous(
+                        ASR::down_cast<ASR::ArraySection_t>(e)))) {
                 count(e, n, bytes);
             } else if (target_array && is_common_symbol_present_in_lhs_and_rhs(
                     al, target_array, e)) {
@@ -291,8 +336,23 @@ public:
             ::visit_AssociateBlockCall(x);
     }
 
+    // A function the offload pass may splice into the body has a section
+    // actual copied whose dummy it sections (spliced_section_copy).
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        callee(x.m_name);
+        ASR::Function_t *fn = callee(x.m_name);
+        if (fn) {
+            for (size_t i = 0; i < x.n_args && i < fn->n_args; i++) {
+                std::vector<int> range_dims;
+                ASR::expr_t *actual = GpuOffloadVisitor::strip_array_casts(
+                    x.m_args[i].m_value);
+                if (ASR::is_a<ASR::Var_t>(*fn->m_args[i]) &&
+                        gpu.spliced_section_copy(fn,
+                            ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v,
+                            actual, range_dims)) {
+                    spliced_copies.insert(actual);
+                }
+            }
+        }
         ASRUtils::BlockBodyWalkVisitor<GpuThreadStack>
             ::visit_FunctionCall(x);
     }
@@ -307,6 +367,8 @@ private:
     Allocator &al;
     GpuOffloadVisitor &gpu;
     std::set<SymbolTable*> counted;
+    // The section actuals a splice would copy.
+    std::set<ASR::expr_t*> spliced_copies;
 
     ASR::expr_t *assigned = nullptr;
     // The array the assignment whose value is being visited defines, whose
@@ -406,9 +468,11 @@ private:
             if ((v->m_intent != ASR::intentType::Local &&
                     v->m_intent != ASR::intentType::ReturnVar) ||
                     v->m_storage == ASR::storage_typeType::Parameter ||
-                    v->m_storage == ASR::storage_typeType::Save ||
-                    ASRUtils::is_allocatable(v->m_type) ||
-                    ASRUtils::is_pointer(v->m_type)) {
+                    v->m_storage == ASR::storage_typeType::Save) {
+                continue;
+            }
+            if (ASRUtils::is_allocatable_or_pointer(v->m_type)) {
+                bytes += allocated_bytes(s, v);
                 continue;
             }
             bytes += std::max<int64_t>(
@@ -416,12 +480,56 @@ private:
         }
     }
 
-    void callee(ASR::symbol_t *name) {
+    // An allocatable or pointer array of device code is laid out like a
+    // local array of the size it is allocated with when that size is a
+    // compile-time constant, and is otherwise in a workspace or on the
+    // device heap. So it counts the most elements an ALLOCATE in its
+    // scope gives it with constant extents, or the value that sizes it
+    // when it is assigned before it is allocated
+    // (gpu_scope_array_shape_source).
+    int64_t allocated_bytes(SymbolTable *s, ASR::Variable_t *v) {
+        if (!ASRUtils::is_array(v->m_type) || s->asr_owner == nullptr ||
+                !ASR::is_a<ASR::symbol_t>(*s->asr_owner)) {
+            return 0;
+        }
+        ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(s->asr_owner);
+        ASR::stmt_t **body = nullptr;
+        size_t n_body = 0;
+        if (ASR::is_a<ASR::Block_t>(*owner)) {
+            body = ASR::down_cast<ASR::Block_t>(owner)->m_body;
+            n_body = ASR::down_cast<ASR::Block_t>(owner)->n_body;
+        } else if (ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+            body = ASR::down_cast<ASR::AssociateBlock_t>(owner)->m_body;
+            n_body = ASR::down_cast<ASR::AssociateBlock_t>(owner)->n_body;
+        } else if (ASR::is_a<ASR::Function_t>(*owner)) {
+            body = ASR::down_cast<ASR::Function_t>(owner)->m_body;
+            n_body = ASR::down_cast<ASR::Function_t>(owner)->n_body;
+        } else {
+            return 0;
+        }
+        GpuConstantAllocations allocations(&v->base);
+        for (size_t i = 0; i < n_body; i++) {
+            allocations.visit_stmt(*body[i]);
+        }
+        int64_t n = allocations.elements;
+        ASR::expr_t *shape = gpu_scope_array_shape_source(v, body, n_body);
+        if (shape) n = std::max(n, elements(shape));
+        int64_t element = ASRUtils::compute_type_size_align(
+            ASRUtils::extract_type(v->m_type)).first;
+        if (element <= 0) {
+            if (n > 0) bounded = false;
+            return 0;
+        }
+        return n > 0 ? n * element : 0;
+    }
+
+    // The function a call calls, whose locals and statements count once.
+    ASR::Function_t* callee(ASR::symbol_t *name) {
         ASR::symbol_t *s = ASRUtils::symbol_get_past_external(name);
         if (s) s = ASRUtils::symbol_get_past_StructMethodDeclaration(s);
-        if (s == nullptr || !ASR::is_a<ASR::Function_t>(*s)) return;
+        if (s == nullptr || !ASR::is_a<ASR::Function_t>(*s)) return nullptr;
         ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
-        if (counted.count(fn->m_symtab)) return;
+        if (counted.count(fn->m_symtab)) return fn;
         scope(fn->m_symtab, {});
         // The callee's statements are its own; what the caller's statement
         // defines does not reach them.
@@ -432,6 +540,7 @@ private:
         for (size_t i = 0; i < fn->n_body; i++) visit_stmt(*fn->m_body[i]);
         target_array = outer_target;
         alias_materialized = outer_materialized;
+        return fn;
     }
 };
 
@@ -948,9 +1057,13 @@ bool read_after_region(GpuArrayFlowReader &reader,
 // the loop. Anything else stays one array, shared by all threads, as the
 // source wrote it: distinct elements per iteration (`y(i) = ...`) are its
 // common case.
-void GpuOffloadVisitor::privatize_iteration_arrays(
+std::vector<std::pair<int64_t, ASR::symbol_t*>>
+GpuOffloadVisitor::iteration_array_candidates(
         const ASR::OMPRegion_t &region, ParallelLoopNest &work,
         const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map) {
+    // The arrays that may be made local, with the bytes each takes on a
+    // thread's stack.
+    std::vector<std::pair<int64_t, ASR::symbol_t*>> candidates;
     // The procedure, or main program, the loop is in.
     SymbolTable *proc_scope = current_scope;
     while (proc_scope && proc_scope->asr_owner &&
@@ -965,7 +1078,7 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
     }
     if (proc_scope == nullptr || proc_scope->asr_owner == nullptr ||
             !ASR::is_a<ASR::symbol_t>(*proc_scope->asr_owner)) {
-        return;
+        return candidates;
     }
     ASR::symbol_t *proc = ASR::down_cast<ASR::symbol_t>(
         proc_scope->asr_owner);
@@ -978,19 +1091,19 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
         proc_body = ASR::down_cast<ASR::Function_t>(proc)->m_body;
         proc_n_body = ASR::down_cast<ASR::Function_t>(proc)->n_body;
     } else {
-        return;
+        return candidates;
     }
     {
         GpuJumpFinder jumps;
         for (size_t i = 0; i < proc_n_body; i++) {
             jumps.visit_stmt(*proc_body[i]);
         }
-        if (jumps.found) return;
+        if (jumps.found) return candidates;
     }
     std::vector<GpuStmtPathStep> path;
     if (!find_stmt_path(proc_body, proc_n_body, false, nullptr,
             &region.base, path)) {
-        return;
+        return candidates;
     }
 
     // The scopes from the loop's own out to the procedure's: a variable
@@ -1035,9 +1148,6 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
     }
     std::map<ASR::Function_t*, bool> outside;
 
-    // The arrays that may be made local, with the bytes each takes on a
-    // thread's stack.
-    std::vector<std::pair<int64_t, ASR::symbol_t*>> candidates;
     for (ASR::symbol_t *sym : named) {
         if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
@@ -1108,12 +1218,29 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
         candidates.push_back({bytes, sym});
     }
     // The body becomes the statements of a BLOCK (below).
-    if (candidates.empty() ||
-            !gpu_associates_inlined(work.body, work.n_body, true)) {
-        return;
+    if (!gpu_associates_inlined(work.body, work.n_body, true)) {
+        candidates.clear();
     }
-    // The smallest first, while they fit the stack that the body's locals
-    // and temporaries and the reserve leave.
+    return candidates;
+}
+
+// Makes the candidates local, the smallest first, while they fit the stack
+// that the body's locals and temporaries and the reserve leave, and returns
+// the bound on the bytes of a thread's stack the body then takes besides
+// the reserve, or -1 if none is known (and nothing is made local). The
+// launch records the bound, and gpu_kernel_finalize checks the kernel the
+// later passes make against it.
+int64_t GpuOffloadVisitor::privatize_iteration_arrays(
+        const ASR::OMPRegion_t &region, ParallelLoopNest &work,
+        const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map) {
+    GpuThreadStack taken(al, *this);
+    for (size_t i = 0; i < work.n_body; i++) {
+        taken.visit_stmt(*work.body[i]);
+    }
+    if (!taken.bounded) return -1;
+    int64_t stack_bytes = taken.bytes;
+    std::vector<std::pair<int64_t, ASR::symbol_t*>> candidates =
+        iteration_array_candidates(region, work, enclosing_assoc_map);
     std::sort(candidates.begin(), candidates.end(),
         [](const std::pair<int64_t, ASR::symbol_t*> &a,
                 const std::pair<int64_t, ASR::symbol_t*> &b) {
@@ -1121,19 +1248,16 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
             return std::string(ASRUtils::symbol_name(a.second))
                 < std::string(ASRUtils::symbol_name(b.second));
         });
-    GpuThreadStack taken(al, *this);
-    for (size_t i = 0; i < work.n_body; i++) {
-        taken.visit_stmt(*work.body[i]);
-    }
-    if (!taken.bounded) return;
-    int64_t stack_bytes = taken.bytes + gpu_stack_frame_reserve_bytes;
     std::vector<ASR::symbol_t*> privatized;
     for (auto &c : candidates) {
-        if (stack_bytes + c.first > device_caps.thread_stack_bytes) break;
+        if (stack_bytes + gpu_stack_frame_reserve_bytes + c.first >
+                device_caps.thread_stack_bytes) {
+            break;
+        }
         stack_bytes += c.first;
         privatized.push_back(c.second);
     }
-    if (privatized.empty()) return;
+    if (privatized.empty()) return stack_bytes;
     std::sort(privatized.begin(), privatized.end(),
         [](ASR::symbol_t *a, ASR::symbol_t *b) {
             return std::string(ASRUtils::symbol_name(a))
@@ -1188,6 +1312,7 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
     body.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al, loc, -1,
         block_sym)));
     work.set_body(body.p, body.n);
+    return stack_bytes;
 }
 
 } // namespace LCompilers

@@ -174,6 +174,13 @@ public:
             GpuDecline &decline,
             bool spliceable = true);
 
+    // The section `actual` that splicing `fn` copies into a contiguous
+    // array for its dummy `dummy` (gather_section_actual), with the
+    // dimensions it spans; nullptr when splicing passes it on as it is.
+    ASR::ArraySection_t* spliced_section_copy(ASR::Function_t *fn,
+            ASR::symbol_t *dummy, ASR::expr_t *actual,
+            std::vector<int> &range_dims);
+
     ASR::expr_t* gather_section_actual(const Location &loc,
             SymbolTable *block_scope, ASR::Function_t *fn,
             ASR::symbol_t *dummy, ASR::expr_t *actual, bool writable,
@@ -527,6 +534,8 @@ public:
         std::vector<GpuReductionInfo> reductions;
         std::vector<DimInfo> dim_info;
         std::vector<ASR::symbol_t*> optional_syms;
+        // GpuKernelLaunch::m_stack_bound.
+        int64_t stack_bound = -1;
     };
 
     void decline(const ASR::OMPRegion_t &x);
@@ -544,9 +553,16 @@ public:
     // Gives each iteration its own copy of an array of unspecified
     // locality that the iteration defines whole before it references it,
     // by making it a local of a BLOCK around the body (see
-    // gpu_offload_privatize.cpp).
-    void privatize_iteration_arrays(const ASR::OMPRegion_t &region,
+    // gpu_offload_privatize.cpp). Returns a bound on the bytes of fixed-size
+    // arrays a thread of the kernel holds on its stack, -1 if none is known.
+    int64_t privatize_iteration_arrays(const ASR::OMPRegion_t &region,
             ParallelLoopNest &work,
+            const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
+
+    // The arrays privatize_iteration_arrays may make local, each with the
+    // bytes it takes on a thread's stack.
+    std::vector<std::pair<int64_t, ASR::symbol_t*>> iteration_array_candidates(
+            const ASR::OMPRegion_t &region, ParallelLoopNest &work,
             const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
 
     bool offloadable_before_rewrites(const ParallelLoopNest &work,
