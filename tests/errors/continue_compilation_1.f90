@@ -3353,3 +3353,22 @@ contains
         x = cc1_pcd_t(cc1_pcd_b_arg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
     end subroutine cc1_pcd_use
 end module cc1_proc_component_dt_dummy_mod
+
+! An error in an interface block of a procedure with ENTRY is reported once,
+! not again for the master function that holds the body.
+subroutine cc1_entry_interface_errors(i)
+    integer, intent(inout) :: i
+    interface cc1_entry_gen
+        procedure cc1_entry_undeclared_1  ! {Error} Symbol 'cc1_entry_undeclared_1' not declared
+    end interface
+    interface operator(.ccentryop.)
+        procedure cc1_entry_undeclared_2  ! {Error} Symbol 'cc1_entry_undeclared_2' not declared
+    end interface
+    interface assignment(=)
+        procedure cc1_entry_undeclared_3  ! {Error} Assignment procedure `cc1_entry_undeclared_3` not found
+    end interface
+    i = 1
+    return
+entry cc1_entry_interface_errors_2(i)
+    i = 2
+end subroutine cc1_entry_interface_errors

@@ -275,6 +275,25 @@ public:
             v.is_template = enclosing_is_template;
         }
     };
+    // Drops the errors of an interface block built in a copy of a procedure's scope made for ENTRY:
+    // the same errors are reported for the procedure's own scope.
+    struct EntryCopyDiagnosticsScope {
+        diag::Diagnostics &diag;
+        size_t n_diagnostics;
+        bool drop;
+
+        EntryCopyDiagnosticsScope(SymbolTableVisitor &v, SymbolTable *scope)
+                : diag(v.diag), n_diagnostics(v.diag.diagnostics.size()),
+                  drop(v.compiler_options.continue_compilation
+                      && v.original_scope(scope) != scope) {}
+
+        ~EntryCopyDiagnosticsScope() {
+            if (drop) {
+                diag.diagnostics.erase(diag.diagnostics.begin() + n_diagnostics,
+                    diag.diagnostics.end());
+            }
+        }
+    };
     SymbolTable *global_scope;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
     // The specific procedures of the operator interface blocks, by operator,
@@ -4514,6 +4533,7 @@ public:
             for (auto &[op, specifics] : *op_procs) {
                 for (auto &[scope, procs] : group_specifics_by_scope(specifics)) {
                     current_scope = scope;
+                    EntryCopyDiagnosticsScope entry_copy_diagnostics(*this, scope);
                     std::pair<const std::string,
                         std::vector<std::pair<std::string, Location>>> scope_procs = {op, procs};
                     add_custom_operator(scope_procs, ASR::accessType::Public);
@@ -4529,6 +4549,7 @@ public:
         SymbolTable *current_scope_copy = current_scope;
         for (auto &[scope, procs] : group_specifics_by_scope(assgn_proc_names_locations)) {
             current_scope = scope;
+            EntryCopyDiagnosticsScope entry_copy_diagnostics(*this, scope);
             add_assignment_procedure(procs);
         }
         current_scope = current_scope_copy;
@@ -4740,6 +4761,7 @@ public:
         SymbolTable *current_scope_copy = current_scope;
         for (auto &proc : generics) {
             current_scope = proc.second[0].scope;
+            EntryCopyDiagnosticsScope entry_copy_diagnostics(*this, current_scope);
             Location loc;
             loc.first = 1;
             loc.last = 1;
