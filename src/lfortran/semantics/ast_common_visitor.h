@@ -17651,9 +17651,9 @@ public:
                         // skip the ArrayItem→ArraySection transformation and let
                         // implicit_argument_casting in Call_t_body handle both the
                         // scalar-to-array and type conversion.
-                        ASR::ttype_t* actual_elem = ASRUtils::type_get_past_array(
+                        ASR::ttype_t* actual_elem = ASRUtils::extract_type(
                             ASRUtils::expr_type(array_expr));
-                        ASR::ttype_t* expected_elem = ASRUtils::type_get_past_array(
+                        ASR::ttype_t* expected_elem = ASRUtils::extract_type(
                             array_arg_idx[i]);
                         if (!ASRUtils::types_equal(actual_elem, expected_elem,
                                 arg_expr, f->m_args[i], true)) {
@@ -17765,7 +17765,8 @@ public:
                             int actual_n_dims = static_cast<int>(array_indices.size());
                             if (expected_n_dims_cast != actual_n_dims) {
                                 section_type = ASRUtils::duplicate_type_with_empty_dims(
-                                    al, ASRUtils::expr_type(array_expr),
+                                    al, ASRUtils::type_get_past_allocatable_pointer(
+                                        ASRUtils::expr_type(array_expr)),
                                     ASR::array_physical_typeType::DescriptorArray, true
                                 );
                             } else {
@@ -17781,12 +17782,13 @@ public:
                                 al, ASRUtils::TYPE(expected_array), expected_phys_type, true);
                         }
 
-                        // For external/implicit-interface calls (ABI expects raw pointers), avoid
-                        // materializing a temporary ArraySection descriptor. Passing the address
-                        // of the first element directly is sufficient for sequence association and
-                        // prevents stack growth from dimension-descriptor allocas.
-                        if (callee_is_external_symbol &&
-                            expected_phys_type == ASR::array_physical_typeType::PointerArray &&
+                        // When the dummy is passed as a raw pointer (PointerArray), pass the
+                        // address of the element directly. This is exactly the element sequence
+                        // that starts at the element, whereas an ArraySection a(i:, j:) does not
+                        // describe it (and may be copied in as a non-contiguous section). It also
+                        // avoids materializing a temporary ArraySection descriptor, preventing
+                        // stack growth from dimension-descriptor allocas.
+                        if (expected_phys_type == ASR::array_physical_typeType::PointerArray &&
                             !ASRUtils::is_character(*ASRUtils::type_get_past_array(expected_arg_type))) {
                             arg.m_value = ASRUtils::EXPR(ASR::make_GetPointer_t(
                                 al, array_item->base.base.loc, arg_expr, cast_target_type, nullptr));
