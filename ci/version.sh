@@ -10,8 +10,10 @@
 #
 #     0.6.0-37-g3878937f-dirty
 #
+# build0.sh sources this from the Prefix `shell`; no `set -x`, which `shell`
+# captures in `$(...)`.
 
-set -ex
+set -e
 
 version=$(git describe --tags --dirty)
 version="${version:1}"
