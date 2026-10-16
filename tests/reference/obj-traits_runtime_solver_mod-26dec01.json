@@ -1,0 +1,13 @@
+{
+    "basename": "obj-traits_runtime_solver_mod-26dec01",
+    "cmd": "lfortran --no-color -c {infile} -o output.o",
+    "infile": "tests/traits_runtime_solver_mod.F90",
+    "infile_hash": "4577932bcb1afc886c704516d4504ed831be28cf4bc326b1a566557d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "obj-traits_runtime_solver_mod-26dec01.stderr",
+    "stderr_hash": "24e0e140a504cddc28ebfa087634877bd22c253125f7add08fd0308c",
+    "returncode": 0
+}

@@ -6023,6 +6023,10 @@ filename = "traits_view_argument_mytype.F90"
 obj = true
 
 [[test]]
+filename = "traits_runtime_solver_mod.F90"
+obj = true
+
+[[test]]
 filename = "errors/continue_compilation_traits_ocp.f90"
 semantics_only_cc = true
 

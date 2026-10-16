@@ -1,0 +1,9 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/traits_runtime_solver_mod.F90:3:4 - 10:2
+   |
+ 3 |       abstract interface :: IRhsFunc
+   |       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+10 |     
+   | ...^^ LFortran extension
