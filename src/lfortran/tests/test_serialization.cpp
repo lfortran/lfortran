@@ -5878,6 +5878,9 @@ TEST_CASE("Inherited trait contracts retain nominal obligations") {
 TEST_CASE("Trait array shape contracts distinguish assumed-size") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;
+    // The optional dummy of static_only keeps both traits without runtime
+    // contracts, whose slots the representation changes below would not
+    // follow: only the static contracts are compared.
     const std::string source = R"(
 module trait_array_contracts_m
 implicit none
@@ -5890,6 +5893,10 @@ abstract interface :: ILeft
         integer, intent(in) :: a(3)
         integer :: r
     end function
+    function static_only(k) result(r)
+        integer, intent(in), optional :: k
+        integer :: r
+    end function
 end interface
 abstract interface :: IRight
     function count(a) result(r)
@@ -5898,6 +5905,10 @@ abstract interface :: IRight
     end function
     function fixed(a) result(r)
         integer, intent(in) :: a(3)
+        integer :: r
+    end function
+    function static_only(k) result(r)
+        integer, intent(in), optional :: k
         integer :: r
     end function
 end interface
@@ -6192,10 +6203,13 @@ end module
 TEST_CASE("Trait array-element bounds preserve positional correspondence") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;
+    // An optional `a` keeps the traits without runtime contracts, whose slots
+    // the bound changes below would not follow: only the static contracts
+    // are compared.
     const std::string method = R"(
 function count(n, other, k, a) result(r)
     integer, intent(in) :: n(2, 2), other(2, 2), k(2)
-    integer, intent(in) :: a(n(k(1), 2), other(1, 1))
+    integer, intent(in), optional :: a(n(k(1), 2), other(1, 1))
     integer :: r
 end function
 )";
@@ -10375,6 +10389,28 @@ end module
     REQUIRE(extent != nullptr);
     REQUIRE(ASR::is_a<ASR::FunctionParam_t>(*extent));
     CHECK(ASR::down_cast<ASR::FunctionParam_t>(extent)->m_param_number == 1);
+    // Its runtime slot puts the view first as well; the explicit shape of `x`
+    // refers to the slot's own `n` at its new position.
+    auto *sized_trait = ASR::down_cast<ASR::Trait_t>(module->m_symtab->get_symbol("isized"));
+    auto *sized_contract = ASRUtils::trait_runtime_contract(&sized_trait->base);
+    REQUIRE(sized_contract != nullptr);
+    REQUIRE(sized_contract->n_slots == 1);
+    auto *resize_slot = ASRUtils::trait_method_function(sized_contract->m_slots[0].m_procedure);
+    REQUIRE(resize_slot->n_args == 3);
+    CHECK(ASR::is_a<ASR::TraitObjectType_t>(
+        *ASRUtils::EXPR2VAR(resize_slot->m_args[0])->m_type));
+    CHECK(std::string(ASRUtils::EXPR2VAR(resize_slot->m_args[1])->m_name) == "n");
+    auto *slot_x = ASRUtils::get_FunctionType(resize_slot)->m_arg_types[2];
+    REQUIRE(ASR::is_a<ASR::Array_t>(*slot_x));
+    auto *slot_extent = ASR::down_cast<ASR::Array_t>(slot_x)->m_dims[0].m_length;
+    REQUIRE(slot_extent != nullptr);
+    REQUIRE(ASR::is_a<ASR::FunctionParam_t>(*slot_extent));
+    CHECK(ASR::down_cast<ASR::FunctionParam_t>(slot_extent)->m_param_number == 1);
+    auto *slot_x_extent = ASR::down_cast<ASR::Array_t>(
+        ASRUtils::EXPR2VAR(resize_slot->m_args[2])->m_type)->m_dims[0].m_length;
+    REQUIRE(ASR::is_a<ASR::Var_t>(*slot_x_extent));
+    CHECK(ASR::down_cast<ASR::Var_t>(slot_x_extent)->m_v ==
+        ASR::down_cast<ASR::Var_t>(resize_slot->m_args[1])->m_v);
     // Adapters only forward: the implementation alone has an OUT receiver.
     ASR::TraitWitness_t *witness = nullptr;
     for (const auto &entry : module->m_symtab->get_scope()) {
@@ -10444,7 +10480,7 @@ end module
     auto procedure = [&](const char *name) {
         return ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol(name));
     };
-    // A trait that has neither a runtime contract (explicit-shape array
+    // A trait that has neither a runtime contract (assumed-size array
     // argument) nor conformances: only its own declaration is verified.
     auto declaration_rejects = [&](bool both, const std::string &code) {
         const std::string declarations = R"(
@@ -10454,7 +10490,7 @@ abstract interface :: ISized
     subroutine resize(n, self, x)
         integer, intent(in) :: n
         type(itself), intent(inout), pass :: self
-        real, intent(in) :: x(n)
+        real, intent(in) :: x(*)
     end subroutine
 end interface
 end module
