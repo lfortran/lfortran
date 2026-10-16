@@ -2683,7 +2683,10 @@ RUN(NAME pdt_20 LABELS gfortran llvm)
 # depend on a kind parameter, so this test is not labelled `gfortran`
 RUN(NAME pdt_21 LABELS llvm)
 RUN(NAME pdt_22 LABELS gfortran llvm)
-RUN(NAME pdt_23 LABELS gfortran llvm)
+# GFortran < 16 wrongly rejects a PRIVATE statement after type parameter
+# definitions (https://gcc.gnu.org/bugzilla/show_bug.cgi?id=84122), so this
+# test is not labelled `gfortran`
+RUN(NAME pdt_23 LABELS llvm)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)
