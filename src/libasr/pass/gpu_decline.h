@@ -72,15 +72,12 @@ struct GpuDeviceCapabilities {
     // iteration runs on one thread (see gpu_vector_lanes.cpp).
     int lanes_per_iteration = 1;
 
-    // How many bytes of local arrays the offload pass may add to each
-    // thread of a kernel itself, by making a per-iteration temporary of the
-    // source a local of the iteration (gpu_offload_privatize.cpp). A
-    // thread's local arrays live in its stack, which they share with what
-    // the source declares in the loop and with the frames of the device
-    // functions it calls. The pass cannot bound those, so it takes a quarter
-    // of the stack and leaves the rest to them; a temporary that does not
-    // fit stays one array, as the source wrote it.
-    int64_t privatized_array_bytes = 0;
+    // How many bytes of stack a thread of a kernel has. Its local arrays
+    // live there, so the offload pass makes a per-iteration temporary of
+    // the source a local of the iteration only while it fits what the
+    // locals the source declares leave (gpu_offload_privatize.cpp); one
+    // that does not stays one array, as the source wrote it.
+    int64_t thread_stack_bytes = 0;
 
     // Whether the device has a scalar type of the same in-memory width as
     // `t`. Every dialect shares a floor -- the widths in

@@ -101,6 +101,102 @@ public:
     void visit_IfArithmetic(const ASR::IfArithmetic_t &) { found = true; }
 };
 
+// What a loop leaves of a thread's stack to the frames the device compiler
+// adds: the kernel's own, its register spills, a device function it does
+// not inline. On Metal the kernel's own frame measured under 1 KiB: a kernel
+// whose one local is an array of 65,400 `float`s builds, one of 65,500 does
+// not (256 KiB is 65,536), whether it calls a device function or not. The
+// reserve is eight times that.
+constexpr int64_t gpu_stack_frame_reserve_bytes = 8 * 1024;
+
+// The bytes of a thread's stack that what the source declares takes while
+// the thread runs a loop body: the locals of the BLOCK and ASSOCIATE
+// constructs of the body, and those of every procedure it may call, and of
+// theirs. Each scope counts once, so the sum bounds what any chain of calls
+// holds at once. An allocatable or pointer lives on the heap and a
+// run-time sized array in a workspace, not on the stack; an associate name
+// is its selector, which the pass writes in its place.
+class GpuDeclaredStack
+        : public ASRUtils::BlockBodyWalkVisitor<GpuDeclaredStack> {
+public:
+    int64_t bytes = 0;
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_m);
+        if (s && ASR::is_a<ASR::Block_t>(*s)) {
+            scope(ASR::down_cast<ASR::Block_t>(s)->m_symtab, {});
+        }
+        ASRUtils::BlockBodyWalkVisitor<GpuDeclaredStack>::visit_BlockCall(x);
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_m);
+        if (s && ASR::is_a<ASR::AssociateBlock_t>(*s)) {
+            ASR::AssociateBlock_t *ab =
+                ASR::down_cast<ASR::AssociateBlock_t>(s);
+            std::set<ASR::symbol_t*> names;
+            for (size_t i = 0; i < ab->n_body; i++) {
+                if (!ASR::is_a<ASR::Associate_t>(*ab->m_body[i])) continue;
+                ASR::expr_t *target = ASR::down_cast<ASR::Associate_t>(
+                    ab->m_body[i])->m_target;
+                if (ASR::is_a<ASR::Var_t>(*target)) {
+                    names.insert(ASR::down_cast<ASR::Var_t>(target)->m_v);
+                }
+            }
+            scope(ab->m_symtab, names);
+        }
+        ASRUtils::BlockBodyWalkVisitor<GpuDeclaredStack>
+            ::visit_AssociateBlockCall(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        callee(x.m_name);
+        ASRUtils::BlockBodyWalkVisitor<GpuDeclaredStack>
+            ::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        callee(x.m_name);
+        ASRUtils::BlockBodyWalkVisitor<GpuDeclaredStack>
+            ::visit_SubroutineCall(x);
+    }
+
+private:
+    std::set<SymbolTable*> counted;
+
+    void scope(SymbolTable *s, const std::set<ASR::symbol_t*> &skip) {
+        if (!counted.insert(s).second) return;
+        for (auto &item : s->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second) ||
+                    skip.count(item.second)) {
+                continue;
+            }
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                item.second);
+            if ((v->m_intent != ASR::intentType::Local &&
+                    v->m_intent != ASR::intentType::ReturnVar) ||
+                    v->m_storage == ASR::storage_typeType::Parameter ||
+                    v->m_storage == ASR::storage_typeType::Save ||
+                    ASRUtils::is_allocatable(v->m_type) ||
+                    ASRUtils::is_pointer(v->m_type)) {
+                continue;
+            }
+            bytes += std::max<int64_t>(
+                ASRUtils::compute_type_size_align(v->m_type).first, 0);
+        }
+    }
+
+    void callee(ASR::symbol_t *name) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(name);
+        if (s) s = ASRUtils::symbol_get_past_StructMethodDeclaration(s);
+        if (s == nullptr || !ASR::is_a<ASR::Function_t>(*s)) return;
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
+        if (counted.count(fn->m_symtab)) return;
+        scope(fn->m_symtab, {});
+        for (size_t i = 0; i < fn->n_body; i++) visit_stmt(*fn->m_body[i]);
+    }
+};
+
 class GpuAssociateFinder
         : public ASRUtils::BlockBodyWalkVisitor<GpuAssociateFinder> {
 public:
@@ -610,7 +706,7 @@ bool read_after_region(GpuArrayFlowReader &reader,
 // once the loop ends. One buffer every thread writes would be a race, so
 // the array becomes a local of a BLOCK around the body, just as if the
 // source had declared it there; the kernel then gives each thread its own
-// copy -- a local array, or a slice of a workspace for a run-time extent.
+// copy, a local array.
 // The host's array keeps the value it had before the loop.
 //
 // An array is only made local where that cannot be told apart: every
@@ -620,14 +716,22 @@ bool read_after_region(GpuArrayFlowReader &reader,
 // a jump gets there, may read it before it is defined again. So no
 // iteration reads a value it did not define, whether every iteration,
 // some or none define the array, and nothing after the loop reads what
-// they defined. It is a local, non-saved variable of fixed or explicit
-// shape that no pointer and no other procedure can reach (access_paths.h),
-// that no clause of the loop and no ASSOCIATE around it names, and that no
-// contained procedure names. Arrays of a fixed size are made local only
-// while together they fit the part of a thread's stack the device lets the
-// pass take (GpuDeviceCapabilities::privatized_array_bytes). Anything else
-// stays one array, shared by all threads, as the source wrote it: distinct
-// elements per iteration (`y(i) = ...`) are its common case.
+// they defined. It is a local, non-saved variable of a size known at
+// compile time that no pointer and no other procedure can reach
+// (access_paths.h), that no clause of the loop and no ASSOCIATE around it
+// names, and that no contained procedure names.
+//
+// A local of an iteration lives in its thread's stack, so arrays are made
+// local only while, together with what the source already declares there
+// (GpuDeclaredStack) and a reserve for the frames the device compiler adds,
+// they fit the stack the device gives a thread
+// (GpuDeviceCapabilities::thread_stack_bytes). A run-time sized array is
+// not made local: the device has no stack array of a run-time size, and the
+// workspace that replaces one holds an instance per iteration, not per
+// running thread (device_launch_expand.cpp), so its size would grow with
+// the loop. Anything else stays one array, shared by all threads, as the
+// source wrote it: distinct elements per iteration (`y(i) = ...`) are its
+// common case.
 void GpuOffloadVisitor::privatize_iteration_arrays(
         const ASR::OMPRegion_t &region, ParallelLoopNest &work,
         const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map) {
@@ -716,7 +820,7 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
     std::map<ASR::Function_t*, bool> outside;
 
     // The arrays that may be made local, with the bytes each takes on a
-    // thread's stack (none for a run-time extent, which gets a workspace).
+    // thread's stack.
     std::vector<std::pair<int64_t, ASR::symbol_t*>> candidates;
     for (ASR::symbol_t *sym : named) {
         if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
@@ -774,6 +878,9 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
             }
         }
         if (!fixed_extents) continue;
+        // None for a run-time size (see above).
+        int64_t bytes = ASRUtils::compute_type_size_align(v->m_type).first;
+        if (bytes <= 0) continue;
 
         GpuArrayAccess access(sym, proc_scope, pointers, outside);
         bool named_outside_body = false;
@@ -798,16 +905,15 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
             continue;
         }
         if (read_after_region(reader, path)) continue;
-        candidates.push_back({std::max<int64_t>(
-            ASRUtils::compute_type_size_align(v->m_type).first, 0), sym});
+        candidates.push_back({bytes, sym});
     }
     // The body becomes the statements of a BLOCK (below).
     if (candidates.empty() ||
             !gpu_associates_inlined(work.body, work.n_body, true)) {
         return;
     }
-    // The smallest first, while they fit what the device lets the pass add
-    // to a thread's stack.
+    // The smallest first, while they fit the stack that what the source
+    // declares and the reserve leave.
     std::sort(candidates.begin(), candidates.end(),
         [](const std::pair<int64_t, ASR::symbol_t*> &a,
                 const std::pair<int64_t, ASR::symbol_t*> &b) {
@@ -815,10 +921,14 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
             return std::string(ASRUtils::symbol_name(a.second))
                 < std::string(ASRUtils::symbol_name(b.second));
         });
+    GpuDeclaredStack declared;
+    for (size_t i = 0; i < work.n_body; i++) {
+        declared.visit_stmt(*work.body[i]);
+    }
+    int64_t stack_bytes = declared.bytes + gpu_stack_frame_reserve_bytes;
     std::vector<ASR::symbol_t*> privatized;
-    int64_t stack_bytes = 0;
     for (auto &c : candidates) {
-        if (stack_bytes + c.first > device_caps.privatized_array_bytes) break;
+        if (stack_bytes + c.first > device_caps.thread_stack_bytes) break;
         stack_bytes += c.first;
         privatized.push_back(c.second);
     }

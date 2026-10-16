@@ -2,12 +2,13 @@
 ! each iteration its own copy of (issue #15307, see gpu_metal_474). An array
 ! a statement after the loop may read -- however a jump gets there -- or that
 ! an iteration reads before defining it all, keeps the one shared value the
-! source gives it, as does one too large for a thread's stack.
+! source gives it, as does one too large for what a thread's stack has left
+! and one of a size only known at run time.
 program gpu_metal_475
 implicit none
-integer, parameter :: n = 10000, big = 65536, near = 16384
+integer, parameter :: n = 10000, big = 65536, near = 16384, mid = 16000
 real :: y(n), a(4), b(4), c(4), d(4), e(4), f(4), g(4), h(8), p(near)
-real :: q(big), v(4), w(8), o(4), r(4), s(4), u(4)
+real :: q(big), v(4), w(8), o(4), r(4), s(4), u(4), x(mid), z(n)
 integer :: i, j, k, it
 logical :: stop_now
 
@@ -215,6 +216,43 @@ do j = 1, n
     if (y(j) /= 4 * j) error stop 18
 end do
 
+! A temporary of 64,000 bytes does not fit next to a BLOCK local of 208,000
+! on a stack of 256 KiB: it stays one array, which one iteration defines.
+do concurrent (j = 1:1000)
+    if (j == 7) then
+        do k = 1, mid
+            x(k) = k + j
+        end do
+        y(j) = x(mid)
+    else
+        y(j) = 0
+    end if
+    block
+        real :: wl(52000)
+        wl = j
+        z(j) = wl(52000)
+    end block
+end do
+if (y(7) /= mid + 7 .or. y(1) /= 0 .or. z(5) /= 5) error stop 19
+
+! Next to one of 160,000 it does, so every iteration defines its own.
+do concurrent (j = 1:256)
+    do k = 1, mid
+        x(k) = k + j
+    end do
+    block
+        real :: wl(40000)
+        wl = j
+        y(j) = x(mid) + wl(40000)
+    end block
+end do
+do j = 1, 256
+    if (y(j) /= mid + 2 * j) error stop 20
+end do
+
+! A temporary of a size only known at run time stays one array: its own
+! copy for every iteration would take 400 kB each.
+call run_time_size(100000, 200000)
 print *, "ok"
 
 contains
@@ -226,5 +264,22 @@ contains
 
     subroutine check_v()
         if (any(v /= 50)) error stop 14
+    end subroutine
+
+    subroutine run_time_size(m, nr)
+        integer, intent(in) :: m, nr
+        real :: t(m), yr(nr)
+        integer :: jr, kr
+        do concurrent (jr = 1:nr)
+            if (jr == 7) then
+                do kr = 1, m
+                    t(kr) = kr + jr
+                end do
+                yr(jr) = t(m)
+            else
+                yr(jr) = 0
+            end if
+        end do
+        if (yr(7) /= m + 7 .or. yr(1) /= 0) error stop 21
     end subroutine
 end program
