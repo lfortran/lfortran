@@ -461,6 +461,7 @@ RUN(NAME fixed_form_contains_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFO
 RUN(NAME fixed_form_function_kind_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-interface GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_generic_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME fixed_form_namelist_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
+RUN(NAME fixed_form_attr_stmt_01 LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
 RUN(NAME print_arr_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran mlir)
 RUN(NAME print_arr_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -4160,6 +4161,7 @@ RUN(NAME external_26 LABELS gfortran llvm fortran EXTRAFILES external_26_procs.f
 RUN(NAME external_27 LABELS gfortran llvm)
 RUN(NAME external_28 LABELS gfortran llvm EXTRAFILES external_28_procs.f90)
 RUN(NAME external_29 LABELS gfortran llvm wasm)
+RUN(NAME external_30 LABELS gfortran llvm EXTRA_ARGS --implicit-interface --implicit-typing)
 RUN(NAME external_string_arg_01 LABELS gfortran llvm
     EXTRAFILES external_string_arg_01_stubs.c)
 RUN(NAME external_string_arg_02 LABELS gfortran llvm
@@ -4470,6 +4472,7 @@ RUN(NAME write_48 LABELS gfortran llvm c)
 # llvm: an iostat= variable of a non-default kind fails module verification (#13947)
 RUN(NAME write_49 LABELS gfortran c)
 RUN(NAME write_51 LABELS gfortran llvm)
+RUN(NAME write_52 LABELS gfortran llvm)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
@@ -5381,6 +5384,8 @@ RUN(NAME structure_constructor_args_23 LABELS llvm) # gfortran 13 miscompiles un
 RUN(NAME structure_constructor_args_24 LABELS llvm) # gfortran 13 miscompiles unallocated scalar allocatable data sources
 RUN(NAME structure_constructor_args_25 LABELS gfortran llvm)
 RUN(NAME structure_constructor_args_28 LABELS gfortran llvm)
+RUN(NAME structure_constructor_args_29 LABELS gfortran llvm)
+RUN(NAME structure_constructor_args_30 LABELS llvm) # gfortran 13 at CI rejects procedure targets in initializer structure constructors
 
 RUN(NAME func_call_in_decl_01 LABELS gfortran llvm)
 RUN(NAME func_call_in_decl_02 LABELS gfortran llvm)
@@ -5598,6 +5603,8 @@ RUN(NAME proc_ptr_37 LABELS gfortran llvm)
 RUN(NAME proc_ptr_38 LABELS gfortran llvm)
 RUN(NAME proc_ptr_39 LABELS gfortran llvm)
 RUN(NAME proc_ptr_40 LABELS gfortran llvm) # interface result length calls a function use associated only in the interface (#15004)
+RUN(NAME proc_ptr_46 LABELS gfortran llvm) # procedure pointer component whose interface result length calls a function (#15004)
+RUN(NAME proc_ptr_47 LABELS gfortran llvm) # same, with an internal procedure as the interface (#15004)
 RUN(NAME proc_ptr_nopass_02 LABELS gfortran llvm)
 RUN(NAME proc_ptr_nopass_03 LABELS gfortran llvm)
 RUN(NAME proc_ptr_nopass_04 LABELS gfortran llvm)
@@ -5609,6 +5616,7 @@ RUN(NAME proc_ptr_nopass_09 LABELS gfortran llvm)
 RUN(NAME proc_ptr_nopass_10 LABELS gfortran llvm)
 RUN(NAME write_substr_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME write_implied_do_1 LABELS gfortran llvm)
+RUN(NAME write_implied_do_2 LABELS gfortran llvm)
 RUN(NAME move_alloc_derived_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME move_alloc_class_01 LABELS gfortran llvm)
 RUN(NAME move_alloc_class_02 LABELS gfortran llvm)
@@ -6237,6 +6245,7 @@ RUN(NAME gpu_metal_444 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_450 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_449 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_454 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_445 LABELS gfortran llvm metal cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
