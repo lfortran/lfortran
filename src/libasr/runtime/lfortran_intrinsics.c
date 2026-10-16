@@ -17,6 +17,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <stddef.h>  /* ptrdiff_t */
+#include <sys/stat.h>
 #if !defined(COMPILE_TO_WASM)
 #include <fenv.h>
 #endif
@@ -6370,6 +6371,8 @@ struct UNIT_FILE {
     int32_t lf_list_dir_null_remaining;
     // Child I/O mode (for DTIO: suppress record terminators in child writes).
     int32_t lf_child_io_mode;
+    // See file_is_rereadable.
+    bool rereadable;
 };
 
 int32_t last_index_used = -1;
@@ -6434,6 +6437,31 @@ static inline void list_dir_state_reset(struct UNIT_FILE *uf) {
     uf->lf_list_dir_null_remaining = 0;
 }
 
+// Whether a record can be read again by seeking back to its start, which
+// formatted READ does to measure the record and to tab within it (T, TL).
+// Only a regular file can: a terminal on macOS reports a successful ftell
+// and fseek, but the seek discards the line stdio has buffered and the
+// terminal cannot send it again.
+static bool file_is_rereadable(FILE *file)
+{
+    if (!file) return false;
+#if defined(_WIN32)
+    struct _stat st;
+    return _fstat(_fileno(file), &st) == 0 && (st.st_mode & _S_IFMT) == _S_IFREG;
+#else
+    struct stat st;
+    return fstat(fileno(file), &st) == 0 && S_ISREG(st.st_mode);
+#endif
+}
+
+// stdin is checked once: what it is connected to does not change.
+static bool stdin_is_rereadable(void)
+{
+    static int rereadable = -1;
+    if (rereadable < 0) rereadable = file_is_rereadable(stdin);
+    return rereadable;
+}
+
 // Pre-connect standard Fortran units at program startup.
 // The Fortran standard requires INPUT_UNIT, OUTPUT_UNIT, ERROR_UNIT to be
 // pre-connected, but their values are processor-dependent. Units 5/6/0 are
@@ -6458,6 +6486,7 @@ static void _lfortran_init_standard_units(void) {
     unit_to_file[0].encoding = 0; // unknown
     unit_to_file[0].round_mode = 0; // processor_defined
     unit_to_file[0].pad_mode = 1;
+    unit_to_file[0].rereadable = stdin_is_rereadable();
 
     // Unit 6: stdout (write-only, formatted, sequential)
     unit_to_file[1].unit = 6;
@@ -6549,6 +6578,7 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
             unit_to_file[i].encoding = encoding;
             unit_to_file[i].round_mode = round_mode;
             unit_to_file[i].pad_mode = pad_mode;
+            unit_to_file[i].rereadable = file_is_rereadable(filep);
             seq_unf_state_reset(&unit_to_file[i]);
             list_dir_state_reset(&unit_to_file[i]);
             return;  // Don't add duplicate entry
@@ -6575,6 +6605,7 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
     unit_to_file[last_index_used].encoding = encoding;
     unit_to_file[last_index_used].round_mode = round_mode;
     unit_to_file[last_index_used].pad_mode = pad_mode;
+    unit_to_file[last_index_used].rereadable = file_is_rereadable(filep);
     seq_unf_state_reset(&unit_to_file[last_index_used]);
     list_dir_state_reset(&unit_to_file[last_index_used]);
 }
@@ -11290,12 +11321,13 @@ typedef struct {
             size_t pos;
         } str;
     };
-    long record_start_pos;
+    long record_start_pos;  // -1 when records cannot be read again
     long pos_in_record;     // 0-based column position within current record
     long record_length;     // length of current record in characters
     int access_id;          // 0=sequential, 1=stream, 2=direct
     int32_t record_len;     // record length for direct access
     int encoding_mode;      // 0=unknown, 1=UTF-8, 2=default
+    bool rereadable;        // see file_is_rereadable
 } InputSource;
 
 // Shared buffer parsing functions for formatted reads
@@ -12382,6 +12414,13 @@ static void handle_read_X(InputSource *inputSource, int width, bool advance_no,
     }
 }
 
+// Position of the record that starts at the current position of the file,
+// or -1 if seeking back to it would not read it again.
+static long record_start_position(InputSource *inputSource)
+{
+    return inputSource->rereadable ? ftell(inputSource->file) : -1;
+}
+
 // Initialize record state: reset position to column 1 and compute record length
 static void init_record_state(InputSource *inputSource)
 {
@@ -12390,7 +12429,7 @@ static void init_record_state(InputSource *inputSource)
     if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
         // For sequential/stream access, scan from record_start_pos to find '\n'
         if (inputSource->access_id != 2) {  // Not direct access
-            // Non-seekable streams (e.g. stdin piped from a shell) have
+            // Streams that cannot be read again (pipes, terminals) have
             // record_start_pos == -1.  fseek/fgetc would silently consume
             // data that can never be put back, so skip the pre-scan and
             // leave record_length as a large sentinel value instead.
@@ -12448,7 +12487,7 @@ static void handle_read_TL(InputSource *inputSource, int width, bool *consumed_n
             if (new_pos < 0) new_pos = 0;
             
             inputSource->pos_in_record = new_pos;
-            if (fseek(inputSource->file,
+            if (inputSource->record_start_pos >= 0 && fseek(inputSource->file,
                     inputSource->record_start_pos + new_pos,
                     SEEK_SET) == 0) {
                 *consumed_newline = false;
@@ -12479,7 +12518,7 @@ static void handle_read_T(InputSource *inputSource, int position, bool *consumed
                 target = inputSource->record_length;
             
             inputSource->pos_in_record = target;
-            if (fseek(inputSource->file,
+            if (inputSource->record_start_pos >= 0 && fseek(inputSource->file,
                     inputSource->record_start_pos + target,
                     SEEK_SET) == 0) {
                 *consumed_newline = false;
@@ -12513,7 +12552,7 @@ static void handle_read_slash(InputSource *inputSource, int32_t *iostat, bool *c
         }
     }
     if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
-        inputSource->record_start_pos = ftell(inputSource->file);
+        inputSource->record_start_pos = record_start_position(inputSource);
         init_record_state(inputSource);
     } else if (inputSource->inputMethod == INPUT_STRING) {
         inputSource->pos_in_record = 0;
@@ -12659,6 +12698,7 @@ LFORTRAN_API void _lfortran_formatted_read(
             printf("No file found with given unit\n");
             exit(1);
         }
+        inputSource.rereadable = find_unit(unit_num)->rereadable;
         if (!read_access) {
             if (iostat) { *iostat = 5007; return; }
             fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
@@ -12671,6 +12711,7 @@ LFORTRAN_API void _lfortran_formatted_read(
         use_stdin_char_mode();
         inputSource.inputMethod = INPUT_FILE;
         inputSource.file = stdin;
+        inputSource.rereadable = stdin_is_rereadable();
     }
     
     va_list args;
@@ -12945,7 +12986,7 @@ static void common_formatted_read(InputSource *inputSource,
     int32_t no_of_args, va_list *args, bool blank_zero, bool pad_no, int decimal_mode)
 {
     if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
-        inputSource->record_start_pos = ftell(inputSource->file);
+        inputSource->record_start_pos = record_start_position(inputSource);
         init_record_state(inputSource);
     }
     if (chunk) *chunk = 0;
@@ -13036,7 +13077,7 @@ static void common_formatted_read(InputSource *inputSource,
                 }
             }
             if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
-                inputSource->record_start_pos = ftell(inputSource->file);
+                inputSource->record_start_pos = record_start_position(inputSource);
                 init_record_state(inputSource);
             } else if (inputSource->inputMethod == INPUT_STRING) {
                 inputSource->pos_in_record = 0;
