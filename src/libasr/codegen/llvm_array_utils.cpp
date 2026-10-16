@@ -78,7 +78,7 @@ namespace LCompilers {
                 case ASR::ttypeType::Array: {
                     ASR::Array_t* v_type = ASR::down_cast<ASR::Array_t>(v->m_type);
                     m_dims = v_type->m_dims;
-                    n_dims = v_type->n_dims;
+                    n_dims = checked_integer_cast<int>(v_type->n_dims);
                     break;
                 }
                 default: {
@@ -161,8 +161,8 @@ namespace LCompilers {
         }
 
         llvm::Type* SimpleCMODescriptor::get_argument_type(llvm::Type* type,
-        std::uint32_t m_h, std::string arg_name,
-        std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache) {
+        std::uint64_t m_h, std::string arg_name,
+        std::unordered_map<std::uint64_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache) {
             llvm::StructType* type_struct = static_cast<llvm::StructType*>(type);
             llvm::Type* first_ele_ptr_type = nullptr;
             if( type_struct->getElementType(0)->isArrayTy() ) {
@@ -185,7 +185,7 @@ namespace LCompilers {
                 arr_arg_type_cache[m_h].find(std::string(arg_name)) == arr_arg_type_cache[m_h].end() ) ) {
                 std::vector<llvm::Type*> arg_des = {first_ele_ptr_type};
                 for( size_t i = 1; i < type_struct->getNumElements(); i++ ) {
-                    arg_des.push_back(static_cast<llvm::StructType*>(type)->getElementType(i));
+                    arg_des.push_back(static_cast<llvm::StructType*>(type)->getElementType(checked_integer_cast<unsigned>(i)));
                 }
                 new_arr_type = llvm::StructType::create(context, arg_des, "array_call");
                 arr_arg_type_cache[m_h][std::string(arg_name)] = new_arr_type;

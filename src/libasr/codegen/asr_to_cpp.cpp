@@ -146,7 +146,7 @@ public:
     void generate_array_decl(std::string& sub, std::string v_m_name,
                              std::string& type_name, std::string& dims,
                              std::string& encoded_type_name,
-                             ASR::dimension_t* m_dims, int n_dims, size_t size,
+                             ASR::dimension_t* m_dims, size_t n_dims, size_t size,
                              bool use_ref, bool dummy,
                              bool declare_value, bool /*is_fixed_size*/,
                              bool is_pointer=false) {

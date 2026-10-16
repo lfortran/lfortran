@@ -150,7 +150,7 @@ public:
         struct arg_info {
             ASR::Variable_t*  asr_obj;
             std::string       ctype;
-            int               ndims;
+            size_t            ndims;
 
             std::vector<std::string> ubound_varnames;
             std::vector<std::pair<std::string,int> > i_am_ubound_of;

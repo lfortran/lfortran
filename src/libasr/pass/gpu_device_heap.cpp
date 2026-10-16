@@ -1287,7 +1287,7 @@ public:
                 continue;
             }
             if (range >= 0) return -2;
-            range = d;
+            range = checked_integer_cast<int>(d);
         }
         return range;
     }
@@ -1634,7 +1634,7 @@ public:
                     "more than one range,";
                 return;
             }
-            range = d;
+            range = checked_integer_cast<int>(d);
         }
         ASR::array_index_t &r = x->m_args[range < 0 ? 0 : range];
         int64_t step = 1;

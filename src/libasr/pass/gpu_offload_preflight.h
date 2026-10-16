@@ -162,7 +162,7 @@ public:
             ASR::ttype_t *t =
                 ASRUtils::type_get_past_allocatable_pointer(var->m_type);
             ASR::dimension_t *dims = nullptr;
-            int rank = ASRUtils::extract_dimensions_from_ttype(t, dims);
+            int rank = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(t, dims));
             if (rank <= 0) continue;
             if (ASRUtils::is_fixed_size_array(dims, rank)) continue;
             if (dims_have_lengths(dims, (size_t)rank)) continue;
@@ -346,8 +346,8 @@ private:
     static bool has_runtime_extent(ASR::ttype_t *t) {
         if (!t) return false;
         ASR::dimension_t *dims = nullptr;
-        int rank = ASRUtils::extract_dimensions_from_ttype(
-            ASRUtils::type_get_past_allocatable_pointer(t), dims);
+        int rank = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::type_get_past_allocatable_pointer(t), dims));
         return rank > 0 && !ASRUtils::is_fixed_size_array(dims, rank);
     }
 

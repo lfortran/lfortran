@@ -115,7 +115,7 @@ public:
             return class_argument_can_be_copied(decl);
         }
         ASR::dimension_t *dims = nullptr;
-        int rank = ASRUtils::extract_dimensions_from_ttype(type, dims);
+        int rank = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(type, dims));
         if (rank <= 0) {
             return unsupported(
                 GpuDecline(GpuDeclineReason::ClassComponentArrayRank));
@@ -1246,7 +1246,7 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
         if (!deferred) continue;
         for (size_t d = 0; d < array->n_dims; d++) {
             scalars.push_back(al, argument(i,
-                ASR::gpu_argument_kindType::GpuArrayExtent, nullptr, d));
+                ASR::gpu_argument_kindType::GpuArrayExtent, nullptr, checked_integer_cast<int>(d)));
         }
     }
     bool packed = buffers.n + (scalars.n > 0) + planned.n > MAX_METAL_BUFFERS;
@@ -1254,10 +1254,10 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
         for (size_t i = 0; i < buffers.n; i++) {
             scalars.push_back(al, argument(buffers[i].m_argument_index,
                 ASR::gpu_argument_kindType::GpuPackedOffset,
-                buffers[i].m_member, i));
+                buffers[i].m_member, checked_integer_cast<int>(i)));
         }
     }
-    int workspace_start = (packed ? 1 : buffers.n) + (scalars.n > 0);
+    size_t workspace_start = (packed ? 1 : buffers.n) + (scalars.n > 0);
     for (size_t i = 0; i < planned.n; i++) {
         planned.p[i].m_buffer_index = workspace_start + i;
     }
