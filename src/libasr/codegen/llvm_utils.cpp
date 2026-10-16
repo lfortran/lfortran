@@ -2564,7 +2564,8 @@ namespace LCompilers {
                 break;
             }
             case ASR::CChar:{
-                llvm::Value* char_ptr = CreateAlloca(llvm::Type::getInt8Ty(context), nullptr, "cchar_ptr");
+                if (!get_pointer_to_data) return str;
+                llvm::Value* char_ptr = CreateAlloca(character_type, nullptr, "cchar_ptr");
                 builder->CreateStore(str, char_ptr);
                 ptr_to_data = char_ptr;
                 break;

@@ -1430,9 +1430,7 @@ public:
                     tmp = tmp_ptr;
                 }
                 //Set data
-                data_and_length.first = builder->CreateLoad(
-                    character_type,
-                    llvm_utils->create_gep2(string_descriptor, tmp, 0));
+                data_and_length.first = llvm_utils->get_string_data(str, tmp);
 
                 // Set length (Length could be explicit OR implicit)
                 if(str->m_len && ASR::is_a<ASR::IntegerConstant_t>(*str->m_len)){ // Explicit-Constant Length
@@ -1454,7 +1452,7 @@ public:
                     tmp = tmp_ptr;
                 }
                 // tmp is i8* (pointer to the character byte)
-                data_and_length.first = tmp;
+                data_and_length.first = llvm_utils->get_string_data(str, tmp);
                 data_and_length.second = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
                 break;
             }
@@ -24612,14 +24610,10 @@ public:
                     args.push_back(tmp);
                     continue;
                 } else if (ASRUtils::is_character(*ASRUtils::expr_type(m_values[i]))) {
-                    ASR::StringLen_t * strlen = ASR::down_cast2<ASR::StringLen_t>(ASR::make_StringLen_t(al,
-                        m_values[i]->base.loc, m_values[i], type32, nullptr));
-                    visit_StringLen(*strlen);
-                    args.push_back(builder->CreateMul(kind_val, tmp));
-                    ptr_loads = 0;
-                    this->visit_expr_wrapper(m_values[i], true);
-                    ptr_loads = ptr_loads_copy;
-                    llvm::Value* str_data = llvm_utils->get_string_data(ASRUtils::get_string_type(m_values[i]), tmp);
+                    llvm::Value *str_data, *str_len;
+                    std::tie(str_data, str_len) = get_string_data_and_length(m_values[i]);
+                    args.push_back(builder->CreateMul(kind_val,
+                        builder->CreateTrunc(str_len, llvm_utils->i32)));
                     args.push_back(str_data);
                     continue;
                 } else if (ASR::is_a<ASR::Logical_t>(*value_type_base)) {

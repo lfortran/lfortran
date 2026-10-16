@@ -60,6 +60,15 @@ contains
             c = 'qrs'
         end function
     end function
+
+    subroutine write_value(c)
+        character(kind=c_char), value :: c
+        character(4) :: buffer
+        write(buffer, *) c
+        if (trim(adjustl(buffer)) /= 'q') error stop 28
+        write(buffer, '(a)') c
+        if (buffer /= 'q   ') error stop 29
+    end subroutine
 end module
 
 program bindc_73
@@ -111,4 +120,15 @@ program bindc_73
     if (text /= 'q' .or. len(text) /= 1) error stop 22
     if (len_trim(get_c()) /= 1) error stop 23
     if (index('aqz', get_c()) /= 2) error stop 24
+    calls = 0
+    write(buffer, *) get_c()
+    if (trim(adjustl(buffer)) /= 'q') error stop 25
+    if (calls /= 1) error stop 30
+    write(buffer, *) p()
+    if (trim(adjustl(buffer)) /= 'q') error stop 26
+    if (calls /= 2) error stop 31
+    write(buffer, *) source_p()
+    if (trim(adjustl(buffer)) /= 'rs') error stop 27
+    call write_value('q')
+    print *, get_c(), p(), source_p()
 end program
