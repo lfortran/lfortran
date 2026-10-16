@@ -59,3 +59,93 @@ semantic error: Non-variable expression in variable definition context (actual a
     |
 111 |         n = c%clear(2*k)
     |                     ^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   --> tests/errors/continue_compilation_traits_array_inout.f90:193:26
+    |
+193 |         call a%update(m, fixed(1:2))
+    |                          ^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   --> tests/errors/continue_compilation_traits_array_inout.f90:197:21
+    |
+197 |         call a%fill(fixed(2:3))
+    |                     ^^^^^^^^^^ 
+
+semantic error: Argument `b` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_array_inout.f90:203:26
+    |
+203 |         call a%update(m, b(1:2))
+    |                          ^^^^^^ 
+
+semantic error: Argument `b` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_array_inout.f90:208:21
+    |
+208 |         call a%fill(b(2:))
+    |                     ^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   --> tests/errors/continue_compilation_traits_array_inout.f90:214:27
+    |
+214 |         call a%update(m, (b))
+    |                           ^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   --> tests/errors/continue_compilation_traits_array_inout.f90:219:22
+    |
+219 |         call a%fill((b))
+    |                      ^ 
+
+semantic error: an array section with a vector subscript is not definable, so it cannot be the actual argument of the intent(inout) dummy argument 'beta'
+   --> tests/errors/continue_compilation_traits_array_inout.f90:225:26
+    |
+225 |         call a%update(m, b([1, 3]))
+    |                          ^^^^^^^^^ 
+
+semantic error: an array section with a vector subscript is not definable, so it cannot be the actual argument of the intent(out) dummy argument 'x'
+   --> tests/errors/continue_compilation_traits_array_inout.f90:230:21
+    |
+230 |         call a%fill(b([3, 1]))
+    |                     ^^^^^^^^^ 
+
+semantic error: an array section with a vector subscript is not definable, so it cannot be the actual argument of the intent(inout) dummy argument 'k'
+   --> tests/errors/continue_compilation_traits_array_inout.f90:236:21
+    |
+236 |         n = a%clear(k([2, 1]))
+    |                     ^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   --> tests/errors/continue_compilation_traits_array_inout.f90:239:30
+    |
+239 |         call ordinary_update(fixed(1:2))
+    |                              ^^^^^^^^^^ 
+
+semantic error: Argument `b` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_array_inout.f90:243:30
+    |
+243 |         call ordinary_update(b(1:2))
+    |                              ^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   --> tests/errors/continue_compilation_traits_array_inout.f90:247:31
+    |
+247 |         call ordinary_update((b))
+    |                               ^ 
+
+semantic error: an array section with a vector subscript is not definable, so it cannot be the actual argument of the intent(inout) dummy argument 'beta'
+   --> tests/errors/continue_compilation_traits_array_inout.f90:251:30
+    |
+251 |         call ordinary_update(b([1, 3]))
+    |                              ^^^^^^^^^ 
+
+semantic error: Argument `b` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_array_inout.f90:257:26
+    |
+257 |         call a%update(m, b)
+    |                          ^ 
+
+semantic error: an array section with a vector subscript is not definable, so it cannot be the actual argument of the intent(inout) dummy argument 'beta'
+   --> tests/errors/continue_compilation_traits_array_inout.f90:263:26
+    |
+263 |         call a%update(m, b([1, 3]))
+    |                          ^^^^^^^^^ 

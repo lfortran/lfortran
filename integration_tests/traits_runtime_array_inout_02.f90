@@ -4,15 +4,16 @@
 ! and no INTENT, of real(8), integer, character and logical arrays, with a
 ! read-only or an intent(inout) receiver, and in a function message. Through
 ! an owner, a pointer and forwarding procedures, whole arrays and strided,
-! reversed, row and pointer sections, allocatable arrays and assumed-shape
-! dummies reach the implementation as descriptors of the caller's storage:
+! reversed, row and pointer sections, allocatable arrays, assumed-shape dummies
+! and the targets of intent(in) pointers and of pointer components of intent(in)
+! objects reach the implementation as descriptors of the caller's storage:
 ! the contiguity probe sees strided actuals as noncontiguous, every element
 ! of a section is defined in place, and the elements outside it keep their
 ! values.
 module traits_runtime_array_inout_02_m
     implicit none
     private
-    public :: IArrays, Scaler, scale_through, drain_through
+    public :: IArrays, Scaler, Holder, scale_through, drain_through, scale_targets
 
     abstract interface :: IArrays
         subroutine scale(self, x, contiguous)
@@ -56,6 +57,10 @@ module traits_runtime_array_inout_02_m
         procedure, pass :: drain => scaler_drain
         procedure, pass :: clear => scaler_clear
     end implements
+
+    type :: Holder
+        real(8), pointer :: p(:) => null()
+    end type Holder
 
 contains
 
@@ -124,15 +129,27 @@ contains
         real(8), intent(inout) :: x(:)
         call view%drain(x)
     end subroutine drain_through
+
+    ! The targets of an intent(in) pointer and of a pointer component of an
+    ! intent(in) object are definable.
+    subroutine scale_targets(view, box, p, contiguous)
+        class(IArrays), intent(in) :: view
+        type(Holder), intent(in) :: box
+        real(8), pointer, intent(in) :: p(:)
+        logical, intent(out) :: contiguous
+        call view%scale(box%p, contiguous)
+        call view%scale(p(size(p):1:-1), contiguous)
+    end subroutine scale_targets
 end module traits_runtime_array_inout_02_m
 
 program traits_runtime_array_inout_02
-    use traits_runtime_array_inout_02_m, only: IArrays, Scaler, scale_through, &
-        drain_through
+    use traits_runtime_array_inout_02_m, only: IArrays, Scaler, Holder, &
+        scale_through, drain_through, scale_targets
     implicit none
     class(IArrays), allocatable :: owner
     class(IArrays), pointer :: view
     type(Scaler), target :: concrete
+    type(Holder) :: box
     real(8) :: a(9), g(3, 4)
     real(8), allocatable :: h(:)
     real(8), pointer :: p(:)
@@ -174,6 +191,12 @@ program traits_runtime_array_inout_02
     call view%scale(p, contiguous)
     if (contiguous) error stop 10
     if (any(storage /= [1d0, -2d0, 3d0, 4d0, -5d0, 6d0, 7d0, -8d0])) error stop 11
+    storage = [(real(i, 8), i = 1, 8)]
+    box%p => storage(1:3)
+    p => storage(5:8)
+    call scale_targets(owner, box, p, contiguous)
+    if (contiguous) error stop 31
+    if (any(storage /= [3d0, 6d0, 9d0, 4d0, 15d0, 18d0, 21d0, 24d0])) error stop 32
 
     ! Forwarded assumed-shape dummies stay descriptors of the caller's array.
     a = [(real(i, 8), i = 1, 9)]

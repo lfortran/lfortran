@@ -27277,6 +27277,40 @@ public:
         }
     }
 
+    // The actual of a nonpointer, nonallocatable INTENT(OUT) or INTENT(INOUT)
+    // array `dummy`, which defines the actual's elements: it is definable as
+    // any defined actual is, and a section with a vector subscript is not
+    // (F2018 15.5.2.4).
+    void check_definable_array_actual(ASR::expr_t *actual, const ASR::Variable_t &dummy) {
+        actual = ASRUtils::get_past_array_physical_cast(actual);
+        check_definable_actual(actual);
+        for (ASR::expr_t *part = actual; part; ) {
+            bool vector_subscript = false;
+            if (ASR::is_a<ASR::ArraySection_t>(*part)) {
+                auto *section = ASR::down_cast<ASR::ArraySection_t>(part);
+                vector_subscript = ASRUtils::is_array_indexed_with_array_indices(section);
+                part = section->m_v;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*part)) {
+                auto *item = ASR::down_cast<ASR::ArrayItem_t>(part);
+                vector_subscript = ASRUtils::is_array_indexed_with_array_indices(item);
+                part = item->m_v;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*part)) {
+                part = ASR::down_cast<ASR::StructInstanceMember_t>(part)->m_v;
+            } else {
+                part = nullptr;
+            }
+            if (vector_subscript) {
+                diag.add(diag::Diagnostic("an array section with a vector subscript is "
+                    "not definable, so it cannot be the actual argument of the intent(" +
+                    std::string(dummy.m_intent == ASR::intentType::Out ? "out" : "inout") +
+                    ") dummy argument '" + std::string(dummy.m_name) + "'",
+                    diag::Level::Error, diag::Stage::Semantic,
+                    {diag::Label("", {actual->base.loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+
     // The passed object of a type-bound call of `procedure` (a binding or a
     // procedure) whose passed-object dummy has INTENT(OUT) or INTENT(INOUT).
     // This keeps a mutating trait binding (PAPER-D07) to definable objects.
@@ -27370,6 +27404,11 @@ public:
             if (variable && (variable->m_intent == ASR::intentType::Out ||
                     variable->m_intent == ASR::intentType::InOut)) {
                 check_association_definable(actual);
+                if (ASRUtils::is_array(variable->m_type) &&
+                        !ASRUtils::is_pointer(variable->m_type) &&
+                        !ASRUtils::is_allocatable(variable->m_type)) {
+                    check_definable_array_actual(actual, *variable);
+                }
             }
             if (ASR::is_a<ASR::Var_t>(*actual) && ASRUtils::association_variable(actual)) {
                 if (ASRUtils::is_allocatable(ASRUtils::expr_type(dummy))) {

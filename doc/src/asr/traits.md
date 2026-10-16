@@ -1926,12 +1926,17 @@ the witness adapter pass that descriptor on by reference: the implementation
 defines the elements of the caller's own array, also of a strided or reversed
 section, without a copy in or out, and an `intent(out)` array keeps a declared
 lower bound such as `x(0:)`. The actual of an `intent(inout)` or `intent(out)`
-array must be definable; the same intent check as for the actual of an
-ordinary call diagnoses it. An implementation declares the array with exactly
-the message's INTENT. The array arguments of a generic message keep their
-read-only limit for now, in closed member slots and erased generic slots alike:
-a trait whose generic message takes an array with another INTENT has no
-runtime contract, and using it as a view is diagnosed as not implemented.
+array must be definable, as in any call with a nonpointer, nonallocatable
+array dummy of that INTENT, which shares the check of the bare view dummies:
+a named constant, an `intent(in)` array, or a section of either, a
+parenthesized variable, an expression, and a section with a vector subscript
+are diagnosed, while a section of a pointer's target, also of an `intent(in)`
+pointer, and a pointer component of an `intent(in)` object are definable. An
+implementation declares the array with exactly the message's INTENT. The
+array arguments of a generic message keep their read-only limit for now, in
+closed member slots and erased generic slots alike: a trait whose generic
+message takes an array with another INTENT has no runtime contract, and using
+it as a view is diagnosed as not implemented.
 
 `traits_runtime_array_inout_01` compiles the reported module unchanged and
 calls its `coefficients` binding through a `MyType` variable and a
@@ -1940,13 +1945,14 @@ updates all twelve elements of the module's `beta` in place, the selected
 receiver and the borrowed estimates, inspected with SELECT TYPE because
 `IEstimates` has no messages. It is registered for normal and separate
 compilation. `traits_runtime_array_inout_02` passes whole arrays and strided,
-reversed, row and pointer sections, allocatable arrays and forwarded
-assumed-shape dummies to `intent(inout)`, `intent(out)` and omitted-intent
-real, integer, character and logical arrays through owners, pointers and
-views, with read-only and `intent(inout)` receivers and in a function message,
-and checks contiguity, every defined element and the elements outside each
-section. The diagnostics are checked by
-`continue_compilation_traits_array_inout`.
+reversed, row and pointer sections, allocatable arrays, forwarded
+assumed-shape dummies and pointer targets to `intent(inout)`, `intent(out)`
+and omitted-intent real, integer, character and logical arrays through
+owners, pointers and views, with read-only and `intent(inout)` receivers and
+in a function message, and checks contiguity, every defined element and the
+elements outside each section. `continue_compilation_traits_array_inout`
+checks the diagnostics through views, and for comparison through ordinary
+calls and static bindings.
 
 ## Scalar allocatable ownership, slots and results (R2)
 
