@@ -6,6 +6,7 @@
 #include <libasr/pass/inline_function_calls.h>
 #include <libasr/asr_builder.h>
 #include <libasr/pass/scoped_inlining.h>
+#include <libasr/pass/symbol_expr_substitution.h>
 #include <libasr/pass/pass_utils.h>
 
 #include <vector>
@@ -300,10 +301,36 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
                 PassUtils::inline_local_name(scope, dummy->m_name), type,
                 ASR::intentType::Local);
             substitutions.emplace(&dummy->base, local);
+            if (ASRUtils::is_array(type)) continue;
             bindings.push_back(reference
                 ? ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, loc,
                     local, x->m_args[i].m_value))
                 : b.Assignment(local, x->m_args[i].m_value));
+        }
+        AssociateVarResolverVisitor replace(al, substitutions);
+        for (size_t i = 0; i < function->n_args; i++) {
+            auto *dummy = ASR::down_cast<ASR::Variable_t>(
+                ASR::down_cast<ASR::Var_t>(function->m_args[i])->m_v);
+            if (!ASRUtils::is_array(dummy->m_type)) continue;
+            ASR::expr_t *actual = x->m_args[i].m_value;
+            ASR::ttype_t *actual_type = ASRUtils::expr_type(actual);
+            if (ASRUtils::extract_physical_type(actual_type) ==
+                    ASR::array_physical_typeType::PointerArray &&
+                    ASRUtils::is_dimension_empty(actual_type)) {
+                // A call-only data address acquires the dummy's shape when
+                // materialized as a descriptor. Bounds use the scalar bindings
+                // above, including arguments declared after this array.
+                ASR::ttype_t *view_type = ASRUtils::duplicate_type(al,
+                    dummy->m_type, nullptr,
+                    ASR::array_physical_typeType::DescriptorArray, true);
+                replace.visit_ttype(*view_type);
+                actual = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
+                    al, loc, actual, ASR::array_physical_typeType::PointerArray,
+                    ASR::array_physical_typeType::DescriptorArray,
+                    view_type, nullptr));
+            }
+            bindings.push_back(ASRUtils::STMT(ASRUtils::make_Associate_t_util(
+                al, loc, substitutions.at(&dummy->base), actual)));
         }
         ASR::expr_t *result = b.Variable(current_scope,
             current_scope->get_unique_name(

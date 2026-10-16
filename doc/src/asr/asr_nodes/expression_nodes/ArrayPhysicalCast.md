@@ -37,6 +37,13 @@ argument, for instance, needs a descriptor to be built around it, and the cast
 is where that happens. The new physical type appears both in `new` and in the
 `physical_type` of `type`.
 
+A cast from `PointerArray` to `DescriptorArray` outside a call argument must
+supply every dimension's lower bound and extent in its result type. A
+call-only data address, such as an array element passed by sequence
+association, has no shape of its own. When inlining materializes that address
+as a descriptor, it uses the explicit-shape dummy's bounds, substituting the
+already-bound arguments so their actual expressions are not evaluated again.
+
 ## Examples
 
 ```clojure
