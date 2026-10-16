@@ -69,6 +69,7 @@ program bindc_73
     procedure(source_c), pointer :: source_p
     character(3) :: buffer
     character :: c
+    character(:), allocatable :: text
 
     if (take_c(get_c()) /= iachar('q')) error stop 4
     if (take_value(get_c()) /= iachar('q')) error stop 5
@@ -97,4 +98,17 @@ program bindc_73
     if (buffer /= 'q  ') error stop 8
     write(buffer, '(a)') source_p()
     if (buffer /= 'rs ') error stop 14
+    calls = 0
+    if (trim(get_c()) /= 'q') error stop 16
+    if (calls /= 1) error stop 17
+    calls = 0
+    if (adjustl(get_c()) /= 'q') error stop 18
+    if (calls /= 1) error stop 19
+    calls = 0
+    if (adjustr(p()) /= 'q') error stop 20
+    if (calls /= 1) error stop 21
+    text = trim(p())
+    if (text /= 'q' .or. len(text) /= 1) error stop 22
+    if (len_trim(get_c()) /= 1) error stop 23
+    if (index('aqz', get_c()) /= 2) error stop 24
 end program

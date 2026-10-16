@@ -58,6 +58,8 @@ which every call passes all the same, as gfortran's do.
 The length of an actual whose length is not a constant is taken from the
 actual itself, so a call with a side effect in the actual (in a subscript, say)
 is moved to a temporary before the statement, to be evaluated only once.
+Shared result-length expressions materialize it at the first evaluated length
+use. Physical casts are normalized across all uses after the rewriting.
 
 The pass runs after the other lowering passes, so that every call is in place,
 and after the .mod files are written, so they keep the argument lists as
@@ -384,9 +386,24 @@ public:
     void replace_IntrinsicImpureFunction(ASR::IntrinsicImpureFunction_t *x) {
         hoist(&x->base);
     }
+};
 
-    void replace_StringPhysicalCast(ASR::StringPhysicalCast_t *x) {
-        ASR::BaseExprReplacer<HoistImpureCalls>::replace_StringPhysicalCast(x);
+// Intrinsic lowering can share an actual between its result-length expression
+// and its call. Hoisting changes that shared operand, so normalize every use
+// after all actuals and their hidden lengths have been rewritten.
+class NormalizeStringPhysicalCasts:
+        public ASR::CallReplacerOnExpressionsVisitor<NormalizeStringPhysicalCasts> {
+public:
+    Allocator &al;
+
+    NormalizeStringPhysicalCasts(Allocator &al_): al{al_} {
+        call_replacer_on_value = false;
+    }
+
+    void call_replacer() {
+        if (!is_a<ASR::StringPhysicalCast_t>(**current_expr)) return;
+        ASR::StringPhysicalCast_t *x =
+            down_cast<ASR::StringPhysicalCast_t>(*current_expr);
         ASR::string_physical_typeType physical =
             ASRUtils::get_string_type(ASRUtils::expr_type(x->m_arg))->m_physical_type;
         if (physical == x->m_new) {
@@ -501,6 +518,26 @@ public:
         return s ? down_cast<ASR::Function_t>(s) : nullptr;
     }
 
+    void hoist_impure_calls(ASR::expr_t *&actual) {
+        if (before == nullptr) return;
+        FindImpureCall impure;
+        impure.visit_expr(*actual);
+        if (impure.found) {
+            HoistImpureCalls hoist(al, current_scope, *before);
+            hoist.current_expr = &actual;
+            hoist.replace_expr(actual);
+        }
+    }
+
+    void visit_StringLen(const ASR::StringLen_t &x) {
+        ASR::ASRPassBaseWalkVisitor<AddHiddenLengthActuals>::visit_StringLen(x);
+        ASR::String_t *str = ASRUtils::get_string_type(x.m_arg);
+        if (str->m_len && ASRUtils::is_value_constant(str->m_len)) return;
+        // A result allocation can use the same actual as the later call.
+        // Materialize it at this first evaluated length use, not at that call.
+        hoist_impure_calls(const_cast<ASR::StringLen_t&>(x).m_arg);
+    }
+
     // The length of the character actual `actual` (its element length if it
     // is an array) as an `integer(8)`. Absent is length 0.
     ASR::expr_t* actual_length(ASR::expr_t *&actual, const Location &loc) {
@@ -525,16 +562,10 @@ public:
         // The length is taken from the actual itself, which is then
         // evaluated twice: a call with a side effect in it is evaluated
         // once, before the statement.
-        FindImpureCall impure;
-        impure.visit_expr(*actual);
-        if (impure.found && before != nullptr) {
-            HoistImpureCalls hoist(al, current_scope, *before);
-            hoist.current_expr = &actual;
-            hoist.replace_expr(actual);
-            str_expr = actual;
-            while (is_a<ASR::ArrayPhysicalCast_t>(*str_expr)) {
-                str_expr = down_cast<ASR::ArrayPhysicalCast_t>(str_expr)->m_arg;
-            }
+        hoist_impure_calls(actual);
+        str_expr = actual;
+        while (is_a<ASR::ArrayPhysicalCast_t>(*str_expr)) {
+            str_expr = down_cast<ASR::ArrayPhysicalCast_t>(str_expr)->m_arg;
         }
         ASRUtils::ExprStmtDuplicator duplicator(al);
         duplicator.allow_procedure_calls = true;
@@ -650,6 +681,8 @@ void pass_string_length_arguments(Allocator &al, ASR::TranslationUnit_t &unit,
     }
     AddHiddenLengthActuals a(al, transformed);
     a.visit_TranslationUnit(unit);
+    NormalizeStringPhysicalCasts casts(al);
+    casts.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);
     verify_hidden_string_lengths(unit, pass_options);
