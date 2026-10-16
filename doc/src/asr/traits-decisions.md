@@ -6,7 +6,7 @@ chosen, and where the proposal leaves room for more than one reading. Its
 purpose is to improve the proposal, so that independent compiler vendors can
 implement it without having to ask the same questions again.
 
-It is a living document. Last updated: 2026-10-14.
+It is a living document. Last updated: 2026-10-16.
 
 ## About this record
 
@@ -160,6 +160,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-14 | Existing receiver-free message declarations | Keep receiver-free declarations as read-only compatibility syntax; **require explicit receivers for instance methods; migrate existing examples and tests** | TD-36 |
 | 2026-10-14 | Matching an implementation to a message with a receiver | **Require a passed receiver with matching INTENT**; also allow weaker receiver effects or NOPASS implementations, and define adaptation rules | TD-36 |
 | 2026-10-14 | Marking the receiver, since `type(itself)` also declares ordinary same-type arguments | **Always mark the receiver with PASS on its dummy declaration**; infer a unique `type(itself)` dummy, and require PASS when there are several; use `PASS(name)` on the trait method declaration instead | TD-36 |
+| 2026-10-16 | Whether the private components of a generic instance belong to the generic definition's module or to the client scope that owns the generated instance | **Preserve the generic definition's privacy and include this case in the fix** (recommended); the generated instance's client scope | TD-37 |
 
 ### Instructions given without an option form
 
@@ -1519,6 +1520,10 @@ specification action, that is, what the paper should say.
 - **Current rules.**
   - An instance is an ordinary sealed derived type owned by the module or main
     program that creates it. Equal instances in one unit are one type.
+  - Owning an instance places its type, procedure copies and conformance
+    evidence in the unit that creates it. It gives that unit no source access:
+    the private components of an instance stay private to the module that
+    defines the generic type (TD-37).
   - Instances are not shared between program units yet: equal instances created
     by different units are different types, and an instance's conformances are
     visible only in its unit. The design intends one identity across units when
@@ -1599,6 +1604,48 @@ specification action, that is, what the paper should say.
   option; compiler defaults are unchanged.
 - **Specification action.** None. This is standard Fortran and a property of
   LFortran's default mode, not a requirement of the proposal.
+
+#### TD-37: Private components of generic instances
+
+- **Status:** Approved semantic decision.
+- **What the paper says.** Nothing about the accessibility of the components
+  of generic derived types. Its examples declare them private, as in
+  `PairwiseSum{ISum :: U}` (inline-32), and give them values in initializers.
+- **Why it is not tight.** Fortran makes a private component accessible only
+  in the module that contains its definition and in that module's descendants
+  (F2018 7.5.4.8), and a structure constructor may give a value only to an
+  accessible component (C7102). An instance is an ordinary derived type owned
+  by the unit that creates it (TD-25), while the generic definition, in
+  another module, declares its components and their accessibility. The paper
+  does not say which of the two modules counts for an instance's components.
+- **Options presented (2026-10-16).** The generic definition's module (chosen
+  and recommended, "Preserve the generic definition's privacy and include this
+  case in the fix"): `Holder{integer}(value=3)` outside the module that
+  defines `Holder` is rejected, while the type's own initializers and methods
+  keep that module's access. Or the client scope that owns the generated
+  instance, where its components would be accessible. The second option is
+  recorded as it was summarized to the implementers.
+- **Choice.** The generic definition's module, chosen by the maintainer.
+- **Consequences.** A private component of an instance is accessible where the
+  same component of an ordinary type defined in the generic type's module
+  would be. Outside that module, a structure constructor of an instance can
+  give its public components and omit a private component that is default
+  initialized or allocatable; giving a private component, by keyword or by
+  position, is an error wherever the instance is created and however the type
+  is named, renamed, re-exported or inferred, also in the generic procedures
+  and generic types of other modules. The instance's copies of the
+  definition's initializers and methods keep the definition's access, so they
+  can give the private components values, also with structure constructors of
+  the type itself. TD-25's ownership of instance symbols is not source access.
+- **Implementation status.** Implemented for structure constructors: the
+  component of an instance is checked against the module of the generic
+  definition that the instance records, also after the definition is loaded
+  from its module file. A reference to a private component with `%` is not
+  diagnosed for any derived type yet; this is a general limitation of
+  LFortran, not a rule of this entry.
+- **Specification action.** State that the accessibility of the components of
+  a generic derived type is that of its definition, independent of the unit
+  that creates or owns an instance.
 
 ### F. Errata and acceptance-copy adaptations
 
@@ -1715,7 +1762,7 @@ names the entries with the details.
 | OQ-10 | Name, contents and definitions of the intrinsic `generics` module. | TD-18 |
 | OQ-11 | `IAnyType` and the operations of unconstrained parameters; when unused bindings of generic types are checked; defined input/output in generic code. | TD-19, TD-27 |
 | OQ-12 | Generic methods: whether implementations may have weaker constraints; overloaded generic messages that differ only in their generic parameter lists (a commented-out paragraph of the paper source, lines 1737-1742, would allow them). | TD-23 |
-| OQ-13 | Generic derived types: `implements` headers and conditional conformance, binder scopes, ownership of parameter-dependent procedures, binding of procedures that do not use the parameters, retroactive conformance from other modules, instance identity across program units, extension and overriding. | TD-24, TD-25 |
+| OQ-13 | Generic derived types: `implements` headers and conditional conformance, binder scopes, ownership of parameter-dependent procedures, binding of procedures that do not use the parameters, retroactive conformance from other modules, instance identity across program units, extension and overriding, and the accessibility of instance components (decided for the prototype in TD-37). | TD-24, TD-25, TD-37 |
 | OQ-14 | Which separate-compilation properties are normative. For example: must adding a conformance for a new type work without recompiling a separately compiled generic provider (the OCP discussion, lines 2686-2699, only says no code needs to be modified), and must a constraint by a child trait forward to a callee constrained by its parent in separately compiled code? Dispatch tables, member entries and other mechanisms should remain processor details. | TD-15, TD-16 |
 | OQ-15 | Scope, lifetime and redeclaration of `:=` declarations, including loops and conditional code. | TD-22 |
 | OQ-16 | Whether kind and length type parameters are part of type arguments, and whether assumed or deferred lengths are allowed. | TD-21 |

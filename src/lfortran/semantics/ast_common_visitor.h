@@ -14567,7 +14567,9 @@ public:
     // Whether the component `member`, which a structure constructor gives at
     // `loc`, is accessible here, reporting it if not. A private component is
     // accessible only in the module that defines its type and in the
-    // descendants of that module (F2018 7.5.4.8).
+    // descendants of that module (F2018 7.5.4.8). A component of an instance
+    // of a generic type is defined by the generic definition: the unit that
+    // owns the instance owns a copy of it, but no access to it (TD-37).
     bool check_component_access(ASR::symbol_t* member, const Location& loc) {
         if (member == nullptr || !ASR::is_a<ASR::Variable_t>(*member)) {
             return true;
@@ -14576,14 +14578,17 @@ public:
         if (var->m_access != ASR::accessType::Private) {
             return true;
         }
-        ASR::Module_t* module = ASRUtils::get_sym_module0(member);
+        ASR::Struct_t* type = ASR::down_cast<ASR::Struct_t>(
+            ASR::down_cast<ASR::symbol_t>(var->m_parent_symtab->asr_owner));
+        ASR::GenericTypeInstance_t* instance = ASRUtils::generic_type_instance(*type);
+        ASR::Module_t* module = ASRUtils::get_sym_module0(instance
+            ? &ASRUtils::generic_instance_definition(*instance)->base : member);
         if (module == nullptr || is_in_module_or_descendant(current_scope, module)) {
             return true;
         }
         std::string name = var->m_name;
         diag.add(Diagnostic("component '" + name + "' of type '"
-            + ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(
-                var->m_parent_symtab->asr_owner))
+            + ASRUtils::generic_type_spelling(*type)
             + "' is private and cannot be specified in a structure constructor "
             "outside module '" + std::string(module->m_name) + "'",
             Level::Error, Stage::Semantic, {

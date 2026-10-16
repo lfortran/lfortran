@@ -420,3 +420,130 @@ module gt_neg_26
         procedure(run_iface), deferred, nopass :: run
     end type Deferred
 end module gt_neg_26
+
+! N27-N34: a private component of a generic type is private to the module that
+! defines the generic type, in every instance, whatever unit owns the instance
+! (TD-37). Outside that module a structure constructor cannot give it a value,
+! by keyword or by position, through a renamed or re-exported type, in an
+! inferred instance, or in the generic procedures and generic types of another
+! module. The definition's own initializers and methods keep its access.
+module gt_neg_private
+    implicit none
+    private
+    public :: Holder, Tagged
+    type, sealed :: Holder{T}
+        private
+        type(T) :: value
+    end type Holder
+    type, sealed :: Tagged{T}
+        type(T) :: item
+        integer, private :: tag = 7
+    end type Tagged
+end module gt_neg_private
+
+! N27: by keyword, in an instance a module owns.
+module gt_neg_27
+    use gt_neg_private, only: Holder
+    implicit none
+contains
+    subroutine n27()
+        type(Holder{integer}) :: h
+        h = Holder{integer}(value=1)
+    end subroutine n27
+end module gt_neg_27
+
+! N28: by position.
+module gt_neg_28
+    use gt_neg_private, only: Holder
+    implicit none
+contains
+    subroutine n28()
+        type(Holder{integer}) :: h
+        h = Holder{integer}(1)
+    end subroutine n28
+end module gt_neg_28
+
+! N29: by position after a public component.
+module gt_neg_29
+    use gt_neg_private, only: Tagged
+    implicit none
+contains
+    subroutine n29()
+        type(Tagged{integer}) :: t
+        t = Tagged{integer}(5, 8)
+    end subroutine n29
+end module gt_neg_29
+
+! N30: in an inferred instance.
+module gt_neg_30
+    use gt_neg_private, only: Holder
+    implicit none
+contains
+    subroutine n30()
+        type(Holder{integer}) :: h
+        h = Holder(value=1)
+    end subroutine n30
+end module gt_neg_30
+
+! N31: through a renamed type.
+module gt_neg_31
+    use gt_neg_private, only: Renamed => Holder
+    implicit none
+contains
+    subroutine n31()
+        type(Renamed{integer}) :: h
+        h = Renamed{integer}(value=1)
+    end subroutine n31
+end module gt_neg_31
+
+! N32: through a re-exported type.
+module gt_neg_32_facade
+    use gt_neg_private, only: Holder
+    implicit none
+    private
+    public :: Holder
+end module gt_neg_32_facade
+
+module gt_neg_32
+    use gt_neg_32_facade, only: Holder
+    implicit none
+contains
+    subroutine n32()
+        type(Holder{integer}) :: h
+        h = Holder{integer}(value=1)
+    end subroutine n32
+end module gt_neg_32
+
+! N33: in a generic procedure of another module.
+module gt_neg_33
+    use gt_neg_contracts, only: INumeric
+    use gt_neg_private, only: Holder
+    implicit none
+contains
+    function n33{INumeric :: T}(x) result(r)
+        type(T), intent(in) :: x
+        type(T) :: r
+        type(Holder{integer}) :: h
+        h = Holder{integer}(value=1)
+        r = x
+    end function n33
+end module gt_neg_33
+
+! N34: in an initializer of a generic type of another module.
+module gt_neg_34
+    use gt_neg_private, only: Holder
+    implicit none
+    type, sealed :: Wrapper{T}
+        type(T) :: item
+    contains
+        initial :: wrap
+    end type Wrapper
+contains
+    function wrap(item) result(res)
+        type(T), intent(in) :: item
+        type(Wrapper{T}) :: res
+        type(Holder{integer}) :: h
+        h = Holder{integer}(value=1)
+        res%item = item
+    end function wrap
+end module gt_neg_34

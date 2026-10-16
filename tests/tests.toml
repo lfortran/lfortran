@@ -6060,6 +6060,11 @@ asr = true
 extrafiles = "errors/traits_component_loaded_pure_mod.f90"
 
 [[test]]
+filename = "errors/traits_generic_private_component_01.f90"
+asr = true
+extrafiles = "errors/traits_generic_private_component_mod.f90"
+
+[[test]]
 filename = "../integration_tests/traits_numeric_01.f90"
 ast = true
 ast_f90 = true

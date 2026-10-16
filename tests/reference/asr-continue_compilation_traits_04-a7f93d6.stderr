@@ -209,3 +209,75 @@ semantic error: procedure 'wrap' depends on the generic parameters of 'direct'; 
     |
 347 |         print *, allocated(wrap(SimpleSum()))
     |                            ^^^^^^^^^^^^^^^^^ 
+
+semantic error: component 'value' of type 'holder{integer(4)}' is private and cannot be specified in a structure constructor outside module 'gt_neg_private'
+   --> tests/errors/continue_compilation_traits_04.f90:451:29
+    |
+451 |         h = Holder{integer}(value=1)
+    |                             ^^^^^^^ 
+    |
+436 |         type(T) :: value
+    |                    ~~~~~ 'value' is declared here
+
+semantic error: component 'value' of type 'holder{integer(4)}' is private and cannot be specified in a structure constructor outside module 'gt_neg_private'
+   --> tests/errors/continue_compilation_traits_04.f90:462:29
+    |
+462 |         h = Holder{integer}(1)
+    |                             ^ 
+    |
+436 |         type(T) :: value
+    |                    ~~~~~ 'value' is declared here
+
+semantic error: component 'tag' of type 'tagged{integer(4)}' is private and cannot be specified in a structure constructor outside module 'gt_neg_private'
+   --> tests/errors/continue_compilation_traits_04.f90:473:32
+    |
+473 |         t = Tagged{integer}(5, 8)
+    |                                ^ 
+    |
+440 |         integer, private :: tag = 7
+    |                             ~~~~~~~ 'tag' is declared here
+
+semantic error: component 'value' of type 'holder{integer(4)}' is private and cannot be specified in a structure constructor outside module 'gt_neg_private'
+   --> tests/errors/continue_compilation_traits_04.f90:484:20
+    |
+484 |         h = Holder(value=1)
+    |                    ^^^^^^^ 
+    |
+436 |         type(T) :: value
+    |                    ~~~~~ 'value' is declared here
+
+semantic error: component 'value' of type 'holder{integer(4)}' is private and cannot be specified in a structure constructor outside module 'gt_neg_private'
+   --> tests/errors/continue_compilation_traits_04.f90:495:30
+    |
+495 |         h = Renamed{integer}(value=1)
+    |                              ^^^^^^^ 
+    |
+436 |         type(T) :: value
+    |                    ~~~~~ 'value' is declared here
+
+semantic error: component 'value' of type 'holder{integer(4)}' is private and cannot be specified in a structure constructor outside module 'gt_neg_private'
+   --> tests/errors/continue_compilation_traits_04.f90:513:29
+    |
+513 |         h = Holder{integer}(value=1)
+    |                             ^^^^^^^ 
+    |
+436 |         type(T) :: value
+    |                    ~~~~~ 'value' is declared here
+
+semantic error: component 'value' of type 'holder{integer(4)}' is private and cannot be specified in a structure constructor outside module 'gt_neg_private'
+   --> tests/errors/continue_compilation_traits_04.f90:527:29
+    |
+527 |         h = Holder{integer}(value=1)
+    |                             ^^^^^^^ 
+    |
+436 |         type(T) :: value
+    |                    ~~~~~ 'value' is declared here
+
+semantic error: component 'value' of type 'holder{integer(4)}' is private and cannot be specified in a structure constructor outside module 'gt_neg_private'
+   --> tests/errors/continue_compilation_traits_04.f90:546:29
+    |
+546 |         h = Holder{integer}(value=1)
+    |                             ^^^^^^^ 
+    |
+436 |         type(T) :: value
+    |                    ~~~~~ 'value' is declared here

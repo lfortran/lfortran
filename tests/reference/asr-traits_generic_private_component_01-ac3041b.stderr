@@ -1,0 +1,10 @@
+semantic error: component 'value' of type 'holder{integer(4)}' is private and cannot be specified in a structure constructor outside module 'traits_generic_private_component_lib'
+  --> tests/errors/traits_generic_private_component_01.f90:10:25
+   |
+10 |     h = Holder{integer}(value=3)
+   |                         ^^^^^^^ 
+
+  --> tests/errors/traits_generic_private_component_mod.f90:10:20
+   |
+10 |         type(T) :: value
+   |                    ~~~~~ 'value' is declared here

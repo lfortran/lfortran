@@ -1113,6 +1113,12 @@ An instance is an ordinary sealed derived type of the module or main program
 that creates it; equal instances of one module or program are one type. It
 owns copies of the type's procedures, specialized for its arguments, and its
 own bindings, initializers and conformances. These are private to the unit.
+Owning an instance gives the unit no access to the definition, though: a
+component that the generic definition declares private stays private to the
+module that defines the generic type, and to its descendants, in every
+instance (TD-37). Outside that module a structure constructor of an instance
+cannot give it a value, while the instance's copies of the definition's own
+initializers and methods keep that module's access.
 An instance is named like its type applied to its arguments,
 `averager{simplesum}`, and its copies' names extend that name; LFortran
 accepts identifiers that start with an underscore, but no name a source can
@@ -1159,9 +1165,12 @@ parameters used in a BLOCK; `traits_generic_type_04` and the native
 `test_generic_type_private_*` CTests a private module that owns instances,
 compiled separately, whose instance entities no USE imports by any name;
 `traits_generic_type_05` intrinsic type arguments whose conformances the
-unit declares.
+unit declares; `traits_generic_type_07` private components that the
+definition's initializer and method give values with structure constructors
+of the type itself, in instances that a separately compiled client owns.
 `continue_compilation_traits_04` and `continue_compilation_traits_05` cover
-the diagnostics.
+the diagnostics, and `traits_generic_private_component_01` a private
+component of a generic type loaded from its module file.
 
 These are boundaries of the current prototype, diagnosed where they apply:
 generic types are declared in modules and instantiated in other modules or
