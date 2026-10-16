@@ -4293,6 +4293,8 @@ RUN(NAME traits_runtime_array_inout_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODU
         traits_runtime_array_inout_01_providers.f90)
 RUN(NAME traits_runtime_array_inout_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_solver_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_solver_01_legacy FILE traits_runtime_solver_01 LABELS llvm NO_STD_F23
+    ISOLATE_MODULES EXTRA_ARGS --verify-all-passes --legacy-array-sections)
 # LFortran's type-bound calls do not yet copy a noncontiguous section back from
 # an explicit-shape dummy, which the oracle's CLASS solver relies on.
 RUN(NAME traits_runtime_solver_01_oracle LABELS gfortran)
@@ -4777,6 +4779,8 @@ RUN(NAME array_section_34 LABELS gfortran llvm)
 RUN(NAME array_section_35 LABELS gfortran llvm)
 RUN(NAME array_section_36 LABELS gfortran llvm)
 RUN(NAME array_section_37 LABELS gfortran llvm)
+RUN(NAME array_section_37_legacy FILE array_section_37 LABELS llvm ISOLATE_MODULES
+    EXTRA_ARGS --legacy-array-sections)
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME nested_vars_02 LABELS gfortran llvm)
@@ -5524,6 +5528,7 @@ RUN(NAME legacy_array_sections_22 LABELS gfortran llvm EXTRA_ARGS --legacy-array
 RUN(NAME legacy_array_sections_23 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
 RUN(NAME legacy_array_sections_24 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
 RUN(NAME legacy_array_sections_25 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
+RUN(NAME legacy_array_sections_26 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
 
 RUN(NAME cmake_minimal_test_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_initialization_declaration LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

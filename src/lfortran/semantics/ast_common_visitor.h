@@ -17485,12 +17485,25 @@ public:
                                 al, ASRUtils::TYPE(expected_array), expected_phys_type, true);
                         }
 
-                        // For external/implicit-interface calls (ABI expects raw pointers), avoid
-                        // materializing a temporary ArraySection descriptor. Passing the address
-                        // of the first element directly is sufficient for sequence association and
-                        // prevents stack growth from dimension-descriptor allocas.
-                        if (callee_is_external_symbol &&
-                            expected_phys_type == ASR::array_physical_typeType::PointerArray &&
+                        // An explicit-shape or assumed-size dummy receives the address of its
+                        // data: the element and the elements that follow it in the actual's
+                        // storage are its sequence, which the callee indexes with its own
+                        // shape. When that storage is not strided, as for a fixed-size,
+                        // explicit-shape or assumed-size array, pass the element's address. A
+                        // section starting at the element would denote its own elements, which
+                        // are not that sequence for an actual of more than one dimension, and a
+                        // noncontiguous section is passed through a copy of them. A procedure
+                        // of another module gets the address for every actual, which also
+                        // avoids a temporary ArraySection descriptor for every call.
+                        ASR::array_physical_typeType actual_storage_phys =
+                            ASRUtils::extract_physical_type(ASRUtils::expr_type(array_expr));
+                        bool actual_storage_is_sequence =
+                            actual_storage_phys == ASR::array_physical_typeType::FixedSizeArray ||
+                            actual_storage_phys == ASR::array_physical_typeType::PointerArray ||
+                            actual_storage_phys == ASR::array_physical_typeType::UnboundedPointerArray;
+                        if ((expected_phys_type == ASR::array_physical_typeType::PointerArray ||
+                             expected_phys_type == ASR::array_physical_typeType::UnboundedPointerArray) &&
+                            (callee_is_external_symbol || actual_storage_is_sequence) &&
                             !ASRUtils::is_character(*ASRUtils::type_get_past_array(expected_arg_type))) {
                             arg.m_value = ASRUtils::EXPR(ASR::make_GetPointer_t(
                                 al, array_item->base.base.loc, arg_expr, cast_target_type, nullptr));

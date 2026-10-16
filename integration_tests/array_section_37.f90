@@ -2,7 +2,8 @@
 ! explicit-shape or assumed-size dummy, gives the dummy the sequence of its
 ! own elements in array element order: the procedure sees and defines only
 ! those, also for a reversed section, a matrix row and a 2-D block, and a
-! contiguous section is passed in place.
+! contiguous section is passed in place. array_section_37_legacy checks that
+! --legacy-array-sections changes none of this.
 module array_section_37_m
     implicit none
 contains

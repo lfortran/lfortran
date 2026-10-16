@@ -2004,13 +2004,10 @@ before the call and, unless the dummy is `intent(in)`, back after it. The
 `TraitFunctionCall` through their slot interfaces exactly as for ordinary
 calls, so a `neqn` smaller than the actual uses the first `neqn` elements of
 the sequence. The actual of an `intent(inout)` or `intent(out)` explicit-shape
-array is checked as that of an assumed-shape one. With
-`--legacy-array-sections`, which turns an array element actual into a section
-starting at it, a section of a fixed-size array is passed from its first
-element, as for an ordinary call in that mode. Explicit-shape arrays of generic
-messages and assumed-size arrays (`y(*)`) remain outside the runtime slot
-surface: a trait with such a message has no runtime contract, and using it as a
-view is diagnosed as not implemented.
+array is checked as that of an assumed-shape one. Explicit-shape arrays of
+generic messages and assumed-size arrays (`y(*)`) remain outside the runtime
+slot surface: a trait with such a message has no runtime contract, and using it
+as a view is diagnosed as not implemented.
 
 `traits_runtime_solver_01` runs these interfaces with a forward Euler solver
 and two right-hand sides. Through read-only borrowed and owning views, the
@@ -2019,7 +2016,9 @@ sections of them. `integrate` runs on the concrete solver statically, through
 an owning `class(ISolver)` and through a borrowed `intent(inout)` view, with
 whole arrays, strided and reversed sections of fixed-size and assumed-shape
 arrays and a shorter `neqn`, and returns `t` and `iflag` through their omitted
-intents. `traits_runtime_solver_01_oracle` checks the same calls with standard
+intents. `traits_runtime_solver_01_legacy` runs it with
+`--legacy-array-sections`, which does not change how a section is passed.
+`traits_runtime_solver_01_oracle` checks the same calls with standard
 CLASS; LFortran does not yet copy a noncontiguous section back from the
 explicit-shape dummy of a type-bound procedure, so it is registered for
 GFortran only. `traits_runtime_solver_separate_01` compiles the interfaces, a
@@ -2032,7 +2031,7 @@ owners and a borrowed view. The reference test
 `traits_runtime_solver_mod.F90` compiles the reported module, unchanged, with
 `-c`, and the diagnostics are checked by
 `continue_compilation_traits_explicit_shape`. `array_section_37` checks the
-copy of ordinary calls.
+copy of ordinary calls, also with `--legacy-array-sections`.
 
 ## Scalar allocatable ownership, slots and results (R2)
 
