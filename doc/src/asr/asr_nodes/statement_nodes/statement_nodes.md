@@ -40,6 +40,7 @@ ForEach
 FormTeam
 GoTo
 GoToTarget
+GpuDiscard
 GpuKernelLaunch
 GpuSync
 If

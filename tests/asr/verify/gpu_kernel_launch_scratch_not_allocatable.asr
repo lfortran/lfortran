@@ -146,6 +146,8 @@
                       :read_back nil
                     )
                   ]
+                  :stop_status nil
+                  :stop_replay []
                 )
                 (GpuSync)
               ]

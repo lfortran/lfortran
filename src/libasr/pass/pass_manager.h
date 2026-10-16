@@ -67,6 +67,8 @@
 #include <libasr/pass/replace_gpu_offload.h>
 #include <libasr/pass/device_partition.h>
 #include <libasr/pass/device_launch_expand.h>
+#include <libasr/pass/gpu_launch_sync.h>
+#include <libasr/pass/gpu_array_statements.h>
 #include <libasr/pass/gpu_memory_space.h>
 #include <libasr/pass/gpu_device_workspace.h>
 #include <libasr/pass/gpu_struct_component_args.h>
@@ -135,9 +137,11 @@ namespace LCompilers {
             {"openmp", &pass_replace_openmp},
             {"parallel_canonicalize", &pass_parallel_canonicalize},
             {"parallel_dispatch", &pass_parallel_dispatch},
+            {"gpu_array_statements", &pass_gpu_array_statements},
             {"omp_region_flatten", &pass_flatten_omp_regions},
             {"gpu_offload", &pass_replace_gpu_offload},
             {"device_partition", &pass_device_partition},
+            {"gpu_launch_sync", &pass_gpu_launch_sync},
             {"device_launch_expand", &pass_device_launch_expand},
             {"gpu_device_workspace", &pass_gpu_device_workspace},
             {"gpu_struct_component_args", &pass_gpu_struct_component_args},
@@ -295,6 +299,9 @@ namespace LCompilers {
                 // region.
                 "parallel_canonicalize",
                 "parallel_dispatch",
+                // A whole-array assignment in a host loop that launches
+                // kernels, on the data they use, runs on the device too.
+                "gpu_array_statements",
                 // Each statement that references a function whose result is
                 // finalized after the statement becomes a BLOCK here, before
                 // the passes below split it into several statements.
@@ -367,6 +374,9 @@ namespace LCompilers {
                 // Lay out each kernel, now that shared lowering has given it
                 // the shape the device code generators see.
                 "gpu_kernel_finalize",
+                // A launch does not wait for its kernel: the host waits
+                // where it next needs what a kernel wrote.
+                "gpu_launch_sync",
                 "device_launch_expand",
                 "do_loops",
                 "while_else",

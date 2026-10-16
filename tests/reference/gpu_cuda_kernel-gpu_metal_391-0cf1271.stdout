@@ -58,14 +58,18 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             __gpu_heap___libasr_created__function_call_ramp_n1 = (((k > 0)) ? (k) : (0));
             __gpu_heap___libasr_created__function_call_ramp_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___libasr_created__function_call_ramp_n1);
             if ((__gpu_heap___libasr_created__function_call_ramp_base > (__gpu_heap_cap_r4 - __gpu_heap___libasr_created__function_call_ramp_n1))) {
-                __gpu_stop_status[((int)(1) - (1))] = 1;
+                if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
+                    __gpu_stop_status[((int)(1) - (1))] = 1;
+                }
                 return;
             }
             __gpu_heap___libasr_created__function_call_ramp_lb1 = 1;
             __gpu_heap___libasr_created__function_call_ramp_n1 = (((k > 0)) ? (k) : (0));
             __gpu_heap___libasr_created__function_call_ramp_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___libasr_created__function_call_ramp_n1);
             if ((__gpu_heap___libasr_created__function_call_ramp_base > (__gpu_heap_cap_r4 - __gpu_heap___libasr_created__function_call_ramp_n1))) {
-                __gpu_stop_status[((int)(1) - (1))] = 2;
+                if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
+                    __gpu_stop_status[((int)(1) - (1))] = 2;
+                }
                 return;
             }
             __gpu_heap_view___libasr_created__function_call_ramp = __gpu_heap_r4 + ((int)((__gpu_heap___libasr_created__function_call_ramp_base + 1)) - (1));

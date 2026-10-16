@@ -70,11 +70,29 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
     lfortran_gpu_ctx* ctx, const char* entry_point, int entry_point_len);
 void                 lfortran_gpu_release_kernel(lfortran_gpu_kernel* k);
 
-// The kernel sees the `size` bytes at `ptr`, and the host sees what the
-// kernel wrote there after the launch. A runtime that copies them into a
-// device buffer may keep that buffer for the next launch of the same kernel.
+// How a kernel uses a buffer argument.
+enum {
+    // The kernel only reads the buffer.
+    LFORTRAN_GPU_READ = 0,
+    // The kernel may write the buffer.
+    LFORTRAN_GPU_WRITE = 1
+};
+
+// The kernel sees the `size` bytes at `ptr` as they are when the launch is
+// made. A launch does not wait for the kernel: the host sees what the kernel
+// wrote at the next lfortran_gpu_sync.
+//
+// A runtime with memory of its own keeps a buffer the kernel may write on
+// the device: until the next sync, a later launch handed the same host range
+// sees what the kernel wrote there, without copying anything, and the host
+// gets it back at the sync. So between a launch and the next sync the host
+// must not read or write a range a kernel may write, nor free it except
+// after lfortran_gpu_discard; a range the kernel only reads it may change
+// or free as soon as the launch returns. This is what the compiler's
+// `gpu_launch_sync` pass arranges. A range handed over again that overlaps
+// a kept one without being the same range makes the runtime sync first.
 void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
-    void* ptr, size_t size);
+    void* ptr, size_t size, int access);
 void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
     const void* val, size_t size);
 // A buffer of `size` bytes only the device holds: nothing is copied in or
@@ -82,13 +100,22 @@ void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
 void lfortran_gpu_set_scratch_arg(lfortran_gpu_kernel* k, int idx,
     size_t size);
 // Copies the leading `size` bytes of the scratch buffer `idx` into `dst`,
-// after the launch and before the kernel is released.
+// after the launch and before the kernel is released. It waits for the
+// launch, as lfortran_gpu_sync does.
 void lfortran_gpu_read_scratch_arg(lfortran_gpu_kernel* k, int idx,
     void* dst, size_t size);
 
+// Starts the kernel and returns without waiting for it.
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3]);
+// Waits for every launch made so far, and copies what the kernels wrote back
+// into the host ranges they were handed. A kernel that failed ends the
+// program here.
 void lfortran_gpu_sync(lfortran_gpu_ctx* ctx);
+// The host is about to free the `size` bytes at `ptr`, and no longer needs
+// what a launch since the last sync wrote there: the runtime forgets the
+// range without copying anything back.
+void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size);
 long long lfortran_gpu_heap_size(void);
 
 #ifdef __cplusplus

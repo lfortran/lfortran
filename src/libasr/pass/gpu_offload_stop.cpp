@@ -160,7 +160,9 @@ private:
 
     // Records a stop at the site `k` makes, with the integer stop code
     // `value` when there is one, in the status buffer: the code first and
-    // the site after it (see gpu_offload_stop.h).
+    // the site after it (see gpu_offload_stop.h). A stop an earlier launch
+    // recorded, which the host has not read yet, ended the program there,
+    // so it is kept.
     std::vector<ASR::stmt_t*> record(
             const std::function<ASR::expr_t*()> &k, ASR::expr_t *value) {
         std::vector<ASR::stmt_t*> stmts;
@@ -169,7 +171,7 @@ private:
                 status_item(b.Add(k(), b.i32(1))), value));
         }
         stmts.push_back(b.Assignment(status_item(b.i32(1)), k()));
-        return stmts;
+        return {b.If(b.Eq(status_item(b.i32(1)), b.i32(0)), stmts, {})};
     }
 
     // What a `stop` turns into: the site, and its integer stop code, are
@@ -583,8 +585,9 @@ GpuDecline gpu_lower_device_stops(Allocator &al, const Location &loc,
     ASR::down_cast<ASR::Variable_t>(status)->m_type =
         status_type(al, loc, n_sites + 1, true);
 
-    // The host side: the status is cleared before the launch, and the
-    // statement a thread recorded is run after it.
+    // The host side: the statement a thread recorded is run once the host
+    // has waited for the launch. The status is cleared once, on entry to
+    // the procedure that launches the kernel (see gpu_launch_sync.cpp).
     stops.host_status = gpu_new_variable(al, loc, host_scope,
         host_scope->get_unique_name("__gpu_stop_status"),
         status_type(al, loc, n_sites + 1, true));
@@ -601,7 +604,6 @@ GpuDecline gpu_lower_device_stops(Allocator &al, const Location &loc,
             b.Var(stops.host_status), args.p, args.n, int4,
             ASR::arraystorageType::ColMajor, nullptr, false));
     };
-    stops.before_launch.push_back(b.Assignment(host_item(1), b.i32(0)));
 
     ASR::stmt_t *replay = nullptr;
     for (int64_t k = n_sites; k >= 1; k--) {
