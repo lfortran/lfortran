@@ -2197,16 +2197,12 @@ void add_ws_warning(const Location &loc,
                             LCompilers::diag::Level::Error, LCompilers::diag::Stage::Parser, {LCompilers::diag::Label("", {loc})}));
                 }
         } else if (end_token == yytokentype::KW_INTEGER) {
-                if (a_kind == 4){
+                if (a_kind == 1 || a_kind == 2 || a_kind == 4 || a_kind == 8) {
+                        std::string k = std::to_string(a_kind);
                         diagnostics.parser_style_label(
-                        "Use integer(4) instead of integer*4",
+                        "Use integer(" + k + ") instead of integer*" + k,
                         {loc},
-                        "help: write this as 'integer(4)'");
-                } else if (a_kind == 8){
-                        diagnostics.parser_style_label(
-                        "Use integer(8) instead of integer*8",
-                        {loc},
-                        "help: write this as 'integer(8)'");
+                        "help: write this as 'integer(" + k + ")'");
                 } else {
                         diagnostics.add(LCompilers::diag::Diagnostic(
                             "kind " + std::to_string(a_kind) + " is not supported yet.",

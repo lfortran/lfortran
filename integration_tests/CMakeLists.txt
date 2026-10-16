@@ -2007,6 +2007,7 @@ RUN(NAME extends_type_of_01 LABELS gfortran llvm)
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
 RUN(NAME integer_boz_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME integer_star_01 LABELS gfortran llvm)
 
 RUN(NAME test_dshiftr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
