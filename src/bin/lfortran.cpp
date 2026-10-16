@@ -1,6 +1,7 @@
 #include "libasr/utils.h"
 #include <chrono>
 #include <iostream>
+#include <stdio.h>
 #include <stdlib.h>
 #include <filesystem>
 #include <random>
@@ -282,9 +283,10 @@ int emit_tokens2(const std::string &input, std::vector<std::string>
     {
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = "input";
-        // `input` is only used for error rendering
-        std::ofstream out("input");
-        out << input;
+        // The text is only quoted by the error rendering, which takes it from
+        // here; writing it to a file would clobber any `input` in the user's
+        // directory.
+        fl.source = input;
         lm.files.push_back(fl);
         lm.init_simple(input);
         lm.file_ends.push_back(input.size());
@@ -414,7 +416,6 @@ bool determine_completeness(std::string command)
 
 int prompt(bool verbose, CompilerOptions &cu)
 {
-    Terminal term(true, false);
     std::cout << "Interactive Fortran. Experimental prototype, not ready for end users." << std::endl;
     std::string version = LFORTRAN_VERSION;
     std::cout << "LFortran version: " << version << std::endl;
@@ -431,7 +432,15 @@ int prompt(bool verbose, CompilerOptions &cu)
     std::vector<std::string> history;
     std::function<bool(std::string)> iscomplete = determine_completeness;
     while (true) {
-        std::string input = prompt0(term, ">>> ", history, iscomplete);
+        std::string input;
+        {
+            // The terminal is in raw mode only while a line is edited, so
+            // that the cell can read the terminal as usual (#15284).
+            Terminal term(true, false);
+            input = prompt0(term, ">>> ", history, iscomplete);
+        }
+        // A READ ended by Ctrl-D in an earlier cell must not end later READs
+        clearerr(stdin);
         if (input.size() == 1 && input[0] == CTRL_KEY('d')) {
             std::cout << std::endl;
             std::cout << "Exiting." << std::endl;
@@ -731,7 +740,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (result.ok) {
+    if (result.ok && !diagnostics.has_error()) {
         asr = result.result;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1186,7 +1195,9 @@ int handle_mlir(const std::string &infile,
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (result.ok) {
+    // With --continue-compilation, the ASR is returned despite errors; no
+    // object file may be written from it.
+    if (result.ok && (emit_mlir || emit_llvm || !diagnostics.has_error())) {
         asr = result.result;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1330,9 +1341,10 @@ int compile_src_to_object_file(const std::string &infile,
     lcompilers_unique_ID_separate_compilation = compiler_options.separate_compilation ? LCOMPILERS_UNIQUE_ID : "";
 
     time_src_to_asr = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-    bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (result.ok) {
+    // With --continue-compilation, the ASR is returned despite errors; no
+    // .mod or object file may be written from it.
+    if (result.ok && !diagnostics.has_error()) {
         asr = result.result;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1350,7 +1362,8 @@ int compile_src_to_object_file(const std::string &infile,
 
     if (!(compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures)
         && !LCompilers::ASRUtils::main_program_present(*asr)
-        && !LCompilers::ASRUtils::global_function_present(*asr)) {
+        && !LCompilers::ASRUtils::global_function_present(*asr)
+        && !LCompilers::ASRUtils::block_data_present(*asr)) {
         if (!arg_c) {
             diagnostics.add(LCompilers::diag::Diagnostic(
                 "no main program found; cannot build an executable. "
@@ -1372,8 +1385,12 @@ int compile_src_to_object_file(const std::string &infile,
     }
 
     // if compiler_options.generate_code_for_global_procedures is true, then mark all modules as external
-    // so that they are not compiled again
-    if (!LCompilers::ASRUtils::main_program_present(*asr) && arg_c && compiler_options.generate_code_for_global_procedures && !compiler_options.separate_compilation) {
+    // so that they are not compiled again; the same holds for the modules
+    // that a BLOCK DATA program unit uses
+    if (!LCompilers::ASRUtils::main_program_present(*asr) && arg_c
+            && (compiler_options.generate_code_for_global_procedures
+                || LCompilers::ASRUtils::block_data_present(*asr))
+            && !compiler_options.separate_compilation) {
         LCompilers::ASRUtils::mark_modules_as_external(*asr);
     }
 
@@ -1409,7 +1426,7 @@ int compile_src_to_object_file(const std::string &infile,
         compiler_options.po.vector_of_time_report.push_back(message);
     }
 
-    return has_error_w_cc;
+    return 0;
 }
 
 int compile_llvm_to_object_file(const std::string& infile,
@@ -1490,6 +1507,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
+    bool ast_has_error = false;
     {
         auto t1 = std::chrono::high_resolution_clock::now();
         LCompilers::Result<LCompilers::LFortran::AST::TranslationUnit_t*>
@@ -1498,6 +1516,9 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         time_src_to_ast = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
         std::cerr << diagnostics.render(lm, compiler_options);
+        // With --continue-compilation, the parser may recover from syntax
+        // errors; continue to report semantic errors, but write no output.
+        ast_has_error = diagnostics.has_error();
         if (result.ok) {
             ast = result.result;
         } else {
@@ -1516,10 +1537,10 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         time_ast_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
         std::cerr << diagnostics.render(lm, compiler_options);
-        if (result.ok) {
+        if (result.ok && !ast_has_error && !diagnostics.has_error()) {
             asr = result.result;
         } else {
-            LCOMPILERS_ASSERT(diagnostics.has_error())
+            LCOMPILERS_ASSERT(ast_has_error || diagnostics.has_error())
             return 2;
         }
     }
@@ -1591,6 +1612,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
+    bool ast_has_error = false;
     {
         auto t1 = std::chrono::high_resolution_clock::now();
         LCompilers::Result<LCompilers::LFortran::AST::TranslationUnit_t*>
@@ -1599,6 +1621,9 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         time_src_to_ast = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
         std::cerr << diagnostics.render(lm, compiler_options);
+        // With --continue-compilation, the parser may recover from syntax
+        // errors; continue to report semantic errors, but write no output.
+        ast_has_error = diagnostics.has_error();
         if (result.ok) {
             ast = result.result;
         } else {
@@ -1617,10 +1642,10 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         time_ast_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
         std::cerr << diagnostics.render(lm, compiler_options);
-        if (result.ok) {
+        if (result.ok && !ast_has_error && !diagnostics.has_error()) {
             asr = result.result;
         } else {
-            LCOMPILERS_ASSERT(diagnostics.has_error())
+            LCOMPILERS_ASSERT(ast_has_error || diagnostics.has_error())
             return 2;
         }
     }
@@ -1662,6 +1687,40 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
 }
 
 
+// The C and C++ backends compile the program units of a file without a main
+// program, and the modules it uses, with the main program, which therefore
+// has to be compiled from source with them. A BLOCK DATA program unit is the
+// exception: it gives the initial values of common blocks to the program, so
+// a file of BLOCK DATA program units only is compiled to an object file of
+// its own.
+int check_block_data_object(const LCompilers::ASR::TranslationUnit_t &asr,
+        const std::string &backend, LCompilers::diag::Diagnostics &diagnostics)
+{
+    for (auto &item : asr.m_symtab->get_scope()) {
+        if (!LCompilers::ASR::is_a<LCompilers::ASR::BlockData_t>(*item.second)) {
+            diagnostics.add(LCompilers::diag::Diagnostic(
+                "the " + backend + " backend compiles a BLOCK DATA program "
+                "unit in a file without a main program only if the file has "
+                "no other program unit and uses no module",
+                LCompilers::diag::Level::Error,
+                LCompilers::diag::Stage::CodeGen, {}));
+            return 1;
+        }
+    }
+    return 0;
+}
+
+std::string get_c_compiler(const std::string &default_compiler)
+{
+    if (char *env_CC = std::getenv("LFORTRAN_CC")) {
+        return env_CC;
+    }
+    if (char *env_CC = std::getenv("CC")) {
+        return env_CC;
+    }
+    return default_compiler;
+}
+
 int compile_to_object_file_cpp(const std::string &infile,
         const std::string &outfile, bool verbose,
         bool assembly, bool kokkos, const std::string &rtlib_header_dir,
@@ -1686,7 +1745,7 @@ int compile_to_object_file_cpp(const std::string &infile,
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (result.ok) {
+    if (result.ok && !diagnostics.has_error()) {
         asr = result.result;
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1699,7 +1758,8 @@ int compile_to_object_file_cpp(const std::string &infile,
         if (err) return err;
     }
 
-    if (!LCompilers::ASRUtils::main_program_present(*asr)) {
+    if (!LCompilers::ASRUtils::main_program_present(*asr)
+            && !LCompilers::ASRUtils::block_data_present(*asr)) {
         if (!arg_c) {
             diagnostics.add(LCompilers::diag::Diagnostic(
                 "no main program found; cannot build an executable. "
@@ -1725,9 +1785,7 @@ int compile_to_object_file_cpp(const std::string &infile,
                 out.open(outfile_empty);
                 out << " ";
             }
-	    std::string CC = "cc";
-            char *env_CC = std::getenv("LFORTRAN_CC");
-            if (env_CC) CC = env_CC;
+            std::string CC = get_c_compiler("cc");
             std::string cmd = CC + " -c '" + outfile_empty + "' -o '" + outfile + "'";
             int err = system(cmd.c_str());
             if (err) {
@@ -1737,7 +1795,13 @@ int compile_to_object_file_cpp(const std::string &infile,
         }
         return 0;
     }
-    if (found_main) {
+    if (!LCompilers::ASRUtils::main_program_present(*asr)) {
+        int err = check_block_data_object(*asr, "C++", diagnostics);
+        if (err) {
+            std::cerr << diagnostics.render(lm, compiler_options);
+            return err;
+        }
+    } else if (found_main) {
         *found_main = true;
     }
 
@@ -1812,7 +1876,7 @@ int compile_to_object_file_c(const std::string &infile,
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         r = fe.get_asr2(input, lm, diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (!r.ok) {
+    if (!r.ok || diagnostics.has_error()) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 2;
     }
@@ -1825,7 +1889,8 @@ int compile_to_object_file_c(const std::string &infile,
         if (err) return err;
     }
 
-    if (!LCompilers::ASRUtils::main_program_present(*asr)) {
+    if (!LCompilers::ASRUtils::main_program_present(*asr)
+            && !LCompilers::ASRUtils::block_data_present(*asr)) {
         if (!arg_c) {
             diagnostics.add(LCompilers::diag::Diagnostic(
                 "no main program found; cannot build an executable. "
@@ -1851,9 +1916,7 @@ int compile_to_object_file_c(const std::string &infile,
                 out.open(outfile_empty);
                 out << " ";
             }
-	    std::string CC = "cc";
-            char *env_CC = std::getenv("LFORTRAN_CC");
-            if (env_CC) CC = env_CC;
+            std::string CC = get_c_compiler("cc");
             std::string cmd = CC + " -c '" + outfile_empty + "' -o '" + outfile + "'";
             int err = system(cmd.c_str());
             if (err) {
@@ -1863,7 +1926,13 @@ int compile_to_object_file_c(const std::string &infile,
         }
         return 0;
     }
-    if (found_main) {
+    if (!LCompilers::ASRUtils::main_program_present(*asr)) {
+        int err = check_block_data_object(*asr, "C", diagnostics);
+        if (err) {
+            std::cerr << diagnostics.render(lm, compiler_options);
+            return err;
+        }
+    } else if (found_main) {
         *found_main = true;
     }
 
@@ -1891,9 +1960,9 @@ int compile_to_object_file_c(const std::string &infile,
             out << src;
         }
 
-        std::string CXX = "gcc";
+        std::string CC = get_c_compiler("gcc");
         std::string options = " -I" + rtlib_header_dir;
-        std::string cmd = CXX + " " + options + " -o " + outfile + " -c " + cfile;
+        std::string cmd = CC + " " + options + " -o " + outfile + " -c " + cfile;
         if (verbose) {
             std::cout << cmd << std::endl;
         }
@@ -1923,7 +1992,7 @@ int compile_to_binary_fortran(const std::string &infile,
     }
     LCompilers::Result<std::string> src = fe.get_fortran(input, lm, diagnostics, pass_manager);
     std::cerr << diagnostics.render(lm, compiler_options);
-    if (!src.ok) {
+    if (!src.ok || diagnostics.has_error()) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
     }
@@ -2324,8 +2393,8 @@ int link_executable(const std::vector<std::string> &infiles,
         }
 #endif
     } else if (backend == Backend::c) {
-        std::string CXX = "gcc";
-        std::string cmd = CXX + " -o " + outfile + " ";
+        std::string CC = get_c_compiler("gcc");
+        std::string cmd = CC + " -o " + outfile + " ";
         std::string base_path = "\"" + runtime_library_dir + "\"";
         std::string runtime_lib = "lfortran_runtime";
         for (auto &s : infiles) {
@@ -2503,8 +2572,7 @@ namespace wasm {
                         { \
                             LCompilers::LocationManager::FileLocations fl; \
                             fl.in_filename = "input"; \
-                            std::ofstream out("input"); \
-                            out << input; \
+                            fl.source = input; \
                             lm.files.push_back(fl); \
                             lm.file_ends.push_back(strlen(input)); \
                         }

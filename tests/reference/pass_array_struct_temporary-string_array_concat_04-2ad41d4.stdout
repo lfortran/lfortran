@@ -1,0 +1,1130 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            string_array_concat_04:
+                (Program
+                    (SymbolTable
+                        4
+                        {
+                            __libasr_created__subroutine_call_sub:
+                                (Variable
+                                    4
+                                    __libasr_created__subroutine_call_sub
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        9
+                                        ["abc", "def", "ghi"]
+                                        (Array
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            PointerArray
+                                            Global
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        9
+                                        ["abc", "def", "ghi"]
+                                        (Array
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            PointerArray
+                                            Global
+                                        )
+                                        ColMajor
+                                    )
+                                    Parameter
+                                    (Array
+                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        PointerArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            chk:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            c:
+                                                (Variable
+                                                    6
+                                                    c
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (String 1 () AssumedLength DescriptorString)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    chk
+                                    (FunctionType
+                                        [(Array
+                                            (String 1 () AssumedLength DescriptorString)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                            Global
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 6 c)]
+                                    [(If
+                                        ()
+                                        (LogicalBinOp
+                                            (IntegerCompare
+                                                (StringLen
+                                                    (Var 6 c)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                NotEq
+                                                (IntegerConstant 5 (Integer 4) Decimal)
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            Or
+                                            (StringCompare
+                                                (ArrayItem
+                                                    (Var 6 c)
+                                                    [(()
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    ())]
+                                                    (String 1 () AssumedLength DescriptorString)
+                                                    ColMajor
+                                                    ()
+                                                    .false.
+                                                )
+                                                NotEq
+                                                (StringConstant
+                                                    "ghi '"
+                                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                                )
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            fm:
+                                (ExternalSymbol
+                                    4
+                                    fm
+                                    2 fm
+                                    string_array_concat_04_mod
+                                    []
+                                    fm
+                                    Public
+                                ),
+                            sub:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            __libasr_created__array_section_:
+                                                (Variable
+                                                    5
+                                                    __libasr_created__array_section_
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr_created__array_section_1:
+                                                (Variable
+                                                    5
+                                                    __libasr_created__array_section_1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr_created__array_section_pointer_:
+                                                (Variable
+                                                    5
+                                                    __libasr_created__array_section_pointer_
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Array
+                                                            (String 1 () AssumedLength DescriptorString)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr_created__array_section_pointer_1:
+                                                (Variable
+                                                    5
+                                                    __libasr_created__array_section_pointer_1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Array
+                                                            (String 1 () AssumedLength DescriptorString)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr_created__function_call_fm:
+                                                (Variable
+                                                    5
+                                                    __libasr_created__function_call_fm
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Array
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr_created__intrinsic_elemental_function_StringConcat:
+                                                (Variable
+                                                    5
+                                                    __libasr_created__intrinsic_elemental_function_StringConcat
+                                                    [x]
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (String 1 (IntegerBinOp
+                                                            (StringLen
+                                                                (ArraySection
+                                                                    (Var 5 x)
+                                                                    [((IntegerConstant 2 (Integer 4) Decimal)
+                                                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                                                    (Array
+                                                                        (String 1 () AssumedLength DescriptorString)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                        Global
+                                                                    )
+                                                                    ()
+                                                                )
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            Add
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            (Integer 4)
+                                                            ()
+                                                        ) ExpressionLength DescriptorString)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IfExp
+                                                            (IntegerCompare
+                                                                (IntegerConstant 0 (Integer 4) Decimal)
+                                                                Gt
+                                                                (IntegerBinOp
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    Mul
+                                                                    (IntegerBinOp
+                                                                        (IntegerBinOp
+                                                                            (IntegerBinOp
+                                                                                (IntegerConstant 3 (Integer 4) Decimal)
+                                                                                Sub
+                                                                                (IntegerConstant 2 (Integer 4) Decimal)
+                                                                                (Integer 4)
+                                                                                ()
+                                                                            )
+                                                                            Div
+                                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                                            (Integer 4)
+                                                                            ()
+                                                                        )
+                                                                        Add
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                                        (Integer 4)
+                                                                        ()
+                                                                    )
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                (Logical 4)
+                                                                ()
+                                                            )
+                                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                                            (IntegerBinOp
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                Mul
+                                                                (IntegerBinOp
+                                                                    (IntegerBinOp
+                                                                        (IntegerBinOp
+                                                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                                                            Sub
+                                                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                                                            (Integer 4)
+                                                                            ()
+                                                                        )
+                                                                        Div
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                                        (Integer 4)
+                                                                        ()
+                                                                    )
+                                                                    Add
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                        PointerArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            __libasr_created__subroutine_call_chk:
+                                                (Variable
+                                                    5
+                                                    __libasr_created__subroutine_call_chk
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Allocatable
+                                                        (Array
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            x:
+                                                (Variable
+                                                    5
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (String 1 () AssumedLength DescriptorString)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    sub
+                                    (FunctionType
+                                        [(Array
+                                            (String 1 () AssumedLength DescriptorString)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                            Global
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    [chk]
+                                    [(Var 5 x)]
+                                    [(Associate
+                                        (Var 5 __libasr_created__function_call_fm)
+                                        (ArraySection
+                                            (Var 5 x)
+                                            [((IntegerConstant 2 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            (IntegerConstant 1 (Integer 4) Decimal))]
+                                            (Array
+                                                (String 1 () AssumedLength DescriptorString)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                                Global
+                                            )
+                                            ()
+                                        )
+                                    )
+                                    (ExplicitDeallocate
+                                        [(Var 5 __libasr_created__array_section_)]
+                                    )
+                                    (Allocate
+                                        [((Var 5 __libasr_created__array_section_)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                                    Sub
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Div
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        ))]
+                                        []
+                                        (StringLen
+                                            (Var 5 x)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        ())]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (Associate
+                                        (Var 5 __libasr_created__array_section_pointer_)
+                                        (ArraySection
+                                            (Var 5 x)
+                                            [((IntegerConstant 2 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            (IntegerConstant 1 (Integer 4) Decimal))]
+                                            (Array
+                                                (String 1 () AssumedLength DescriptorString)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                                Global
+                                            )
+                                            ()
+                                        )
+                                    )
+                                    (Assignment
+                                        (Var 5 __libasr_created__array_section_)
+                                        (Var 5 __libasr_created__array_section_pointer_)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (Var 5 __libasr_created__intrinsic_elemental_function_StringConcat)
+                                        (FunctionCall
+                                            4 fm
+                                            ()
+                                            [((Var 5 __libasr_created__function_call_fm))]
+                                            (Array
+                                                (String 1 (IntegerBinOp
+                                                    (StringLen
+                                                        (Var 5 __libasr_created__array_section_)
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    Add
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    ()
+                                                ) ExpressionLength DescriptorString)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IfExp
+                                                    (IntegerCompare
+                                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                                        Gt
+                                                        (IntegerBinOp
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            Mul
+                                                            (IntegerBinOp
+                                                                (IntegerBinOp
+                                                                    (IntegerBinOp
+                                                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                                                        Sub
+                                                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                                                        (Integer 4)
+                                                                        ()
+                                                                    )
+                                                                    Div
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                Add
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        (Logical 4)
+                                                        ()
+                                                    )
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerBinOp
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        Mul
+                                                        (IntegerBinOp
+                                                            (IntegerBinOp
+                                                                (IntegerBinOp
+                                                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                                                    Sub
+                                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                Div
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            Add
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    (Integer 4)
+                                                    ()
+                                                ))]
+                                                PointerArray
+                                                Global
+                                            )
+                                            ()
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (ExplicitDeallocate
+                                        [(Var 5 __libasr_created__subroutine_call_chk)]
+                                    )
+                                    (ExplicitDeallocate
+                                        [(Var 5 __libasr_created__array_section_1)]
+                                    )
+                                    (Allocate
+                                        [((Var 5 __libasr_created__array_section_1)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerBinOp
+                                            (IntegerBinOp
+                                                (IntegerBinOp
+                                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                                    Sub
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Div
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        ))]
+                                        []
+                                        (StringLen
+                                            (Var 5 x)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        ())]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (Associate
+                                        (Var 5 __libasr_created__array_section_pointer_1)
+                                        (ArraySection
+                                            (Var 5 x)
+                                            [((IntegerConstant 2 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            (IntegerConstant 1 (Integer 4) Decimal))]
+                                            (Array
+                                                (String 1 () AssumedLength DescriptorString)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                                Global
+                                            )
+                                            ()
+                                        )
+                                    )
+                                    (Assignment
+                                        (Var 5 __libasr_created__array_section_1)
+                                        (Var 5 __libasr_created__array_section_pointer_1)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Allocate
+                                        [((Var 5 __libasr_created__subroutine_call_chk)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (ArraySize
+                                            (Var 5 __libasr_created__intrinsic_elemental_function_StringConcat)
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        ))]
+                                        []
+                                        (IntegerBinOp
+                                            (Cast
+                                                (IntegerBinOp
+                                                    (StringLen
+                                                        (Var 5 __libasr_created__array_section_1)
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    Add
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                IntegerToInteger
+                                                (Integer 4)
+                                                ()
+                                                ()
+                                            )
+                                            Add
+                                            (Cast
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                IntegerToInteger
+                                                (Integer 4)
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        ())]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (Assignment
+                                        (Var 5 __libasr_created__subroutine_call_chk)
+                                        (IntrinsicElementalFunction
+                                            StringConcat
+                                            [(Var 5 __libasr_created__intrinsic_elemental_function_StringConcat)
+                                            (StringConstant
+                                                "'"
+                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            )]
+                                            0
+                                            (Array
+                                                (String 1 () DeferredLength DescriptorString)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IfExp
+                                                    (IntegerCompare
+                                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                                        Gt
+                                                        (IntegerBinOp
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            Mul
+                                                            (IntegerBinOp
+                                                                (IntegerBinOp
+                                                                    (IntegerBinOp
+                                                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                                                        Sub
+                                                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                                                        (Integer 4)
+                                                                        ()
+                                                                    )
+                                                                    Div
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                Add
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        (Logical 4)
+                                                        ()
+                                                    )
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    (IntegerBinOp
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        Mul
+                                                        (IntegerBinOp
+                                                            (IntegerBinOp
+                                                                (IntegerBinOp
+                                                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                                                    Sub
+                                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                )
+                                                                Div
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            Add
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    (Integer 4)
+                                                    ()
+                                                ))]
+                                                PointerArray
+                                                Global
+                                            )
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (SubroutineCall
+                                        4 chk
+                                        ()
+                                        [((Var 5 __libasr_created__subroutine_call_chk))]
+                                        ()
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                )
+                        })
+                    string_array_concat_04
+                    [string_array_concat_04_mod]
+                    [(SubroutineCall
+                        4 sub
+                        ()
+                        [((ArrayPhysicalCast
+                            (Var 4 __libasr_created__subroutine_call_sub)
+                            PointerArray
+                            DescriptorArray
+                            (Array
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                DescriptorArray
+                                Global
+                            )
+                            ()
+                        ))]
+                        ()
+                        .false.
+                    )]
+                    ()
+                ),
+            string_array_concat_04_mod:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            fm:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            x:
+                                                (Variable
+                                                    3
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (String 1 () AssumedLength DescriptorString)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            y:
+                                                (Variable
+                                                    3
+                                                    y
+                                                    [x]
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (String 1 (IntegerBinOp
+                                                            (StringLen
+                                                                (Var 3 x)
+                                                                (Integer 4)
+                                                                ()
+                                                            )
+                                                            Add
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            (Integer 4)
+                                                            ()
+                                                        ) ExpressionLength DescriptorString)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (ArraySize
+                                                            (Var 3 x)
+                                                            ()
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                        DescriptorArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    fm
+                                    (FunctionType
+                                        [(Array
+                                            (String 1 () AssumedLength DescriptorString)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                            Global
+                                        )]
+                                        (Array
+                                            (String 1 (IntegerBinOp
+                                                (StringLen
+                                                    (FunctionParam
+                                                        0
+                                                        (Array
+                                                            (String 1 () AssumedLength DescriptorString)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                            Global
+                                                        )
+                                                        ()
+                                                    )
+                                                    (Integer 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            ) ExpressionLength DescriptorString)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (ArraySize
+                                                (FunctionParam
+                                                    0
+                                                    (Array
+                                                        (String 1 () AssumedLength DescriptorString)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                )
+                                                ()
+                                                (Integer 4)
+                                                ()
+                                            ))]
+                                            DescriptorArray
+                                            Global
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 3 x)]
+                                    [(Assignment
+                                        (Var 3 y)
+                                        (Var 3 x)
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Var 3 y)
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                )
+                        })
+                    string_array_concat_04_mod
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+    ()
+)

@@ -17,10 +17,32 @@ extern "C" {
 
 typedef void (*kernel_func_t)(void);
 
+// A buffer argument larger than this gets new device memory at every launch
+// instead of kept memory (see buffer_cache). Compared with copying the
+// argument, creating a buffer costs most for a small one, and a large one
+// kept for a kernel launched once, as a setup loop is, would hold its memory
+// until the program ends.
+static const size_t CACHED_BUFFER_MAX = (size_t)1024 * 1024;
+
+// The device memory of the arguments of one kernel, kept from one launch to
+// the next instead of a cudaMalloc and cudaFree for every argument of every
+// launch. Argument `i` of every launch uses buffers[i], grown when a launch
+// needs more bytes; the host's bytes are copied in before each launch and
+// back after it, so every launch sees the current host data. A kernel object
+// owns the memory from its load to its release (`in_use`), so two launches
+// of the same kernel never share it; one loaded while it is taken allocates
+// memory of its own for its launch. Scratch buffers are not kept.
+typedef struct buffer_cache {
+    void *buffers[MAX_ARGS];
+    size_t capacities[MAX_ARGS];
+    int in_use;
+} buffer_cache;
+
 // Registry for pre-compiled CUDA kernels
 static struct {
     const char *name;
     kernel_func_t func;
+    buffer_cache cache;
 } kernel_registry[MAX_KERNELS];
 static int n_registered = 0;
 
@@ -52,7 +74,14 @@ struct lfortran_gpu_kernel {
     size_t buffer_sizes[MAX_ARGS];
     scalar_arg scalar_args[MAX_ARGS];
     int arg_is_buffer[MAX_ARGS]; // 1 = buffer, 0 = scalar
+    // A buffer only the device holds: nothing is copied in or back.
+    int arg_is_scratch[MAX_ARGS];
+    // A buffer in `cache`, which the kernel object does not free.
+    int arg_is_cached[MAX_ARGS];
     int n_args;
+    // The memory of the kernel's registry entry, or NULL when another
+    // kernel object of the same kernel holds it.
+    buffer_cache *cache;
 };
 
 extern "C" {
@@ -75,6 +104,10 @@ lfortran_gpu_ctx* lfortran_gpu_init(void) {
 
 void lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx) {
     if (!ctx) return;
+    // The reset frees all device memory, the kept buffers included.
+    for (int i = 0; i < n_registered; i++) {
+        memset(&kernel_registry[i].cache, 0, sizeof(buffer_cache));
+    }
     cudaDeviceReset();
     free(ctx);
 }
@@ -88,23 +121,27 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
     lfortran_gpu_copy_kernel_name(name_buf, entry_point, entry_point_len);
 
     // Look up the kernel in the registry
-    kernel_func_t func = NULL;
+    int entry = -1;
     for (int i = 0; i < n_registered; i++) {
         if (strcmp(kernel_registry[i].name, name_buf) == 0) {
-            func = kernel_registry[i].func;
+            entry = i;
             break;
         }
     }
-    if (!func) {
+    if (entry < 0) {
         fprintf(stderr, "lfortran_gpu_load_kernel: kernel '%s' not found in registry\n",
             name_buf);
         exit(1);
     }
 
     lfortran_gpu_kernel *k = (lfortran_gpu_kernel*)calloc(1, sizeof(lfortran_gpu_kernel));
-    k->func = func;
+    k->func = kernel_registry[entry].func;
     k->ctx = ctx;
     k->n_args = 0;
+    buffer_cache *cache = &kernel_registry[entry].cache;
+    if (!__atomic_exchange_n(&cache->in_use, 1, __ATOMIC_ACQUIRE)) {
+        k->cache = cache;
+    }
     return k;
 }
 
@@ -112,14 +149,45 @@ void lfortran_gpu_release_kernel(lfortran_gpu_kernel* k) {
     if (!k) return;
     // Free device buffers
     for (int i = 0; i < k->n_args; i++) {
-        if (k->arg_is_buffer[i] && k->buffer_device_ptrs[i]) {
+        if (k->arg_is_buffer[i] && !k->arg_is_cached[i]
+                && k->buffer_device_ptrs[i]) {
             cudaFree(k->buffer_device_ptrs[i]);
         }
         if (!k->arg_is_buffer[i] && k->scalar_args[i].data) {
             free(k->scalar_args[i].data);
         }
     }
+    if (k->cache) __atomic_store_n(&k->cache->in_use, 0, __ATOMIC_RELEASE);
     free(k);
+}
+
+// The kept memory of argument `idx`, with room for at least `size` bytes.
+static void* cached_buffer(buffer_cache *cache, int idx, size_t size) {
+    if (cache->buffers[idx] && cache->capacities[idx] >= size) {
+        return cache->buffers[idx];
+    }
+    size_t length = size;
+    if (cache->buffers[idx]) {
+        // Grow geometrically, so that an argument that grows a little at
+        // every launch does not get new memory at every launch.
+        size_t doubled = 2 * cache->capacities[idx];
+        if (doubled > length && doubled <= CACHED_BUFFER_MAX) {
+            length = doubled;
+        }
+        cudaFree(cache->buffers[idx]);
+        cache->buffers[idx] = NULL;
+        cache->capacities[idx] = 0;
+    }
+    void *d_ptr = NULL;
+    cudaError_t err = cudaMalloc(&d_ptr, length);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "lfortran_gpu_set_buffer_arg: cudaMalloc failed: %s\n",
+            cudaGetErrorString(err));
+        exit(1);
+    }
+    cache->buffers[idx] = d_ptr;
+    cache->capacities[idx] = length;
+    return d_ptr;
 }
 
 void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
@@ -133,11 +201,17 @@ void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
 
     // Allocate device memory and copy host → device
     void *d_ptr = NULL;
-    cudaError_t err = cudaMalloc(&d_ptr, size);
-    if (err != cudaSuccess) {
-        fprintf(stderr, "lfortran_gpu_set_buffer_arg: cudaMalloc failed: %s\n",
-            cudaGetErrorString(err));
-        exit(1);
+    cudaError_t err;
+    if (k->cache && size > 0 && size <= CACHED_BUFFER_MAX) {
+        d_ptr = cached_buffer(k->cache, idx, size);
+        k->arg_is_cached[idx] = 1;
+    } else {
+        err = cudaMalloc(&d_ptr, size);
+        if (err != cudaSuccess) {
+            fprintf(stderr, "lfortran_gpu_set_buffer_arg: cudaMalloc failed: %s\n",
+                cudaGetErrorString(err));
+            exit(1);
+        }
     }
     err = cudaMemcpy(d_ptr, ptr, size, cudaMemcpyHostToDevice);
     if (err != cudaSuccess) {
@@ -146,6 +220,45 @@ void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
         exit(1);
     }
     k->buffer_device_ptrs[idx] = d_ptr;
+}
+
+void lfortran_gpu_set_scratch_arg(lfortran_gpu_kernel* k, int idx,
+    size_t size)
+{
+    if (!k || idx >= MAX_ARGS) return;
+    k->buffer_host_ptrs[idx] = NULL;
+    k->buffer_sizes[idx] = size;
+    k->arg_is_buffer[idx] = 1;
+    k->arg_is_scratch[idx] = 1;
+    if (idx >= k->n_args) k->n_args = idx + 1;
+    void *d_ptr = NULL;
+    if (size > 0) {
+        cudaError_t err = cudaMalloc(&d_ptr, size);
+        if (err != cudaSuccess) {
+            fprintf(stderr, "lfortran_gpu_set_scratch_arg: cudaMalloc "
+                "failed: %s\n", cudaGetErrorString(err));
+            exit(1);
+        }
+    }
+    k->buffer_device_ptrs[idx] = d_ptr;
+}
+
+void lfortran_gpu_read_scratch_arg(lfortran_gpu_kernel* k, int idx,
+    void* dst, size_t size)
+{
+    if (!k || idx >= MAX_ARGS || size == 0) return;
+    if (!k->arg_is_scratch[idx] || size > k->buffer_sizes[idx]) {
+        fprintf(stderr, "lfortran_gpu_read_scratch_arg: no scratch buffer "
+            "%d of %zu bytes\n", idx, size);
+        exit(1);
+    }
+    cudaError_t err = cudaMemcpy(dst, k->buffer_device_ptrs[idx], size,
+        cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "lfortran_gpu_read_scratch_arg: cudaMemcpy D2H "
+            "failed: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
 }
 
 void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
@@ -202,7 +315,8 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
 
     // Copy device → host for all buffer args
     for (int i = 0; i < k->n_args; i++) {
-        if (k->arg_is_buffer[i] && k->buffer_device_ptrs[i]) {
+        if (k->arg_is_buffer[i] && !k->arg_is_scratch[i]
+                && k->buffer_device_ptrs[i]) {
             err = cudaMemcpy(k->buffer_host_ptrs[i],
                 k->buffer_device_ptrs[i],
                 k->buffer_sizes[i],
@@ -222,3 +336,7 @@ void lfortran_gpu_sync(lfortran_gpu_ctx* ctx) {
 }
 
 } // extern "C"
+
+extern "C" long long lfortran_gpu_heap_size(void) {
+    return lfortran_gpu_parse_heap_size();
+}

@@ -8,10 +8,37 @@
 #define MAX_ARGS 32
 #define MAX_KERNELS 64
 
-// Registry of the shader sources emitted for each kernel.
+// A buffer argument larger than this gets a new buffer at every launch
+// instead of a kept one (see buffer_cache). Compared with copying the
+// argument, creating a buffer costs most for a small one, and a large one
+// kept for a kernel launched once, as a setup loop is, would hold its memory
+// until the program ends.
+static const size_t CACHED_BUFFER_MAX = (size_t)1024 * 1024;
+
+// The device buffers of the arguments of one kernel, kept from one launch to
+// the next: creating and releasing a buffer for every argument of every
+// launch costs more than a small kernel runs. Argument `i` of every launch
+// uses buffers[i], grown when a launch needs more bytes; the host's bytes are
+// copied in before each launch and back after it, so every launch sees the
+// current host data. A kernel object owns the buffers from its load to its
+// release (`in_use`), so two launches of the same kernel never share them;
+// one loaded while they are taken gets buffers of its own for its launch.
+// Scratch buffers (the device heap arenas) are not kept: they are as large
+// as the heap, and a new one is created for every launch.
+typedef struct buffer_cache {
+    id<MTLBuffer> buffers[MAX_ARGS];
+    int in_use;
+} buffer_cache;
+
+// Registry of the shader sources emitted for each kernel, and the pipeline
+// compiled from each, once per run: a kernel is loaded at every launch, and
+// compiling its source again every time is slow and exhausts the driver's
+// cache of compiled shaders.
 static struct {
     const char *name;
     const char *source;
+    id<MTLComputePipelineState> pipeline;
+    buffer_cache cache;
 } source_registry[MAX_KERNELS];
 static int n_registered = 0;
 
@@ -34,7 +61,14 @@ struct lfortran_gpu_kernel {
     size_t buffer_sizes[MAX_ARGS];
     scalar_arg scalar_args[MAX_ARGS];
     int arg_is_buffer[MAX_ARGS]; // 1 = buffer, 0 = scalar
+    // A buffer only the device holds, created at the launch and kept until
+    // the kernel is released so that the host can read part of it back.
+    int arg_is_scratch[MAX_ARGS];
+    id<MTLBuffer> scratch_buffers[MAX_ARGS];
     int n_args;
+    // The buffers of the kernel's registry entry, or NULL when another
+    // kernel object of the same kernel holds them.
+    buffer_cache *cache;
 };
 
 lfortran_gpu_ctx* lfortran_gpu_init(void) {
@@ -55,6 +89,12 @@ lfortran_gpu_ctx* lfortran_gpu_init(void) {
 
 void lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx) {
     if (!ctx) return;
+    for (int i = 0; i < n_registered; i++) {
+        if (source_registry[i].cache.in_use) continue;
+        for (int j = 0; j < MAX_ARGS; j++) {
+            source_registry[i].cache.buffers[j] = nil;
+        }
+    }
     ctx->device = nil;
     ctx->queue = nil;
     ctx->last_command_buffer = nil;
@@ -74,27 +114,9 @@ void lfortran_gpu_register_metal_source(const char *name, const char *source) {
     n_registered++;
 }
 
-lfortran_gpu_kernel* lfortran_gpu_load_kernel(
-    lfortran_gpu_ctx* ctx, const char* entry_point, int entry_point_len)
+static id<MTLComputePipelineState> compile_pipeline(lfortran_gpu_ctx* ctx,
+    const char *name_buf, const char *source)
 {
-    if (!ctx || !entry_point) return NULL;
-
-    char name_buf[LFORTRAN_GPU_MAX_KERNEL_NAME];
-    lfortran_gpu_copy_kernel_name(name_buf, entry_point, entry_point_len);
-
-    const char *source = NULL;
-    for (int i = 0; i < n_registered; i++) {
-        if (strcmp(source_registry[i].name, name_buf) == 0) {
-            source = source_registry[i].source;
-            break;
-        }
-    }
-    if (!source) {
-        fprintf(stderr, "lfortran_gpu_load_kernel: kernel '%s' not found in registry\n",
-                name_buf);
-        exit(1);
-    }
-
     NSError *error = nil;
     NSString *src = [NSString stringWithUTF8String:source];
 
@@ -122,23 +144,82 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
                 [[error localizedDescription] UTF8String]);
         exit(1);
     }
+    return pipeline;
+}
+
+lfortran_gpu_kernel* lfortran_gpu_load_kernel(
+    lfortran_gpu_ctx* ctx, const char* entry_point, int entry_point_len)
+{
+    if (!ctx || !entry_point) return NULL;
+
+    char name_buf[LFORTRAN_GPU_MAX_KERNEL_NAME];
+    lfortran_gpu_copy_kernel_name(name_buf, entry_point, entry_point_len);
+
+    int entry = -1;
+    for (int i = 0; i < n_registered; i++) {
+        if (strcmp(source_registry[i].name, name_buf) == 0) {
+            entry = i;
+            break;
+        }
+    }
+    if (entry < 0) {
+        fprintf(stderr, "lfortran_gpu_load_kernel: kernel '%s' not found in registry\n",
+                name_buf);
+        exit(1);
+    }
+    if (!source_registry[entry].pipeline) {
+        @autoreleasepool {
+            source_registry[entry].pipeline = compile_pipeline(ctx, name_buf,
+                source_registry[entry].source);
+        }
+    }
 
     lfortran_gpu_kernel *k = (lfortran_gpu_kernel*)calloc(1, sizeof(lfortran_gpu_kernel));
-    k->pipeline = pipeline;
+    k->pipeline = source_registry[entry].pipeline;
     k->ctx = ctx;
     k->n_args = 0;
+    buffer_cache *cache = &source_registry[entry].cache;
+    if (!__atomic_exchange_n(&cache->in_use, 1, __ATOMIC_ACQUIRE)) {
+        k->cache = cache;
+    }
     return k;
 }
 
 void lfortran_gpu_release_kernel(lfortran_gpu_kernel* k) {
     if (!k) return;
+    if (k->cache) __atomic_store_n(&k->cache->in_use, 0, __ATOMIC_RELEASE);
     for (int i = 0; i < k->n_args; i++) {
         if (!k->arg_is_buffer[i] && k->scalar_args[i].data) {
             free(k->scalar_args[i].data);
         }
+        k->scratch_buffers[i] = nil;
     }
     k->pipeline = nil;
     free(k);
+}
+
+void lfortran_gpu_set_scratch_arg(lfortran_gpu_kernel* k, int idx,
+    size_t size)
+{
+    if (!k || idx >= MAX_ARGS) return;
+    k->buffer_ptrs[idx] = NULL;
+    k->buffer_sizes[idx] = size;
+    k->arg_is_buffer[idx] = 1;
+    k->arg_is_scratch[idx] = 1;
+    if (idx >= k->n_args) k->n_args = idx + 1;
+}
+
+void lfortran_gpu_read_scratch_arg(lfortran_gpu_kernel* k, int idx,
+    void* dst, size_t size)
+{
+    if (!k || idx >= MAX_ARGS || size == 0) return;
+    if (!k->arg_is_scratch[idx] || !k->scratch_buffers[idx]
+            || size > k->buffer_sizes[idx]) {
+        fprintf(stderr, "lfortran_gpu_read_scratch_arg: no scratch buffer "
+            "%d of %zu bytes\n", idx, size);
+        exit(1);
+    }
+    memcpy(dst, [k->scratch_buffers[idx] contents], size);
 }
 
 void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
@@ -165,68 +246,127 @@ void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
     if (idx >= k->n_args) k->n_args = idx + 1;
 }
 
+// The kept buffer of argument `idx`, with room for at least `size` bytes.
+static id<MTLBuffer> cached_buffer(lfortran_gpu_ctx* ctx, buffer_cache *cache,
+    int idx, size_t size)
+{
+    id<MTLBuffer> buffer = cache->buffers[idx];
+    if (buffer && [buffer length] >= size) return buffer;
+    size_t length = size;
+    if (buffer) {
+        // Grow geometrically, so that an argument that grows a little at
+        // every launch does not get a new buffer at every launch.
+        size_t doubled = 2 * (size_t)[buffer length];
+        if (doubled > length && doubled <= CACHED_BUFFER_MAX) {
+            length = doubled;
+        }
+    }
+    // Release the old buffer before creating the larger one.
+    cache->buffers[idx] = nil;
+    buffer = [ctx->device newBufferWithLength:length
+                                      options:MTLResourceStorageModeShared];
+    if (!buffer) {
+        fprintf(stderr, "lfortran_gpu_launch: cannot allocate a device "
+            "buffer of %zu bytes\n", length);
+        exit(1);
+    }
+    cache->buffers[idx] = buffer;
+    return buffer;
+}
+
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3])
 {
     if (!ctx || !k) return;
 
-    id<MTLCommandBuffer> commandBuffer = [ctx->queue commandBuffer];
+    // The command buffer, its encoder and the buffers it holds on to are
+    // autoreleased: without a pool of its own every launch would keep them,
+    // and with them a copy of every argument, until the program ends.
+    @autoreleasepool {
+        id<MTLCommandBuffer> commandBuffer = [ctx->queue commandBuffer];
 
-    id<MTLComputeCommandEncoder> encoder = [commandBuffer computeCommandEncoder];
-    [encoder setComputePipelineState:k->pipeline];
+        id<MTLComputeCommandEncoder> encoder = [commandBuffer computeCommandEncoder];
+        [encoder setComputePipelineState:k->pipeline];
 
-    // Set arguments - track MTLBuffers for copy-back
-    id<MTLBuffer> buffers[MAX_ARGS];
-    memset(buffers, 0, sizeof(buffers));
+        // Set arguments - track MTLBuffers for copy-back
+        id<MTLBuffer> buffers[MAX_ARGS];
+        memset(buffers, 0, sizeof(buffers));
 
-    for (int i = 0; i < k->n_args; i++) {
-        if (k->arg_is_buffer[i]) {
-            // Copy host data into a Metal buffer
-            id<MTLBuffer> buffer = [ctx->device
-                newBufferWithBytes:k->buffer_ptrs[i]
-                            length:k->buffer_sizes[i]
-                           options:MTLResourceStorageModeShared];
-            buffers[i] = buffer;
-            [encoder setBuffer:buffer offset:0 atIndex:i];
-        } else {
-            // Set scalar bytes directly
-            [encoder setBytes:k->scalar_args[i].data
-                       length:k->scalar_args[i].size
-                      atIndex:i];
+        for (int i = 0; i < k->n_args; i++) {
+            if (k->arg_is_buffer[i] && k->buffer_sizes[i] == 0) {
+                // An array with no elements, or one that is not allocated
+                // and that the kernel does not touch: Metal has no buffer
+                // of no bytes.
+                [encoder setBuffer:nil offset:0 atIndex:i];
+            } else if (k->arg_is_scratch[i]) {
+                id<MTLBuffer> buffer = [ctx->device
+                    newBufferWithLength:k->buffer_sizes[i]
+                                options:MTLResourceStorageModeShared];
+                if (!buffer) {
+                    fprintf(stderr, "lfortran_gpu_launch: cannot allocate a "
+                        "device buffer of %zu bytes\n", k->buffer_sizes[i]);
+                    exit(1);
+                }
+                k->scratch_buffers[i] = buffer;
+                [encoder setBuffer:buffer offset:0 atIndex:i];
+            } else if (k->arg_is_buffer[i]) {
+                // Copy host data into a Metal buffer
+                id<MTLBuffer> buffer;
+                if (k->cache && k->buffer_sizes[i] <= CACHED_BUFFER_MAX) {
+                    buffer = cached_buffer(ctx, k->cache, i,
+                        k->buffer_sizes[i]);
+                    memcpy([buffer contents], k->buffer_ptrs[i],
+                        k->buffer_sizes[i]);
+                } else {
+                    buffer = [ctx->device
+                        newBufferWithBytes:k->buffer_ptrs[i]
+                                    length:k->buffer_sizes[i]
+                                   options:MTLResourceStorageModeShared];
+                }
+                buffers[i] = buffer;
+                [encoder setBuffer:buffer offset:0 atIndex:i];
+            } else {
+                // Set scalar bytes directly
+                [encoder setBytes:k->scalar_args[i].data
+                           length:k->scalar_args[i].size
+                          atIndex:i];
+            }
+        }
+
+        // Dispatch threads
+        NSUInteger total_threads = (NSUInteger)(grid[0] * block[0]);
+        NSUInteger threads_per_group = (NSUInteger)block[0];
+
+        // Clamp threads_per_group to pipeline maximum
+        NSUInteger max_threads = [k->pipeline maxTotalThreadsPerThreadgroup];
+        if (threads_per_group > max_threads) {
+            threads_per_group = max_threads;
+        }
+
+        MTLSize gridSize = MTLSizeMake(total_threads, 1, 1);
+        MTLSize threadGroupSize = MTLSizeMake(threads_per_group, 1, 1);
+        [encoder dispatchThreads:gridSize threadsPerThreadgroup:threadGroupSize];
+
+        [encoder endEncoding];
+        [commandBuffer commit];
+        [commandBuffer waitUntilCompleted];
+
+        // A kernel that faulted or was stopped by the watchdog has not
+        // computed its results, so the program cannot go on with what is in
+        // the buffers; the CUDA runtime exits in this case too.
+        if ([commandBuffer error]) {
+            fprintf(stderr, "lfortran_gpu_launch: GPU execution error: %s\n",
+                    [[[commandBuffer error] localizedDescription] UTF8String]);
+            exit(1);
+        }
+
+        // Copy results back from Metal buffers to host memory
+        for (int i = 0; i < k->n_args; i++) {
+            if (k->arg_is_buffer[i] && !k->arg_is_scratch[i] && buffers[i]) {
+                memcpy(k->buffer_ptrs[i], [buffers[i] contents], k->buffer_sizes[i]);
+            }
         }
     }
-
-    // Dispatch threads
-    NSUInteger total_threads = (NSUInteger)(grid[0] * block[0]);
-    NSUInteger threads_per_group = (NSUInteger)block[0];
-
-    // Clamp threads_per_group to pipeline maximum
-    NSUInteger max_threads = [k->pipeline maxTotalThreadsPerThreadgroup];
-    if (threads_per_group > max_threads) {
-        threads_per_group = max_threads;
-    }
-
-    MTLSize gridSize = MTLSizeMake(total_threads, 1, 1);
-    MTLSize threadGroupSize = MTLSizeMake(threads_per_group, 1, 1);
-    [encoder dispatchThreads:gridSize threadsPerThreadgroup:threadGroupSize];
-
-    [encoder endEncoding];
-    [commandBuffer commit];
-    [commandBuffer waitUntilCompleted];
-
-    if ([commandBuffer error]) {
-        fprintf(stderr, "lfortran_gpu_launch: GPU execution error: %s\n",
-                [[[commandBuffer error] localizedDescription] UTF8String]);
-    }
-
-    // Copy results back from Metal buffers to host memory
-    for (int i = 0; i < k->n_args; i++) {
-        if (k->arg_is_buffer[i] && buffers[i]) {
-            memcpy(k->buffer_ptrs[i], [buffers[i] contents], k->buffer_sizes[i]);
-        }
-    }
-
-    ctx->last_command_buffer = commandBuffer;
 }
 
 void lfortran_gpu_sync(lfortran_gpu_ctx* ctx) {
@@ -236,7 +376,12 @@ void lfortran_gpu_sync(lfortran_gpu_ctx* ctx) {
     if ([ctx->last_command_buffer error]) {
         fprintf(stderr, "lfortran_gpu_sync: GPU execution error: %s\n",
                 [[[ctx->last_command_buffer error] localizedDescription] UTF8String]);
+        exit(1);
     }
 
     ctx->last_command_buffer = nil;
+}
+
+long long lfortran_gpu_heap_size(void) {
+    return lfortran_gpu_parse_heap_size();
 }

@@ -3,12 +3,16 @@
 import os
 import subprocess as sp
 import sys
+import threading
 from typing import Dict
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 sys.path.append(os.path.join(ROOT_DIR, "src", "libasr"))
 
-from compiler_tester.tester import color, fg, log, run_test, style, tester_main
+from compiler_tester.tester import (RunException, color, fg, log, run_test,
+                                    style, tester_main)
+
+x86_lock = threading.Lock()
 
 def run_cmd(cmd, cwd=None):
     print(f"+ {cmd}")
@@ -115,7 +119,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "class_constructor", "implied_do_loops",
                         "pass_array_by_data", "init_expr", "global_init",
                         "global_init_wire",
-                        "where",
+                        "where", "forall",
                         "nested_vars", "intent_out_deallocate", "openmp",
                         "array_struct_temporary", "coarray",
                         "parallel_canonicalize", "parallel_dispatch",
@@ -771,14 +775,22 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 extra_args)
 
     if x86:
-        run_test(
-            filename,
-            "x86",
-            "lfortran --no-color --backend=x86 {infile} -o output",
-            filename,
-            update_reference,
-            verify_hash,
-            extra_args)
+        # Every x86 test writes the executable `output`, which the reference
+        # does not record, so run them one at a time and check it was written.
+        with x86_lock:
+            if os.path.isfile("output"):
+                os.remove("output")
+            run_test(
+                filename,
+                "x86",
+                "lfortran --no-color --backend=x86 {infile} -o output",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
+            if not os.path.isfile("output"):
+                raise RunException(
+                    f"{filename} * x86: the executable 'output' was not written")
 
     if fortran:
         if pass_ is not None:

@@ -1,0 +1,3 @@
+# Symbols not exported from the lfortran executable on macOS (ld64 wildcard
+# syntax). See src/bin/CMakeLists.txt.
+__Z*

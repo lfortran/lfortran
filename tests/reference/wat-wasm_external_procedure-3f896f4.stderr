@@ -1,0 +1,5 @@
+code generation error: the external procedure 'zz' is not defined in this file; the WASM backend does not support calling an external procedure defined elsewhere
+  --> tests/errors/wasm_external_procedure.f90:10:14
+   |
+10 |     print *, zz(2)
+   |              ^^^^^ 

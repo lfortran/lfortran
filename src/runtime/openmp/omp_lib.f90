@@ -141,6 +141,16 @@ end subroutine
 subroutine GOMP_critical_end() bind(C, name="GOMP_critical_end")
 end subroutine
 
+subroutine GOMP_critical_name_start(pptr) bind(C, name="GOMP_critical_name_start")
+import :: c_ptr
+type(c_ptr), intent(inout) :: pptr
+end subroutine
+
+subroutine GOMP_critical_name_end(pptr) bind(C, name="GOMP_critical_name_end")
+import :: c_ptr
+type(c_ptr), intent(inout) :: pptr
+end subroutine
+
 function omp_get_max_threads() bind(c, name="omp_get_max_threads")
 import :: c_int
 integer(c_int) :: omp_get_max_threads

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-common_block_variable_bindc_name-ab22a7f",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/asr/verify/common_block_variable_bindc_name.asr",
+    "infile_hash": "c7af63ae57e3c97622e9e6dd5067cd0186a34cd5dc281de9935f4eaf",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-common_block_variable_bindc_name-ab22a7f.stderr",
+    "stderr_hash": "565a8247abe9b78153ab2e85809c47faeb2ef86fac558503cfc83c52",
+    "returncode": 2
+}

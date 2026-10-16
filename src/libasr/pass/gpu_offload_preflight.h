@@ -1,6 +1,7 @@
 #ifndef LIBASR_PASS_GPU_OFFLOAD_PREFLIGHT_H
 #define LIBASR_PASS_GPU_OFFLOAD_PREFLIGHT_H
 
+#include <algorithm>
 #include <set>
 #include <string>
 #include <vector>
@@ -307,33 +308,6 @@ public:
     }
 };
 
-// Every `stop` and `error stop` a body holds, in the order they are found.
-// A device that can trap runs one of these as a halt of the launch, which
-// is less than the statement asks for: a grid returns no status, so the
-// stop code goes nowhere and normal termination cannot be told apart from
-// error termination. Each one is collected so that what the device drops
-// is said where the statement stands, rather than lowered in silence.
-class GpuStopStatementFinder
-        : public ASRUtils::BlockBodyWalkVisitor<GpuStopStatementFinder> {
-public:
-    // How Fortran spells the statement, and where it is.
-    std::vector<std::pair<std::string, Location>> stops;
-
-    void visit_stmt(const ASR::stmt_t &s) {
-        switch (s.type) {
-            case ASR::stmtType::Stop:
-                stops.push_back({"stop", s.base.loc});
-                break;
-            case ASR::stmtType::ErrorStop:
-                stops.push_back({"error stop", s.base.loc});
-                break;
-            default:
-                break;
-        }
-        ASR::BaseWalkVisitor<GpuStopStatementFinder>::visit_stmt(s);
-    }
-};
-
 // Metal shaders have neither variable-length arrays nor a heap, so a
 // device function (an `inline` callee of a kernel) can only declare
 // locals whose extent the shader compiler can fold to a constant. An
@@ -625,7 +599,36 @@ inline ASR::expr_t* gpu_reduction_slot(Allocator &al, const Location &loc,
     return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
         ASRUtils::EXPR(ASR::make_Var_t(al, loc, buffer)),
         args.p, args.n, ASRUtils::duplicate_type(al, scalar_type),
-        ASR::arraystorageType::ColMajor, nullptr));
+        ASR::arraystorageType::ColMajor, nullptr, false));
+}
+
+// The number of iterations of the loop index range `start:end`:
+// `end - start + 1`, or zero when the range runs backwards. A launch
+// numbers the iterations of a nest by the product of these, so a range
+// that runs backwards must count as none, not as a negative number of
+// iterations that two such ranges multiply into a positive one.
+inline ASR::expr_t* gpu_loop_extent(Allocator &al, const Location &loc,
+        ASR::expr_t *start, ASR::expr_t *end, ASR::ttype_t *int_type) {
+    int64_t start_value = 0, end_value = 0;
+    if (ASRUtils::extract_value(ASRUtils::expr_value(start), start_value)
+            && ASRUtils::extract_value(ASRUtils::expr_value(end),
+                end_value)) {
+        return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            std::max<int64_t>(0, end_value - start_value + 1), int_type,
+            ASR::integerbozType::Decimal));
+    }
+    ASR::expr_t *extent = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+        ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc, end,
+            ASR::binopType::Sub, start, int_type, nullptr)),
+        ASR::binopType::Add, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+            loc, 1, int_type, ASR::integerbozType::Decimal)),
+        int_type, nullptr));
+    ASR::expr_t *nonempty = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al,
+        loc, end, ASR::cmpopType::GtE, start,
+        ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+    return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, nonempty, extent,
+        ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int_type,
+            ASR::integerbozType::Decimal)), int_type, nullptr));
 }
 
 } // namespace LCompilers

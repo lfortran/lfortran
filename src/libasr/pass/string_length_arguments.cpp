@@ -219,7 +219,7 @@ ASR::symbol_t* transformed_procedure(ASR::symbol_t *s,
 // component) and a FunctionPointerCast hold their own copy of their
 // interface's FunctionType, so they have to take its new signature. So does
 // the signature of a procedure with such a dummy.
-class UpdateProcedureTypes: public ASR::BaseWalkVisitor<UpdateProcedureTypes> {
+class UpdateProcedureTypes: public ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes> {
 public:
     Allocator &al;
     const TransformedProcedures &transformed;
@@ -230,7 +230,7 @@ public:
         al{al_}, transformed{transformed_} {}
 
     void visit_Variable(const ASR::Variable_t &x) {
-        ASR::BaseWalkVisitor<UpdateProcedureTypes>::visit_Variable(x);
+        ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes>::visit_Variable(x);
         ASR::symbol_t *decl = transformed_procedure(x.m_type_declaration,
             transformed);
         if (decl == nullptr || !is_a<ASR::FunctionType_t>(
@@ -238,8 +238,9 @@ public:
             return;
         }
         ASR::Variable_t &xx = const_cast<ASR::Variable_t&>(x);
-        ASR::ttype_t *signature =
-            down_cast<ASR::Function_t>(decl)->m_function_signature;
+        ASR::ttype_t *signature = ASRUtils::import_procedure_type(al,
+            down_cast<ASR::Function_t>(decl)->m_function_signature,
+            xx.m_parent_symtab);
         if (ASRUtils::is_pointer(xx.m_type)) {
             xx.m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
                 xx.base.base.loc, signature));
@@ -249,8 +250,35 @@ public:
         retyped.insert(&xx.base);
     }
 
+    // A procedure component read from a .mod file holds its own copy of its
+    // interface's FunctionType rather than sharing it. The new signature can
+    // name symbols of the interface's scope, so it is imported into the
+    // scope of the reference.
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+        ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes>::visit_StructInstanceMember(x);
+        ASR::symbol_t *m = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!is_a<ASR::Variable_t>(*m)) return;
+        ASR::symbol_t *decl = transformed_procedure(
+            down_cast<ASR::Variable_t>(m)->m_type_declaration, transformed);
+        if (decl == nullptr || !is_a<ASR::FunctionType_t>(
+                *ASRUtils::type_get_past_pointer(x.m_type))) {
+            return;
+        }
+        ASR::StructInstanceMember_t &xx =
+            const_cast<ASR::StructInstanceMember_t&>(x);
+        ASR::ttype_t *signature = ASRUtils::import_procedure_type(al,
+            down_cast<ASR::Function_t>(decl)->m_function_signature,
+            current_scope);
+        if (ASRUtils::is_pointer(xx.m_type)) {
+            xx.m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
+                xx.base.base.loc, signature));
+        } else {
+            xx.m_type = signature;
+        }
+    }
+
     void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
-        ASR::BaseWalkVisitor<UpdateProcedureTypes>::visit_FunctionPointerCast(x);
+        ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes>::visit_FunctionPointerCast(x);
         ASR::symbol_t *to = transformed_procedure(x.m_to, transformed);
         if (to == nullptr) return;
         const_cast<ASR::FunctionPointerCast_t&>(x).m_type =
@@ -258,7 +286,7 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
-        ASR::BaseWalkVisitor<UpdateProcedureTypes>::visit_Function(x);
+        ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes>::visit_Function(x);
         ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(x);
         if (ft->n_arg_types != x.n_args) return;
         for (size_t i = 0; i < x.n_args; i++) {

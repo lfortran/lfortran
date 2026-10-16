@@ -8,6 +8,10 @@ inputs:
   llvm-version:
     description: LLVM version to build against.
     required: true
+  save-cache:
+    description: Save the compiler cache on main. Quick and Exhaustive build the same compilers, so only Quick saves.
+    required: false
+    default: 'true'
 
 runs:
   using: composite
@@ -47,13 +51,27 @@ runs:
           micromamba install pandoc=3.1.13
         fi
 
+    # The Linux LLVM 21 compiler runs Quick's full separate-compilation and
+    # leak-detection suites, so it is compiled with -O2 like Quick's LLVM 11
+    # compatibility compiler. It stays a Debug build: assertions, per-pass ASR
+    # verification and the -Werror/hardening flags stay on, nothing defines
+    # NDEBUG. The other platforms keep -O0 coverage.
+    - name: Select compiler optimization
+      id: optimize
+      shell: bash
+      run: |
+        if [[ "${{ inputs.os }}" == ubuntu-* && "${{ inputs.llvm-version }}" == "21" ]]; then
+          echo "LFORTRAN_CI_OPTIMIZE=yes" >> "$GITHUB_ENV"
+          echo "key-suffix=-o2" >> "$GITHUB_OUTPUT"
+        fi
+
     - uses: hendrikmuhs/ccache-action@main
       with:
-        key: Build-${{ inputs.os }}-${{ inputs.llvm-version }}
+        key: Build-${{ inputs.os }}-${{ inputs.llvm-version }}${{ steps.optimize.outputs.key-suffix }}
         # The action's 500M default is smaller than one Debug build, so ccache
         # evicted objects it needed. Prune-Main-Caches-CI.yml keeps one copy per key.
         max-size: 1500M
-        save: ${{ github.ref == 'refs/heads/main' }}
+        save: ${{ github.ref == 'refs/heads/main' && inputs.save-cache == 'true' }}
 
     - name: Setup Platform
       shell: bash -e -l {0}
@@ -69,6 +87,12 @@ runs:
       run: |
         export CXXFLAGS="-Werror -D_GLIBCXX_ASSERTIONS -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
         export CFLAGS="-Werror -D_GLIBCXX_ASSERTIONS -D_LIBCPP_HARDENING_MODE=_LIBCPP_HARDENING_MODE_DEBUG"
+        if [[ "${LFORTRAN_CI_OPTIMIZE:-}" == "yes" ]]; then
+            # CMake's Debug flags (-g) come after these, so -O2 stays in effect.
+            # See Compiler-Compatibility-CI.yml for -Wno-mismatched-new-delete.
+            CXXFLAGS="$CXXFLAGS -O2 -Wno-mismatched-new-delete"
+            CFLAGS="$CFLAGS -O2"
+        fi
         export WIN=0
         shell ci/build.sh
 

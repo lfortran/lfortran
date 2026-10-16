@@ -182,6 +182,8 @@ struct CompilerOptions {
     bool link_numpy = false;
     bool run = false;
     bool legacy_array_sections = false;
+    // Diagnose requirements of Fortran 2023 that earlier standards relax
+    bool std_f23_conformance = false;
     bool ignore_pragma = false;
     bool stack_arrays = false;
     bool internal_alloc_check = false;

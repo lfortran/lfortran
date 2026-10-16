@@ -47,6 +47,22 @@ struct GpuComponentLayout {
 // inline in the element. See `gpu_decomposed_components`.
 bool gpu_component_is_decomposed(ASR::symbol_t *component);
 
+// Whether the device layout of a derived-type kernel argument carries this
+// component as the host's bytes without giving them a meaning: an
+// allocatable scalar component, whose host representation is a pointer to
+// the value (and its length, for a character). The device copy of the
+// variable keeps these bytes so that the components after it sit where the
+// host put them, and copies them back unchanged; the kernel must not read
+// or write the component itself. See `gpu_opaque_component_words`.
+bool gpu_component_is_opaque(ASR::symbol_t *component);
+
+// The number of 64-bit words the host representation of a component takes:
+// a character is a pointer and a length, any other allocatable component
+// is a pointer. This is what the device declares in place of a
+// component it does not interpret -- an opaque component or a decomposed
+// one, whose data is handed over in buffers of its own.
+size_t gpu_opaque_component_words(ASR::symbol_t *component);
+
 // What `gpu_decomposed_components` records about one component, for a
 // caller holding the component and not the type it belongs to.
 GpuComponentLayout gpu_component_layout(ASR::symbol_t *component);

@@ -76,12 +76,6 @@ struct CudaDialect {
         return (kind == 8) ? literal : literal + "f";
     }
 
-    // A kernel thread halts the launch with a trap: the device raises it,
-    // the launch fails, and nothing after it in the thread runs.
-    std::string abort_stmt() const {
-        return "__trap();";
-    }
-
     std::string thread_index() const { return "threadIdx.x"; }
     std::string block_index() const { return "blockIdx.x"; }
     std::string block_size() const { return "blockDim.x"; }
@@ -94,6 +88,13 @@ struct CudaDialect {
 
     std::string uint_type() const {
         return "unsigned int";
+    }
+
+    // A relaxed atomic add to an `int` in device memory, giving the old
+    // value. The CPU emulation defines atomicAdd in cuda_cpu_device.h.
+    std::string atomic_fetch_add(const std::string &address,
+            const std::string &increment) const {
+        return "atomicAdd(" + address + ", " + increment + ")";
     }
 
     // Every scalar arrives in one struct, passed by value, which is what the

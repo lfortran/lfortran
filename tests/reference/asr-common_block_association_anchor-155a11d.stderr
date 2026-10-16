@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.common_block.association_anchor]: CommonBlock 'common~blk' association anchor must designate a member or the variable of an earlier association, with constant subscripts
+ --> tests/asr/verify/common_block_association_anchor.asr:1:1
+  |
+1 | (TranslationUnit
+  | ^ failed here

@@ -52,6 +52,88 @@ semantic error: Procedure declarations without an explicit interface (procedure(
 86 |         procedure(), nopass, pointer :: caller => null()
    |         ^^^^^^^^^^^ 
 
+semantic error: Derived type `nosuchtype_13216` is not defined
+   --> tests/errors/continue_compilation_3.f90:220:9
+    |
+220 |         type(nosuchtype_13216), intent(in) :: a
+    |         ^^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: Dummy argument 'a' not defined
+   --> tests/errors/continue_compilation_3.f90:219:5 - 222:16
+    |
+219 |        integer function f1_prog_13216(a) result(r)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+222 |        end function
+    | ...^^^^^^^^^^^^^^^^ 
+
+semantic error: Derived type `nosuchtype_13216` is not defined
+   --> tests/errors/continue_compilation_3.f90:394:9
+    |
+394 |         type(nosuchtype_13216) :: x
+    |         ^^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: Derived type `nosuchtype_13216` is not defined
+   --> tests/errors/continue_compilation_3.f90:401:9
+    |
+401 |         type(nosuchtype_13216), intent(in) :: a
+    |         ^^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: Dummy argument 'a' not defined
+   --> tests/errors/continue_compilation_3.f90:400:5 - 403:16
+    |
+400 |        integer function f3_13216(a) result(r)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+403 |        end function
+    | ...^^^^^^^^^^^^^^^^ 
+
+semantic error: Derived type `nosuchtype_13216` is not defined
+   --> tests/errors/continue_compilation_3.f90:416:13
+    |
+416 |             type(nosuchtype_13216), intent(in) :: a
+    |             ^^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: Dummy argument 'a' not defined
+   --> tests/errors/continue_compilation_3.f90:415:9 - 418:20
+    |
+415 |            integer function inner1_f_13216(a) result(q)
+    |            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+418 |            end function
+    | ...^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
+   --> tests/errors/continue_compilation_3.f90:442:13
+    |
+442 |             implicit real (a-z)
+    |             ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
+   --> tests/errors/continue_compilation_3.f90:459:9
+    |
+459 |         implicit real (a-z)
+    |         ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Derived type `nosuchtype_toplevel_13216` is not defined
+   --> tests/errors/continue_compilation_3.f90:467:5
+    |
+467 |     type(nosuchtype_toplevel_13216), intent(in) :: a
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
+semantic error: Dummy argument 'a' not defined
+   --> tests/errors/continue_compilation_3.f90:466:1 - 469:12
+    |
+466 |    integer function tf1_13216(a) result(r)
+    |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+469 |    end function
+    | ...^^^^^^^^^^^^ 
+
 semantic error: Assumed-rank arrays are not supported in print statements
   --> tests/errors/continue_compilation_3.f90:33:18
    |
@@ -337,12 +419,6 @@ semantic error: Type mismatch in binary operator, the types must be compatible
 164 |     x = 5 + "x"
     |         ^   ^^^ type mismatch (integer and string)
 
-semantic error: Type mismatch in assignment, the types must be compatible
-   --> tests/errors/continue_compilation_3.f90:164:5
-    |
-164 |     x = 5 + "x"
-    |     ^       ^^^ type mismatch (integer and string)
-
 semantic error: Subroutine `bpe` called as a function
    --> tests/errors/continue_compilation_3.f90:167:9
     |
@@ -534,3 +610,270 @@ semantic error: Assignment to subroutine is not allowed
     |
 217 |         bpe = d
     |         ^^^ 
+
+semantic error: Variable 'undefined_program_host_13216' is not declared
+   --> tests/errors/continue_compilation_3.f90:224:13
+    |
+224 |         r = undefined_program_host_13216
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'undefined_program_host_13216' is undeclared
+
+semantic error: The leftmost part-ref in a data-ref cannot be a function reference
+   --> tests/errors/continue_compilation_3.f90:242:23
+    |
+242 |         print *, size(mk_13849(1)%a)
+    |                       ^^^^^^^^^^^^^ 
+
+semantic error: The leftmost part-ref in a data-ref cannot be a function reference
+   --> tests/errors/continue_compilation_3.f90:243:18
+    |
+243 |         print *, mk_13849(1)%a
+    |                  ^^^^^^^^^^^^^ 
+
+semantic error: Operator `+` undefined for the types in the expression `cc3_binop_t + integer(4)`
+   --> tests/errors/continue_compilation_3.f90:257:14
+    |
+257 |     print *, x + 1  ! {Error} Operator `+` undefined for the types in the expression `cc3_binop_t + integer(4)`
+    |              ^^^^^ 
+
+semantic error: Operator `-` undefined for the types in the expression `integer(4) - cc3_binop_t`
+   --> tests/errors/continue_compilation_3.f90:258:14
+    |
+258 |     print *, 2 - x  ! {Error} Operator `-` undefined for the types in the expression `integer(4) - cc3_binop_t`
+    |              ^^^^^ 
+
+semantic error: Operator `*` undefined for the types in the expression `cc3_binop_t * cc3_binop_t`
+   --> tests/errors/continue_compilation_3.f90:259:14
+    |
+259 |     print *, x * x  ! {Error} Operator `*` undefined for the types in the expression `cc3_binop_t * cc3_binop_t`
+    |              ^^^^^ 
+
+semantic error: Operator `**` undefined for the types in the expression `real(4) ** cc3_binop_t[:]`
+   --> tests/errors/continue_compilation_3.f90:260:14
+    |
+260 |     print *, 2.0 ** y  ! {Error} Operator `**` undefined for the types in the expression `real(4) ** cc3_binop_t[:]`
+    |              ^^^^^^^^ 
+
+semantic error: Operator `/` undefined for the types in the expression `type(c_ptr) / integer(4)`
+   --> tests/errors/continue_compilation_3.f90:261:14
+    |
+261 |     print *, c / 2  ! {Error} Operator `/` undefined for the types in the expression `type(c_ptr) / integer(4)`
+    |              ^^^^^ 
+
+semantic error: Operator `+` undefined for the types in the expression `logical(4) + logical(4)`
+   --> tests/errors/continue_compilation_3.f90:272:14
+    |
+272 |     print *, a + a  ! {Error} Operator `+` undefined for the types in the expression `logical(4) + logical(4)`
+    |              ^^^^^ 
+
+semantic error: Operator `-` undefined for the types in the expression `logical(4) - logical(4)[:]`
+   --> tests/errors/continue_compilation_3.f90:273:14
+    |
+273 |     print *, a - b  ! {Error} Operator `-` undefined for the types in the expression `logical(4) - logical(4)[:]`
+    |              ^^^^^ 
+
+semantic error: Operator `*` undefined for the types in the expression `logical(4)[:] * logical(4)`
+   --> tests/errors/continue_compilation_3.f90:274:14
+    |
+274 |     print *, b * a  ! {Error} Operator `*` undefined for the types in the expression `logical(4)[:] * logical(4)`
+    |              ^^^^^ 
+
+semantic error: Operator `/` undefined for the types in the expression `logical(4) / logical(8)`
+   --> tests/errors/continue_compilation_3.f90:275:14
+    |
+275 |     print *, a / c  ! {Error} Operator `/` undefined for the types in the expression `logical(4) / logical(8)`
+    |              ^^^^^ 
+
+semantic error: Operator `**` undefined for the types in the expression `logical(8) ** logical(4)`
+   --> tests/errors/continue_compilation_3.f90:276:14
+    |
+276 |     print *, c ** a  ! {Error} Operator `**` undefined for the types in the expression `logical(8) ** logical(4)`
+    |              ^^^^^^ 
+
+semantic error: Operator `+` undefined for the types in the expression `cc3_kind_t + integer(4)`
+   --> tests/errors/continue_compilation_3.f90:306:18
+    |
+306 |         print *, x + 1  ! {Error} Operator `+` undefined for the types in the expression `cc3_kind_t + integer(4)`
+    |                  ^^^^^ 
+
+semantic error: Operands of comparison operator '==' are not comparable: cc3_kind_t == real
+   --> tests/errors/continue_compilation_3.f90:307:18
+    |
+307 |         print *, x == 1.0  ! {Error} Operands of comparison operator '==' are not comparable: cc3_kind_t == real
+    |                  ^^^^^^^^ 
+
+semantic error: Expected logical expression in if statement, but recieved class(*) instead
+   --> tests/errors/continue_compilation_3.f90:314:9
+    |
+314 |     if (d) print *, "x"  ! {Error} Expected logical expression in if statement, but recieved class(*) instead
+    |         ^ class(*) expression, expected logical
+
+semantic error: Operands of comparison operator '==' are not comparable: class(*) == integer
+   --> tests/errors/continue_compilation_3.f90:315:14
+    |
+315 |     print *, d == 1  ! {Error} Operands of comparison operator '==' are not comparable: class(*) == integer
+    |              ^^^^^^ 
+
+semantic error: Expected logical expression in if statement, but recieved type(*) instead
+   --> tests/errors/continue_compilation_3.f90:321:9
+    |
+321 |     if (x) print *, "x"  ! {Error} Expected logical expression in if statement, but recieved type(*) instead
+    |         ^ type(*) expression, expected logical
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_3.f90:352:5
+    |
+352 |     i = d  ! {Error} Type mismatch in assignment, the types must be compatible
+    |     ^   ^ type mismatch (integer and class(*))
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_3.f90:353:5
+    |
+353 |     c = d  ! {Error} Type mismatch in assignment, the types must be compatible
+    |     ^   ^ type mismatch (string and class(*))
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_3.f90:354:5
+    |
+354 |     a = d  ! {Error} Type mismatch in assignment, the types must be compatible
+    |     ^   ^ type mismatch (t_14738 and class(*))
+
+semantic error: Type mismatch in argument `i`: expected `integer(4)` but got `class(*)`
+   --> tests/errors/continue_compilation_3.f90:356:16
+    |
+356 |     call g_int(d)  ! {Error} Type mismatch in argument `i`: expected `integer(4)` but got `class(*)`
+    |                ^ 
+
+semantic error: Type mismatch in argument `a`: expected `t_14738` but got `class(*)`
+   --> tests/errors/continue_compilation_3.f90:357:14
+    |
+357 |     call g_t(d)  ! {Error} Type mismatch in argument `a`: expected `t_14738` but got `class(*)`
+    |              ^ 
+
+semantic error: Type mismatch in argument `i`: expected `integer(4)` but got `class(*)`.
+   --> tests/errors/continue_compilation_3.f90:358:20
+    |
+358 |     print *, f_int(d)  ! {Error} Type mismatch in argument `i`: expected `integer(4)` but got `class(*)`.
+    |                    ^ 
+
+semantic error: Variable 'undeclared_14736_1' is not declared
+   --> tests/errors/continue_compilation_3.f90:371:19
+    |
+371 |         p_14736 = undeclared_14736_1
+    |                   ^^^^^^^^^^^^^^^^^^ 'undeclared_14736_1' is undeclared
+
+semantic error: Cannot assign to a constant variable
+   --> tests/errors/continue_compilation_3.f90:371:9
+    |
+371 |         p_14736 = undeclared_14736_1
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+    |
+364 |     integer, parameter :: p_14736 = 1
+    |                           ~~~~~~~~~~~ declared as constant
+
+semantic error: Variable 'undeclared_14736_2' is not declared
+   --> tests/errors/continue_compilation_3.f90:372:13
+    |
+372 |         a = undeclared_14736_2
+    |             ^^^^^^^^^^^^^^^^^^ 'undeclared_14736_2' is undeclared
+
+semantic error: Cannot assign to an intent(in) variable `a`
+   --> tests/errors/continue_compilation_3.f90:372:9
+    |
+372 |         a = undeclared_14736_2
+    |         ^ 
+
+semantic error: Variable 'undeclared_14736_3' is not declared
+   --> tests/errors/continue_compilation_3.f90:374:17
+    |
+374 |             i = undeclared_14736_3
+    |                 ^^^^^^^^^^^^^^^^^^ 'undeclared_14736_3' is undeclared
+
+semantic error: Assignment to loop variable `i` is not allowed
+   --> tests/errors/continue_compilation_3.f90:374:13
+    |
+374 |             i = undeclared_14736_3
+    |             ^ 
+
+semantic error: Variable 'undeclared_14736_4' is not declared
+   --> tests/errors/continue_compilation_3.f90:376:21
+    |
+376 |         sub_14736 = undeclared_14736_4
+    |                     ^^^^^^^^^^^^^^^^^^ 'undeclared_14736_4' is undeclared
+
+semantic error: Assignment to subroutine is not allowed
+   --> tests/errors/continue_compilation_3.f90:376:9
+    |
+376 |         sub_14736 = undeclared_14736_4
+    |         ^^^^^^^^^ 
+
+semantic error: Variable 'undeclared_14736_5' is not declared
+   --> tests/errors/continue_compilation_3.f90:384:22
+    |
+384 |         f_14736(1) = undeclared_14736_5
+    |                      ^^^^^^^^^^^^^^^^^^ 'undeclared_14736_5' is undeclared
+
+semantic error: The LHS of assignment can only be a variable or an array reference
+   --> tests/errors/continue_compilation_3.f90:384:9
+    |
+384 |         f_14736(1) = undeclared_14736_5
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Variable 'undeclared_14736_6' is not declared
+   --> tests/errors/continue_compilation_3.f90:385:27
+    |
+385 |         arr(f_14736(1)) = undeclared_14736_6
+    |                           ^^^^^^^^^^^^^^^^^^ 'undeclared_14736_6' is undeclared
+
+semantic error: Variable 'undefined_variable_13216' is not declared
+   --> tests/errors/continue_compilation_3.f90:398:13
+    |
+398 |         r = undefined_variable_13216
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^ 'undefined_variable_13216' is undeclared
+
+semantic error: Variable 'undefined_variable2_13216' is not declared
+   --> tests/errors/continue_compilation_3.f90:405:13
+    |
+405 |         r = undefined_variable2_13216
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^ 'undefined_variable2_13216' is undeclared
+
+semantic error: Variable 'undefined_function_host_13216' is not declared
+   --> tests/errors/continue_compilation_3.f90:420:17
+    |
+420 |             q = undefined_function_host_13216
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'undefined_function_host_13216' is undeclared
+
+semantic error: Variable 'undefined_after_function_host_13216' is not declared
+   --> tests/errors/continue_compilation_3.f90:424:13
+    |
+424 |         r = undefined_after_function_host_13216
+    |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'undefined_after_function_host_13216' is undeclared
+
+semantic error: Variable 'undefined_module_procedure_host_13216' is not declared
+   --> tests/errors/continue_compilation_3.f90:445:22
+    |
+445 |             print *, undefined_module_procedure_host_13216
+    |                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'undefined_module_procedure_host_13216' is undeclared
+
+semantic error: Variable 'undefined_after_module_procedure_host_13216' is not declared
+   --> tests/errors/continue_compilation_3.f90:449:18
+    |
+449 |         print *, undefined_after_module_procedure_host_13216
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'undefined_after_module_procedure_host_13216' is undeclared
+
+semantic error: Variable 'undefined_subroutine_host_13758' is not declared
+   --> tests/errors/continue_compilation_3.f90:462:18
+    |
+462 |         print *, undefined_subroutine_host_13758
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'undefined_subroutine_host_13758' is undeclared
+
+semantic error: Variable 'undefined_toplevel_function_13216' is not declared
+   --> tests/errors/continue_compilation_3.f90:472:9
+    |
+472 |     r = undefined_toplevel_function_13216
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'undefined_toplevel_function_13216' is undeclared
+
+semantic error: Variable 'undefined_toplevel_subroutine_13216' is not declared
+   --> tests/errors/continue_compilation_3.f90:476:14
+    |
+476 |     print *, undefined_toplevel_subroutine_13216
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 'undefined_toplevel_subroutine_13216' is undeclared

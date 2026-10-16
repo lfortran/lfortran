@@ -17,6 +17,7 @@
 #include <limits.h>
 #include <stdint.h>
 #include <stddef.h>  /* ptrdiff_t */
+#include <sys/stat.h>
 #if !defined(COMPILE_TO_WASM)
 #include <fenv.h>
 #endif
@@ -31,7 +32,9 @@ typedef enum {
 
 #if defined(_WIN32)
 #  include <winsock2.h>
+#  include <windows.h>
 #  include <io.h>
+#  include <direct.h>
 #  define ftruncate _chsize_s
 #else
 #  include <unistd.h>
@@ -2730,8 +2733,13 @@ void set_string_length(Serialization_Info* s_info){
         s_info->current_arg_info.current_string_len = 
             transform_string_size_into_int(s_info);
     } else {
-        if(s_info->current_element_type == CHAR_PTR_TYPE ||
-            s_info->current_element_type == STRING_DESCRIPTOR_TYPE ) return; // Array. length already set (Consumed from array of lengths).
+        // Empty arrays have no descriptor to inspect.
+        if (!stack_empty(s_info->array_sizes_stack) &&
+            get_stack_top(s_info->array_sizes_stack) == 0) return;
+        if (!stack_empty(s_info->array_sizes_stack) &&
+            get_stack_top(s_info->array_sizes_stack) > 0 &&
+            (s_info->current_element_type == CHAR_PTR_TYPE ||
+             s_info->current_element_type == STRING_DESCRIPTOR_TYPE)) return; // Character array has a shared element length.
             ASSERT_MSG(s_info->current_element_type != CHAR_PTR_TYPE,
                     "ICE:%s\n","Not supported -- Can't deduce length for CCHAR");
             s_info->current_arg_info.current_string_len = 
@@ -3001,7 +3009,8 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
             }
         } else if (cur == '(' || cur == '{') { // StructStart, complexStart
             s_info->current_arg_info.is_complex = (cur == '{');
-            push_stack(s_info->array_sizes_stack, -1000000); // dummy size. needed to know when to move from arg* to another.
+            // Keep empty arrays empty while walking a contained struct.
+            push_stack(s_info->array_sizes_stack, zero_size ? 0 : -1000000); // dummy size. needed to know when to move from arg* to another.
             ++s_info->current_stop;
         } else if (cur == ')' || cur == '}') { // StructEnd, ComplexEnd
             s_info->current_arg_info.is_complex = false;
@@ -4449,28 +4458,145 @@ static void print_label_span(const Span *span, bool is_primary,
     internal_free(line_text);
 }
 
-LFORTRAN_API void _lcompilers_runtime_error(lfortran_allocator_t* al, Label *labels, uint32_t n_labels, const char* format, ...)
-{
+typedef struct runtime_error_buffer {
+    char *data;
+    size_t len;
+    size_t cap;
+} runtime_error_buffer;
+
+static void runtime_error_buffer_reserve(runtime_error_buffer *buf, size_t extra) {
+    if (buf->len + extra + 1 <= buf->cap) {
+        return;
+    }
+    size_t cap = buf->cap > 0 ? buf->cap : 64;
+    while (cap < buf->len + extra + 1) {
+        cap *= 2;
+    }
+    char *data = (char*)internal_realloc(buf->data, cap);
+    if (!data) {
+        fprintf(stderr, "runtime error: out of memory\n");
+        exit(1);
+    }
+    buf->data = data;
+    buf->cap = cap;
+}
+
+static void runtime_error_buffer_append(runtime_error_buffer *buf,
+        const char *str, size_t n) {
+    runtime_error_buffer_reserve(buf, n);
+    memcpy(buf->data + buf->len, str, n);
+    buf->len += n;
+    buf->data[buf->len] = '\0';
+}
+
+// Appends one conversion `spec` (e.g. "%5d") formatted with its argument.
+static void runtime_error_buffer_appendf(runtime_error_buffer *buf,
+        const char *spec, ...) {
     va_list args;
-    va_start(args, format);
+    va_start(args, spec);
     va_list args_copy;
     va_copy(args_copy, args);
-    int needed = vsnprintf(NULL, 0, format, args_copy);
+    int needed = vsnprintf(NULL, 0, spec, args_copy);
     va_end(args_copy);
-    if (needed < 0) {
-        vfprintf(stderr, format, args);
-        fflush(stderr);
-        va_end(args);
-        return;
+    if (needed > 0) {
+        runtime_error_buffer_reserve(buf, (size_t)needed);
+        vsnprintf(buf->data + buf->len, (size_t)needed + 1, spec, args);
+        buf->len += (size_t)needed;
     }
-    char *error_msg = (char*)internal_malloc((size_t)needed + 1);
-    if (!error_msg) {
-        vfprintf(stderr, format, args);
-        fflush(stderr);
-        va_end(args);
-        return;
+    va_end(args);
+}
+
+/*
+ * Formats `format` like vsnprintf, but consumes from `*args` only the
+ * arguments of its own conversions, so several format strings can share one
+ * argument list. The caller frees the result.
+ */
+static char* runtime_error_format(const char *format, va_list *args) {
+    runtime_error_buffer buf = {NULL, 0, 0};
+    runtime_error_buffer_reserve(&buf, 0);
+    buf.data[0] = '\0';
+    const char *p = format ? format : "";
+    while (*p) {
+        const char *pct = strchr(p, '%');
+        if (!pct) {
+            runtime_error_buffer_append(&buf, p, strlen(p));
+            break;
+        }
+        runtime_error_buffer_append(&buf, p, (size_t)(pct - p));
+        // The compiler emits conversions with standard flags, width,
+        // precision and length modifiers; '*' widths are not supported
+        const char *length = pct + 1 + strspn(pct + 1, "-+ #0123456789.");
+        const char *q = length + strspn(length, "hljztL");
+        char spec[32];
+        size_t n = (size_t)(q - pct) + 1;
+        if (!*q || n >= sizeof(spec)) {
+            runtime_error_buffer_append(&buf, pct, strlen(pct));
+            break;
+        }
+        memcpy(spec, pct, n);
+        spec[n] = '\0';
+        char conversion = *q++;
+        bool is_long = length[0] == 'l' && length[1] != 'l';
+        bool is_long_long = length[0] == 'l' && length[1] == 'l';
+        switch (conversion) {
+            case 'd': case 'i': case 'c':
+            case 'u': case 'o': case 'x': case 'X':
+                if (is_long_long) {
+                    runtime_error_buffer_appendf(&buf, spec, va_arg(*args, long long));
+                } else if (is_long) {
+                    runtime_error_buffer_appendf(&buf, spec, va_arg(*args, long));
+                } else if (length[0] == 'j') {
+                    runtime_error_buffer_appendf(&buf, spec, va_arg(*args, intmax_t));
+                } else if (length[0] == 'z') {
+                    runtime_error_buffer_appendf(&buf, spec, va_arg(*args, size_t));
+                } else if (length[0] == 't') {
+                    runtime_error_buffer_appendf(&buf, spec, va_arg(*args, ptrdiff_t));
+                } else {
+                    runtime_error_buffer_appendf(&buf, spec, va_arg(*args, int));
+                }
+                break;
+            case 'f': case 'F': case 'e': case 'E':
+            case 'g': case 'G': case 'a': case 'A':
+                if (length[0] == 'L') {
+                    runtime_error_buffer_appendf(&buf, spec, va_arg(*args, long double));
+                } else {
+                    runtime_error_buffer_appendf(&buf, spec, va_arg(*args, double));
+                }
+                break;
+            case 's':
+                runtime_error_buffer_appendf(&buf, spec, va_arg(*args, const char*));
+                break;
+            case 'p':
+                runtime_error_buffer_appendf(&buf, spec, va_arg(*args, void*));
+                break;
+            case '%':
+                runtime_error_buffer_append(&buf, "%", 1);
+                break;
+            default:
+                runtime_error_buffer_append(&buf, pct, (size_t)(q - pct));
+                break;
+        }
+        p = q;
     }
-    vsnprintf(error_msg, (size_t)needed + 1, format, args);
+    return buf.data;
+}
+
+LFORTRAN_API void _lcompilers_runtime_error_exit(const lfortran_runtime_error_info *info, ...)
+{
+    va_list args;
+    va_start(args, info);
+    char *error_msg = runtime_error_format(info->message, &args);
+    char **label_msgs = NULL;
+    if (info->n_labels > 0) {
+        label_msgs = (char**)internal_malloc(info->n_labels * sizeof(char*));
+        if (!label_msgs) {
+            fprintf(stderr, "runtime error: out of memory\n");
+            exit(1);
+        }
+    }
+    for (uint32_t i = 0; i < info->n_labels; i++) {
+        label_msgs[i] = runtime_error_format(info->labels[i].message, &args);
+    }
     va_end(args);
 
     bool use_colors = _lfortran_use_runtime_colors;
@@ -4479,79 +4605,43 @@ LFORTRAN_API void _lcompilers_runtime_error(lfortran_allocator_t* al, Label *lab
     const char *color_bold_red = use_colors ? "\033[0;31;1m" : "";
     const char *color_bold_blue = use_colors ? "\033[0;34;1m" : "";
 
-    if (n_labels == 0) {
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, error_msg, color_reset);
-        fflush(stderr);
-        internal_free(error_msg);
-        return;
-    }
+    fprintf(stderr, "%sruntime error%s%s: %s%s\n",
+            color_bold_red, color_reset, color_bold, error_msg, color_reset);
 
-    Label *primary_label = NULL;
-    for (uint32_t i = 0; i < n_labels; i++) {
-        if (labels[i].primary) {
-            primary_label = &labels[i];
+    const lfortran_runtime_error_label *primary_label = NULL;
+    for (uint32_t i = 0; i < info->n_labels; i++) {
+        if (info->labels[i].primary) {
+            primary_label = &info->labels[i];
             break;
         }
     }
 
-    if (!primary_label || primary_label->n_spans == 0) {
-        fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-                color_bold_red, color_reset, color_bold, error_msg, color_reset);
-        fflush(stderr);
-        internal_free(error_msg);
-        return;
-    }
+    if (primary_label && primary_label->n_spans > 0) {
+        const Span *first_span = &primary_label->spans[0];
+        const char *filename = first_span->filename ? first_span->filename : "unknown";
 
-    fprintf(stderr, "%sruntime error%s%s: %s%s\n",
-            color_bold_red, color_reset, color_bold, error_msg, color_reset);
+        int width = runtime_line_num_width(first_span->start_l);
+        fprintf(stderr, "%*s%s-->%s %s:%u:%u\n",
+                width, "", color_bold_blue, color_reset,
+                filename, first_span->start_l, first_span->start_c);
 
-    Span *first_span = &primary_label->spans[0];
-    const char *filename = first_span->filename ? first_span->filename : "unknown";
-
-    int width = runtime_line_num_width(first_span->start_l);
-    fprintf(stderr, "%*s%s-->%s %s:%u:%u\n",
-            width, "", color_bold_blue, color_reset, 
-            filename, first_span->start_l, first_span->start_c);
-
-    for (uint32_t i = 0; i < n_labels; i++) {
-        Label *label = &labels[i];
-        for (uint32_t j = 0; j < label->n_spans; j++) {
-            print_label_span(&label->spans[j], label->primary, 
-                           label->message, use_colors);
-            if (label->message != NULL)
-                ALLOCATOR_DEALLOC(al, label->message);
-            label->message = NULL;
+        for (uint32_t i = 0; i < info->n_labels; i++) {
+            const lfortran_runtime_error_label *label = &info->labels[i];
+            for (uint32_t j = 0; j < label->n_spans; j++) {
+                // The label message is printed only under its first span
+                print_label_span(&label->spans[j], label->primary,
+                               j == 0 ? label_msgs[i] : NULL, use_colors);
+            }
         }
     }
 
     fflush(stderr);
+    for (uint32_t i = 0; i < info->n_labels; i++) {
+        internal_free(label_msgs[i]);
+    }
+    internal_free(label_msgs);
     internal_free(error_msg);
-}
-
-LFORTRAN_API char* _lcompilers_snprintf_alloc(lfortran_allocator_t* al, const char* format, ...) {
-    va_list args;
-    va_start(args, format);
-    va_list args_copy;
-    va_copy(args_copy, args);
-    int needed = vsnprintf(NULL, 0, format, args_copy);
-    va_end(args_copy);
-    if (needed < 0) {
-        vfprintf(stderr, format, args);
-        fflush(stderr);
-        va_end(args);
-        return NULL;
-    }
-    char *formatted = (char*)ALLOCATOR_ALLOC(al, (int64_t)needed + 1);
-    if (!formatted) {
-        vfprintf(stderr, format, args);
-        fflush(stderr);
-        va_end(args);
-        return NULL;
-    }
-    vsnprintf(formatted, (size_t)needed + 1, format, args);
-    va_end(args);
-    return formatted;
+    exit(1);
 }
 
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...)
@@ -5889,13 +5979,30 @@ LFORTRAN_API float _lfortran_s_cpu_time() {
 
 // system_time -----------------------------------------------------------------
 
+#if defined(_WIN32)
+static bool _lfortran_windows_performance_clock(int64_t *count, int64_t *rate) {
+    LARGE_INTEGER counter, frequency;
+    if (!QueryPerformanceFrequency(&frequency) || frequency.QuadPart <= 0 ||
+            !QueryPerformanceCounter(&counter) || counter.QuadPart < 0) {
+        return false;
+    }
+    // Keep native ticks: scaling a long-running counter can overflow.
+    *count = counter.QuadPart;
+    *rate = frequency.QuadPart;
+    return true;
+}
+#endif
+
 LFORTRAN_API int32_t _lfortran_i32sys_clock_count() {
 #if defined(_WIN32)
-    return - INT_MAX;
+    // Milliseconds, wrapping from COUNT_MAX to zero without signed overflow.
+    return (int32_t)(GetTickCount64() % ((uint64_t)INT_MAX + 1));
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
-        return (int32_t)(ts.tv_nsec / 1000000) + ((int32_t)ts.tv_sec * 1000);
+        // Milliseconds, wrapping from COUNT_MAX to zero without signed overflow.
+        uint64_t ms = (uint64_t)ts.tv_sec * 1000 + (uint64_t)(ts.tv_nsec / 1000000);
+        return (int32_t)(ms % ((uint64_t)INT_MAX + 1));
     } else {
         return - INT_MAX;
     }
@@ -5904,7 +6011,7 @@ LFORTRAN_API int32_t _lfortran_i32sys_clock_count() {
 
 LFORTRAN_API int32_t _lfortran_i32sys_clock_count_rate() {
 #if defined(_WIN32)
-    return - INT_MAX;
+    return 1000;
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
@@ -5917,7 +6024,7 @@ LFORTRAN_API int32_t _lfortran_i32sys_clock_count_rate() {
 
 LFORTRAN_API int32_t _lfortran_i32sys_clock_count_max() {
 #if defined(_WIN32)
-    return 0;
+    return INT_MAX;
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
@@ -5930,11 +6037,16 @@ LFORTRAN_API int32_t _lfortran_i32sys_clock_count_max() {
 
 LFORTRAN_API uint64_t _lfortran_i64sys_clock_count() {
 #if defined(_WIN32)
-    return 0;
+    int64_t count, rate;
+    if (_lfortran_windows_performance_clock(&count, &rate)) {
+        return (uint64_t)count;
+    }
+    return -LLONG_MAX;
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
-        return (uint64_t)(ts.tv_nsec) + ((uint64_t)ts.tv_sec * 1000000000);
+        uint64_t nanoseconds = (uint64_t)ts.tv_sec * 1000000000 + (uint64_t)ts.tv_nsec;
+        return nanoseconds % ((uint64_t)LLONG_MAX + 1);
     } else {
         return - LLONG_MAX;
     }
@@ -5943,7 +6055,8 @@ LFORTRAN_API uint64_t _lfortran_i64sys_clock_count() {
 
 LFORTRAN_API int64_t _lfortran_i64sys_clock_count_rate() {
 #if defined(_WIN32)
-    return 0;
+    int64_t count, rate;
+    return _lfortran_windows_performance_clock(&count, &rate) ? rate : 0;
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
@@ -5958,7 +6071,8 @@ LFORTRAN_API int64_t _lfortran_i64sys_clock_count_rate() {
 
 LFORTRAN_API int64_t _lfortran_i64sys_clock_count_max() {
 #if defined(_WIN32)
-    return 0;
+    int64_t count, rate;
+    return _lfortran_windows_performance_clock(&count, &rate) ? LLONG_MAX : 0;
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
@@ -5971,7 +6085,7 @@ LFORTRAN_API int64_t _lfortran_i64sys_clock_count_max() {
 
 LFORTRAN_API float _lfortran_i32r32sys_clock_count_rate() {
 #if defined(_WIN32)
-    return 0;
+    return (float)_lfortran_i32sys_clock_count_rate();
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
@@ -5984,7 +6098,7 @@ LFORTRAN_API float _lfortran_i32r32sys_clock_count_rate() {
 
 LFORTRAN_API double _lfortran_i64r64sys_clock_count_rate() {
 #if defined(_WIN32)
-    return 0;
+    return (double)_lfortran_i64sys_clock_count_rate();
 #else
     struct timespec ts;
     if(clock_gettime(CLOCK_MONOTONIC, &ts) == 0) {
@@ -6251,10 +6365,14 @@ struct UNIT_FILE {
     // Pending bytes for sequential unformatted records (shared by all types).
     int32_t seq_unf_pending;
     int32_t seq_unf_record_len;
+    // Set by ENDFILE or a READ that hit end of file: the unit is after the end-of-file record.
+    bool after_endfile;
     // Pending list-directed null-repeat state.
     int32_t lf_list_dir_null_remaining;
     // Child I/O mode (for DTIO: suppress record terminators in child writes).
     int32_t lf_child_io_mode;
+    // See file_is_rereadable.
+    bool rereadable;
 };
 
 int32_t last_index_used = -1;
@@ -6274,6 +6392,7 @@ static inline void seq_unf_state_reset(struct UNIT_FILE *uf) {
     if (!uf) return;
     uf->seq_unf_pending = 0;
     uf->seq_unf_record_len = 0;
+    uf->after_endfile = false;
 }
 
 // Begin reading from a sequential unformatted record if not already in one.
@@ -6284,7 +6403,9 @@ static inline int seq_unf_begin_record(int32_t unit_num, FILE* filep) {
     if (uf->seq_unf_pending == 0) {
         int32_t marker = 0;
         if (fread(&marker, sizeof(int32_t), 1, filep) != 1) {
-            return feof(filep) ? -1 : 1;
+            if (!feof(filep)) return 1;
+            uf->after_endfile = true;
+            return -1;
         }
         if (marker < 0) return 1;
         uf->seq_unf_pending = marker;
@@ -6316,9 +6437,29 @@ static inline void list_dir_state_reset(struct UNIT_FILE *uf) {
     uf->lf_list_dir_null_remaining = 0;
 }
 
-LFORTRAN_API void _lfortran_set_child_io(int32_t unit_num, int32_t is_child) {
-    struct UNIT_FILE *uf = find_unit(unit_num);
-    if (uf) uf->lf_child_io_mode = is_child;
+// Whether a record can be read again by seeking back to its start, which
+// formatted READ does to measure the record and to tab within it (T, TL).
+// Only a regular file can: a terminal on macOS reports a successful ftell
+// and fseek, but the seek discards the line stdio has buffered and the
+// terminal cannot send it again.
+static bool file_is_rereadable(FILE *file)
+{
+    if (!file) return false;
+#if defined(_WIN32)
+    struct _stat st;
+    return _fstat(_fileno(file), &st) == 0 && (st.st_mode & _S_IFMT) == _S_IFREG;
+#else
+    struct stat st;
+    return fstat(fileno(file), &st) == 0 && S_ISREG(st.st_mode);
+#endif
+}
+
+// stdin is checked once: what it is connected to does not change.
+static bool stdin_is_rereadable(void)
+{
+    static int rereadable = -1;
+    if (rereadable < 0) rereadable = file_is_rereadable(stdin);
+    return rereadable;
 }
 
 // Pre-connect standard Fortran units at program startup.
@@ -6345,6 +6486,7 @@ static void _lfortran_init_standard_units(void) {
     unit_to_file[0].encoding = 0; // unknown
     unit_to_file[0].round_mode = 0; // processor_defined
     unit_to_file[0].pad_mode = 1;
+    unit_to_file[0].rereadable = stdin_is_rereadable();
 
     // Unit 6: stdout (write-only, formatted, sequential)
     unit_to_file[1].unit = 6;
@@ -6379,6 +6521,12 @@ static void _lfortran_init_standard_units(void) {
     unit_to_file[2].pad_mode = 1;
 
     last_index_used = 2;
+}
+
+LFORTRAN_API void _lfortran_set_child_io(int32_t unit_num, int32_t is_child) {
+    _lfortran_init_standard_units();
+    struct UNIT_FILE *uf = find_unit(unit_num);
+    if (uf) uf->lf_child_io_mode = is_child;
 }
 
 LFORTRAN_API void _lfortran_file_write_newline(int32_t unit_num) {
@@ -6430,6 +6578,7 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
             unit_to_file[i].encoding = encoding;
             unit_to_file[i].round_mode = round_mode;
             unit_to_file[i].pad_mode = pad_mode;
+            unit_to_file[i].rereadable = file_is_rereadable(filep);
             seq_unf_state_reset(&unit_to_file[i]);
             list_dir_state_reset(&unit_to_file[i]);
             return;  // Don't add duplicate entry
@@ -6456,6 +6605,7 @@ void store_unit_file(int32_t unit_num, char* filename, FILE* filep, bool unit_fi
     unit_to_file[last_index_used].encoding = encoding;
     unit_to_file[last_index_used].round_mode = round_mode;
     unit_to_file[last_index_used].pad_mode = pad_mode;
+    unit_to_file[last_index_used].rereadable = file_is_rereadable(filep);
     seq_unf_state_reset(&unit_to_file[last_index_used]);
     list_dir_state_reset(&unit_to_file[last_index_used]);
 }
@@ -8052,6 +8202,8 @@ LFORTRAN_API void _lfortran_endfile(int32_t unit_num, int32_t *iostat, char *iom
     if (pos >= 0) {
         (void)!ftruncate(fileno(filep), pos);
     }
+    struct UNIT_FILE *uf = find_unit(unit_num);
+    if (uf) uf->after_endfile = true;
 }
 
 LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *iomsg,  int64_t iomsg_len)
@@ -8064,7 +8216,8 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *i
         pad_with_spaces(iomsg, 0, iomsg_len);
     }
     bool unit_file_bin;
-    FILE* fd = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
+    int access_id = -1;
+    FILE* fd = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
     if (fd == NULL) {
         if (iostat != NULL) {
             *iostat = 5001;
@@ -8076,6 +8229,33 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *i
         }
         fprintf(stderr, "Specified UNIT %d in BACKSPACE is not created or connected.\n", unit_num);
         exit(1);
+    }
+
+    if (unit_file_bin && access_id == 0) {
+        struct UNIT_FILE *uf = find_unit(unit_num);
+        bool after_endfile = uf->after_endfile;
+        seq_unf_state_reset(uf);
+        // Only step back over the end-of-file record
+        if (after_endfile) {
+            clearerr(fd);
+            return;
+        }
+        long pos = ftell(fd);
+        if (pos == 0) {
+            return;
+        }
+        int32_t marker = -1;
+        long marker_size = (long)sizeof(int32_t);
+        if (pos < 2 * marker_size
+                || fseek(fd, pos - marker_size, SEEK_SET) != 0
+                || fread(&marker, sizeof(int32_t), 1, fd) != 1
+                || marker < 0 || (long)marker > pos - 2 * marker_size
+                || fseek(fd, pos - 2 * marker_size - (long)marker, SEEK_SET) != 0) {
+            if (iostat != NULL) { *iostat = 1; return; }
+            fprintf(stderr, "Error: Invalid record marker in BACKSPACE on unit %d.\n", unit_num);
+            exit(1);
+        }
+        return;
     }
 
     fflush(fd);
@@ -9672,6 +9852,7 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num,
             if (find_unit(unit_num)->seq_unf_pending == 0) {
                 int32_t marker = 0;
                 if (fread(&marker, sizeof(int32_t), 1, filep) != 1) {
+                    if (feof(filep)) find_unit(unit_num)->after_endfile = true;
                     if (iostat) { *iostat = feof(filep) ? -1 : 1; return; }
                     printf("Error reading record marker from file.\n");
                     exit(1);
@@ -11140,12 +11321,13 @@ typedef struct {
             size_t pos;
         } str;
     };
-    long record_start_pos;
+    long record_start_pos;  // -1 when records cannot be read again
     long pos_in_record;     // 0-based column position within current record
     long record_length;     // length of current record in characters
     int access_id;          // 0=sequential, 1=stream, 2=direct
     int32_t record_len;     // record length for direct access
     int encoding_mode;      // 0=unknown, 1=UTF-8, 2=default
+    bool rereadable;        // see file_is_rereadable
 } InputSource;
 
 // Shared buffer parsing functions for formatted reads
@@ -11377,6 +11559,47 @@ static void parse_character_from_buffer(char* buffer, int field_len,
     }
 }
 
+static inline int read_character(InputSource *inputSource)
+{
+    switch (inputSource->inputMethod) {
+
+    case INPUT_FILE: {
+        int c = fgetc(inputSource->file);
+#if defined(__EMSCRIPTEN__)
+        // Recover a spurious EOF on interactive stdin: a record
+        // boundary at the very start of this read looks like end of
+        // file on the first attempt; the retry pulls the next line.
+        if (c == EOF && inputSource->file == stdin) {
+            clearerr(inputSource->file);
+            c = fgetc(inputSource->file);
+        }
+#endif
+        // CRLF is one external sequential/stream record terminator.
+        // A lone CR remains data, as do characters in internal/direct files.
+        if (c == '\r' && inputSource->access_id != 2) {
+            int next = fgetc(inputSource->file);
+            if (next == '\n') {
+                c = '\n';
+            } else if (next != EOF) {
+                ungetc(next, inputSource->file);
+            }
+        }
+        if (c != EOF && c != '\n') {
+            inputSource->pos_in_record++;
+        }
+        return c;
+    }
+
+    case INPUT_STRING:
+        if (inputSource->str.pos < inputSource->str.len) {
+            return (unsigned char)inputSource->str.buf[inputSource->str.pos++];
+        }
+        return EOF;
+    }
+
+    return EOF;
+}
+
 static inline char* read_line(char *buf, int size, InputSource *inputSource)
 {
     if (size <= 0) {
@@ -11427,22 +11650,35 @@ static inline char* read_line(char *buf, int size, InputSource *inputSource)
             ret = fgets(buf, size, inputSource->file);
         }
 #endif
-        if (ret != NULL) {
-            // Keep record-local cursor in sync for T/TL/TR editing.
-            // Count only non-newline chars consumed from current record.
-            size_t n = strlen(buf);
-            size_t consumed = 0;
-            for (size_t j = 0; j < n; j++) {
-                if (buf[j] == '\n') break;
-                consumed++;
-            }
-            inputSource->pos_in_record += (long)consumed;
-            if (inputSource->record_length >= 0 &&
-                    inputSource->pos_in_record > inputSource->record_length) {
-                inputSource->pos_in_record = inputSource->record_length;
+        if (ret == NULL) {
+            return NULL;
+        }
+        size_t n = strlen(buf);
+        // CRLF is one external sequential/stream record terminator.
+        // A lone CR remains data, as do characters in direct files.
+        if (inputSource->access_id != 2 && n > 0) {
+            if (n >= 2 && buf[n - 1] == '\n' && buf[n - 2] == '\r') {
+                buf[n - 2] = '\n';
+                buf[--n] = '\0';
+            } else if (buf[n - 1] == '\r') {
+                // The LF may follow just past the end of the buffer.
+                int next = fgetc(inputSource->file);
+                if (next == '\n') {
+                    buf[n - 1] = '\n';
+                } else if (next != EOF) {
+                    ungetc(next, inputSource->file);
+                }
             }
         }
-        return ret;
+        // Keep record-local cursor in sync for T/TL/TR editing.
+        // Count only non-newline chars consumed from current record.
+        char *nl = (char*)memchr(buf, '\n', n);
+        inputSource->pos_in_record += (long)(nl ? (size_t)(nl - buf) : n);
+        if (inputSource->record_length >= 0 &&
+                inputSource->pos_in_record > inputSource->record_length) {
+            inputSource->pos_in_record = inputSource->record_length;
+        }
+        return buf;
     }
     case INPUT_STRING:
         while (i < size - 1 && inputSource->str.pos < inputSource->str.len) {
@@ -11462,37 +11698,6 @@ static inline char* read_line(char *buf, int size, InputSource *inputSource)
     return NULL;
 }
 
-static inline int read_character(InputSource *inputSource)
-{
-    switch (inputSource->inputMethod) {
-
-    case INPUT_FILE: {
-        int c = fgetc(inputSource->file);
-#if defined(__EMSCRIPTEN__)
-        // Same spurious-EOF recovery as in read_line above: a record
-        // boundary at the very start of this read looks like end of
-        // file on the first attempt; the retry pulls the next line.
-        if (c == EOF && inputSource->file == stdin) {
-            clearerr(inputSource->file);
-            c = fgetc(inputSource->file);
-        }
-#endif
-        if (c != EOF && c != '\n') {
-            inputSource->pos_in_record++;
-        }
-        return c;
-    }
-
-    case INPUT_STRING:
-        if (inputSource->str.pos < inputSource->str.len) {
-            return (unsigned char)inputSource->str.buf[inputSource->str.pos++];
-        }
-        return EOF;
-    }
-
-    return EOF;
-}
-
 static bool read_field(InputSource *inputSource, int read_width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline,
         char **buffer, int *field_len, bool pad_no)
@@ -11503,7 +11708,11 @@ static bool read_field(InputSource *inputSource, int read_width, bool advance_no
         exit(1);
     }
 
-    if (read_line(*buffer, read_width + 1, inputSource) == NULL) {
+    bool record_ended = *consumed_newline;
+    if (record_ended) {
+        // The record has ended, so the field is empty and gets blank padding.
+        (*buffer)[0] = '\0';
+    } else if (read_line(*buffer, read_width + 1, inputSource) == NULL) {
         if (iostat) {
             *iostat = -1;
         } else {
@@ -11524,7 +11733,7 @@ static bool read_field(InputSource *inputSource, int read_width, bool advance_no
         *consumed_newline = true;
     }
 
-    if (chunk) *chunk = (int32_t)(*field_len);
+    if (chunk && !record_ended) *chunk = (int32_t)(*field_len);
     if (advance_no && *consumed_newline && *field_len != read_width) {
         if (iostat) *iostat = -2;
     }
@@ -12187,6 +12396,7 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
 static void handle_read_X(InputSource *inputSource, int width, bool advance_no,
         int32_t *iostat, bool *consumed_newline)
 {
+    if (*consumed_newline) return;
     int skip = (width > 0) ? width : 1;
     for (int i = 0; i < skip; i++) {
         int c = read_character(inputSource);
@@ -12204,6 +12414,13 @@ static void handle_read_X(InputSource *inputSource, int width, bool advance_no,
     }
 }
 
+// Position of the record that starts at the current position of the file,
+// or -1 if seeking back to it would not read it again.
+static long record_start_position(InputSource *inputSource)
+{
+    return inputSource->rereadable ? ftell(inputSource->file) : -1;
+}
+
 // Initialize record state: reset position to column 1 and compute record length
 static void init_record_state(InputSource *inputSource)
 {
@@ -12212,7 +12429,7 @@ static void init_record_state(InputSource *inputSource)
     if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
         // For sequential/stream access, scan from record_start_pos to find '\n'
         if (inputSource->access_id != 2) {  // Not direct access
-            // Non-seekable streams (e.g. stdin piped from a shell) have
+            // Streams that cannot be read again (pipes, terminals) have
             // record_start_pos == -1.  fseek/fgetc would silently consume
             // data that can never be put back, so skip the pre-scan and
             // leave record_length as a large sentinel value instead.
@@ -12223,9 +12440,13 @@ static void init_record_state(InputSource *inputSource)
                 fseek(inputSource->file, inputSource->record_start_pos, SEEK_SET);
                 
                 inputSource->record_length = 0;
-                int c;
+                int c, previous = EOF;
                 while ((c = fgetc(inputSource->file)) != EOF && c != '\n') {
                     inputSource->record_length++;
+                    previous = c;
+                }
+                if (c == '\n' && previous == '\r') {
+                    inputSource->record_length--;
                 }
                 
                 // Restore position to start of record
@@ -12248,7 +12469,7 @@ static void init_record_state(InputSource *inputSource)
     }
 }
 
-static void handle_read_TL(InputSource *inputSource, int width)
+static void handle_read_TL(InputSource *inputSource, int width, bool *consumed_newline)
 {
     int move_left = (width > 0) ? width : 1;
     
@@ -12258,6 +12479,7 @@ static void handle_read_TL(InputSource *inputSource, int width)
         } else {
             inputSource->str.pos = 0;
         }
+        *consumed_newline = false;
     } else if (inputSource->inputMethod == INPUT_FILE) {
         if (inputSource->file) {
             // Move within current record, never crossing record boundary
@@ -12265,14 +12487,16 @@ static void handle_read_TL(InputSource *inputSource, int width)
             if (new_pos < 0) new_pos = 0;
             
             inputSource->pos_in_record = new_pos;
-            fseek(inputSource->file,
-                  inputSource->record_start_pos + new_pos,
-                  SEEK_SET);
+            if (inputSource->record_start_pos >= 0 && fseek(inputSource->file,
+                    inputSource->record_start_pos + new_pos,
+                    SEEK_SET) == 0) {
+                *consumed_newline = false;
+            }
         }
     }
 }
 
-static void handle_read_T(InputSource *inputSource, int position)
+static void handle_read_T(InputSource *inputSource, int position, bool *consumed_newline)
 {
     if (position < 1) position = 1;
     
@@ -12282,6 +12506,7 @@ static void handle_read_T(InputSource *inputSource, int position)
             target_pos = (int)inputSource->str.len;
         }
         inputSource->str.pos = target_pos;
+        *consumed_newline = false;
     } else if (inputSource->inputMethod == INPUT_FILE) {
         if (inputSource->file) {
             // Convert 1-based position to 0-based offset
@@ -12293,9 +12518,11 @@ static void handle_read_T(InputSource *inputSource, int position)
                 target = inputSource->record_length;
             
             inputSource->pos_in_record = target;
-            fseek(inputSource->file,
-                  inputSource->record_start_pos + target,
-                  SEEK_SET);
+            if (inputSource->record_start_pos >= 0 && fseek(inputSource->file,
+                    inputSource->record_start_pos + target,
+                    SEEK_SET) == 0) {
+                *consumed_newline = false;
+            }
         }
     }
 }
@@ -12325,7 +12552,7 @@ static void handle_read_slash(InputSource *inputSource, int32_t *iostat, bool *c
         }
     }
     if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
-        inputSource->record_start_pos = ftell(inputSource->file);
+        inputSource->record_start_pos = record_start_position(inputSource);
         init_record_state(inputSource);
     } else if (inputSource->inputMethod == INPUT_STRING) {
         inputSource->pos_in_record = 0;
@@ -12471,6 +12698,7 @@ LFORTRAN_API void _lfortran_formatted_read(
             printf("No file found with given unit\n");
             exit(1);
         }
+        inputSource.rereadable = find_unit(unit_num)->rereadable;
         if (!read_access) {
             if (iostat) { *iostat = 5007; return; }
             fprintf(stderr, "Runtime Error: Read access not permitted for unit %d.\n", unit_num);
@@ -12483,6 +12711,7 @@ LFORTRAN_API void _lfortran_formatted_read(
         use_stdin_char_mode();
         inputSource.inputMethod = INPUT_FILE;
         inputSource.file = stdin;
+        inputSource.rereadable = stdin_is_rereadable();
     }
     
     va_list args;
@@ -12696,10 +12925,10 @@ static void process_fmt_items_read(InputSource *inputSource,
                     if (tab_type == 'R') {
                         handle_read_X(inputSource, width, advance_no, iostat, consumed_newline);
                     } else if (tab_type == 'L') {
-                        handle_read_TL(inputSource, width);
+                        handle_read_TL(inputSource, width, consumed_newline);
                     }
                 } else {
-                    handle_read_T(inputSource, width);
+                    handle_read_T(inputSource, width, consumed_newline);
                 }
                 break;
             case 'A':
@@ -12757,7 +12986,7 @@ static void common_formatted_read(InputSource *inputSource,
     int32_t no_of_args, va_list *args, bool blank_zero, bool pad_no, int decimal_mode)
 {
     if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
-        inputSource->record_start_pos = ftell(inputSource->file);
+        inputSource->record_start_pos = record_start_position(inputSource);
         init_record_state(inputSource);
     }
     if (chunk) *chunk = 0;
@@ -12848,7 +13077,7 @@ static void common_formatted_read(InputSource *inputSource,
                 }
             }
             if (inputSource->inputMethod == INPUT_FILE && inputSource->file) {
-                inputSource->record_start_pos = ftell(inputSource->file);
+                inputSource->record_start_pos = record_start_position(inputSource);
                 init_record_state(inputSource);
             } else if (inputSource->inputMethod == INPUT_STRING) {
                 inputSource->pos_in_record = 0;
@@ -13036,6 +13265,32 @@ LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* io
     }
 }
 
+LFORTRAN_API void _lfortran_connect_unit_for_read(int32_t unit_num, int32_t unformatted, int32_t* iostat)
+{
+    if (unit_num < 0) return;
+    if (get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL)) return;
+    // Implicit open: READ from an unconnected unit opens "fort.<unit>" and creates it if missing
+    char fort_filename[64];
+    snprintf(fort_filename, sizeof(fort_filename), "fort.%d", unit_num);
+    bool write_access = true;
+    FILE* filep = fopen(fort_filename, unformatted ? "r+b" : "r+");
+    if (!filep && errno == ENOENT) {
+        filep = fopen(fort_filename, unformatted ? "w+b" : "w+");
+    } else if (!filep) {
+        filep = fopen(fort_filename, unformatted ? "rb" : "r");
+        write_access = false;
+    }
+    if (!filep) {
+        if (iostat) { *iostat = 5004; return; }
+        fprintf(stderr, "Runtime Error: Cannot open file '%s' for implicit unit %d.\n",
+            fort_filename, unit_num);
+        exit(1);
+    }
+    char* fname = (char*)internal_malloc(strlen(fort_filename) + 1);
+    strcpy(fname, fort_filename);
+    store_unit_file(unit_num, fname, filep, unformatted != 0, 0, true, write_access, 0, false, 0, 0, 0, 0, 0, 1);
+}
+
 LFORTRAN_API char* _lpython_read_alloc(lfortran_allocator_t* al, int64_t fd, int64_t n)
 {
     char *c = (char *) ALLOCATOR_ALLOC(al, n);
@@ -13145,8 +13400,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         }
     }
     if (unit_file_bin) { // Unformatted
-        if (access_id == 0) {  // 0 = SEQUENTIAL access: always append
-            fseek(filep, 0, SEEK_END);
+        if (access_id == 0) {  // C needs a seek between a read and a write
+            fseek(filep, 0, SEEK_CUR);
         }
         va_list args;
         va_start(args, format_len);
@@ -14323,6 +14578,31 @@ LFORTRAN_API char *_lpython_get_argv(int32_t index) {
     return _argv[index];
 }
 
+// getcwd (GNU extension)
+LFORTRAN_API int32_t _lfortran_getcwd(char* buffer, int64_t length) {
+    if (length <= 0) return EINVAL;
+    if ((uint64_t)length >= SIZE_MAX) return ENOMEM;
+    memset(buffer, ' ', (size_t)length);
+    // libc needs a trailing NUL; the Fortran buffer may fit the path exactly.
+    size_t capacity = (size_t)length + 1;
+#if defined(_WIN32)
+    if (capacity > INT_MAX) return ERANGE;
+#endif
+    char* path = internal_malloc(capacity);
+    if (!path) return ENOMEM;
+#if defined(_WIN32)
+    char* result = _getcwd(path, (int)capacity);
+#else
+    char* result = getcwd(path, capacity);
+#endif
+    int32_t status = result ? 0 : errno;
+    if (result) {
+        _lfortran_copy_str_and_pad(buffer, length, path, (int64_t)strlen(path), 1);
+    }
+    internal_free(path);
+    return status;
+}
+
 // get_command_argument
 LFORTRAN_API void _lfortran_get_command_argument_value(int n, char* receiver) {
     if (n >= 0 && n < _argc) {
@@ -14372,8 +14652,10 @@ LFORTRAN_API int32_t _lfortran_get_command_length() {
     return total_length;
 }
 
-LFORTRAN_API int32_t _lfortran_get_command_status() {
-    return 1;
+LFORTRAN_API int32_t _lfortran_get_command_status(int32_t command_len, int32_t length) {
+    if (_argc == 0) return 42;
+    if (command_len < length) return -1;
+    return 0;
 }
 
 // << Command line arguments << ------------------------------------------------

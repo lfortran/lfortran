@@ -47,6 +47,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             self:
                                                 (Variable
@@ -76,6 +77,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     all_abstract
@@ -91,7 +93,7 @@
                                         Interface
                                         ()
                                         .true.
-                                        .false.
+                                        .true.
                                         .false.
                                         .false.
                                         .false.
@@ -147,6 +149,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     bitset_type

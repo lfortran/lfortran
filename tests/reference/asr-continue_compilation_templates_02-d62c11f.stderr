@@ -1,0 +1,52 @@
+semantic error: Parameter 't' is declared more than once in requirement 'requirement_scope_r'
+ --> tests/errors/continue_compilation_templates_02.f90:6:38
+  |
+6 |     requirement requirement_scope_r {t, t}  ! {Error} Parameter 't' is declared more than once in requirement 'requirement_scope_r'
+  |                                      ^ first declared here
+  |
+6 |     requirement requirement_scope_r {t, t}  ! {Error} Parameter 't' is declared more than once in requirement 'requirement_scope_r'
+  |                                         ^ redeclared here
+
+semantic error: Template argument u has not been declared in template specification.
+  --> tests/errors/continue_compilation_templates_02.f90:16:5 - 18:17
+   |
+16 |        template template_scope_t {t, u}  ! {Error} Template argument u has not been declared in template specification.
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+18 |        end template
+   | ...^^^^^^^^^^^^^^^^^ 
+
+semantic error: requirement argument 'u' has not been declared in requirement 'requirement_op_r'
+  --> tests/errors/continue_compilation_templates_02.f90:37:38
+   |
+37 |     requirement requirement_op_r {t, u}  ! {Error} requirement argument 'u' has not been declared in requirement 'requirement_op_r'
+   |                                      ^ 
+
+semantic error: Template argument u has not been declared in template specification.
+  --> tests/errors/continue_compilation_templates_02.f90:40:5 - 42:17
+   |
+40 |        template template_op_t {t, u}  ! {Error} Template argument u has not been declared in template specification.
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+42 |        end template
+   | ...^^^^^^^^^^^^^^^^^ 
+
+semantic error: a `deferred` declaration is only allowed in a requirement, a template or a templated subprogram
+  --> tests/errors/continue_compilation_templates_02.f90:55:9
+   |
+55 |         deferred integer, parameter :: n  ! {Error} a `deferred` declaration is only allowed in a requirement, a template or a templated subprogram
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a `deferred` declaration is only allowed in a requirement, a template or a templated subprogram
+  --> tests/errors/continue_compilation_templates_02.f90:70:9
+   |
+70 |         deferred integer, parameter :: n  ! {Error} a `deferred` declaration is only allowed in a requirement, a template or a templated subprogram
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Intent attribute can only be applied to procedure arguments
+  --> tests/errors/continue_compilation_templates_02.f90:80:14
+   |
+80 |     integer, intent(in) :: n  ! {Error} Intent attribute can only be applied to procedure arguments
+   |              ^^^^^^^^^^ 

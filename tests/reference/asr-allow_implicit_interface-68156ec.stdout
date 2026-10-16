@@ -67,6 +67,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             alnorm~arg_1:
                                                 (Variable
@@ -91,6 +92,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             alnorm~result:
                                                 (Variable
@@ -115,6 +117,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     alnorm~fpcast
@@ -184,6 +187,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             b:
                                 (Variable
@@ -208,6 +212,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             dgetrf:
                                 (Function
@@ -269,6 +274,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             dgetrf~arg_1:
                                                 (Variable
@@ -293,6 +299,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             dgetrf~arg_2:
                                                 (Variable
@@ -317,6 +324,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     dgetrf~fpcast
@@ -389,6 +397,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             one:
                                 (Variable
@@ -404,7 +413,7 @@
                                         1.000000
                                         (Real 8)
                                     )
-                                    Default
+                                    Save
                                     (Real 8)
                                     ()
                                     Source
@@ -419,6 +428,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             prho:
                                 (Variable
@@ -443,6 +453,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             six:
                                 (Variable
@@ -458,7 +469,7 @@
                                         6.000000
                                         (Real 8)
                                     )
-                                    Default
+                                    Save
                                     (Real 8)
                                     ()
                                     Source
@@ -473,6 +484,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             two:
                                 (Variable
@@ -488,7 +500,7 @@
                                         2.000000
                                         (Real 8)
                                     )
-                                    Default
+                                    Save
                                     (Real 8)
                                     ()
                                     Source
@@ -503,6 +515,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             u:
                                 (Variable
@@ -527,6 +540,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             x:
                                 (Variable
@@ -551,6 +565,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             y:
                                 (Variable
@@ -575,6 +590,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             zero:
                                 (Variable
@@ -590,7 +606,7 @@
                                         0.000000
                                         (Real 8)
                                     )
-                                    Default
+                                    Save
                                     (Real 8)
                                     ()
                                     Source
@@ -605,6 +621,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     prho
@@ -625,47 +642,7 @@
                     )
                     []
                     []
-                    [(Assignment
-                        (Var 2 zero)
-                        (RealConstant
-                            0.000000
-                            (Real 8)
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 one)
-                        (RealConstant
-                            1.000000
-                            (Real 8)
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 two)
-                        (RealConstant
-                            2.000000
-                            (Real 8)
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 six)
-                        (RealConstant
-                            6.000000
-                            (Real 8)
-                        )
-                        ()
-                        .false.
-                        .false.
-                    )
-                    (Associate
+                    [(Associate
                         (Var 2 alnorm~fpcast_ptr)
                         (FunctionPointerCast
                             (Var 2 alnorm)

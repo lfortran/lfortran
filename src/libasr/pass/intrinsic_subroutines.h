@@ -41,6 +41,7 @@ enum class IntrinsicImpureSubroutines : int64_t {
     CoMin,
     CoBroadcast,
     Exit,
+    GetCwd,
     // ...
 };
 
@@ -58,7 +59,87 @@ typedef void (*verify_subroutine)(
     const ASR::IntrinsicImpureSubroutine_t&,
     diag::Diagnostics&);
 
+// The type of a dummy for a rank 1 array argument that is accessed element
+// by element from index 1: assumed shape, or assumed size for an assumed-size
+// actual argument, which has no extent to describe it with.
+static inline ASR::ttype_t* elementwise_array_dummy_type(Allocator& al,
+        const Location& loc, ASR::ttype_t* t) {
+    t = ASRUtils::type_get_past_allocatable_pointer(t);
+    if (ASRUtils::extract_physical_type(t) !=
+            ASR::array_physical_typeType::UnboundedPointerArray) {
+        return ASRUtils::duplicate_type_with_empty_dims(al, t);
+    }
+    Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+    ASR::dimension_t dim;
+    dim.loc = loc;
+    dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    dim.m_length = nullptr;
+    dims.push_back(al, dim);
+    return ASRUtils::duplicate_type(al, t, &dims,
+        ASR::array_physical_typeType::UnboundedPointerArray, true);
+}
+
 typedef ASR::expr_t* (*get_initial_value_sub)(Allocator&, ASR::ttype_t*);
+
+namespace GetCwd {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x,
+            diag::Diagnostics& diagnostics) {
+        require_impl(x.n_args == 1 || x.n_args == 2,
+            "getcwd requires one or two arguments", x.base.base.loc, diagnostics);
+        if (x.n_args > 0) {
+            require_impl(valid_output(x.m_args[0]),
+                "getcwd requires a scalar default-kind character output variable", x.base.base.loc, diagnostics);
+        }
+        if (x.n_args == 2) {
+            ASR::ttype_t* type = expr_type(x.m_args[1]);
+            require_impl(is_integer(*type) && !is_array(type) && definable_output(x.m_args[1]),
+                "getcwd status must be a scalar integer output variable", x.base.base.loc, diagnostics);
+        }
+    }
+
+    static inline ASR::asr_t* create_GetCwdSubroutine(Allocator& al, const Location& loc,
+            Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        if (!valid_output(args[0])) {
+            append_error(diag, "getcwd requires a scalar default-kind character output variable", loc);
+            return nullptr;
+        }
+        Vec<ASR::expr_t*> actuals; actuals.reserve(al, 2);
+        actuals.push_back(al, args[0]);
+        if (args[1]) {
+            ASR::ttype_t* type = expr_type(args[1]);
+            if (!is_integer(*type) || is_array(type) || !definable_output(args[1])) {
+                append_error(diag, "getcwd status must be a scalar integer output variable", loc);
+                return nullptr;
+            }
+            actuals.push_back(al, args[1]);
+        }
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc,
+            static_cast<int64_t>(IntrinsicImpureSubroutines::GetCwd), actuals.p, actuals.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_GetCwdSubroutine(Allocator& al, const Location& loc,
+            SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_getcwd_subroutine");
+        fill_func_arg_sub("buffer", b.String(nullptr, ASR::AssumedLength), Out);
+        ASR::expr_t* status = runtime_call(al, loc, fn_symtab, args[0], dep);
+        if (arg_types.n == 2) {
+            fill_func_arg_sub("status", arg_types[1], Out);
+            status = CastingUtil::perform_casting(status, arg_types[1], al, loc);
+            body.push_back(al, b.Assignment(args[1], status));
+        } else {
+            ASR::expr_t* ignored = declare("status", int32, Local);
+            body.push_back(al, b.Assignment(ignored, status));
+        }
+        ASR::symbol_t* subroutine = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, subroutine);
+        return b.SubroutineCall(subroutine, new_args);
+    }
+
+} // namespace GetCwd
 
 namespace RandomInit {
 
@@ -169,7 +250,7 @@ namespace RandomSeed {
         }
         if (!is_real(*arg_types[1])) {
             flag = 1;
-            ASR::ttype_t* put_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[1]);
+            ASR::ttype_t* put_type = elementwise_array_dummy_type(al, loc, arg_types[1]);
             fill_func_arg_sub("put", put_type, In);
             std::string put_func_name = "_lfortran_random_seed_put_i32";
             if (fn_symtab->get_symbol(put_func_name) == nullptr) {
@@ -200,7 +281,7 @@ namespace RandomSeed {
             fill_func_arg_sub("put", real32, In);
         }
         if (!is_real(*arg_types[2])) {
-            ASR::ttype_t* get_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[2]);
+            ASR::ttype_t* get_type = elementwise_array_dummy_type(al, loc, arg_types[2]);
             fill_func_arg_sub("get", get_type, Out);
             if (flag == 1) {
                 body.push_back(al, b.Assignment(args[2], args[1]));
@@ -222,7 +303,12 @@ namespace RandomSeed {
                     body.push_back(al, b.Assignment(xx, b.Call(s_get, get_call_args, int32)));
                     vals.push_back(xx);
                 }
-                body.push_back(al, b.Assignment(args[2], b.ArrayConstant(vals, elem_type, false)));
+                // `get` can be larger than the seed, which is stored into
+                // its first elements
+                for (size_t i = 0; i < vals.size(); i++) {
+                    std::vector<ASR::expr_t*> idx = {b.i32(i + 1)};
+                    body.push_back(al, b.Assignment(b.ArrayItem_01(args[2], idx), vals[i]));
+                }
             }
         } else {
             fill_func_arg_sub("get", real32, In);
@@ -476,7 +562,7 @@ namespace GetCommand {
             command = string_holder
             deallocate(string_holder)
 
-            status = _lfortran_get_command_status()
+            status = _lfortran_get_command_status(len(command), length_to_allocate)
 
         */
         const int64_t ZERO = 0;
@@ -487,8 +573,8 @@ namespace GetCommand {
         int arg_idx = 0; // Tracks index (min = 0, max = 2)
 
         ASR::expr_t* length_to_allocate = nullptr;
-        // Create _lfortran_get_command_length interface + call it (required by both command and length)
-        if (has_command || has_length) {
+        // Create _lfortran_get_command_length interface + call it (required by command, length and status)
+        if (has_command || has_length || has_status) {
             ASR::symbol_t *get_length = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 0, int32);
             fn_symtab->add_symbol(c_func_name_2, get_length);
             dep.push_back(al, s2c(al, c_func_name_2));
@@ -528,10 +614,18 @@ namespace GetCommand {
 
         if (has_status) {
             fill_func_arg_sub("status", arg_types[arg_idx], Out);
-            ASR::symbol_t *get_status = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 0, arg_types[arg_idx]);
+            ASR::symbol_t *get_status = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 2, int32);
             fn_symtab->add_symbol(c_func_name_3, get_status);
             dep.push_back(al, s2c(al, c_func_name_3));
-            body.push_back(al, b.Assignment(args[arg_idx], b.Call(get_status, call_args, arg_types[arg_idx])));
+            // status is -1 if `command` is too short to hold the command, 0 otherwise
+            Vec<ASR::expr_t*> status_args; status_args.reserve(al, 2);
+            status_args.push_back(al, has_command ? b.StringLen(args[0]) : length_to_allocate);
+            status_args.push_back(al, length_to_allocate);
+            ASR::expr_t* status = b.Call(get_status, status_args, int32);
+            if (ASRUtils::extract_kind_from_ttype_t(arg_types[arg_idx]) != 4) {
+                status = b.i2i_t(status, arg_types[arg_idx]);
+            }
+            body.push_back(al, b.Assignment(args[arg_idx], status));
         }
 
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -726,55 +820,120 @@ namespace SystemClock {
         return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::SystemClock), m_args.p, m_args.n, overload_id);
     }
 
+    static inline bool has_count(int64_t overload_id) {
+        return overload_id == 0 || overload_id == 3 || overload_id == 4 || overload_id == 6;
+    }
+
+    static inline bool has_count_rate(int64_t overload_id) {
+        return overload_id == 1 || overload_id == 3 || overload_id == 5 || overload_id == 6;
+    }
+
+    static inline bool has_count_max(int64_t overload_id) {
+        return overload_id == 2 || overload_id == 4 || overload_id == 5 || overload_id == 6;
+    }
+
+    /*
+        All values of one call describe the same clock. Its integer kind is the
+        smallest kind of the present integer arguments, so that
+        0 <= COUNT <= COUNT_MAX holds in every argument's kind. A real
+        COUNT_RATE selects the clock only when it is the sole argument.
+        Only 32-bit and 64-bit clocks exist, so if an integer argument has a
+        kind smaller than default integer, the processor-dependent choice is
+        that no clock is available for the call; 0 is returned in that case.
+    */
+    static inline int clock_kind(Vec<ASR::ttype_t*>& arg_types, int64_t overload_id) {
+        int kind = 0;
+        auto use_integer_kind = [&](ASR::ttype_t* type) {
+            if (ASRUtils::is_integer(*type)) {
+                int k = ASRUtils::extract_kind_from_ttype_t(type);
+                if (kind == 0 || k < kind) kind = k;
+            }
+        };
+        if (has_count(overload_id)) use_integer_kind(arg_types[0]);
+        if (has_count_rate(overload_id)) use_integer_kind(arg_types[1]);
+        if (has_count_max(overload_id)) use_integer_kind(arg_types[2]);
+        if (kind == 0) {
+            kind = ASRUtils::extract_kind_from_ttype_t(arg_types[1]);
+        }
+        if (kind < 4) return 0;
+        return kind >= 8 ? 8 : 4;
+    }
+
     static inline ASR::stmt_t* instantiate_SystemClock(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
             Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
 
-        std::string c_func_name_1 = "_lfortran_i32sys_clock_count";
-        std::string c_func_name_2 = "_lfortran_i32sys_clock_count_rate";
-        std::string c_func_name_3 = "_lfortran_i32sys_clock_count_max";
         std::string new_name = "_lcompilers_system_clock_";
         declare_basic_variables(new_name);
-        Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
-        if (overload_id == 0 || overload_id == 3 || overload_id == 4 || overload_id == 6) {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 8) {
-                c_func_name_1 = "_lfortran_i64sys_clock_count";
+        int kind = clock_kind(arg_types, overload_id);
+        bool no_clock = kind == 0;
+        ASR::ttype_t* clock_type = kind == 8 ? int64 : int32;
+        std::string prefix = kind == 8 ? "_lfortran_i64" : "_lfortran_i32";
+        // Runtime helpers are declared with their C return types.
+        auto clock_value = [&](const std::string& c_func_name, ASR::ttype_t* type) {
+            ASR::symbol_t* s = b.create_c_func_subroutines(c_func_name, fn_symtab, 0, type);
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+            Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
+            return b.Call(s, call_args, type);
+        };
+        auto convert = [&](ASR::expr_t* x, ASR::ttype_t* type) {
+            ASR::ttype_t* x_type = ASRUtils::expr_type(x);
+            if (x_type->type == type->type && ASRUtils::extract_kind_from_ttype_t(x_type)
+                    == ASRUtils::extract_kind_from_ttype_t(type)) {
+                return x;
             }
+            return b.t2t(x, x_type, type);
+        };
+        if (has_count(overload_id)) {
             fill_func_arg_sub("count", arg_types[0], Out);
-            ASR::symbol_t *s_1 = b.create_c_func_subroutines(c_func_name_1, fn_symtab, 0, arg_types[0]);
-            fn_symtab->add_symbol(c_func_name_1, s_1);
-            dep.push_back(al, s2c(al, c_func_name_1));
-            body.push_back(al, b.Assignment(args[0], b.Call(s_1, call_args, arg_types[0])));
+            ASR::ttype_t* count_type = ASRUtils::extract_type(arg_types[0]);
+            int count_kind = ASRUtils::extract_kind_from_ttype_t(count_type);
+            // Without a clock, COUNT is -HUGE(COUNT) in COUNT's kind.
+            int64_t count_huge = static_cast<int64_t>(
+                (uint64_t(1) << (8 * count_kind - 1)) - 1);
+            if (no_clock) {
+                body.push_back(al, b.Assignment(args[0], b.i_t(-count_huge, count_type)));
+            } else if (count_kind == kind) {
+                body.push_back(al, b.Assignment(args[0],
+                    clock_value(prefix + "sys_clock_count", clock_type)));
+            } else {
+                // A negative count means no clock.
+                ASR::expr_t* count = clock_value(prefix + "sys_clock_count", clock_type);
+                ASR::expr_t* clock_count = declare("clock_count", clock_type, Local);
+                body.push_back(al, b.Assignment(clock_count, count));
+                body.push_back(al, b.If(b.Lt(clock_count, b.i_t(0, clock_type)), {
+                        b.Assignment(args[0], b.i_t(-count_huge, count_type))
+                    }, {
+                        b.Assignment(args[0], convert(clock_count, count_type))
+                    }));
+            }
         } else {
             fill_func_arg_sub("count", int32, In);
         }
-        if (overload_id == 1 || overload_id == 3 || overload_id == 5 || overload_id == 6) {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_types[1]) == 8) {
-                if (is_real(*arg_types[1])) {
-                    c_func_name_2 = "_lfortran_i64r64sys_clock_count_rate";
-                } else {
-                    c_func_name_2 = "_lfortran_i64sys_clock_count_rate";
-                }
-            } else if (is_real(*arg_types[1])) {
-                c_func_name_2 = "_lfortran_i32r32sys_clock_count_rate";
-            }
+        if (has_count_rate(overload_id)) {
             fill_func_arg_sub("count_rate", arg_types[1], Out);
-            ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 0, arg_types[1]);
-            fn_symtab->add_symbol(c_func_name_2, s_2);
-            dep.push_back(al, s2c(al, c_func_name_2));
-            body.push_back(al, b.Assignment(args[1], b.Call(s_2, call_args, arg_types[1])));
+            ASR::ttype_t* rate_type = ASRUtils::extract_type(arg_types[1]);
+            ASR::expr_t* rate = nullptr;
+            if (no_clock) {
+                rate = b.constant_t(0, rate_type);
+            } else if (ASRUtils::is_real(*rate_type)) {
+                rate = kind == 8
+                    ? clock_value("_lfortran_i64r64sys_clock_count_rate", real64)
+                    : clock_value("_lfortran_i32r32sys_clock_count_rate", real32);
+            } else {
+                rate = clock_value(prefix + "sys_clock_count_rate", clock_type);
+            }
+            body.push_back(al, b.Assignment(args[1], convert(rate, rate_type)));
         } else {
             fill_func_arg_sub("count_rate", int32, In);
         }
-        if (overload_id == 2 || overload_id == 4 || overload_id == 5 || overload_id == 6) {
-            if (ASRUtils::extract_kind_from_ttype_t(arg_types[2]) == 8) {
-                c_func_name_3 = "_lfortran_i64sys_clock_count_max";
-            }
+        if (has_count_max(overload_id)) {
             fill_func_arg_sub("count_max", arg_types[2], Out);
-            ASR::symbol_t *s_3 = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 0, arg_types[2]);
-            fn_symtab->add_symbol(c_func_name_3, s_3);
-            dep.push_back(al, s2c(al, c_func_name_3));
-            body.push_back(al, b.Assignment(args[2], b.Call(s_3, call_args, arg_types[2])));
+            ASR::ttype_t* max_type = ASRUtils::extract_type(arg_types[2]);
+            ASR::expr_t* count_max = no_clock ? b.i_t(0, max_type)
+                : clock_value(prefix + "sys_clock_count_max", clock_type);
+            body.push_back(al, b.Assignment(args[2], convert(count_max, max_type)));
         } else {
             fill_func_arg_sub("count_max", int32, In);
         }
@@ -933,7 +1092,8 @@ namespace DateAndTime {
             fill_func_arg_sub("zone", real32, In);
         }
         if (!is_real(*arg_types[3])) {
-            fill_func_arg_sub("values", arg_types[3], Out);
+            ASR::ttype_t* values_type = elementwise_array_dummy_type(al, loc, arg_types[3]);
+            fill_func_arg_sub("values", values_type, Out);
             std::vector<LCompilers::ASR::expr_t *> vals;
             ASR::symbol_t *s_4 = b.create_c_func_subroutines(c_func_name_4, fn_symtab, 1, int32);
             fn_symtab->add_symbol(c_func_name_4, s_4);
@@ -950,7 +1110,12 @@ namespace DateAndTime {
                 }
                 vals.push_back(xx_casted);
             }
-            body.push_back(al, b.Assignment(args[3], b.ArrayConstant(vals, extract_type(arg_types[3]), false)));
+            // `values` can be larger than 8, the values are stored into its
+            // first elements
+            for (size_t i = 0; i < vals.size(); i++) {
+                std::vector<ASR::expr_t*> idx = {b.i32(i + 1)};
+                body.push_back(al, b.Assignment(b.ArrayItem_01(args[3], idx), vals[i]));
+            }
         } else {
             fill_func_arg_sub("values", real32, In);
         }
@@ -1347,6 +1512,85 @@ namespace MoveAlloc {
         ASRUtils::require_impl(ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_args[1])), "Second argument must be an allocatable type", x.base.base.loc, diagnostics);
     }
 
+    static inline bool check_arguments(ASR::expr_t* from, ASR::expr_t* to,
+            diag::Diagnostics& diag) {
+        ASR::expr_t* move_args[2] = {from, to};
+        const std::string arg_names[2] = {"from", "to"};
+        for (size_t i = 0; i < 2; i++) {
+            if (!ASRUtils::is_allocatable(move_args[i])) {
+                diag.add(diag::Diagnostic(
+                    "`" + arg_names[i] + "` argument of `move_alloc` must be allocatable",
+                    diag::Level::Error, diag::Stage::Semantic,
+                    {diag::Label("must be allocatable", { move_args[i]->base.loc })}));
+                return false;
+            }
+        }
+        ASR::ttype_t* from_type = ASRUtils::expr_type(from);
+        ASR::ttype_t* to_type = ASRUtils::expr_type(to);
+        auto declared_type_str = [](ASR::expr_t* arg) {
+            ASR::ttype_t* type = ASRUtils::extract_type(ASRUtils::expr_type(arg));
+            std::string str = ASRUtils::type_to_str_with_kind(type, arg);
+            if (ASR::is_a<ASR::String_t>(*type)) {
+                str = "character(kind=" + std::to_string(
+                    ASRUtils::extract_kind_from_ttype_t(type)) + ")";
+            } else if (ASR::is_a<ASR::StructType_t>(*type) &&
+                    !ASRUtils::is_unlimited_polymorphic_type(type)) {
+                str = (ASRUtils::is_class_type(type) ? "class(" : "type(") + str + ")";
+            }
+            return str;
+        };
+        std::string from_type_str = declared_type_str(from);
+        std::string to_type_str = declared_type_str(to);
+        if (!ASRUtils::is_move_alloc_type_compatible(from, to)) {
+            ASR::ttype_t* from_base = ASRUtils::extract_type(from_type);
+            ASR::ttype_t* to_base = ASRUtils::extract_type(to_type);
+            if (from_base->type == to_base->type &&
+                    !ASR::is_a<ASR::StructType_t>(*from_base) &&
+                    ASRUtils::extract_kind_from_ttype_t(from_base) !=
+                    ASRUtils::extract_kind_from_ttype_t(to_base)) {
+                diag.add(diag::Diagnostic(
+                    "`to` argument of `move_alloc` must have the same kind as "
+                    "`from` argument, but `to` is " + to_type_str +
+                    " and `from` is " + from_type_str,
+                    diag::Level::Error, diag::Stage::Semantic,
+                    {diag::Label("kind differs from " + from_type_str,
+                        { to->base.loc })}));
+                return false;
+            }
+            diag.add(diag::Diagnostic(
+                "`to` argument of `move_alloc` must be type compatible with "
+                "`from` argument, but `to` is " + to_type_str +
+                " and `from` is " + from_type_str,
+                diag::Level::Error, diag::Stage::Semantic,
+                {diag::Label("not type compatible with " + from_type_str,
+                    { to->base.loc })}));
+            return false;
+        }
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(from_type)) &&
+                !ASRUtils::is_class_type(ASRUtils::extract_type(to_type))) {
+            diag.add(diag::Diagnostic(
+                "`to` argument of `move_alloc` must be polymorphic because "
+                "`from` argument is polymorphic",
+                diag::Level::Error, diag::Stage::Semantic,
+                {diag::Label(to_type_str + " is not polymorphic",
+                    { to->base.loc })}));
+            return false;
+        }
+        size_t from_rank = ASRUtils::extract_n_dims_from_ttype(from_type);
+        size_t to_rank = ASRUtils::extract_n_dims_from_ttype(to_type);
+        if (from_rank != to_rank) {
+            diag.add(diag::Diagnostic(
+                "`from` and `to` arguments of `move_alloc` must have the "
+                "same rank, but `from` has rank " + std::to_string(from_rank) +
+                " and `to` has rank " + std::to_string(to_rank),
+                diag::Level::Error, diag::Stage::Semantic,
+                {diag::Label("rank " + std::to_string(to_rank),
+                    { to->base.loc })}));
+            return false;
+        }
+        return true;
+    }
+
     static inline ASR::asr_t* create_MoveAlloc(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         for (size_t i = 0; i < 2; i++) {
             ASR::symbol_t *sym = nullptr;
@@ -1369,6 +1613,9 @@ namespace MoveAlloc {
                     {diag::Label("", { loc })}));
                 return nullptr;
             }
+        }
+        if (!check_arguments(args[0], args[1], diag)) {
+            return nullptr;
         }
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, 2);
         m_args.push_back(al, args[0]); m_args.push_back(al, args[1]);
@@ -1461,14 +1708,10 @@ namespace MoveAlloc {
 
         std::vector<ASR::stmt_t*> if_body;
 
-        bool is_allocatable_array_from = ASRUtils::is_array(arg_types[0]) &&
-            ASRUtils::is_allocatable(arg_types[0]) &&
-            ASRUtils::extract_physical_type(arg_types[0]) == ASR::array_physical_typeType::DescriptorArray;
-        bool is_allocatable_array_to = ASRUtils::is_array(arg_types[1]) &&
-            ASRUtils::is_allocatable(arg_types[1]) &&
-            ASRUtils::extract_physical_type(arg_types[1]) == ASR::array_physical_typeType::DescriptorArray;
-
-        if (is_allocatable_array_from && is_allocatable_array_to) {
+        // The allocation is transferred, not copied: the object is neither
+        // finalized nor deallocated, and pointers associated with `from`
+        // become associated with `to` (F2018 16.9.137).
+        if (ASRUtils::is_move_allocation_pair(args[1], args[0])) {
             ASR::stmt_t* move_assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
                 al, loc, args[1], args[0], nullptr, false, true));
             if_body.push_back(move_assign);

@@ -1697,6 +1697,11 @@ namespace OutOfRange
 
 namespace CompilerVersion {
 
+    // Defined in intrinsic_function.cpp: the version changes with every
+    // commit, and expanding it in this widely included header would change
+    // every including file and defeat compiler caches.
+    std::string version_string();
+
     static inline void verify_args(const ASR::IntrinsicElementalFunction_t& x, diag::Diagnostics& diagnostics) {
         ASRUtils::require_impl(x.n_args == 0,
             "compiler_version() takes no argument",
@@ -1706,7 +1711,7 @@ namespace CompilerVersion {
     static ASR::expr_t *eval_CompilerVersion(Allocator &al, const Location &loc,
             ASR::ttype_t */*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
         ASRUtils::ASRBuilder b(al, loc);
-        std::string version = std::string("LFortran version ") + LFORTRAN_VERSION;
+        std::string version = version_string();
         return b.StringConstant(version, character(version.length()));
     }
 
@@ -3188,9 +3193,13 @@ namespace Aint {
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
 
-        // Cast: Real -> Integer -> Real
-        // TODO: this approach doesn't work for numbers > i64_max
-        body.push_back(al, b.Assignment(result, b.i2r_t(b.r2i_t(args[0], int64), return_type)));
+        // int(a, 8) is undefined for |a| >= 2**63, inf and NaN; aint(a) is a itself there
+        body.push_back(al, b.If(b.Lt(b.CallIntrinsic(scope, {arg_types[0]}, {args[0]},
+                arg_types[0], 0, Abs::instantiate_Abs), b.f_t(9223372036854775808.0, arg_types[0])), {
+            b.Assignment(result, b.i2r_t(b.r2i_t(args[0], int64), return_type))
+        }, {
+            b.Assignment(result, b.r2r_t(args[0], return_type))
+        }));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -5596,8 +5605,10 @@ namespace SelectedIntKind {
             result = 2;
         } else if (val <= 9) {
             result = 4;
-        } else {
+        } else if (val <= 18) {
             result = 8;
+        } else {
+            result = -1;
         }
         return b.i32(result);
     }
@@ -5619,7 +5630,11 @@ namespace SelectedIntKind {
                 b.If(b.LtE(number, b.i_t(9, arg_types[0])), {
                     b.Assignment(result, b.i32(4))
                 }, {
-                    b.Assignment(result, b.i32(8))
+                    b.If(b.LtE(number, b.i_t(18, arg_types[0])), {
+                        b.Assignment(result, b.i32(8))
+                    }, {
+                        b.Assignment(result, b.i32(-1))
+                    })
                 })
             })
         }));
@@ -6190,10 +6205,10 @@ namespace StringConcat {
             ASRBuilder b(al, loc);
             ASR::String_t* s1 = get_string_type(args[0]);
             ASR::String_t* s2 = get_string_type(args[1]);
-            if(is_value_constant(s1->m_len) && is_value_constant(s2->m_len)){
-                int64_t s1_len, s2_len;
-                extract_value(s1->m_len, s1_len);
-                extract_value(s2->m_len, s2_len);
+            // A length can be a named constant without a value yet, e.g.
+            // one that depends on a deferred constant of a template.
+            int64_t s1_len, s2_len;
+            if (extract_value(s1->m_len, s1_len) && extract_value(s2->m_len, s2_len)) {
                 return_type = b.String(b.i64(s1_len + s2_len), ASR::ExpressionLength,
                     ASR::DescriptorString, char_kind);
             } else {
@@ -6227,7 +6242,11 @@ namespace StringConcat {
             ASR::expr_t* expr, ASR::ttype_t* expr_type, ASRBuilder& b) {
         ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(expr_type));
         if (str_type->m_len) {
-            return b.i2i_t(str_type->m_len, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
+            // Copy the length, so that later rewrites of the returned
+            // expression do not modify the type it was taken from.
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            return b.i2i_t(duplicator.duplicate_expr(str_type->m_len),
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));
         }
         // For deferred-length strings, check if expr is a StringConcat.
         // If so, recursively compute the length to avoid embedding the
