@@ -4752,6 +4752,13 @@ gpu_cuda_kernel = true
 filename = "../integration_tests/gpu_metal_455.f90"
 gpu_cuda_kernel = true
 
+# An associate name bound to the result of a function is that result, made
+# once on entry: one call, not one for every element read through the name.
+[[test]]
+filename = "../integration_tests/gpu_metal_452.f90"
+gpu_cuda_kernel = true
+options = "--realloc-lhs-arrays"
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
