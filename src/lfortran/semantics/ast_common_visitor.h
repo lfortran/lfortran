@@ -17782,14 +17782,15 @@ public:
                                 al, ASRUtils::TYPE(expected_array), expected_phys_type, true);
                         }
 
-                        // When the dummy is passed as a raw pointer (PointerArray), pass the
-                        // address of the element directly. This is exactly the element sequence
-                        // that starts at the element, whereas an ArraySection a(i:, j:) does not
-                        // describe it (and may be copied in as a non-contiguous section). It also
-                        // avoids materializing a temporary ArraySection descriptor, preventing
-                        // stack growth from dimension-descriptor allocas.
-                        if (expected_phys_type == ASR::array_physical_typeType::PointerArray &&
-                            !ASRUtils::is_character(*ASRUtils::type_get_past_array(expected_arg_type))) {
+                        // When the dummy is passed as a raw pointer (explicit-shape PointerArray
+                        // or assumed-size UnboundedPointerArray), pass the address of the element
+                        // directly. This is exactly the element sequence that starts at the
+                        // element, whereas an ArraySection a(i:, j:) does not describe it (and may
+                        // be copied in as a non-contiguous section). It also avoids materializing
+                        // a temporary ArraySection descriptor, preventing stack growth from
+                        // dimension-descriptor allocas.
+                        if (expected_phys_type == ASR::array_physical_typeType::PointerArray ||
+                            expected_phys_type == ASR::array_physical_typeType::UnboundedPointerArray) {
                             arg.m_value = ASRUtils::EXPR(ASR::make_GetPointer_t(
                                 al, array_item->base.base.loc, arg_expr, cast_target_type, nullptr));
                             args_with_array_section.push_back(al, arg);
