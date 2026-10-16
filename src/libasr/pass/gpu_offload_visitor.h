@@ -541,6 +541,14 @@ public:
     void resolve_enclosing_associates(ParallelLoopNest &work, size_t n_dims,
             std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
 
+    // Gives each iteration its own copy of an array of unspecified
+    // locality that the iteration defines whole before it references it,
+    // by making it a local of a BLOCK around the body (see
+    // gpu_offload_privatize.cpp).
+    void privatize_iteration_arrays(const ASR::OMPRegion_t &region,
+            ParallelLoopNest &work,
+            const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
+
     bool offloadable_before_rewrites(const ParallelLoopNest &work,
             const std::set<SymbolTable*> &enclosing_block_scopes,
             const Location &loc);

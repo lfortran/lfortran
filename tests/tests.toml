@@ -4772,6 +4772,13 @@ filename = "../integration_tests/gpu_metal_453.f90"
 gpu_cuda_kernel = true
 options = "--realloc-lhs-arrays"
 
+# An array each iteration defines whole before it references it is a local
+# of the kernel, or a slice of a workspace, not a kernel argument every
+# thread shares; one read after the loop stays an argument.
+[[test]]
+filename = "../integration_tests/gpu_metal_474.f90"
+gpu_cuda_kernel = true
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true

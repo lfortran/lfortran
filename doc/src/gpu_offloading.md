@@ -163,6 +163,20 @@ generates the device source. It never falls back to the CPU:
   array, like any allocatable of device code assigned the result of a
   function, takes the shape the function gives its result, over the
   actual arguments of the call.
+* An array with unspecified locality that every iteration defines whole
+  before it references it (`t = ...`, or `do k = 1, m; t(k) = ...` over
+  its whole declared extent, before anything reads `t`) is a temporary of
+  the iteration, as Fortran 2018, 11.1.7.5 allows: each thread gets its own
+  copy, as if `t` were declared in a `block` around the body -- a local
+  array, or a slice of a workspace when its extents are only known at run
+  time. This is only done when no statement that can run after the loop
+  reads the array before defining it again, so the array keeps the value
+  it had before the loop and nothing can tell. Every other array of
+  unspecified locality -- one whose elements the iterations define one each
+  (`y(j) = ...`), one partly defined, a dummy argument, an array read after
+  the loop, or one a contained procedure, a pointer, an `associate` around
+  the loop or a locality clause names -- is one array that all threads
+  share.
 * An array an iteration needs whose size is known only at run time -- a
   local of a `block` with run-time extents, an allocatable local, or a
   temporary the compiler introduces, such as the result of a function or
