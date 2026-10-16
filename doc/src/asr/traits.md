@@ -1705,8 +1705,11 @@ continues to reject actual runtime views with an explicit backend diagnostic.
 Supported methods are functions with scalar integer, real, complex, logical
 or constant-length character results, and subroutines. Arguments are scalar
 integer, real, complex, logical, character, or nonpolymorphic derived-type
-values, or read-only, required, nonallocatable, nonpointer assumed-shape arrays
-of an intrinsic numeric or logical type or of character of a constant length.
+values, or required, nonallocatable, nonpointer assumed-shape arrays of an
+intrinsic numeric or logical type or of character of a constant length. The
+arrays of a message that is not generic have any INTENT (see "Array arguments"
+below); those of a generic message are read-only, a temporary limit of this
+implementation.
 A message that is not generic may also take bare views of runtime traits as
 arguments other than its receiver (see "Trait-object arguments" below).
 Array descriptors pass by reference, so strided, reversed and empty sections
@@ -1892,6 +1895,58 @@ and two providers of same-named types separately. The diagnostics are checked
 by `continue_compilation_traits_view_argument`, and the reference test
 `traits_view_argument_mytype.F90` compiles the reported module, unchanged,
 with `-c`.
+
+### Array arguments
+
+An assumed-shape array argument of a message that is not generic keeps its
+ordinary INTENT, as the scalar arguments do. A later report extends `ICoeffs`
+with an array that `update` modifies, next to a view of `IEstimates`, which is
+now a trait without messages:
+
+```fortran
+abstract interface  :: IEstimates
+end interface
+
+abstract interface :: ICoeffs
+   subroutine update(self,estimates,beta)
+      type(itself), pass, intent(inout) :: self
+      class(IEstimates),  intent(inout) :: estimates
+      real(8),            intent(inout) :: beta(:)
+   end subroutine update
+end interface
+
+real(8) :: beta(12)
+...
+call self%coeffs%update(self%estimates,beta)
+```
+
+The call passes the module array `beta` through an explicit
+`ArrayPhysicalCast` to a descriptor, as an ordinary call does, and the slot and
+the witness adapter pass that descriptor on by reference: the implementation
+defines the elements of the caller's own array, also of a strided or reversed
+section, without a copy in or out, and an `intent(out)` array keeps a declared
+lower bound such as `x(0:)`. The actual of an `intent(inout)` or `intent(out)`
+array must be definable; the same intent check as for the actual of an
+ordinary call diagnoses it. An implementation declares the array with exactly
+the message's INTENT. The array arguments of a generic message keep their
+read-only limit for now, in closed member slots and erased generic slots alike:
+a trait whose generic message takes an array with another INTENT has no
+runtime contract, and using it as a view is diagnosed as not implemented.
+
+`traits_runtime_array_inout_01` compiles the reported module unchanged and
+calls its `coefficients` binding through a `MyType` variable and a
+`class(MyType)` owner with two implementations of each trait: every call
+updates all twelve elements of the module's `beta` in place, the selected
+receiver and the borrowed estimates, inspected with SELECT TYPE because
+`IEstimates` has no messages. It is registered for normal and separate
+compilation. `traits_runtime_array_inout_02` passes whole arrays and strided,
+reversed, row and pointer sections, allocatable arrays and forwarded
+assumed-shape dummies to `intent(inout)`, `intent(out)` and omitted-intent
+real, integer, character and logical arrays through owners, pointers and
+views, with read-only and `intent(inout)` receivers and in a function message,
+and checks contiguity, every defined element and the elements outside each
+section. The diagnostics are checked by
+`continue_compilation_traits_array_inout`.
 
 ## Scalar allocatable ownership, slots and results (R2)
 

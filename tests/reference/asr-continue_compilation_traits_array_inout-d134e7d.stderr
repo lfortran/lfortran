@@ -1,0 +1,61 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_array_inout.f90:9:5 - 10:18
+   |
+ 9 |        abstract interface :: IEstimates
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+10 |        end interface
+   | ...^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: intent, optionality or value attribute of argument 'x' does not match trait method 'scale'
+  --> tests/errors/continue_compilation_traits_array_inout.f90:45:5 - 47:19
+   |
+45 |        implements IScale :: Mismatched
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+47 |        end implements
+   | ...^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+  --> tests/errors/continue_compilation_traits_array_inout.f90:79:26
+   |
+79 |         call c%update(e, b + 1)
+   |                          ^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+  --> tests/errors/continue_compilation_traits_array_inout.f90:84:26
+   |
+84 |         call c%update(e, fixed)
+   |                          ^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+  --> tests/errors/continue_compilation_traits_array_inout.f90:89:26
+   |
+89 |         call c%update(e, [1.0d0, 2.0d0])
+   |                          ^^^^^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+  --> tests/errors/continue_compilation_traits_array_inout.f90:94:41
+   |
+94 |         call c%update(estimates=e, beta=values())
+   |                                         ^^^^^^^^ 
+
+semantic error: Argument `b` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_array_inout.f90:100:26
+    |
+100 |         call c%update(e, b)
+    |                          ^ 
+
+semantic error: Argument `b` with intent(in) passed to a dummy argument with modifying intent
+   --> tests/errors/continue_compilation_traits_array_inout.f90:105:21
+    |
+105 |         call c%fill(b)
+    |                     ^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+   --> tests/errors/continue_compilation_traits_array_inout.f90:111:21
+    |
+111 |         n = c%clear(2*k)
+    |                     ^^^ 

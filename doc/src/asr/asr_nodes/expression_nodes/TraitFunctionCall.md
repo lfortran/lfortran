@@ -13,8 +13,9 @@ TraitFunctionCall(symbol name, int slot, call_arg* args, ttype type)
 `name` is the normalized contract interface at `slot`, not a concrete
 implementation. `args[0]` is the borrowed view; the remaining arguments have
 the message's normal types, order, and association attributes, including
-read-only assumed-shape numeric or logical array descriptors passed by
-reference and, for a message that is not generic, bare `intent(in)` or
+assumed-shape numeric or logical array descriptors passed by reference, with
+their ordinary intents for a message that is not generic and read-only for a
+generic one, and, for a message that is not generic, bare `intent(in)` or
 `intent(inout)` views of runtime traits associated as in
 [TraitSubroutineCall](../statement_nodes/TraitSubroutineCall.md). `type` is its
 scalar integer, real or logical result type.

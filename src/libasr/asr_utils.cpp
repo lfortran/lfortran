@@ -6977,13 +6977,15 @@ static bool runtime_trait_character(ASR::ttype_t *type)
 }
 
 // The runtime slot surface of a concrete signature, or of a closed generic
-// signature with each binder replaced by its member: scalar arguments, read-only
+// signature with each binder replaced by its member: scalar arguments, required
 // assumed-shape numeric, logical or constant-length character arrays, and scalar
-// numeric, logical or constant-length character results. A length wildcard
-// member has no finite set of slots. A message that is not generic may also
-// take borrowed views of runtime traits other than as its receiver: bare,
-// required `class(T)` arguments with intent(in) or intent(inout), passed by
-// reference like the bare view dummies of ordinary procedures.
+// numeric, logical or constant-length character results. An array argument of a
+// message that is not generic has any INTENT, as in an ordinary call; one of a
+// generic message is read-only for now. A length wildcard member has no finite
+// set of slots. A message that is not generic may also take borrowed views of
+// runtime traits other than as its receiver: bare, required `class(T)` arguments
+// with intent(in) or intent(inout), passed by reference like the bare view
+// dummies of ordinary procedures.
 static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
         const std::map<std::string, ASR::ttype_t*> &members)
 {
@@ -7024,7 +7026,7 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
                     !element || !(ASR::is_a<ASR::Integer_t>(*element) ||
                         ASR::is_a<ASR::Real_t>(*element) || ASR::is_a<ASR::Complex_t>(*element) ||
                         ASR::is_a<ASR::Logical_t>(*element) || runtime_trait_character(element)) ||
-                    arg->m_intent != ASR::intentType::In ||
+                    (arg->m_intent != ASR::intentType::In && trait_method_template(method)) ||
                     arg->m_presence != ASR::presenceType::Required ||
                     arg->m_value_attr || arg->m_target_attr || arg->m_is_volatile ||
                     arg->m_contiguous_attr || arg->n_codims) return false;
