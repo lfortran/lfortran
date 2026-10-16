@@ -9731,20 +9731,8 @@ public:
                 } else {
                     s_intent = ASRUtils::intent_local;
                 }
-                ASR::abiType s_abi = is_argument ? current_procedure_abi_type : ASR::abiType::Source;
-                // Return variables of bind(C) functions should also
-                // use the function's ABI for proper type mapping
-                if (!is_argument && current_scope->asr_owner &&
-                    ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
-                    ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
-                        current_scope->asr_owner);
-                    if (ASR::is_a<ASR::Function_t>(*owner)) {
-                        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(owner);
-                        if (to_lower(s.m_name) == to_lower(fn->m_name)) {
-                            s_abi = current_procedure_abi_type;
-                        }
-                    }
-                }
+                ASR::abiType s_abi = (is_argument || is_procedure_result(s.m_name))
+                    ? current_procedure_abi_type : ASR::abiType::Source;
                 Vec<ASR::dimension_t> dims;
                 dims.reserve(al, 0);
                 // location for dimension(...) if present
@@ -27633,18 +27621,7 @@ public:
     AST::AttrType_t* type, AST::var_sym_t* var_sym, std::string& sym, ASR::String_t* str, bool is_argument, ASR::abiType abi, bool is_array) {
         // Handle kind: set CChar for bind(C) character(c_char) arguments
         // and return variables
-        bool is_return_var = false;
-        if (!is_argument && current_scope->asr_owner &&
-            ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
-            ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
-                current_scope->asr_owner);
-            if (ASR::is_a<ASR::Function_t>(*owner)) {
-                ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(owner);
-                if (sym == to_lower(fn->m_name)) {
-                    is_return_var = true;
-                }
-            }
-        }
+        bool is_return_var = !is_argument && is_procedure_result(sym.c_str());
         if (kind_item && kind_item->m_value) {
             if (is_iso_c_binding_c_char(kind_item->m_value)) {
                 if ((is_argument || is_return_var) && abi == ASR::BindC) {

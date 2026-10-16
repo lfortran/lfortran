@@ -9795,7 +9795,8 @@ public:
                         context, *module, *builder, array_size);
                     ptr = builder->CreateBitCast(ptr_i8, type->getPointerTo());
                 }
-            } else if(ASRUtils::is_string_only(v->m_type)){
+            } else if(ASRUtils::is_string_only(v->m_type) &&
+                    ASRUtils::is_descriptorString(v->m_type)){
                 if(v->m_storage == ASR::Save || v->m_storage == ASR::Parameter){
                     if(v->m_storage == ASR::Parameter) {LCOMPILERS_ASSERT(v->m_symbolic_value)}
                     std::string str_initial_value_string {};
@@ -15002,14 +15003,11 @@ public:
              ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(asr_target_type))) {
             bool is_bindc_char_member =
                 ASRUtils::is_inline_character_struct_member(x.m_target);
-            bool is_cchar_array_item = false;
-            if (ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
-                ASR::ttype_t* target_item_type = ASRUtils::extract_type(ASRUtils::expr_type(x.m_target));
-                is_cchar_array_item = ASR::is_a<ASR::String_t>(*target_item_type) &&
-                    ASR::down_cast<ASR::String_t>(target_item_type)->m_physical_type == ASR::CChar;
-            }
-            if (is_bindc_char_member) {
-                // bind(C)/SEQUENCE character member: layout is inline [dst_len x i8].
+            bool is_cchar = ASRUtils::is_string_only(asr_target_type) &&
+                !ASRUtils::is_allocatable_or_pointer(asr_target_type) &&
+                ASRUtils::get_string_type(asr_target_type)->m_physical_type == ASR::CChar;
+            if (is_bindc_char_member || is_cchar) {
+                // CChar scalars and bind(C)/SEQUENCE members have inline byte storage.
                 // memcpy min(src_len, dst_len) bytes, then space-pad the rest.
                 ASR::String_t* dst_str_type = ASR::down_cast<ASR::String_t>(
                     ASRUtils::extract_type(asr_target_type));
@@ -15058,27 +15056,6 @@ public:
                 builder->CreateMemSet(pad_dst,
                     llvm::ConstantInt::get(context, llvm::APInt(8, ' ')),
                     pad_len, llvm::MaybeAlign());
-                tmp = nullptr;
-                return;
-            }
-            if (is_cchar_array_item) {
-                // CChar array item: store first byte directly as i8
-                ASR::String_t* src_str_type = ASR::down_cast<ASR::String_t>(
-                    ASRUtils::extract_type(asr_value_type));
-                llvm::Value* byte_val;
-                if (src_str_type->m_physical_type == ASR::CChar) {
-                    byte_val = llvm_utils->CreateLoad2(
-                        llvm::Type::getInt8Ty(context), value);
-                } else {
-                    // DescriptorString: extract data pointer and load first byte
-                    llvm::Value* data_ptr = llvm_utils->create_gep2(
-                        llvm_utils->string_descriptor, value, 0);
-                    llvm::Value* data = llvm_utils->CreateLoad2(
-                        character_type, data_ptr);
-                    byte_val = llvm_utils->CreateLoad2(
-                        llvm::Type::getInt8Ty(context), data);
-                }
-                builder->CreateStore(byte_val, target);
                 tmp = nullptr;
                 return;
             }
