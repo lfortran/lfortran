@@ -353,10 +353,12 @@ private :
      *    
      *  An ExternalSymbol should be already in the current scope, but we might not be able 
      *  to get it by name due to name mangling -- So import the symbol's definition,
-     *  reusing an existing import of it.
+     *  reusing an existing import of it. A symbol use associated in an internal
+     *  procedure is not in a module itself, but its definition is.
      */
     ASR::symbol_t* get_resolved_symbol(ASR::symbol_t* sym){
-        ASR::Module_t *sym_mod = ASRUtils::get_sym_module(sym);
+        ASR::Module_t *sym_mod = ASRUtils::get_sym_module(
+            ASRUtils::symbol_get_past_external(sym));
         if(ASR::symbol_t* func = current_scope_->resolve_symbol(ASRUtils::symbol_name(sym))){
             auto const sym_deep  =  ASRUtils::symbol_get_past_external(sym);
             auto const func_deep =  ASRUtils::symbol_get_past_external(func);
