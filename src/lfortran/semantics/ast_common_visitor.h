@@ -2271,9 +2271,10 @@ public:
     // Current procedure arguments. Only non-empty for SymbolTableVisitor,
     // empty for BodyVisitor.
     std::vector<std::string> current_procedure_args;
-    // The name of the result variable of the current function, like
-    // current_procedure_args
+    // The result name and its declaring function scope are available before
+    // the function's ASR owner and return variable have been constructed.
     std::string current_procedure_result;
+    SymbolTable *current_procedure_result_scope = nullptr;
     std::vector<std::string> excluded_from_symtab;
     int64_t current_symbol;
     ASR::abiType current_procedure_abi_type = ASR::abiType::Source;
@@ -3266,7 +3267,8 @@ public:
     }
 
     bool is_procedure_result(const char* name) {
-        return name != nullptr && !current_procedure_result.empty()
+        return current_scope == current_procedure_result_scope
+            && name != nullptr && !current_procedure_result.empty()
             && to_lower(name) == current_procedure_result;
     }
 
@@ -13350,10 +13352,16 @@ public:
                                 }));
                             throw SemanticAbort();
                         }
-                        diag.add(Diagnostic(
-                            "Character dummy argument `" + sym +
-                            "` must be of constant length of one or assumed length, "
-                            "unless it has assumed shape or assumed rank in a BIND(C) procedure",
+                        std::string message;
+                        if (is_procedure_result(sym.c_str())) {
+                            message = "character function result `" + sym +
+                                "` must have constant length one in a BIND(C) procedure";
+                        } else {
+                            message = "Character dummy argument `" + sym +
+                                "` must be of constant length of one or assumed length, "
+                                "unless it has assumed shape or assumed rank in a BIND(C) procedure";
+                        }
+                        diag.add(Diagnostic(message,
                             Level::Error, Stage::Semantic, {
                                 Label("", {loc})
                             }));
