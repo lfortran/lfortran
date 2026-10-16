@@ -31,6 +31,13 @@ if (HAVE_INTERNAL_ALLOC_CHECK)
 endif()
 set_target_properties(lfortran_runtime_static PROPERTIES
     LIBRARY_OUTPUT_DIRECTORY ..)
+if (WIN32)
+    # Static and import libraries (ARCHIVE) and DLLs (RUNTIME) go next to the
+    # runtime modules too, where the driver looks for them.
+    set_target_properties(lfortran_runtime lfortran_runtime_static PROPERTIES
+        ARCHIVE_OUTPUT_DIRECTORY ..
+        RUNTIME_OUTPUT_DIRECTORY ..)
+endif()
 
 if(WITH_TARGET_WASM)
 
