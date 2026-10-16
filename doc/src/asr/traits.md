@@ -1709,7 +1709,8 @@ values, or required, nonallocatable, nonpointer assumed-shape arrays of an
 intrinsic numeric or logical type or of character of a constant length. The
 arrays of a message that is not generic have any INTENT (see "Array arguments"
 below); those of a generic message are read-only, a temporary limit of this
-implementation.
+implementation. A message that is not generic may also take such arrays of
+explicit shape (see "Explicit-shape array arguments" below).
 A message that is not generic may also take bare views of runtime traits as
 arguments other than its receiver (see "Trait-object arguments" below).
 Array descriptors pass by reference, so strided, reversed and empty sections
@@ -1955,6 +1956,78 @@ in a function message, and checks contiguity, every defined element and the
 elements outside each section. `continue_compilation_traits_array_inout`
 checks the diagnostics, also of associate names, through views, and for
 comparison through ordinary calls and static bindings.
+
+### Explicit-shape array arguments
+
+A message that is not generic may also take explicit-shape arrays, whose
+bounds are specification expressions that can depend on its other dummies,
+such as `y(neqn)` of a user's solver interface, whose right-hand side is a
+receiverless runtime message:
+
+```fortran
+abstract interface :: IRhsFunc
+   subroutine sfunc(x,y,yp)
+      real(8), intent(in)  :: x
+      real(8), intent(in)  :: y(:)
+      real(8), intent(out) :: yp(:)
+   end subroutine sfunc
+end interface
+
+abstract interface :: ISolver
+   subroutine integrate(self,rhs,neqn,y,t,tout,relerr,abserr,iflag)
+      type(itself), pass, intent(inout) :: self
+      class(IRhsFunc), intent(in)       :: rhs
+      integer                           :: neqn, iflag
+      real(8)                           :: t, tout, relerr, abserr
+      real(8)                           :: y(neqn)
+   end subroutine integrate
+end interface
+```
+
+`sfunc` marks no receiver, so it is receiverless (TD-36): its implementations
+bind it with `nopass`, and its slot takes the view as a private `intent(in)`
+dispatch argument, so the read-only `rhs` view calls it. Its `intent(out)`
+array `yp` is an assumed-shape array as above, which the view's INTENT does not
+make read-only. `integrate` takes `y(neqn)` and its scalars without INTENT.
+
+An explicit-shape array has the element types and attributes of the
+assumed-shape arrays above and any INTENT, and it is passed by data, as in an
+ordinary call. The slot's interface keeps its bounds, which refer to the slot's
+own dummies also after the view of a receiverless message is put before them,
+and the witness adapter passes the data on unchanged to the implementation,
+which declares the same shape. The actual is associated with the dummy by
+sequence: a contiguous actual is passed in place, and a noncontiguous one, such
+as a strided or reversed section, a matrix row or a block of a fixed-size,
+allocatable or assumed-shape array, is copied into a contiguous temporary
+before the call and, unless the dummy is `intent(in)`, back after it. The
+`array_passed_in_function_call` pass does this for `TraitSubroutineCall` and
+`TraitFunctionCall` through their slot interfaces exactly as for ordinary
+calls, so a `neqn` smaller than the actual uses the first `neqn` elements of
+the sequence. The actual of an `intent(inout)` or `intent(out)` explicit-shape
+array is checked as that of an assumed-shape one. With
+`--legacy-array-sections`, which turns an array element actual into a section
+starting at it, a section of a fixed-size array is passed from its first
+element, as for an ordinary call in that mode. Explicit-shape arrays of generic
+messages and assumed-size arrays (`y(*)`) remain outside the runtime slot
+surface: a trait with such a message has no runtime contract, and using it as a
+view is diagnosed as not implemented.
+
+`traits_runtime_solver_01` runs these interfaces with a forward Euler solver
+and two right-hand sides. Through read-only borrowed and owning views, the
+derivative is written into the caller's arrays and into strided and reversed
+sections of them. `integrate` runs on the concrete solver statically, through
+an owning `class(ISolver)` and through a borrowed `intent(inout)` view, with
+whole arrays, strided and reversed sections of fixed-size and assumed-shape
+arrays and a shorter `neqn`, and returns `t` and `iflag` through their omitted
+intents. `traits_runtime_solver_01_oracle` checks the same calls with standard
+CLASS; LFortran does not yet copy a noncontiguous section back from the
+explicit-shape dummy of a type-bound procedure, so it is registered for
+GFortran only. `traits_runtime_solver_separate_01` compiles the interfaces, a
+contract-only consumer and the providers separately. The reference test
+`traits_runtime_solver_mod.F90` compiles the reported module, unchanged, with
+`-c`, and the diagnostics are checked by
+`continue_compilation_traits_explicit_shape`. `array_section_37` checks the
+copy of ordinary calls.
 
 ## Scalar allocatable ownership, slots and results (R2)
 

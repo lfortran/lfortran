@@ -1,0 +1,33 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+  --> tests/errors/continue_compilation_traits_explicit_shape.f90:10:5 - 12:27
+   |
+10 |        abstract interface :: INumeric
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+12 |        end interface INumeric
+   | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+  --> tests/errors/continue_compilation_traits_explicit_shape.f90:34:5
+   |
+34 |     class(IAssumedSize), allocatable :: assumed_size_argument
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: runtime dispatch for this trait method signature is not implemented yet
+  --> tests/errors/continue_compilation_traits_explicit_shape.f90:35:5
+   |
+35 |     class(IGenericShape), allocatable :: generic_shape_argument
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Argument `a` with intent(in) passed to a dummy argument with modifying intent
+  --> tests/errors/continue_compilation_traits_explicit_shape.f90:41:30
+   |
+41 |         call stepper%step(3, a, yp)
+   |                              ^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+  --> tests/errors/continue_compilation_traits_explicit_shape.f90:48:33
+   |
+48 |         call stepper%step(3, y, [1d0, 2d0, 3d0])
+   |                                 ^^^^^^^^^^^^^^^ 

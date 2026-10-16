@@ -1,0 +1,13 @@
+{
+    "basename": "asr-continue_compilation_traits_explicit_shape-659bef6",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/continue_compilation_traits_explicit_shape.f90",
+    "infile_hash": "bcaf31e875a2231a4e15cb45e6d353cef31d591b6672bebdc407a42b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-continue_compilation_traits_explicit_shape-659bef6.stderr",
+    "stderr_hash": "b0c3fca1d37ef3fbb91e8bdacbfe67f01d1eee3231a3cf6d328712fe",
+    "returncode": 1
+}

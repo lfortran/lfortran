@@ -6981,11 +6981,14 @@ static bool runtime_trait_character(ASR::ttype_t *type)
 // assumed-shape numeric, logical or constant-length character arrays, and scalar
 // numeric, logical or constant-length character results. An array argument of a
 // message that is not generic has any INTENT, as in an ordinary call; one of a
-// generic message is read-only for now. A length wildcard member has no finite
-// set of slots. A message that is not generic may also take borrowed views of
-// runtime traits other than as its receiver: bare, required `class(T)` arguments
-// with intent(in) or intent(inout), passed by reference like the bare view
-// dummies of ordinary procedures.
+// generic message is read-only for now. A message that is not generic may also
+// take such arrays of explicit shape, whose bounds may depend on its other
+// dummies: they are passed by data, through a contiguous copy of a
+// noncontiguous actual as in an ordinary call. A length wildcard member has no
+// finite set of slots. A message that is not generic may also take borrowed
+// views of runtime traits other than as its receiver: bare, required `class(T)`
+// arguments with intent(in) or intent(inout), passed by reference like the bare
+// view dummies of ordinary procedures.
 static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
         const std::map<std::string, ASR::ttype_t*> &members)
 {
@@ -7022,7 +7025,15 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
         if (ASR::is_a<ASR::Array_t>(*arg->m_type)) {
             auto *array = ASR::down_cast<ASR::Array_t>(arg->m_type);
             auto *element = member(array->m_type);
-            if (array->m_physical_type != ASR::array_physical_typeType::DescriptorArray ||
+            bool assumed_shape = array->m_physical_type ==
+                ASR::array_physical_typeType::DescriptorArray;
+            for (size_t j = 0; j < array->n_dims; j++) {
+                if (array->m_dims[j].m_length) assumed_shape = false;
+            }
+            bool explicit_shape = !trait_method_template(method) &&
+                array->m_physical_type == ASR::array_physical_typeType::PointerArray &&
+                !is_dimension_empty(array->m_dims, array->n_dims);
+            if (!(assumed_shape || explicit_shape) ||
                     !element || !(ASR::is_a<ASR::Integer_t>(*element) ||
                         ASR::is_a<ASR::Real_t>(*element) || ASR::is_a<ASR::Complex_t>(*element) ||
                         ASR::is_a<ASR::Logical_t>(*element) || runtime_trait_character(element)) ||
@@ -7030,9 +7041,6 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
                     arg->m_presence != ASR::presenceType::Required ||
                     arg->m_value_attr || arg->m_target_attr || arg->m_is_volatile ||
                     arg->m_contiguous_attr || arg->n_codims) return false;
-            for (size_t j = 0; j < array->n_dims; j++) {
-                if (array->m_dims[j].m_length) return false;
-            }
             continue;
         }
         auto *type = member(arg->m_type);

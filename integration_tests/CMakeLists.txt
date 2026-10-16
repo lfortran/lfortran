@@ -4292,6 +4292,15 @@ RUN(NAME traits_runtime_array_inout_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODU
     EXTRAFILES traits_runtime_array_inout_01_mytype.f90
         traits_runtime_array_inout_01_providers.f90)
 RUN(NAME traits_runtime_array_inout_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_solver_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+# LFortran's type-bound calls do not yet copy a noncontiguous section back from
+# an explicit-shape dummy, which the oracle's CLASS solver relies on.
+RUN(NAME traits_runtime_solver_01_oracle LABELS gfortran)
+RUN(NAME traits_runtime_solver_separate_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_solver_separate_01_contracts.f90
+        traits_runtime_solver_separate_01_consumer.f90
+        traits_runtime_solver_separate_01_provider.f90)
 RUN(NAME class_nominal_separate_01 LABELS gfortran llvm llvm2
     EXTRAFILES class_nominal_separate_01_a.f90 class_nominal_separate_01_b.f90)
 RUN(NAME traits_static_01_oracle LABELS gfortran llvm)

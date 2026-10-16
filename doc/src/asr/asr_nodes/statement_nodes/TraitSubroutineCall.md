@@ -24,21 +24,26 @@ of the caller's actual in place. As in an ordinary call, an actual array of
 another physical representation, such as a fixed-size array, reaches its dummy
 through an explicit `ArrayPhysicalCast`, and the actual of an `intent(inout)`
 or `intent(out)` array must be definable. A message that is not generic may
-also take bare `intent(in)` or `intent(inout)` views of runtime traits; each
-such actual is a view of the dummy's exact contract, an explicit `TraitBorrow`,
-`TraitPack` or `TraitProject` or a forwarded view, as for a bare view dummy of
-an ordinary call, and is passed by reference.
+also take such arrays of explicit shape, whose bounds can refer to its other
+dummies; they are passed by data, like those of an ordinary call, and the
+`array_passed_in_function_call` pass copies a noncontiguous actual into a
+contiguous temporary before the call and, unless the dummy is `intent(in)`,
+back after it. A message that is not generic may also take bare `intent(in)` or
+`intent(inout)` views of runtime traits; each such actual is a view of the
+dummy's exact contract, an explicit `TraitBorrow`, `TraitPack` or
+`TraitProject` or a forwarded view, as for a bare view dummy of an ordinary
+call, and is passed by reference.
 
 Unlike [TraitFunctionCall](../expression_nodes/TraitFunctionCall.md), the call
 has no result, and `slot` is always an ordinary slot without type arguments:
 member slots of closed generic messages, erased generic slots, and
 `TraitDeferredCall` exist only for functions. Generic subroutine messages,
 BIND(C) messages, and messages with any other dummy, such as an optional,
-allocatable, pointer, explicit-shape, assumed-size, or assumed-rank one, a
-polymorphic dummy of a derived type, or an allocatable, pointer, TARGET or
-VOLATILE view, are outside the runtime slot surface: a trait with such a
-message has no runtime contract, and using it as a runtime view is diagnosed as
-not implemented.
+allocatable, pointer, assumed-size, or assumed-rank one, an explicit-shape
+array of a generic message, a polymorphic dummy of a derived type, or an
+allocatable, pointer, TARGET or VOLATILE view, are outside the runtime slot
+surface: a trait with such a message has no runtime contract, and using it as
+a runtime view is diagnosed as not implemented.
 
 Verification checks the slot against the actual view's canonical contract and
 then applies ordinary call checks; an ordinary `SubroutineCall` cannot name a

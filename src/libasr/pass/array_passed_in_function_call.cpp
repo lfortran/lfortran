@@ -1061,11 +1061,26 @@ public:
         ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_SubroutineCall(x);
     }
 
+    // A runtime trait call goes through its slot's interface, a Function
+    // whose dummies are those of the message after the view, so its
+    // arguments are associated exactly as those of an ordinary call.
+    void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t& x) {
+        visit_Call(x, "_trait_subroutine_call_");
+        ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_TraitSubroutineCall(x);
+    }
+
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
         if (is_current_body_set != 0) {
             visit_Call(x, "_function_call_");
         }
         ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_FunctionCall(x);
+    }
+
+    void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t& x) {
+        if (is_current_body_set != 0) {
+            visit_Call(x, "_trait_function_call_");
+        }
+        ASR::CallReplacerOnExpressionsVisitor<CallVisitor>::visit_TraitFunctionCall(x);
     }
 
     void visit_Function(const ASR::Function_t& x) {

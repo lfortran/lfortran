@@ -15,7 +15,9 @@ implementation. `args[0]` is the borrowed view; the remaining arguments have
 the message's normal types, order, and association attributes, including
 assumed-shape numeric or logical array descriptors passed by reference, with
 their ordinary intents for a message that is not generic and read-only for a
-generic one, and, for a message that is not generic, bare `intent(in)` or
+generic one, explicit-shape arrays of a message that is not generic passed by
+data as in [TraitSubroutineCall](../statement_nodes/TraitSubroutineCall.md),
+and, for a message that is not generic, bare `intent(in)` or
 `intent(inout)` views of runtime traits associated as in
 [TraitSubroutineCall](../statement_nodes/TraitSubroutineCall.md). `type` is its
 scalar integer, real or logical result type.
