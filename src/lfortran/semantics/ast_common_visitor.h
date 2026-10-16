@@ -10248,30 +10248,25 @@ public:
                     continue;
                 }
                 ASR::symbol_t *ext_sym = current_scope->get_symbol(sym);
-                if ( ext_sym != nullptr && is_external && !is_attr_external &&
-                        ASR::is_a<ASR::Variable_t>(*ext_sym) &&
-                        ASR::down_cast<ASR::Variable_t>(ext_sym)->m_presence ==
-                            ASR::presenceType::Optional ) {
-                    /*
-                        return type of an optional external dummy procedure,
-                        already turned into an optional procedure variable
-                        external :: x
-                        optional :: x
-                        integer :: x -> we are handling this case
-                    */
-                    ASR::down_cast<ASR::FunctionType_t>(
-                        ASR::down_cast<ASR::Variable_t>(ext_sym)->m_type)
-                        ->m_return_var_type = type;
-                } else if ( ext_sym != nullptr && ( is_external && !is_attr_external ) ) {
+                if ( ext_sym != nullptr && ( is_external && !is_attr_external ) ) {
                     /*
                         return type of external function is specified
                         external :: x
                         integer :: x -> we are handling this case
                     */
-                    ASR::symbol_t *sym_ = current_scope->get_symbol(sym);
-                    LCOMPILERS_ASSERT( sym_ != nullptr );
+                    ASR::Function_t *f = nullptr;
+                    if (ASR::is_a<ASR::Variable_t>(*ext_sym) &&
+                            ASR::down_cast<ASR::Variable_t>(ext_sym)->m_presence ==
+                                ASR::presenceType::Optional) {
+                        // Optional dummy procedure: update its interface.
+                        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(ext_sym);
+                        f = ASR::down_cast<ASR::Function_t>(
+                            ASRUtils::symbol_get_past_external(v->m_type_declaration));
+                        LCOMPILERS_ASSERT(v->m_type == f->m_function_signature);
+                    } else {
+                        f = ASR::down_cast<ASR::Function_t>(ext_sym);
+                    }
                     // set function return type as `type`
-                    ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(sym_);
                     if (f->m_return_var == nullptr) {
                         std::string return_var_name = sym + "_return_var_name";
                         SetChar variable_dependencies_vec;

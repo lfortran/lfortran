@@ -60,6 +60,22 @@ contains
     end subroutine
 end module
 
+! No `implicit none`: `p` is first typed as implicit real.
+module external_30_mod2
+contains
+    subroutine s6(x, p)
+        integer, intent(out) :: x
+        external :: p
+        optional :: p
+        integer :: p
+        if (present(p)) then
+            x = p()
+        else
+            x = 6
+        end if
+    end subroutine
+end module
+
 integer function five()
     five = 5
 end function
@@ -71,6 +87,7 @@ end subroutine
 
 program external_30
     use external_30_mod
+    use external_30_mod2
     implicit none
     integer, external :: five
     external :: incr
@@ -102,4 +119,9 @@ program external_30
     x = 3
     call s5(x, incr)
     if (x /= 4) error stop
+
+    call s6(x)
+    if (x /= 6) error stop
+    call s6(x, five)
+    if (x /= 5) error stop
 end program external_30
