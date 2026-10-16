@@ -1416,6 +1416,18 @@ semantic error: interface mismatch for procedure pointer component 'f' in struct
 3313 |     type(cc1_pci_t) :: cc1_pci_s = cc1_pci_t(f=cc1_pci_real_func)  ! {Error} interface mismatch for procedure pointer component 'f' in structure constructor
      |                                                ^^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pci_func_iface) and procedure(cc1_pci_real_func))
 
+semantic error: bind(c) variable `s` must have character length one
+    --> tests/errors/continue_compilation_1.f90:3389:34
+     |
+3389 |     character(len=5), bind(c) :: s  ! {Error} bind(c) variable `s` must have character length one
+     |                                  ^ 
+
+semantic error: bind(c) variable `a` must have character length one
+    --> tests/errors/continue_compilation_1.f90:3390:34
+     |
+3390 |     character(len=5), bind(c) :: a(3)  ! {Error} bind(c) variable `a` must have character length one
+     |                                  ^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -4185,3 +4197,27 @@ semantic error: interface mismatch for procedure pointer component 'p' in struct
      |
 3371 |         x = cc1_pcd_t(cc1_pcd_b_arg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
      |                       ^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pcd_iface) and procedure(cc1_pcd_b_arg))
+
+warning: the `pause` statement is a deleted feature (deleted in Fortran 95)
+    --> tests/errors/continue_compilation_1.f90:3382:9
+     |
+3382 |         pause 3.0  ! {Error} `pause` code must be a scalar integer or default character expression, found real(4)
+     |         ^^^^^^^^^ 
+
+semantic error: `pause` code must be a scalar integer or default character expression, found real(4)
+    --> tests/errors/continue_compilation_1.f90:3382:15
+     |
+3382 |         pause 3.0  ! {Error} `pause` code must be a scalar integer or default character expression, found real(4)
+     |               ^^^ 
+
+warning: the `pause` statement is a deleted feature (deleted in Fortran 95)
+    --> tests/errors/continue_compilation_1.f90:3383:9
+     |
+3383 |         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
+     |         ^^^^^^^^^^^ 
+
+semantic error: `pause` code must be a scalar integer or default character expression, found integer(4) array
+    --> tests/errors/continue_compilation_1.f90:3383:15
+     |
+3383 |         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
+     |               ^^^^^ 

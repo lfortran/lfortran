@@ -5036,6 +5036,7 @@ public:
             } else if (array_t->m_physical_type == ASR::array_physical_typeType::PointerArray &&
                        !LLVM::is_llvm_pointer(*x_mv_type) &&
                        is_bindc_array &&
+                       !ASRUtils::is_character(*x_mv_type_) &&
                        llvm::isa<llvm::GlobalVariable>(array)) {
                 // PointerArray global without Pointer/Allocatable wrapper (e.g. bind(C) globals):
                 // LLVM globals add a pointer level, so load to get data pointer
@@ -7546,8 +7547,25 @@ public:
                     value = x.m_symbolic_value;
                 }
                 if(value){LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));}
-                ptr = llvm::cast<llvm::Constant>(llvm_utils->handle_global_nonallocatable_stringArray(al,
-                    ASR::down_cast<ASR::Array_t>(x.m_type), value?ASR::down_cast<ASR::ArrayConstant_t>(value):nullptr, llvm_var_name));
+                if (x.m_abi == ASR::abiType::BindC) {
+                    // The C-visible name must be the character storage, as
+                    // for a bind(C) character scalar, not the descriptor. The
+                    // descriptor only points at that storage, so it can stay
+                    // private to each translation unit.
+                    ptr = llvm::cast<llvm::Constant>(llvm_utils->handle_global_nonallocatable_stringArray(al,
+                        ASR::down_cast<ASR::Array_t>(x.m_type), value?ASR::down_cast<ASR::ArrayConstant_t>(value):nullptr,
+                        llvm_var_name + "__desc", llvm_var_name,
+                        needs_common_linkage_for_global(x) ? llvm::GlobalValue::CommonLinkage
+                            : llvm::GlobalValue::ExternalLinkage));
+                } else if (external) {
+                    ptr = module->getOrInsertGlobal(llvm_var_name, llvm_utils->get_StringType(x.m_type));
+                } else {
+                    ptr = llvm::cast<llvm::Constant>(llvm_utils->handle_global_nonallocatable_stringArray(al,
+                        ASR::down_cast<ASR::Array_t>(x.m_type), value?ASR::down_cast<ASR::ArrayConstant_t>(value):nullptr, llvm_var_name));
+                    if (compiler_options.separate_compilation) {
+                        llvm::cast<llvm::GlobalVariable>(ptr)->setLinkage(llvm::GlobalValue::ExternalLinkage);
+                    }
+                }
 
             } else {
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
@@ -7655,6 +7673,13 @@ public:
                     }
                     ptr = llvm_utils->declare_global_string(str, initial_string_value,
                         is_const, desc_name, string_linkage, data_name);
+                    if (needs_common_linkage_for_global(x)) {
+                        llvm::GlobalVariable* data = module->getNamedGlobal(data_name);
+                        // Common linkage applies to the C-visible storage, not
+                        // the descriptor, and requires a zero initializer.
+                        data->setInitializer(llvm::Constant::getNullValue(data->getValueType()));
+                        set_global_variable_linkage_as_common(data, x);
+                    }
                 } else {
                     ptr = module->getOrInsertGlobal(llvm_var_name, llvm_utils->get_StringType(x.m_type));
                 }
@@ -25437,6 +25462,14 @@ public:
 
     void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t & /* x */) {
         throw CodeGenError("GpuAtomicFetchAdd should not appear in LLVM backend");
+    }
+
+    void visit_GpuLaneIndex(const ASR::GpuLaneIndex_t & /* x */) {
+        throw CodeGenError("GpuLaneIndex should not appear in LLVM backend");
+    }
+
+    void visit_GpuLaneBroadcast(const ASR::GpuLaneBroadcast_t & /* x */) {
+        throw CodeGenError("GpuLaneBroadcast should not appear in LLVM backend");
     }
 
     template <typename T>

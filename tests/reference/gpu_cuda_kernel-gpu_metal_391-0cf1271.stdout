@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-__device__ inline void ramp_gpu_16(float x, int n, float* y) {
+__device__ inline void ramp_gpu_17(float x, int n, float* y) {
     int __do_loop_end;
     int j;
     __do_loop_end = n;
@@ -27,7 +27,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __gpu_heap_cap_r4 = __scalar_args.__gpu_heap_cap_r4;
     int __flat_idx;
-    float* __gpu_heap_view___libasr_created__function_call_ramp;
+    float* __gpu_heap_view___gpu_call_result;
     int i;
     const int m = 8;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
@@ -37,40 +37,43 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     i = (__flat_idx + 1);
     {
         int __do_loop_end;
-        int __gpu_heap___libasr_created__function_call_ramp_base;
-        int __gpu_heap___libasr_created__function_call_ramp_lb1;
-        int __gpu_heap___libasr_created__function_call_ramp_n1;
+        int __gpu_heap___gpu_call_result_base;
+        int __gpu_heap___gpu_call_result_lb1;
+        int __gpu_heap___gpu_call_result_n1;
         int __gpu_sum_k;
         float __gpu_sum_res;
         int k;
-        __gpu_heap___libasr_created__function_call_ramp_base = -1;
+        __gpu_heap___gpu_call_result_base = -1;
         k = 2;
         if ((x[((int)(i) - (1))] > ((float)3))) {
             k = (k + 1);
         }
+        __gpu_heap___gpu_call_result_lb1 = 1;
+        __gpu_heap___gpu_call_result_n1 = (((k > 0)) ? (k) : (0));
+        __gpu_heap___gpu_call_result_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___gpu_call_result_n1);
+        if ((__gpu_heap___gpu_call_result_base > (__gpu_heap_cap_r4 - __gpu_heap___gpu_call_result_n1))) {
+            if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
+                __gpu_stop_status[((int)(1) - (1))] = 1;
+            }
+            return;
+        }
+        __gpu_heap___gpu_call_result_lb1 = 1;
+        __gpu_heap___gpu_call_result_n1 = (((k > 0)) ? (k) : (0));
+        __gpu_heap___gpu_call_result_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___gpu_call_result_n1);
+        if ((__gpu_heap___gpu_call_result_base > (__gpu_heap_cap_r4 - __gpu_heap___gpu_call_result_n1))) {
+            if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
+                __gpu_stop_status[((int)(1) - (1))] = 2;
+            }
+            return;
+        }
+        __gpu_heap_view___gpu_call_result = __gpu_heap_r4 + ((int)((__gpu_heap___gpu_call_result_base + 1)) - (1));
+        ramp_gpu_17(x[((int)(i) - (1))], k, __gpu_heap_view___gpu_call_result);
         __gpu_sum_res =   0.00000000000000000e+00f;
-        __do_loop_end = k;
+        __do_loop_end = __gpu_heap___gpu_call_result_n1;
         __gpu_sum_k = (1 - 1);
         while (((__gpu_sum_k + 1) <= __do_loop_end)) {
             __gpu_sum_k = (__gpu_sum_k + 1);
-            __gpu_heap___libasr_created__function_call_ramp_base = -1;
-            __gpu_heap___libasr_created__function_call_ramp_lb1 = 1;
-            __gpu_heap___libasr_created__function_call_ramp_n1 = (((k > 0)) ? (k) : (0));
-            __gpu_heap___libasr_created__function_call_ramp_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___libasr_created__function_call_ramp_n1);
-            if ((__gpu_heap___libasr_created__function_call_ramp_base > (__gpu_heap_cap_r4 - __gpu_heap___libasr_created__function_call_ramp_n1))) {
-                __gpu_stop_status[((int)(1) - (1))] = 1;
-                return;
-            }
-            __gpu_heap___libasr_created__function_call_ramp_lb1 = 1;
-            __gpu_heap___libasr_created__function_call_ramp_n1 = (((k > 0)) ? (k) : (0));
-            __gpu_heap___libasr_created__function_call_ramp_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___libasr_created__function_call_ramp_n1);
-            if ((__gpu_heap___libasr_created__function_call_ramp_base > (__gpu_heap_cap_r4 - __gpu_heap___libasr_created__function_call_ramp_n1))) {
-                __gpu_stop_status[((int)(1) - (1))] = 2;
-                return;
-            }
-            __gpu_heap_view___libasr_created__function_call_ramp = __gpu_heap_r4 + ((int)((__gpu_heap___libasr_created__function_call_ramp_base + 1)) - (1));
-            ramp_gpu_16(x[((int)(i) - (1))], k, __gpu_heap_view___libasr_created__function_call_ramp);
-            __gpu_sum_res = (__gpu_sum_res + __gpu_heap_r4[((int)(((__gpu_heap___libasr_created__function_call_ramp_base + 1) + (__gpu_sum_k - __gpu_heap___libasr_created__function_call_ramp_lb1))) - (1))]);
+            __gpu_sum_res = (__gpu_sum_res + __gpu_heap_r4[((int)(((__gpu_heap___gpu_call_result_base + 1) + ((__gpu_heap___gpu_call_result_lb1 + (__gpu_sum_k - 1)) - __gpu_heap___gpu_call_result_lb1))) - (1))]);
         }
         r[((int)(i) - (1))] = __gpu_sum_res;
     }

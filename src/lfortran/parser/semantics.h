@@ -3168,6 +3168,7 @@ void set_m_trivia(decl_stmt_t *s, trivia_t *trivia) {
         TRIVIA_SET(Pragma)
         TRIVIA_SET(DeclarationPragma)
         TRIVIA_SET(Open)
+        TRIVIA_SET(Pause)
         TRIVIA_SET(Return)
         TRIVIA_SET(Print)
         TRIVIA_SET(Read)

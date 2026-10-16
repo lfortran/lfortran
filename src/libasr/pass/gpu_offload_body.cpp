@@ -25,6 +25,10 @@ namespace LCompilers {
 // below can decline any more.
 void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
         const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map) {
+    // Every call of a function returning an array is made once, before
+    // the element loops below are built around its statement.
+    hoist_array_function_results(work);
+
     // Inline IntrinsicArrayFunction All before kernel extraction
     all_reduction_targets.clear();
     inline_intrinsic_all(work);
@@ -138,6 +142,10 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
                 ASR::Assignment_t *asgn =
                     ASR::down_cast<ASR::Assignment_t>(
                         ab->m_body[ai]);
+                // A name bound to the array a function returns is the
+                // value of one call, made on entry: writing the call in
+                // place of the name would make it again wherever the name
+                // is read, for every element an array operation reads.
                 if (ASR::is_a<ASR::Var_t>(*asgn->m_target)) {
                     ASR::symbol_t *sym =
                         ASR::down_cast<ASR::Var_t>(
@@ -146,6 +154,7 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
                         ASR::down_cast<ASR::Variable_t>(sym)
                             ->m_parent_symtab == ab->m_symtab &&
                         assoc_map.find(sym) == assoc_map.end() &&
+                        !gpu_is_array_function_result(asgn->m_value) &&
                         is_single_assignment_binding(sym,
                             ab->m_body, ab->n_body) &&
                         !GpuAssociateScopeWrites(ab->m_body, ab->n_body,
@@ -164,17 +173,26 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
         }
     };
 
-    // Resolve AssociateBlocks inside the loop body (e.g.,
-    // block { associate(nh => n) ... } within the loop). GPU kernels
-    // cannot use Pointer-based associate aliases, so we inline the
-    // associate targets and replace the AssociateBlockCall with the
-    // resolved statements.
-    for (size_t bi = 0; bi < work.n_body; bi++) {
-        if (!ASR::is_a<ASR::BlockCall_t>(*work.body[bi])) continue;
-        ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
-            work.body[bi]);
-        if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
+    // Resolve AssociateBlocks inside the BLOCKs of the loop body (e.g.,
+    // block { associate(nh => n) ... } within the loop), and inside the
+    // BLOCKs those contain. GPU kernels cannot use Pointer-based associate
+    // aliases, so we inline the associate targets and replace the
+    // AssociateBlockCall with the resolved statements.
+    std::vector<ASR::Block_t*> body_blocks;
+    std::function<void(ASR::stmt_t**, size_t)> collect_blocks =
+            [&](ASR::stmt_t **stmts, size_t n_stmts) {
+        for (size_t i = 0; i < n_stmts; i++) {
+            if (!ASR::is_a<ASR::BlockCall_t>(*stmts[i])) continue;
+            ASR::symbol_t *m = ASR::down_cast<ASR::BlockCall_t>(
+                stmts[i])->m_m;
+            if (!ASR::is_a<ASR::Block_t>(*m)) continue;
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(m);
+            body_blocks.push_back(block);
+            collect_blocks(block->m_body, block->n_body);
+        }
+    };
+    collect_blocks(work.body, work.n_body);
+    for (ASR::Block_t *block : body_blocks) {
         Vec<ASR::stmt_t*> new_block_body;
         new_block_body.reserve(al, block->n_body);
         bool changed = false;

@@ -1005,6 +1005,77 @@ class DeviceImplicitAllocInserter:
             retain_original_stmt = true;
         }
 
+        // A function whose result has an explicit shape gives that shape,
+        // with the call's actual arguments written over its dummies, to the
+        // variable its result is assigned to, as a routine does to the
+        // variable it writes its result into (see visit_SubroutineCall).
+        bool call_result_shape(const ASR::Assignment_t& x, size_t n_dims) {
+            ASR::expr_t* value = ASRUtils::get_past_array_physical_cast(
+                x.m_value);
+            if( !ASR::is_a<ASR::FunctionCall_t>(*value) ) {
+                return false;
+            }
+            ASR::FunctionCall_t* call = ASR::down_cast<ASR::FunctionCall_t>(
+                value);
+            ASR::symbol_t* fn = ASRUtils::symbol_get_past_StructMethodDeclaration(
+                ASRUtils::symbol_get_past_external(call->m_name));
+            if( !ASR::is_a<ASR::Function_t>(*fn) ) {
+                return false;
+            }
+            ASR::ttype_t* type = ASRUtils::get_FunctionType(fn)->m_return_var_type;
+            if( type == nullptr || ASRUtils::is_allocatable(type) ||
+                ASRUtils::is_pointer(type) ) {
+                return false;
+            }
+            ASR::dimension_t* result_dims = nullptr;
+            if( (size_t) ASRUtils::extract_dimensions_from_ttype(type,
+                    result_dims) != n_dims ) {
+                return false;
+            }
+            // The extents are read from the actual arguments themselves,
+            // past the physical cast a call gives them.
+            Vec<ASR::call_arg_t> shape_args;
+            shape_args.reserve(al, call->n_args);
+            for( size_t i = 0; i < call->n_args; i++ ) {
+                ASR::call_arg_t shape_arg = call->m_args[i];
+                if( shape_arg.m_value ) {
+                    shape_arg.m_value = ASRUtils::get_past_array_physical_cast(
+                        shape_arg.m_value);
+                }
+                shape_args.push_back(al, shape_arg);
+            }
+            ASRUtils::ReplaceFunctionParamWithArg replacer(
+                al, shape_args.p, shape_args.size());
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            duplicator.allow_procedure_calls = true;
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, n_dims);
+            for( size_t i = 0; i < n_dims; i++ ) {
+                if( result_dims[i].m_length == nullptr ) {
+                    return false;
+                }
+                duplicator.success = true;
+                ASR::dimension_t dim;
+                dim.loc = result_dims[i].loc;
+                dim.m_length = duplicator.duplicate_expr(
+                    replacer.replace_FunctionParam_with_arg(
+                        result_dims[i].m_length));
+                dim.m_start = result_dims[i].m_start
+                    ? duplicator.duplicate_expr(
+                        replacer.replace_FunctionParam_with_arg(
+                            result_dims[i].m_start))
+                    : nullptr;
+                if( !duplicator.success ) {
+                    return false;
+                }
+                dims.push_back(al, dim);
+            }
+            insert_allocate(x.base.base.loc, x.m_target, dims.p, dims.size());
+            explicitly_allocated.insert(
+                ASR::down_cast<ASR::Var_t>(x.m_target)->m_v);
+            return true;
+        }
+
         void visit_Assignment(const ASR::Assignment_t& x) {
             if( !in_device ) {
                 return;
@@ -1023,11 +1094,14 @@ class DeviceImplicitAllocInserter:
                 ASRUtils::is_character(*ASRUtils::extract_type(target_type)) ) {
                 return;
             }
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(target_type);
+            if( n_dims > 0 && call_result_shape(x, n_dims) ) {
+                return;
+            }
             ASR::expr_t* source = shape_source(x.m_value);
             if( source == nullptr ) {
                 return;
             }
-            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(target_type);
             if( n_dims == 0 ||
                 (size_t) ASRUtils::extract_n_dims_from_ttype(
                     ASRUtils::expr_type(source)) != n_dims ) {
