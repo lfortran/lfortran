@@ -1,7 +1,7 @@
 ! A procedure pointer component whose interface is an internal procedure
 ! with a character result whose length calls a function use associated only
 ! in that procedure (#15004)
-module proc_ptr_42_sizes
+module proc_ptr_47_sizes
 implicit none
 contains
     pure integer function extent()
@@ -9,7 +9,7 @@ contains
     end function
 end module
 
-program proc_ptr_42
+program proc_ptr_47
 implicit none
 type :: pp
     procedure(later), pointer, nopass :: pf => null()
@@ -30,7 +30,7 @@ if (extent /= 5) error stop
 print *, s
 contains
     function later(x) result(r)
-        use proc_ptr_42_sizes, only: extent
+        use proc_ptr_47_sizes, only: extent
         integer, intent(in) :: x
         character(len=extent()) :: r
         r = "ab"

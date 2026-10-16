@@ -1,6 +1,6 @@
 ! Procedure pointer components whose interface has a character result whose
 ! length calls a function, associated in another scope (#15004)
-module proc_ptr_41_sizes
+module proc_ptr_46_sizes
 implicit none
 contains
     pure integer function extent()
@@ -8,7 +8,7 @@ contains
     end function
 end module
 
-module proc_ptr_41_host
+module proc_ptr_46_host
 implicit none
 type :: pp
     procedure(wide), pointer, nopass :: pw => null()
@@ -27,7 +27,7 @@ contains
     end function
 
     function later(x) result(r)
-        use proc_ptr_41_sizes, only: extent
+        use proc_ptr_46_sizes, only: extent
         integer, intent(in) :: x
         character(len=extent()) :: r
         r = "ab"
@@ -46,8 +46,8 @@ contains
     end subroutine
 end module
 
-program proc_ptr_41
-use proc_ptr_41_host
+program proc_ptr_46
+use proc_ptr_46_host
 implicit none
 type(pp) :: a
 character(len=:), allocatable :: s
