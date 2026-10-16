@@ -2882,8 +2882,11 @@ void GpuOffloadVisitor::inline_elemental_array_var_in_body(ASR::stmt_t** &body,
                     if (f->m_args[i]) find_array_section(f->m_args[i]);
                 }
             } else if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
+                // Only an elemental function is applied element by
+                // element; any other is handed its array arguments whole.
                 ASR::FunctionCall_t *fc =
                     ASR::down_cast<ASR::FunctionCall_t>(e);
+                if (!ASRUtils::is_elemental(fc->m_name)) return;
                 for (size_t i = 0; i < fc->n_args; i++) {
                     if (fc->m_args[i].m_value)
                         find_array_section(fc->m_args[i].m_value);
