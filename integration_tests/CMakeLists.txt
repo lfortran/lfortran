@@ -2955,6 +2955,7 @@ RUN(NAME defined_assignment_01 LABELS llvm flang)
 RUN(NAME defined_assignment_02 LABELS gfortran llvm)
 RUN(NAME defined_assignment_03 LABELS gfortran llvm)
 RUN(NAME defined_assignment_04 LABELS gfortran llvm)
+RUN(NAME defined_assignment_05 LABELS gfortran llvm)
 RUN(NAME defined_assignment_elemental_01 LABELS gfortran llvm)
 RUN(NAME defined_assignment_free_interface_01 LABELS gfortran llvm flang)
 

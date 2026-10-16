@@ -1577,16 +1577,19 @@ public:
         entry_scope_origin[current_scope] = old_scope;
         if (is_master) {
             // The body is compiled in the master function, so its interface blocks are built here too.
-            for (auto *pending: {&generic_procedures, &overloaded_op_procs, &defined_op_procs}) {
-                for (auto &item: *pending) {
-                    std::vector<GenericSpecific> &specifics = item.second;
-                    for (size_t i = 0, n = specifics.size(); i < n; i++) {
-                        if (specifics[i].scope == old_scope) {
-                            specifics.push_back({specifics[i].name, specifics[i].loc, current_scope});
-                        }
+            auto add_master_specifics = [&](std::vector<GenericSpecific> &specifics) {
+                for (size_t i = 0, n = specifics.size(); i < n; i++) {
+                    if (specifics[i].scope == old_scope) {
+                        specifics.push_back({specifics[i].name, specifics[i].loc, current_scope});
                     }
                 }
+            };
+            for (auto *pending: {&generic_procedures, &overloaded_op_procs, &defined_op_procs}) {
+                for (auto &item: *pending) {
+                    add_master_specifics(item.second);
+                }
             }
+            add_master_specifics(assgn_proc_names_locations);
             // Create integer variable "entry__lcompilers"
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
             ASR::symbol_t* entry_lcompilers_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
