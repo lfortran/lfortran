@@ -7450,6 +7450,50 @@ LFORTRAN_API void _lfortran_sleep(int32_t seconds)
 #endif
 }
 
+// The legacy PAUSE statement, after its message is written: wait for a line
+// on stdin. "go" resumes execution; any other line, or the end of the
+// input, terminates the program normally.
+static void lfortran_pause_wait(void)
+{
+    fprintf(stderr, "To resume execution, type go.  "
+        "Other input will terminate the job.\n");
+    fflush(stderr);
+    use_stdin_char_mode();
+    char line[8];
+    bool resume = false;
+    if (fgets(line, sizeof(line), stdin) != NULL) {
+        size_t len = strlen(line);
+        bool complete = len > 0 && line[len - 1] == '\n';
+        if (complete) line[--len] = '\0';
+        if (len > 0 && line[len - 1] == '\r') line[--len] = '\0';
+        resume = strcmp(line, "go") == 0;
+        // Consume the rest of a long line.
+        int c;
+        while (!complete && (c = fgetc(stdin)) != EOF && c != '\n') {
+            resume = false;
+        }
+    }
+    if (!resume) {
+        _lfortran_internal_alloc_finalize();
+        exit(0);
+    }
+    fprintf(stderr, "RESUMED\n");
+}
+
+LFORTRAN_API void _lfortran_pause_string(const char* code, int64_t code_len)
+{
+    fflush(stdout);
+    fprintf(stderr, "PAUSE %.*s\n", (int)code_len, code);
+    lfortran_pause_wait();
+}
+
+LFORTRAN_API void _lfortran_pause_numeric(int64_t code)
+{
+    fflush(stdout);
+    fprintf(stderr, "PAUSE %" PRId64 "\n", code);
+    lfortran_pause_wait();
+}
+
 // Decimal edit mode requested by a DECIMAL= specifier on the data transfer
 // statement currently being executed. It overrides the connection's mode for
 // the duration of that statement only; -1 means "no statement level request".

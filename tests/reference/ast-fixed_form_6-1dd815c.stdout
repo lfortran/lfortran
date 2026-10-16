@@ -1,0 +1,22 @@
+(TranslationUnit
+    [(Program
+        pause0
+        ()
+        [(If
+            0
+            ()
+            (Logical .true. ())
+            [(Pause
+                0
+                ()
+                ()
+            )]
+            []
+            .false.
+            ()
+            ()
+            ()
+        )]
+        []
+    )]
+)

@@ -2505,6 +2505,16 @@ public:
 
     void visit_IntrinsicImpureSubroutine( const ASR::IntrinsicImpureSubroutine_t &x ) {
         std::string out;
+        if (x.m_sub_intrinsic_id == static_cast<int64_t>(
+                ASRUtils::IntrinsicImpureSubroutines::Pause)) {
+            out = indent + "pause";
+            if (x.n_args == 1) {
+                visit_expr(*x.m_args[0]);
+                out += " " + src;
+            }
+            src = out + "\n";
+            return;
+        }
         out = "call ";
         switch ( x.m_sub_intrinsic_id ) {
             SET_INTRINSIC_SUBROUTINE_NAME(RandomNumber, "random_number");
