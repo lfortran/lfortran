@@ -1947,11 +1947,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             loc)), {allocate}, {}));
     }
 
-    // The variable whose dynamic type a polymorphic array `value` has, for
-    // a polymorphic `target`, or nullptr when the value is not polymorphic
-    // or that variable is not known. A section of an array has the dynamic
-    // type of the array.
-    ASR::expr_t* get_polymorphic_mold(ASR::expr_t* target, ASR::expr_t* value) {
+    // The variable whose dynamic type a polymorphic `value` has, for a
+    // polymorphic `target`, or nullptr when the value is not polymorphic or
+    // that variable is not known. A section of an array has the dynamic type
+    // of the array.
+    ASR::expr_t* get_polymorphic_mold(ASR::expr_t* target, ASR::expr_t* value,
+            bool allow_scalar = false) {
         if (!ASRUtils::is_class_type(ASRUtils::extract_type(
                     ASRUtils::expr_type(target))) ||
                 !ASRUtils::is_class_type(ASRUtils::extract_type(
@@ -1967,11 +1968,12 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 ASR::down_cast<ASR::ArrayItem_t>(mold)->m_v);
         }
         ASR::ttype_t* mold_type = ASRUtils::expr_type(mold);
+        bool is_array = ASRUtils::is_array(mold_type);
         if (!(ASR::is_a<ASR::Var_t>(*mold) ||
                 ASR::is_a<ASR::StructInstanceMember_t>(*mold)) ||
-                !ASRUtils::is_array(mold_type) ||
-                ASRUtils::extract_physical_type(mold_type) !=
-                    ASR::array_physical_typeType::DescriptorArray) {
+                (!is_array && !allow_scalar) ||
+                (is_array && ASRUtils::extract_physical_type(mold_type) !=
+                    ASR::array_physical_typeType::DescriptorArray)) {
             return nullptr;
         }
         ASRUtils::ExprStmtDuplicator d(al);
@@ -2456,7 +2458,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 // polymorphic source, which the loops do not copy, so it
                 // is allocated with that source as its mold.
                 ASR::expr_t* arg_mold = get_polymorphic_mold(
-                    xx.m_args[i].m_a, xx.m_source);
+                    xx.m_args[i].m_a, xx.m_source, true);
                 if (arg_mold != nullptr) {
                     mold = arg_mold;
                     xx.m_args[i].m_type = ASRUtils::duplicate_type(al,
@@ -2466,7 +2468,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             // Clear source when data copy loops were generated, since
             // the loops handle the copy. Keeping array-typed source
             // expressions (e.g. real(a)) would cause backend errors. Only
-            // the mold of a polymorphic array is kept.
+            // the mold of a polymorphic source is kept.
             if (generated_loop) {
                 xx.m_source = mold;
             }
