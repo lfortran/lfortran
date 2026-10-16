@@ -6,7 +6,7 @@
 ! and one of a size only known at run time.
 program gpu_metal_475
 implicit none
-integer, parameter :: n = 10000, big = 65536, near = 16384, mid = 16000
+integer, parameter :: n = 10000, big = 16384, near = 8192, mid = 5000
 real :: y(n), a(4), b(4), c(4), d(4), e(4), f(4), g(4), h(8), p(near)
 real :: q(big), v(4), w(8), o(4), r(4), s(4), u(4), x(mid), z(n)
 integer :: i, j, k, it
@@ -129,7 +129,7 @@ do j = 1, n
     end if
 end do
 
-! A temporary of 64 KiB fits a thread's stack.
+! A temporary of 32 KiB fits a thread's stack.
 do concurrent (j = 1:256)
     do k = 1, near
         p(k) = j + k
@@ -140,8 +140,8 @@ do j = 1, 256
     if (y(j) /= 2 * j + 1 + near) error stop 11
 end do
 
-! An array of 256 KiB does not: it stays one array, which is right here, as
-! one iteration defines it.
+! An array of 64 KiB does not on Metal: it stays one array, which is right
+! here, as one iteration defines it.
 do concurrent (j = 1:1000)
     if (j == 7) then
         do k = 1, big
@@ -216,8 +216,8 @@ do j = 1, n
     if (y(j) /= 4 * j) error stop 18
 end do
 
-! A temporary of 64,000 bytes does not fit next to a BLOCK local of 208,000
-! on a stack of 256 KiB: it stays one array, which one iteration defines.
+! A temporary of 20,000 bytes does not fit next to a BLOCK local of 40,000
+! on a Metal stack of 64 KiB: it stays one array, which one iteration defines.
 do concurrent (j = 1:1000)
     if (j == 7) then
         do k = 1, mid
@@ -228,22 +228,22 @@ do concurrent (j = 1:1000)
         y(j) = 0
     end if
     block
-        real :: wl(52000)
+        real :: wl(10000)
         wl = j
-        z(j) = wl(52000)
+        z(j) = wl(10000)
     end block
 end do
 if (y(7) /= mid + 7 .or. y(1) /= 0 .or. z(5) /= 5) error stop 19
 
-! Next to one of 160,000 it does, so every iteration defines its own.
+! Next to one of 24,000 it does, so every iteration defines its own.
 do concurrent (j = 1:256)
     do k = 1, mid
         x(k) = k + j
     end do
     block
-        real :: wl(40000)
+        real :: wl(6000)
         wl = j
-        y(j) = x(mid) + wl(40000)
+        y(j) = x(mid) + wl(6000)
     end block
 end do
 do j = 1, 256

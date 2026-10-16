@@ -178,7 +178,8 @@ generates the device source. It never falls back to the CPU:
   given to each thread only while, together with the locals of the `block`
   and `associate` constructs of the body and of the procedures it calls,
   and 8 KiB left to the frames the device compiler adds, they fit a
-  thread's stack (256 KiB with Metal, 512 KiB with CUDA). Every other array
+  thread's stack (64 KiB with Metal, the least a device it runs on has,
+  512 KiB with CUDA). Every other array
   of unspecified locality -- one whose elements the iterations define one
   each (`y(j) = ...`), one partly defined, one an iteration reads before
   defining it, a dummy argument, an array that may be read after the loop,
