@@ -3136,7 +3136,7 @@ public:
                 ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v);
         }
         std::set<ASR::symbol_t*> workspaces, extent_parameters;
-        int slot = (layout.m_packed ? 1 : layout.n_buffers) +
+        int64_t slot = (layout.m_packed ? 1 : layout.n_buffers) +
             (layout.n_scalars > 0);
         for (size_t i = 0; i < layout.n_workspaces; i++) {
             const auto &workspace = layout.m_workspaces[i];
