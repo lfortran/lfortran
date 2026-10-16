@@ -1639,10 +1639,10 @@ uint64_t linecol_to_pos(const std::string &s, uint16_t line, uint16_t col) {
 }
 
 // Converts a linear position `position` to a (line, col) tuple
-void pos_to_linecol(const std::string &s, uint64_t position,
-            uint16_t &line, uint16_t &col) {
-    uint64_t pos = 0;
-    uint64_t nlpos = 0;
+void pos_to_linecol(const std::string &s, uint32_t position,
+            uint32_t &line, uint32_t &col) {
+    uint32_t pos = 0;
+    uint32_t nlpos = 0;
     line = 1;
     while (true) {
         nlpos = pos;
@@ -2168,7 +2168,7 @@ static inline ast_t* OMP_PRAGMA2(Allocator &al,
 
 void add_ws_warning(const Location &loc,
         LCompilers::diag::Diagnostics &diagnostics, bool fixed_form,
-        int end_token, int a_kind = 4) {
+        int end_token, int64_t a_kind = 4) {
     if (!fixed_form) {
         if (end_token == yytokentype::KW_ENDDO) {
             diagnostics.parser_style_label(
