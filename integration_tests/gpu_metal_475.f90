@@ -2,9 +2,8 @@
 ! each iteration its own copy of (issue #15307, see gpu_metal_474). An array
 ! a statement after the loop may read -- however a jump gets there -- or that
 ! an iteration reads before defining it all, keeps the one shared value the
-! source gives it, as does one too large for what a thread's stack has left
-! -- next to the locals and the temporaries of the body's array values --
-! and one of a size only known at run time.
+! source gives it. Eligible arrays remain private regardless of size; the
+! lowered kernel puts large or runtime-sized arrays in workspace slices.
 program gpu_metal_475
 implicit none
 integer, parameter :: n = 10000, big = 16384, near = 8192, mid = 5000
@@ -143,8 +142,7 @@ do j = 1, 256
     if (y(j) /= 2 * j + 1 + near) error stop 11
 end do
 
-! An array of 64 KiB does not on Metal: it stays one array, which is right
-! here, as one iteration defines it.
+! An array of 64 KiB uses a private workspace slice on Metal.
 do concurrent (j = 1:1000)
     if (j == 7) then
         do k = 1, big
@@ -219,8 +217,7 @@ do j = 1, n
     if (y(j) /= 4 * j) error stop 18
 end do
 
-! A temporary of 20,000 bytes does not fit next to a BLOCK local of 40,000
-! on a Metal stack of 64 KiB: it stays one array, which one iteration defines.
+! Private storage exceeds the Metal stack budget: spill the larger array.
 do concurrent (j = 1:1000)
     if (j == 7) then
         do k = 1, mid
@@ -253,9 +250,8 @@ do j = 1, 256
     if (y(j) /= mid + 2 * j) error stop 20
 end do
 
-! The temporary of 36,000 bytes the value of `cshift` takes on a thread's
-! stack leaves no room there for one of 30,000 on Metal: it stays one
-! array, which one iteration defines.
+! The actual cshift temporary and the private array exceed the stack
+! budget together. The larger array uses a workspace, not shared storage.
 bb = 1
 do concurrent (j = 1:64)
     if (j == 7) then
@@ -283,9 +279,8 @@ do j = 1, 256
     if (y(j) /= 2 * sm + j) error stop 23
 end do
 
-! A temporary of a size only known at run time stays one array: its own
-! copy for every iteration would take 400 kB each.
-call run_time_size(100000, 200000)
+! Runtime-sized private storage uses a launch-sized workspace.
+call run_time_size(128, 4)
 print *, "ok"
 
 contains
@@ -304,15 +299,13 @@ contains
         real :: t(m), yr(nr)
         integer :: jr, kr
         do concurrent (jr = 1:nr)
-            if (jr == 7) then
-                do kr = 1, m
-                    t(kr) = kr + jr
-                end do
-                yr(jr) = t(m)
-            else
-                yr(jr) = 0
-            end if
+            do kr = 1, m
+                t(kr) = kr + jr
+            end do
+            yr(jr) = t(m)
         end do
-        if (yr(7) /= m + 7 .or. yr(1) /= 0) error stop 21
+        do jr = 1, nr
+            if (yr(jr) /= m + jr) error stop 21
+        end do
     end subroutine
 end program

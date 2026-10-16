@@ -528,6 +528,7 @@ public:
         ASR::ttype_t *int_type = nullptr;
         size_t n_dims = 0;
         Vec<ASR::call_arg_t> call_args;
+        Vec<ASR::stmt_t*> private_shapes;
         Vec<ASR::stmt_t*> gather_stmts;
         Vec<ASR::stmt_t*> scatter_stmts;
         std::vector<LiveoutScalarInfo> liveout_scalars;
@@ -554,11 +555,11 @@ public:
     // gpu_offload_privatize.cpp).
     void privatize_iteration_arrays(const ASR::OMPRegion_t &region,
             ParallelLoopNest &work,
-            const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
+            const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map,
+            Vec<ASR::stmt_t*> &private_shapes);
 
-    // The arrays privatize_iteration_arrays may make local, each with the
-    // bytes it takes on a thread's stack.
-    std::vector<std::pair<int64_t, ASR::symbol_t*>> iteration_array_candidates(
+    // The arrays privatize_iteration_arrays may make local.
+    std::vector<ASR::symbol_t*> iteration_array_candidates(
             const ASR::OMPRegion_t &region, ParallelLoopNest &work,
             const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
 

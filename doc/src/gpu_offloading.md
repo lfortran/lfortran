@@ -190,6 +190,15 @@ generates the device source. It never falls back to the CPU:
   defining it, a dummy argument, an array that may be read after the loop,
   or one a contained procedure, a pointer, an `associate` around the loop
   or a locality clause names -- is one array that all threads share.
+  Runtime-sized eligible arrays use the same workspace machinery as automatic
+  BLOCK locals: the host evaluates launch-resolvable extents, including the
+  existing replay over thread indices, and allocates a slice per iteration.
+  Privatized automatic arrays capture their existing bounds and extents on
+  the host; they do not re-evaluate specification expressions whose operands
+  may have changed since entry to the procedure.
+  If an extent cannot be rebuilt on the host, the workspace pre-flight reports
+  a compile-time error; the compiler never silently leaves that array shared.
+  Workspace memory therefore grows with the launch size.
 * An array an iteration needs whose size is known only at run time -- a
   local of a `block` with run-time extents, an allocatable local, or a
   temporary the compiler introduces, such as the result of a function or

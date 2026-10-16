@@ -10,11 +10,10 @@ end module
 
 program gpu_kernel_source_08
 ! Each loop defines `t` whole before it reads it, so the GPU offload gives
-! every thread its own `t` (a `float t[...]` of the CUDA kernel) only while
-! it fits a thread's 512 KiB stack together with the temporaries the body
-! needs there: a row gathered for a call (loops 1 and 2) and the temporary
-! of an assignment to its own array (loops 3 and 4), counted once. In loops
-! 1 and 4 `t` does not fit and stays a kernel argument.
+! every thread its own `t`. Late storage placement measures the actual
+! gathered rows (loops 1 and 2) and alias temporaries (loops 3 and 4).
+! In loops 1 and 4 the larger array spills to a private workspace slice;
+! `t` stays on the stack. Neither array becomes shared.
 use gpu_kernel_source_08_m, only: row_sum
 implicit none
 integer, parameter :: n = 4, m = 10000
@@ -33,7 +32,7 @@ do j = 1, n
     end do
 end do
 
-! 480,000 bytes gathered for the call leave no room for `t`.
+! The 480,000-byte gathered row spills; `t` fits.
 do concurrent (j = 1:n)
     do k = 1, m
         t(k) = j + k
@@ -70,7 +69,7 @@ do j = 1, n
     if (abs(w1(60000, j) - 1) > 1e-3) error stop 4
 end do
 
-! A 480,000-byte temporary for the reversal: `t` does not fit.
+! The 480,000-byte reversal temporary spills; `t` fits.
 do concurrent (j = 1:n)
     do k = 1, m
         t(k) = 4 * j + k

@@ -4,6 +4,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 
 #include <map>
 #include <set>
@@ -526,6 +527,15 @@ public:
     }
     void visit_ArrayRank(const ASR::ArrayRank_t &/*x*/) {}
     void visit_ArrayIsContiguous(const ASR::ArrayIsContiguous_t &/*x*/) {}
+    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
+        if (x.m_arr_intrinsic_id == static_cast<int64_t>(
+                ASRUtils::IntrinsicArrayFunctions::Shape) &&
+                x.n_args == 1 && ASR::is_a<ASR::Var_t>(
+                    *ASRUtils::get_past_array_physical_cast(x.m_args[0]))) {
+            return;
+        }
+        BaseWalkVisitor::visit_IntrinsicArrayFunction(x);
+    }
     void visit_PointerAssociated(const ASR::PointerAssociated_t &/*x*/) {}
     void visit_IntrinsicImpureFunction(
             const ASR::IntrinsicImpureFunction_t &x) {

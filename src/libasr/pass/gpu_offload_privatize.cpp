@@ -222,8 +222,6 @@ public:
     }
 
 private:
-    // The array's bounds are compile-time constants (see
-    // privatize_iteration_arrays), so the loop names one by its value.
     static bool constant(ASR::expr_t *e, int64_t &v) {
         return e != nullptr
             && ASRUtils::extract_value(ASRUtils::expr_value(e), v);
@@ -237,6 +235,19 @@ private:
 
     bool is_upper_bound(size_t d, ASR::expr_t *e) {
         int64_t s = 0, l = 0, v = 0;
+        ASR::expr_t *length = arr->m_dims[d].m_length;
+        // A dummy that cannot change still has the value used on entry
+        // when the automatic array's shape was established.
+        if (length && ASR::is_a<ASR::Var_t>(*length) &&
+                ASR::is_a<ASR::Variable_t>(
+                    *ASR::down_cast<ASR::Var_t>(length)->m_v) &&
+                ASR::down_cast<ASR::Variable_t>(
+                    ASR::down_cast<ASR::Var_t>(length)->m_v)->m_intent
+                    == ASR::intentType::In &&
+                constant(arr->m_dims[d].m_start, s) && s == 1 &&
+                PassUtils::same_expression(arr->m_dims[d].m_length, e)) {
+            return true;
+        }
         return constant(arr->m_dims[d].m_start, s)
             && constant(arr->m_dims[d].m_length, l) && constant(e, v)
             && v == s + l - 1;
@@ -598,8 +609,8 @@ bool read_after_region(GpuArrayFlowReader &reader,
 // a jump gets there, may read it before it is defined again. So no
 // iteration reads a value it did not define, whether every iteration,
 // some or none define the array, and nothing after the loop reads what
-// they defined. It is a local, non-saved variable of a size known at
-// compile time that no pointer and no other procedure can reach
+// they defined. It is a local, non-saved variable that no pointer and no
+// other procedure can reach
 // (access_paths.h), that no clause of the loop and no ASSOCIATE around it
 // names, and that no contained procedure names.
 //
@@ -607,13 +618,11 @@ bool read_after_region(GpuArrayFlowReader &reader,
 // lowered locals on the stack or in per-thread global workspace slices.
 // Other arrays remain shared, notably distinct elements per iteration
 // (`y(i) = ...`).
-std::vector<std::pair<int64_t, ASR::symbol_t*>>
+std::vector<ASR::symbol_t*>
 GpuOffloadVisitor::iteration_array_candidates(
         const ASR::OMPRegion_t &region, ParallelLoopNest &work,
         const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map) {
-    // The arrays that may be made local, with the bytes each takes on a
-    // thread's stack.
-    std::vector<std::pair<int64_t, ASR::symbol_t*>> candidates;
+    std::vector<ASR::symbol_t*> candidates;
     // The procedure, or main program, the loop is in.
     SymbolTable *proc_scope = current_scope;
     while (proc_scope && proc_scope->asr_owner &&
@@ -726,22 +735,6 @@ GpuOffloadVisitor::iteration_array_candidates(
                 !ASR::is_a<ASR::Logical_t>(*elem)) {
             continue;
         }
-        // The local is declared with the extents the array was, which
-        // are compile-time constants: none of a run-time size (see above).
-        bool constant_bounds = true;
-        for (size_t d = 0; d < arr->n_dims; d++) {
-            int64_t value = 0;
-            constant_bounds = constant_bounds && arr->m_dims[d].m_start
-                && arr->m_dims[d].m_length
-                && ASRUtils::extract_value(ASRUtils::expr_value(
-                    arr->m_dims[d].m_start), value)
-                && ASRUtils::extract_value(ASRUtils::expr_value(
-                    arr->m_dims[d].m_length), value);
-        }
-        if (!constant_bounds) continue;
-        int64_t bytes = ASRUtils::compute_type_size_align(v->m_type).first;
-        if (bytes <= 0) continue;
-
         GpuArrayAccess access(sym, proc_scope, pointers, outside);
         bool named_outside_body = false;
         for (size_t d = 0; d < work.n_heads(); d++) {
@@ -765,7 +758,7 @@ GpuOffloadVisitor::iteration_array_candidates(
             continue;
         }
         if (read_after_region(reader, path)) continue;
-        candidates.push_back({bytes, sym});
+        candidates.push_back(sym);
     }
     // The body becomes the statements of a BLOCK (below).
     if (!gpu_associates_inlined(work.body, work.n_body, true)) {
@@ -778,13 +771,10 @@ GpuOffloadVisitor::iteration_array_candidates(
 // shared lowering has materialized the kernel's arrays.
 void GpuOffloadVisitor::privatize_iteration_arrays(
         const ASR::OMPRegion_t &region, ParallelLoopNest &work,
-        const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map) {
-    std::vector<std::pair<int64_t, ASR::symbol_t*>> candidates =
+        const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map,
+        Vec<ASR::stmt_t*> &private_shapes) {
+    std::vector<ASR::symbol_t*> privatized =
         iteration_array_candidates(region, work, enclosing_assoc_map);
-    std::vector<ASR::symbol_t*> privatized;
-    for (auto &c : candidates) {
-        privatized.push_back(c.second);
-    }
     if (privatized.empty()) return;
     std::sort(privatized.begin(), privatized.end(),
         [](ASR::symbol_t *a, ASR::symbol_t *b) {
@@ -817,9 +807,37 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
     std::map<ASR::symbol_t*, ASR::expr_t*> local_of;
     for (ASR::symbol_t *sym : privatized) {
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+        ASR::ttype_t *type = ASRUtils::duplicate_type(al, v->m_type);
+        auto *array = ASR::down_cast<ASR::Array_t>(type);
+        ASRUtils::ASRBuilder b(al, v->base.base.loc);
+        ASR::expr_t *source = ASRUtils::EXPR(
+            ASR::make_Var_t(al, v->base.base.loc, sym));
+        for (size_t d = 0; d < array->n_dims; d++) {
+            auto capture = [&](ASR::expr_t *&dimension, ASR::expr_t *value) {
+                int64_t constant_value;
+                if (dimension && ASRUtils::extract_value(
+                        ASRUtils::expr_value(dimension), constant_value)) return;
+                // Capture the array's existing shape, not the expression
+                // used to declare it, whose operands may since have changed.
+                ASR::expr_t *extent = b.Variable(current_scope,
+                    current_scope->get_unique_name("__gpu_private_shape"),
+                    ASRUtils::expr_type(value), ASR::intentType::Local);
+                private_shapes.push_back(al, b.Assignment(extent, value));
+                dimension = ASRUtils::EXPR(ASR::make_Var_t(al,
+                    v->base.base.loc, ASR::down_cast<ASR::Var_t>(extent)->m_v));
+            };
+            ASR::ttype_t *index_type = ASRUtils::TYPE(
+                ASR::make_Integer_t(al, loc, 4));
+            capture(array->m_dims[d].m_length,
+                b.ArraySize(source, b.i32(d + 1), index_type));
+            capture(array->m_dims[d].m_start,
+                ASRUtils::EXPR(ASR::make_ArrayBound_t(al, v->base.base.loc,
+                    source, b.i32(d + 1), index_type, ASR::arrayboundType::LBound,
+                    nullptr)));
+        }
         ASR::symbol_t *local = gpu_new_variable(al, v->base.base.loc,
             block_scope, block_scope->get_unique_name(v->m_name),
-            ASRUtils::duplicate_type(al, v->m_type));
+            type);
         local_of[sym] = ASRUtils::EXPR(ASR::make_Var_t(al,
             v->base.base.loc, local));
     }

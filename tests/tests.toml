@@ -4783,6 +4783,16 @@ options = "--realloc-lhs-arrays"
 filename = "../integration_tests/gpu_metal_474.f90"
 gpu_cuda_kernel = true
 
+# Large and runtime-sized arrays stay private in workspace slices.
+[[test]]
+filename = "../integration_tests/gpu_metal_476.f90"
+gpu_cuda_kernel = true
+
+# Automatic callee locals are measured after inlining.
+[[test]]
+filename = "../integration_tests/gpu_metal_477.f90"
+gpu_cuda_kernel = true
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
