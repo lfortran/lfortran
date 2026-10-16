@@ -5216,8 +5216,8 @@ static ASR::asr_t* array_intrinsic_shape_size(Allocator &al,
                 CastingUtil::perform_casting(af->m_args[2], a_type, al, a_loc));
             ASR::expr_t* source = ASRUtils::get_past_array_physical_cast(
                 af->m_args[0]);
-            if( ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(source))
-                    == shape.size() ) {
+            if( static_cast<size_t>(ASRUtils::extract_n_dims_from_ttype(
+                    ASRUtils::expr_type(source))) == shape.size() ) {
                 return ncopies;
             }
             ASR::expr_t* dim = af->m_args[1];
