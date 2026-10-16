@@ -1,0 +1,5 @@
+syntax error: Include file 'nofile.inc' not found. If an include path is available, please use the `-I` option to specify it.
+ --> tests/errors/missing_include_02.f:3:27
+  |
+3 |       include 'nofile.inc'
+  |                           ^ 

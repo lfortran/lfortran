@@ -6134,6 +6134,10 @@ filename = "errors/missing_include_01.f90"
 ast = true
 
 [[test]]
+filename = "errors/missing_include_02.f"
+ast = true
+
+[[test]]
 filename = "coarray_teams_01.f90"
 fortran = true
 pass = "coarray"
