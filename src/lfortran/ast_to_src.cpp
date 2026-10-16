@@ -2081,8 +2081,8 @@ public:
         r += " ";
         for (size_t i=0; i<x.n_member; i++) {
             r.append(x.m_member[i].m_name);
+            if (x.m_member[i].n_args > 0) r += "(";
             for (size_t j=0; j<x.m_member[i].n_args; j++) {
-                r += "(";
                 expr_t *start = x.m_member[i].m_args[j].m_start;
                 expr_t *end = x.m_member[i].m_args[j].m_end;
                 expr_t *step = x.m_member[i].m_args[j].m_step;
@@ -2108,8 +2108,9 @@ public:
                 } else {
                     throw LCompilersException("Incorrect array elements");
                 }
-                r += ")";
+                if (j < x.m_member[i].n_args-1) r += ",";
             }
+            if (x.m_member[i].n_args > 0) r += ")";
             r.append("%");
         }
         r.append(x.m_name);
@@ -3872,7 +3873,7 @@ public:
                         }
                         if (start) {}
                         if (step) {}
-                        if (i < x.m_member[i].n_args-1) r.append(",");
+                        if (j < x.m_member[i].n_args-1) r.append(",");
                     }
                     r.append(")");
                 }
@@ -3940,7 +3941,7 @@ public:
                         } else {
                             throw LCompilersException("Incorrect coarray elements");
                         }
-                        if (i < x.m_member[i].n_args-1) r.append(",");
+                        if (j < x.m_member[i].n_args-1) r.append(",");
                     }
                     r.append(")");
                 }
@@ -4156,7 +4157,7 @@ public:
                         } else {
                             throw LCompilersException("Incorrect array elements");
                         }
-                        if (i < x.m_member[i].n_args-1) r.append(",");
+                        if (j < x.m_member[i].n_args-1) r.append(",");
                     }
                     r.append(")");
                 }
