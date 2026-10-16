@@ -1376,7 +1376,8 @@ namespace LCompilers {
                     llvm::Value* off = builder->CreateMul(ui_val, src_w.elem_size);
                     builder->CreateCall(copy_fn_ty, src_w.copy_fn, {
                         builder->CreateGEP(llvm::Type::getInt8Ty(context), src_w.data, off),
-                        builder->CreateGEP(llvm::Type::getInt8Ty(context), dest_raw, off)});
+                        builder->CreateGEP(llvm::Type::getInt8Ty(context), dest_raw, off),
+                        llvm::ConstantInt::getTrue(context)});
                     builder->CreateStore(
                         builder->CreateAdd(ui_val,
                             llvm::ConstantInt::get(i64_ty, 1)), ui);

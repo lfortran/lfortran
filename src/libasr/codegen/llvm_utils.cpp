@@ -223,9 +223,12 @@ namespace LCompilers {
             llvm::PointerType *fnPtrTy = llvm::PointerType::get(fnTy, 0);
             llvm::PointerType *fnPtrPtrTy = llvm::PointerType::get(fnPtrTy, 0);
             vptr_type = fnPtrPtrTy;  // i32 (...)**
+            // The copy function of a VTable: (source, destination, whether
+            // the destination is finalized before it is defined).
             fnTy = llvm::FunctionType::get(
-                llvm::Type::getVoidTy(context), {character_type, character_type}, false);
-            struct_copy_functype = fnTy;  // void (i8*, i8*)
+                llvm::Type::getVoidTy(context),
+                {character_type, character_type, llvm::Type::getInt1Ty(context)}, false);
+            struct_copy_functype = fnTy;  // void (i8*, i8*, i1)
             string_descriptor = llvm::StructType::create(context,string_descriptor_members, "string_descriptor");
         }
 
@@ -10444,11 +10447,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
     llvm::Function* LLVMStruct::define_struct_copy_function(ASR::symbol_t* struct_sym, llvm::Module* module) 
     {
-        llvm::FunctionType *funcType = llvm::FunctionType::get(
-            llvm::Type::getVoidTy(context),
-            {llvm_utils->i8_ptr, llvm_utils->i8_ptr},
-            false
-        );
+        llvm::FunctionType *funcType = llvm_utils->struct_copy_functype;
 
         // Create the function in the module
         std::string func_name = "_copy_";
@@ -10482,8 +10481,17 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             ASRUtils::symbol_type(struct_sym), struct_sym, module);
         llvm::Value *src = builder->CreateBitCast(argsVec[0], struct_type->getPointerTo());
         llvm::Value *dst = builder->CreateBitCast(argsVec[1], struct_type->getPointerTo());
+        // A destination that has just been allocated is defined by the copy,
+        // and not finalized (F2018 7.5.6.3 p1).
+        if (has_final_subroutine(ASR::down_cast<ASR::Struct_t>(struct_sym))) {
+            llvm_utils->create_if_else(argsVec[2], [&]() {
+                call_struct_finalize_fn(dst, ASRUtils::symbol_type(struct_sym),
+                    ASR::down_cast<ASR::Struct_t>(struct_sym));
+            }, []() {});
+        }
         llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, struct_sym->base.loc, struct_sym)), src, dst,
-            ASRUtils::symbol_type(struct_sym), ASRUtils::symbol_type(struct_sym), module);
+            ASRUtils::symbol_type(struct_sym), ASRUtils::symbol_type(struct_sym), module,
+            false, false);
         builder->CreateRetVoid();
 
         if (savedBB) {
@@ -10493,11 +10501,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
     llvm::Function* LLVMStruct::define_intrinsic_type_copy_function(ASR::ttype_t* type, llvm::Module* module) 
     {
-        llvm::FunctionType *funcType = llvm::FunctionType::get(
-            llvm::Type::getVoidTy(context),
-            {llvm_utils->i8_ptr, llvm_utils->i8_ptr},
-            false
-        );
+        llvm::FunctionType *funcType = llvm_utils->struct_copy_functype;
 
         // Create the function in the module
         std::string func_name = "_copy_" + ASRUtils::intrinsic_type_to_str_with_kind(
@@ -10879,7 +10883,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         llvm::Type::getInt8Ty(context), src_w.data, byte_offset);
                     llvm::Value* dest_elem = builder->CreateGEP(
                         llvm::Type::getInt8Ty(context), dest_raw_data, byte_offset);
-                    builder->CreateCall(fnTy, src_w.copy_fn, {src_elem, dest_elem});
+                    builder->CreateCall(fnTy, src_w.copy_fn, {src_elem, dest_elem,
+                        llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), finalize_dest)});
                     builder->CreateStore(
                         builder->CreateAdd(ui_val, llvm::ConstantInt::get(i64_ty, 1)), ui);
                 });
@@ -10950,7 +10955,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         llvm::Type::getInt8Ty(context), src_raw_data, byte_offset);
                     llvm::Value* dest_elem = builder->CreateGEP(
                         llvm::Type::getInt8Ty(context), dest_raw_data, byte_offset);
-                    builder->CreateCall(fnTy, fn, {src_elem, dest_elem});
+                    builder->CreateCall(fnTy, fn, {src_elem, dest_elem,
+                        llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), finalize_dest)});
                     builder->CreateStore(
                         builder->CreateAdd(ui_val, llvm::ConstantInt::get(i64_ty, 1)), ui);
                 });
@@ -11069,7 +11075,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     dest_ptr = builder->CreateBitCast(dest_ptr, llvm_utils->i8_ptr);
                 }
 
-                builder->CreateCall(fnTy, fn, {src_ptr, dest_ptr});
+                builder->CreateCall(fnTy, fn, {src_ptr, dest_ptr,
+                    llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), finalize_dest)});
                 return ;
             }
 
@@ -11253,7 +11260,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                             fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
                             src_member = builder->CreateBitCast(src_member, llvm_utils->i8_ptr);
                             dest_member = builder->CreateBitCast(dest_member, llvm_utils->i8_ptr);
-                            builder->CreateCall(fnTy, fn, {src_member, dest_member});
+                            builder->CreateCall(fnTy, fn, {src_member, dest_member,
+                                llvm::ConstantInt::getTrue(context)});
                         }, [&]() {
                             if (ASRUtils::is_allocatable(member_type)) {
                                 // If source allocatable struct is not allocated, then
@@ -11430,6 +11438,15 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         }
 
     }
+    bool LLVMStruct::has_final_subroutine(ASR::Struct_t* struct_sym) {
+        for (ASR::Struct_t* st = struct_sym; st != nullptr;
+                st = st->m_parent == nullptr ? nullptr : ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(st->m_parent))) {
+            if (st->n_member_functions > 0) return true;
+        }
+        return false;
+    }
+
     void LLVMStruct::call_struct_finalize_fn(llvm::Value* ptr, ASR::ttype_t* ty, ASR::Struct_t* struct_sym) {
         if( ASRUtils::is_pointer(ty) ) return; // Final fn never invoked on pointers
         auto chain_has_final = [](ASR::Struct_t* st) {

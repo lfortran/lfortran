@@ -14296,9 +14296,15 @@ public:
             return ;
         } else if ((is_target_class || is_target_struct) &&
                     (is_value_class || is_value_struct)) {
+            // Whether the variable is allocated by the assignment, which
+            // then defines it rather than finalizing it first: an
+            // unallocated allocatable variable is not finalized
+            // (F2018 7.5.6.3 p1).
+            llvm::Value* target_is_new = nullptr;
             if (ASRUtils::is_allocatable(asr_target_type) && 
                     !(is_target_class && is_value_class)) {
-                check_and_allocate_scalar(x.m_target, x.m_value, asr_value_type, true);
+                target_is_new = check_and_allocate_scalar(
+                    x.m_target, x.m_value, asr_value_type, true);
             }
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
@@ -14502,7 +14508,10 @@ public:
                 fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
                 value_struct = builder->CreateBitCast(value_struct, llvm_utils->i8_ptr);
                 target_struct = builder->CreateBitCast(target_struct, llvm_utils->i8_ptr);
-                builder->CreateCall(fnTy, fn, {value_struct, target_struct});
+                // An allocatable variable has been reallocated above.
+                builder->CreateCall(fnTy, fn, {value_struct, target_struct,
+                    llvm::ConstantInt::get(llvm::Type::getInt1Ty(context),
+                        !ASRUtils::is_allocatable(asr_target_type))});
             } else {
                 ASR::symbol_t* vptr_sym;
                 ASR::expr_t* deepcopy_var;
@@ -14526,8 +14535,25 @@ public:
                     deepcopy_var = x.m_value;
                 }
 
+                bool finalize_target = true;
+                if (target_is_new != nullptr) {
+                    finalize_target = false;
+                    ASR::Struct_t* target_struct_sym = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(
+                            ASRUtils::get_struct_sym_from_struct_expr(deepcopy_var)));
+                    llvm::ConstantInt* is_new_constant =
+                        llvm::dyn_cast<llvm::ConstantInt>(target_is_new);
+                    if ((is_new_constant == nullptr || !is_new_constant->isOne()) &&
+                            LLVMStruct::has_final_subroutine(target_struct_sym)) {
+                        llvm::Value* finalized_target = target_struct;
+                        llvm_utils->create_if_else(builder->CreateNot(target_is_new), [&]() {
+                            struct_api->call_struct_finalize_fn(finalized_target, deepcopy_type,
+                                target_struct_sym);
+                        }, []() {});
+                    }
+                }
                 llvm_utils->deepcopy(deepcopy_var, value_struct, target_struct,
-                    deepcopy_type, deepcopy_type, module.get(), true);
+                    deepcopy_type, deepcopy_type, module.get(), true, finalize_target);
             }
             if (is_target_unlimited_polymorphic || is_target_class) {
                 // Store Vptr from original struct
@@ -15580,7 +15606,9 @@ public:
     }
 
     // Checks if target_expr is allocated and if not then allocate
-    void check_and_allocate_scalar(ASR::expr_t *target_expr, ASR::expr_t *value_expr = nullptr,
+    // Allocates the scalar `target_expr` unless it is allocated, and returns
+    // whether it allocated it.
+    llvm::Value* check_and_allocate_scalar(ASR::expr_t *target_expr, ASR::expr_t *value_expr = nullptr,
             ASR::ttype_t *value_struct_type = nullptr, bool is_assignment = false) {
         ASR::ttype_t *asr_ttype =ASRUtils::expr_type(target_expr);
         ASR::ttype_t *asr_type = ASRUtils::type_get_past_pointer(
@@ -15687,6 +15715,7 @@ public:
                     this->visit_stmt(*alloc_stmt);
             },
             []() {});
+        return llvm_cond;
     }
 
     static constexpr int POLYMORPHIC_BOX_DATA_FIELD = 1;

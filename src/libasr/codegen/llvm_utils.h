@@ -3362,6 +3362,10 @@ class ASRToLLVMVisitor;
              * NOTICE : It doesn't handle arrays
             */
             void call_struct_finalize_fn(llvm::Value* ptr, ASR::ttype_t* ty, ASR::Struct_t* struct_sym);
+
+            // Whether `struct_sym`, or a type it extends, has a final
+            // subroutine, so that call_struct_finalize_fn calls one.
+            static bool has_final_subroutine(ASR::Struct_t* struct_sym);
     };
 
     class LLVMTuple {
