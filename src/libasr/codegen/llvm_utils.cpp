@@ -3219,7 +3219,8 @@ namespace LCompilers {
 
 llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     Allocator& /*al*/, ASR::Array_t* array_t, 
-    ASR::ArrayConstant_t* arrayConst_t, std::string name) 
+    ASR::ArrayConstant_t* arrayConst_t, std::string name,
+    std::string data_name, llvm::GlobalValue::LinkageTypes data_linkage)
 {
     LCOMPILERS_ASSERT(array_t->m_physical_type == ASR::PointerArray)
 
@@ -3262,12 +3263,15 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             sequence.resize(total_len, ' '); 
 
             llvm::ArrayType *char_array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context), total_len);
-            llvm::Constant *const_data_as_array = llvm::ConstantDataArray::getString(context, sequence, false);
-            
-            // Keep the exact original linkage, mutability, and literal "_data" naming convention
+            // A common symbol must be zero initialized
+            llvm::Constant *const_data_as_array =
+                data_linkage == llvm::GlobalValue::CommonLinkage
+                    ? llvm::ConstantAggregateZero::get(char_array_type)
+                    : llvm::ConstantDataArray::getString(context, sequence, false);
+
             llvm::GlobalVariable *global_string_as_array = new llvm::GlobalVariable(
                 *module, char_array_type, false, 
-                llvm::GlobalValue::PrivateLinkage, const_data_as_array, "_data"
+                data_linkage, const_data_as_array, data_name
             );
 
             llvm::Value *zero_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);

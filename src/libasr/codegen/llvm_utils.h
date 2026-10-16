@@ -732,7 +732,9 @@ class ASRToLLVMVisitor;
                     is the same representation as the string PhysicalType  
             */
             llvm::Value* handle_global_nonallocatable_stringArray(Allocator& al, ASR::Array_t* array_t,
-                ASR::ArrayConstant_t* arrayConst_t, std::string name);
+                ASR::ArrayConstant_t* arrayConst_t, std::string name,
+                std::string data_name="_data",
+                llvm::GlobalValue::LinkageTypes data_linkage=llvm::GlobalValue::PrivateLinkage);
 
             llvm::Value* is_equal_pointer_string(llvm::Value* left, llvm::Value* right);
 
