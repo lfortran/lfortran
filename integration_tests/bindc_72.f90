@@ -1,4 +1,4 @@
-program bindc_71
+program bindc_72
     use iso_c_binding, only: c_char, c_int
     implicit none
 
