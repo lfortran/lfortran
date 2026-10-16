@@ -27260,6 +27260,18 @@ public:
         llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(
             dest_type, dest_sym, module.get());
         if (!ASRUtils::is_array(dest_type)) {
+            if (!LLVM::is_llvm_pointer(*arg_type) &&
+                    LLVM::is_llvm_pointer(*dest_type)) {
+                // `dt` is the selector's class wrapper itself (e.g. an
+                // array element or a non-pointer dummy), but a pointer
+                // destination is a pointer to the wrapper pointer: add the
+                // missing level of indirection.
+                llvm::Value* wrapper_ptr_ptr = llvm_utils->CreateAlloca(
+                    type, nullptr, "class_wrapper_ptr");
+                builder->CreateStore(builder->CreateBitCast(dt, type),
+                    wrapper_ptr_ptr);
+                return wrapper_ptr_ptr;
+            }
             return builder->CreateBitCast(dt, type->getPointerTo());
         } else {
             return builder->CreateBitCast(dt, type);
