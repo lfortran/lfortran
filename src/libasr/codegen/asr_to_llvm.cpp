@@ -7557,9 +7557,14 @@ public:
                         llvm_var_name + "__desc", llvm_var_name,
                         needs_common_linkage_for_global(x) ? llvm::GlobalValue::CommonLinkage
                             : llvm::GlobalValue::ExternalLinkage));
+                } else if (external) {
+                    ptr = module->getOrInsertGlobal(llvm_var_name, llvm_utils->get_StringType(x.m_type));
                 } else {
                     ptr = llvm::cast<llvm::Constant>(llvm_utils->handle_global_nonallocatable_stringArray(al,
                         ASR::down_cast<ASR::Array_t>(x.m_type), value?ASR::down_cast<ASR::ArrayConstant_t>(value):nullptr, llvm_var_name));
+                    if (compiler_options.separate_compilation) {
+                        llvm::cast<llvm::GlobalVariable>(ptr)->setLinkage(llvm::GlobalValue::ExternalLinkage);
+                    }
                 }
 
             } else {
@@ -7668,6 +7673,13 @@ public:
                     }
                     ptr = llvm_utils->declare_global_string(str, initial_string_value,
                         is_const, desc_name, string_linkage, data_name);
+                    if (needs_common_linkage_for_global(x)) {
+                        llvm::GlobalVariable* data = module->getNamedGlobal(data_name);
+                        // Common linkage applies to the C-visible storage, not
+                        // the descriptor, and requires a zero initializer.
+                        data->setInitializer(llvm::Constant::getNullValue(data->getValueType()));
+                        set_global_variable_linkage_as_common(data, x);
+                    }
                 } else {
                     ptr = module->getOrInsertGlobal(llvm_var_name, llvm_utils->get_StringType(x.m_type));
                 }

@@ -173,17 +173,26 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
         }
     };
 
-    // Resolve AssociateBlocks inside the loop body (e.g.,
-    // block { associate(nh => n) ... } within the loop). GPU kernels
-    // cannot use Pointer-based associate aliases, so we inline the
-    // associate targets and replace the AssociateBlockCall with the
-    // resolved statements.
-    for (size_t bi = 0; bi < work.n_body; bi++) {
-        if (!ASR::is_a<ASR::BlockCall_t>(*work.body[bi])) continue;
-        ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
-            work.body[bi]);
-        if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
+    // Resolve AssociateBlocks inside the BLOCKs of the loop body (e.g.,
+    // block { associate(nh => n) ... } within the loop), and inside the
+    // BLOCKs those contain. GPU kernels cannot use Pointer-based associate
+    // aliases, so we inline the associate targets and replace the
+    // AssociateBlockCall with the resolved statements.
+    std::vector<ASR::Block_t*> body_blocks;
+    std::function<void(ASR::stmt_t**, size_t)> collect_blocks =
+            [&](ASR::stmt_t **stmts, size_t n_stmts) {
+        for (size_t i = 0; i < n_stmts; i++) {
+            if (!ASR::is_a<ASR::BlockCall_t>(*stmts[i])) continue;
+            ASR::symbol_t *m = ASR::down_cast<ASR::BlockCall_t>(
+                stmts[i])->m_m;
+            if (!ASR::is_a<ASR::Block_t>(*m)) continue;
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(m);
+            body_blocks.push_back(block);
+            collect_blocks(block->m_body, block->n_body);
+        }
+    };
+    collect_blocks(work.body, work.n_body);
+    for (ASR::Block_t *block : body_blocks) {
         Vec<ASR::stmt_t*> new_block_body;
         new_block_body.reserve(al, block->n_body);
         bool changed = false;

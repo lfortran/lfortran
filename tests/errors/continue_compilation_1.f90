@@ -3428,3 +3428,9 @@ contains
         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
     end subroutine cc1_pause_use
 end module cc1_pause_codes
+
+module cc1_bindc_character_length
+    implicit none
+    character(len=5), bind(c) :: s  ! {Error} bind(c) variable `s` must have character length one
+    character(len=5), bind(c) :: a(3)  ! {Error} bind(c) variable `a` must have character length one
+end module cc1_bindc_character_length
