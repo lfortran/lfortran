@@ -2023,7 +2023,12 @@ intents. `traits_runtime_solver_01_oracle` checks the same calls with standard
 CLASS; LFortran does not yet copy a noncontiguous section back from the
 explicit-shape dummy of a type-bound procedure, so it is registered for
 GFortran only. `traits_runtime_solver_separate_01` compiles the interfaces, a
-contract-only consumer and the providers separately. The reference test
+contract-only consumer and the providers separately.
+`traits_runtime_explicit_shape_01` calls receiverless messages whose bounds
+refer to the dummies after the view, with a character array with a lower
+bound, a 2-D block and a function argument that is only copied in, and bounds
+computed from other dummies for integer, logical and complex arrays, through
+owners and a borrowed view. The reference test
 `traits_runtime_solver_mod.F90` compiles the reported module, unchanged, with
 `-c`, and the diagnostics are checked by
 `continue_compilation_traits_explicit_shape`. `array_section_37` checks the
