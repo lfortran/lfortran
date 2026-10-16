@@ -29153,7 +29153,8 @@ public:
                     return_var_type0);
             }
         }
-        if (ASRUtils::is_character(*x.m_type)) {
+        if (ASRUtils::is_character(*x.m_type)
+                && ASRUtils::get_string_type(x.m_type)->m_physical_type == ASR::DescriptorString) {
             strings_to_be_deallocated.push_back(al, tmp);
         }
     }

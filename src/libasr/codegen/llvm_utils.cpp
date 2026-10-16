@@ -2918,14 +2918,8 @@ namespace LCompilers {
         }
 
         if (src_str_type->m_physical_type == ASR::CChar) {
-            rhs_data = builder->CreateLoad(character_type, src);
-            llvm::Value* rhs_len_val = builder->CreateCall(
-                module->getOrInsertFunction("strlen",
-                    llvm::FunctionType::get(
-                        llvm::Type::getInt64Ty(context),
-                        {character_type}, false)),
-                {rhs_data});
-            rhs_len = rhs_len_val;
+            rhs_data = src;
+            rhs_len = get_string_length(src_str_type, src);
         } else {
             std::tie(rhs_data, rhs_len) = get_string_length_data(
                 src_str_type, src);
