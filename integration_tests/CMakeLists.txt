@@ -2292,6 +2292,7 @@ RUN(NAME select_type_58 LABELS gfortran llvm)
 RUN(NAME select_type_59 LABELS gfortran llvm)
 RUN(NAME select_type_60 LABELS gfortran llvm)
 RUN(NAME select_type_61 LABELS gfortran llvm)
+RUN(NAME select_type_62 LABELS gfortran llvm)
 RUN(NAME select_type_63 LABELS llvm)
 RUN(NAME select_type_64 LABELS gfortran llvm)
 
