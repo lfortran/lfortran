@@ -122,27 +122,29 @@
                     []
                     []
                 )
-                (/ (+ (FuncCallOrArray
-                    A
-                    []
-                    [(()
-                    i
-                    ()
-                    0)]
-                    []
-                    []
-                    []
-                ) (FuncCallOrArray
-                    A
-                    []
-                    [(()
-                    (- i 1)
-                    ()
-                    0)]
-                    []
-                    []
-                    []
-                )) 2)
+                (/ (Parenthesis
+                    (+ (FuncCallOrArray
+                        A
+                        []
+                        [(()
+                        i
+                        ()
+                        0)]
+                        []
+                        []
+                        []
+                    ) (FuncCallOrArray
+                        A
+                        []
+                        [(()
+                        (- i 1)
+                        ()
+                        0)]
+                        []
+                        []
+                        []
+                    ))
+                ) 2)
                 ()
             )]
             ()

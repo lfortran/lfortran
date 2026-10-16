@@ -408,7 +408,9 @@
         (Assignment
             0
             p
-            (** b (- td 1))
+            (** b (Parenthesis
+                (- td 1)
+            ))
             ()
         )
         (If

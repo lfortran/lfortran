@@ -23,7 +23,9 @@
         (Assignment
             0
             x
-            (* (+ 2 3) 5)
+            (* (Parenthesis
+                (+ 2 3)
+            ) 5)
             ()
         )
         (Print

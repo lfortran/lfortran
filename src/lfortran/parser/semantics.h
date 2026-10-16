@@ -1177,11 +1177,7 @@ static inline reduce_opType convert_id_to_reduce_type(
 #define FALSE(x, l) make_Logical_t(p.m_a, l, false, str2str_null(p.m_a, x))
 
 ast_t* parenthesis(Allocator &al, Location &loc, expr_t *op) {
-    switch (op->type) {
-        case LCompilers::LFortran::AST::exprType::Name: {
-            return make_Parenthesis_t(al, loc, op); }
-        default : { return (ast_t*)op; }
-    }
+    return make_Parenthesis_t(al, loc, op);
 }
 
 #define PAREN(x, l) parenthesis(p.m_a, l, EXPR(x))

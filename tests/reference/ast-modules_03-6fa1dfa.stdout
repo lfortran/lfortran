@@ -652,7 +652,9 @@
             []
             []
             ()
-            (/ (* me (Real "1e3_dp")) (** (* bohr2ang (Real "1e-8_dp")) 3))
+            (/ (* me (Real "1e3_dp")) (** (Parenthesis
+                (* bohr2ang (Real "1e-8_dp"))
+            ) 3))
             Equal
             ())]
             (TriviaNode
@@ -681,7 +683,9 @@
             []
             []
             ()
-            (/ 1 (* (* Na me) (Real "1e3_dp")))
+            (/ 1 (Parenthesis
+                (* (* Na me) (Real "1e3_dp"))
+            ))
             Equal
             ())]
             (TriviaNode
@@ -710,7 +714,9 @@
             []
             []
             ()
-            (/ 1 (* J2Ha hbar))
+            (/ 1 (Parenthesis
+                (* J2Ha hbar)
+            ))
             Equal
             ())]
             (TriviaNode
