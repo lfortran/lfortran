@@ -45,6 +45,14 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             caps.device_function_runtime_sized_locals = false;
             // Every Apple GPU runs SIMD-groups of 32 threads.
             caps.lanes_per_iteration = 32;
+            // A kernel is compiled for the GPU that runs it, so this is the
+            // smallest stack of a device Metal runs on. An Apple silicon Mac
+            // gives a thread 256 KiB (a local array of 65,500 `float`s is
+            // rejected with "Compute function exceeds available stack
+            // space", one of 65,400 is not), the Apple Paravirtual device of
+            // a macOS virtual machine 64 KiB (65,472 bytes build, 65,520 are
+            // rejected with "Compilation failed").
+            caps.thread_stack_bytes = 64 * 1024;
             break;
         case GpuDevice::Cuda:
             caps.name = "CUDA";
@@ -56,6 +64,10 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // whose size the compiler has to know -- so a run-time sized
             // local has to be moved to kernel scope here too.
             caps.device_function_runtime_sized_locals = false;
+            // A CUDA thread has at most 512 KiB of local memory, where its
+            // stack lives (CUDA C++ Programming Guide, "Features and
+            // Technical Specifications", compute capability 2.0 and up).
+            caps.thread_stack_bytes = 512 * 1024;
             break;
         case GpuDevice::None:
             break;

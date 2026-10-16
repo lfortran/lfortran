@@ -163,6 +163,45 @@ generates the device source. It never falls back to the CPU:
   array, like any allocatable of device code assigned the result of a
   function, takes the shape the function gives its result, over the
   actual arguments of the call.
+* An array of a size known at compile time with unspecified locality that
+  an iteration defines whole before it references it (`t = ...`, or
+  `do k = 1, m; t(k) = ...` over its whole declared extent, before anything
+  reads `t`), on every path through the body that references it, is a
+  temporary of the iteration, as Fortran 2018, 11.1.7.5 allows: each thread
+  gets its own copy, a local array, as if `t` were declared in a `block`
+  around the body. This holds whether every iteration, only some, or none
+  take such a path, since none reads a value it did not define. It is only done when no statement that
+  can run after the loop -- the rest of the enclosing statements, the
+  condition of an enclosing `do while`, or wherever an `exit` or `cycle`
+  goes -- may read the array before defining it again, so the array keeps
+  the value it had before the loop and nothing can tell. Locality is a
+  correctness decision, independent of array size or stack capacity.
+  After array temporaries, inlining and materialization, `gpu_kernel_storage`
+  materializes updating aggregate arguments and places the actual lowered
+  arrays, before `gpu_memory_space` specializes device calls. Small fixed-size
+  arrays use `Thread` storage within the device
+  stack budget (64 KiB with Metal, 512 KiB with CUDA), reserving 8 KiB for
+  device compiler frames and register spills and accounting for the remaining
+  out-of-line device routines, including their by-value aggregate parameters.
+  Non-spillable aggregate locals and argument copies consume that budget too.
+  Larger arrays use `Global` storage, recorded
+  as per-thread workspaces in `Function.gpu` by `gpu_kernel_finalize`.
+  Existing launch sizing and indexing give every iteration a separate slice;
+  spilling never turns a private array back into a shared value. Every other
+  array of unspecified locality -- one whose elements the iterations define one
+  each (`y(j) = ...`), one partly defined, one an iteration reads before
+  defining it, a dummy argument, an array that may be read after the loop,
+  or one a contained procedure, a pointer, an `associate` around the loop
+  or a locality clause names -- is one array that all threads share.
+  Runtime-sized eligible arrays use the same workspace machinery as automatic
+  BLOCK locals: the host evaluates launch-resolvable extents, including the
+  existing replay over thread indices, and allocates a slice per iteration.
+  Privatized automatic arrays capture their existing bounds and extents on
+  the host; they do not re-evaluate specification expressions whose operands
+  may have changed since entry to the procedure.
+  If an extent cannot be rebuilt on the host, the workspace pre-flight reports
+  a compile-time error; the compiler never silently leaves that array shared.
+  Workspace memory therefore grows with the launch size.
 * An array an iteration needs whose size is known only at run time -- a
   local of a `block` with run-time extents, an allocatable local, or a
   temporary the compiler introduces, such as the result of a function or

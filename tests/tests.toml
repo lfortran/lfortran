@@ -4373,6 +4373,10 @@ filename = "../integration_tests/gpu_kernel_source_07.f90"
 gpu_cuda_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_kernel_source_08.f90"
+gpu_cuda_kernel = true
+
+[[test]]
 filename = "../integration_tests/gpu_metal_213.f90"
 gpu_cuda_kernel = true
 
@@ -4779,6 +4783,35 @@ options = "--realloc-lhs-arrays"
 filename = "../integration_tests/gpu_metal_453.f90"
 gpu_cuda_kernel = true
 options = "--realloc-lhs-arrays"
+
+# A fixed-size array each iteration defines whole before it references it
+# is a local of the kernel, not a kernel argument every thread shares; one
+# read after the loop stays an argument.
+[[test]]
+filename = "../integration_tests/gpu_metal_474.f90"
+gpu_cuda_kernel = true
+
+# Large and runtime-sized arrays stay private in workspace slices.
+[[test]]
+filename = "../integration_tests/gpu_metal_476.f90"
+gpu_cuda_kernel = true
+
+# Automatic callee locals are measured after inlining.
+[[test]]
+filename = "../integration_tests/gpu_metal_477.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_478.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_479.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_09.f90"
+gpu_cuda_kernel = true
 
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
