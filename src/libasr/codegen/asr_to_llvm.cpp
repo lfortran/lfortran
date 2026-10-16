@@ -17921,15 +17921,10 @@ public:
             tmp = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_arg), tmp, is_alloc);
         } else if (x.m_old == ASR::string_physical_typeType::CChar &&
             x.m_new == ASR::string_physical_typeType::DescriptorString){
-            this->visit_expr_load_wrapper(x.m_arg, 0);// Typically a bind-C-function return
-
-            int len = -1;
-            bool is_const_len = ASRUtils::extract_value(
-                ASRUtils::get_string_type(x.m_arg)->m_len, len);
-            if(!is_const_len) throw LCompilersException("Unhandled CChar string physical type with non constant length");
-
-            tmp = llvm_utils->create_string_descriptor(tmp,
-                llvm::ConstantInt::get(context, llvm::APInt(64, len)),"stringCast_desc");
+            llvm::Value* data = get_string_data_and_length(x.m_arg).first;
+            llvm::Value* length = llvm_utils->get_string_length(
+                ASRUtils::get_string_type(x.m_arg), data);
+            tmp = llvm_utils->create_string_descriptor(data, length, "stringCast_desc");
         } else {
             LCOMPILERS_ASSERT(false);
         }
@@ -29132,18 +29127,14 @@ public:
             } else {
                 tmp = CreateCallUtil(fn, args, return_var_type0);
             }
-            // The convention we use is that any strings is a pointer to the underlying physicalType
-            // Example of StringPhysicalTypes -> `string_descriptor*`, `i8*`
-            if(ASRUtils::is_string_only(return_var_type0)){
-                // Make sure to use `alloca` at the entry point.
-                llvm::Value* string_ptr = llvm_utils->CreateAlloca(
-                                            llvm_utils->get_StringType(return_var_type0),
-                                            nullptr,
-                                            "string_ret_const"
-                                        );
-                builder->CreateStore(tmp, string_ptr);
-                tmp = string_ptr;
-            }
+        }
+        // Direct and indirect string calls both produce a pointer to the
+        // physical value: string_descriptor* or i8*.
+        if (ASRUtils::is_string_only(x.m_type)) {
+            llvm::Value* string_ptr = llvm_utils->CreateAlloca(
+                llvm_utils->get_StringType(x.m_type), nullptr, "string_ret_const");
+            builder->CreateStore(tmp, string_ptr);
+            tmp = string_ptr;
         }
         // Convert complex return value from platform ABI to internal representation
         if (s->m_return_var) {
