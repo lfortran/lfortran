@@ -1,5 +1,6 @@
 #include <libasr/asr_builder.h>
 #include <libasr/pass/gpu_kernel_abi.h>
+#include <libasr/pass/gpu_data_layout.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/pass_utils.h>
@@ -530,21 +531,62 @@ void pass_gpu_kernel_storage(Allocator &al, ASR::TranslationUnit_t &unit,
         // These are the actual remaining device routines, not a prediction
         // of the routines gpu_offload might inline. Count each scope once.
         int64_t remaining = budget;
+        auto array_bytes = [&](const GpuVlaWorkspace &ws) {
+            int64_t bytes = ws.elem_size;
+            for (const auto &dim : ws.dims) {
+                if (!dim.is_constant) return int64_t(-1);
+                int64_t extent = std::max<int64_t>(dim.constant_value, 0);
+                bytes = extent > 0 && bytes > budget / extent
+                    ? budget + 1 : bytes * extent;
+            }
+            return bytes;
+        };
+        auto non_workspace_storage = [&](ASR::Function_t &fn,
+                const std::vector<GpuVlaWorkspace> &workspaces) {
+            std::set<ASR::symbol_t*> workspace_vars;
+            for (const auto &ws : workspaces) workspace_vars.insert(ws.var);
+            std::function<void(SymbolTable*)> scope = [&](SymbolTable *table) {
+                for (const auto &item : table->get_scope()) {
+                    if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                        scope(ASR::down_cast<ASR::Block_t>(
+                            item.second)->m_symtab);
+                    } else if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+                        scope(ASR::down_cast<ASR::AssociateBlock_t>(
+                            item.second)->m_symtab);
+                    } else if (ASR::is_a<ASR::Variable_t>(*item.second) &&
+                            !workspace_vars.count(item.second)) {
+                        auto *var = ASR::down_cast<ASR::Variable_t>(item.second);
+                        if ((var->m_intent != ASR::intentType::Local &&
+                                var->m_intent != ASR::intentType::ReturnVar) ||
+                                var->m_storage != ASR::storage_typeType::Default ||
+                                ASRUtils::is_allocatable_or_pointer(var->m_type)) {
+                            continue;
+                        }
+                        ASR::expr_t *value = ASRUtils::EXPR(ASR::make_Var_t(
+                            al, var->base.base.loc, item.second));
+                        ASR::ttype_t *type = gpu_size_of_type_argument(al,
+                            value, var->m_type);
+                        int64_t bytes = ASRUtils::compute_type_size_align(type).first;
+                        // Storage not representable by a numeric workspace
+                        // (notably aggregates) is never room for another array.
+                        remaining = bytes < 0 ? 0
+                            : std::max<int64_t>(remaining - bytes, 0);
+                    }
+                }
+            };
+            scope(fn.m_symtab);
+        };
+        non_workspace_storage(kernel, arrays);
         std::set<ASR::Function_t*> visited;
         std::function<void(ASR::Function_t*)> callees =
             [&](ASR::Function_t *fn) {
             if (!visited.insert(fn).second) return;
             if (fn != &kernel) {
-                for (const auto &ws : collect_gpu_vla_workspaces(*fn, 0, true)) {
-                    int64_t bytes = ws.elem_size;
-                    bool fixed = true;
-                    for (const auto &dim : ws.dims) {
-                        if (!dim.is_constant) { fixed = false; break; }
-                        int64_t extent = std::max<int64_t>(dim.constant_value, 0);
-                        bytes = extent > 0 && bytes > budget / extent
-                            ? budget + 1 : bytes * extent;
-                    }
-                    if (fixed) remaining = std::max<int64_t>(remaining - bytes, 0);
+                auto locals = collect_gpu_vla_workspaces(*fn, 0, true);
+                non_workspace_storage(*fn, locals);
+                for (const auto &ws : locals) {
+                    int64_t bytes = array_bytes(ws);
+                    if (bytes >= 0) remaining = std::max<int64_t>(remaining - bytes, 0);
                 }
             }
             for (auto *callee : gpu_callees(fn->m_body, fn->n_body, true)) {
@@ -554,15 +596,8 @@ void pass_gpu_kernel_storage(Allocator &al, ASR::TranslationUnit_t &unit,
         callees(&kernel);
         std::vector<std::pair<int64_t, ASR::symbol_t*>> fixed;
         for (const auto &ws : arrays) {
-            int64_t bytes = ws.elem_size;
-            bool constant = true;
-            for (const auto &dim : ws.dims) {
-                if (!dim.is_constant) { constant = false; break; }
-                int64_t extent = std::max<int64_t>(dim.constant_value, 0);
-                bytes = extent > 0 && bytes > budget / extent
-                    ? budget + 1 : bytes * extent;
-            }
-            if (constant) fixed.emplace_back(bytes, ws.var);
+            int64_t bytes = array_bytes(ws);
+            if (bytes >= 0) fixed.emplace_back(bytes, ws.var);
         }
         std::sort(fixed.begin(), fixed.end(), [](const auto &a, const auto &b) {
             if (a.first != b.first) return a.first < b.first;

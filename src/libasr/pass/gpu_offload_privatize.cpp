@@ -241,6 +241,8 @@ private:
         if (length && ASR::is_a<ASR::Var_t>(*length) &&
                 ASR::is_a<ASR::Variable_t>(
                     *ASR::down_cast<ASR::Var_t>(length)->m_v) &&
+                !ASRUtils::is_pointer(ASRUtils::symbol_type(
+                    ASR::down_cast<ASR::Var_t>(length)->m_v)) &&
                 ASR::down_cast<ASR::Variable_t>(
                     ASR::down_cast<ASR::Var_t>(length)->m_v)->m_intent
                     == ASR::intentType::In &&
