@@ -1,0 +1,236 @@
+#include <stdint.h>
+
+struct point_t {
+    float x;
+};
+
+struct tensor_t {
+    long values_;
+};
+
+__device__ inline void values_gpu_39(tensor_t self, float* __data_self_values_, int __size_self_values_, int __lb_self_values__dim1, float* r) {
+    int __do_loop_end;
+    int __libasr_index_0_;
+    int __libasr_index_0_1;
+    __libasr_index_0_1 = __lb_self_values__dim1;
+    __do_loop_end = ((((int)__size_self_values_) + ((int)1)) - 1);
+    __libasr_index_0_ = (((int)1) - 1);
+    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+        __libasr_index_0_ = (__libasr_index_0_ + 1);
+        r[((int)(__libasr_index_0_) - (1))] = __data_self_values_[((int)(__libasr_index_0_1) - (__lb_self_values__dim1))];
+        __libasr_index_0_1 = (__libasr_index_0_1 + 1);
+    }
+}
+
+__device__ inline void twice_gpu_41(float* x, int __size_x_dim1, int __stride_x_dim1, float* r) {
+    int __do_loop_end;
+    int __libasr_index_0_;
+    int __libasr_index_0_1;
+    __libasr_index_0_1 = 1;
+    __do_loop_end = ((((int)(__size_x_dim1)) + ((int)1)) - 1);
+    __libasr_index_0_ = (((int)1) - 1);
+    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+        __libasr_index_0_ = (__libasr_index_0_ + 1);
+        r[((int)(__libasr_index_0_) - (1))] = (((float)2) * x[(__stride_x_dim1 * ((int)(__libasr_index_0_1) - (1)))]);
+        __libasr_index_0_1 = (__libasr_index_0_1 + 1);
+    }
+}
+
+__device__ inline void points_device_t_gpu_59(int p, int n, point_t* r) {
+    int __1_intent_out_dealloc_idx_;
+    int __do_loop_end;
+    int i;
+    __do_loop_end = n;
+    i = (1 - 1);
+    while (((i + 1) <= __do_loop_end)) {
+        i = (i + 1);
+        r[((int)(i) - (1))].x = ((float)(p * i));
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __loop_end_0;
+    int __workspace_extent;
+    int __workspace_extent1;
+    int __workspace_extent2;
+    int __workspace_extent3;
+    int __workspace_extent4;
+    int __workspace_extent5;
+    int __workspace_extent6;
+    int __workspace_extent7;
+    int __workspace_extent8;
+    int __workspace_extent9;
+    int __workspace_extent10;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    float* a,
+    float* b,
+    float* c,
+    float* e,
+    point_t* q,
+    float* w,
+    tensor_t* x,
+    float* __data_x_values_,
+    int* __offsets_x_values_,
+    int* __sizes_x_values_,
+    float* z,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    float* __workspace_12,
+    float* __workspace_13,
+    float* __workspace_14,
+    float* __workspace_15,
+    float* __workspace_16,
+    float* __workspace_17,
+    float* __workspace_18,
+    float* __workspace_19,
+    float* __workspace_20,
+    float* __workspace_21,
+    float* __workspace_22)
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __workspace_extent = __scalar_args.__workspace_extent;
+    int __workspace_extent1 = __scalar_args.__workspace_extent1;
+    int __workspace_extent2 = __scalar_args.__workspace_extent2;
+    int __workspace_extent3 = __scalar_args.__workspace_extent3;
+    int __workspace_extent4 = __scalar_args.__workspace_extent4;
+    int __workspace_extent5 = __scalar_args.__workspace_extent5;
+    int __workspace_extent6 = __scalar_args.__workspace_extent6;
+    int __workspace_extent7 = __scalar_args.__workspace_extent7;
+    int __workspace_extent8 = __scalar_args.__workspace_extent8;
+    int __workspace_extent9 = __scalar_args.__workspace_extent9;
+    int __workspace_extent10 = __scalar_args.__workspace_extent10;
+    int __do_loop_end;
+    int __flat_idx;
+    float __gpu_mm_acc;
+    int __gpu_mm_i;
+    int __gpu_mm_k;
+    int __gpu_sec_i;
+    int __gpu_sec_i1;
+    int __gpu_sec_i2;
+    point_t __libasr_created__function_call_points[3];
+    const int n = 3;
+    const int np = 2;
+    int p;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    p = (__flat_idx + 1);
+    {
+        int __do_loop_end;
+        int __do_loop_end1;
+        float* __gpu_call_result = __workspace_12 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
+        float* __libasr_created__function_call_1_tensor_t_values = __workspace_13 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent1;
+        float* __libasr_created__subroutine_from_function_ = __workspace_14 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent2;
+        int __libasr_index_0_;
+        int __libasr_index_0_1;
+        values_gpu_39(x[((int)(p) - (1))], __data_x_values_ + __offsets_x_values_[((int)(p) - (1))], __sizes_x_values_[(((int)(p) - (1))) * 2 + 0], __sizes_x_values_[(((int)(p) - (1))) * 2 + 1], __libasr_created__subroutine_from_function_);
+        for (int __copy_i = 0; __copy_i < ((((int)__sizes_x_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]))); __copy_i++) __libasr_created__function_call_1_tensor_t_values[__copy_i] = __libasr_created__subroutine_from_function_[__copy_i];
+        __libasr_index_0_1 = 1;
+        __do_loop_end = (__sizes_x_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]);
+        __libasr_index_0_ = (1 - 1);
+        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+            __libasr_index_0_ = (__libasr_index_0_ + 1);
+            __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_1_tensor_t_values[((int)(__libasr_index_0_1) - (1))];
+            __libasr_index_0_1 = (__libasr_index_0_1 + 1);
+        }
+        __do_loop_end1 = n;
+        __gpu_sec_i = (1 - 1);
+        while (((__gpu_sec_i + 1) <= __do_loop_end1)) {
+            __gpu_sec_i = (__gpu_sec_i + 1);
+            a[((int)(__gpu_sec_i) - (1)) + (3 * ((int)(p) - (1)))] = __gpu_call_result[((int)(__gpu_sec_i) - (1))];
+        }
+    }
+    {
+        int __do_loop_end;
+        int __do_loop_end1;
+        float* __gpu_call_result = __workspace_15 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent3;
+        float* __libasr_created__function_call_1_tensor_t_values = __workspace_16 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent4;
+        float* __libasr_created__subroutine_from_function_ = __workspace_17 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent5;
+        int __libasr_index_0_;
+        int __libasr_index_0_1;
+        values_gpu_39(x[((int)(p) - (1))], __data_x_values_ + __offsets_x_values_[((int)(p) - (1))], __sizes_x_values_[(((int)(p) - (1))) * 2 + 0], __sizes_x_values_[(((int)(p) - (1))) * 2 + 1], __libasr_created__subroutine_from_function_);
+        for (int __copy_i = 0; __copy_i < ((((int)__sizes_x_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]))); __copy_i++) __libasr_created__function_call_1_tensor_t_values[__copy_i] = __libasr_created__subroutine_from_function_[__copy_i];
+        __libasr_index_0_1 = 1;
+        __do_loop_end = (__sizes_x_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]);
+        __libasr_index_0_ = (1 - 1);
+        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+            __libasr_index_0_ = (__libasr_index_0_ + 1);
+            __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_1_tensor_t_values[((int)(__libasr_index_0_1) - (1))];
+            __libasr_index_0_1 = (__libasr_index_0_1 + 1);
+        }
+        __do_loop_end1 = n;
+        __gpu_sec_i1 = (1 - 1);
+        while (((__gpu_sec_i1 + 1) <= __do_loop_end1)) {
+            __gpu_sec_i1 = (__gpu_sec_i1 + 1);
+            e[((int)(__gpu_sec_i1) - (1)) + (3 * ((int)(p) - (1)))] = (b[((int)(__gpu_sec_i1) - (1)) + (3 * ((int)(p) - (1)))] + (__gpu_call_result[((int)(__gpu_sec_i1) - (1))] * ((float)2)));
+        }
+    }
+    {
+        int __do_loop_end;
+        int __do_loop_end1;
+        float* __gpu_call_result = __workspace_18 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent6;
+        int __gpu_sum_k;
+        float __gpu_sum_res;
+        float* __libasr_created__function_call_1_tensor_t_values = __workspace_19 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent7;
+        float* __libasr_created__subroutine_from_function_ = __workspace_20 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent8;
+        int __libasr_index_0_;
+        int __libasr_index_0_1;
+        values_gpu_39(x[((int)(p) - (1))], __data_x_values_ + __offsets_x_values_[((int)(p) - (1))], __sizes_x_values_[(((int)(p) - (1))) * 2 + 0], __sizes_x_values_[(((int)(p) - (1))) * 2 + 1], __libasr_created__subroutine_from_function_);
+        for (int __copy_i = 0; __copy_i < ((((int)__sizes_x_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]))); __copy_i++) __libasr_created__function_call_1_tensor_t_values[__copy_i] = __libasr_created__subroutine_from_function_[__copy_i];
+        __libasr_index_0_1 = 1;
+        __do_loop_end = (__sizes_x_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]);
+        __libasr_index_0_ = (1 - 1);
+        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+            __libasr_index_0_ = (__libasr_index_0_ + 1);
+            __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_1_tensor_t_values[((int)(__libasr_index_0_1) - (1))];
+            __libasr_index_0_1 = (__libasr_index_0_1 + 1);
+        }
+        __gpu_sum_res =   0.00000000000000000e+00f;
+        __do_loop_end1 = (__sizes_x_values_[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]);
+        __gpu_sum_k = (1 - 1);
+        while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
+            __gpu_sum_k = (__gpu_sum_k + 1);
+            __gpu_sum_res = (__gpu_sum_res + (__gpu_call_result[((int)((1 + (__gpu_sum_k - 1))) - (1))] * b[((int)(__gpu_sum_k) - (1)) + (3 * ((int)(p) - (1)))]));
+        }
+        c[((int)(p) - (1))] = __gpu_sum_res;
+    }
+    {
+        int __do_loop_end;
+        float* __gpu_call_result = __workspace_21 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent9;
+        float* __libasr_created__function_call_twice;
+        float* __libasr_created__function_call_twice1 = __workspace_22 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent10;
+        int __libasr_index_0_;
+        int __libasr_index_0_1;
+        __libasr_created__function_call_twice = a + ((int)(1) - (1)) + (3 * ((int)(p) - (1)));
+        twice_gpu_41(__libasr_created__function_call_twice, ((((n) - (1)) / (1)) + 1), 1, __libasr_created__function_call_twice1);
+        __libasr_index_0_1 = 1;
+        __do_loop_end = (1 + ((int)((((((((int)3) - ((int)1)) + ((int)1)) / ((int)1)) > 0)) ? ((((((int)3) - ((int)1)) + ((int)1)) / ((int)1))) : (0))) - 1);
+        __libasr_index_0_ = (1 - 1);
+        while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+            __libasr_index_0_ = (__libasr_index_0_ + 1);
+            __gpu_call_result[((int)(__libasr_index_0_) - (1))] = __libasr_created__function_call_twice1[((int)(__libasr_index_0_1) - (1))];
+            __libasr_index_0_1 = (__libasr_index_0_1 + 1);
+        }
+        __gpu_mm_i = (1 - 1);
+        while (((__gpu_mm_i + 1) <= 3)) {
+            __gpu_mm_i = (__gpu_mm_i + 1);
+            __gpu_mm_acc =   0.00000000000000000e+00f;
+            __gpu_mm_k = (1 - 1);
+            while (((__gpu_mm_k + 1) <= 3)) {
+                __gpu_mm_k = (__gpu_mm_k + 1);
+                __gpu_mm_acc = (__gpu_mm_acc + (w[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(__gpu_mm_k) - (1)))] * __gpu_call_result[((int)((1 + (__gpu_mm_k - 1))) - (1))]));
+            }
+            z[((int)(__gpu_mm_i) - (1)) + (3 * ((int)(p) - (1)))] = __gpu_mm_acc;
+        }
+    }
+    __do_loop_end = n;
+    __gpu_sec_i2 = (1 - 1);
+    while (((__gpu_sec_i2 + 1) <= __do_loop_end)) {
+        __gpu_sec_i2 = (__gpu_sec_i2 + 1);
+        points_device_t_gpu_59(p, 3, __libasr_created__function_call_points);
+        q[((int)(__gpu_sec_i2) - (1)) + (3 * ((int)(p) - (1)))] = __libasr_created__function_call_points[((int)(__gpu_sec_i2) - (1))];
+    }
+}
+

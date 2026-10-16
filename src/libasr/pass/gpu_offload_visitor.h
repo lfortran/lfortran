@@ -195,6 +195,11 @@ public:
 
     void inline_matmul_stmts(ASR::stmt_t** &body, size_t &n_body);
 
+    void hoist_array_function_results(ParallelLoopNest &nest);
+
+    void hoist_array_function_results_in_body(ASR::stmt_t** &body,
+            size_t &n_body, SymbolTable *scope, SymbolTable *&block_scope);
+
     void hoist_nested_matmuls(ParallelLoopNest &nest);
 
     void hoist_nested_matmuls_in_body(ASR::stmt_t** &body, size_t &n_body,
@@ -306,7 +311,7 @@ public:
     void materialize_aliased_assignments(ParallelLoopNest &nest);
 
     void materialize_aliased_in_body(ASR::stmt_t** &body, size_t &n_body,
-            bool &changed);
+            SymbolTable *scope, bool &changed);
 
     void inline_array_section_assignment(ParallelLoopNest &nest);
 

@@ -25,6 +25,10 @@ namespace LCompilers {
 // below can decline any more.
 void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
         const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map) {
+    // Every call of a function returning an array is made once, before
+    // the element loops below are built around its statement.
+    hoist_array_function_results(work);
+
     // Inline IntrinsicArrayFunction All before kernel extraction
     all_reduction_targets.clear();
     inline_intrinsic_all(work);
@@ -138,6 +142,10 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
                 ASR::Assignment_t *asgn =
                     ASR::down_cast<ASR::Assignment_t>(
                         ab->m_body[ai]);
+                // A name bound to the array a function returns is the
+                // value of one call, made on entry: writing the call in
+                // place of the name would make it again wherever the name
+                // is read, for every element an array operation reads.
                 if (ASR::is_a<ASR::Var_t>(*asgn->m_target)) {
                     ASR::symbol_t *sym =
                         ASR::down_cast<ASR::Var_t>(
@@ -146,6 +154,7 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
                         ASR::down_cast<ASR::Variable_t>(sym)
                             ->m_parent_symtab == ab->m_symtab &&
                         assoc_map.find(sym) == assoc_map.end() &&
+                        !gpu_is_array_function_result(asgn->m_value) &&
                         is_single_assignment_binding(sym,
                             ab->m_body, ab->n_body) &&
                         !GpuAssociateScopeWrites(ab->m_body, ab->n_body,
