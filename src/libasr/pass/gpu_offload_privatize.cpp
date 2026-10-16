@@ -3,6 +3,7 @@
 #include <map>
 #include <set>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <libasr/asr.h>
@@ -543,9 +544,11 @@ bool read_after_region(GpuArrayFlowReader &reader,
 // they defined. It is a local, non-saved variable of fixed or explicit
 // shape that no pointer and no other procedure can reach (access_paths.h),
 // that no clause of the loop and no ASSOCIATE around it names, and that no
-// contained procedure names. Anything else stays one array, shared by all
-// threads, as the source wrote it: distinct elements per iteration
-// (`y(i) = ...`) are its common case.
+// contained procedure names. Arrays of a fixed size are made local only
+// while together they fit the part of a thread's stack the device lets the
+// pass take (GpuDeviceCapabilities::privatized_array_bytes). Anything else
+// stays one array, shared by all threads, as the source wrote it: distinct
+// elements per iteration (`y(i) = ...`) are its common case.
 void GpuOffloadVisitor::privatize_iteration_arrays(
         const ASR::OMPRegion_t &region, ParallelLoopNest &work,
         const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map) {
@@ -633,7 +636,9 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
     }
     std::map<ASR::Function_t*, bool> outside;
 
-    std::vector<ASR::symbol_t*> privatized;
+    // The arrays that may be made local, with the bytes each takes on a
+    // thread's stack (none for a run-time extent, which gets a workspace).
+    std::vector<std::pair<int64_t, ASR::symbol_t*>> candidates;
     for (ASR::symbol_t *sym : named) {
         if (!ASR::is_a<ASR::Variable_t>(*sym)) continue;
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
@@ -714,7 +719,24 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
             continue;
         }
         if (read_after_region(reader, path)) continue;
-        privatized.push_back(sym);
+        candidates.push_back({std::max<int64_t>(
+            ASRUtils::compute_type_size_align(v->m_type).first, 0), sym});
+    }
+    // The smallest first, while they fit what the device lets the pass add
+    // to a thread's stack.
+    std::sort(candidates.begin(), candidates.end(),
+        [](const std::pair<int64_t, ASR::symbol_t*> &a,
+                const std::pair<int64_t, ASR::symbol_t*> &b) {
+            if (a.first != b.first) return a.first < b.first;
+            return std::string(ASRUtils::symbol_name(a.second))
+                < std::string(ASRUtils::symbol_name(b.second));
+        });
+    std::vector<ASR::symbol_t*> privatized;
+    int64_t stack_bytes = 0;
+    for (auto &c : candidates) {
+        if (stack_bytes + c.first > device_caps.privatized_array_bytes) break;
+        stack_bytes += c.first;
+        privatized.push_back(c.second);
     }
     if (privatized.empty()) return;
     std::sort(privatized.begin(), privatized.end(),
