@@ -1167,7 +1167,10 @@ compiled separately, whose instance entities no USE imports by any name;
 `traits_generic_type_05` intrinsic type arguments whose conformances the
 unit declares; `traits_generic_type_07` private components that the
 definition's initializer and method give values with structure constructors
-of the type itself, in instances that a separately compiled client owns.
+of the type itself, in instances that a separately compiled client owns;
+`traits_generic_type_08` a method that constructs another module's type of
+the same name, imported under another name, and the constructors of a type
+whose only component does not depend on its parameter.
 `continue_compilation_traits_04` and `continue_compilation_traits_05` cover
 the diagnostics, and `traits_generic_private_component_01` a private
 component of a generic type loaded from its module file.

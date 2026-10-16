@@ -3285,20 +3285,27 @@ public:
             array, shape, ttype, value);
     }
 
-    // A structure constructor of the generic type in one of the type's own
-    // procedures constructs the instance that the procedure is copied for.
+    // A structure constructor of the generic definition being specialized,
+    // in one of its own procedures, constructs the instance that the
+    // procedure is copied for. The instance records the definition it
+    // specializes; a constructor of any other type keeps its type, also one
+    // whose name is the definition's, such as a type renamed on `use`.
     ASR::asr_t* duplicate_StructConstructor(ASR::StructConstructor_t *x) {
         ASR::StructConstructor_t *copy = ASR::down_cast2<ASR::StructConstructor_t>(
             BaseExprStmtDuplicator::duplicate_StructConstructor(x));
-        std::string name = ASRUtils::symbol_name(
-            ASRUtils::symbol_get_past_external(x->m_dt_sym));
-        auto instance = symbol_subs.find(name);
-        if (instance != symbol_subs.end() && ASR::is_a<ASR::Struct_t>(
-                *ASRUtils::symbol_get_past_external(instance->second))
-                && ASR::is_a<ASR::StructType_t>(*x->m_type)) {
-            copy->m_dt_sym = instance->second;
+        ASR::symbol_t *type = ASRUtils::symbol_get_past_external(x->m_dt_sym);
+        auto candidate = symbol_subs.find(ASRUtils::symbol_name(type));
+        if (candidate == symbol_subs.end() || !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
+            return &copy->base.base;
+        }
+        ASR::symbol_t *target = ASRUtils::symbol_get_past_external(candidate->second);
+        ASR::GenericTypeInstance_t *instance = ASR::is_a<ASR::Struct_t>(*target)
+            ? ASRUtils::generic_type_instance(*ASR::down_cast<ASR::Struct_t>(target))
+            : nullptr;
+        if (instance && &ASRUtils::generic_instance_definition(*instance)->base == type) {
+            copy->m_dt_sym = candidate->second;
             copy->m_type = ASRUtils::make_StructType_t_util(al, x->base.base.loc,
-                instance->second, ASR::down_cast<ASR::StructType_t>(x->m_type)->m_is_cstruct);
+                candidate->second, ASR::down_cast<ASR::StructType_t>(x->m_type)->m_is_cstruct);
         }
         return &copy->base.base;
     }
