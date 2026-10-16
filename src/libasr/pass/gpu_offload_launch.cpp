@@ -46,6 +46,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         // Unwrap BlockCall to inspect block body statements
         ASR::stmt_t **stmts_to_scan = &stmt;
         size_t n_stmts_to_scan = 1;
+        SymbolTable *block_symtab = nullptr;
         if (ASR::is_a<ASR::BlockCall_t>(*stmt)) {
             ASR::BlockCall_t *bc =
                 ASR::down_cast<ASR::BlockCall_t>(stmt);
@@ -54,6 +55,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                     ASR::down_cast<ASR::Block_t>(bc->m_m);
                 stmts_to_scan = blk->m_body;
                 n_stmts_to_scan = blk->n_body;
+                block_symtab = blk->m_symtab;
             }
         }
         for (size_t sj = 0; sj < n_stmts_to_scan; sj++) {
@@ -73,6 +75,11 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             ASR::Variable_t *var =
                 ASR::down_cast<ASR::Variable_t>(orig_sym);
             if (!ASRUtils::is_allocatable(var->m_type)) continue;
+            // A local of a BLOCK of the loop body is the kernel's own,
+            // which the host has no storage for.
+            if (block_symtab && var->m_parent_symtab == block_symtab) {
+                continue;
+            }
 
             ASR::FunctionCall_t *fc =
                 ASR::down_cast<ASR::FunctionCall_t>(asgn->m_value);
