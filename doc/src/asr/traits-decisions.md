@@ -160,7 +160,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-14 | Existing receiver-free message declarations | Keep receiver-free declarations as read-only compatibility syntax; **require explicit receivers for instance methods; migrate existing examples and tests** | TD-36 |
 | 2026-10-14 | Matching an implementation to a message with a receiver | **Require a passed receiver with matching INTENT**; also allow weaker receiver effects or NOPASS implementations, and define adaptation rules | TD-36 |
 | 2026-10-14 | Marking the receiver, since `type(itself)` also declares ordinary same-type arguments | **Always mark the receiver with PASS on its dummy declaration**; infer a unique `type(itself)` dummy, and require PASS when there are several; use `PASS(name)` on the trait method declaration instead | TD-36 |
-| 2026-10-16 | Whether the private components of a generic instance belong to the generic definition's module or to the client scope that owns the generated instance | **Preserve the generic definition's privacy and include this case in the fix** (recommended); the generated instance's client scope | TD-37 |
+| 2026-10-16 | Whether the private components of a generic instance belong to the generic definition's module or, as in the prototype then, to the client scope that owns the generated instance | **Preserve the generic definition's privacy and include this case in the fix (recommended)**; Finish ordinary Fortran checking now; document and defer generic-instance privacy | TD-37 |
 
 ### Instructions given without an option form
 
@@ -1521,9 +1521,9 @@ specification action, that is, what the paper should say.
   - An instance is an ordinary sealed derived type owned by the module or main
     program that creates it. Equal instances in one unit are one type.
   - Owning an instance places its type, procedure copies and conformance
-    evidence in the unit that creates it. It gives that unit no source access:
-    the private components of an instance stay private to the module that
-    defines the generic type (TD-37).
+    evidence in the unit that creates it. It does not grant that unit
+    additional access to private components: those of an instance stay
+    private to the module that defines the generic type (TD-37).
   - Instances are not shared between program units yet: equal instances created
     by different units are different types, and an instance's conformances are
     visible only in its unit. The design intends one identity across units when
@@ -1618,14 +1618,18 @@ specification action, that is, what the paper should say.
   by the unit that creates it (TD-25), while the generic definition, in
   another module, declares its components and their accessibility. The paper
   does not say which of the two modules counts for an instance's components.
-- **Options presented (2026-10-16).** The generic definition's module (chosen
-  and recommended, "Preserve the generic definition's privacy and include this
-  case in the fix"): `Holder{integer}(value=3)` outside the module that
-  defines `Holder` is rejected, while the type's own initializers and methods
-  keep that module's access. Or the client scope that owns the generated
-  instance, where its components would be accessible. The second option is
-  recorded as it was summarized to the implementers.
-- **Choice.** The generic definition's module, chosen by the maintainer.
+- **Options presented (2026-10-16).** The question explained that the
+  prototype then let the unit that owns a generated instance give its private
+  components values, and recommended rejecting `Holder{integer}(value=3)`
+  outside the module that defines `Holder` while the type's own initializers
+  and methods keep that module's access. Its options were "Preserve the
+  generic definition's privacy and include this case in the fix
+  (recommended)" (`definition_scope`, chosen), or "Finish ordinary Fortran
+  checking now; document and defer generic-instance privacy"
+  (`defer_generic_privacy`). Access from the owning unit was not offered as a
+  language rule.
+- **Choice.** Preserve the generic definition's privacy and include this case
+  in the fix (`definition_scope`), chosen by the maintainer.
 - **Consequences.** A private component of an instance is accessible where the
   same component of an ordinary type defined in the generic type's module
   would be. Outside that module, a structure constructor of an instance can
@@ -1636,7 +1640,8 @@ specification action, that is, what the paper should say.
   and generic types of other modules. The instance's copies of the
   definition's initializers and methods keep the definition's access, so they
   can give the private components values, also with structure constructors of
-  the type itself. TD-25's ownership of instance symbols is not source access.
+  the type itself. TD-25's ownership of instance symbols does not grant
+  additional access to private components.
 - **Implementation status.** Implemented for structure constructors: the
   component of an instance is checked against the module of the generic
   definition that the instance records, also after the definition is loaded

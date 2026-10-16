@@ -1113,12 +1113,12 @@ An instance is an ordinary sealed derived type of the module or main program
 that creates it; equal instances of one module or program are one type. It
 owns copies of the type's procedures, specialized for its arguments, and its
 own bindings, initializers and conformances. These are private to the unit.
-Owning an instance gives the unit no access to the definition, though: a
-component that the generic definition declares private stays private to the
-module that defines the generic type, and to its descendants, in every
-instance (TD-37). Outside that module a structure constructor of an instance
-cannot give it a value, while the instance's copies of the definition's own
-initializers and methods keep that module's access.
+Owning an instance does not grant the unit additional access to private
+components, though: a component that the generic definition declares private
+stays private to the module that defines the generic type, and to its
+descendants, in every instance (TD-37). Outside that module a structure
+constructor of an instance cannot give it a value, while the instance's copies
+of the definition's own initializers and methods keep that module's access.
 An instance is named like its type applied to its arguments,
 `averager{simplesum}`, and its copies' names extend that name; LFortran
 accepts identifiers that start with an underscore, but no name a source can
