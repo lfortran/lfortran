@@ -206,11 +206,11 @@ TEST_CASE("ASR Verify INTENT(OUT) StringPhysicalCast argument path") {
     std::string src = R"""(
 program p
 implicit none
-character(2), allocatable :: str
+character(1), allocatable :: str
 call ss(str)
 contains
-subroutine ss(s)
-    character(2), intent(out) :: s
+subroutine ss(s) bind(c)
+    character(1), intent(out) :: s
 end subroutine
 end program p
 )""";
@@ -236,22 +236,24 @@ end program p
 
     ASR::Program_t *prog = ASR::down_cast<ASR::Program_t>(asr->m_symtab->get_symbol("p"));
     ASR::SubroutineCall_t *call_stmt = ASR::down_cast<ASR::SubroutineCall_t>(prog->m_body[0]);
-    ASR::expr_t* original_arg = call_stmt->m_args[0].m_value;
+    REQUIRE(ASR::is_a<ASR::StringPhysicalCast_t>(*call_stmt->m_args[0].m_value));
+    ASR::StringPhysicalCast_t* cast_arg =
+        ASR::down_cast<ASR::StringPhysicalCast_t>(call_stmt->m_args[0].m_value);
+    CHECK(asr_verify(*asr, true, diagnostics));
 
-    ASR::ttype_t* cast_type = ASR::down_cast<ASR::ttype_t>(
-        ASR::make_String_t(al, original_arg->base.loc, 1, nullptr,
-            ASR::string_length_kindType::ImplicitLength,
-            ASR::string_physical_typeType::DescriptorString));
-    call_stmt->m_args[0].m_value = ASR::down_cast<ASR::expr_t>(
-        ASR::make_StringPhysicalCast_t(al, original_arg->base.loc, original_arg,
-            ASR::string_physical_typeType::DescriptorString,
-            ASR::string_physical_typeType::CChar, cast_type, nullptr));
+    cast_arg->m_old = ASR::string_physical_typeType::CChar;
+    CHECK(!asr_verify(*asr, true, diagnostics));
+    diagnostics.diagnostics.clear();
+    cast_arg->m_old = ASR::string_physical_typeType::DescriptorString;
 
+    cast_arg->m_new = ASR::string_physical_typeType::DescriptorString;
+    CHECK(!asr_verify(*asr, true, diagnostics));
+    diagnostics.diagnostics.clear();
+    cast_arg->m_new = ASR::string_physical_typeType::CChar;
     CHECK(asr_verify(*asr, true, diagnostics));
 
     // Mutate cast payload to a non-variable expression.
-    ASR::StringPhysicalCast_t* cast_arg =
-        ASR::down_cast<ASR::StringPhysicalCast_t>(call_stmt->m_args[0].m_value);
+    ASR::expr_t* original_arg = cast_arg->m_arg;
     ASR::ttype_t* int_type = ASR::down_cast<ASR::ttype_t>(
         ASR::make_Integer_t(al, original_arg->base.loc, 4));
     cast_arg->m_arg = ASR::down_cast<ASR::expr_t>(
