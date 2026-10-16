@@ -23,6 +23,11 @@ namespace LCompilers {
     // place, without a temporary.
     bool is_vectorise_able(ASR::expr_t* x);
 
+    // Whether `rhs` names an array that `lhs` names as well, in which case
+    // a section of it is copied rather than read in place.
+    bool is_common_symbol_present_in_lhs_and_rhs(Allocator &al,
+        ASR::expr_t* lhs, ASR::expr_t* rhs);
+
     void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
         ASR::expr_t* value, Vec<ASR::stmt_t*>* current_body,
         ASR::expr_t* rank_source = nullptr);

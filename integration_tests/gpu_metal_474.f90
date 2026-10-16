@@ -5,8 +5,8 @@
 ! or whose value is read after the loop, stays shared.
 program gpu_metal_474
 implicit none
-integer, parameter :: n = 10000, m = 64
-real :: g(m, n), t(m), y(n), u(4)
+integer, parameter :: n = 10000, m = 64, long = 16384
+real :: g(m, n), t(m), y(n), u(4), x(m, n), xr(4, long)
 integer :: it, j, k
 
 ! A fixed-size temporary, defined element by element, in a loop that
@@ -26,6 +26,27 @@ do j = 1, n
         if (g(k, j) /= j + m + 1 - k + 2) error stop 1
     end do
 end do
+
+! Filled from a column of an array far larger than a thread's stack, next
+! to the sum of a row longer than what the stack has left: no temporary
+! holds either section, so every iteration still defines its own.
+do j = 1, n
+    do k = 1, m
+        x(k, j) = j + k
+    end do
+end do
+xr = 1
+do concurrent (j = 1:n)
+    t = x(:, j) + 1
+    g(:, j) = t(m:1:-1)
+    if (j == 1) y(1) = sum(xr(4, :))
+end do
+do j = 1, n
+    do k = 1, m
+        if (g(k, j) /= j + m + 1 - k + 1) error stop 7
+    end do
+end do
+if (y(1) /= long) error stop 8
 ! The temporary is defined again before it is read after the loop.
 t = 1
 if (sum(t) /= m) error stop 2

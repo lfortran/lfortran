@@ -116,65 +116,82 @@ constexpr int64_t gpu_stack_frame_reserve_bytes = 8 * 1024;
 // body, and of every procedure it may call, and of theirs; and the
 // temporaries the passes after this one create for the array values the
 // statements of those compute (`cshift(b, j)`, `reshape(...)`, a section
-// copied for a call), which are locals of the kernel or of the procedure
+// gathered for a call), which are locals of the kernel or of the procedure
 // as well. Each scope counts once, so the sum bounds what any chain of
 // calls holds at once. An allocatable or pointer lives on the heap and a
 // run-time sized array in a workspace, not on the stack; an associate name
 // is its selector, which the pass writes in its place.
 //
-// Every array value a statement may hold in a temporary
-// (is_temporary_needed) counts once, wherever it nests, whether a
-// temporary is made for it in the end or not -- except an elementwise
-// one (is_vectorise_able, or a scalar broadcast to a shape) that is an
-// operand of another or the value of an assignment, which is computed
-// element by element into what uses it. A value counts the bytes of its
-// type; when its extents are not compile-time constants, those of the
-// array a section of it names, at most once each element without a vector
-// subscript, or of an elementwise value's operands, whose shape it has.
-// A value no such bound is known for leaves the bound unknown
-// (`bounded`): a pass after this one may still find one and make its
-// temporary a stack array.
+// A temporary counts for every array value a pass after this one may give
+// storage of its own, wherever it nests, whether it is made in the end or
+// not:
+//   - a value a statement may hold in a temporary (is_temporary_needed),
+//     one an expression computes or a section with a vector subscript --
+//     except an elementwise one (is_vectorise_able, or a scalar broadcast
+//     to a shape) that is an operand of another or the value of an
+//     assignment, which is computed element by element into what uses it;
+//   - of a section without a vector subscript, only a copy: of one whose
+//     elements are not adjacent, as an actual argument
+//     (gather_strided_section_arg), or of one of the array an assignment
+//     defines (is_common_symbol_present_in_lhs_and_rhs); anywhere else the
+//     section is read in place;
+//   - the target of an assignment whose value reads the target's storage
+//     through another designator, when that temporary has a compile-time
+//     size (self_aliasing_target, alias_temp_is_fixed_size).
+// A value counts the bytes of its type. When its extents are not
+// compile-time constants, a section or an element designator with a vector
+// subscript counts a bound on the elements its subscripts select
+// (`designated_elements`), and an elementwise value the elements of its
+// operands, whose shape it has. A value no such bound is known for leaves
+// the bound unknown (`bounded`): a pass after this one may still find one
+// and make its temporary a stack array.
 class GpuThreadStack
         : public ASRUtils::BlockBodyWalkVisitor<GpuThreadStack> {
 public:
     int64_t bytes = 0;
     bool bounded = true;
 
-    GpuThreadStack() { visit_compile_time_value = false; }
+    GpuThreadStack(Allocator &al_, GpuOffloadVisitor &gpu_)
+            : al(al_), gpu(gpu_) {
+        visit_compile_time_value = false;
+    }
 
     // An actual argument is evaluated, whatever the flag above says of
     // the `m_value` of a call_arg.
     void visit_call_arg(const ASR::call_arg_t &x) {
-        if (x.m_value) visit_expr(*x.m_value);
+        if (!x.m_value) return;
+        bool outer = call_argument;
+        call_argument = true;
+        visit_expr(*x.m_value);
+        call_argument = outer;
     }
 
     void visit_expr(const ASR::expr_t &x) {
         ASR::expr_t *e = const_cast<ASR::expr_t*>(&x);
         bool cast = ASR::is_a<ASR::ArrayPhysicalCast_t>(x);
         bool own = elementwise(e);
+        // Where `e` stands, as what visits it says; its operands are told
+        // where they stand below.
         bool in_elementwise = in_elementwise_value;
+        bool argument = call_argument;
         int64_t outer_operands = operand_elements;
         in_elementwise_value = cast ? in_elementwise : reads_in_place(e);
+        call_argument = cast && argument;
         operand_elements = -1;
         ASRUtils::BlockBodyWalkVisitor<GpuThreadStack>::visit_expr(x);
         int64_t operands = operand_elements;
         in_elementwise_value = in_elementwise;
+        call_argument = argument;
         operand_elements = outer_operands;
         if (!ASRUtils::is_array(ASRUtils::expr_type(e))) return;
         int64_t n = elements(e);
         if (n < 0 && (own || cast)) n = operands;
         operand_elements = std::max(operand_elements, n);
         if (e == assigned || cast || (own && in_elementwise) ||
-                !is_temporary_needed(e)) {
+                !is_temporary_needed(e) || read_in_place(e, argument)) {
             return;
         }
-        int64_t element = ASRUtils::compute_type_size_align(
-            ASRUtils::extract_type(ASRUtils::expr_type(e))).first;
-        if (n < 0 || element <= 0) {
-            bounded = false;
-        } else {
-            bytes += n * element;
-        }
+        count(e, n);
     }
 
     // What an assignment defines is storage, not a value it computes, and
@@ -183,10 +200,19 @@ public:
         assigned = x.m_target;
         visit_expr(*x.m_target);
         assigned = nullptr;
+        ASR::expr_t *aliased = gpu.self_aliasing_target(
+            const_cast<ASR::Assignment_t*>(&x));
+        if (aliased && gpu.alias_temp_is_fixed_size(aliased)) {
+            count(aliased, elements(aliased));
+        }
+        ASR::expr_t *outer_target = target_array;
+        target_array = ASRUtils::is_array(ASRUtils::expr_type(x.m_target))
+            ? ASRUtils::extract_array_variable(x.m_target) : nullptr;
         bool in_elementwise = in_elementwise_value;
         in_elementwise_value = true;
         visit_expr(*x.m_value);
         in_elementwise_value = in_elementwise;
+        target_array = outer_target;
         if (x.m_overloaded) visit_stmt(*x.m_overloaded);
     }
 
@@ -231,15 +257,25 @@ public:
     }
 
 private:
+    Allocator &al;
+    GpuOffloadVisitor &gpu;
     std::set<SymbolTable*> counted;
 
     ASR::expr_t *assigned = nullptr;
+    // The array the assignment whose value is being visited defines.
+    ASR::expr_t *target_array = nullptr;
     // Whether the value being visited is an operand of an elementwise
     // value or the value of an assignment.
     bool in_elementwise_value = false;
+    // Whether it is an actual argument.
+    bool call_argument = false;
     // The most elements an array operand of the value being visited has,
     // -1 if none is known.
     int64_t operand_elements = -1;
+
+    // More elements than any stack holds; a bound that grows past it
+    // stays there.
+    static constexpr int64_t too_many_elements = int64_t(1) << 40;
 
     static bool elementwise(ASR::expr_t *e) {
         return ASR::is_a<ASR::ArrayBroadcast_t>(*e) || is_vectorise_able(e);
@@ -265,25 +301,77 @@ private:
         }
     }
 
-    // The elements of an array value, if its type or the array a section
-    // of it names gives them at compile time; -1 otherwise.
-    static int64_t elements(ASR::expr_t *e) {
+    // Whether `e`, a section without a vector subscript, is read where it
+    // is rather than copied (see the class comment).
+    bool read_in_place(ASR::expr_t *e, bool argument) {
+        if (!ASR::is_a<ASR::ArraySection_t>(*e)) return false;
+        ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(e);
+        if (ASRUtils::is_array_indexed_with_array_indices(as)) return false;
+        if (argument && gpu.section_is_noncontiguous(as)) return false;
+        return !(target_array &&
+            is_common_symbol_present_in_lhs_and_rhs(al, target_array, e));
+    }
+
+    void count(ASR::expr_t *e, int64_t n) {
+        int64_t element = ASRUtils::compute_type_size_align(
+            ASRUtils::extract_type(ASRUtils::expr_type(e))).first;
+        if (n < 0 || element <= 0) {
+            bounded = false;
+        } else {
+            bytes += n * element;
+        }
+    }
+
+    // A bound on the elements of an array value from its type or, for a
+    // designator, its subscripts; -1 if none is known at compile time.
+    int64_t elements(ASR::expr_t *e) {
         ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
             ASRUtils::expr_type(e));
         if (ASRUtils::is_fixed_size_array(t)) {
             return ASRUtils::get_fixed_size_of_array(t);
         }
-        if (ASR::is_a<ASR::ArraySection_t>(*e) &&
-                !ASRUtils::is_array_indexed_with_array_indices(
-                    ASR::down_cast<ASR::ArraySection_t>(e))) {
-            t = ASRUtils::type_get_past_allocatable_pointer(
-                ASRUtils::expr_type(
-                    ASR::down_cast<ASR::ArraySection_t>(e)->m_v));
-            if (ASRUtils::is_fixed_size_array(t)) {
-                return ASRUtils::get_fixed_size_of_array(t);
-            }
+        if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+            ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(e);
+            return designated_elements(as->m_v, as->m_args, as->n_args);
+        }
+        if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+            ASR::ArrayItem_t *ai = ASR::down_cast<ASR::ArrayItem_t>(e);
+            return designated_elements(ai->m_v, ai->m_args, ai->n_args);
         }
         return -1;
+    }
+
+    // A bound on the elements the subscripts of `base` select, the product
+    // of one per dimension: one for a scalar subscript, as many as a
+    // vector subscript has, and for a triplet as many as it spans when
+    // that is a compile-time constant (const_section_extent, as a gathered
+    // section is sized) and otherwise the extent of that dimension of
+    // `base`, which a triplet never exceeds.
+    int64_t designated_elements(ASR::expr_t *base, ASR::array_index_t *args,
+            size_t n_args) {
+        ASR::dimension_t *dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(base), dims);
+        int64_t n = 1;
+        for (size_t d = 0; d < n_args; d++) {
+            const ASR::array_index_t &index = args[d];
+            int64_t extent = -1;
+            if (index.m_left == nullptr && index.m_step == nullptr) {
+                extent = index.m_right && ASRUtils::is_array(
+                        ASRUtils::expr_type(index.m_right))
+                    ? elements(index.m_right) : 1;
+            } else if (!gpu.const_section_extent(index, extent)) {
+                if (d >= n_dims || dims[d].m_length == nullptr ||
+                        !ASRUtils::extract_value(ASRUtils::expr_value(
+                            dims[d].m_length), extent)) {
+                    extent = -1;
+                }
+            }
+            if (extent < 0) return -1;
+            n = extent > 0 && n > too_many_elements / extent
+                ? too_many_elements : n * extent;
+        }
+        return n;
     }
 
     void scope(SymbolTable *s, const std::set<ASR::symbol_t*> &skip) {
@@ -315,7 +403,12 @@ private:
         ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(s);
         if (counted.count(fn->m_symtab)) return;
         scope(fn->m_symtab, {});
+        // The callee's statements are its own; what the caller's statement
+        // defines does not reach them.
+        ASR::expr_t *outer_target = target_array;
+        target_array = nullptr;
         for (size_t i = 0; i < fn->n_body; i++) visit_stmt(*fn->m_body[i]);
+        target_array = outer_target;
     }
 };
 
@@ -1005,7 +1098,7 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
             return std::string(ASRUtils::symbol_name(a.second))
                 < std::string(ASRUtils::symbol_name(b.second));
         });
-    GpuThreadStack taken;
+    GpuThreadStack taken(al, *this);
     for (size_t i = 0; i < work.n_body; i++) {
         taken.visit_stmt(*work.body[i]);
     }
