@@ -1,0 +1,13 @@
+{
+    "basename": "run-continue_compilation_unterminated_string-5db76a4",
+    "cmd": "lfortran --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/continue_compilation_unterminated_string.f90",
+    "infile_hash": "5d3123a40d77cb335f2a6d879bdd173e152f1c73db9526c2c85b0c50",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-continue_compilation_unterminated_string-5db76a4.stderr",
+    "stderr_hash": "33e212e55371a14d80033413d7154a2d16b60354e577e7af71ed9a1e",
+    "returncode": 1
+}

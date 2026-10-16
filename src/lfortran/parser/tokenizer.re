@@ -346,8 +346,11 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             exp = [edED][-+]? digit+;
             integer = digit+ ("_" kind)?;
             real = ((significand exp?) | (digit+ exp)) ("_" kind)?;
-            string1 = (kind "_")? '"' ('""'|[^"\x00])* '"';
-            string2 = (kind "_")? "'" ("''"|[^'\x00])* "'";
+            string_continuation = "&" [ \t]* newline ([ \t]* ("!"[^\n\x00]*)? newline)* [ \t]* "&"?;
+            string1 = (kind "_")? '"' ('""'|[^"\n\x00]|string_continuation)* '"';
+            string2 = (kind "_")? "'" ("''"|[^'\n\x00]|string_continuation)* "'";
+            unterminated_string1 = (kind "_")? '"' ('""'|[^"\n\x00]|string_continuation)* newline;
+            unterminated_string2 = (kind "_")? "'" ("''"|[^'\n\x00]|string_continuation)* newline;
             omp_kw = "!$" [oO][mM][pP];
             omp = omp_kw [^\n\x00]*;
             omp_end = omp_kw whitespace+ [eE][nN][dD] [^\n\x00]*;
@@ -882,6 +885,23 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                 line_num++; cur_line=cur; continue;
             }
 
+            unterminated_string1 | unterminated_string2 {
+                unsigned char *quote = tok;
+                while (quote < cur && *quote != '\'' && *quote != '"') quote++;
+                loc.first = quote - string_start + loc_offset;
+                loc.last = loc.first;
+                diagnostics.add(diag::Diagnostic(
+                    "unterminated character constant",
+                    diag::Level::Error, diag::Stage::Tokenizer, {
+                    diag::Label("character constant is not closed before the end of the line", {loc})
+                }));
+                if (!continue_compilation) {
+                    throw parser_local::TokenizerAbort();
+                }
+                line_num++;
+                cur_line = cur;
+                continue;
+            }
             string1 { lex_string(al, yylval.str_prefix, '"'); RET(TK_STRING) }
             string2 { lex_string(al, yylval.str_prefix, '\''); RET(TK_STRING) }
 
