@@ -3046,3 +3046,207 @@ contains
         cc1_pcoc4_take_pointer = 0
     end function cc1_pcoc4_take_pointer
 end module cc1_proc_component_of_constant_4_mod
+
+! The interface of a dummy procedure or procedure pointer result shall not
+! depend on its own characteristics (Fortran 2023 15.4.3.6), directly or
+! through the interfaces of other dummy procedures or results.
+module cc1_cyclic_procedure_interfaces
+implicit none
+contains
+    subroutine cc1_cpi_a(g)
+        procedure(cc1_cpi_b) :: g
+    end subroutine cc1_cpi_a
+
+    subroutine cc1_cpi_b(k)
+        procedure(cc1_cpi_a) :: k  ! {Error} interface 'cc1_cpi_a' of dummy procedure 'k' depends on the characteristics of 'k'
+    end subroutine cc1_cpi_b
+
+    subroutine cc1_cpi_self(g)
+        procedure(cc1_cpi_self) :: g  ! {Error} interface 'cc1_cpi_self' of dummy procedure 'g' depends on the characteristics of 'g'
+    end subroutine cc1_cpi_self
+
+    function cc1_cpi_result_a() result(r)
+        procedure(cc1_cpi_result_b), pointer :: r
+        r => null()
+    end function cc1_cpi_result_a
+
+    function cc1_cpi_result_b() result(r)
+        procedure(cc1_cpi_result_a), pointer :: r  ! {Error} interface 'cc1_cpi_result_a' of procedure pointer result 'r' depends on the characteristics of 'r'
+        r => null()
+    end function cc1_cpi_result_b
+
+    function cc1_cpi_result_self() result(r)
+        procedure(cc1_cpi_result_self), pointer :: r  ! {Error} interface 'cc1_cpi_result_self' of procedure pointer result 'r' depends on the characteristics of 'r'
+        r => null()
+    end function cc1_cpi_result_self
+end module cc1_cyclic_procedure_interfaces
+
+! Later uses of procedures with an interface that depends on its own
+! characteristics are checked after the interface is reported.
+module cc1_cyclic_procedure_interface_uses
+use cc1_cyclic_procedure_interfaces, only: cc1_cpi_a, cc1_cpi_result_a
+implicit none
+type :: cc1_cpu_holder
+    procedure(cc1_cpu_f), pointer, nopass :: pf => null()
+end type cc1_cpu_holder
+interface cc1_cpu_generic
+    procedure cc1_cpu_f
+end interface cc1_cpu_generic
+contains
+    subroutine cc1_cpu_f(g)
+        procedure(cc1_cpu_h) :: g
+        procedure(cc1_cpu_h), pointer :: q
+        q => g
+    end subroutine cc1_cpu_f
+
+    subroutine cc1_cpu_h(k)
+        procedure(cc1_cpu_f) :: k  ! {Error} interface 'cc1_cpu_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    end subroutine cc1_cpu_h
+
+    integer function cc1_cpu_fn_f(g)
+        procedure(cc1_cpu_fn_h) :: g
+        cc1_cpu_fn_f = 1
+    end function cc1_cpu_fn_f
+
+    integer function cc1_cpu_fn_h(k)
+        procedure(cc1_cpu_fn_f) :: k  ! {Error} interface 'cc1_cpu_fn_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        cc1_cpu_fn_h = k() + 1
+    end function cc1_cpu_fn_h
+
+    subroutine cc1_cpu_uses()
+        procedure(cc1_cpu_f), pointer :: pp
+        procedure(cc1_cpi_a), pointer :: pa
+        procedure(cc1_cpi_result_a), pointer :: pr
+        type(cc1_cpu_holder) :: p
+        integer :: i
+        pp => cc1_cpu_f
+        p%pf => cc1_cpu_f
+        pa => cc1_cpi_a
+        pr => cc1_cpi_result_a
+        call cc1_cpu_generic(cc1_cpu_h)
+        i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+    end subroutine cc1_cpu_uses
+end module cc1_cyclic_procedure_interface_uses
+
+! A function whose interface depends on its own characteristics keeps its
+! result after the error: a result with argument-dependent array bounds or
+! character length becomes allocatable with deferred bounds and length.
+module cc1_cyclic_interface_results
+implicit none
+type :: cc1_cir_t
+    integer :: i
+end type cc1_cir_t
+contains
+    function cc1_cir_chr_f(g, n) result(r)
+        procedure(cc1_cir_chr_h) :: g
+        integer, intent(in) :: n
+        character(len=n) :: r
+        r = "x"
+    end function cc1_cir_chr_f
+
+    function cc1_cir_chr_h(k, n) result(r)
+        procedure(cc1_cir_chr_f) :: k  ! {Error} interface 'cc1_cir_chr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        integer, intent(in) :: n
+        character(len=n) :: r
+        r = k()
+    end function cc1_cir_chr_h
+
+    function cc1_cir_chr_arr_f(g, n) result(r)
+        procedure(cc1_cir_chr_arr_h) :: g
+        integer, intent(in) :: n
+        character(len=n) :: r(n)
+        r = "x"
+    end function cc1_cir_chr_arr_f
+
+    function cc1_cir_chr_arr_h(k, n) result(r)
+        procedure(cc1_cir_chr_arr_f) :: k  ! {Error} interface 'cc1_cir_chr_arr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        integer, intent(in) :: n
+        character(len=n) :: r(n)
+        r = k()
+    end function cc1_cir_chr_arr_h
+
+    function cc1_cir_arr_f(g, n) result(r)
+        procedure(cc1_cir_arr_h) :: g
+        integer, intent(in) :: n
+        integer :: r(n)
+        r = 1
+    end function cc1_cir_arr_f
+
+    integer function cc1_cir_arr_h(k, n) result(r)
+        procedure(cc1_cir_arr_f) :: k  ! {Error} interface 'cc1_cir_arr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        integer, intent(in) :: n
+        r = sum(k())
+    end function cc1_cir_arr_h
+
+    function cc1_cir_dt_f(g) result(r)
+        procedure(cc1_cir_dt_h) :: g
+        type(cc1_cir_t) :: r
+        r%i = 1
+    end function cc1_cir_dt_f
+
+    function cc1_cir_dt_h(k) result(r)
+        procedure(cc1_cir_dt_f) :: k  ! {Error} interface 'cc1_cir_dt_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        type(cc1_cir_t) :: r
+        r = k()
+    end function cc1_cir_dt_h
+
+    subroutine cc1_cir_Case(g)
+        procedure(CC1_CIR_CASE) :: g  ! {Error} interface 'cc1_cir_case' of dummy procedure 'g' depends on the characteristics of 'g'
+    end subroutine cc1_cir_Case
+
+    subroutine cc1_cir_later()
+        integer :: i
+        i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+    end subroutine cc1_cir_later
+end module cc1_cyclic_interface_results
+
+! A procedure whose interface has no result is not a function, even when the
+! interface is unknown after an error.
+module cc1_resultless_interface_references
+implicit none
+contains
+    subroutine cc1_rir_sub()
+    end subroutine cc1_rir_sub
+
+    integer function cc1_rir_call(k)
+        procedure(cc1_rir_sub) :: k
+        cc1_rir_call = k()  ! {Error} procedure 'k' is referenced as a function, but its interface has no result
+    end function cc1_rir_call
+
+    function cc1_rir_local_f(g) result(r)
+        procedure(cc1_rir_local_h) :: g
+        type :: cc1_rir_local_t
+            integer :: i
+        end type cc1_rir_local_t
+        type(cc1_rir_local_t) :: r
+        r%i = 1
+    end function cc1_rir_local_f
+
+    integer function cc1_rir_local_h(k)
+        procedure(cc1_rir_local_f) :: k  ! {Error} interface 'cc1_rir_local_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        print *, k()  ! {Error} procedure 'k' is referenced as a function, but its interface has no result
+        cc1_rir_local_h = 1
+    end function cc1_rir_local_h
+end module cc1_resultless_interface_references
+
+! Procedure pointers and procedure pointer components with a subroutine
+! interface are reported by their source names.
+module cc1_resultless_pointer_references
+implicit none
+type :: cc1_rpr_t
+    procedure(cc1_rpr_sub), pointer, nopass :: pf => null()
+end type cc1_rpr_t
+contains
+    subroutine cc1_rpr_sub()
+    end subroutine cc1_rpr_sub
+
+    subroutine cc1_rpr_use()
+        procedure(cc1_rpr_sub), pointer :: p
+        type(cc1_rpr_t) :: o
+        real :: x
+        p => cc1_rpr_sub
+        o%pf => cc1_rpr_sub
+        x = p()  ! {Error} procedure 'p' is referenced as a function, but its interface has no result
+        x = o%pf()  ! {Error} procedure 'pf' is referenced as a function, but its interface has no result
+    end subroutine cc1_rpr_use
+end module cc1_resultless_pointer_references
