@@ -7691,12 +7691,16 @@ public:
             // target only if it is not allocated already: F2018 7.5.6.3 p1
             // finalizes the target only in that case, so it must not be
             // allocated beforehand.
+            // An allocatable result is returned into the target, or into a
+            // temporary that is then assigned, after deallocating it: the
+            // target is not allocated beforehand either.
             bool result_assigned_from_own_variable =
                 overloaded_stmt == nullptr &&
-                !ASRUtils::is_class_type(
+                ((!ASRUtils::is_class_type(
                     ASRUtils::type_get_past_allocatable_pointer(
                         ASRUtils::expr_type(target))) &&
-                ASRUtils::is_finalizable_function_reference(value);
+                  ASRUtils::is_finalizable_function_reference(value)) ||
+                 ASRUtils::is_allocatable(ASRUtils::expr_type(value)));
             if (!ASRUtils::is_array(ASRUtils::expr_type(target)) && ASRUtils::is_struct(*ASRUtils::expr_type(target)) && ASRUtils::is_allocatable(ASRUtils::expr_type(target)) && ASR::is_a<ASR::FunctionCall_t>(*value) && !result_assigned_from_own_variable) {
                 // Allocate the target if the value is a function call returning an allocatable
                 // array and the target is allocatable
