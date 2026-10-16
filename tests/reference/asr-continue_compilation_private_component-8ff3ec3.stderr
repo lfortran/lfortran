@@ -1,0 +1,107 @@
+semantic error: component 'a' of type 'priv_ctor_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+  --> tests/errors/continue_compilation_private_component.f90:72:50
+   |
+72 |         type(priv_ctor_t) :: inner = priv_ctor_t(a=1)  ! {Error} component 'a' of type 'priv_ctor_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+   |                                                  ^^^ 
+   |
+21 |         integer :: a
+   |                    ~ 'a' is declared here
+
+semantic error: component 'a' of type 'priv_ctor_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+   --> tests/errors/continue_compilation_private_component.f90:112:53
+    |
+112 |     type(priv_ctor_t), parameter :: w = priv_ctor_t(1)  ! {Error} component 'a' of type 'priv_ctor_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+    |                                                     ^ 
+    |
+ 21 |         integer :: a
+    |                    ~ 'a' is declared here
+
+semantic error: component 'x' of type 'priv_ctor_base_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+  --> tests/errors/continue_compilation_private_component.f90:77:29
+   |
+77 |         e = priv_ctor_ext_t(x=1, y=2)  ! {Error} component 'x' of type 'priv_ctor_base_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+   |                             ^^^ 
+   |
+30 |         integer :: x = 0
+   |                    ~~~~~ 'x' is declared here
+
+semantic error: component 'x' of type 'priv_ctor_base_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+  --> tests/errors/continue_compilation_private_component.f90:78:29
+   |
+78 |         e = priv_ctor_ext_t(1, 2)  ! {Error} component 'x' of type 'priv_ctor_base_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+   |                             ^ 
+   |
+30 |         integer :: x = 0
+   |                    ~~~~~ 'x' is declared here
+
+semantic error: component 'a' of type 'priv_ctor_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+  --> tests/errors/continue_compilation_private_component.f90:89:21
+   |
+89 |     v = priv_ctor_t(a=1)  ! {Error} component 'a' of type 'priv_ctor_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+   |                     ^^^ 
+   |
+21 |         integer :: a
+   |                    ~ 'a' is declared here
+
+semantic error: component 'a' of type 'priv_ctor_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+  --> tests/errors/continue_compilation_private_component.f90:91:21
+   |
+91 |     v = priv_ctor_t(1, 2)  ! {Error} component 'b' of type 'priv_ctor_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+   |                     ^ 
+   |
+21 |         integer :: a
+   |                    ~ 'a' is declared here
+
+semantic error: component 'b' of type 'priv_ctor_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+  --> tests/errors/continue_compilation_private_component.f90:91:24
+   |
+91 |     v = priv_ctor_t(1, 2)  ! {Error} component 'b' of type 'priv_ctor_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+   |                        ^ 
+   |
+22 |         integer :: b = 0
+   |                    ~~~~~ 'b' is declared here
+
+semantic error: component 'q' of type 'priv_ctor_mixed_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+  --> tests/errors/continue_compilation_private_component.f90:92:30
+   |
+92 |     m = priv_ctor_mixed_t(5, 6)  ! {Error} component 'q' of type 'priv_ctor_mixed_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+   |                              ^ 
+   |
+26 |         integer, private :: q = 3
+   |                             ~~~~~ 'q' is declared here
+
+semantic error: parent component 'priv_ctor_hidden_t' of type 'priv_ctor_child_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+  --> tests/errors/continue_compilation_private_component.f90:93:28
+   |
+93 |     ch = priv_ctor_child_t(priv_ctor_hidden_t=priv_ctor_hidden_value(), c=1)  ! {Error} parent component 'priv_ctor_hidden_t' of type 'priv_ctor_child_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+   |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+warning: giving the parent component positionally in a structure constructor is an extension
+  --> tests/errors/continue_compilation_private_component.f90:94:28
+   |
+94 |     ch = priv_ctor_child_t(priv_ctor_hidden_var, 1)  ! {Error} parent component 'priv_ctor_hidden_t' of type 'priv_ctor_child_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+   |                            ^^^^^^^^^^^^^^^^^^^^ use the parent component keyword instead: priv_ctor_hidden_t=...
+
+semantic error: parent component 'priv_ctor_hidden_t' of type 'priv_ctor_child_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+  --> tests/errors/continue_compilation_private_component.f90:94:28
+   |
+94 |     ch = priv_ctor_child_t(priv_ctor_hidden_var, 1)  ! {Error} parent component 'priv_ctor_hidden_t' of type 'priv_ctor_child_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+   |                            ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: component 'n' of type 'priv_ctor_overloaded_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+  --> tests/errors/continue_compilation_private_component.f90:95:32
+   |
+95 |     o = priv_ctor_overloaded_t(n=1)  ! {Error} component 'n' of type 'priv_ctor_overloaded_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+   |                                ^^^ 
+   |
+41 |         integer :: n
+   |                    ~ 'n' is declared here
+
+semantic error: component 'a' of type 'priv_ctor_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+   --> tests/errors/continue_compilation_private_component.f90:106:29
+    |
+106 |     v = priv_ctor_renamed_t(a=1)  ! {Error} component 'a' of type 'priv_ctor_t' is private and cannot be specified in a structure constructor outside module 'priv_ctor_mod'
+    |                             ^^^ 
+    |
+ 21 |         integer :: a
+    |                    ~ 'a' is declared here

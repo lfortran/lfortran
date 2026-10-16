@@ -3459,6 +3459,10 @@ filename = "errors/continue_compilation_external_procedure.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/continue_compilation_private_component.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/continue_compilation_coarrays.f90"
 semantics_only_cc = true
 
