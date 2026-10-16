@@ -35,10 +35,13 @@ generators (asr_to_metal.cpp and asr_to_cuda.cpp) expect:
     ...
     scalars%x = x                       ! one struct holding every scalar
     call lfortran_gpu_set_scalar_arg(kernel, n, c_loc(scalars), sizeof(scalars))
-    grid = [(thread_count + block_size - 1) / block_size, 1, 1]
+    grid = [(thread_count * lanes + block_size - 1) / block_size, 1, 1]
     block = [block_size, 1, 1]
     call lfortran_gpu_launch(ctx, kernel, c_loc(grid), c_loc(block))
     call lfortran_gpu_release_kernel(kernel)
+
+`lanes` is the kernel's last argument when its layout has lanes
+(gpu_vector_lanes.cpp), and one otherwise.
 
 The launch does not wait for the kernel. An argument the kernel may write
 stays on the device until a GpuSync (lfortran_gpu_sync) copies it back; the
@@ -1096,7 +1099,14 @@ class DeviceLaunchExpandVisitor :
             ASR::ttype_t *dim3 = b.Array({3}, int32);
             ASR::expr_t *grid = declare_local(loc, "gpu_grid", dim3);
             ASR::expr_t *block = declare_local(loc, "gpu_block", dim3);
-            fill_geometry(loc, out, grid, b.Div(b.Sub(b.Add(threads,
+            // An iteration of a kernel with lanes runs on that many
+            // consecutive threads, its last argument (gpu_vector_lanes.cpp).
+            ASR::expr_t *started = threads;
+            if (layout.m_lanes) {
+                started = b.Mul(threads,
+                    b.i2i_t(x.m_args[x.n_args - 1].m_value, int64));
+            }
+            fill_geometry(loc, out, grid, b.Div(b.Sub(b.Add(started,
                 block_size), b.i64(1)), block_size));
             fill_geometry(loc, out, block, x.m_block_size);
 

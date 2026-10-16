@@ -42,6 +42,7 @@ GoTo
 GoToTarget
 GpuDiscard
 GpuKernelLaunch
+GpuLaneBarrier
 GpuSync
 If
 IfArithmetic

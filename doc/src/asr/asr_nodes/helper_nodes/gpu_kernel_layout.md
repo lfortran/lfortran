@@ -9,7 +9,7 @@ The finalized launch contract owned by a kernel's `Function.gpu` field.
 ```text
 gpu_kernel_layout = (gpu_kernel_argument* buffers, gpu_kernel_argument* scalars,
     gpu_workspace* workspaces, bool packed, int source_argument_count,
-    symbol* device_functions)
+    symbol* device_functions, symbol? lanes)
 gpu_kernel_argument = (symbol variable, symbol? member, ttype type,
     gpu_argument_kind kind, int argument_index, int dimension, bool written)
 gpu_workspace = (symbol variable, gpu_workspace_dimension* dims,
@@ -41,6 +41,16 @@ and both allocation and device indexing consume that value.
 `source_argument_count` separates original arguments from these appended
 parameters. `device_functions` records the device call graph in callee-first
 order; direct self-recursion is permitted.
+
+`lanes`, when present, is the kernel's last parameter, an integer scalar
+after the extent parameters: each iteration of the kernel runs on that many
+consecutive threads of one SIMD-group, its lanes, which share the loops
+inside it ([GpuLaneIndex](../expression_nodes/GpuLaneIndex.md),
+[GpuLaneBarrier](../statement_nodes/GpuLaneBarrier.md),
+[GpuLaneBroadcast](../expression_nodes/GpuLaneBroadcast.md)). The thread
+index the kernel reads then numbers its iterations, the host starts
+`lanes` threads per iteration, and a workspace slice belongs to an
+iteration. `gpu_vector_lanes` sets it, after the finalizer.
 
 The finalizer produces this metadata after shared lowering. Host expansion
 and device emission read it without reconstructing the ABI.

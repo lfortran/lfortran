@@ -768,6 +768,50 @@ An assignment whose every element is assigned again before anything reads it
 (`dcdw = 0.` followed by `dcdw = sum(reduce_dcdw, dim=4)`) is removed before
 this, by the `dead_array_store` pass, so it costs no launch at all.
 
+### Lanes: an iteration on a SIMD-group
+
+A loop with few iterations -- a training step over a mini-batch of one, a
+loop over the layers of a network -- leaves most of the GPU idle, and runs
+each iteration as one long chain of dependent memory accesses on one
+thread: a GPU thread does not run ahead of a load the way a CPU core does,
+so every element of every array statement inside the iteration costs a
+memory latency. The `gpu_vector_lanes` pass, right after
+`gpu_kernel_finalize`, rewrites such a kernel so that each iteration runs on
+the lanes of a SIMD-group, which share the loops inside it (Metal only, 32
+lanes; a device's capabilities say how many, see `GpuDeviceCapabilities::
+lanes_per_iteration`):
+
+* A loop whose iterations are independent -- it assigns every shared array
+  at one subscript list holding its variable, reads such an array only at
+  that subscript list (or at one provably different element: `a(i, l)` and
+  `a(k, l - 1)`), and every scalar it assigns is assigned first in each
+  iteration and dead after it -- is shared out: lane k takes iterations k,
+  k + lanes, ..., and the lanes wait for each other after it
+  (`GpuLaneBarrier`). Adjacent loops over the same iterations are joined
+  first, and a loop whose body is one more such loop shares out the pairs
+  of iterations of both.
+* A statement with an effect the lanes must not repeat -- one that writes
+  shared memory outside such a loop, calls a procedure that is not pure,
+  or takes elements of the device heap -- runs on the first lane, and the
+  others take the scalars it assigned from it (`GpuLaneBroadcast`).
+* Everything else runs on every lane, with the same values.
+
+A lane that stops in a shared-out loop records the stop and returns, as a
+thread does, and the other lanes return after the loop. A kernel is left as
+it is when a statement in the way cannot be run on one lane (it returns, or
+assigns a private array), and when it writes an element of a kernel argument
+that every iteration writes -- an array declared outside the loop that each
+iteration uses as a temporary, which the launch shares between all threads
+(a known limitation, which lanes would only make show more often).
+
+The host chooses the lanes per launch: the SIMD-group width for a launch of
+at most 1024 iterations, one otherwise, where the iterations fill the GPU
+anyway and the lanes would only repeat each other's work. The kernel takes
+the lanes as its last parameter (`gpu_kernel_layout.lanes`); its thread
+index then numbers the iterations, the host starts `lanes` threads per
+iteration, and a workspace slice belongs to an iteration, shared by its
+lanes.
+
 ### Deliberate relaxations
 
 Two relaxations are deliberate. A pure procedure the host calls while a

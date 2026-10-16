@@ -66,6 +66,19 @@ struct GpuDeviceStops {
 GpuDecline gpu_lower_device_stops(Allocator &al, const Location &loc,
     ASR::Function_t &kernel, SymbolTable *host_scope, GpuDeviceStops &stops);
 
+// The status buffer `s` records a stop in, when `s` is such a record: the
+// `if` that writes a site, and the code of the site, while no site is
+// recorded. nullptr otherwise. Any number of threads may run such records
+// at once (see above).
+ASR::symbol_t* gpu_stop_record_status(const ASR::stmt_t &s);
+
+// Whether `s` is the test that follows a call of a procedure that can stop,
+// and if so, the site and the code the call hands back (`code` is nullptr
+// when the test does not record one). Both hold zero after the test on a
+// thread that goes on: one that stopped returns.
+bool gpu_stopped_check_scalars(const ASR::stmt_t &s, ASR::symbol_t **site,
+    ASR::symbol_t **code);
+
 } // namespace LCompilers
 
 #endif // LIBASR_PASS_GPU_OFFLOAD_STOP_H
