@@ -3162,13 +3162,22 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     ASR::ttype_t* simd_type;
     ASR::expr_t* parent_expr;
     ASR::expr_t* lhs_var;
+    // The node the target of an assignment is traversed from, set only while
+    // that target is replaced. A vector subscript is materialized into a
+    // temporary everywhere it appears, including in the subscripts of a
+    // target: `a(b([1,2])) = [5,6]` uses the elements of `b([1,2])` as the
+    // subscripts of `a`, and evaluating them once, before the assignment,
+    // is what the standard requires. Only the target node itself must be
+    // left in place, so it is exempted here instead of exempting the whole
+    // target expression.
+    ASR::expr_t** assignment_target_expr;
 
     ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
             FunctionCallPreparation& call_preparation_) :
         al(al_), exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_),
         call_preparation(call_preparation_), current_scope(nullptr),
         is_assignment_target_array_section_item(false), is_simd_expression(false), simd_type(nullptr),
-        parent_expr(nullptr), lhs_var(nullptr) {}
+        parent_expr(nullptr), lhs_var(nullptr), assignment_target_expr(nullptr) {}
 
     void replace_ttype(ASR::ttype_t* /*x*/) {
         // Do nothing
@@ -3899,7 +3908,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArraySection(x);
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
             if( (exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
-                !is_assignment_target_array_section_item) ||
+                current_expr != assignment_target_expr) ||
                 is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v)) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
                     *current_expr, "_array_section_", al, current_body,
@@ -3960,7 +3969,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         if( ASRUtils::is_array_indexed_with_array_indices(x) ) {
             ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayItem(x);
             if( (exprs_with_target.find(*current_expr) == exprs_with_target.end() &&
-                !is_assignment_target_array_section_item) ||
+                current_expr != assignment_target_expr) ||
                 is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, x->m_v)) {
                 *current_expr = create_and_allocate_temporary_variable_for_array(
                     *current_expr, "_array_item_", al, current_body,
@@ -4492,7 +4501,9 @@ class ReplaceExprWithTemporaryVisitor:
             ASR::expr_t** current_expr_copy_8 = current_expr;
             ASR::expr_t* original_target = x.m_target;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_target));
+            replacer.assignment_target_expr = current_expr;
             call_replacer();
+            replacer.assignment_target_expr = nullptr;
             current_expr = current_expr_copy_8;
             replacer.is_assignment_target_array_section_item = is_assignment_target_array_section_item;
             if( x.m_target != original_target ) {
