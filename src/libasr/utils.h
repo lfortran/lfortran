@@ -104,6 +104,10 @@ struct PassOptions {
     // but does not require it); off by default.
     bool logical_short_circuit = false;
     bool descriptor_index_64 = false; // Use 64-bit indices in array descriptors
+    // An array element passed for an array dummy argument is turned into an
+    // array section that starts the dummy's sequence at that element
+    // (--legacy-array-sections).
+    bool legacy_array_sections = false;
     bool coarray = false;
     std::vector<std::string> vector_of_time_report;
     // Set by the pass manager so that a pass can report a diagnostic. It is

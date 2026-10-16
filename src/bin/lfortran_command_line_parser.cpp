@@ -663,6 +663,7 @@ namespace LCompilers::CommandLineInterface {
         if (compiler_options.descriptor_index_64) {
             compiler_options.po.descriptor_index_64 = true;
         }
+        compiler_options.po.legacy_array_sections = compiler_options.legacy_array_sections;
     }
 
 } // namespace LCompilers::CommandLineInterface

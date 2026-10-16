@@ -116,8 +116,9 @@ public:
 
     // Variables that were associated (by pass_array_by_data) with an
     // ArraySection whose source array is UnboundedPointerArray (assumed-size)
-    // or FixedSizeArray (sequence association via --legacy-array-sections).
-    // Copy-in/copy-out must be skipped for these because:
+    // or, with --legacy-array-sections, FixedSizeArray (sequence association
+    // from an array element). Copy-in/copy-out must be skipped for these
+    // because:
     // - UnboundedPointerArray: section bounds reference undefined UBound
     // - FixedSizeArray: sequence association requires the callee to index the
     //   original contiguous memory with its own leading dimension
@@ -1074,11 +1075,15 @@ public:
 
     // Track Associate statements created by pass_array_by_data where the
     // source is an ArraySection of an assumed-size (UnboundedPointerArray)
-    // array or a FixedSizeArray (sequence association via --legacy-array-sections).
+    // array or, with --legacy-array-sections, of a FixedSizeArray.
     // For UnboundedPointerArray: allocation size cannot be determined (undefined UBound).
-    // For FixedSizeArray: sequence association requires the callee to index the
-    // original contiguous memory with its own leading dimension; copy-in would
-    // create a packed temporary with wrong memory layout.
+    // For FixedSizeArray: --legacy-array-sections turns an array element into
+    // a section that starts the dummy's sequence at the element, and the
+    // callee indexes the original contiguous memory with its own leading
+    // dimension; copy-in would create a packed temporary with wrong memory
+    // layout. A section written in the source, such as `a(1::2)` or
+    // `a(2:3, 2:3)`, is instead the sequence of its own elements, which a
+    // noncontiguous one reaches only through the copy.
     void visit_Associate(const ASR::Associate_t& x) {
         if ( ASR::is_a<ASR::ArraySection_t>(*x.m_value) &&
              ASR::is_a<ASR::Var_t>(*x.m_target) ) {
@@ -1090,7 +1095,8 @@ public:
                 if ( phys == ASR::array_physical_typeType::UnboundedPointerArray &&
                      has_undefined_assumed_size_bound(section) ) {
                     track = true;
-                } else if ( phys == ASR::array_physical_typeType::FixedSizeArray ) {
+                } else if ( phys == ASR::array_physical_typeType::FixedSizeArray &&
+                            pass_options.legacy_array_sections ) {
                     track = true;
                 }
                 if ( track ) {
