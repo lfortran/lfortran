@@ -4746,6 +4746,12 @@ gpu_offload_metal = true
 filename = "../integration_tests/gpu_metal_408.f90"
 gpu_cuda_kernel = true
 
+# Every matmul an offloaded loop lowers inline accumulates each element in a
+# scalar local and stores it into the target once.
+[[test]]
+filename = "../integration_tests/gpu_metal_455.f90"
+gpu_cuda_kernel = true
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
