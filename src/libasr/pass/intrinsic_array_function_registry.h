@@ -2895,7 +2895,7 @@ namespace Spread {
     // The extent of dimension `i_ + 1` of `spread(array, dim, ncopies)`,
     // where `ncopies` is the extent of the new dimension and `array_size(j)`
     // gives the extent of dimension `j` of `array`, with the type of
-    // `ncopies`. `j` is an integer constant when `dim` is a constant.
+    // `ncopies`. `j` is always an integer constant.
     static inline ASR::expr_t* result_extent(Allocator& al, const Location& loc,
         ASR::expr_t* array, ASR::expr_t* ncopies, int64_t i_, ASR::expr_t* dim,
         bool is_dim_const,
@@ -2911,25 +2911,21 @@ namespace Spread {
             }
             return array_size(b.i32(i < dim_ ? i : i - 1));
         }
-        // merge(ncopies, merge(original_shape[i], original_shape[merge(1, i - 1, i == 1)], i < dim), i == dim)
-        Vec<ASR::expr_t*> args_merge1; args_merge1.reserve(al, 3);
+        // merge(ncopies, merge(original_shape[i], original_shape[i - 1], i < dim), i == dim)
         Vec<ASR::expr_t*> args_merge2; args_merge2.reserve(al, 3);
         Vec<ASR::expr_t*> args_merge3; args_merge3.reserve(al, 3);
 
-        args_merge1.push_back(al, b.i32(1));
-        args_merge1.push_back(al, b.i32(i - 1));
-        args_merge1.push_back(al, b.Eq(b.i32(i), b.i32(1)));
-        ASR::expr_t* merge_for_i = EXPR(Merge::create_Merge(al, loc, args_merge1, diag));
-
         // `i` runs over the result's dimensions, one more than the array
-        // has. This branch is only selected when `i < dim`, so it is never
-        // the appended dimension, but the index still has to name a
-        // dimension the array actually has for the expression to be
-        // well formed.
+        // has. Only `dim` is a run-time value, so the two candidate
+        // dimensions of the array are constants. The first is only
+        // selected when `i < dim`, so it is never the appended dimension,
+        // and the second only when `i > dim`, so it is never dimension 0,
+        // but each index still has to name a dimension the array actually
+        // has for the expression to be well formed.
         int64_t array_rank = ASRUtils::extract_n_dims_from_ttype(
             ASRUtils::expr_type(array));
         args_merge2.push_back(al, array_size(b.i32(std::min(i, array_rank))));
-        args_merge2.push_back(al, array_size(merge_for_i));
+        args_merge2.push_back(al, array_size(b.i32(std::max<int64_t>(i - 1, 1))));
         args_merge2.push_back(al, b.Lt(b.i32(i), dim));
         ASR::expr_t* merge_for_i_ne_dim = EXPR(Merge::create_Merge(al, loc, args_merge2, diag));
 

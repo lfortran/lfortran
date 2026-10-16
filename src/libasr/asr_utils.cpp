@@ -5202,6 +5202,12 @@ static ASR::asr_t* array_intrinsic_shape_size(Allocator &al,
     }
     ASRBuilder builder(al, a_loc);
     ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4));
+    // `make_ArraySize_t_util` can answer with the declared length of an
+    // explicit-shape dimension, which keeps its own kind, so the extents
+    // are cast to the kind `a_type` that is asked for.
+    auto size_of_type = [&](ASR::expr_t* size) {
+        return CastingUtil::perform_casting(size, a_type, al, a_loc);
+    };
     auto extent = [&](size_t i) {
         if( shape[i].first == nullptr ) {
             // The extent `ncopies` of `spread`, which is zero when negative.
@@ -5219,16 +5225,16 @@ static ASR::asr_t* array_intrinsic_shape_size(Allocator &al,
             ASR::expr_t* e = ASRUtils::Spread::result_extent(al, a_loc, source,
                 ncopies, i, dim, ASRUtils::is_value_constant(dim),
                 [&](ASR::expr_t* j) {
-                    return ASRUtils::EXPR(make_ArraySize_t_util(al, a_loc,
-                        source, j, a_type, nullptr, for_type));
+                    return size_of_type(ASRUtils::EXPR(make_ArraySize_t_util(
+                        al, a_loc, source, j, a_type, nullptr, for_type)));
                 }, diag);
             LCOMPILERS_ASSERT(!diag.has_error());
             return e;
         }
         ASR::expr_t* d = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
             al, a_loc, shape[i].second, int32_type));
-        return ASRUtils::EXPR(make_ArraySize_t_util(al, a_loc, shape[i].first,
-            d, a_type, nullptr, for_type));
+        return size_of_type(ASRUtils::EXPR(make_ArraySize_t_util(al, a_loc,
+            shape[i].first, d, a_type, nullptr, for_type)));
     };
     if( a_dim == nullptr ) {
         ASR::expr_t* size = extent(0);
