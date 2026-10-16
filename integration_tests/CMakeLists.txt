@@ -4753,6 +4753,7 @@ RUN(NAME entry_21 LABELS gfortran llvm)
 RUN(NAME entry_22 LABELS gfortran llvm)
 RUN(NAME entry_23 LABELS gfortran llvm)
 RUN(NAME entry_generic_interface_01 LABELS gfortran llvm)
+RUN(NAME entry_generic_interface_02 LABELS gfortran llvm)
 
 RUN(NAME character_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME character_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

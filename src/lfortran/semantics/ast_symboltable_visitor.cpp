@@ -4630,13 +4630,13 @@ public:
         return it == entry_scope_origin.end() ? scope : it->second;
     }
 
-    // An external procedure has no explicit interface outside its own subprogram.
+    // An external procedure or entry has no explicit interface outside the subprogram that defines it.
     bool check_specific_explicit_interface(ASR::symbol_t *specific,
             const std::string &name, const Location &loc) {
         if (!ASR::is_a<ASR::Function_t>(*specific)) return true;
         ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(specific);
         if (!ASRUtils::is_tu_scope(ASRUtils::symbol_parent_symtab(specific))
-                || is_enclosing_scope(f->m_symtab, original_scope(current_scope))) {
+                || is_enclosing_scope(original_scope(f->m_symtab), original_scope(current_scope))) {
             return true;
         }
         diag.add(Diagnostic(
