@@ -7,7 +7,7 @@ program gpu_metal_475
 implicit none
 integer, parameter :: n = 10000, big = 65536, near = 16384
 real :: y(n), a(4), b(4), c(4), d(4), e(4), f(4), g(4), h(8), p(near)
-real :: q(big), v(4), w(8)
+real :: q(big), v(4), w(8), o(4), r(4), s(4), u(4)
 integer :: i, j, k, it
 logical :: stop_now
 
@@ -169,6 +169,52 @@ do concurrent (j = 1:1)
     y(j) = sum(v)
 end do
 call check_v()
+
+! The temporary is a local of a BLOCK the body becomes; an ASSOCIATE or a
+! BLOCK of the body goes into it too.
+do concurrent (j = 1:n)
+    o = j
+    y(j) = sum(o)
+    associate (al => y(j))
+        al = al + 1
+    end associate
+end do
+do j = 1, n
+    if (y(j) /= 4 * j + 1) error stop 15
+end do
+
+do concurrent (j = 1:n)
+    r = j
+    associate (al => y(j))
+        al = sum(r)
+    end associate
+end do
+do j = 1, n
+    if (y(j) /= 4 * j) error stop 16
+end do
+
+do concurrent (j = 1:n)
+    block
+        s = j
+        y(j) = sum(s)
+    end block
+end do
+do j = 1, n
+    if (y(j) /= 4 * j) error stop 17
+end do
+
+do concurrent (j = 1:n)
+    u = j
+    block
+        associate (al => y(j))
+            al = sum(u)
+        end associate
+    end block
+end do
+do j = 1, n
+    if (y(j) /= 4 * j) error stop 18
+end do
+
 print *, "ok"
 
 contains

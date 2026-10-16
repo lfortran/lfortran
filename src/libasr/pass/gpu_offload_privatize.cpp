@@ -101,6 +101,85 @@ public:
     void visit_IfArithmetic(const ASR::IfArithmetic_t &) { found = true; }
 };
 
+class GpuAssociateFinder
+        : public ASRUtils::BlockBodyWalkVisitor<GpuAssociateFinder> {
+public:
+    bool found = false;
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &) {
+        found = true;
+    }
+};
+
+// Whether every ASSOCIATE in `stmts` is one the kernel inlines once the
+// statements are a BLOCK's (rewrite_loop_body_for_kernel): a statement of
+// that BLOCK or of a BLOCK it reaches through BLOCKs (`in_block`), or one
+// directly in such an ASSOCIATE. Any other one would reach the kernel
+// whole.
+bool gpu_associates_inlined(ASR::stmt_t **stmts, size_t n_stmts,
+        bool in_block) {
+    for (size_t i = 0; i < n_stmts; i++) {
+        ASR::stmt_t *s = stmts[i];
+        if (in_block && ASR::is_a<ASR::BlockCall_t>(*s) &&
+                ASR::is_a<ASR::Block_t>(
+                    *ASR::down_cast<ASR::BlockCall_t>(s)->m_m)) {
+            ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(
+                ASR::down_cast<ASR::BlockCall_t>(s)->m_m);
+            if (!gpu_associates_inlined(b->m_body, b->n_body, true)) {
+                return false;
+            }
+            continue;
+        }
+        if (ASR::is_a<ASR::AssociateBlockCall_t>(*s) &&
+                ASR::is_a<ASR::AssociateBlock_t>(
+                    *ASR::down_cast<ASR::AssociateBlockCall_t>(s)->m_m)) {
+            ASR::AssociateBlock_t *ab = ASR::down_cast<ASR::AssociateBlock_t>(
+                ASR::down_cast<ASR::AssociateBlockCall_t>(s)->m_m);
+            if (!gpu_associates_inlined(ab->m_body, ab->n_body, false)) {
+                return false;
+            }
+            continue;
+        }
+        GpuAssociateFinder finder;
+        finder.visit_stmt(*s);
+        if (finder.found) return false;
+    }
+    return true;
+}
+
+// The BLOCK and ASSOCIATE constructs a loop body runs that belong to
+// `scope`: those of the body itself, not those nested in one of them.
+class GpuScopedConstructs
+        : public ASRUtils::BlockBodyWalkVisitor<GpuScopedConstructs> {
+public:
+    explicit GpuScopedConstructs(SymbolTable *scope_) : scope(scope_) {}
+
+    std::vector<ASR::symbol_t*> found;
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        add(x.m_m);
+        ASRUtils::BlockBodyWalkVisitor<GpuScopedConstructs>
+            ::visit_BlockCall(x);
+    }
+
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        add(x.m_m);
+        ASRUtils::BlockBodyWalkVisitor<GpuScopedConstructs>
+            ::visit_AssociateBlockCall(x);
+    }
+
+private:
+    SymbolTable *scope;
+
+    void add(ASR::symbol_t *s) {
+        if ((ASR::is_a<ASR::Block_t>(*s) ||
+                    ASR::is_a<ASR::AssociateBlock_t>(*s)) &&
+                scope->get_symbol(ASRUtils::symbol_name(s)) == s &&
+                std::find(found.begin(), found.end(), s) == found.end()) {
+            found.push_back(s);
+        }
+    }
+};
+
 // What a run of statements does with the value an array held when the
 // run was entered.
 //   Untouched -- never reads it: the array is not accessed, or it is first
@@ -722,6 +801,11 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
         candidates.push_back({std::max<int64_t>(
             ASRUtils::compute_type_size_align(v->m_type).first, 0), sym});
     }
+    // The body becomes the statements of a BLOCK (below).
+    if (candidates.empty() ||
+            !gpu_associates_inlined(work.body, work.n_body, true)) {
+        return;
+    }
     // The smallest first, while they fit what the device lets the pass add
     // to a thread's stack.
     std::sort(candidates.begin(), candidates.end(),
@@ -747,6 +831,26 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
 
     Location loc = region.base.base.loc;
     SymbolTable *block_scope = al.make_new<SymbolTable>(current_scope);
+    // The BLOCK and ASSOCIATE constructs of the body move into the new
+    // BLOCK with it, so that a name they refer to resolves to the local.
+    {
+        GpuScopedConstructs constructs(current_scope);
+        for (size_t i = 0; i < work.n_body; i++) {
+            constructs.visit_stmt(*work.body[i]);
+        }
+        for (ASR::symbol_t *s : constructs.found) {
+            std::string name = ASRUtils::symbol_name(s);
+            if (ASR::is_a<ASR::Block_t>(*s)) {
+                ASR::down_cast<ASR::Block_t>(s)->m_symtab->parent =
+                    block_scope;
+            } else {
+                ASR::down_cast<ASR::AssociateBlock_t>(s)->m_symtab->parent =
+                    block_scope;
+            }
+            current_scope->erase_symbol(name);
+            block_scope->add_symbol(name, s);
+        }
+    }
     std::map<ASR::symbol_t*, ASR::expr_t*> local_of;
     for (ASR::symbol_t *sym : privatized) {
         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
