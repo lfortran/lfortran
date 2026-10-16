@@ -1134,11 +1134,11 @@ semantic error: Variable 'cc1_pcut_nosuch' is not declared
 2498 |     type(cc1_pcut_t) :: cc1_pcut_s = cc1_pcut_t(cc1_pcut_nosuch)  ! {Error} Variable 'cc1_pcut_nosuch' is not declared
      |                                                 ^^^^^^^^^^^^^^^ 'cc1_pcut_nosuch' is undeclared
 
-semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+semantic error: interface mismatch for procedure pointer component 'pf' in structure constructor
     --> tests/errors/continue_compilation_1.f90:2515:49
      |
-2515 |     type(cc1_pcfm_t) :: cc1_pcfm_s = cc1_pcfm_t(cc1_pcfm_f)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
-     |                                                 ^^^^^^^^^^ 
+2515 |     type(cc1_pcfm_t) :: cc1_pcfm_s = cc1_pcfm_t(cc1_pcfm_f)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
+     |                                                 ^^^^^^^^^^ incompatible interfaces (procedure(cc1_pcfm_iface) and procedure(cc1_pcfm_f))
 
 semantic error: using the internal procedure 'cos', which is defined later, as a procedure interface is not supported yet
     --> tests/errors/continue_compilation_1.f90:2529:9
@@ -1188,41 +1188,41 @@ semantic error: no specific procedure of the generic 'generic_no_match' matches 
 2657 |     integer :: b(generic_no_match(z=n))  ! {Error} no specific procedure of the generic 'generic_no_match' matches the arguments
      |                  ^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+semantic error: interface mismatch for procedure pointer component 'pf' in structure constructor
     --> tests/errors/continue_compilation_1.f90:2681:63
      |
-2681 |     type(cc1_pclim_func_t) :: cc1_pclim_s1 = cc1_pclim_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
-     |                                                               ^^^^^^^^^^^^^^^^^^^ 
+2681 |     type(cc1_pclim_func_t) :: cc1_pclim_s1 = cc1_pclim_func_t(cc1_pclim_known_sub)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
+     |                                                               ^^^^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pclim_func) and procedure(cc1_pclim_known_sub))
 
-semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+semantic error: interface mismatch for procedure pointer component 'pf' in structure constructor
     --> tests/errors/continue_compilation_1.f90:2682:64
      |
-2682 |     type(cc1_pclim_sub_t) :: cc1_pclim_s2 = cc1_pclim_sub_t(pf=cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
-     |                                                                ^^^^^^^^^^^^^^^^^^^^ 
+2682 |     type(cc1_pclim_sub_t) :: cc1_pclim_s2 = cc1_pclim_sub_t(pf=cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
+     |                                                                ^^^^^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pclim_sub) and procedure(cc1_pclim_known_func))
 
-semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+semantic error: interface mismatch for procedure pointer component 'pf' in structure constructor
     --> tests/errors/continue_compilation_1.f90:2702:58
      |
-2702 |     type(cc1_pclt_sub_t) :: cc1_pclt_s1 = cc1_pclt_sub_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
-     |                                                          ^^^^^^^^^^^^^^^^^^^^ 
+2702 |     type(cc1_pclt_sub_t) :: cc1_pclt_s1 = cc1_pclt_sub_t(cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
+     |                                                          ^^^^^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pclt_sub) and procedure(cc1_pclim_known_func))
 
-semantic error: type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+semantic error: interface mismatch for procedure pointer component 'pf' in structure constructor
     --> tests/errors/continue_compilation_1.f90:2710:60
      |
-2710 |     type(cc1_pclt_func_t) :: cc1_pclt_s2 = cc1_pclt_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
-     |                                                            ^^^^^^^^^^^^^^^^^^^ 
+2710 |     type(cc1_pclt_func_t) :: cc1_pclt_s2 = cc1_pclt_func_t(cc1_pclim_known_sub)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
+     |                                                            ^^^^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pclt_func) and procedure(cc1_pclim_known_sub))
 
-semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+semantic error: interface mismatch for procedure pointer component 'pf' in structure constructor
     --> tests/errors/continue_compilation_1.f90:2736:73
      |
-2736 |         type(cc1_pcth_sub_t), parameter :: cc1_pcth_c1 = cc1_pcth_sub_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
-     |                                                                         ^^^^^^^^^^^^^^^^^^^^ 
+2736 |         type(cc1_pcth_sub_t), parameter :: cc1_pcth_c1 = cc1_pcth_sub_t(cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
+     |                                                                         ^^^^^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pcth_sub) and procedure(cc1_pclim_known_func))
 
-semantic error: type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+semantic error: interface mismatch for procedure pointer component 'pf' in structure constructor
     --> tests/errors/continue_compilation_1.f90:2737:75
      |
-2737 |         type(cc1_pcth_func_t), parameter :: cc1_pcth_c2 = cc1_pcth_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
-     |                                                                           ^^^^^^^^^^^^^^^^^^^ 
+2737 |         type(cc1_pcth_func_t), parameter :: cc1_pcth_c2 = cc1_pcth_func_t(cc1_pclim_known_sub)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
+     |                                                                           ^^^^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pcth_func) and procedure(cc1_pclim_known_sub))
 
 semantic error: Interface 'cc1_pcth_never' is referenced but not defined
     --> tests/errors/continue_compilation_1.f90:2734:13
@@ -1230,23 +1230,23 @@ semantic error: Interface 'cc1_pcth_never' is referenced but not defined
 2734 |             procedure(cc1_pcth_never), pointer, nopass :: pf => null()  ! {Error} Interface 'cc1_pcth_never' is referenced but not defined
      |             ^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
 
-semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+semantic error: interface mismatch for procedure pointer component 'pf' in structure constructor
     --> tests/errors/continue_compilation_1.f90:2773:79
      |
-2773 |             type(cc1_pcll_tmpl_t), parameter :: cc1_pcll_c1 = cc1_pcll_tmpl_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
-     |                                                                               ^^^^^^^^^^^^^^^^^^^^ 
+2773 |             type(cc1_pcll_tmpl_t), parameter :: cc1_pcll_c1 = cc1_pcll_tmpl_t(cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
+     |                                                                               ^^^^^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pcll_sub) and procedure(cc1_pclim_known_func))
 
-semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+semantic error: interface mismatch for procedure pointer component 'pf' in structure constructor
     --> tests/errors/continue_compilation_1.f90:2786:69
      |
-2786 |             type(cc1_pcll_t), parameter :: cc1_pcll_c2 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
-     |                                                                     ^^^^^^^^^^^^^^^^^^^^ 
+2786 |             type(cc1_pcll_t), parameter :: cc1_pcll_c2 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
+     |                                                                     ^^^^^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pcll_sub) and procedure(cc1_pclim_known_func))
 
-semantic error: type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+semantic error: interface mismatch for procedure pointer component 'pf' in structure constructor
     --> tests/errors/continue_compilation_1.f90:2793:65
      |
-2793 |         type(cc1_pcll_t), parameter :: cc1_pcll_c3 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
-     |                                                                 ^^^^^^^^^^^^^^^^^^^^ 
+2793 |         type(cc1_pcll_t), parameter :: cc1_pcll_c3 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
+     |                                                                 ^^^^^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pcll_func) and procedure(cc1_pclim_known_func))
 
 semantic error: Interface 'cc1_pcll_never' is referenced but not defined
     --> tests/errors/continue_compilation_1.f90:2784:17
@@ -1319,6 +1319,102 @@ semantic error: a procedure pointer component of a named constant cannot be an i
      |
 3093 |     procedure(cc1_pclim_known_func), pointer :: cc1_pcoc4_q => cc1_pcoc_c%f  ! {Error} a procedure pointer component of a named constant cannot be an initial procedure target
      |                                                                ^^^^^^^^^^^^ `cc1_pcoc_c` is a named constant, not a variable
+
+semantic error: interface 'cc1_cpi_self' of dummy procedure 'g' depends on the characteristics of 'g'
+    --> tests/errors/continue_compilation_1.f90:3126:36
+     |
+3126 |         procedure(cc1_cpi_self) :: g  ! {Error} interface 'cc1_cpi_self' of dummy procedure 'g' depends on the characteristics of 'g'
+     |                                    ^ 'cc1_cpi_self' has dummy procedure 'g'
+
+semantic error: interface 'cc1_cpi_result_self' of procedure pointer result 'r' depends on the characteristics of 'r'
+    --> tests/errors/continue_compilation_1.f90:3140:52
+     |
+3140 |         procedure(cc1_cpi_result_self), pointer :: r  ! {Error} interface 'cc1_cpi_result_self' of procedure pointer result 'r' depends on the characteristics of 'r'
+     |                                                    ^ 'cc1_cpi_result_self' has procedure pointer result 'r'
+
+semantic error: interface 'cc1_cpi_a' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3122:33
+     |
+3122 |         procedure(cc1_cpi_a) :: k  ! {Error} interface 'cc1_cpi_a' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                 ^ 'cc1_cpi_a' has dummy procedure 'g' with interface 'cc1_cpi_b', which has dummy procedure 'k'
+
+semantic error: interface 'cc1_cpi_result_a' of procedure pointer result 'r' depends on the characteristics of 'r'
+    --> tests/errors/continue_compilation_1.f90:3135:49
+     |
+3135 |         procedure(cc1_cpi_result_a), pointer :: r  ! {Error} interface 'cc1_cpi_result_a' of procedure pointer result 'r' depends on the characteristics of 'r'
+     |                                                 ^ 'cc1_cpi_result_a' has procedure pointer result 'r' with interface 'cc1_cpi_result_b', which has procedure pointer result 'r'
+
+semantic error: interface 'cc1_cpu_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3164:33
+     |
+3164 |         procedure(cc1_cpu_f) :: k  ! {Error} interface 'cc1_cpu_f' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                 ^ 'cc1_cpu_f' has dummy procedure 'g' with interface 'cc1_cpu_h', which has dummy procedure 'k'
+
+semantic error: interface 'cc1_cpu_fn_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3173:36
+     |
+3173 |         procedure(cc1_cpu_fn_f) :: k  ! {Error} interface 'cc1_cpu_fn_f' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                    ^ 'cc1_cpu_fn_f' has dummy procedure 'g' with interface 'cc1_cpu_fn_h', which has dummy procedure 'k'
+
+semantic error: interface 'cc1_cir_case' of dummy procedure 'g' depends on the characteristics of 'g'
+    --> tests/errors/continue_compilation_1.f90:3255:36
+     |
+3255 |         procedure(CC1_CIR_CASE) :: g  ! {Error} interface 'cc1_cir_case' of dummy procedure 'g' depends on the characteristics of 'g'
+     |                                    ^ 'cc1_cir_case' has dummy procedure 'g'
+
+semantic error: interface 'cc1_cir_arr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3237:37
+     |
+3237 |         procedure(cc1_cir_arr_f) :: k  ! {Error} interface 'cc1_cir_arr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                     ^ 'cc1_cir_arr_f' has dummy procedure 'g' with interface 'cc1_cir_arr_h', which has dummy procedure 'k'
+
+semantic error: interface 'cc1_cir_chr_arr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3223:41
+     |
+3223 |         procedure(cc1_cir_chr_arr_f) :: k  ! {Error} interface 'cc1_cir_chr_arr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                         ^ 'cc1_cir_chr_arr_f' has dummy procedure 'g' with interface 'cc1_cir_chr_arr_h', which has dummy procedure 'k'
+
+semantic error: interface 'cc1_cir_chr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3209:37
+     |
+3209 |         procedure(cc1_cir_chr_f) :: k  ! {Error} interface 'cc1_cir_chr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                     ^ 'cc1_cir_chr_f' has dummy procedure 'g' with interface 'cc1_cir_chr_h', which has dummy procedure 'k'
+
+semantic error: interface 'cc1_cir_dt_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3249:36
+     |
+3249 |         procedure(cc1_cir_dt_f) :: k  ! {Error} interface 'cc1_cir_dt_f' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                    ^ 'cc1_cir_dt_f' has dummy procedure 'g' with interface 'cc1_cir_dt_h', which has dummy procedure 'k'
+
+semantic error: interface 'cc1_rir_local_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3287:39
+     |
+3287 |         procedure(cc1_rir_local_f) :: k  ! {Error} interface 'cc1_rir_local_f' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                       ^ 'cc1_rir_local_f' has dummy procedure 'g' with interface 'cc1_rir_local_h', which has dummy procedure 'k'
+
+semantic error: interface mismatch for procedure pointer component 'p' in structure constructor
+    --> tests/errors/continue_compilation_1.f90:3376:42
+     |
+3376 |         type(cc1_pci_t) :: y = cc1_pci_t(cc1_pci_noarg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+     |                                          ^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pci_sub_iface) and procedure(cc1_pci_noarg))
+
+warning: Assuming implicit save attribute for variable declaration
+    --> tests/errors/continue_compilation_1.f90:3376:28
+     |
+3376 |         type(cc1_pci_t) :: y = cc1_pci_t(cc1_pci_noarg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+     |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement
+
+semantic error: interface mismatch for procedure pointer component 'p' in structure constructor
+    --> tests/errors/continue_compilation_1.f90:3355:57
+     |
+3355 |     type(cc1_pci_t), parameter :: cc1_pci_c = cc1_pci_t(cc1_pci_noarg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+     |                                                         ^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pci_sub_iface) and procedure(cc1_pci_noarg))
+
+semantic error: interface mismatch for procedure pointer component 'f' in structure constructor
+    --> tests/errors/continue_compilation_1.f90:3356:48
+     |
+3356 |     type(cc1_pci_t) :: cc1_pci_s = cc1_pci_t(f=cc1_pci_real_func)  ! {Error} interface mismatch for procedure pointer component 'f' in structure constructor
+     |                                                ^^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pci_func_iface) and procedure(cc1_pci_real_func))
 
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
@@ -4017,3 +4113,87 @@ semantic error: a procedure pointer component of a named constant cannot be an a
      |
 3103 |         r = cc1_pcoc4_take_pointer(cc1_pcoc4_table(1)%f)  ! {Error} a procedure pointer component of a named constant cannot be an actual argument
      |                                    ^^^^^^^^^^^^^^^^^^^^ `cc1_pcoc4_table` is a named constant, not a variable
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:3188:9
+     |
+3188 |         i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+     |         ^   ^^^ type mismatch (integer and string)
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:3260:9
+     |
+3260 |         i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+     |         ^   ^^^ type mismatch (integer and string)
+
+semantic error: procedure 'k' is referenced as a function, but its interface has no result
+    --> tests/errors/continue_compilation_1.f90:3274:24
+     |
+3274 |         cc1_rir_call = k()  ! {Error} procedure 'k' is referenced as a function, but its interface has no result
+     |                        ^^^ 'k' cannot be called as a function
+
+semantic error: procedure 'k' is referenced as a function, but its interface has no result
+    --> tests/errors/continue_compilation_1.f90:3288:18
+     |
+3288 |         print *, k()  ! {Error} procedure 'k' is referenced as a function, but its interface has no result
+     |                  ^^^ 'k' cannot be called as a function
+
+semantic error: procedure 'p' is referenced as a function, but its interface has no result
+    --> tests/errors/continue_compilation_1.f90:3310:13
+     |
+3310 |         x = p()  ! {Error} procedure 'p' is referenced as a function, but its interface has no result
+     |             ^^^ 'p' cannot be called as a function
+
+semantic error: procedure 'pf' is referenced as a function, but its interface has no result
+    --> tests/errors/continue_compilation_1.f90:3311:13
+     |
+3311 |         x = o%pf()  ! {Error} procedure 'pf' is referenced as a function, but its interface has no result
+     |             ^^^^^^ 'pf' cannot be called as a function
+
+semantic error: Required argument `get_ptr` at position 2 is missing in procedure call
+    --> tests/errors/continue_compilation_1.f90:3334:20
+     |
+3334 |     call take_proc(x)
+     |                    ^ 
+
+semantic error: interface mismatch for procedure pointer component 'p' in structure constructor
+    --> tests/errors/continue_compilation_1.f90:3378:23
+     |
+3378 |         x = cc1_pci_t(cc1_pci_noarg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+     |                       ^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pci_sub_iface) and procedure(cc1_pci_noarg))
+
+semantic error: interface mismatch for procedure pointer component 'p' in structure constructor
+    --> tests/errors/continue_compilation_1.f90:3379:23
+     |
+3379 |         x = cc1_pci_t(cc1_pci_real_arg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+     |                       ^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pci_sub_iface) and procedure(cc1_pci_real_arg))
+
+semantic error: interface mismatch for procedure pointer component 'p' in structure constructor
+    --> tests/errors/continue_compilation_1.f90:3380:23
+     |
+3380 |         x = cc1_pci_t(cc1_pci_int8_arg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+     |                       ^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pci_sub_iface) and procedure(cc1_pci_int8_arg))
+
+semantic error: interface mismatch for procedure pointer component 'p' in structure constructor
+    --> tests/errors/continue_compilation_1.f90:3381:25
+     |
+3381 |         x = cc1_pci_t(p=cc1_pci_int_func)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+     |                         ^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pci_sub_iface) and procedure(cc1_pci_int_func))
+
+semantic error: interface mismatch for procedure pointer component 'f' in structure constructor
+    --> tests/errors/continue_compilation_1.f90:3383:25
+     |
+3383 |         x = cc1_pci_t(f=cc1_pci_real_func)  ! {Error} interface mismatch for procedure pointer component 'f' in structure constructor
+     |                         ^^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pci_func_iface) and procedure(cc1_pci_real_func))
+
+semantic error: interface mismatch for procedure pointer component 'p' in structure constructor
+    --> tests/errors/continue_compilation_1.f90:3384:23
+     |
+3384 |         x = cc1_pci_t(q)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+     |                       ^ incompatible interfaces (procedure(cc1_pci_sub_iface) and procedure(cc1_pci_func_iface))
+
+semantic error: interface mismatch for procedure pointer component 'p' in structure constructor
+    --> tests/errors/continue_compilation_1.f90:3414:23
+     |
+3414 |         x = cc1_pcd_t(cc1_pcd_b_arg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+     |                       ^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pcd_iface) and procedure(cc1_pcd_b_arg))

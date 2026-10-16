@@ -2512,7 +2512,7 @@ module cc1_proc_component_forward_mismatch_mod
     type :: cc1_pcfm_t
         procedure(cc1_pcfm_iface), pointer, nopass :: pf => null()
     end type
-    type(cc1_pcfm_t) :: cc1_pcfm_s = cc1_pcfm_t(cc1_pcfm_f)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    type(cc1_pcfm_t) :: cc1_pcfm_s = cc1_pcfm_t(cc1_pcfm_f)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
 contains
     integer function cc1_pcfm_f()
         cc1_pcfm_f = 3
@@ -2678,8 +2678,8 @@ module cc1_proc_component_later_interface_mismatch_mod
     type :: cc1_pclim_sub_t
         procedure(cc1_pclim_sub), pointer, nopass :: pf => null()
     end type
-    type(cc1_pclim_func_t) :: cc1_pclim_s1 = cc1_pclim_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
-    type(cc1_pclim_sub_t) :: cc1_pclim_s2 = cc1_pclim_sub_t(pf=cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    type(cc1_pclim_func_t) :: cc1_pclim_s1 = cc1_pclim_func_t(cc1_pclim_known_sub)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
+    type(cc1_pclim_sub_t) :: cc1_pclim_s2 = cc1_pclim_sub_t(pf=cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
 contains
     integer function cc1_pclim_func()
         cc1_pclim_func = 0
@@ -2699,7 +2699,7 @@ module cc1_proc_component_later_interface_template_mod
     type :: cc1_pclt_sub_t
         procedure(cc1_pclt_sub), pointer, nopass :: pf => null()
     end type
-    type(cc1_pclt_sub_t) :: cc1_pclt_s1 = cc1_pclt_sub_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+    type(cc1_pclt_sub_t) :: cc1_pclt_s1 = cc1_pclt_sub_t(cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
     template cc1_pclt_unused {t}
         deferred type :: t
     contains
@@ -2707,7 +2707,7 @@ module cc1_proc_component_later_interface_template_mod
             type(t), intent(in) :: x
         end subroutine cc1_pclt_noop
     end template
-    type(cc1_pclt_func_t) :: cc1_pclt_s2 = cc1_pclt_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+    type(cc1_pclt_func_t) :: cc1_pclt_s2 = cc1_pclt_func_t(cc1_pclim_known_sub)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
 contains
     integer function cc1_pclt_func()
         cc1_pclt_func = 0
@@ -2733,8 +2733,8 @@ module cc1_proc_component_template_host_interface_mod
         type :: cc1_pcth_never_t
             procedure(cc1_pcth_never), pointer, nopass :: pf => null()  ! {Error} Interface 'cc1_pcth_never' is referenced but not defined
         end type
-        type(cc1_pcth_sub_t), parameter :: cc1_pcth_c1 = cc1_pcth_sub_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
-        type(cc1_pcth_func_t), parameter :: cc1_pcth_c2 = cc1_pcth_func_t(cc1_pclim_known_sub)  ! {Error} type mismatch in structure constructor: value of type FunctionType() cannot be the value of pointer component 'pf' of type FunctionType(return_type: integer(4))
+        type(cc1_pcth_sub_t), parameter :: cc1_pcth_c1 = cc1_pcth_sub_t(cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
+        type(cc1_pcth_func_t), parameter :: cc1_pcth_c2 = cc1_pcth_func_t(cc1_pclim_known_sub)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
     contains
         subroutine cc1_pcth_noop(x)
             type(t), intent(in) :: x
@@ -2770,7 +2770,7 @@ module cc1_proc_component_local_type_mod
             type :: cc1_pcll_tmpl_t
                 procedure(cc1_pcll_sub), pointer, nopass :: pf => null()
             end type
-            type(cc1_pcll_tmpl_t), parameter :: cc1_pcll_c1 = cc1_pcll_tmpl_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+            type(cc1_pcll_tmpl_t), parameter :: cc1_pcll_c1 = cc1_pcll_tmpl_t(cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
         end subroutine cc1_pcll_tmpl_noop
     end template
 contains
@@ -2783,14 +2783,14 @@ contains
             type :: cc1_pcll_never_t
                 procedure(cc1_pcll_never), pointer, nopass :: pf => null()  ! {Error} Interface 'cc1_pcll_never' is referenced but not defined
             end type
-            type(cc1_pcll_t), parameter :: cc1_pcll_c2 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+            type(cc1_pcll_t), parameter :: cc1_pcll_c2 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
         end subroutine cc1_pcll_inner
     end subroutine cc1_pcll_outer
     subroutine cc1_pcll_shadow()
         type :: cc1_pcll_t
             procedure(cc1_pcll_func), pointer, nopass :: pf => null()
         end type
-        type(cc1_pcll_t), parameter :: cc1_pcll_c3 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} type mismatch in structure constructor: value of type FunctionType(return_type: integer) cannot be the value of pointer component 'pf' of type FunctionType()
+        type(cc1_pcll_t), parameter :: cc1_pcll_c3 = cc1_pcll_t(cc1_pclim_known_func)  ! {Error} interface mismatch for procedure pointer component 'pf' in structure constructor
     contains
         subroutine cc1_pcll_func()
         end subroutine cc1_pcll_func
@@ -3107,3 +3107,310 @@ contains
         cc1_pcoc4_take_pointer = 0
     end function cc1_pcoc4_take_pointer
 end module cc1_proc_component_of_constant_4_mod
+
+! The interface of a dummy procedure or procedure pointer result shall not
+! depend on its own characteristics (Fortran 2023 15.4.3.6), directly or
+! through the interfaces of other dummy procedures or results.
+module cc1_cyclic_procedure_interfaces
+implicit none
+contains
+    subroutine cc1_cpi_a(g)
+        procedure(cc1_cpi_b) :: g
+    end subroutine cc1_cpi_a
+
+    subroutine cc1_cpi_b(k)
+        procedure(cc1_cpi_a) :: k  ! {Error} interface 'cc1_cpi_a' of dummy procedure 'k' depends on the characteristics of 'k'
+    end subroutine cc1_cpi_b
+
+    subroutine cc1_cpi_self(g)
+        procedure(cc1_cpi_self) :: g  ! {Error} interface 'cc1_cpi_self' of dummy procedure 'g' depends on the characteristics of 'g'
+    end subroutine cc1_cpi_self
+
+    function cc1_cpi_result_a() result(r)
+        procedure(cc1_cpi_result_b), pointer :: r
+        r => null()
+    end function cc1_cpi_result_a
+
+    function cc1_cpi_result_b() result(r)
+        procedure(cc1_cpi_result_a), pointer :: r  ! {Error} interface 'cc1_cpi_result_a' of procedure pointer result 'r' depends on the characteristics of 'r'
+        r => null()
+    end function cc1_cpi_result_b
+
+    function cc1_cpi_result_self() result(r)
+        procedure(cc1_cpi_result_self), pointer :: r  ! {Error} interface 'cc1_cpi_result_self' of procedure pointer result 'r' depends on the characteristics of 'r'
+        r => null()
+    end function cc1_cpi_result_self
+end module cc1_cyclic_procedure_interfaces
+
+! Later uses of procedures with an interface that depends on its own
+! characteristics are checked after the interface is reported.
+module cc1_cyclic_procedure_interface_uses
+use cc1_cyclic_procedure_interfaces, only: cc1_cpi_a, cc1_cpi_result_a
+implicit none
+type :: cc1_cpu_holder
+    procedure(cc1_cpu_f), pointer, nopass :: pf => null()
+end type cc1_cpu_holder
+interface cc1_cpu_generic
+    procedure cc1_cpu_f
+end interface cc1_cpu_generic
+contains
+    subroutine cc1_cpu_f(g)
+        procedure(cc1_cpu_h) :: g
+        procedure(cc1_cpu_h), pointer :: q
+        q => g
+    end subroutine cc1_cpu_f
+
+    subroutine cc1_cpu_h(k)
+        procedure(cc1_cpu_f) :: k  ! {Error} interface 'cc1_cpu_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    end subroutine cc1_cpu_h
+
+    integer function cc1_cpu_fn_f(g)
+        procedure(cc1_cpu_fn_h) :: g
+        cc1_cpu_fn_f = 1
+    end function cc1_cpu_fn_f
+
+    integer function cc1_cpu_fn_h(k)
+        procedure(cc1_cpu_fn_f) :: k  ! {Error} interface 'cc1_cpu_fn_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        cc1_cpu_fn_h = k() + 1
+    end function cc1_cpu_fn_h
+
+    subroutine cc1_cpu_uses()
+        procedure(cc1_cpu_f), pointer :: pp
+        procedure(cc1_cpi_a), pointer :: pa
+        procedure(cc1_cpi_result_a), pointer :: pr
+        type(cc1_cpu_holder) :: p
+        integer :: i
+        pp => cc1_cpu_f
+        p%pf => cc1_cpu_f
+        pa => cc1_cpi_a
+        pr => cc1_cpi_result_a
+        call cc1_cpu_generic(cc1_cpu_h)
+        i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+    end subroutine cc1_cpu_uses
+end module cc1_cyclic_procedure_interface_uses
+
+! A function whose interface depends on its own characteristics keeps its
+! result after the error: a result with argument-dependent array bounds or
+! character length becomes allocatable with deferred bounds and length.
+module cc1_cyclic_interface_results
+implicit none
+type :: cc1_cir_t
+    integer :: i
+end type cc1_cir_t
+contains
+    function cc1_cir_chr_f(g, n) result(r)
+        procedure(cc1_cir_chr_h) :: g
+        integer, intent(in) :: n
+        character(len=n) :: r
+        r = "x"
+    end function cc1_cir_chr_f
+
+    function cc1_cir_chr_h(k, n) result(r)
+        procedure(cc1_cir_chr_f) :: k  ! {Error} interface 'cc1_cir_chr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        integer, intent(in) :: n
+        character(len=n) :: r
+        r = k()
+    end function cc1_cir_chr_h
+
+    function cc1_cir_chr_arr_f(g, n) result(r)
+        procedure(cc1_cir_chr_arr_h) :: g
+        integer, intent(in) :: n
+        character(len=n) :: r(n)
+        r = "x"
+    end function cc1_cir_chr_arr_f
+
+    function cc1_cir_chr_arr_h(k, n) result(r)
+        procedure(cc1_cir_chr_arr_f) :: k  ! {Error} interface 'cc1_cir_chr_arr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        integer, intent(in) :: n
+        character(len=n) :: r(n)
+        r = k()
+    end function cc1_cir_chr_arr_h
+
+    function cc1_cir_arr_f(g, n) result(r)
+        procedure(cc1_cir_arr_h) :: g
+        integer, intent(in) :: n
+        integer :: r(n)
+        r = 1
+    end function cc1_cir_arr_f
+
+    integer function cc1_cir_arr_h(k, n) result(r)
+        procedure(cc1_cir_arr_f) :: k  ! {Error} interface 'cc1_cir_arr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        integer, intent(in) :: n
+        r = sum(k())
+    end function cc1_cir_arr_h
+
+    function cc1_cir_dt_f(g) result(r)
+        procedure(cc1_cir_dt_h) :: g
+        type(cc1_cir_t) :: r
+        r%i = 1
+    end function cc1_cir_dt_f
+
+    function cc1_cir_dt_h(k) result(r)
+        procedure(cc1_cir_dt_f) :: k  ! {Error} interface 'cc1_cir_dt_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        type(cc1_cir_t) :: r
+        r = k()
+    end function cc1_cir_dt_h
+
+    subroutine cc1_cir_Case(g)
+        procedure(CC1_CIR_CASE) :: g  ! {Error} interface 'cc1_cir_case' of dummy procedure 'g' depends on the characteristics of 'g'
+    end subroutine cc1_cir_Case
+
+    subroutine cc1_cir_later()
+        integer :: i
+        i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+    end subroutine cc1_cir_later
+end module cc1_cyclic_interface_results
+
+! A procedure whose interface has no result is not a function, even when the
+! interface is unknown after an error.
+module cc1_resultless_interface_references
+implicit none
+contains
+    subroutine cc1_rir_sub()
+    end subroutine cc1_rir_sub
+
+    integer function cc1_rir_call(k)
+        procedure(cc1_rir_sub) :: k
+        cc1_rir_call = k()  ! {Error} procedure 'k' is referenced as a function, but its interface has no result
+    end function cc1_rir_call
+
+    function cc1_rir_local_f(g) result(r)
+        procedure(cc1_rir_local_h) :: g
+        type :: cc1_rir_local_t
+            integer :: i
+        end type cc1_rir_local_t
+        type(cc1_rir_local_t) :: r
+        r%i = 1
+    end function cc1_rir_local_f
+
+    integer function cc1_rir_local_h(k)
+        procedure(cc1_rir_local_f) :: k  ! {Error} interface 'cc1_rir_local_f' of dummy procedure 'k' depends on the characteristics of 'k'
+        print *, k()  ! {Error} procedure 'k' is referenced as a function, but its interface has no result
+        cc1_rir_local_h = 1
+    end function cc1_rir_local_h
+end module cc1_resultless_interface_references
+
+! Procedure pointers and procedure pointer components with a subroutine
+! interface are reported by their source names.
+module cc1_resultless_pointer_references
+implicit none
+type :: cc1_rpr_t
+    procedure(cc1_rpr_sub), pointer, nopass :: pf => null()
+end type cc1_rpr_t
+contains
+    subroutine cc1_rpr_sub()
+    end subroutine cc1_rpr_sub
+
+    subroutine cc1_rpr_use()
+        procedure(cc1_rpr_sub), pointer :: p
+        type(cc1_rpr_t) :: o
+        real :: x
+        p => cc1_rpr_sub
+        o%pf => cc1_rpr_sub
+        x = p()  ! {Error} procedure 'p' is referenced as a function, but its interface has no result
+        x = o%pf()  ! {Error} procedure 'pf' is referenced as a function, but its interface has no result
+    end subroutine cc1_rpr_use
+end module cc1_resultless_pointer_references
+
+! A required dummy procedure must not be omitted in a call.
+module missing_proc_arg_mod
+    implicit none
+contains
+    subroutine take_proc(x, get_ptr)
+        integer, intent(out) :: x
+        interface
+            subroutine get_ptr(ptr)
+                integer, intent(out) :: ptr
+            end subroutine get_ptr
+        end interface
+        call get_ptr(x)
+    end subroutine
+end module
+
+subroutine missing_proc_arg_caller()
+    use missing_proc_arg_mod
+    implicit none
+    integer :: x
+    call take_proc(x)
+end subroutine
+
+! A procedure given to a procedure pointer component in a structure
+! constructor must have the characteristics of the component's explicit
+! interface (Fortran 2018 7.5.10, 10.2.2.4), also a module procedure defined
+! later.
+module cc1_proc_component_interface_mod
+    implicit none
+    abstract interface
+        subroutine cc1_pci_sub_iface(i)
+            integer, intent(in) :: i
+        end subroutine cc1_pci_sub_iface
+        integer function cc1_pci_func_iface(i)
+            integer, intent(in) :: i
+        end function cc1_pci_func_iface
+    end interface
+    type :: cc1_pci_t
+        procedure(cc1_pci_sub_iface), pointer, nopass :: p => null()
+        procedure(cc1_pci_func_iface), pointer, nopass :: f => null()
+    end type
+    type(cc1_pci_t), parameter :: cc1_pci_c = cc1_pci_t(cc1_pci_noarg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+    type(cc1_pci_t) :: cc1_pci_s = cc1_pci_t(f=cc1_pci_real_func)  ! {Error} interface mismatch for procedure pointer component 'f' in structure constructor
+contains
+    subroutine cc1_pci_noarg()
+    end subroutine cc1_pci_noarg
+    subroutine cc1_pci_real_arg(r)
+        real, intent(in) :: r
+    end subroutine cc1_pci_real_arg
+    subroutine cc1_pci_int8_arg(i)
+        integer(8), intent(in) :: i
+    end subroutine cc1_pci_int8_arg
+    integer function cc1_pci_int_func(i)
+        integer, intent(in) :: i
+        cc1_pci_int_func = i
+    end function cc1_pci_int_func
+    real function cc1_pci_real_func(i)
+        integer, intent(in) :: i
+        cc1_pci_real_func = i
+    end function cc1_pci_real_func
+    subroutine cc1_pci_use()
+        type(cc1_pci_t) :: x
+        type(cc1_pci_t) :: y = cc1_pci_t(cc1_pci_noarg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+        procedure(cc1_pci_func_iface), pointer :: q
+        x = cc1_pci_t(cc1_pci_noarg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+        x = cc1_pci_t(cc1_pci_real_arg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+        x = cc1_pci_t(cc1_pci_int8_arg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+        x = cc1_pci_t(p=cc1_pci_int_func)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+        q => cc1_pci_int_func
+        x = cc1_pci_t(f=cc1_pci_real_func)  ! {Error} interface mismatch for procedure pointer component 'f' in structure constructor
+        x = cc1_pci_t(q)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+        x = cc1_pci_t(f=q)
+    end subroutine cc1_pci_use
+end module cc1_proc_component_interface_mod
+
+! Derived types with identical components are still distinct types, so a
+! procedure taking one does not match an interface taking the other.
+module cc1_proc_component_dt_dummy_mod
+    implicit none
+    type :: cc1_pcd_a_t
+        integer :: i
+    end type
+    type :: cc1_pcd_b_t
+        integer :: i
+    end type
+    abstract interface
+        subroutine cc1_pcd_iface(x)
+            import :: cc1_pcd_a_t
+            type(cc1_pcd_a_t), intent(in) :: x
+        end subroutine cc1_pcd_iface
+    end interface
+    type :: cc1_pcd_t
+        procedure(cc1_pcd_iface), pointer, nopass :: p => null()
+    end type
+contains
+    subroutine cc1_pcd_b_arg(x)
+        type(cc1_pcd_b_t), intent(in) :: x
+    end subroutine cc1_pcd_b_arg
+    subroutine cc1_pcd_use()
+        type(cc1_pcd_t) :: x
+        x = cc1_pcd_t(cc1_pcd_b_arg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
+    end subroutine cc1_pcd_use
+end module cc1_proc_component_dt_dummy_mod
