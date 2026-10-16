@@ -426,9 +426,9 @@ and rewrites it, in ASR, before any backend sees it:
   on the host, with the recorded stop code. The program therefore prints
   what it prints on the CPU (`ERROR STOP 42`, `ERROR STOP evaluate: unknown
   activation`) and ends with the same status.
-* A kernel that finds a site already recorded, by an earlier launch of it the
-  host has not waited for yet, returns at once: the program has ended at that
-  stop, and the first launch that stopped is the one reported.
+* A thread records its stop only while no site is recorded: a site an
+  earlier launch recorded, which the host has not read yet, is where the
+  program ended, and the first launch that stopped is the one reported.
 
 The code is written before the site, and only by a thread that reached that
 site, so whichever thread's site the host reads, the code next to it was

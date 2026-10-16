@@ -24,8 +24,8 @@ sides of the launch:
   exactly as the statement does on the CPU. The launch does not wait for the
   kernel, so the statement is attached to the launch and run at the first
   wait the `gpu_launch_sync` pass places after it; the buffer is cleared once,
-  on entry to the procedure, and a kernel that finds a site already recorded
-  runs nothing, so the first launch that stopped is the one reported.
+  on entry to the procedure, and a thread records its stop only while no
+  site is recorded, so the first launch that stopped is the one reported.
 
 The buffer holds the site in its first element, and one more element per
 site for the stop code of that site. A thread writes the code first and the

@@ -456,6 +456,89 @@ bool acts_outside(ASR::Function_t *fn,
     return v.found;
 }
 
+// The parts of a derived-type dummy argument a procedure's body accesses:
+// the chains of components it names the dummy through, or the whole of it
+// when it uses the dummy itself (passes it on, assigns it).
+struct DummyUse {
+    bool whole = false;
+    std::vector<std::vector<ASR::symbol_t*>> chains;
+};
+
+class DummyUses : public ASR::BaseWalkVisitor<DummyUses> {
+public:
+    ASR::symbol_t *dummy;
+    DummyUse &use;
+    std::set<ASR::symbol_t*> blocks;
+    DummyUses(ASR::symbol_t *dummy_, DummyUse &use_)
+        : dummy(dummy_), use(use_) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (ASRUtils::symbol_get_past_external(x.m_v) == dummy) {
+            use.whole = true;
+        }
+    }
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+        std::vector<ASR::symbol_t*> chain;
+        const ASR::expr_t *e = &x.base;
+        while (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            const ASR::StructInstanceMember_t *m =
+                ASR::down_cast<ASR::StructInstanceMember_t>(e);
+            chain.insert(chain.begin(),
+                ASRUtils::symbol_get_past_external(m->m_m));
+            e = m->m_v;
+        }
+        if (ASR::is_a<ASR::Var_t>(*e) && ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(e)->m_v) == dummy) {
+            use.chains.push_back(chain);
+            return;
+        }
+        BaseWalkVisitor::visit_StructInstanceMember(x);
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(b).second) return;
+        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(b).second) return;
+        ASR::AssociateBlock_t *block = ASR::down_cast<ASR::AssociateBlock_t>(
+            b);
+        for (size_t i = 0; i < block->n_body; i++) {
+            visit_stmt(*block->m_body[i]);
+        }
+    }
+};
+
+// What the body of `fn` accesses through its dummy argument `i`, a scalar of
+// a derived type: the whole of it unless the body is known and names it
+// only through components.
+DummyUse dummy_use(ASR::Function_t *fn, size_t i) {
+    DummyUse use;
+    use.whole = true;
+    if (ASRUtils::get_FunctionType(fn)->m_deftype
+            != ASR::deftypeType::Implementation
+            || i >= fn->n_args || !ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
+        return use;
+    }
+    ASR::symbol_t *dummy = ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v;
+    if (!ASR::is_a<ASR::Variable_t>(*dummy)) return use;
+    ASR::ttype_t *type = ASRUtils::symbol_type(dummy);
+    if (ASRUtils::is_array(type) || ASRUtils::is_pointer(type)
+            || !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+        return use;
+    }
+    use.whole = false;
+    DummyUses v(dummy, use);
+    for (size_t k = 0; k < fn->n_body && !use.whole; k++) {
+        v.visit_stmt(*fn->m_body[k]);
+    }
+    return use;
+}
+
 class AccessCollector : public ASR::BaseWalkVisitor<AccessCollector> {
 public:
     Accesses &acc;
@@ -516,11 +599,34 @@ public:
 
     void call(ASR::symbol_t *name, ASR::call_arg_t *args, size_t n_args,
             ASR::expr_t *dt) {
+        ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(name);
+        ASR::Function_t *plain = dt == nullptr
+            && ASR::is_a<ASR::Function_t>(*callee)
+            ? ASR::down_cast<ASR::Function_t>(callee) : nullptr;
         for (size_t i = 0; i < n_args; i++) {
-            if (args[i].m_value) visit_expr(*args[i].m_value);
+            if (!args[i].m_value) continue;
+            // A derived-type value handed to a procedure that names only
+            // some of its components accesses only those.
+            Path p;
+            std::vector<ASR::expr_t*> subscripts;
+            if (plain != nullptr && n_args == plain->n_args
+                    && path_of(pointers, args[i].m_value, p, &subscripts)
+                    && !is_pointer_variable(p.root)) {
+                DummyUse use = dummy_use(plain, i);
+                if (!use.whole) {
+                    for (const auto &chain : use.chains) {
+                        Path q = p;
+                        q.members.insert(q.members.end(), chain.begin(),
+                            chain.end());
+                        acc.paths.push_back(q);
+                    }
+                    for (ASR::expr_t *sub : subscripts) visit_expr(*sub);
+                    continue;
+                }
+            }
+            visit_expr(*args[i].m_value);
         }
         if (dt) visit_expr(*dt);
-        ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(name);
         // A type-bound procedure is the procedure its binding names: one
         // that overrides it is pure when it is, and may access what it may.
         if (ASR::is_a<ASR::StructMethodDeclaration_t>(*callee)) {

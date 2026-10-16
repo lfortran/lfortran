@@ -160,7 +160,9 @@ private:
 
     // Records a stop at the site `k` makes, with the integer stop code
     // `value` when there is one, in the status buffer: the code first and
-    // the site after it (see gpu_offload_stop.h).
+    // the site after it (see gpu_offload_stop.h). A stop an earlier launch
+    // recorded, which the host has not read yet, ended the program there,
+    // so it is kept.
     std::vector<ASR::stmt_t*> record(
             const std::function<ASR::expr_t*()> &k, ASR::expr_t *value) {
         std::vector<ASR::stmt_t*> stmts;
@@ -169,7 +171,7 @@ private:
                 status_item(b.Add(k(), b.i32(1))), value));
         }
         stmts.push_back(b.Assignment(status_item(b.i32(1)), k()));
-        return stmts;
+        return {b.If(b.Eq(status_item(b.i32(1)), b.i32(0)), stmts, {})};
     }
 
     // What a `stop` turns into: the site, and its integer stop code, are
@@ -567,31 +569,11 @@ GpuDecline gpu_lower_device_stops(Allocator &al, const Location &loc,
             kernel.m_symtab->get_unique_name("__gpu_stop_code"), int4);
     }
     lowering.lower_kernel(kernel, site, code);
-    {
-        // A launch does not wait for the kernel, and the host reads the
-        // buffer only when it next waits (see gpu_launch_sync.cpp), so a
-        // later launch of the kernel can start after an earlier one
-        // stopped. The program has ended at that stop: the later launch
-        // runs nothing, and leaves the site and code the stop recorded.
-        Vec<ASR::array_index_t> first;
-        first.reserve(al, 1);
-        ASR::array_index_t ai;
-        ai.loc = loc;
-        ai.m_left = nullptr;
-        ai.m_right = b.i32(1);
-        ai.m_step = nullptr;
-        first.push_back(al, ai);
-        ASR::expr_t *recorded = ASRUtils::EXPR(ASR::make_ArrayItem_t(al,
-            loc, b.Var(status), first.p, first.n, int4,
-            ASR::arraystorageType::ColMajor, nullptr, false));
+    if (site != nullptr) {
         Vec<ASR::stmt_t*> body;
-        body.reserve(al, kernel.n_body + 3);
-        body.push_back(al, b.If(b.NotEq(recorded, b.i32(0)),
-            {ASRUtils::STMT(ASR::make_Return_t(al, loc))}, {}));
-        if (site != nullptr) {
-            body.push_back(al, b.Assignment(b.Var(site), b.i32(0)));
-            body.push_back(al, b.Assignment(b.Var(code), b.i32(0)));
-        }
+        body.reserve(al, kernel.n_body + 2);
+        body.push_back(al, b.Assignment(b.Var(site), b.i32(0)));
+        body.push_back(al, b.Assignment(b.Var(code), b.i32(0)));
         for (size_t i = 0; i < kernel.n_body; i++) {
             body.push_back(al, kernel.m_body[i]);
         }

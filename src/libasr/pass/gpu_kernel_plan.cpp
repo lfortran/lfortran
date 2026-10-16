@@ -715,9 +715,9 @@ public:
 // known to only read it: an operand of an expression, a subscript, the
 // value of an assignment, an inquiry about its shape, or an actual argument
 // of an `intent(in)` dummy argument. Anything else -- the target of an
-// assignment, an `allocate`, an alias bound to it, its address, an
-// argument of a dummy that may be defined, or a statement this does not
-// know -- counts as a write.
+// assignment, what an `allocate` or `deallocate` names, an alias bound to
+// it, its address, an argument of a dummy that may be defined, or a
+// statement this does not know -- counts as a write.
 class KernelWrites : public ASR::BaseWalkVisitor<KernelWrites> {
 public:
     std::set<ASR::symbol_t*> written;
@@ -756,6 +756,51 @@ public:
                 }
                 return;
             }
+            case ASR::stmtType::Allocate:
+            case ASR::stmtType::ReAlloc: {
+                // What is allocated is written; its shape is read.
+                ASR::alloc_arg_t *args = ASR::is_a<ASR::Allocate_t>(x)
+                    ? ASR::down_cast<ASR::Allocate_t>(&x)->m_args
+                    : ASR::down_cast<ASR::ReAlloc_t>(&x)->m_args;
+                size_t n = ASR::is_a<ASR::Allocate_t>(x)
+                    ? ASR::down_cast<ASR::Allocate_t>(&x)->n_args
+                    : ASR::down_cast<ASR::ReAlloc_t>(&x)->n_args;
+                for (size_t i = 0; i < n; i++) {
+                    mark(args[i].m_a);
+                    visit_expr(*args[i].m_a);
+                    for (size_t d = 0; d < args[i].n_dims; d++) {
+                        if (args[i].m_dims[d].m_start) {
+                            visit_expr(*args[i].m_dims[d].m_start);
+                        }
+                        if (args[i].m_dims[d].m_length) {
+                            visit_expr(*args[i].m_dims[d].m_length);
+                        }
+                    }
+                    if (args[i].m_len_expr) visit_expr(*args[i].m_len_expr);
+                }
+                if (ASR::is_a<ASR::Allocate_t>(x)) {
+                    const ASR::Allocate_t &a =
+                        *ASR::down_cast<ASR::Allocate_t>(&x);
+                    if (a.m_stat) mark(a.m_stat);
+                    if (a.m_errmsg) mark(a.m_errmsg);
+                    if (a.m_source) visit_expr(*a.m_source);
+                }
+                return;
+            }
+            case ASR::stmtType::ExplicitDeallocate:
+            case ASR::stmtType::ImplicitDeallocate: {
+                ASR::expr_t **vars = ASR::is_a<ASR::ExplicitDeallocate_t>(x)
+                    ? ASR::down_cast<ASR::ExplicitDeallocate_t>(&x)->m_vars
+                    : ASR::down_cast<ASR::ImplicitDeallocate_t>(&x)->m_vars;
+                size_t n = ASR::is_a<ASR::ExplicitDeallocate_t>(x)
+                    ? ASR::down_cast<ASR::ExplicitDeallocate_t>(&x)->n_vars
+                    : ASR::down_cast<ASR::ImplicitDeallocate_t>(&x)->n_vars;
+                for (size_t i = 0; i < n; i++) {
+                    mark(vars[i]);
+                    visit_expr(*vars[i]);
+                }
+                return;
+            }
             case ASR::stmtType::AssociateBlockCall: {
                 ASR::symbol_t *block = ASR::down_cast<
                     ASR::AssociateBlockCall_t>(&x)->m_m;
@@ -772,8 +817,7 @@ public:
             case ASR::stmtType::SubroutineCall: {
                 const ASR::SubroutineCall_t &c =
                     *ASR::down_cast<ASR::SubroutineCall_t>(&x);
-                call_arguments(c.m_name, c.m_args, c.n_args);
-                if (c.m_dt) mark(c.m_dt);
+                call_arguments(c.m_name, c.m_args, c.n_args, c.m_dt);
                 return;
             }
             default: {
@@ -787,8 +831,7 @@ public:
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        call_arguments(x.m_name, x.m_args, x.n_args);
-        if (x.m_dt) visit_expr(*x.m_dt);
+        call_arguments(x.m_name, x.m_args, x.n_args, x.m_dt);
     }
 
     void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t &x) {
@@ -874,32 +917,63 @@ private:
         }
     }
 
+    // Whether dummy `i` of `fn` only reads its actual argument.
+    static bool reads_only(ASR::Function_t *fn, size_t i) {
+        if (fn == nullptr || i >= fn->n_args
+                || !ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
+            return false;
+        }
+        ASR::symbol_t *dummy = ASR::down_cast<ASR::Var_t>(
+            fn->m_args[i])->m_v;
+        return ASR::is_a<ASR::Variable_t>(*dummy)
+            && ASR::down_cast<ASR::Variable_t>(dummy)->m_intent
+                == ASR::intentType::In
+            && !ASRUtils::is_pointer(ASRUtils::symbol_type(dummy));
+    }
+
+    // `dt` is the object of a type-bound call. When the call does not pass
+    // it among `args`, it is the dummy the binding passes it as.
     void call_arguments(ASR::symbol_t *name, ASR::call_arg_t *args,
-            size_t n_args) {
+            size_t n_args, ASR::expr_t *dt) {
         ASR::symbol_t *callee = ASRUtils::symbol_get_past_external(name);
+        ASR::StructMethodDeclaration_t *binding = nullptr;
         // A type-bound procedure is the procedure its binding names, whose
         // dummy arguments any procedure overriding it shares.
         if (ASR::is_a<ASR::StructMethodDeclaration_t>(*callee)) {
-            callee = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::StructMethodDeclaration_t>(callee)
-                    ->m_proc);
+            binding = ASR::down_cast<ASR::StructMethodDeclaration_t>(callee);
+            callee = ASRUtils::symbol_get_past_external(binding->m_proc);
         }
         ASR::Function_t *fn = ASR::is_a<ASR::Function_t>(*callee)
             ? ASR::down_cast<ASR::Function_t>(callee) : nullptr;
+        // The dummy the first actual argument is passed for: the one after
+        // the passed object when the call does not pass the object among
+        // its arguments. A passed object that is not the first dummy, or a
+        // call this cannot match up, writes everything it is handed.
+        size_t first = 0;
+        bool known = fn != nullptr;
+        if (dt != nullptr) {
+            bool apart = known && n_args + 1 == fn->n_args
+                && (binding == nullptr || !binding->m_is_nopass);
+            if (apart && binding != nullptr && binding->m_self_argument
+                    && (!ASR::is_a<ASR::Var_t>(*fn->m_args[0])
+                        || std::string(ASRUtils::symbol_name(
+                            ASR::down_cast<ASR::Var_t>(fn->m_args[0])->m_v))
+                            != binding->m_self_argument)) {
+                known = false;
+            }
+            if (known && apart) {
+                first = 1;
+                if (!reads_only(fn, 0)) mark(dt);
+            } else if (!known || n_args != fn->n_args) {
+                known = false;
+                mark(dt);
+            }
+            visit_expr(*dt);
+        }
         for (size_t i = 0; i < n_args; i++) {
             ASR::expr_t *value = args[i].m_value;
             if (value == nullptr) continue;
-            bool read_only = false;
-            if (fn != nullptr && i < fn->n_args
-                    && ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
-                ASR::symbol_t *dummy = ASR::down_cast<ASR::Var_t>(
-                    fn->m_args[i])->m_v;
-                read_only = ASR::is_a<ASR::Variable_t>(*dummy)
-                    && ASR::down_cast<ASR::Variable_t>(dummy)->m_intent
-                        == ASR::intentType::In
-                    && !ASRUtils::is_pointer(ASRUtils::symbol_type(dummy));
-            }
-            if (!read_only) mark(value);
+            if (!known || !reads_only(fn, first + i)) mark(value);
             visit_expr(*value);
         }
     }
