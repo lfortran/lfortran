@@ -766,6 +766,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "pause1.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/stop_03.f90"
 run = true
 
@@ -3766,6 +3770,10 @@ ast = true
 
 [[test]]
 filename = "errors/fixed_form_13.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_14.f"
 ast = true
 
 [[test]]

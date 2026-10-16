@@ -4143,3 +4143,27 @@ semantic error: interface mismatch for procedure pointer component 'p' in struct
      |
 3353 |         x = cc1_pcd_t(cc1_pcd_b_arg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
      |                       ^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pcd_iface) and procedure(cc1_pcd_b_arg))
+
+warning: the `pause` statement is a deleted feature (deleted in Fortran 95)
+    --> tests/errors/continue_compilation_1.f90:3364:9
+     |
+3364 |         pause 3.0  ! {Error} `pause` code must be a scalar integer or default character expression, found real(4)
+     |         ^^^^^^^^^ 
+
+semantic error: `pause` code must be a scalar integer or default character expression, found real(4)
+    --> tests/errors/continue_compilation_1.f90:3364:15
+     |
+3364 |         pause 3.0  ! {Error} `pause` code must be a scalar integer or default character expression, found real(4)
+     |               ^^^ 
+
+warning: the `pause` statement is a deleted feature (deleted in Fortran 95)
+    --> tests/errors/continue_compilation_1.f90:3365:9
+     |
+3365 |         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
+     |         ^^^^^^^^^^^ 
+
+semantic error: `pause` code must be a scalar integer or default character expression, found integer(4) array
+    --> tests/errors/continue_compilation_1.f90:3365:15
+     |
+3365 |         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
+     |               ^^^^^ 

@@ -2428,6 +2428,24 @@ public:
         s = r;
     }
 
+    void visit_Pause(const Pause_t &x) {
+        std::string r = indent;
+        r += print_label(x);
+        r += syn(gr::Keyword);
+        r.append("pause");
+        r += syn();
+        if (x.m_code) {
+            this->visit_expr(*x.m_code);
+            r += " " + s;
+        }
+        if(x.m_trivia){
+            r += print_trivia_after(*x.m_trivia);
+        } else {
+            r.append("\n");
+        }
+        s = r;
+    }
+
     void visit_ErrorStop(const ErrorStop_t &x) {
         std::string r = indent;
         r += print_label(x);
