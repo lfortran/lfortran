@@ -3665,6 +3665,18 @@ public:
 	}
     }
 
+    // While a bound was postponed, the dimension looked deferred and got a descriptor
+    void set_postponed_explicit_shape_physical_type(ASR::Variable_t* v) {
+        if (!ASR::is_a<ASR::Array_t>(*v->m_type)) {
+            return;
+        }
+        ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(v->m_type);
+        if (array_type->m_physical_type == ASR::array_physical_typeType::DescriptorArray
+                && !ASRUtils::is_dimension_empty(array_type->m_dims, array_type->n_dims)) {
+            array_type->m_physical_type = ASR::array_physical_typeType::PointerArray;
+        }
+    }
+
     bool is_funcCall_to_unresolved_genereicProcedure(AST::expr_t* expr){
         return AST::is_a<AST::FuncCallOrArray_t>(*expr) &&
             is_pending_generic_procedure(

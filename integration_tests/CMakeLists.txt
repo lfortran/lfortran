@@ -819,6 +819,7 @@ RUN(NAME array_bound_7 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_bound_8 LABELS gfortran llvm) # parameter-array element as array bound
 RUN(NAME array_bound_9 LABELS gfortran llvm) # component or array element as assumed-shape lower bound
 RUN(NAME array_bound_10 LABELS gfortran llvm)
+RUN(NAME array_bound_11 LABELS gfortran llvm) # type-bound call as explicit-shape dummy bound
 RUN(NAME arrays_op_1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
 RUN(NAME arrays_op_2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
 RUN(NAME arrays_op_3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
