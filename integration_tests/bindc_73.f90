@@ -44,6 +44,11 @@ contains
         c = 'rs'
     end function
 
+    pure function pure_c() result(c) bind(c)
+        character(kind=c_char) :: c
+        c = 'q'
+    end function
+
     subroutine source_callback(p)
         procedure(source_c) :: p
         character(2) :: c
@@ -127,6 +132,21 @@ program bindc_73
     write(buffer, *) p()
     if (trim(adjustl(buffer)) /= 'q') error stop 26
     if (calls /= 2) error stop 31
+    calls = 0
+    if (trim(adjustl(get_c())) /= 'q') error stop 32
+    if (calls /= 1) error stop 33
+    calls = 0
+    if (trim(adjustr(p())) /= 'q') error stop 34
+    if (calls /= 1) error stop 35
+    if (trim(adjustl(pure_c())) /= 'q') error stop 36
+    if (trim(adjustr(pure_c())) /= 'q') error stop 37
+    calls = 0
+    call take_string(trim(adjustl(get_c())), 'q')
+    if (calls /= 1) error stop 38
+    calls = 0
+    text = trim(adjustr(get_c()))
+    if (text /= 'q' .or. len(text) /= 1) error stop 39
+    if (calls /= 1) error stop 40
     write(buffer, *) source_p()
     if (trim(adjustl(buffer)) /= 'rs') error stop 27
     call write_value('q')

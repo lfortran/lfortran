@@ -388,33 +388,6 @@ public:
     }
 };
 
-// Intrinsic lowering can share an actual between its result-length expression
-// and its call. Hoisting changes that shared operand, so normalize every use
-// after all actuals and their hidden lengths have been rewritten.
-class NormalizeStringPhysicalCasts:
-        public ASR::CallReplacerOnExpressionsVisitor<NormalizeStringPhysicalCasts> {
-public:
-    Allocator &al;
-
-    NormalizeStringPhysicalCasts(Allocator &al_): al{al_} {
-        call_replacer_on_value = false;
-    }
-
-    void call_replacer() {
-        if (!is_a<ASR::StringPhysicalCast_t>(**current_expr)) return;
-        ASR::StringPhysicalCast_t *x =
-            down_cast<ASR::StringPhysicalCast_t>(*current_expr);
-        ASR::string_physical_typeType physical =
-            ASRUtils::get_string_type(ASRUtils::expr_type(x->m_arg))->m_physical_type;
-        if (physical == x->m_new) {
-            *current_expr = x->m_arg;
-        } else if (physical != x->m_old) {
-            *current_expr = ASRUtils::create_string_physical_cast(al,
-                x->m_arg, x->m_new, ASRUtils::is_allocatable(x->m_type));
-        }
-    }
-};
-
 class FindImpureCall: public ASR::BaseWalkVisitor<FindImpureCall> {
 public:
     bool found = false;
@@ -681,8 +654,7 @@ void pass_string_length_arguments(Allocator &al, ASR::TranslationUnit_t &unit,
     }
     AddHiddenLengthActuals a(al, transformed);
     a.visit_TranslationUnit(unit);
-    NormalizeStringPhysicalCasts casts(al);
-    casts.visit_TranslationUnit(unit);
+    PassUtils::normalize_string_physical_casts(al, unit);
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);
     verify_hidden_string_lengths(unit, pass_options);
