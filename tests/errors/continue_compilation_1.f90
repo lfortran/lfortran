@@ -3353,3 +3353,12 @@ contains
         x = cc1_pcd_t(cc1_pcd_b_arg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
     end subroutine cc1_pcd_use
 end module cc1_proc_component_dt_dummy_mod
+
+! An array spec in a type declaration after a DIMENSION statement for the
+! same entity gives it the DIMENSION attribute twice.
+subroutine cc1_duplicate_dimension_attr(x)
+    dimension arr(3)
+    integer, dimension(3) :: arr  ! {Error} Duplicate DIMENSION attribute specified
+    dimension x(*)
+    real :: x(*)  ! {Error} Duplicate DIMENSION attribute specified
+end subroutine cc1_duplicate_dimension_attr

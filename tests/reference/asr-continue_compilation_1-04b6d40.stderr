@@ -1416,6 +1416,28 @@ semantic error: interface mismatch for procedure pointer component 'f' in struct
 3295 |     type(cc1_pci_t) :: cc1_pci_s = cc1_pci_t(f=cc1_pci_real_func)  ! {Error} interface mismatch for procedure pointer component 'f' in structure constructor
      |                                                ^^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pci_func_iface) and procedure(cc1_pci_real_func))
 
+semantic error: Duplicate DIMENSION attribute specified
+    --> tests/errors/continue_compilation_1.f90:3361:30
+     |
+3361 |     integer, dimension(3) :: arr  ! {Error} Duplicate DIMENSION attribute specified
+     |                              ^^^ 
+
+semantic error: Duplicate DIMENSION attribute specified
+    --> tests/errors/continue_compilation_1.f90:3363:13
+     |
+3363 |     real :: x(*)  ! {Error} Duplicate DIMENSION attribute specified
+     |             ^^^^ 
+
+semantic error: Dummy argument 'x' not defined
+    --> tests/errors/continue_compilation_1.f90:3359:1 - 3364:43
+     |
+3359 |    subroutine cc1_duplicate_dimension_attr(x)
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3364 |    end subroutine cc1_duplicate_dimension_attr
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

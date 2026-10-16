@@ -2807,6 +2807,18 @@ public:
         throw SemanticAbort();
     }
 
+    // An array spec in a type declaration after a DIMENSION (or other
+    // attribute) statement that already gave one (F2023 8.5.1 C815)
+    void reject_duplicate_dimension(ASR::Variable_t *v,
+            ASR::ttype_t *declared_type, const Location &loc) {
+        if (ASRUtils::is_array(v->m_type) && ASRUtils::is_array(declared_type)) {
+            diag.add(Diagnostic(
+                "Duplicate DIMENSION attribute specified",
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     void reject_null_initializer_if_not_pointer_or_allocatable(
             const std::string& name, ASR::ttype_t* type,
             ASR::symbol_t* type_declaration, bool is_pointer,
@@ -10365,6 +10377,7 @@ public:
                             ASR::Variable_t* symbol_variable = ASR::down_cast<ASR::Variable_t>(symbol);
                             symbol_variable->base.base.loc = s.loc;
                             if ( symbol_variable->m_type ) {
+                                reject_duplicate_dimension(symbol_variable, type, s.loc);
                                 if (is_argument && is_dimension_star) {
                                     symbol_variable->m_type = type;
                                 } else if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
@@ -10468,6 +10481,7 @@ public:
                             check_namelist_object_type_confirmed(symbol_variable,
                                 type, type_declaration, s.loc);
                         }
+                        reject_duplicate_dimension(symbol_variable, type, s.loc);
                         if (is_argument && is_dimension_star) {
                             symbol_variable->m_type = type;
                         } else if ( ASR::is_a<ASR::Array_t>(*symbol_variable->m_type) ) {
