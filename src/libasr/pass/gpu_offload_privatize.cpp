@@ -139,7 +139,9 @@ constexpr int64_t gpu_stack_frame_reserve_bytes = 8 * 1024;
 //     section is read in place;
 //   - the target of an assignment whose value reads the target's storage
 //     through another designator, when that temporary has a compile-time
-//     size (self_aliasing_target, alias_temp_is_fixed_size).
+//     size (self_aliasing_target, alias_temp_is_fixed_size). Its value then
+//     reads the sections of the target in place; such an assignment
+//     counts only one of the two ways of making the copy (visit_Assignment).
 // A value counts the bytes of its type. When its extents are not
 // compile-time constants, a section or an element designator with a vector
 // subscript counts a bound on the elements its subscripts select
@@ -191,31 +193,73 @@ public:
         if (n < 0 && (own || cast)) n = operands;
         operand_elements = std::max(operand_elements, n);
         if (e == assigned || cast || (own && in_elementwise) ||
-                !is_temporary_needed(e) || read_in_place(e, argument)) {
+                !is_temporary_needed(e)) {
             return;
         }
-        count(e, n);
+        if (ASR::is_a<ASR::ArraySection_t>(*e) &&
+                !ASRUtils::is_array_indexed_with_array_indices(
+                    ASR::down_cast<ASR::ArraySection_t>(e))) {
+            // A section is read in place, except where it is copied (see
+            // the class comment).
+            if (argument && gpu.section_is_noncontiguous(
+                    ASR::down_cast<ASR::ArraySection_t>(e))) {
+                count(e, n, bytes);
+            } else if (target_array && is_common_symbol_present_in_lhs_and_rhs(
+                    al, target_array, e)) {
+                count(e, n, *target_sections);
+            }
+            return;
+        }
+        count(e, n, bytes);
+    }
+
+    // Whether the statement being visited is one the offload pass gives an
+    // alias temporary when it needs one: one of the body, or of the DO
+    // loops, BLOCKs and ASSOCIATEs in it (materialize_aliased_in_body).
+    void visit_stmt(const ASR::stmt_t &x) {
+        bool outer = alias_materialized;
+        alias_materialized = outer && (ASR::is_a<ASR::DoLoop_t>(x) ||
+            ASR::is_a<ASR::BlockCall_t>(x) ||
+            ASR::is_a<ASR::AssociateBlockCall_t>(x) ||
+            ASR::is_a<ASR::Assignment_t>(x));
+        ASRUtils::BlockBodyWalkVisitor<GpuThreadStack>::visit_stmt(x);
+        alias_materialized = outer;
     }
 
     // What an assignment defines is storage, not a value it computes, and
-    // an elementwise value is computed into it.
+    // an elementwise value is computed into it. One whose value reads the
+    // storage of its target through another designator has its value
+    // computed into a temporary first, whose sections of the target are
+    // read in place: the offload pass's alias temporary where it makes one,
+    // else array_struct_temporary's copies of those sections. Where it is
+    // not known which of the two a statement gets -- that of a procedure
+    // the body calls, which the offload pass may splice into the body or
+    // not -- the larger counts.
     void visit_Assignment(const ASR::Assignment_t &x) {
         assigned = x.m_target;
         visit_expr(*x.m_target);
         assigned = nullptr;
         ASR::expr_t *aliased = gpu.self_aliasing_target(
             const_cast<ASR::Assignment_t*>(&x));
+        int64_t alias_bytes = 0;
         if (aliased && gpu.alias_temp_is_fixed_size(aliased)) {
-            count(aliased, elements(aliased));
+            count(aliased, elements(aliased), alias_bytes);
         }
         ASR::expr_t *outer_target = target_array;
-        target_array = ASRUtils::is_array(ASRUtils::expr_type(x.m_target))
+        int64_t *outer_sections = target_sections;
+        int64_t section_bytes = 0;
+        target_array = !(aliased && alias_materialized) &&
+                ASRUtils::is_array(ASRUtils::expr_type(x.m_target))
             ? ASRUtils::extract_array_variable(x.m_target) : nullptr;
+        target_sections = &section_bytes;
         bool in_elementwise = in_elementwise_value;
         in_elementwise_value = true;
         visit_expr(*x.m_value);
         in_elementwise_value = in_elementwise;
         target_array = outer_target;
+        target_sections = outer_sections;
+        bytes += aliased ? std::max(alias_bytes, section_bytes)
+            : section_bytes;
         if (x.m_overloaded) visit_stmt(*x.m_overloaded);
     }
 
@@ -265,8 +309,12 @@ private:
     std::set<SymbolTable*> counted;
 
     ASR::expr_t *assigned = nullptr;
-    // The array the assignment whose value is being visited defines.
+    // The array the assignment whose value is being visited defines, whose
+    // sections there are copied, and the bytes of those copies.
     ASR::expr_t *target_array = nullptr;
+    int64_t *target_sections = nullptr;
+    // See visit_stmt.
+    bool alias_materialized = true;
     // Whether the value being visited is an operand of an elementwise
     // value or the value of an assignment.
     bool in_elementwise_value = false;
@@ -284,24 +332,13 @@ private:
         return ASR::is_a<ASR::ArrayBroadcast_t>(*e) || is_vectorise_able(e);
     }
 
-    // Whether `e`, a section without a vector subscript, is read where it
-    // is rather than copied (see the class comment).
-    bool read_in_place(ASR::expr_t *e, bool argument) {
-        if (!ASR::is_a<ASR::ArraySection_t>(*e)) return false;
-        ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(e);
-        if (ASRUtils::is_array_indexed_with_array_indices(as)) return false;
-        if (argument && gpu.section_is_noncontiguous(as)) return false;
-        return !(target_array &&
-            is_common_symbol_present_in_lhs_and_rhs(al, target_array, e));
-    }
-
-    void count(ASR::expr_t *e, int64_t n) {
+    void count(ASR::expr_t *e, int64_t n, int64_t &into) {
         int64_t element = ASRUtils::compute_type_size_align(
             ASRUtils::extract_type(ASRUtils::expr_type(e))).first;
         if (n < 0 || element <= 0) {
             bounded = false;
         } else {
-            bytes += n * element;
+            into += n * element;
         }
     }
 
@@ -389,9 +426,12 @@ private:
         // The callee's statements are its own; what the caller's statement
         // defines does not reach them.
         ASR::expr_t *outer_target = target_array;
+        bool outer_materialized = alias_materialized;
         target_array = nullptr;
+        alias_materialized = false;
         for (size_t i = 0; i < fn->n_body; i++) visit_stmt(*fn->m_body[i]);
         target_array = outer_target;
+        alias_materialized = outer_materialized;
     }
 };
 
