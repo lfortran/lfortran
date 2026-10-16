@@ -25439,6 +25439,14 @@ public:
         throw CodeGenError("GpuAtomicFetchAdd should not appear in LLVM backend");
     }
 
+    void visit_GpuLaneIndex(const ASR::GpuLaneIndex_t & /* x */) {
+        throw CodeGenError("GpuLaneIndex should not appear in LLVM backend");
+    }
+
+    void visit_GpuLaneBroadcast(const ASR::GpuLaneBroadcast_t & /* x */) {
+        throw CodeGenError("GpuLaneBroadcast should not appear in LLVM backend");
+    }
+
     template <typename T>
     inline void set_func_subrout_params(T* func_subrout, ASR::abiType& x_abi,
                                         std::uint32_t& m_h, ASR::Variable_t*& orig_arg,

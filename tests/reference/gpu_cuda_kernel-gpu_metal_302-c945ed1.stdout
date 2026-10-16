@@ -30,7 +30,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         a[((int)(i) - (1))] = r[((int)(i) - (1))];
     }
     if ((i < 0)) {
-        __gpu_stop_status[((int)(1) - (1))] = 1;
+        if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
+            __gpu_stop_status[((int)(1) - (1))] = 1;
+        }
         return;
     }
 }

@@ -4337,6 +4337,13 @@ public:
                 throw CodeGenError("gpu offload: a stop statement reached "
                     "the device code generator", stmt->base.loc);
             }
+            case ASR::stmtType::GpuLaneBarrier: {
+                LCOMPILERS_ASSERT(current_kernel_layout != nullptr
+                    && current_kernel_layout->m_lanes != nullptr);
+                dialect.emit_lane_barrier(src, get_indent(),
+                    ASRUtils::symbol_name(current_kernel_layout->m_lanes));
+                break;
+            }
             case ASR::stmtType::Return: {
                 // A Fortran RETURN in a function hands back the result
                 // variable, which the device language spells out.
@@ -5268,6 +5275,22 @@ public:
             }
             case ASR::exprType::GpuBlockSize: {
                 src << dialect.block_size();
+                break;
+            }
+            case ASR::exprType::GpuLaneIndex: {
+                src << dialect.lane_index();
+                break;
+            }
+            case ASR::exprType::GpuLaneBroadcast: {
+                ASR::GpuLaneBroadcast_t *b =
+                    ASR::down_cast<ASR::GpuLaneBroadcast_t>(expr);
+                // A logical travels as an integer.
+                if (ASRUtils::is_logical(*b->m_type)) {
+                    src << "(" << dialect.lane_broadcast("(int)("
+                        + expr_str(b->m_arg) + ")") << " != 0)";
+                } else {
+                    src << dialect.lane_broadcast(expr_str(b->m_arg));
+                }
                 break;
             }
             case ASR::exprType::GpuAtomicFetchAdd: {

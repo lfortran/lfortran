@@ -2102,13 +2102,13 @@ public:
         std::string r = indent;
         r += "call ";
         r += ASRUtils::symbol_name(x.m_kernel);
-        r += "<<<";
-        visit_expr(*x.m_grid_size);
-        r += src;
-        r += ", ";
+        // The execution configuration as CUDA writes it: whole blocks.
+        visit_expr(*x.m_thread_count);
+        std::string thread_count = src;
         visit_expr(*x.m_block_size);
-        r += src;
-        r += ">>>(";
+        std::string block_size = src;
+        r += "<<<(" + thread_count + " + " + block_size + " - 1)/"
+            + block_size + ", " + block_size + ">>>(";
         for (size_t i = 0; i < x.n_args; i++) {
             visit_expr(*x.m_args[i].m_value);
             r += src;
@@ -2123,6 +2123,28 @@ public:
     void visit_GpuSync(const ASR::GpuSync_t &/*x*/) {
         std::string r = indent;
         r += "gpu sync";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
+    void visit_GpuLaneBarrier(const ASR::GpuLaneBarrier_t &/*x*/) {
+        std::string r = indent;
+        r += "gpu lane barrier";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
+    void visit_GpuDiscard(const ASR::GpuDiscard_t &x) {
+        std::string r = indent;
+        r += "gpu discard(";
+        for (size_t i = 0; i < x.n_vars; i++) {
+            visit_expr(*x.m_vars[i]);
+            r += src;
+            if (i < x.n_vars - 1) r += ", ";
+        }
+        r += ")";
         handle_line_truncation(r, 2);
         r += "\n";
         src = r;
@@ -3463,6 +3485,15 @@ public:
 
     void visit_GpuBlockSize(const ASR::GpuBlockSize_t &x) {
         src = "gpu_block_size(" + std::to_string(x.m_dim) + ")";
+    }
+
+    void visit_GpuLaneIndex(const ASR::GpuLaneIndex_t &/*x*/) {
+        src = "gpu_lane_index()";
+    }
+
+    void visit_GpuLaneBroadcast(const ASR::GpuLaneBroadcast_t &x) {
+        visit_expr(*x.m_arg);
+        src = "gpu_lane_broadcast(" + src + ")";
     }
 
     void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t &x) {
