@@ -5042,6 +5042,8 @@ RUN(NAME legacy_array_sections_25 LABELS gfortran llvm EXTRA_ARGS --legacy-array
 RUN(NAME legacy_array_sections_26 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections
     GFORTRAN_ARGS -fallow-argument-mismatch)
 RUN(NAME legacy_array_sections_27 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
+RUN(NAME legacy_array_sections_28 LABELS gfortran llvm EXTRA_ARGS --legacy-array-sections)
+RUN(NAME legacy_array_sections_29 LABELS llvm EXTRA_ARGS --legacy-array-sections)
 
 RUN(NAME cmake_minimal_test_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_initialization_declaration LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
