@@ -3,12 +3,15 @@
 ! a statement after the loop may read -- however a jump gets there -- or that
 ! an iteration reads before defining it all, keeps the one shared value the
 ! source gives it, as does one too large for what a thread's stack has left
+! -- next to the locals and the temporaries of the body's array values --
 ! and one of a size only known at run time.
 program gpu_metal_475
 implicit none
 integer, parameter :: n = 10000, big = 16384, near = 8192, mid = 5000
+integer, parameter :: tm = 7500, tb = 9000, sm = 1000
 real :: y(n), a(4), b(4), c(4), d(4), e(4), f(4), g(4), h(8), p(near)
 real :: q(big), v(4), w(8), o(4), r(4), s(4), u(4), x(mid), z(n)
+real :: tt(tm), bb(tb), ts(sm), bs(sm)
 integer :: i, j, k, it
 logical :: stop_now
 
@@ -248,6 +251,36 @@ do concurrent (j = 1:256)
 end do
 do j = 1, 256
     if (y(j) /= mid + 2 * j) error stop 20
+end do
+
+! The temporary of 36,000 bytes the value of `cshift` takes on a thread's
+! stack leaves no room there for one of 30,000 on Metal: it stays one
+! array, which one iteration defines.
+bb = 1
+do concurrent (j = 1:64)
+    if (j == 7) then
+        do k = 1, tm
+            tt(k) = k + j
+        end do
+        y(j) = tt(tm)
+    else
+        y(j) = 0
+    end if
+    z(j) = sum(cshift(bb, j))
+end do
+if (y(7) /= tm + 7 .or. y(1) /= 0 .or. any(z(1:64) /= tb)) error stop 22
+
+! Next to a temporary of 4,000 bytes it does, so every iteration defines
+! its own.
+bs = 1
+do concurrent (j = 1:256)
+    do k = 1, sm
+        ts(k) = k + j
+    end do
+    y(j) = ts(sm) + sum(cshift(bs, j))
+end do
+do j = 1, 256
+    if (y(j) /= 2 * sm + j) error stop 23
 end do
 
 ! A temporary of a size only known at run time stays one array: its own

@@ -13,6 +13,16 @@ namespace LCompilers {
     ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
         ASR::expr_t* value, SymbolTable* scope, std::string name_hint, bool is_pointer_required=false);
 
+    // Whether `value` is an array other than a variable -- a section, or
+    // a value an expression computes -- which a statement that passes it
+    // on may hold in a temporary.
+    bool is_temporary_needed(ASR::expr_t* value);
+
+    // Whether `x` is a variable or a value computed element by element
+    // from its operands, which an elementwise operation using it reads in
+    // place, without a temporary.
+    bool is_vectorise_able(ASR::expr_t* x);
+
     void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
         ASR::expr_t* value, Vec<ASR::stmt_t*>* current_body,
         ASR::expr_t* rank_source = nullptr);

@@ -177,9 +177,12 @@ generates the device source. It never falls back to the CPU:
   the value it had before the loop and nothing can tell. Such arrays are
   given to each thread only while, together with the locals of the `block`
   and `associate` constructs of the body and of the procedures it calls,
+  the temporaries the compiler may make for the array values they compute
+  (such as `cshift(b, j)`, `reshape(...)`, or a section copied for a call),
   and 8 KiB left to the frames the device compiler adds, they fit a
   thread's stack (64 KiB with Metal, the least a device it runs on has,
-  512 KiB with CUDA). Every other array
+  512 KiB with CUDA); none is when the size of such a value is not known
+  at compile time. Every other array
   of unspecified locality -- one whose elements the iterations define one
   each (`y(j) = ...`), one partly defined, one an iteration reads before
   defining it, a dummy argument, an array that may be read after the loop,

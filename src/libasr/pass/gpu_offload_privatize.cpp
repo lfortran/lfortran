@@ -10,6 +10,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/access_paths.h>
+#include <libasr/pass/array_struct_temporary.h>
 #include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/gpu_offload_visitor.h>
@@ -109,24 +110,92 @@ public:
 // reserve is eight times that.
 constexpr int64_t gpu_stack_frame_reserve_bytes = 8 * 1024;
 
-// The bytes of a thread's stack that what the source declares takes while
-// the thread runs a loop body: the locals of the BLOCK and ASSOCIATE
-// constructs of the body, and those of every procedure it may call, and of
-// theirs. Each scope counts once, so the sum bounds what any chain of calls
-// holds at once. An allocatable or pointer lives on the heap and a
+// A bound on the bytes of a thread's stack a loop body takes while the
+// thread runs it, besides the arrays this pass makes local. Two things
+// live there: the locals of the BLOCK and ASSOCIATE constructs of the
+// body, and of every procedure it may call, and of theirs; and the
+// temporaries the passes after this one create for the array values the
+// statements of those compute (`cshift(b, j)`, `reshape(...)`, a section
+// copied for a call), which are locals of the kernel or of the procedure
+// as well. Each scope counts once, so the sum bounds what any chain of
+// calls holds at once. An allocatable or pointer lives on the heap and a
 // run-time sized array in a workspace, not on the stack; an associate name
 // is its selector, which the pass writes in its place.
-class GpuDeclaredStack
-        : public ASRUtils::BlockBodyWalkVisitor<GpuDeclaredStack> {
+//
+// Every array value a statement may hold in a temporary
+// (is_temporary_needed) counts once, wherever it nests, whether a
+// temporary is made for it in the end or not -- except an elementwise
+// one (is_vectorise_able, or a scalar broadcast to a shape) that is an
+// operand of another or the value of an assignment, which is computed
+// element by element into what uses it. A value counts the bytes of its
+// type; when its extents are not compile-time constants, those of the
+// array a section of it names, at most once each element without a vector
+// subscript, or of an elementwise value's operands, whose shape it has.
+// A value no such bound is known for leaves the bound unknown
+// (`bounded`): a pass after this one may still find one and make its
+// temporary a stack array.
+class GpuThreadStack
+        : public ASRUtils::BlockBodyWalkVisitor<GpuThreadStack> {
 public:
     int64_t bytes = 0;
+    bool bounded = true;
+
+    GpuThreadStack() { visit_compile_time_value = false; }
+
+    // An actual argument is evaluated, whatever the flag above says of
+    // the `m_value` of a call_arg.
+    void visit_call_arg(const ASR::call_arg_t &x) {
+        if (x.m_value) visit_expr(*x.m_value);
+    }
+
+    void visit_expr(const ASR::expr_t &x) {
+        ASR::expr_t *e = const_cast<ASR::expr_t*>(&x);
+        bool cast = ASR::is_a<ASR::ArrayPhysicalCast_t>(x);
+        bool own = elementwise(e);
+        bool in_elementwise = in_elementwise_value;
+        int64_t outer_operands = operand_elements;
+        in_elementwise_value = cast ? in_elementwise : reads_in_place(e);
+        operand_elements = -1;
+        ASRUtils::BlockBodyWalkVisitor<GpuThreadStack>::visit_expr(x);
+        int64_t operands = operand_elements;
+        in_elementwise_value = in_elementwise;
+        operand_elements = outer_operands;
+        if (!ASRUtils::is_array(ASRUtils::expr_type(e))) return;
+        int64_t n = elements(e);
+        if (n < 0 && (own || cast)) n = operands;
+        operand_elements = std::max(operand_elements, n);
+        if (e == assigned || cast || (own && in_elementwise) ||
+                !is_temporary_needed(e)) {
+            return;
+        }
+        int64_t element = ASRUtils::compute_type_size_align(
+            ASRUtils::extract_type(ASRUtils::expr_type(e))).first;
+        if (n < 0 || element <= 0) {
+            bounded = false;
+        } else {
+            bytes += n * element;
+        }
+    }
+
+    // What an assignment defines is storage, not a value it computes, and
+    // an elementwise value is computed into it.
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        assigned = x.m_target;
+        visit_expr(*x.m_target);
+        assigned = nullptr;
+        bool in_elementwise = in_elementwise_value;
+        in_elementwise_value = true;
+        visit_expr(*x.m_value);
+        in_elementwise_value = in_elementwise;
+        if (x.m_overloaded) visit_stmt(*x.m_overloaded);
+    }
 
     void visit_BlockCall(const ASR::BlockCall_t &x) {
         ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_m);
         if (s && ASR::is_a<ASR::Block_t>(*s)) {
             scope(ASR::down_cast<ASR::Block_t>(s)->m_symtab, {});
         }
-        ASRUtils::BlockBodyWalkVisitor<GpuDeclaredStack>::visit_BlockCall(x);
+        ASRUtils::BlockBodyWalkVisitor<GpuThreadStack>::visit_BlockCall(x);
     }
 
     void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
@@ -145,24 +214,77 @@ public:
             }
             scope(ab->m_symtab, names);
         }
-        ASRUtils::BlockBodyWalkVisitor<GpuDeclaredStack>
+        ASRUtils::BlockBodyWalkVisitor<GpuThreadStack>
             ::visit_AssociateBlockCall(x);
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         callee(x.m_name);
-        ASRUtils::BlockBodyWalkVisitor<GpuDeclaredStack>
+        ASRUtils::BlockBodyWalkVisitor<GpuThreadStack>
             ::visit_FunctionCall(x);
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         callee(x.m_name);
-        ASRUtils::BlockBodyWalkVisitor<GpuDeclaredStack>
+        ASRUtils::BlockBodyWalkVisitor<GpuThreadStack>
             ::visit_SubroutineCall(x);
     }
 
 private:
     std::set<SymbolTable*> counted;
+
+    ASR::expr_t *assigned = nullptr;
+    // Whether the value being visited is an operand of an elementwise
+    // value or the value of an assignment.
+    bool in_elementwise_value = false;
+    // The most elements an array operand of the value being visited has,
+    // -1 if none is known.
+    int64_t operand_elements = -1;
+
+    static bool elementwise(ASR::expr_t *e) {
+        return ASR::is_a<ASR::ArrayBroadcast_t>(*e) || is_vectorise_able(e);
+    }
+
+    // Whether `e` reads an elementwise operand in place: the operations
+    // array_struct_temporary gives a temporary only an operand that is
+    // not elementwise.
+    static bool reads_in_place(ASR::expr_t *e) {
+        switch (e->type) {
+            case ASR::exprType::IntegerBinOp:
+            case ASR::exprType::RealBinOp:
+            case ASR::exprType::ComplexBinOp:
+            case ASR::exprType::LogicalBinOp:
+            case ASR::exprType::LogicalNot:
+            case ASR::exprType::RealUnaryMinus:
+            case ASR::exprType::IntegerCompare:
+            case ASR::exprType::RealCompare:
+            case ASR::exprType::StringCompare:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    // The elements of an array value, if its type or the array a section
+    // of it names gives them at compile time; -1 otherwise.
+    static int64_t elements(ASR::expr_t *e) {
+        ASR::ttype_t *t = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(e));
+        if (ASRUtils::is_fixed_size_array(t)) {
+            return ASRUtils::get_fixed_size_of_array(t);
+        }
+        if (ASR::is_a<ASR::ArraySection_t>(*e) &&
+                !ASRUtils::is_array_indexed_with_array_indices(
+                    ASR::down_cast<ASR::ArraySection_t>(e))) {
+            t = ASRUtils::type_get_past_allocatable_pointer(
+                ASRUtils::expr_type(
+                    ASR::down_cast<ASR::ArraySection_t>(e)->m_v));
+            if (ASRUtils::is_fixed_size_array(t)) {
+                return ASRUtils::get_fixed_size_of_array(t);
+            }
+        }
+        return -1;
+    }
 
     void scope(SymbolTable *s, const std::set<ASR::symbol_t*> &skip) {
         if (!counted.insert(s).second) return;
@@ -722,10 +844,11 @@ bool read_after_region(GpuArrayFlowReader &reader,
 // names, and that no contained procedure names.
 //
 // A local of an iteration lives in its thread's stack, so arrays are made
-// local only while, together with what the source already declares there
-// (GpuDeclaredStack) and a reserve for the frames the device compiler adds,
-// they fit the stack the device gives a thread
-// (GpuDeviceCapabilities::thread_stack_bytes). A run-time sized array is
+// local only while, together with what the source declares there and the
+// temporaries of the body's array values (GpuThreadStack) and a reserve for
+// the frames the device compiler adds, they fit the stack the device gives
+// a thread (GpuDeviceCapabilities::thread_stack_bytes); none is when that
+// bound is unknown. A run-time sized array is
 // not made local: the device has no stack array of a run-time size, and the
 // workspace that replaces one holds an instance per iteration, not per
 // running thread (device_launch_expand.cpp), so its size would grow with
@@ -912,8 +1035,8 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
             !gpu_associates_inlined(work.body, work.n_body, true)) {
         return;
     }
-    // The smallest first, while they fit the stack that what the source
-    // declares and the reserve leave.
+    // The smallest first, while they fit the stack that the body's locals
+    // and temporaries and the reserve leave.
     std::sort(candidates.begin(), candidates.end(),
         [](const std::pair<int64_t, ASR::symbol_t*> &a,
                 const std::pair<int64_t, ASR::symbol_t*> &b) {
@@ -921,11 +1044,12 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
             return std::string(ASRUtils::symbol_name(a.second))
                 < std::string(ASRUtils::symbol_name(b.second));
         });
-    GpuDeclaredStack declared;
+    GpuThreadStack taken;
     for (size_t i = 0; i < work.n_body; i++) {
-        declared.visit_stmt(*work.body[i]);
+        taken.visit_stmt(*work.body[i]);
     }
-    int64_t stack_bytes = declared.bytes + gpu_stack_frame_reserve_bytes;
+    if (!taken.bounded) return;
+    int64_t stack_bytes = taken.bytes + gpu_stack_frame_reserve_bytes;
     std::vector<ASR::symbol_t*> privatized;
     for (auto &c : candidates) {
         if (stack_bytes + c.first > device_caps.thread_stack_bytes) break;
