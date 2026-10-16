@@ -3285,6 +3285,24 @@ public:
             array, shape, ttype, value);
     }
 
+    // A structure constructor of the generic type in one of the type's own
+    // procedures constructs the instance that the procedure is copied for.
+    ASR::asr_t* duplicate_StructConstructor(ASR::StructConstructor_t *x) {
+        ASR::StructConstructor_t *copy = ASR::down_cast2<ASR::StructConstructor_t>(
+            BaseExprStmtDuplicator::duplicate_StructConstructor(x));
+        std::string name = ASRUtils::symbol_name(
+            ASRUtils::symbol_get_past_external(x->m_dt_sym));
+        auto instance = symbol_subs.find(name);
+        if (instance != symbol_subs.end() && ASR::is_a<ASR::Struct_t>(
+                *ASRUtils::symbol_get_past_external(instance->second))
+                && ASR::is_a<ASR::StructType_t>(*x->m_type)) {
+            copy->m_dt_sym = instance->second;
+            copy->m_type = ASRUtils::make_StructType_t_util(al, x->base.base.loc,
+                instance->second, ASR::down_cast<ASR::StructType_t>(x->m_type)->m_is_cstruct);
+        }
+        return &copy->base.base;
+    }
+
     ASR::asr_t* duplicate_StructInstanceMember(ASR::StructInstanceMember_t *x) {
         ASR::expr_t *v = duplicate_expr(x->m_v);
         ASR::ttype_t *t = substitute_type(&x->base, x->m_type);
