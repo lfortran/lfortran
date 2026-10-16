@@ -27190,13 +27190,16 @@ public:
     // An associate name whose selector is an expression rather than a
     // variable: a function result, a parenthesized designator, or any other
     // value (F2018 11.1.3.3). It is not definable either, although ordinary
-    // definition contexts do not check this yet; the receiver of a trait call
-    // and an intent(inout) trait view do (see
+    // definition contexts, such as an assignment or a scalar actual argument,
+    // do not check this yet; the receiver of a trait call, an intent(inout)
+    // trait view and the actual of a nonpointer, nonallocatable intent(inout)
+    // or intent(out) array dummy do (see
     // check_receiver_not_expression_associate).
     std::set<ASR::symbol_t*> expression_associate_variables;
 
-    // The object an intent(inout) or intent(out) receiver, or an
-    // intent(inout) trait view, would define is not an associate name of an
+    // The object an intent(inout) or intent(out) receiver, an intent(inout)
+    // trait view, or a nonpointer, nonallocatable intent(inout) or
+    // intent(out) array dummy would define is not an associate name of an
     // expression, nor a part of one.
     void check_receiver_not_expression_associate(ASR::expr_t *object,
             const std::string &use) {
@@ -27279,11 +27282,16 @@ public:
 
     // The actual of a nonpointer, nonallocatable INTENT(OUT) or INTENT(INOUT)
     // array `dummy`, which defines the actual's elements: it is definable as
-    // any defined actual is, and a section with a vector subscript is not
-    // (F2018 15.5.2.4).
+    // any defined actual is, and neither the associate name of an expression,
+    // nor a part of one (F2018 11.1.3.3), nor a section with a vector
+    // subscript (F2018 15.5.2.4) is.
     void check_definable_array_actual(ASR::expr_t *actual, const ASR::Variable_t &dummy) {
         actual = ASRUtils::get_past_array_physical_cast(actual);
+        std::string use = "the actual argument of the intent(" +
+            std::string(dummy.m_intent == ASR::intentType::Out ? "out" : "inout") +
+            ") dummy argument '" + std::string(dummy.m_name) + "'";
         check_definable_actual(actual);
+        check_receiver_not_expression_associate(actual, use);
         for (ASR::expr_t *part = actual; part; ) {
             bool vector_subscript = false;
             if (ASR::is_a<ASR::ArraySection_t>(*part)) {
@@ -27301,9 +27309,7 @@ public:
             }
             if (vector_subscript) {
                 diag.add(diag::Diagnostic("an array section with a vector subscript is "
-                    "not definable, so it cannot be the actual argument of the intent(" +
-                    std::string(dummy.m_intent == ASR::intentType::Out ? "out" : "inout") +
-                    ") dummy argument '" + std::string(dummy.m_name) + "'",
+                    "not definable, so it cannot be " + use,
                     diag::Level::Error, diag::Stage::Semantic,
                     {diag::Label("", {actual->base.loc})}));
                 throw SemanticAbort();

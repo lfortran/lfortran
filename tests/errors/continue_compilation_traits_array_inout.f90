@@ -282,3 +282,49 @@ contains
         s = a%total(r) + a%total(fixed(1:2)) + a%total((b)) + a%total(b([1, 3])) + a%total(r + 1)
     end subroutine
 end module
+
+! The associate name of an expression, also through another associate name,
+! and a part of one are not definable (F2018 11.1.3.3), so none can be the
+! actual of an intent(inout) or intent(out) array dummy. Each procedure whose
+! name starts with from_ has exactly one such actual. valid_associates passes
+! the associate names of a variable and of its section, and their parts.
+module traits_array_associate_negative_m
+    use traits_array_definability_negative_m, only: IArrays, IMarker, ordinary_update
+    implicit none
+contains
+    subroutine from_associate_expression(a, m, b)
+        class(IArrays), intent(inout) :: a
+        class(IMarker), intent(inout) :: m
+        real(8), intent(inout) :: b(:)
+        associate (x => (b))
+            call a%update(m, x)
+        end associate
+    end subroutine
+    subroutine from_associate_expression_alias_out(a, b)
+        class(IArrays), intent(in) :: a
+        real(8), intent(inout) :: b(:)
+        associate (x => b + 1)
+            associate (y => x)
+                call a%fill(y(2:))
+            end associate
+        end associate
+    end subroutine
+    subroutine from_ordinary_associate_expression(b)
+        real(8), intent(inout) :: b(:)
+        associate (x => (b))
+            call ordinary_update(x)
+        end associate
+    end subroutine
+    subroutine valid_associates(a, m, b)
+        class(IArrays), intent(inout) :: a
+        class(IMarker), intent(inout) :: m
+        real(8), intent(inout) :: b(:)
+        associate (x => b, y => b(2:))
+            call a%update(m, x)
+            call a%fill(y)
+            associate (z => x)
+                call ordinary_update(z(::2))
+            end associate
+        end associate
+    end subroutine
+end module

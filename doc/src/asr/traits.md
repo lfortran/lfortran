@@ -1929,14 +1929,16 @@ lower bound such as `x(0:)`. The actual of an `intent(inout)` or `intent(out)`
 array must be definable, as in any call with a nonpointer, nonallocatable
 array dummy of that INTENT, which shares the check of the bare view dummies:
 a named constant, an `intent(in)` array, or a section of either, a
-parenthesized variable, an expression, and a section with a vector subscript
-are diagnosed, while a section of a pointer's target, also of an `intent(in)`
-pointer, and a pointer component of an `intent(in)` object are definable. An
-implementation declares the array with exactly the message's INTENT. The
-array arguments of a generic message keep their read-only limit for now, in
-closed member slots and erased generic slots alike: a trait whose generic
-message takes an array with another INTENT has no runtime contract, and using
-it as a view is diagnosed as not implemented.
+parenthesized variable, an expression, the associate name of an expression or
+a part of one, and a section with a vector subscript are diagnosed, while a
+section of a pointer's target, also of an `intent(in)` pointer, and a pointer
+component of an `intent(in)` object are definable. As in an ordinary call,
+the associate name of an `intent(in)` array or of a section with a vector
+subscript is not diagnosed yet. An implementation declares the array with
+exactly the message's INTENT. The array arguments of a generic message keep
+their read-only limit for now, in closed member slots and erased generic slots
+alike: a trait whose generic message takes an array with another INTENT has no
+runtime contract, and using it as a view is diagnosed as not implemented.
 
 `traits_runtime_array_inout_01` compiles the reported module unchanged and
 calls its `coefficients` binding through a `MyType` variable and a
@@ -1951,8 +1953,8 @@ and omitted-intent real, integer, character and logical arrays through
 owners, pointers and views, with read-only and `intent(inout)` receivers and
 in a function message, and checks contiguity, every defined element and the
 elements outside each section. `continue_compilation_traits_array_inout`
-checks the diagnostics through views, and for comparison through ordinary
-calls and static bindings.
+checks the diagnostics, also of associate names, through views, and for
+comparison through ordinary calls and static bindings.
 
 ## Scalar allocatable ownership, slots and results (R2)
 
