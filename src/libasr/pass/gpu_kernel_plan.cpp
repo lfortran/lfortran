@@ -1273,6 +1273,7 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
     layout->m_source_argument_count = source_count;
     layout->m_device_functions = device_functions.p;
     layout->n_device_functions = device_functions.n;
+    layout->m_lanes = nullptr;
     kernel.m_gpu = layout;
     return true;
 }

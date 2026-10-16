@@ -2128,6 +2128,14 @@ public:
         src = r;
     }
 
+    void visit_GpuLaneBarrier(const ASR::GpuLaneBarrier_t &/*x*/) {
+        std::string r = indent;
+        r += "gpu lane barrier";
+        handle_line_truncation(r, 2);
+        r += "\n";
+        src = r;
+    }
+
     void visit_GpuDiscard(const ASR::GpuDiscard_t &x) {
         std::string r = indent;
         r += "gpu discard(";
@@ -3477,6 +3485,15 @@ public:
 
     void visit_GpuBlockSize(const ASR::GpuBlockSize_t &x) {
         src = "gpu_block_size(" + std::to_string(x.m_dim) + ")";
+    }
+
+    void visit_GpuLaneIndex(const ASR::GpuLaneIndex_t &/*x*/) {
+        src = "gpu_lane_index()";
+    }
+
+    void visit_GpuLaneBroadcast(const ASR::GpuLaneBroadcast_t &x) {
+        visit_expr(*x.m_arg);
+        src = "gpu_lane_broadcast(" + src + ")";
     }
 
     void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t &x) {

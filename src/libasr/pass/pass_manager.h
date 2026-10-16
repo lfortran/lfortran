@@ -70,6 +70,7 @@
 #include <libasr/pass/gpu_launch_sync.h>
 #include <libasr/pass/gpu_array_statements.h>
 #include <libasr/pass/dead_array_store.h>
+#include <libasr/pass/gpu_vector_lanes.h>
 #include <libasr/pass/gpu_memory_space.h>
 #include <libasr/pass/gpu_device_workspace.h>
 #include <libasr/pass/gpu_struct_component_args.h>
@@ -150,6 +151,7 @@ namespace LCompilers {
             {"gpu_device_heap", &pass_gpu_device_heap},
             {"gpu_memory_space", &pass_gpu_memory_space},
             {"gpu_kernel_finalize", &pass_gpu_kernel_finalize},
+            {"gpu_vector_lanes", &pass_gpu_vector_lanes},
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"intent_out_deallocate", &pass_intent_out_deallocate},
@@ -379,6 +381,9 @@ namespace LCompilers {
                 // Lay out each kernel, now that shared lowering has given it
                 // the shape the device code generators see.
                 "gpu_kernel_finalize",
+                // An iteration of a kernel with few runs on the lanes of a
+                // SIMD-group, which share the loops inside it.
+                "gpu_vector_lanes",
                 // A launch does not wait for its kernel: the host waits
                 // where it next needs what a kernel wrote.
                 "gpu_launch_sync",

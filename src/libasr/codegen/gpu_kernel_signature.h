@@ -75,7 +75,11 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
             << dialect.buffer_attr(slot++);
         kernel_params.push_back({type, parameter, GpuKernelParamKind::Buffer});
     }
-    dialect.emit_thread_id_param(src, previous);
+    if (layout.m_lanes) {
+        dialect.emit_lane_thread_params(src, previous);
+    } else {
+        dialect.emit_thread_id_param(src, previous);
+    }
     src << ")\n{\n";
     indent_level++;
     for (size_t i = 0; i < layout.n_scalars; i++) {
@@ -84,6 +88,12 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
         std::string parameter = gpu_argument_name(arg, layout);
         src << get_indent() << gpu_type(arg.m_type) << " " << parameter
             << " = __scalar_args." << parameter << ";\n";
+    }
+    // Each iteration runs on `lanes` consecutive threads: the thread index
+    // the body sees is the iteration's, and the lane tells them apart.
+    if (layout.m_lanes) {
+        dialect.emit_lane_prologue(src, get_indent(),
+            ASRUtils::symbol_name(layout.m_lanes));
     }
     if (layout.m_packed) {
         for (size_t i = 0; i < layout.n_buffers; i++) {
