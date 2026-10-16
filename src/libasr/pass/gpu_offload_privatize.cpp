@@ -843,16 +843,16 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
         local_of[sym] = ASRUtils::EXPR(ASR::make_Var_t(al,
             v->base.base.loc, local));
     }
-    AssociateVarResolverVisitor redirect(al, local_of);
-    for (size_t i = 0; i < work.n_body; i++) {
-        redirect.visit_stmt(*work.body[i]);
-    }
     std::string block_name = current_scope->get_unique_name(
         "__gpu_iteration_scope");
     ASR::asr_t *block = ASR::make_Block_t(al, loc, block_scope,
         s2c(al, block_name), work.body, work.n_body);
     block_scope->asr_owner = block;
     ASR::symbol_t *block_sym = ASR::down_cast<ASR::symbol_t>(block);
+    // The symbol owns all moved scopes, including bare ASSOCIATE bodies
+    // that the statement visitor does not descend into.
+    AssociateVarResolverVisitor redirect(al, local_of);
+    redirect.visit_symbol(*block_sym);
     current_scope->add_symbol(block_name, block_sym);
     kernel_blocks.push_back(block_sym);
     Vec<ASR::stmt_t*> body;

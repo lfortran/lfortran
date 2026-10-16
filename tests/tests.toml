@@ -4798,6 +4798,10 @@ filename = "../integration_tests/gpu_metal_478.f90"
 gpu_cuda_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_metal_479.f90"
+gpu_cuda_kernel = true
+
+[[test]]
 filename = "../integration_tests/gpu_kernel_source_09.f90"
 gpu_cuda_kernel = true
 
