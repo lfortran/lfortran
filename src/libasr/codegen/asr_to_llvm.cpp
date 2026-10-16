@@ -82,6 +82,8 @@ using ASRUtils::determine_module_dependencies;
 using ASRUtils::is_arg_dummy;
 using ASRUtils::is_argument_of_type_CPtr;
 
+using ASRUtils::is_external_interface_function;
+
 // Helper functions for LLVM function name mangling
 namespace {
 
@@ -97,19 +99,6 @@ bool is_dummy_procedure(const ASR::Function_t& fn) {
         }
     }
     return false;
-}
-
-/**
- * Check if a function is an external interface function.
- * External interface functions are functions with:
- * - Interface or ImplicitInterface deftype
- * - Not intrinsic ABI
- * - Not in a module
- */
-static inline bool is_external_interface_function(ASR::FunctionType_t* ftype) {
-    return ASRUtils::is_declaration_deftype(ftype->m_deftype) &&
-           ftype->m_abi != ASR::abiType::Intrinsic &&
-           !ftype->m_module;
 }
 
 /**
