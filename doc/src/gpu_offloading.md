@@ -142,9 +142,12 @@ generates the device source. It never falls back to the CPU:
   or a section -- is an alias of it, in the loop body and in a procedure the
   loop calls, so what is written through the name reaches the variable: the
   selector takes the place of a scalar name (and of every name in the loop
-  body), and an array name of a procedure points at the selector. A selector
-  designates the object it designates on entry to the construct, so a
-  subscript of it that the construct may change
+  body, also inside the `block` and `associate` constructs in it), and an
+  array name of a procedure points at the selector. So the kernel is handed
+  the variable once, however many names the loop reads and writes it
+  through (`associate (w => self%w)` with `self` also used in the loop). A
+  selector designates the object it designates on entry to the construct,
+  so a subscript of it that the construct may change
   (`associate (e => w(j)); j = 3; e = 1`) is read into a variable of its own
   on entry.
 * An associate name of a construct the loop is in, bound to an expression
