@@ -657,19 +657,26 @@ void GpuOffloadVisitor::materialize_runtime_alias_in_body(
 // built below read elements the same statement has already written.
 //   a(:) = a(n:1:-1)
 // becomes
-//   __gpu_alias(1:n) = a(n:1:-1)
-//   a(:)            = __gpu_alias(1:n)
+//   block
+//     real :: __gpu_alias(n)
+//     __gpu_alias(1:n) = a(n:1:-1)
+//     a(:)            = __gpu_alias(1:n)
+//   end block
 // Both halves are alias-free, and the existing ArraySection and
-// whole-array lowerings turn each of them into an element loop.
+// whole-array lowerings turn each of them into an element loop. As in
+// materialize_runtime_alias_in_body, the BLOCK makes the temporary a
+// local of the iteration: one declared in the procedure holding the loop
+// would be a kernel argument, one buffer every thread writes at once.
 void GpuOffloadVisitor::materialize_aliased_assignments(
         ParallelLoopNest &nest) {
     bool changed = false;
     NestBodyWriteBack back(nest);
-    materialize_aliased_in_body(back.body, back.n_body, changed);
+    materialize_aliased_in_body(back.body, back.n_body, current_scope,
+        changed);
 }
 
 void GpuOffloadVisitor::materialize_aliased_in_body(
-        ASR::stmt_t** &body, size_t &n_body,
+        ASR::stmt_t** &body, size_t &n_body, SymbolTable *scope,
         bool &changed) {
     Vec<ASR::stmt_t*> new_body;
     new_body.reserve(al, n_body * 2);
@@ -679,7 +686,8 @@ void GpuOffloadVisitor::materialize_aliased_in_body(
         ASR::stmt_t *stmt = body[si];
         if (ASR::is_a<ASR::DoLoop_t>(*stmt)) {
             ASR::DoLoop_t *dl = ASR::down_cast<ASR::DoLoop_t>(stmt);
-            materialize_aliased_in_body(dl->m_body, dl->n_body, changed);
+            materialize_aliased_in_body(dl->m_body, dl->n_body, scope,
+                changed);
             new_body.push_back(al, stmt);
             continue;
         }
@@ -689,7 +697,7 @@ void GpuOffloadVisitor::materialize_aliased_in_body(
             if (b && ASR::is_a<ASR::Block_t>(*b)) {
                 ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
                 materialize_aliased_in_body(blk->m_body, blk->n_body,
-                    changed);
+                    blk->m_symtab, changed);
             }
             new_body.push_back(al, stmt);
             continue;
@@ -700,7 +708,7 @@ void GpuOffloadVisitor::materialize_aliased_in_body(
                     ASR::down_cast<ASR::AssociateBlockCall_t>(
                         stmt)->m_m);
             materialize_aliased_in_body(ab->m_body, ab->n_body,
-                changed);
+                ab->m_symtab, changed);
             new_body.push_back(al, stmt);
             continue;
         }
@@ -719,14 +727,9 @@ void GpuOffloadVisitor::materialize_aliased_in_body(
         }
 
         Location loc = stmt->base.loc;
-        SymbolTable *var_scope = current_scope;
-        while (var_scope && var_scope->asr_owner &&
-               var_scope->asr_owner->type == ASR::asrType::symbol &&
-               ASR::is_a<ASR::AssociateBlock_t>(
-                   *ASR::down_cast<ASR::symbol_t>(
-                       var_scope->asr_owner))) {
-            var_scope = var_scope->parent;
-        }
+        SymbolTable *var_scope = al.make_new<SymbolTable>(scope);
+        Vec<ASR::stmt_t*> block_body;
+        block_body.reserve(al, 2);
         ASR::ttype_t *elem_type = ASRUtils::extract_type(
             ASRUtils::expr_type(target));
 
@@ -765,7 +768,7 @@ void GpuOffloadVisitor::materialize_aliased_in_body(
                     tmp, args.p, args.n,
                     ASRUtils::expr_type(tmp), nullptr));
             };
-            new_body.push_back(al, ASRUtils::STMT(
+            block_body.push_back(al, ASRUtils::STMT(
                 ASR::make_Assignment_t(al, loc, tmp_section(),
                     asgn->m_value, nullptr, false, false)));
             asgn->m_value = tmp_section();
@@ -781,12 +784,24 @@ void GpuOffloadVisitor::materialize_aliased_in_body(
             }
             ASR::expr_t *tmp = declare_temp_array(loc, var_scope,
                 elem_type, extents.p, extents.n, "__gpu_alias");
-            new_body.push_back(al, ASRUtils::STMT(
+            block_body.push_back(al, ASRUtils::STMT(
                 ASR::make_Assignment_t(al, loc, tmp, asgn->m_value,
                     nullptr, false, false)));
             asgn->m_value = tmp;
         }
-        new_body.push_back(al, stmt);
+        block_body.push_back(al, stmt);
+        std::string block_name = scope->get_unique_name(
+            "__gpu_alias_scope");
+        ASR::asr_t *block = ASR::make_Block_t(al, loc, var_scope,
+            s2c(al, block_name), block_body.p, block_body.n);
+        var_scope->asr_owner = block;
+        ASR::symbol_t *block_sym = ASR::down_cast<ASR::symbol_t>(block);
+        scope->add_symbol(block_name, block_sym);
+        if (scope == current_scope) {
+            kernel_blocks.push_back(block_sym);
+        }
+        new_body.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(
+            al, loc, -1, block_sym)));
         local_changed = true;
     }
 
