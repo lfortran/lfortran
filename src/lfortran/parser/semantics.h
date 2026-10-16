@@ -2181,16 +2181,12 @@ void add_ws_warning(const Location &loc,
                 {loc},
                 "help: write this as 'end if'");
         } else if (end_token == yytokentype::KW_REAL) {
-                if (a_kind == 4){
+                if (a_kind == 4 || a_kind == 8 || a_kind == 10 || a_kind == 16) {
+                        std::string k = std::to_string(a_kind);
                         diagnostics.parser_style_label(
-                        "Use real(4) instead of real*4",
+                        "Use real(" + k + ") instead of real*" + k,
                         {loc},
-                        "help: write this as 'real(4)'");
-                } else if(a_kind == 8){
-                        diagnostics.parser_style_label(
-                        "Use real(8) instead of real*8",
-                        {loc},
-                        "help: write this as 'real(8)'");
+                        "help: write this as 'real(" + k + ")'");
                 } else {
                         diagnostics.add(LCompilers::diag::Diagnostic(
                             "kind " + std::to_string(a_kind) + " is not supported yet.",
