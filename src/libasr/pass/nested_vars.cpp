@@ -1514,9 +1514,12 @@ public:
             loop_end_syncs.clear();
             ctx_duplicator.ctx_vars.clear();
             ASR::symbol_t *assigned_target_sym = nullptr;
+            bool assigns_part = false;
             if (ASR::is_a<ASR::Assignment_t>(*m_body[i])) {
                 ASR::Assignment_t *assignment = ASR::down_cast<ASR::Assignment_t>(m_body[i]);
                 assigned_target_sym = get_root_host_symbol(assignment->m_target);
+                assigns_part = !ASR::is_a<ASR::Var_t>(
+                    *ASRUtils::get_past_array_physical_cast(assignment->m_target));
             }
             visit_stmt(*m_body[i]);
             if (cur_func_sym != nullptr && (calls_present || calls_in_loop_condition)) {
@@ -1682,9 +1685,11 @@ public:
                             } else { // Otherwise Assign Directly.
                                 body.push_back(al, assignment);
                             }
+                            // Assign the part in the context variable, so that copying it back keeps what the call wrote
+                            bool assigns_part_of_sym = skip_sync_back && assigns_part;
                             if (ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter &&
                                     ASRUtils::EXPR2VAR(val)->m_intent != ASR::intentType::In &&
-                                    !skip_sync_back) {
+                                    (!skip_sync_back || assigns_part_of_sym)) {
                                 assignment = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, t->base.loc,
                                                 val, target, nullptr, false, false));
                                 /* Allocatable RHS Needs A Check `IF allocated --> assign` (Based On Fortran Standards) */
@@ -1694,7 +1699,7 @@ public:
                                     assigns_at_end.push_back(assignment);
                                 }
                                 // A later statement of the where construct must see what the call wrote
-                                if (ASR::is_a<ASR::Where_t>(*m_body[i])) {
+                                if (ASR::is_a<ASR::Where_t>(*m_body[i]) || assigns_part_of_sym) {
                                     ctx_duplicator.ctx_vars[ASRUtils::symbol_get_past_external(sym)] = ext_sym;
                                 }
                             }
