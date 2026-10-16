@@ -40,9 +40,9 @@ end module
 program procedure_pointer_32
 implicit none
 block
-    use procedure_pointer_32_mod, only: table
-    if (table(1)%rc()//table(2)%rc() /= 'ab') error stop
-    print *, table(1)%rc()//table(2)%rc()
+    use procedure_pointer_32_mod, only: table, letter
+    if (letter(table(1))//letter(table(2)) /= 'ab') error stop
+    print *, letter(table(1))//letter(table(2))
 end block
 block
     use procedure_pointer_32_mod, only: first, letter

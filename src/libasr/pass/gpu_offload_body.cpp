@@ -103,9 +103,9 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
                     inner_stmts.reserve(al, inner_ab->n_body);
                     inline_assoc_body(inner_ab, assoc_map,
                         inner_stmts);
-                    // Resolve the inner statements now: once they are
-                    // wrapped in a Block below the caller's resolver
-                    // no longer reaches them.
+                    // Resolve the inner statements now, so that the
+                    // inner associate names no longer count as uses of
+                    // the inner scope when it is wrapped below.
                     if (!assoc_map.empty()) {
                         AssociateVarResolverVisitor inner_resolver(
                             al, assoc_map);

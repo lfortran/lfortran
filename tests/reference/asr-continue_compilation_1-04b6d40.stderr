@@ -1308,6 +1308,90 @@ semantic error: Symbol 'cc1_plnm_gen' must be a variable or a procedure
    1 | ! If you need a function, put it into the module below and remove the same
      |  ~ 'cc1_plnm_gen' declared as a 'GenericProcedure' here
 
+semantic error: a procedure pointer component of a named constant cannot be an initial procedure target
+    --> tests/errors/continue_compilation_1.f90:3048:66
+     |
+3048 |         procedure(cc1_pclim_known_func), pointer, nopass :: g => cc1_pcoc_cs(1)%f  ! {Error} a procedure pointer component of a named constant cannot be an initial procedure target
+     |                                                                  ^^^^^^^^^^^^^^^^ `cc1_pcoc_cs` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be an initial procedure target
+    --> tests/errors/continue_compilation_1.f90:3050:64
+     |
+3050 |     procedure(cc1_pclim_known_func), pointer :: cc1_pcoc4_q => cc1_pcoc_c%f  ! {Error} a procedure pointer component of a named constant cannot be an initial procedure target
+     |                                                                ^^^^^^^^^^^^ `cc1_pcoc_c` is a named constant, not a variable
+
+semantic error: interface 'cc1_cpi_self' of dummy procedure 'g' depends on the characteristics of 'g'
+    --> tests/errors/continue_compilation_1.f90:3083:36
+     |
+3083 |         procedure(cc1_cpi_self) :: g  ! {Error} interface 'cc1_cpi_self' of dummy procedure 'g' depends on the characteristics of 'g'
+     |                                    ^ 'cc1_cpi_self' has dummy procedure 'g'
+
+semantic error: interface 'cc1_cpi_result_self' of procedure pointer result 'r' depends on the characteristics of 'r'
+    --> tests/errors/continue_compilation_1.f90:3097:52
+     |
+3097 |         procedure(cc1_cpi_result_self), pointer :: r  ! {Error} interface 'cc1_cpi_result_self' of procedure pointer result 'r' depends on the characteristics of 'r'
+     |                                                    ^ 'cc1_cpi_result_self' has procedure pointer result 'r'
+
+semantic error: interface 'cc1_cpi_a' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3079:33
+     |
+3079 |         procedure(cc1_cpi_a) :: k  ! {Error} interface 'cc1_cpi_a' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                 ^ 'cc1_cpi_a' has dummy procedure 'g' with interface 'cc1_cpi_b', which has dummy procedure 'k'
+
+semantic error: interface 'cc1_cpi_result_a' of procedure pointer result 'r' depends on the characteristics of 'r'
+    --> tests/errors/continue_compilation_1.f90:3092:49
+     |
+3092 |         procedure(cc1_cpi_result_a), pointer :: r  ! {Error} interface 'cc1_cpi_result_a' of procedure pointer result 'r' depends on the characteristics of 'r'
+     |                                                 ^ 'cc1_cpi_result_a' has procedure pointer result 'r' with interface 'cc1_cpi_result_b', which has procedure pointer result 'r'
+
+semantic error: interface 'cc1_cpu_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3121:33
+     |
+3121 |         procedure(cc1_cpu_f) :: k  ! {Error} interface 'cc1_cpu_f' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                 ^ 'cc1_cpu_f' has dummy procedure 'g' with interface 'cc1_cpu_h', which has dummy procedure 'k'
+
+semantic error: interface 'cc1_cpu_fn_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3130:36
+     |
+3130 |         procedure(cc1_cpu_fn_f) :: k  ! {Error} interface 'cc1_cpu_fn_f' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                    ^ 'cc1_cpu_fn_f' has dummy procedure 'g' with interface 'cc1_cpu_fn_h', which has dummy procedure 'k'
+
+semantic error: interface 'cc1_cir_case' of dummy procedure 'g' depends on the characteristics of 'g'
+    --> tests/errors/continue_compilation_1.f90:3212:36
+     |
+3212 |         procedure(CC1_CIR_CASE) :: g  ! {Error} interface 'cc1_cir_case' of dummy procedure 'g' depends on the characteristics of 'g'
+     |                                    ^ 'cc1_cir_case' has dummy procedure 'g'
+
+semantic error: interface 'cc1_cir_arr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3194:37
+     |
+3194 |         procedure(cc1_cir_arr_f) :: k  ! {Error} interface 'cc1_cir_arr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                     ^ 'cc1_cir_arr_f' has dummy procedure 'g' with interface 'cc1_cir_arr_h', which has dummy procedure 'k'
+
+semantic error: interface 'cc1_cir_chr_arr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3180:41
+     |
+3180 |         procedure(cc1_cir_chr_arr_f) :: k  ! {Error} interface 'cc1_cir_chr_arr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                         ^ 'cc1_cir_chr_arr_f' has dummy procedure 'g' with interface 'cc1_cir_chr_arr_h', which has dummy procedure 'k'
+
+semantic error: interface 'cc1_cir_chr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3166:37
+     |
+3166 |         procedure(cc1_cir_chr_f) :: k  ! {Error} interface 'cc1_cir_chr_f' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                     ^ 'cc1_cir_chr_f' has dummy procedure 'g' with interface 'cc1_cir_chr_h', which has dummy procedure 'k'
+
+semantic error: interface 'cc1_cir_dt_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3206:36
+     |
+3206 |         procedure(cc1_cir_dt_f) :: k  ! {Error} interface 'cc1_cir_dt_f' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                    ^ 'cc1_cir_dt_f' has dummy procedure 'g' with interface 'cc1_cir_dt_h', which has dummy procedure 'k'
+
+semantic error: interface 'cc1_rir_local_f' of dummy procedure 'k' depends on the characteristics of 'k'
+    --> tests/errors/continue_compilation_1.f90:3244:39
+     |
+3244 |         procedure(cc1_rir_local_f) :: k  ! {Error} interface 'cc1_rir_local_f' of dummy procedure 'k' depends on the characteristics of 'k'
+     |                                       ^ 'cc1_rir_local_f' has dummy procedure 'g' with interface 'cc1_rir_local_h', which has dummy procedure 'k'
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -3804,3 +3888,228 @@ semantic error: rank mismatch in argument `n`: the dummy argument is a scalar bu
      |
 2842 |     call cc1_scalar_dummy(a)  ! {Error} rank mismatch in argument `n`: the dummy argument is a scalar but the actual argument is an array of rank 1
      |                           ^ pass one element of the array instead
+
+semantic error: Array index 5 is out of bounds (1 to 4) in dimension 1
+    --> tests/errors/continue_compilation_1.f90:2923:10
+     |
+2923 |     data cc1_ds_a(3:5) /3, 4, 5/  ! {Error} Array index 5 is out of bounds (1 to 4) in dimension 1
+     |          ^^^^^^^^^^^^^ 
+
+semantic error: DATA statement element count mismatch: 3 elements on left-hand side, 2 values on right-hand side
+    --> tests/errors/continue_compilation_1.f90:2924:5
+     |
+2924 |     data cc1_ds_b(1:3) /1, 2/  ! {Error} DATA statement element count mismatch: 3 elements on left-hand side, 2 values on right-hand side
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: DATA statement element count mismatch: 2 elements on left-hand side, 3 values on right-hand side
+    --> tests/errors/continue_compilation_1.f90:2925:5
+     |
+2925 |     data cc1_ds_c(1:2) /1, 2, 3/  ! {Error} DATA statement element count mismatch: 2 elements on left-hand side, 3 values on right-hand side
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: DATA statement element count mismatch: 3 elements on left-hand side, 2 values on right-hand side
+    --> tests/errors/continue_compilation_1.f90:2926:5
+     |
+2926 |     data cc1_ds_d(2:3), cc1_ds_s /1, 2/  ! {Error} DATA statement element count mismatch: 3 elements on left-hand side, 2 values on right-hand side
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: DATA statement element count mismatch: more elements on left-hand side than 2 values on right-hand side
+    --> tests/errors/continue_compilation_1.f90:2927:5
+     |
+2927 |     data cc1_ds_e(1:3), (cc1_ds_f(i), i=1,n) /1, 2/  ! {Error} DATA statement element count mismatch: more elements on left-hand side than 2 values on right-hand side
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a procedure pointer component of a named constant cannot be a pointer assignment target
+    --> tests/errors/continue_compilation_1.f90:2951:14
+     |
+2951 |         q => cc1_pcoc_c%f  ! {Error} a procedure pointer component of a named constant cannot be a pointer assignment target
+     |              ^^^^^^^^^^^^ `cc1_pcoc_c` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be a pointer assignment target
+    --> tests/errors/continue_compilation_1.f90:2952:14
+     |
+2952 |         q => cc1_pcoc_o%inner%f  ! {Error} a procedure pointer component of a named constant cannot be a pointer assignment target
+     |              ^^^^^^^^^^^^^^^^^^ `cc1_pcoc_o` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be a pointer assignment target
+    --> tests/errors/continue_compilation_1.f90:2953:14
+     |
+2953 |         q => cc1_pcoc_cs(2)%f  ! {Error} a procedure pointer component of a named constant cannot be a pointer assignment target
+     |              ^^^^^^^^^^^^^^^^ `cc1_pcoc_cs` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be an actual argument
+    --> tests/errors/continue_compilation_1.f90:2954:27
+     |
+2954 |         r = cc1_pcoc_call(cc1_pcoc_c%f)  ! {Error} a procedure pointer component of a named constant cannot be an actual argument
+     |                           ^^^^^^^^^^^^ `cc1_pcoc_c` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be an actual argument
+    --> tests/errors/continue_compilation_1.f90:2955:36
+     |
+2955 |         call cc1_pcoc_take_pointer(cc1_pcoc_o%inner%f)  ! {Error} a procedure pointer component of a named constant cannot be an actual argument
+     |                                    ^^^^^^^^^^^^^^^^^^ `cc1_pcoc_o` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be an argument of associated
+    --> tests/errors/continue_compilation_1.f90:2984:27
+     |
+2984 |         l = associated(q, cc1_pcoc_c%f)  ! {Error} a procedure pointer component of a named constant cannot be an argument of associated
+     |                           ^^^^^^^^^^^^ `cc1_pcoc_c` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be an argument of associated
+    --> tests/errors/continue_compilation_1.f90:2985:27
+     |
+2985 |         l = associated(q, cc1_pcoc_o%inner%f)  ! {Error} a procedure pointer component of a named constant cannot be an argument of associated
+     |                           ^^^^^^^^^^^^^^^^^^ `cc1_pcoc_o` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be an argument of associated
+    --> tests/errors/continue_compilation_1.f90:2986:24
+     |
+2986 |         l = associated(cc1_pcoc_cs(1)%f)  ! {Error} a procedure pointer component of a named constant cannot be an argument of associated
+     |                        ^^^^^^^^^^^^^^^^ `cc1_pcoc_cs` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be a component value in a structure constructor
+    --> tests/errors/continue_compilation_1.f90:2987:24
+     |
+2987 |         v = cc1_pcoc_t(cc1_pcoc_c%f)  ! {Error} a procedure pointer component of a named constant cannot be a component value in a structure constructor
+     |                        ^^^^^^^^^^^^ `cc1_pcoc_c` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be a component value in a structure constructor
+    --> tests/errors/continue_compilation_1.f90:2988:26
+     |
+2988 |         v = cc1_pcoc_t(f=cc1_pcoc_o%inner%f)  ! {Error} a procedure pointer component of a named constant cannot be a component value in a structure constructor
+     |                          ^^^^^^^^^^^^^^^^^^ `cc1_pcoc_o` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be a component value in a structure constructor
+    --> tests/errors/continue_compilation_1.f90:2989:27
+     |
+2989 |         w = cc1_pcoc2_t(g=cc1_pcoc_cs(2)%f, &  ! {Error} a procedure pointer component of a named constant cannot be a component value in a structure constructor
+     |                           ^^^^^^^^^^^^^^^^ `cc1_pcoc_cs` is a named constant, not a variable
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:3009:9
+     |
+3009 |         cc1_pcoc_c%f => q  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^ assignment here
+     |
+2943 |     type(cc1_pcoc_t), parameter :: cc1_pcoc_c = cc1_pcoc_t(cc1_pclim_known_func)
+     |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ declared as constant
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:3010:9
+     |
+3010 |         cc1_pcoc_cs(1)%f => null()  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^ assignment here
+     |
+2946 |     type(cc1_pcoc_t), parameter :: cc1_pcoc_cs(2) = cc1_pcoc_t(cc1_pclim_known_func)
+     |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ declared as constant
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:3011:17
+     |
+3011 |         nullify(cc1_pcoc_c%f)  ! {Error} Cannot assign to a constant variable
+     |                 ^^^^^^^^^^^^ assignment here
+     |
+2943 |     type(cc1_pcoc_t), parameter :: cc1_pcoc_c = cc1_pcoc_t(cc1_pclim_known_func)
+     |                                    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ declared as constant
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:3012:9
+     |
+3012 |         cc1_pcoc3_c%p => x  ! {Error} Cannot assign to a constant variable
+     |         ^^^^^^^^^^^^^^^^^^ assignment here
+     |
+3003 |     type(cc1_pcoc3_t), parameter :: cc1_pcoc3_c = cc1_pcoc3_t(null())
+     |                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ declared as constant
+
+semantic error: Cannot assign to a constant variable
+    --> tests/errors/continue_compilation_1.f90:3013:17
+     |
+3013 |         nullify(cc1_pcoc3_c%p)  ! {Error} Cannot assign to a constant variable
+     |                 ^^^^^^^^^^^^^ assignment here
+     |
+3003 |     type(cc1_pcoc3_t), parameter :: cc1_pcoc3_c = cc1_pcoc3_t(null())
+     |                                     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ declared as constant
+
+semantic error: a procedure pointer component of a named constant cannot be called
+    --> tests/errors/continue_compilation_1.f90:3054:9
+     |
+3054 |         call cc1_pcoc4_c%sp()  ! {Error} a procedure pointer component of a named constant cannot be called
+     |         ^^^^^^^^^^^^^^^^^^^^^ `cc1_pcoc4_c` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be called
+    --> tests/errors/continue_compilation_1.f90:3055:9
+     |
+3055 |         call cc1_pcoc4_o%inner%sp()  ! {Error} a procedure pointer component of a named constant cannot be called
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^ `cc1_pcoc4_o` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be called
+    --> tests/errors/continue_compilation_1.f90:3056:9
+     |
+3056 |         call cc1_pcoc4_table(2)%sp()  ! {Error} a procedure pointer component of a named constant cannot be called
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `cc1_pcoc4_table` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be called
+    --> tests/errors/continue_compilation_1.f90:3057:13
+     |
+3057 |         r = cc1_pcoc4_c%f(1)  ! {Error} a procedure pointer component of a named constant cannot be called
+     |             ^^^^^^^^^^^^^^^^ `cc1_pcoc4_c` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be called
+    --> tests/errors/continue_compilation_1.f90:3058:13
+     |
+3058 |         r = cc1_pcoc4_c%f(cc1_pcoc4_c%n)  ! {Error} a procedure pointer component of a named constant cannot be called
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `cc1_pcoc4_c` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be called
+    --> tests/errors/continue_compilation_1.f90:3059:37
+     |
+3059 |         r = 1 + cc1_pcoc4_o%inner%f(cc1_pcoc4_table(1)%f(2))  ! {Error} a procedure pointer component of a named constant cannot be called (twice)
+     |                                     ^^^^^^^^^^^^^^^^^^^^^^^ `cc1_pcoc4_table` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be called
+    --> tests/errors/continue_compilation_1.f90:3059:17
+     |
+3059 |         r = 1 + cc1_pcoc4_o%inner%f(cc1_pcoc4_table(1)%f(2))  ! {Error} a procedure pointer component of a named constant cannot be called (twice)
+     |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ `cc1_pcoc4_o` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be an actual argument
+    --> tests/errors/continue_compilation_1.f90:3060:36
+     |
+3060 |         r = cc1_pcoc4_take_pointer(cc1_pcoc4_table(1)%f)  ! {Error} a procedure pointer component of a named constant cannot be an actual argument
+     |                                    ^^^^^^^^^^^^^^^^^^^^ `cc1_pcoc4_table` is a named constant, not a variable
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:3145:9
+     |
+3145 |         i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+     |         ^   ^^^ type mismatch (integer and string)
+
+semantic error: Type mismatch in assignment, the types must be compatible
+    --> tests/errors/continue_compilation_1.f90:3217:9
+     |
+3217 |         i = "x"  ! {Error} Type mismatch in assignment, the types must be compatible
+     |         ^   ^^^ type mismatch (integer and string)
+
+semantic error: procedure 'k' is referenced as a function, but its interface has no result
+    --> tests/errors/continue_compilation_1.f90:3231:24
+     |
+3231 |         cc1_rir_call = k()  ! {Error} procedure 'k' is referenced as a function, but its interface has no result
+     |                        ^^^ 'k' cannot be called as a function
+
+semantic error: procedure 'k' is referenced as a function, but its interface has no result
+    --> tests/errors/continue_compilation_1.f90:3245:18
+     |
+3245 |         print *, k()  ! {Error} procedure 'k' is referenced as a function, but its interface has no result
+     |                  ^^^ 'k' cannot be called as a function
+
+semantic error: procedure 'p' is referenced as a function, but its interface has no result
+    --> tests/errors/continue_compilation_1.f90:3267:13
+     |
+3267 |         x = p()  ! {Error} procedure 'p' is referenced as a function, but its interface has no result
+     |             ^^^ 'p' cannot be called as a function
+
+semantic error: procedure 'pf' is referenced as a function, but its interface has no result
+    --> tests/errors/continue_compilation_1.f90:3268:13
+     |
+3268 |         x = o%pf()  ! {Error} procedure 'pf' is referenced as a function, but its interface has no result
+     |             ^^^^^^ 'pf' cannot be called as a function

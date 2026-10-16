@@ -17,7 +17,7 @@ end type
 procedure(s) :: e, g
 type(t), parameter :: x = t(e)
 type(t) :: y = t(g)
-call x%f()
+call run(x)
 if (e_calls /= 1 .or. g_calls /= 0) error stop
 call y%f()
 call y%f()
@@ -26,6 +26,13 @@ y%f => e
 call y%f()
 if (e_calls /= 2 .or. g_calls /= 2) error stop
 print *, e_calls, g_calls
+contains
+    ! A procedure pointer component of a named constant cannot be called
+    ! directly (R1040, C901), but through a dummy argument associated with it.
+    subroutine run(c)
+        type(t), intent(in) :: c
+        call c%f()
+    end subroutine
 end program
 
 subroutine e()
