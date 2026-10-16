@@ -287,10 +287,11 @@ public:
         if (!compiler_options.continue_compilation) throw SemanticAbort();
     }
 
-    void check_assignment_to_constant_variable(ASR::symbol_t* sym,
+    // Returns whether it reported an error.
+    bool check_assignment_to_constant_variable(ASR::symbol_t* sym,
             const Location& assignment_loc) {
         if (!sym) {
-            return;
+            return false;
         }
         ASR::symbol_t* base_sym = ASRUtils::symbol_get_past_external(sym);
         if (ASR::is_a<ASR::Variable_t>(*base_sym)) {
@@ -298,11 +299,14 @@ public:
             if (v->m_storage == ASR::storage_typeType::Parameter) {
                 add_assignment_to_constant_variable_error(assignment_loc,
                     v->base.base.loc, "declared as constant");
+                return true;
             } else if (non_definable_associate_variables.find(sym) != non_definable_associate_variables.end()) {
                 add_assignment_to_constant_variable_error(assignment_loc,
                     v->base.base.loc, "associated with constant selector");
+                return true;
             }
         }
+        return false;
     }
 
     // Checks that depend only on the target of an assignment, not its value.
@@ -3350,6 +3354,8 @@ public:
     void visit_Associate(const AST::Associate_t& x) {
         this->visit_expr(*(x.m_target));
         ASR::expr_t* target = ASRUtils::EXPR(tmp);
+        bool is_invalid = check_assignment_to_constant_variable(
+            extract_assignment_base_symbol(target), x.base.base.loc);
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
         current_variable_type_ = target_type;
         current_struct_type_var_expr = target;
@@ -3386,8 +3392,14 @@ public:
                         {value->base.loc})}));
             throw SemanticAbort();
         }
-        ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+        is_invalid = check_procedure_component_of_constant(value,
+            "a pointer assignment target") || is_invalid;
+        // With --continue-compilation, drop the reported statement.
+        if (is_invalid) {
+            throw SemanticAbort();
+        }
         tmp = nullptr;
+        ASR::ttype_t* value_type = ASRUtils::expr_type(value);
         bool is_target_pointer = ASRUtils::is_pointer(target_type);
         if (ASR::is_a<ASR::ArraySection_t>(*target)) {
             ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(target);
@@ -9175,6 +9187,10 @@ public:
                             passed_arg = cast_procedure_actual(passed_arg, f->m_args[i + offset]);
                             args.p[i].m_value = passed_arg;
                             passed_type = ASRUtils::expr_type(passed_arg);
+                        } else if (ASR::is_a<ASR::FunctionType_t>(
+                                *ASRUtils::type_get_past_pointer(param_type))) {
+                            check_procedure_component_of_constant(passed_arg,
+                                "an actual argument");
                         }
                         // Skip type checking for function types (procedure dummy
                         // arguments are validated separately above).
@@ -9257,6 +9273,11 @@ public:
         ASR::stmt_t* cast_stmt = nullptr;
         ASR::call_arg_t* call_args = args.p;
         size_t n_call_args = args.size();
+        if (check_procedure_component_of_constant(v_expr, final_sym,
+                x.base.base.loc, "called")) {
+            // With --continue-compilation, drop the reported call.
+            throw SemanticAbort();
+        }
         ASRUtils::insert_self_arg(al, final_sym, call_args, n_call_args, v_expr);
         check_call_allocatable_pointer_polymorphism(final_sym, call_args, n_call_args);
         tmp = ASRUtils::make_SubroutineCall_t_util(al, x.base.base.loc,
@@ -10728,6 +10749,8 @@ public:
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*(x.m_args[i]));
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
+            check_assignment_to_constant_variable(
+                extract_assignment_base_symbol(tmp_expr), tmp_expr->base.loc);
             if (ASRUtils::is_pointer(ASRUtils::expr_type(tmp_expr)) || ASR::is_a<ASR::FunctionType_t>(*ASRUtils::expr_type(tmp_expr))) {
                 if(ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) || ASR::is_a<ASR::Var_t>(*tmp_expr)) {
                     arg_vec.push_back(al, tmp_expr);

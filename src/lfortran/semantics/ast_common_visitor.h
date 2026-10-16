@@ -10864,6 +10864,14 @@ public:
                             && ASR::is_a<ASR::FunctionType_t>(
                                 *ASR::down_cast<ASR::Pointer_t>(
                                     ASRUtils::type_get_past_allocatable(type))->m_type)) {
+                        if (AST::down_cast<AST::Name_t>(s.m_initializer)->n_member > 0) {
+                            this->visit_expr(*s.m_initializer);
+                            if (check_procedure_component_of_constant(
+                                    ASRUtils::EXPR(tmp),
+                                    "an initial procedure target")) {
+                                continue;
+                            }
+                        }
                         std::string init_name = to_lower(
                             AST::down_cast<AST::Name_t>(s.m_initializer)->m_id);
                         ASR::symbol_t *init_sym = current_scope->resolve_symbol(init_name);
@@ -15097,6 +15105,8 @@ public:
                 continue;
             }
             ASR::expr_t* arg = vals[i].m_value;
+            check_procedure_component_of_constant(arg,
+                "a component value in a structure constructor");
             ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
             if (ASRUtils::is_procedure_pointer_value(member_var, arg)) {
                 // A procedure defined later, or one given to a component
@@ -15645,15 +15655,7 @@ public:
             }
             type = ASRUtils::duplicate_type(al, type, &empty_dims);
             if (arr_ref_val == nullptr) {
-                ASR::expr_t *val = ASRUtils::expr_value(v_Var);
-                if (val == nullptr &&
-                        ASR::is_a<ASR::StructInstanceMember_t>(*v_Var)) {
-                    ASR::StructInstanceMember_t* member_expr =
-                        ASR::down_cast<ASR::StructInstanceMember_t>(v_Var);
-                    val = ASRUtils::get_struct_member_value_from_constant(
-                        ASRUtils::expr_value(member_expr->m_v),
-                        member_expr->m_m);
-                }
+                ASR::expr_t *val = ASRUtils::designator_constant_value(al, v_Var);
                 if (val) {
                     val = ASRUtils::expr_value(val);
                 }
@@ -18105,7 +18107,8 @@ public:
     }
 
     ASR::asr_t* create_FunctionFromFunctionTypeVariable(const Location &loc,
-                Vec<ASR::call_arg_t>& args, ASR::symbol_t *v, bool is_dt_present=false) {
+                Vec<ASR::call_arg_t>& args, ASR::symbol_t *v,
+                const std::string &source_name, bool is_dt_present=false) {
         ASR::ttype_t* proc_type = ASRUtils::import_procedure_type(al,
             ASRUtils::symbol_type(v), current_scope);
         ASR::FunctionType_t* func = ASR::down_cast<ASR::FunctionType_t>(ASRUtils::type_get_past_pointer(proc_type));
@@ -18113,6 +18116,13 @@ public:
         auto declared_result = implicit_call_result_types.find(v);
         if (declared_result != implicit_call_result_types.end()) {
             return_type = declared_result->second;
+        }
+        if (return_type == nullptr) {
+            diag.add(Diagnostic("procedure '" + source_name +
+                "' is referenced as a function, but its interface has no result",
+                Level::Error, Stage::Semantic,
+                {Label("'" + source_name + "' cannot be called as a function", {loc})}));
+            throw SemanticAbort();
         }
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
@@ -18147,6 +18157,7 @@ public:
         if( is_dt_present ) {
             ASR::expr_t* dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                 al, loc, args.p[0].m_value, v, proc_type, nullptr));
+            check_procedure_component_of_constant(dt, "called");
             ASR::call_arg_t* call_args = args.p + 1;
             size_t n_call_args = args.size() - 1;
             ASRUtils::insert_self_arg(al, v, call_args, n_call_args, dt);
@@ -18277,7 +18288,8 @@ public:
         if (ASR::is_a<ASR::Function_t>(*f2)) {
             return create_Function(x.base.base.loc, new_args, v);
         } else if (ASR::is_a<ASR::Variable_t>(*f2)) {
-            return create_FunctionFromFunctionTypeVariable(x.base.base.loc, new_args, v, is_dt_present);
+            return create_FunctionFromFunctionTypeVariable(x.base.base.loc, new_args, v,
+                std::string(x.m_func), is_dt_present);
         } else {
             LCOMPILERS_ASSERT(ASR::is_a<ASR::GenericProcedure_t>(*f2));
             return create_GenericProcedureWithASTNode(x, new_args, v, is_dt_present);
@@ -18345,6 +18357,10 @@ public:
                 indices.p, indices.size(), loc);
             ASR::expr_t* array_item_value = ASRUtils::fold_ArrayItem_value(
                 al, expr, indices.p, indices.size());
+            if (ASRUtils::constant_names_procedure_outside(array_item_value,
+                    current_scope)) {
+                array_item_value = nullptr;
+            }
             array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc, expr, indices.p,
                 indices.size(), ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(expr))),
                 ASR::arraystorageType::ColMajor, array_item_value, in_bounds);
@@ -20836,6 +20852,8 @@ public:
         std::vector<std::string> kwarg_names = {"pointer", "target"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
+        check_procedure_component_of_constant(ptr_, "an argument of associated");
+        check_procedure_component_of_constant(tgt_, "an argument of associated");
         if (tgt_ != nullptr) {
             if (ASR::expr_t* tgt_value = ASRUtils::expr_value(tgt_)) {
                 if (ASR::is_a<ASR::PointerNullConstant_t>(*tgt_value)) {
@@ -22502,6 +22520,76 @@ public:
         }
     }
 
+    // The named constant `c` that `data_ref` is or is a subobject of, as in
+    // `c`, `c%inner` or `c(1)`, or nullptr.
+    ASR::expr_t* named_constant_of_data_ref(ASR::expr_t* data_ref) {
+        while (true) {
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*data_ref)) {
+                data_ref = ASR::down_cast<ASR::StructInstanceMember_t>(data_ref)->m_v;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*data_ref)) {
+                data_ref = ASR::down_cast<ASR::ArrayItem_t>(data_ref)->m_v;
+            } else {
+                break;
+            }
+        }
+        return ASRUtils::is_const(data_ref) ? data_ref : nullptr;
+    }
+
+    // Reports `data_ref % component` at `loc` if `component` is a procedure
+    // pointer component and `data_ref` is a named constant or a subobject of
+    // one, as in `c%f`, `c%inner%f` or `c(1)%f`. Such a reference is not a
+    // procedure component reference (F2023 R1040:
+    // `scalar-variable % procedure-component-name`), since a variable shall
+    // not be a constant or a subobject of a constant (C901). A procedure
+    // designator of a call (R1522), the target of a procedure pointer
+    // (R1041), also in `associated` and as a structure constructor component
+    // value (R758), and the actual argument of a dummy procedure or
+    // procedure pointer (R1524) can be a procedure component reference, but
+    // not such a reference; an initial procedure target (R1518) can only be
+    // a procedure name. `what` names its role. A type-bound procedure of a
+    // constant, `data-ref % binding-name` (R1522), is not a component.
+    // Returns whether it reported the reference.
+    bool check_procedure_component_of_constant(ASR::expr_t* data_ref,
+            ASR::symbol_t* component, const Location& loc,
+            const std::string& what) {
+        if (data_ref == nullptr || component == nullptr) {
+            return false;
+        }
+        component = ASRUtils::symbol_get_past_external(component);
+        if (!ASR::is_a<ASR::Variable_t>(*component) ||
+                !ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
+                    ASR::down_cast<ASR::Variable_t>(component)->m_type))) {
+            return false;
+        }
+        ASR::expr_t* constant = named_constant_of_data_ref(data_ref);
+        if (constant == nullptr) {
+            return false;
+        }
+        diag.add(Diagnostic(
+            "a procedure pointer component of a named constant cannot be "
+            + what,
+            Level::Error, Stage::Semantic, {
+                Label("`" + std::string(ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(constant)->m_v))
+                    + "` is a named constant, not a variable",
+                    {loc})}));
+        if (!compiler_options.continue_compilation) throw SemanticAbort();
+        return true;
+    }
+
+    // Reports `expr` if it references a procedure pointer component of a
+    // named constant, see above.
+    bool check_procedure_component_of_constant(ASR::expr_t* expr,
+            const std::string& what) {
+        if (expr == nullptr || !ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            return false;
+        }
+        ASR::StructInstanceMember_t* member =
+            ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+        return check_procedure_component_of_constant(member->m_v, member->m_m,
+            expr->base.loc, what);
+    }
+
     // `actual` associated with the dummy argument `dummy` of a procedure.
     ASR::expr_t* cast_procedure_actual(ASR::expr_t* actual, ASR::expr_t* dummy) {
         if (actual == nullptr || dummy == nullptr || !ASR::is_a<ASR::Var_t>(*dummy)) {
@@ -22510,6 +22598,7 @@ public:
         ASR::symbol_t* dummy_sym = ASRUtils::symbol_get_past_external(
             ASR::down_cast<ASR::Var_t>(dummy)->m_v);
         if (ASR::is_a<ASR::Function_t>(*dummy_sym)) {
+            check_procedure_component_of_constant(actual, "an actual argument");
             return cast_procedure(actual, ASRUtils::get_FunctionType(
                 ASR::down_cast<ASR::Function_t>(dummy_sym)), dummy_sym);
         }
@@ -22517,6 +22606,9 @@ public:
             return actual;
         }
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(dummy_sym);
+        if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(v->m_type))) {
+            check_procedure_component_of_constant(actual, "an actual argument");
+        }
         // A pointer dummy is associated with the pointer itself.
         if (ASRUtils::is_pointer(v->m_type) ||
                 !ASR::is_a<ASR::FunctionType_t>(*v->m_type)) {
@@ -27181,7 +27273,7 @@ public:
                                 value = mem_var->m_symbolic_value; // ArrayConstant
                             }
                         }
-                        value = ASRUtils::externalize_struct_refs_in_init(
+                        value = ASRUtils::import_folded_constant_value(
                             al, value, current_scope);
                     }
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp)) ||
@@ -27190,7 +27282,8 @@ public:
                     // itself a compile time constant, so the member selected
                     // from it has to be folded here as well: it has no
                     // storage to be read from later on.
-                    ASR::expr_t* base_value = ASRUtils::expr_value(ASRUtils::EXPR(tmp));
+                    ASR::expr_t* base_value = ASRUtils::designator_constant_value(
+                        al, ASRUtils::EXPR(tmp));
                     if (base_value) {
                         value = get_struct_member_value_from_constant_array(
                             base_value, tmp2_m_m_ext, tmp2_mem_type);
@@ -27205,7 +27298,7 @@ public:
                                 value = mem_var->m_symbolic_value; // ArrayConstant
                             }
                         }
-                        value = ASRUtils::externalize_struct_refs_in_init(
+                        value = ASRUtils::import_folded_constant_value(
                             al, value, current_scope);
                     }
                 }
@@ -27276,7 +27369,7 @@ public:
                             value = mem_var->m_symbolic_value; // ArrayConstant
                         }
                     }
-                    value = ASRUtils::externalize_struct_refs_in_init(
+                    value = ASRUtils::import_folded_constant_value(
                         al, value, current_scope);
                 }
             } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp)) ||
@@ -27285,7 +27378,8 @@ public:
                 // a compile time constant, so the member selected from it has
                 // to be folded here as well: it has no storage to be read
                 // from later on.
-                ASR::expr_t* base_value = ASRUtils::expr_value(ASRUtils::EXPR(tmp));
+                ASR::expr_t* base_value = ASRUtils::designator_constant_value(
+                    al, ASRUtils::EXPR(tmp));
                 if (base_value) {
                     value = get_struct_member_value_from_constant_array(
                         base_value, tmp2_m_m_ext, tmp2_mem_type);
@@ -27300,7 +27394,7 @@ public:
                             value = mem_var->m_symbolic_value; // ArrayConstant
                         }
                     }
-                    value = ASRUtils::externalize_struct_refs_in_init(
+                    value = ASRUtils::import_folded_constant_value(
                         al, value, current_scope);
                 }
             }
