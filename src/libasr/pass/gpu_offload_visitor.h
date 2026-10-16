@@ -195,6 +195,11 @@ public:
 
     void inline_matmul_stmts(ASR::stmt_t** &body, size_t &n_body);
 
+    void hoist_array_function_results(ParallelLoopNest &nest);
+
+    void hoist_array_function_results_in_body(ASR::stmt_t** &body,
+            size_t &n_body, SymbolTable *scope, SymbolTable *&block_scope);
+
     void hoist_nested_matmuls(ParallelLoopNest &nest);
 
     void hoist_nested_matmuls_in_body(ASR::stmt_t** &body, size_t &n_body,

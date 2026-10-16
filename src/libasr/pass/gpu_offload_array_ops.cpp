@@ -797,6 +797,264 @@ void GpuOffloadVisitor::materialize_aliased_in_body(
     }
 }
 
+namespace {
+
+// Replaces every call of a function returning an array in an expression
+// by a new array of `scope`, and collects the assignments of the calls to
+// those arrays. A call in an argument of such a call is left in place: it
+// is made once, when the call it is an argument of is.
+class GpuArrayFunctionResultHoister :
+        public ASR::BaseExprReplacer<GpuArrayFunctionResultHoister> {
+public:
+    Allocator &al;
+    std::function<SymbolTable*()> scope;
+    Vec<ASR::stmt_t*> &assignments;
+
+    GpuArrayFunctionResultHoister(Allocator &al_,
+            std::function<SymbolTable*()> scope_,
+            Vec<ASR::stmt_t*> &assignments_)
+        : al(al_), scope(scope_), assignments(assignments_) {}
+
+    // The array the call's result is assigned to: of the call's own
+    // shape when that is a compile-time constant, and allocatable
+    // otherwise, given its shape by the assignment.
+    ASR::expr_t* result_array(ASR::FunctionCall_t *fc) {
+        const Location &loc = fc->base.base.loc;
+        ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(
+            fc->m_type);
+        ASR::dimension_t *dims = nullptr;
+        int rank = ASRUtils::extract_dimensions_from_ttype(type, dims);
+        bool fixed = ASRUtils::is_fixed_size_array(dims, rank);
+        ASR::ttype_t *tmp_type;
+        if (fixed) {
+            tmp_type = ASRUtils::duplicate_type(al, type);
+        } else {
+            Vec<ASR::dimension_t> deferred;
+            deferred.reserve(al, rank);
+            for (int d = 0; d < rank; d++) {
+                ASR::dimension_t dim;
+                dim.loc = loc;
+                dim.m_start = nullptr;
+                dim.m_length = nullptr;
+                deferred.push_back(al, dim);
+            }
+            tmp_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                ASRUtils::TYPE(ASR::make_Array_t(al, loc,
+                    ASRUtils::duplicate_type(al,
+                        ASRUtils::extract_type(type)),
+                    deferred.p, deferred.n,
+                    ASR::array_physical_typeType::DescriptorArray,
+                    ASR::memory_spaceType::Global))));
+        }
+        SymbolTable *tmp_scope = scope();
+        std::string name = tmp_scope->get_unique_name("__gpu_call_result");
+        ASR::symbol_t *sym = gpu_new_variable(al, loc, tmp_scope, name,
+            tmp_type);
+        ASR::expr_t *tmp = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+        assignments.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
+            al, loc, tmp, ASRUtils::EXPR((ASR::asr_t*)fc), nullptr, !fixed,
+            false)));
+        return tmp;
+    }
+
+    void replace_FunctionCall(ASR::FunctionCall_t *x) {
+        if (gpu_is_array_function_result(ASRUtils::EXPR((ASR::asr_t*)x))) {
+            *current_expr = result_array(x);
+            return;
+        }
+        ASR::BaseExprReplacer<GpuArrayFunctionResultHoister>
+            ::replace_FunctionCall(x);
+    }
+
+    // The shape a scalar is spread over is the shape of the other
+    // operand, written again (`f(x) * 2` broadcasts 2 over
+    // `shape(f(x))`); it is not a value the statement computes.
+    void replace_ArrayBroadcast(ASR::ArrayBroadcast_t *x) {
+        ASR::expr_t **current_expr_copy = current_expr;
+        current_expr = &x->m_array;
+        replace_expr(x->m_array);
+        current_expr = current_expr_copy;
+    }
+
+    void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t *x) {
+        if (gpu_is_array_function_result(x->m_arg)) {
+            *current_expr = result_array(
+                ASR::down_cast<ASR::FunctionCall_t>(x->m_arg));
+            return;
+        }
+        ASR::BaseExprReplacer<GpuArrayFunctionResultHoister>
+            ::replace_ArrayPhysicalCast(x);
+    }
+};
+
+// Whether the target of an assignment is a variable, or an element or a
+// section of one, rather than a component, whose allocation before the
+// launch is worked out from the value assigned to it.
+bool gpu_plain_array_target(ASR::expr_t *target) {
+    target = ASRUtils::get_past_array_physical_cast(target);
+    if (ASR::is_a<ASR::ArraySection_t>(*target)) {
+        target = ASR::down_cast<ASR::ArraySection_t>(target)->m_v;
+    } else if (ASR::is_a<ASR::ArrayItem_t>(*target)) {
+        target = ASR::down_cast<ASR::ArrayItem_t>(target)->m_v;
+    }
+    return ASR::is_a<ASR::Var_t>(*target);
+}
+
+} // namespace
+
+// A call of a function that returns an array, in an array expression of
+// the loop body, is made once, before the statement, and its result
+// assigned to an array of its own, which the statement reads instead:
+//   a(1:n, p) = x(p)%values() * 2
+// becomes
+//   block
+//     real, allocatable :: __gpu_call_result(:)
+//     __gpu_call_result = x(p)%values()
+//     a(1:n, p) = __gpu_call_result * 2
+//   end block
+// The element-by-element lowerings below would otherwise put the call
+// inside the loop they build, where it is made again for every element.
+// On the host the shared passes make the same temporary, before the
+// statement; here they run too late, after the statement became loops.
+//
+// The array is a local of the innermost BLOCK or ASSOCIATE construct of
+// the loop body the statement is in, or of a BLOCK made for it around the
+// statement of the loop body, so that every iteration has its own. It
+// takes the shape the function gives its result, which is known on entry
+// once the function is lowered (gpu_device_allocatable), and the host
+// sizes it before the launch like the temporaries of the shared passes.
+// A call that is the whole value assigned to a variable is left alone:
+// the variable already is such an array.
+void GpuOffloadVisitor::hoist_array_function_results(ParallelLoopNest &nest) {
+    NestBodyWriteBack back(nest);
+    Vec<ASR::stmt_t*> new_body;
+    new_body.reserve(al, back.n_body);
+    bool changed = false;
+    for (size_t si = 0; si < back.n_body; si++) {
+        ASR::stmt_t *stmt = back.body[si];
+        SymbolTable *block_scope = nullptr;
+        Vec<ASR::stmt_t*> stmts;
+        stmts.reserve(al, 1);
+        stmts.push_back(al, stmt);
+        ASR::stmt_t **body = stmts.p;
+        size_t n_body = stmts.n;
+        hoist_array_function_results_in_body(body, n_body, nullptr,
+            block_scope);
+        if (block_scope == nullptr) {
+            for (size_t i = 0; i < n_body; i++) {
+                new_body.push_back(al, body[i]);
+            }
+            continue;
+        }
+        const Location &loc = stmt->base.loc;
+        std::string block_name = current_scope->get_unique_name(
+            "__gpu_call_result_scope");
+        ASR::asr_t *block = ASR::make_Block_t(al, loc, block_scope,
+            s2c(al, block_name), body, n_body);
+        block_scope->asr_owner = block;
+        ASR::symbol_t *block_sym = ASR::down_cast<ASR::symbol_t>(block);
+        current_scope->add_symbol(block_name, block_sym);
+        kernel_blocks.push_back(block_sym);
+        new_body.push_back(al, ASRUtils::STMT(ASR::make_BlockCall_t(al,
+            loc, -1, block_sym)));
+        changed = true;
+    }
+    if (changed) {
+        back.body = new_body.p;
+        back.n_body = new_body.n;
+    }
+}
+
+// `scope` is the scope the arrays of the statements in `body` are put in,
+// or nullptr for a statement of the loop body outside any construct with
+// a scope, whose arrays go into `block_scope`, made when the first one is.
+void GpuOffloadVisitor::hoist_array_function_results_in_body(
+        ASR::stmt_t** &body, size_t &n_body, SymbolTable *scope,
+        SymbolTable *&block_scope) {
+    Vec<ASR::stmt_t*> new_body;
+    new_body.reserve(al, n_body);
+    bool changed = false;
+    for (size_t si = 0; si < n_body; si++) {
+        ASR::stmt_t *stmt = body[si];
+        switch (stmt->type) {
+            case ASR::stmtType::DoLoop: {
+                ASR::DoLoop_t *x = ASR::down_cast<ASR::DoLoop_t>(stmt);
+                hoist_array_function_results_in_body(x->m_body, x->n_body,
+                    scope, block_scope);
+                break;
+            }
+            case ASR::stmtType::WhileLoop: {
+                ASR::WhileLoop_t *x = ASR::down_cast<ASR::WhileLoop_t>(stmt);
+                hoist_array_function_results_in_body(x->m_body, x->n_body,
+                    scope, block_scope);
+                break;
+            }
+            case ASR::stmtType::If: {
+                ASR::If_t *x = ASR::down_cast<ASR::If_t>(stmt);
+                hoist_array_function_results_in_body(x->m_body, x->n_body,
+                    scope, block_scope);
+                hoist_array_function_results_in_body(x->m_orelse,
+                    x->n_orelse, scope, block_scope);
+                break;
+            }
+            case ASR::stmtType::BlockCall: {
+                ASR::symbol_t *b = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::BlockCall_t>(stmt)->m_m);
+                if (b && ASR::is_a<ASR::Block_t>(*b)) {
+                    ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+                    hoist_array_function_results_in_body(blk->m_body,
+                        blk->n_body, blk->m_symtab, block_scope);
+                }
+                break;
+            }
+            case ASR::stmtType::AssociateBlockCall: {
+                ASR::AssociateBlock_t *ab =
+                    ASR::down_cast<ASR::AssociateBlock_t>(
+                        ASR::down_cast<ASR::AssociateBlockCall_t>(
+                            stmt)->m_m);
+                hoist_array_function_results_in_body(ab->m_body,
+                    ab->n_body, ab->m_symtab, block_scope);
+                break;
+            }
+            case ASR::stmtType::Assignment: {
+                ASR::Assignment_t *asgn =
+                    ASR::down_cast<ASR::Assignment_t>(stmt);
+                if (!gpu_plain_array_target(asgn->m_target)) break;
+                if (gpu_is_array_function_result(asgn->m_value) &&
+                        !ASR::is_a<ASR::ArraySection_t>(
+                            *ASRUtils::get_past_array_physical_cast(
+                                asgn->m_target))) {
+                    break;
+                }
+                Vec<ASR::stmt_t*> assignments;
+                assignments.reserve(al, 1);
+                GpuArrayFunctionResultHoister hoister(al,
+                    [&]() -> SymbolTable* {
+                        if (scope) return scope;
+                        if (!block_scope) {
+                            block_scope = al.make_new<SymbolTable>(
+                                current_scope);
+                        }
+                        return block_scope;
+                    }, assignments);
+                hoister.current_expr = &asgn->m_value;
+                hoister.replace_expr(asgn->m_value);
+                for (size_t i = 0; i < assignments.n; i++) {
+                    new_body.push_back(al, assignments[i]);
+                }
+                changed = changed || assignments.n > 0;
+                break;
+            }
+            default: break;
+        }
+        new_body.push_back(al, stmt);
+    }
+    if (changed) {
+        body = new_body.p;
+        n_body = new_body.n;
+    }
+}
+
 void GpuOffloadVisitor::inline_array_section_assignment(
         ParallelLoopNest &nest) {
     bool changed = false;

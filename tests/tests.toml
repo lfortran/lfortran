@@ -4759,6 +4759,13 @@ filename = "../integration_tests/gpu_metal_452.f90"
 gpu_cuda_kernel = true
 options = "--realloc-lhs-arrays"
 
+# A call of a function returning an array, in an array expression, is made
+# once before the statement, not once for every element it computes.
+[[test]]
+filename = "../integration_tests/gpu_metal_453.f90"
+gpu_cuda_kernel = true
+options = "--realloc-lhs-arrays"
+
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
