@@ -447,10 +447,6 @@ def test_code_completion(client: LFortranLspTestClient) -> None:
             kind=CompletionItemKind.Function,
         ),
         CompletionItem(
-            label="1_softmax_eval_1d",
-            kind=CompletionItemKind.Function,
-        ),
-        CompletionItem(
             label="softmax",
             kind=CompletionItemKind.Struct,
         ),
