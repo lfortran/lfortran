@@ -14,7 +14,7 @@ __device__ inline float vla_fill_gpu_9(int m, float v, float* tmp) {
         tmp[((int)(k) - (1))] = v;
     }
     __gpu_sum_res =   0.00000000000000000e+00f;
-    __do_loop_end1 = (1 + m - 1);
+    __do_loop_end1 = (m);
     __gpu_sum_k = (1 - 1);
     while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
         __gpu_sum_k = (__gpu_sum_k + 1);
@@ -45,7 +45,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __flat_idx;
     int i;
     float* tmp = __workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent);
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((__loop_end_0 - 1) + 1))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);

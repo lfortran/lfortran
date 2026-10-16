@@ -39,51 +39,6 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
     // Inline IntrinsicArrayFunction Sum before kernel extraction
     inline_intrinsic_sum(work);
 
-    // Also inline Sum in helper functions called from the
-    // loop body. This ensures that sum(f(x)) patterns
-    // inside helper functions are expanded into loops before
-    // kernel extraction, avoiding allocatable temporaries that
-    // cannot be represented as VLAs in Metal shaders.
-    {
-        GpuFunctionCollector sum_fc;
-        for (size_t i = 0; i < work.n_body; i++) {
-            sum_fc.visit_stmt(*work.body[i]);
-        }
-        bool sum_added = true;
-        while (sum_added) {
-            sum_added = false;
-            GpuFunctionCollector sum_tc;
-            for (auto &[fn_name, fn_sym] : sum_fc.functions) {
-                ASR::symbol_t *resolved =
-                    ASRUtils::symbol_get_past_external(fn_sym);
-                if (ASR::is_a<ASR::Function_t>(*resolved)) {
-                    ASR::Function_t *fn =
-                        ASR::down_cast<ASR::Function_t>(resolved);
-                    for (size_t i = 0; i < fn->n_body; i++) {
-                        sum_tc.visit_stmt(*fn->m_body[i]);
-                    }
-                }
-            }
-            for (auto &[name, sym] : sum_tc.functions) {
-                if (sum_fc.functions.find(name) ==
-                        sum_fc.functions.end()) {
-                    sum_fc.functions[name] = sym;
-                    sum_added = true;
-                }
-            }
-        }
-        for (auto &[fn_name, fn_sym] : sum_fc.functions) {
-            ASR::symbol_t *resolved =
-                ASRUtils::symbol_get_past_external(fn_sym);
-            if (ASR::is_a<ASR::Function_t>(*resolved)) {
-                ASR::Function_t *fn =
-                    ASR::down_cast<ASR::Function_t>(resolved);
-                inline_sum_in_stmts(fn->m_body, fn->n_body,
-                    fn->m_symtab);
-            }
-        }
-    }
-
     // Inline IntrinsicArrayFunction Transpose before kernel extraction
     inline_intrinsic_transpose(work);
 
@@ -129,7 +84,10 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
                         resolver.current_expr = &value;
                         resolver.replace_expr(value);
                     }
-                    assoc_map[sym] = value;
+                    GpuAssociateScopeWrites writes(ab->m_body, ab->n_body,
+                        ai + 1);
+                    assoc_map[sym] = gpu_fix_selector_subscripts(al, value,
+                        writes, ab->m_symtab, resolved_stmts);
                 }
             } else if (ASR::is_a<ASR::AssociateBlockCall_t>(
                            *ab->m_body[ai])) {
@@ -145,9 +103,9 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
                     inner_stmts.reserve(al, inner_ab->n_body);
                     inline_assoc_body(inner_ab, assoc_map,
                         inner_stmts);
-                    // Resolve the inner statements now: once they are
-                    // wrapped in a Block below the caller's resolver
-                    // no longer reaches them.
+                    // Resolve the inner statements now, so that the
+                    // inner associate names no longer count as uses of
+                    // the inner scope when it is wrapped below.
                     if (!assoc_map.empty()) {
                         AssociateVarResolverVisitor inner_resolver(
                             al, assoc_map);
@@ -189,7 +147,9 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
                             ->m_parent_symtab == ab->m_symtab &&
                         assoc_map.find(sym) == assoc_map.end() &&
                         is_single_assignment_binding(sym,
-                            ab->m_body, ab->n_body)) {
+                            ab->m_body, ab->n_body) &&
+                        !GpuAssociateScopeWrites(ab->m_body, ab->n_body,
+                            ai + 1).may_change(asgn->m_value)) {
                         assoc_map[sym] = asgn->m_value;
                     } else {
                         resolved_stmts.push_back(al,

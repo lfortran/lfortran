@@ -2828,3 +2828,221 @@ contains
         print *, n
     end subroutine
 end subroutine
+
+module cc1_procptr_later_init_a
+contains
+    integer function cc1_plia_int()
+        cc1_plia_int = 42
+    end function cc1_plia_int
+    real function cc1_plia_real()
+        cc1_plia_real = 0
+    end function cc1_plia_real
+end module cc1_procptr_later_init_a
+module cc1_procptr_later_init_m
+    use cc1_procptr_later_init_a
+    procedure(cc1_plim_real), pointer :: cc1_plim_p1 => cc1_plia_int  ! {Error} type mismatch in initialization: `FunctionType(return_type: integer)` cannot be assigned to `FunctionType(return_type: real) pointer`
+    procedure(cc1_plia_real), pointer :: cc1_plim_p2 => cc1_plim_int  ! {Error} type mismatch in initialization: `FunctionType(return_type: integer)` cannot be assigned to `FunctionType(return_type: real) pointer`
+contains
+    real function cc1_plim_real()
+        cc1_plim_real = 0
+    end function cc1_plim_real
+    integer function cc1_plim_int()
+        cc1_plim_int = 42
+    end function cc1_plim_int
+end module cc1_procptr_later_init_m
+module cc1_procptr_undefined_iface_m
+    procedure(cc1_puim_nosuch), pointer :: cc1_puim_q => cc1_puim_g  ! {Error} Interface 'cc1_puim_nosuch' is referenced but not defined
+contains
+    integer function cc1_puim_g()
+        cc1_puim_g = 1
+    end function cc1_puim_g
+end module cc1_procptr_undefined_iface_m
+module cc1_procptr_undefined_target_m
+    procedure(cc1_putm_nosuch), pointer :: cc1_putm_a => null()  ! {Error} Interface 'cc1_putm_nosuch' is referenced but not defined
+    procedure(cc1_putm_f), pointer :: cc1_putm_q => cc1_putm_nosuch
+    type :: cc1_putm_t
+        procedure(cc1_putm_f), pointer, nopass :: c => cc1_putm_nosuch
+    end type cc1_putm_t
+contains
+    integer function cc1_putm_f()
+        cc1_putm_f = 0
+    end function cc1_putm_f
+end module cc1_procptr_undefined_target_m
+module cc1_procptr_later_nonproc_a
+    interface cc1_plna_gen
+        module procedure cc1_plna_g
+    end interface cc1_plna_gen
+contains
+    real function cc1_plna_g()
+        cc1_plna_g = 0
+    end function cc1_plna_g
+end module cc1_procptr_later_nonproc_a
+module cc1_procptr_later_nonproc_m
+    use cc1_procptr_later_nonproc_a
+    integer :: cc1_plnm_x = 3
+    procedure(cc1_plnm_f), pointer :: cc1_plnm_p1 => cc1_plnm_x  ! {Error} type mismatch in initialization: `integer` cannot be assigned to `FunctionType() pointer`
+    procedure(cc1_plnm_f), pointer :: cc1_plnm_p2 => cc1_plnm_y  ! {Error} type mismatch in initialization: `integer` cannot be assigned to `FunctionType(return_type: integer) pointer`
+    procedure(cc1_plnm_f), pointer :: cc1_plnm_p3 => cc1_plnm_gen  ! {Error} Symbol 'cc1_plnm_gen' must be a variable or a procedure
+    procedure(cc1_plnm_f), pointer :: cc1_plnm_p4 => cc1_plna_gen  ! {Error} Symbol 'cc1_plna_gen' must be a variable or a procedure
+    integer :: cc1_plnm_y = 4
+    interface cc1_plnm_gen
+        module procedure cc1_plnm_f
+    end interface cc1_plnm_gen
+contains
+    integer function cc1_plnm_f()
+        cc1_plnm_f = 0
+    end function cc1_plnm_f
+end module cc1_procptr_later_nonproc_m
+
+! The elements that a DATA statement initializes must be inside the array and
+! match the number of values.
+subroutine cc1_data_section_errors(n)
+    implicit none
+    integer :: n, i
+    integer :: cc1_ds_a(4), cc1_ds_b(4), cc1_ds_c(4), cc1_ds_d(4), cc1_ds_e(3)
+    integer :: cc1_ds_s, cc1_ds_f(5)
+    data cc1_ds_a(1) /1/
+    data cc1_ds_a(3:5) /3, 4, 5/  ! {Error} Array index 5 is out of bounds (1 to 4) in dimension 1
+    data cc1_ds_b(1:3) /1, 2/  ! {Error} DATA statement element count mismatch: 3 elements on left-hand side, 2 values on right-hand side
+    data cc1_ds_c(1:2) /1, 2, 3/  ! {Error} DATA statement element count mismatch: 2 elements on left-hand side, 3 values on right-hand side
+    data cc1_ds_d(2:3), cc1_ds_s /1, 2/  ! {Error} DATA statement element count mismatch: 3 elements on left-hand side, 2 values on right-hand side
+    data cc1_ds_e(1:3), (cc1_ds_f(i), i=1,n) /1, 2/  ! {Error} DATA statement element count mismatch: more elements on left-hand side than 2 values on right-hand side
+end subroutine cc1_data_section_errors
+
+! A procedure pointer component of a named constant, or of a subobject of a
+! named constant, is not a procedure component reference, whose base is a
+! variable (C901, R1040): it can be neither a procedure pointer target nor an
+! actual argument.
+module cc1_proc_component_of_constant_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_func
+    implicit none
+    type :: cc1_pcoc_t
+        procedure(cc1_pclim_known_func), pointer, nopass :: f => null()
+    end type
+    type :: cc1_pcoc_outer_t
+        type(cc1_pcoc_t) :: inner
+    end type
+    type(cc1_pcoc_t), parameter :: cc1_pcoc_c = cc1_pcoc_t(cc1_pclim_known_func)
+    type(cc1_pcoc_outer_t), parameter :: cc1_pcoc_o = &
+        cc1_pcoc_outer_t(cc1_pcoc_t(cc1_pclim_known_func))
+    type(cc1_pcoc_t), parameter :: cc1_pcoc_cs(2) = cc1_pcoc_t(cc1_pclim_known_func)
+contains
+    subroutine cc1_pcoc_use()
+        procedure(cc1_pclim_known_func), pointer :: q
+        integer :: r
+        q => cc1_pcoc_c%f  ! {Error} a procedure pointer component of a named constant cannot be a pointer assignment target
+        q => cc1_pcoc_o%inner%f  ! {Error} a procedure pointer component of a named constant cannot be a pointer assignment target
+        q => cc1_pcoc_cs(2)%f  ! {Error} a procedure pointer component of a named constant cannot be a pointer assignment target
+        r = cc1_pcoc_call(cc1_pcoc_c%f)  ! {Error} a procedure pointer component of a named constant cannot be an actual argument
+        call cc1_pcoc_take_pointer(cc1_pcoc_o%inner%f)  ! {Error} a procedure pointer component of a named constant cannot be an actual argument
+    end subroutine cc1_pcoc_use
+    integer function cc1_pcoc_call(g)
+        procedure(cc1_pclim_known_func) :: g
+        cc1_pcoc_call = g()
+    end function cc1_pcoc_call
+    subroutine cc1_pcoc_take_pointer(g)
+        procedure(cc1_pclim_known_func), pointer, intent(in) :: g
+    end subroutine cc1_pcoc_take_pointer
+end module cc1_proc_component_of_constant_mod
+
+! Nor can it be an argument of `associated` or a procedure pointer component
+! value in a structure constructor (R758, C7109).
+module cc1_proc_component_of_constant_2_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_func
+    use cc1_proc_component_of_constant_mod, only: cc1_pcoc_t, cc1_pcoc_c, &
+        cc1_pcoc_o, cc1_pcoc_cs
+    implicit none
+    type :: cc1_pcoc2_t
+        procedure(cc1_pclim_known_func), pointer, nopass :: f => null()
+        procedure(cc1_pclim_known_func), pointer, nopass :: g => null()
+    end type
+contains
+    subroutine cc1_pcoc2_use()
+        procedure(cc1_pclim_known_func), pointer :: q
+        type(cc1_pcoc_t) :: v
+        type(cc1_pcoc2_t) :: w
+        logical :: l
+        q => cc1_pclim_known_func
+        l = associated(q, cc1_pcoc_c%f)  ! {Error} a procedure pointer component of a named constant cannot be an argument of associated
+        l = associated(q, cc1_pcoc_o%inner%f)  ! {Error} a procedure pointer component of a named constant cannot be an argument of associated
+        l = associated(cc1_pcoc_cs(1)%f)  ! {Error} a procedure pointer component of a named constant cannot be an argument of associated
+        v = cc1_pcoc_t(cc1_pcoc_c%f)  ! {Error} a procedure pointer component of a named constant cannot be a component value in a structure constructor
+        v = cc1_pcoc_t(f=cc1_pcoc_o%inner%f)  ! {Error} a procedure pointer component of a named constant cannot be a component value in a structure constructor
+        w = cc1_pcoc2_t(g=cc1_pcoc_cs(2)%f, &  ! {Error} a procedure pointer component of a named constant cannot be a component value in a structure constructor
+            f=cc1_pclim_known_func)
+    end subroutine cc1_pcoc2_use
+end module cc1_proc_component_of_constant_2_mod
+
+! A pointer component of a named constant cannot be a pointer object
+! either: a named constant is not a variable (C901).
+module cc1_proc_component_of_constant_3_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_func
+    use cc1_proc_component_of_constant_mod, only: cc1_pcoc_c, cc1_pcoc_cs
+    implicit none
+    type :: cc1_pcoc3_t
+        integer, pointer :: p => null()
+    end type
+    type(cc1_pcoc3_t), parameter :: cc1_pcoc3_c = cc1_pcoc3_t(null())
+contains
+    subroutine cc1_pcoc3_use()
+        procedure(cc1_pclim_known_func), pointer :: q
+        integer, target :: x
+        q => cc1_pclim_known_func
+        cc1_pcoc_c%f => q  ! {Error} Cannot assign to a constant variable
+        cc1_pcoc_cs(1)%f => null()  ! {Error} Cannot assign to a constant variable
+        nullify(cc1_pcoc_c%f)  ! {Error} Cannot assign to a constant variable
+        cc1_pcoc3_c%p => x  ! {Error} Cannot assign to a constant variable
+        nullify(cc1_pcoc3_c%p)  ! {Error} Cannot assign to a constant variable
+    end subroutine cc1_pcoc3_use
+end module cc1_proc_component_of_constant_3_mod
+
+module cc1_proc_component_of_constant_4_procs_mod
+    implicit none
+contains
+    integer function cc1_pcoc4_twice(x)
+        integer, intent(in) :: x
+        cc1_pcoc4_twice = 2*x
+    end function cc1_pcoc4_twice
+end module cc1_proc_component_of_constant_4_procs_mod
+
+! Nor can it be called (R1520, R1521, R1522), or be an initial procedure
+! target, which is a procedure name (R1518).
+module cc1_proc_component_of_constant_4_mod
+    use cc1_pclim_procs_mod, only: cc1_pclim_known_sub, cc1_pclim_known_func
+    use cc1_proc_component_of_constant_mod, only: cc1_pcoc_c, cc1_pcoc_cs
+    use cc1_proc_component_of_constant_4_procs_mod, only: cc1_pcoc4_twice
+    implicit none
+    type :: cc1_pcoc4_t
+        procedure(cc1_pclim_known_sub), pointer, nopass :: sp => null()
+        procedure(cc1_pcoc4_twice), pointer, nopass :: f => null()
+        integer :: n = 0
+    end type
+    type :: cc1_pcoc4_outer_t
+        type(cc1_pcoc4_t) :: inner
+    end type
+    type(cc1_pcoc4_t), parameter :: cc1_pcoc4_c = &
+        cc1_pcoc4_t(cc1_pclim_known_sub, cc1_pcoc4_twice, 3)
+    type(cc1_pcoc4_outer_t), parameter :: cc1_pcoc4_o = &
+        cc1_pcoc4_outer_t(cc1_pcoc4_t(cc1_pclim_known_sub, cc1_pcoc4_twice, 4))
+    type(cc1_pcoc4_t), parameter :: cc1_pcoc4_table(2) = &
+        cc1_pcoc4_t(cc1_pclim_known_sub, cc1_pcoc4_twice, 1)
+    type :: cc1_pcoc4_holder_t
+        procedure(cc1_pclim_known_func), pointer, nopass :: g => cc1_pcoc_cs(1)%f  ! {Error} a procedure pointer component of a named constant cannot be an initial procedure target
+    end type
+    procedure(cc1_pclim_known_func), pointer :: cc1_pcoc4_q => cc1_pcoc_c%f  ! {Error} a procedure pointer component of a named constant cannot be an initial procedure target
+contains
+    subroutine cc1_pcoc4_use()
+        integer :: r
+        call cc1_pcoc4_c%sp()  ! {Error} a procedure pointer component of a named constant cannot be called
+        call cc1_pcoc4_o%inner%sp()  ! {Error} a procedure pointer component of a named constant cannot be called
+        call cc1_pcoc4_table(2)%sp()  ! {Error} a procedure pointer component of a named constant cannot be called
+        r = cc1_pcoc4_c%f(1)  ! {Error} a procedure pointer component of a named constant cannot be called
+        r = cc1_pcoc4_c%f(cc1_pcoc4_c%n)  ! {Error} a procedure pointer component of a named constant cannot be called
+        r = 1 + cc1_pcoc4_o%inner%f(cc1_pcoc4_table(1)%f(2))  ! {Error} a procedure pointer component of a named constant cannot be called (twice)
+        r = cc1_pcoc4_take_pointer(cc1_pcoc4_table(1)%f)  ! {Error} a procedure pointer component of a named constant cannot be an actual argument
+    end subroutine cc1_pcoc4_use
+    integer function cc1_pcoc4_take_pointer(g)
+        procedure(cc1_pcoc4_twice), pointer, intent(in) :: g
+        cc1_pcoc4_take_pointer = 0
+    end function cc1_pcoc4_take_pointer
+end module cc1_proc_component_of_constant_4_mod

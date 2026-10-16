@@ -3,12 +3,10 @@ implicit none
 integer, parameter :: n = 8
 contains
 
-    ! `p` is bound to every second element of `col`. A device pointer is an
-    ! address and carries no stride, so a gpu kernel can say how many
-    ! elements `p` has -- the extent honours the step -- but cannot address
-    ! them. Reading `p(k)` there walked `col` one element at a time and
-    ! returned the right number of the wrong elements, with no diagnostic.
-    ! The gpu backends refuse this now; on the host it means what it says.
+    ! `p` is bound to every second element of `col`. Reading `p(k)` in a
+    ! gpu kernel once walked `col` one element at a time and returned the
+    ! right number of the wrong elements; the device steps through `col` by
+    ! the stride of the section now.
     pure function strided_sum(col) result(s)
         real, intent(in) :: col(:)
         real :: s

@@ -4983,6 +4983,7 @@ public:
                 current_der_type_name = get_type_key(der_symbol);
             }
         } else {
+            array_name = get_expr_name_for_runtime_message(x.m_v);
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
             this->visit_expr(*x.m_v);
@@ -9438,6 +9439,39 @@ public:
         }
         collect_variable_types_and_struct_types(variable_type_names, struct_types, x_symtab->parent);
     }
+    // Whether the initial value of the SAVE variable `v` is a constant that
+    // becomes the static initializer of its global.
+    static bool is_static_save_initial_value(ASR::Variable_t* v) {
+        if (!v->m_value) return false;
+        if (ASR::is_a<ASR::Integer_t>(*v->m_type)
+                || ASR::is_a<ASR::Real_t>(*v->m_type)
+                || ASR::is_a<ASR::Logical_t>(*v->m_type)) {
+            return true;
+        }
+        if (ASR::is_a<ASR::Complex_t>(*v->m_type)) {
+            return ASR::is_a<ASR::ComplexConstant_t>(*v->m_value);
+        }
+        if (!ASR::is_a<ASR::ArrayConstant_t>(*v->m_value)
+                || !ASRUtils::is_array(v->m_type)
+                || ASRUtils::extract_physical_type(v->m_type)
+                    != ASR::array_physical_typeType::FixedSizeArray) {
+            return false;
+        }
+        ASR::ttype_t* element_type = ASRUtils::type_get_past_array(v->m_type);
+        return ASR::is_a<ASR::Integer_t>(*element_type)
+            || ASR::is_a<ASR::Real_t>(*element_type)
+            || ASR::is_a<ASR::Logical_t>(*element_type)
+            || ASR::is_a<ASR::Complex_t>(*element_type);
+    }
+
+    // Whether the global of the SAVE variable `v` is created with its initial
+    // value as the static initializer.
+    static bool save_value_in_global_initializer(ASR::Variable_t* v) {
+        return v->m_storage == ASR::storage_typeType::Save
+            && is_static_save_initial_value(v)
+            && !v->m_is_volatile;
+    }
+
     void set_VariableInital_value(ASR::Variable_t* v, llvm::Value* target_var){
         ASR::expr_t* initial_expr = v->m_value ? v->m_value : v->m_symbolic_value;
         // A struct array broadcast that reaches here is one the `global_init`
@@ -9494,6 +9528,9 @@ public:
                 target_var = arr_descr->get_pointer_to_data(target_type, target_var);
                 builder->CreateStore(init_value, target_var, v->m_is_volatile);
             } else if( target_ptype == ASR::array_physical_typeType::FixedSizeArray ) {
+                // A SAVE array of a BLOCK is declared each time the BLOCK
+                // executes; its global already holds the initial value.
+                if (save_value_in_global_initializer(v)) return;
                 ASR::expr_t* arr_value = v->m_value ? v->m_value : v->m_symbolic_value;
                 llvm::Value* arg_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                 llvm::APInt(32, ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(arr_value))));
@@ -9564,19 +9601,7 @@ public:
                     llvm_utils->CreateLoad2(array_desc_type->getPointerTo(), target_var),
                     data_type);
         } else {
-            if (v->m_storage == ASR::storage_typeType::Save
-                && v->m_value
-                && ((ASR::is_a<ASR::Integer_t>(*v->m_type)
-                || ASR::is_a<ASR::Real_t>(*v->m_type)
-                || ASR::is_a<ASR::Logical_t>(*v->m_type))
-                || (ASR::is_a<ASR::ArrayConstant_t>(*v->m_value)
-                && ASRUtils::is_array(v->m_type)
-                && ASRUtils::extract_physical_type(v->m_type)
-                    == ASR::array_physical_typeType::FixedSizeArray
-                && (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(v->m_type))
-                    || ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(v->m_type))
-                    || ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array(v->m_type)))))
-                && !v->m_is_volatile) {
+            if (save_value_in_global_initializer(v)) {
                 // Do nothing, the value is already initialized
                 // in the global variable
             } else {
@@ -9786,20 +9811,11 @@ public:
                     llvm::GlobalVariable *gptr = module->getNamedGlobal(global_name);
                     gptr->setLinkage(llvm::GlobalValue::InternalLinkage);
                     llvm::Constant *init_value;
-                    if (v->m_value
-                            && (ASR::is_a<ASR::Integer_t>(*v->m_type)
-                            || ASR::is_a<ASR::Real_t>(*v->m_type)
-                            || ASR::is_a<ASR::Logical_t>(*v->m_type))) {
+                    if (is_static_save_initial_value(v)
+                            && !ASRUtils::is_array(v->m_type)) {
                         this->visit_expr(*v->m_value);
                         init_value = llvm::dyn_cast<llvm::Constant>(tmp);
-                    } else if (v->m_value
-                            && ASR::is_a<ASR::ArrayConstant_t>(*v->m_value)
-                            && ASRUtils::is_array(v->m_type)
-                            && ASRUtils::extract_physical_type(v->m_type)
-                                == ASR::array_physical_typeType::FixedSizeArray
-                            && (ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(v->m_type))
-                                || ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(v->m_type))
-                                || ASR::is_a<ASR::Logical_t>(*ASRUtils::type_get_past_array(v->m_type)))) {
+                    } else if (is_static_save_initial_value(v)) {
                         llvm::Type* el_type = type->getArrayElementType();
                         init_value = get_const_array(v->m_value, el_type);
                     } else if (v->m_symbolic_value
@@ -15506,8 +15522,15 @@ public:
                 ASR::expr_t* target_size_asr = ASRUtils::EXPR(ASR::make_ArraySize_t(al, x.m_target->base.loc,
                     x.m_target, dim_asr, type32, nullptr));
 
-                ASR::expr_t* x_m_components_0_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, components[0]->base.loc,
-                    components[0], dim_asr, type32, nullptr));
+                // A constructor is not evaluated here, its type has its
+                // integer(4) size
+                ASR::expr_t* x_m_components_0_size = nullptr;
+                if (ASR::is_a<ASR::ArrayConstructor_t>(*components[0])) {
+                    x_m_components_0_size = component_dims[dim].m_length;
+                } else {
+                    x_m_components_0_size = ASRUtils::EXPR(ASR::make_ArraySize_t(al, components[0]->base.loc,
+                        components[0], dim_asr, type32, nullptr));
+                }
                 ASR::expr_t* target_size_value = ASRUtils::expr_value(target_size_asr);
                 ASR::expr_t* component_size_value = ASRUtils::expr_value(x_m_components_0_size);
                 if (target_size_value && component_size_value &&
@@ -25439,6 +25462,10 @@ public:
 
     void visit_GpuBlockSize(const ASR::GpuBlockSize_t & /* x */) {
         throw CodeGenError("GpuBlockSize should not appear in LLVM backend");
+    }
+
+    void visit_GpuAtomicFetchAdd(const ASR::GpuAtomicFetchAdd_t & /* x */) {
+        throw CodeGenError("GpuAtomicFetchAdd should not appear in LLVM backend");
     }
 
     template <typename T>

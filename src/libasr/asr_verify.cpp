@@ -1606,7 +1606,11 @@ public:
                 is_struct = true;
             }
         }
-        if( symtab->parent != nullptr &&
+        // Classifying an initializer looks through ExternalSymbol, which is
+        // possible only once external symbols are resolved (a module file
+        // is verified with check_external=false before that), so the check
+        // runs then.
+        if( check_external && symtab->parent != nullptr &&
             !is_module && !is_struct) {
             // For now restrict this check only to variables which are present
             // inside symbols which have a body.
@@ -2206,7 +2210,18 @@ public:
                         ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_components[i]) ||
                         ASR::is_a<ASR::StructInstanceMember_t>(*x.m_components[i]) ||
                         ASR::is_a<ASR::BitCast_t>(*x.m_components[i]) ||
-                        ASR::is_a<ASR::ArrayConstant_t>(*x.m_components[i]), "DebugCheckArrayBounds::m_components element must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant");
+                        ASR::is_a<ASR::ArrayConstant_t>(*x.m_components[i]) ||
+                        ASR::is_a<ASR::ArrayConstructor_t>(*x.m_components[i]), "DebugCheckArrayBounds::m_components element must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, ArrayConstant, or ArrayConstructor");
+                if (ASR::is_a<ASR::ArrayConstructor_t>(*x.m_components[i])) {
+                    ASR::dimension_t* m_dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::expr_type(x.m_components[i]), m_dims);
+                    require(n_dims == 1 && m_dims[0].m_length != nullptr &&
+                        ASRUtils::is_integer(*ASRUtils::expr_type(m_dims[0].m_length)) &&
+                        ASRUtils::extract_kind_from_ttype_t(
+                            ASRUtils::expr_type(m_dims[0].m_length)) == 4,
+                        "DebugCheckArrayBounds::m_components ArrayConstructor must have its integer(4) size in its type");
+                }
 
                 require(ASRUtils::is_array(ASRUtils::expr_type(x.m_components[i])), "DebugCheckArrayBounds::m_components element must have an Array type");
             }
@@ -3195,7 +3210,89 @@ public:
                 "' must be a function that runs on the device");
         verify_gpu_kernel_launch_signature(x,
             *ASR::down_cast<ASR::Function_t>(x.m_kernel));
+        require_id(x.m_component_fit == nullptr ||
+                ASR::is_a<ASR::Block_t>(*x.m_component_fit),
+            "asr.verify.gpu_kernel_launch.component_fit_is_block",
+            "GpuKernelLaunch::m_component_fit must be a Block");
+        for (size_t i = 0; i < x.n_scratch; i++) {
+            const ASR::gpu_scratch_buffer_t &scratch = x.m_scratch[i];
+            bool in_range = scratch.m_argument_index >= 0 &&
+                (size_t)scratch.m_argument_index < x.n_args;
+            require_id(in_range,
+                "asr.verify.gpu_kernel_launch.scratch_argument",
+                "a GpuKernelLaunch scratch buffer must name an argument of "
+                "the launch");
+            if (!in_range) continue;
+            ASR::expr_t *actual =
+                x.m_args[scratch.m_argument_index].m_value;
+            require_id(actual != nullptr &&
+                    ASR::is_a<ASR::Var_t>(*actual) &&
+                    ASRUtils::is_allocatable(ASRUtils::expr_type(actual)) &&
+                    ASRUtils::is_array(ASRUtils::expr_type(actual)),
+                "asr.verify.gpu_kernel_launch.scratch_actual",
+                "the actual argument of a GpuKernelLaunch scratch buffer "
+                "must be an allocatable array variable");
+            require_id(ASRUtils::is_integer(*ASRUtils::expr_type(
+                    scratch.m_size)) && (scratch.m_read_back == nullptr ||
+                    ASRUtils::is_integer(*ASRUtils::expr_type(
+                        scratch.m_read_back))),
+                "asr.verify.gpu_kernel_launch.scratch_size",
+                "the size and read-back count of a GpuKernelLaunch scratch "
+                "buffer must be integers");
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_GpuKernelLaunch(x);
+    }
+
+    // The procedure whose code `scope` belongs to, past the BLOCK and
+    // ASSOCIATE constructs in it, or nullptr.
+    static const ASR::Function_t* enclosing_function(SymbolTable *scope) {
+        while (scope != nullptr && scope->asr_owner != nullptr &&
+                scope->asr_owner->type == ASR::asrType::symbol) {
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+                scope->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*owner)) {
+                return ASR::down_cast<ASR::Function_t>(owner);
+            }
+            if (!ASR::is_a<ASR::Block_t>(*owner) &&
+                    !ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+                return nullptr;
+            }
+            scope = scope->parent;
+        }
+        return nullptr;
+    }
+
+    // A device heap allocation takes its elements with an atomic add to
+    // the next free element of an arena, an element of the integer(4)
+    // heap state, and gets the old value back. Only device code has one.
+    void visit_GpuAtomicFetchAdd(const GpuAtomicFetchAdd_t &x) {
+        const ASR::Function_t *fn = enclosing_function(current_symtab);
+        require_id(fn != nullptr && ASRUtils::is_device_only_function(*fn),
+            "asr.verify.gpu_atomic_fetch_add.device_code",
+            "GpuAtomicFetchAdd is only allowed in device code");
+        ASR::expr_t *target = ASRUtils::get_past_array_physical_cast(
+            x.m_target);
+        require_id(ASR::is_a<ASR::ArrayItem_t>(*target),
+            "asr.verify.gpu_atomic_fetch_add.target_array_element",
+            "GpuAtomicFetchAdd::m_target must be an element of an array");
+        auto is_int4 = [](ASR::ttype_t *t) {
+            return t != nullptr && ASR::is_a<ASR::Integer_t>(*t) &&
+                ASR::down_cast<ASR::Integer_t>(t)->m_kind == 4;
+        };
+        require_id(is_int4(ASRUtils::expr_type(x.m_target)),
+            "asr.verify.gpu_atomic_fetch_add.target_type",
+            "GpuAtomicFetchAdd::m_target must be an integer(4) scalar");
+        require_id(is_int4(ASRUtils::expr_type(x.m_increment)),
+            "asr.verify.gpu_atomic_fetch_add.increment_type",
+            "GpuAtomicFetchAdd::m_increment must be an integer(4) scalar");
+        require_id(is_int4(x.m_type),
+            "asr.verify.gpu_atomic_fetch_add.result_type",
+            "GpuAtomicFetchAdd::m_type must be integer(4), the type of "
+            "its target");
+        require_id(x.m_value == nullptr,
+            "asr.verify.gpu_atomic_fetch_add.value",
+            "GpuAtomicFetchAdd has no compile-time value");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuAtomicFetchAdd(x);
     }
 
     void visit_SubroutineCall(const SubroutineCall_t &x) {
@@ -4038,13 +4135,20 @@ public:
     }
 
     void visit_StructConstant(const StructConstant_t &x) {
-        for (size_t i = 0; i < x.n_args; i++) {
-            if (x.m_args[i].m_value == nullptr) continue;
-            require_with_loc_id(is_struct_constant_argument(x.m_args[i].m_value),
-                "asr.verify.struct_constant.argument_is_constant",
-                "StructConstant argument " + std::to_string(i + 1)
-                    + " is not a constant",
-                x.m_args[i].m_value->base.loc);
+        // Classifying an argument looks through ExternalSymbol, which is
+        // possible only once external symbols are resolved (a module file
+        // is verified with check_external=false before that), so the check
+        // runs then.
+        if (check_external) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i].m_value == nullptr) continue;
+                require_with_loc_id(
+                    is_struct_constant_argument(x.m_args[i].m_value),
+                    "asr.verify.struct_constant.argument_is_constant",
+                    "StructConstant argument " + std::to_string(i + 1)
+                        + " is not a constant",
+                    x.m_args[i].m_value->base.loc);
+            }
         }
         verify_struct_constructor_arguments("StructConstant",
             "asr.verify.struct_constant", x.m_dt_sym, x.m_args, x.n_args,

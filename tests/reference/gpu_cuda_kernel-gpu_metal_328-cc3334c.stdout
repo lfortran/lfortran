@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-__device__ inline void fixed_result_device_t_gpu_33(int n, float* r) {
+__device__ inline void fixed_result_device_t_gpu_48(int n, float* r) {
     const int width = 2;
     int __1__libasr_index_;
     int __do_loop_end;
@@ -49,7 +49,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float __gpu_sum_res;
     float __libasr_created__function_call_fixed_result[2];
     int i;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((4 - 1) + 1))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 4)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
@@ -58,13 +58,13 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __gpu_sum_k = (1 - 1);
     while (((__gpu_sum_k + 1) <= 2)) {
         __gpu_sum_k = (__gpu_sum_k + 1);
-        fixed_result_device_t_gpu_33(i, __libasr_created__function_call_fixed_result);
+        fixed_result_device_t_gpu_48(i, __libasr_created__function_call_fixed_result);
         __gpu_sum_res = (__gpu_sum_res + __libasr_created__function_call_fixed_result[((int)(__gpu_sum_k) - (1))]);
     }
     results[((int)(i) - (1))] = __gpu_sum_res;
 }
 
-__device__ inline void reallocated_result_device_t_gpu_34(int n, float* r) {
+__device__ inline void reallocated_result_device_t_gpu_49(int n, float* r) {
     int __do_loop_end;
     int __do_loop_end1;
     int __libasr_index_0_;
@@ -91,7 +91,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     float __gpu_sum_res1;
     float __libasr_created__function_call_reallocated_result[2];
     int i;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((4 - 1) + 1))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 4)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
@@ -100,7 +100,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     __gpu_sum_k1 = (1 - 1);
     while (((__gpu_sum_k1 + 1) <= 2)) {
         __gpu_sum_k1 = (__gpu_sum_k1 + 1);
-        reallocated_result_device_t_gpu_34(i, __libasr_created__function_call_reallocated_result);
+        reallocated_result_device_t_gpu_49(i, __libasr_created__function_call_reallocated_result);
         __gpu_sum_res1 = (__gpu_sum_res1 + __libasr_created__function_call_reallocated_result[((int)(__gpu_sum_k1) - (1))]);
     }
     reallocated[((int)(i) - (1))] = __gpu_sum_res1;

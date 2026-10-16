@@ -3074,13 +3074,7 @@ public:
             }
             return v_var;
         } else {
-            std::string sym_type = ASRUtils::symbol_type_name(*vpast);
-            diag.diagnostics.push_back(diag::Diagnostic(
-                "Symbol '" + var_name + "' must be a variable or a procedure",
-                diag::Level::Error, diag::Stage::Semantic, {
-                    diag::Label("cannot use a '" + sym_type + "' as a variable", {loc}),
-                    diag::Label("'" + var_name + "' declared as a '" + sym_type + "' here", {vpast->base.loc}, false),
-                }));
+            report_not_variable_or_procedure(var_name, loc, vpast);
             throw SemanticAbort();
         }
     }
@@ -4356,12 +4350,171 @@ public:
         return in_bounds;
     }
 
+    // Whether DATA gives the local variables of `owner` the SAVE attribute,
+    // as declaration initialization does for procedure and BLOCK locals.
+    static bool is_data_saved_local_owner(ASR::symbol_t* owner) {
+        return owner && (ASR::is_a<ASR::Function_t>(*owner)
+            || ASR::is_a<ASR::Block_t>(*owner));
+    }
+
+    // Whether a DATA object is held in a local's initialized SAVE storage.
+    bool data_object_has_saved_initializer(ASR::expr_t* object) {
+        if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
+            return data_object_has_saved_initializer(
+                ASR::down_cast<ASR::ArrayItem_t>(object)->m_v);
+        }
+        if (ASR::is_a<ASR::StringSection_t>(*object)) {
+            return data_object_has_saved_initializer(
+                ASR::down_cast<ASR::StringSection_t>(object)->m_arg);
+        }
+        ASR::Variable_t* v = ASRUtils::expr_to_variable_or_null(object);
+        if (!v) return false;
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(&v->base);
+        return is_data_saved_local_owner(owner)
+            && v->m_storage == ASR::storage_typeType::Save
+            && v->m_symbolic_value != nullptr && v->m_common_block == nullptr;
+    }
+
+    // The elements of an array that an array section in a DATA statement
+    // selects: the lower bound and extent of each dimension of the array, and
+    // the subscripts that the section selects in it, in order.
+    struct DataSectionBounds {
+        std::vector<int64_t> lb, extent;
+        std::vector<std::vector<int64_t>> subscripts;
+        int64_t size = 0;
+    };
+
+    static bool extract_data_bound(ASR::expr_t* expr, int64_t& value) {
+        if (!expr) return false;
+        ASR::expr_t* expr_value = ASRUtils::expr_value(expr);
+        return ASRUtils::extract_value(expr_value ? expr_value : expr, value);
+    }
+
+    // The constant elements of a vector subscript.
+    bool extract_data_vector_subscript(ASR::expr_t* expr,
+            std::vector<int64_t>& subscripts) {
+        ASR::expr_t* expr_value = ASRUtils::expr_value(expr);
+        if (!expr_value) expr_value = expr;
+        if (ASR::is_a<ASR::ArrayConstant_t>(*expr_value)) {
+            ASR::ArrayConstant_t* ac = ASR::down_cast<ASR::ArrayConstant_t>(expr_value);
+            int64_t n = ASRUtils::get_fixed_size_of_array(ac->m_type);
+            for (int64_t k = 0; k < n; k++) {
+                int64_t idx = 0;
+                if (!extract_data_bound(
+                        ASRUtils::fetch_ArrayConstant_value(al, ac, k), idx)) {
+                    return false;
+                }
+                subscripts.push_back(idx);
+            }
+            return true;
+        }
+        if (ASR::is_a<ASR::ArrayConstructor_t>(*expr_value)) {
+            ASR::ArrayConstructor_t* ac = ASR::down_cast<ASR::ArrayConstructor_t>(expr_value);
+            for (size_t k = 0; k < ac->n_args; k++) {
+                int64_t idx = 0;
+                if (!extract_data_bound(ac->m_args[k], idx)) return false;
+                subscripts.push_back(idx);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    // Resolves the elements that the subscripts `args` of the array `array`
+    // select. Returns false if the array does not have constant bounds or a
+    // subscript is not a constant. Reports an error if an element is outside
+    // the array.
+    bool resolve_data_section(ASR::expr_t* array, ASR::array_index_t* args,
+            size_t n_args, DataSectionBounds& b, const Location& loc) {
+        ASR::ttype_t* var_type = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(ASRUtils::expr_type(array)));
+        if (!ASR::is_a<ASR::Array_t>(*var_type)) return false;
+        ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(var_type);
+        size_t n = arr->n_dims;
+        if (n == 0 || n_args != n) return false;
+        b.lb.assign(n, 1);
+        b.extent.assign(n, 0);
+        b.subscripts.assign(n, {});
+        b.size = 1;
+        for (size_t d = 0; d < n; d++) {
+            if ((arr->m_dims[d].m_start &&
+                    !extract_data_bound(arr->m_dims[d].m_start, b.lb[d])) ||
+                    !extract_data_bound(arr->m_dims[d].m_length, b.extent[d])) {
+                return false;
+            }
+            int64_t ub = b.lb[d] + b.extent[d] - 1;
+            ASR::array_index_t &arg = args[d];
+            std::vector<int64_t> &subs = b.subscripts[d];
+            if (!arg.m_left && !arg.m_step) {
+                if (!arg.m_right) return false;
+                if (ASRUtils::is_array(ASRUtils::expr_type(arg.m_right))) {
+                    if (!extract_data_vector_subscript(arg.m_right, subs)) {
+                        return false;
+                    }
+                } else {
+                    int64_t idx = 0;
+                    if (!extract_data_bound(arg.m_right, idx)) return false;
+                    subs.push_back(idx);
+                }
+            } else {
+                int64_t start = b.lb[d], end = ub, step = 1;
+                if ((arg.m_left && !extract_data_bound(arg.m_left, start)) ||
+                        (arg.m_right && !extract_data_bound(arg.m_right, end)) ||
+                        (arg.m_step && !extract_data_bound(arg.m_step, step)) ||
+                        step == 0) {
+                    return false;
+                }
+                for (int64_t idx = start; step > 0 ? idx <= end : idx >= end;
+                        idx += step) {
+                    subs.push_back(idx);
+                }
+            }
+            for (int64_t idx : subs) {
+                if (idx < b.lb[d] || idx > ub) {
+                    diag.add(Diagnostic(
+                        "Array index " + std::to_string(idx) +
+                        " is out of bounds (" + std::to_string(b.lb[d]) +
+                        " to " + std::to_string(ub) +
+                        ") in dimension " + std::to_string(d + 1),
+                        Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                }
+            }
+            b.size *= (int64_t) subs.size();
+        }
+        return true;
+    }
+
+    // Resolves the elements that the array section or the array with a vector
+    // subscript `object` of a DATA statement selects.
+    bool resolve_data_section(ASR::expr_t* object, DataSectionBounds& b) {
+        if (ASR::is_a<ASR::ArraySection_t>(*object)) {
+            ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(object);
+            return resolve_data_section(section->m_v, section->m_args,
+                section->n_args, b, object->base.loc);
+        }
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayItem_t>(*object));
+        ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(object);
+        return resolve_data_section(item->m_v, item->m_args, item->n_args, b,
+            object->base.loc);
+    }
+
     // Gives `v` the initial value `value` that a DATA statement specifies.
     // When `v` is in a common block, the view of the block gives initial
     // values to its storage from then on.
     void set_data_initial_value(ASR::Variable_t* v, ASR::expr_t* value) {
         v->m_value = value;
         v->m_symbolic_value = value;
+        // DATA gives a local variable static lifetime, just like declaration
+        // initialization. COMMON storage and derived-type members are owned
+        // by their enclosing objects instead.
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(&v->base);
+        if (is_data_saved_local_owner(owner)
+                && v->m_intent == ASR::intentType::Local
+                && v->m_common_block == nullptr
+                && v->m_storage == ASR::storage_typeType::Default) {
+            v->m_storage = ASR::storage_typeType::Save;
+        }
         SetChar var_deps_vec;
         var_deps_vec.reserve(al, 1);
         ASRUtils::collect_variable_dependencies(al, var_deps_vec, v->m_type,
@@ -4462,6 +4615,7 @@ public:
                                 body.p, body.size(), arr_type,
                                 ASR::arraystorageType::ColMajor));
                         set_data_initial_value(v2, arr_const);
+                        if (data_object_has_saved_initializer(object)) return;
                     }
                 }
                 ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, object, expression_value);
@@ -4480,16 +4634,23 @@ public:
             Vec<ASR::expr_t*> body;
             body.reserve(al, a->n_value);
             int size_of_array = 0;
-            ASR::ArraySection_t* array_section = nullptr;
+            // The section or vector-subscripted array that the values are for
+            ASR::expr_t* subscripted = nullptr;
+            DataSectionBounds section_bounds;
+            bool section_resolved = false;
 
             if (ASR::is_a<ASR::ArraySection_t>(*object)) {
-                array_section = ASR::down_cast<ASR::ArraySection_t>(object);
-                size_of_array = ASRUtils::get_fixed_size_of_ArraySection(array_section);
-                object = array_section->m_v;
+                subscripted = object;
+                section_resolved = resolve_data_section(object, section_bounds);
+                size_of_array = section_resolved ? (int) section_bounds.size : -1;
+                object = ASR::down_cast<ASR::ArraySection_t>(object)->m_v;
             } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
-                ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(object);
-                size_of_array = a->n_value - curr_value; 
-                object = item->m_v; 
+                // An array with a vector subscript, e.g. x([1, 3])
+                subscripted = object;
+                section_resolved = resolve_data_section(object, section_bounds);
+                size_of_array = section_resolved ? (int) section_bounds.size :
+                    (int) (a->n_value - curr_value);
+                object = ASR::down_cast<ASR::ArrayItem_t>(object)->m_v;
             } else {
                 size_of_array = ASRUtils::get_fixed_size_of_array(array_type->m_dims, array_type->n_dims);
             }
@@ -4498,6 +4659,19 @@ public:
                 // For equivalenced arrays, the dimensions may not be available
                 // Use the number of DATA values as the array size
                 size_of_array = a->n_value - curr_value;
+            }
+            if (curr_value + (size_t) size_of_array > a->n_value) {
+                // Only reached when visit_DataStmt cannot count the elements
+                // of every object of the statement, e.g. of an implied-DO
+                // with non-constant bounds.
+                diag.add(Diagnostic(
+                    "DATA statement element count mismatch: more elements on "
+                    "left-hand side than " + std::to_string(a->n_value) +
+                    " values on right-hand side",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
             }
             int tmp_curr_value = (int) curr_value;
             curr_value += size_of_array;
@@ -4669,105 +4843,78 @@ public:
                 // the correct column-major offsets; overwriting m_value with a
                 // section-sized constant would drop earlier sections and leave
                 // an initializer smaller than the array.
-                bool merged = false;
-                if (array_section != nullptr) {
+                if (subscripted != nullptr) {
                     ASR::ttype_t* var_ttype = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(v2->m_type));
                     ASR::Array_t* full_arr = ASR::is_a<ASR::Array_t>(*var_ttype) ?
                         ASR::down_cast<ASR::Array_t>(var_ttype) : nullptr;
                     int64_t full_size = full_arr ? ASRUtils::get_fixed_size_of_array(
                         full_arr->m_dims, full_arr->n_dims) : -1;
-                    size_t ndims = full_arr ? full_arr->n_dims : 0;
-                    bool bounds_ok = full_size > 0 && array_section->n_args == ndims;
-                    std::vector<int64_t> lb(ndims), extent(ndims),
-                        sec_start(ndims), sec_end(ndims), sec_step(ndims);
-                    for (size_t d = 0; bounds_ok && d < ndims; d++) {
-                        lb[d] = 1;
-                        if (full_arr->m_dims[d].m_start &&
-                                !ASRUtils::extract_value(full_arr->m_dims[d].m_start, lb[d])) {
-                            bounds_ok = false;
-                        }
-                        if (!full_arr->m_dims[d].m_length ||
-                                !ASRUtils::extract_value(full_arr->m_dims[d].m_length, extent[d])) {
-                            bounds_ok = false;
-                        }
-                        ASR::array_index_t &arg = array_section->m_args[d];
-                        if (!bounds_ok || !arg.m_left || !arg.m_right ||
-                                !ASRUtils::extract_value(arg.m_left, sec_start[d]) ||
-                                !ASRUtils::extract_value(arg.m_right, sec_end[d])) {
-                            bounds_ok = false;
-                            break;
-                        }
-                        sec_step[d] = 1;
-                        if (arg.m_step && !ASRUtils::extract_value(arg.m_step, sec_step[d])) {
-                            bounds_ok = false;
-                        }
-                        if (sec_step[d] == 0) bounds_ok = false;
+                    if (!section_resolved || full_size <= 0) {
+                        diag.add(Diagnostic(
+                            "array section in DATA statement must have "
+                            "constant subscripts and array bounds",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {subscripted->base.loc})
+                            }));
+                        throw SemanticAbort();
                     }
-                    if (bounds_ok) {
-                        std::vector<int64_t> stride(ndims);
-                        for (size_t d = 0; d < ndims; d++) {
-                            stride[d] = d == 0 ? 1 : stride[d-1] * extent[d-1];
-                        }
-                        std::vector<ASR::expr_t*> init(full_size, nullptr);
-                        if (v2->m_value && ASR::is_a<ASR::ArrayConstant_t>(*v2->m_value)) {
-                            ASR::ArrayConstant_t* ac = ASR::down_cast<ASR::ArrayConstant_t>(v2->m_value);
-                            if (ASRUtils::get_fixed_size_of_array(ac->m_type) == full_size) {
-                                for (int64_t k = 0; k < full_size; k++) {
-                                    init[k] = ASRUtils::fetch_ArrayConstant_value(al, ac, k);
-                                }
-                            }
-                        } else if (v2->m_value && ASR::is_a<ASR::ArrayConstructor_t>(*v2->m_value)) {
-                            ASR::ArrayConstructor_t* ac = ASR::down_cast<ASR::ArrayConstructor_t>(v2->m_value);
-                            if (ac->n_args == (size_t) full_size) {
-                                for (int64_t k = 0; k < full_size; k++) {
-                                    init[k] = ac->m_args[k];
-                                }
-                            }
-                        }
-                        for (int64_t k = 0; k < full_size; k++) {
-                            if (init[k] == nullptr) {
-                                init[k] = ASRUtils::get_constant_zero_with_given_type(
-                                    al, full_arr->m_type);
-                            }
-                        }
-                        // Walk the section in column-major element order and
-                        // drop each DATA value at its linear position.
-                        std::vector<int64_t> idx = sec_start;
-                        for (size_t k = 0; bounds_ok && k < body.size(); k++) {
-                            int64_t linear = 0;
-                            for (size_t d = 0; d < ndims; d++) {
-                                linear += (idx[d] - lb[d]) * stride[d];
-                            }
-                            if (linear < 0 || linear >= full_size) {
-                                bounds_ok = false;
-                                break;
-                            }
-                            init[linear] = body[k];
-                            for (size_t d = 0; d < ndims; d++) {
-                                idx[d] += sec_step[d];
-                                if ((sec_step[d] > 0 && idx[d] <= sec_end[d]) ||
-                                    (sec_step[d] < 0 && idx[d] >= sec_end[d])) break;
-                                idx[d] = sec_start[d];
-                            }
-                        }
-                        if (bounds_ok) {
-                            Vec<ASR::expr_t*> full_body;
-                            full_body.reserve(al, full_size);
+                    const DataSectionBounds &sb = section_bounds;
+                    size_t ndims = sb.lb.size();
+                    LCOMPILERS_ASSERT(sb.size == (int64_t) body.size());
+                    std::vector<int64_t> stride(ndims);
+                    for (size_t d = 0; d < ndims; d++) {
+                        stride[d] = d == 0 ? 1 : stride[d-1] * sb.extent[d-1];
+                    }
+                    std::vector<ASR::expr_t*> init(full_size, nullptr);
+                    if (v2->m_value && ASR::is_a<ASR::ArrayConstant_t>(*v2->m_value)) {
+                        ASR::ArrayConstant_t* ac = ASR::down_cast<ASR::ArrayConstant_t>(v2->m_value);
+                        if (ASRUtils::get_fixed_size_of_array(ac->m_type) == full_size) {
                             for (int64_t k = 0; k < full_size; k++) {
-                                full_body.push_back(al, init[k]);
+                                init[k] = ASRUtils::fetch_ArrayConstant_value(al, ac, k);
                             }
-                            ASR::expr_t* full_const = ASRUtils::EXPR(
-                                ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc,
-                                    full_body.p, full_body.size(),
-                                    ASRUtils::duplicate_type(al, var_ttype),
-                                    ASR::arraystorageType::ColMajor));
-                            set_data_initial_value(v2, full_const);
-                            merged = true;
+                        }
+                    } else if (v2->m_value && ASR::is_a<ASR::ArrayConstructor_t>(*v2->m_value)) {
+                        ASR::ArrayConstructor_t* ac = ASR::down_cast<ASR::ArrayConstructor_t>(v2->m_value);
+                        if (ac->n_args == (size_t) full_size) {
+                            for (int64_t k = 0; k < full_size; k++) {
+                                init[k] = ac->m_args[k];
+                            }
                         }
                     }
-                }
-                if (!merged) {
+                    for (int64_t k = 0; k < full_size; k++) {
+                        if (init[k] == nullptr) {
+                            init[k] = ASRUtils::get_constant_zero_with_given_type(
+                                al, full_arr->m_type);
+                        }
+                    }
+                    // Walk the section in column-major element order and
+                    // drop each DATA value at its linear position.
+                    std::vector<size_t> pos(ndims, 0);
+                    for (size_t k = 0; k < body.size(); k++) {
+                        int64_t linear = 0;
+                        for (size_t d = 0; d < ndims; d++) {
+                            linear += (sb.subscripts[d][pos[d]] - sb.lb[d]) * stride[d];
+                        }
+                        LCOMPILERS_ASSERT(linear >= 0 && linear < full_size);
+                        init[linear] = body[k];
+                        for (size_t d = 0; d < ndims; d++) {
+                            if (++pos[d] < sb.subscripts[d].size()) break;
+                            pos[d] = 0;
+                        }
+                    }
+                    Vec<ASR::expr_t*> full_body;
+                    full_body.reserve(al, full_size);
+                    for (int64_t k = 0; k < full_size; k++) {
+                        full_body.push_back(al, init[k]);
+                    }
+                    ASR::expr_t* full_const = ASRUtils::EXPR(
+                        ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc,
+                            full_body.p, full_body.size(),
+                            ASRUtils::duplicate_type(al, var_ttype),
+                            ASR::arraystorageType::ColMajor));
+                    set_data_initial_value(v2, full_const);
+                } else {
                     set_data_initial_value(v2, ASRUtils::EXPR(tmp));
                 }
             }
@@ -4859,13 +5006,56 @@ public:
         }
     }
 
+    // An element of a local array that an implied-DO in a DATA statement of
+    // a procedure or BLOCK initializes.
+    struct DataLocalElement {
+        ASR::Variable_t* array;
+        int64_t flat;               // column-major position in `array`
+        ASR::expr_t* element_value; // compile-time value
+        ASR::ArrayItem_t* target;
+        ASR::expr_t* value;
+    };
+
+    void emit_data_element_assignment(const AST::DataStmt_t &data_stmt,
+            ASR::expr_t* target, ASR::expr_t* value) {
+        ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
+        ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
+                                                                            target, value, nullptr, compiler_options.po.realloc_lhs_arrays, false)
+                                                     );
+        LCOMPILERS_ASSERT(current_body != nullptr)
+        current_body->push_back(al, assignStatement);
+    }
+
+    // Gives each array of `elements` its initial value once. The elements of
+    // an array that this does not save are also assigned on every execution.
+    void set_data_local_elements_value(const AST::DataStmt_t &data_stmt,
+            const std::vector<DataLocalElement> &elements) {
+        std::vector<ASR::Variable_t*> arrays;
+        std::map<ASR::Variable_t*, std::vector<std::pair<int64_t, ASR::expr_t*>>> values;
+        for (const DataLocalElement &e : elements) {
+            auto &array_values = values[e.array];
+            if (array_values.empty()) arrays.push_back(e.array);
+            array_values.push_back({e.flat, e.element_value});
+        }
+        for (ASR::Variable_t* array : arrays) {
+            set_data_array_elements_value(array, values[array],
+                data_stmt.base.base.loc);
+        }
+        for (const DataLocalElement &e : elements) {
+            if (!data_object_has_saved_initializer(&e.target->base)) {
+                emit_data_element_assignment(data_stmt, &e.target->base, e.value);
+            }
+        }
+    }
+
     void handle_implied_do_loop_data_stmt(const AST::DataStmt_t &data_stmt,
                                           AST::DataStmtSet_t *data_stmt_set,
                                           ASR::expr_t* implied_do_loop_expr,
                                           size_t &value_index,
                                           Vec<ASR::expr_t*>* collected_values = nullptr,
                                           Vec<int64_t>* collected_indices = nullptr,
-                                          ASR::Variable_t* target_variable = nullptr) {
+                                          ASR::Variable_t* target_variable = nullptr,
+                                          std::vector<DataLocalElement>* local_elements = nullptr) {
         ASR::ImpliedDoLoop_t *implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(implied_do_loop_expr);
         ASR::expr_t* loop_start_expr = implied_do_loop->m_start;
         ASR::expr_t* loop_end_expr = implied_do_loop->m_end;
@@ -4944,6 +5134,15 @@ public:
                 }
             }
         }
+        // In a procedure or BLOCK, the elements of local arrays are collected
+        // for the whole statement, so that each array gets its initial value
+        // once instead of once per element.
+        std::vector<DataLocalElement> statement_local_elements;
+        bool outermost_local_loop = !top_level_module_scope
+            && collected_values == nullptr && local_elements == nullptr;
+        if (outermost_local_loop) {
+            local_elements = &statement_local_elements;
+        }
 
         ASRUtils::ExprStmtDuplicator exprDuplicator(al);
         for (int64_t loop_var = loop_start; loop_var <= loop_end; loop_var += loop_increment) {
@@ -4954,7 +5153,7 @@ public:
                     // Substitute the current loop variable in nested loop before recursing
                     ASR::ImpliedDoLoop_t* nested_idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(duplicatedExpr);
                     substitute_var_in_implied_do_loop(nested_idl, loop_var_sym, loop_var, integer_type);
-                    handle_implied_do_loop_data_stmt(data_stmt, data_stmt_set, duplicatedExpr, value_index, collected_values, collected_indices, target_variable);
+                    handle_implied_do_loop_data_stmt(data_stmt, data_stmt_set, duplicatedExpr, value_index, collected_values, collected_indices, target_variable, local_elements);
                 } else if (ASR::is_a<ASR::ArrayItem_t>(*duplicatedExpr)) {
                     ASR::ArrayItem_t* array_item_expr = ASR::down_cast<ASR::ArrayItem_t>(duplicatedExpr);
                     for (size_t arg_index = 0; arg_index < array_item_expr->n_args; arg_index++) {
@@ -5022,13 +5221,19 @@ public:
                             collected_indices->push_back(al, indices_valid ? flat : (int64_t)-1);
                         }
                     } else {
-                        ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item_expr);
-                        ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
-                        ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
-                                                                                            target, value, nullptr, compiler_options.po.realloc_lhs_arrays, false)
-                                                                     );
-                        LCOMPILERS_ASSERT(current_body != nullptr)
-                        current_body->push_back(al, assignStatement);
+                        ASR::Variable_t* arr_var = nullptr;
+                        int64_t flat = 0;
+                        ASR::expr_t* element_value = ASRUtils::expr_value(value);
+                        if (element_value && is_data_saved_local_owner(
+                                    ASRUtils::get_asr_owner(array_item_expr->m_v))
+                                && data_array_element_position(array_item_expr,
+                                    arr_var, flat)) {
+                            local_elements->push_back({arr_var, flat,
+                                element_value, array_item_expr, value});
+                            continue;
+                        }
+                        emit_data_element_assignment(data_stmt,
+                            ASRUtils::EXPR((ASR::asr_t*) array_item_expr), value);
                     }
                 } else {
                     diag.add(Diagnostic(
@@ -5039,6 +5244,10 @@ public:
                     throw SemanticAbort();
                 }
             }
+        }
+
+        if (outermost_local_loop) {
+            set_data_local_elements_value(data_stmt, statement_local_elements);
         }
 
         //In module scope, set the collected values on the array variable as a
@@ -5068,33 +5277,13 @@ public:
             }
 
             if (indices_ok) {
-                ASR::ttype_t* elem_type = ASR::down_cast<ASR::Array_t>(tv_arr_ttype)->m_type;
-                std::vector<ASR::expr_t*> slots(total_size, nullptr);
-
-                // Preserve values from a prior DATA statement if any.
-                if (v2->m_value && ASR::is_a<ASR::ArrayConstant_t>(*v2->m_value)) {
-                    ASR::ArrayConstant_t* prev = ASR::down_cast<ASR::ArrayConstant_t>(v2->m_value);
-                    int64_t prev_size = ASRUtils::get_fixed_size_of_array(prev->m_type);
-                    for (int64_t k = 0; k < prev_size && k < total_size; k++) {
-                        slots[k] = ASRUtils::fetch_ArrayConstant_value(al, prev, (int)k);
-                    }
-                }
+                std::vector<std::pair<int64_t, ASR::expr_t*>> elements;
+                elements.reserve(local_collected_values.size());
                 for (size_t k = 0; k < local_collected_values.size(); k++) {
-                    slots[local_collected_indices[k]] = local_collected_values[k];
+                    elements.push_back({local_collected_indices[k],
+                        local_collected_values[k]});
                 }
-                Vec<ASR::expr_t*> full_values;
-                full_values.reserve(al, (size_t)total_size);
-                for (int64_t k = 0; k < total_size; k++) {
-                    if (slots[k] == nullptr) {
-                        slots[k] = ASRUtils::get_constant_zero_with_given_type(al, elem_type);
-                    }
-                    full_values.push_back(al, slots[k]);
-                }
-                ASR::asr_t* arr_constructor = ASRUtils::make_ArrayConstructor_t_util(
-                    al, data_stmt.base.base.loc, full_values.p,
-                    full_values.size(), v2->m_type,
-                    ASR::arraystorageType::ColMajor);
-                set_data_initial_value(v2, ASRUtils::EXPR(arr_constructor));
+                set_data_array_elements_value(v2, elements, data_stmt.base.base.loc);
             } else {
                 // Fallback: old behavior (1D ArrayConstructor sized to
                 // collected values). Used when we can't compute flat indices
@@ -5118,17 +5307,12 @@ public:
         }
     }
 
-    // Sets the element `arr_item` of an array in the initial value of the
-    // whole array, whose other elements keep the values earlier DATA
-    // statements gave them or are zero. `element_value` gives the value of
-    // the element from its earlier value, nullptr if it had none, or returns
-    // nullptr when it cannot be determined. Returns whether the element is
-    // set: it is not when the array or the element cannot be determined at
-    // compile time.
-    bool set_data_array_element_value(ASR::ArrayItem_t* arr_item,
-            const std::function<ASR::expr_t*(ASR::expr_t*)> &element_value,
-            const Location &loc) {
-        ASR::Variable_t* arr_var = nullptr;
+    // The array of the element `arr_item` and the column-major position of
+    // the element in it. Returns false when the array or the position cannot
+    // be determined at compile time.
+    bool data_array_element_position(ASR::ArrayItem_t* arr_item,
+            ASR::Variable_t*& arr_var, int64_t& flat) {
+        arr_var = nullptr;
         if (ASR::is_a<ASR::Var_t>(*arr_item->m_v)) {
             arr_var = ASR::down_cast<ASR::Variable_t>(
                 ASR::down_cast<ASR::Var_t>(arr_item->m_v)->m_v);
@@ -5149,7 +5333,7 @@ public:
         }
         ASR::Array_t* arr_t = ASR::down_cast<ASR::Array_t>(arr_ttype);
         // Compute flat (ColMajor) index
-        int64_t flat = 0;
+        flat = 0;
         int64_t stride = 1;
         bool idx_ok = (arr_t->n_dims == arr_item->n_args);
         for (size_t d = 0; d < arr_t->n_dims && idx_ok; d++) {
@@ -5173,10 +5357,121 @@ public:
             flat += (idx_val - start_val) * stride;
             stride *= dim_size;
         }
-        if (!idx_ok || flat < 0 || flat >= total_size) {
+        return idx_ok && flat >= 0 && flat < total_size;
+    }
+
+    // The element at the column-major position `flat` of the initial value
+    // of the array `arr_var`, or nullptr if no DATA statement gave it one.
+    ASR::expr_t* data_array_initial_element(ASR::Variable_t* arr_var,
+            int64_t flat) {
+        if (arr_var->m_value && ASR::is_a<ASR::ArrayConstant_t>(*arr_var->m_value)) {
+            ASR::ArrayConstant_t* prev = ASR::down_cast<ASR::ArrayConstant_t>(arr_var->m_value);
+            if (flat < ASRUtils::get_fixed_size_of_array(prev->m_type)) {
+                return ASRUtils::fetch_ArrayConstant_value(al, prev, (int)flat);
+            }
+        }
+        return nullptr;
+    }
+
+    // When the array `arr_var` already has a full-size constant initial
+    // value from an earlier DATA statement and `elements` are constants of
+    // its numeric or logical element type, gives it a copy of that value with
+    // the elements replaced and returns true. Copying the data of the
+    // constant keeps the cost of a DATA statement on a large array low.
+    bool update_data_array_constant(ASR::Variable_t* arr_var,
+            int64_t total_size, ASR::ttype_t* elem_type,
+            const std::vector<std::pair<int64_t, ASR::expr_t*>> &elements,
+            const Location &loc) {
+        if (!arr_var->m_value || !ASR::is_a<ASR::ArrayConstant_t>(*arr_var->m_value)) {
             return false;
         }
-        ASR::ttype_t* elem_type = arr_t->m_type;
+        ASR::ArrayConstant_t* prev = ASR::down_cast<ASR::ArrayConstant_t>(arr_var->m_value);
+        if (ASRUtils::get_fixed_size_of_array(prev->m_type) != total_size
+                || !ASRUtils::types_equal(ASRUtils::type_get_past_array(prev->m_type),
+                    elem_type, nullptr, nullptr)) {
+            return false;
+        }
+        // The layout of the data of an ArrayConstant (set_ArrayConstant_data)
+        int kind = ASRUtils::extract_kind_from_ttype_t(elem_type);
+        size_t elem_bytes = 0;
+        if (ASR::is_a<ASR::Integer_t>(*elem_type) && (kind == 1 || kind == 2
+                || kind == 4 || kind == 8)) {
+            elem_bytes = kind;
+        } else if (ASR::is_a<ASR::Real_t>(*elem_type) && (kind == 4 || kind == 8)) {
+            elem_bytes = kind;
+        } else if (ASR::is_a<ASR::Complex_t>(*elem_type) && (kind == 4 || kind == 8)) {
+            elem_bytes = 2 * kind;
+        } else if (ASR::is_a<ASR::Logical_t>(*elem_type)) {
+            elem_bytes = sizeof(bool);
+        } else {
+            return false;
+        }
+        for (const auto &element : elements) {
+            ASR::expr_t* value = element.second;
+            if (!ASRUtils::types_equal(ASRUtils::expr_type(value), elem_type,
+                        nullptr, nullptr)
+                    || !(ASR::is_a<ASR::IntegerConstant_t>(*value)
+                        || ASR::is_a<ASR::RealConstant_t>(*value)
+                        || ASR::is_a<ASR::ComplexConstant_t>(*value)
+                        || ASR::is_a<ASR::LogicalConstant_t>(*value))) {
+                return false;
+            }
+        }
+        char* data = al.allocate<char>(total_size * elem_bytes);
+        std::memcpy(data, prev->m_data, total_size * elem_bytes);
+        for (const auto &element : elements) {
+            LCOMPILERS_ASSERT(element.first >= 0 && element.first < total_size);
+            char* dst = data + element.first * elem_bytes;
+            auto put = [&](auto x, size_t offset) {
+                std::memcpy(dst + offset, &x, sizeof(x));
+            };
+            ASR::expr_t* value = element.second;
+            if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
+                int64_t n = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+                switch (kind) {
+                    case 1: put((int8_t) n, 0); break;
+                    case 2: put((int16_t) n, 0); break;
+                    case 4: put((int32_t) n, 0); break;
+                    default: put((int64_t) n, 0); break;
+                }
+            } else if (ASR::is_a<ASR::RealConstant_t>(*value)) {
+                double r = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+                if (kind == 4) put((float) r, 0); else put(r, 0);
+            } else if (ASR::is_a<ASR::ComplexConstant_t>(*value)) {
+                ASR::ComplexConstant_t* c = ASR::down_cast<ASR::ComplexConstant_t>(value);
+                if (kind == 4) {
+                    put((float) c->m_re, 0);
+                    put((float) c->m_im, sizeof(float));
+                } else {
+                    put(c->m_re, 0);
+                    put(c->m_im, sizeof(double));
+                }
+            } else {
+                put((bool) ASR::down_cast<ASR::LogicalConstant_t>(value)->m_value, 0);
+            }
+        }
+        set_data_initial_value(arr_var, ASRUtils::EXPR(
+            ASRUtils::make_ArrayConstant_t_util(al, loc, data, prev->m_type,
+                prev->m_storage_format)));
+        return true;
+    }
+
+    // Sets the elements `elements` (column-major position and value) of
+    // the array `arr_var`, of compile-time size, in the initial value of the
+    // whole array, whose other elements keep the values earlier DATA
+    // statements gave them or are zero. A later element at the same
+    // position replaces an earlier one.
+    void set_data_array_elements_value(ASR::Variable_t* arr_var,
+            const std::vector<std::pair<int64_t, ASR::expr_t*>> &elements,
+            const Location &loc) {
+        ASR::ttype_t* arr_ttype = ASRUtils::type_get_past_allocatable(
+            ASRUtils::type_get_past_pointer(arr_var->m_type));
+        int64_t total_size = ASRUtils::get_fixed_size_of_array(arr_ttype);
+        ASR::ttype_t* elem_type = ASR::down_cast<ASR::Array_t>(arr_ttype)->m_type;
+        if (update_data_array_constant(arr_var, total_size, elem_type,
+                elements, loc)) {
+            return;
+        }
         std::vector<ASR::expr_t*> slots(total_size, nullptr);
         // Preserve values from a prior DATA statement
         if (arr_var->m_value && ASR::is_a<ASR::ArrayConstant_t>(*arr_var->m_value)) {
@@ -5186,11 +5481,10 @@ public:
                 slots[k] = ASRUtils::fetch_ArrayConstant_value(al, prev, (int)k);
             }
         }
-        ASR::expr_t* value = element_value(slots[flat]);
-        if (value == nullptr) {
-            return false;
+        for (const auto &element : elements) {
+            LCOMPILERS_ASSERT(element.first >= 0 && element.first < total_size);
+            slots[element.first] = element.second;
         }
-        slots[flat] = value;
         Vec<ASR::expr_t*> full_values;
         full_values.reserve(al, (size_t)total_size);
         for (int64_t k = 0; k < total_size; k++) {
@@ -5204,6 +5498,29 @@ public:
             full_values.size(), arr_var->m_type,
             ASR::arraystorageType::ColMajor);
         set_data_initial_value(arr_var, ASRUtils::EXPR(arr_constructor));
+    }
+
+    // Sets the element `arr_item` of an array in the initial value of the
+    // whole array, whose other elements keep the values earlier DATA
+    // statements gave them or are zero. `element_value` gives the value of
+    // the element from its earlier value, nullptr if it had none, or returns
+    // nullptr when it cannot be determined. Returns whether the element is
+    // set: it is not when the array or the element cannot be determined at
+    // compile time.
+    bool set_data_array_element_value(ASR::ArrayItem_t* arr_item,
+            const std::function<ASR::expr_t*(ASR::expr_t*)> &element_value,
+            const Location &loc) {
+        ASR::Variable_t* arr_var = nullptr;
+        int64_t flat = 0;
+        if (!data_array_element_position(arr_item, arr_var, flat)) {
+            return false;
+        }
+        ASR::expr_t* value = element_value(
+            data_array_initial_element(arr_var, flat));
+        if (value == nullptr) {
+            return false;
+        }
+        set_data_array_elements_value(arr_var, {{flat, value}}, loc);
         return true;
     }
 
@@ -5395,6 +5712,7 @@ public:
             // as it causes issues in LLVM codegen - rely on assignment instead
             if (!ASR::is_a<ASR::Pointer_t>(*v2->m_type)) {
                 set_data_initial_value(v2, symbolic_expr);
+                if (data_object_has_saved_initializer(object)) return;
             }
         } else if (ASR::is_a<ASR::ArrayItem_t>(*object)) {
             // This is the following case:
@@ -5403,17 +5721,21 @@ public:
             // i.e., x(2) = 2.
             // Additionally, update the variable's m_value so that compile-time
             // initialization (e.g. in BLOCK DATA) works correctly.
-            set_data_array_element_value(ASR::down_cast<ASR::ArrayItem_t>(object),
+            if (set_data_array_element_value(ASR::down_cast<ASR::ArrayItem_t>(object),
                 [&](ASR::expr_t* /*previous*/) { return symbolic_expr; },
-                x.base.base.loc);
+                x.base.base.loc) && data_object_has_saved_initializer(object)) {
+                return;
+            }
         } else if (ASR::is_a<ASR::StringSection_t>(*object)) {
             // This is the following case:
             // s(2:3) / 'ab' /
             // As for an array item, the characters are given both by an
             // assignment and in the initial value of the whole variable.
-            if (!set_data_substring_value(
+            if (set_data_substring_value(
                     ASR::down_cast<ASR::StringSection_t>(object),
-                    symbolic_expr, x.base.base.loc) && in_block_data) {
+                    symbolic_expr, x.base.base.loc)) {
+                if (data_object_has_saved_initializer(object)) return;
+            } else if (in_block_data) {
                 diag.add(Diagnostic(
                     "a DATA statement of a BLOCK DATA program unit can only "
                     "initialize a substring with constant bounds of a "
@@ -5599,7 +5921,17 @@ public:
                 this->visit_expr(*a->m_object[j]);
                 ASR::expr_t* object = ASRUtils::EXPR(tmp);
                 ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
-                if (ASRUtils::is_array(obj_type)) {
+                if (ASR::is_a<ASR::ArraySection_t>(*object)
+                        || (ASR::is_a<ASR::ArrayItem_t>(*object)
+                            && ASRUtils::is_array(obj_type))) {
+                    // An array section or an array with a vector subscript
+                    DataSectionBounds section_bounds;
+                    if (!resolve_data_section(object, section_bounds)) {
+                        can_validate = false;
+                        break;
+                    }
+                    total_lhs_elements += section_bounds.size;
+                } else if (ASRUtils::is_array(obj_type)) {
                     // Get array size from ASR
                     int64_t array_size = ASRUtils::get_fixed_size_of_array(obj_type);
                     if (array_size > 0) {
@@ -6629,6 +6961,40 @@ public:
             }
         }
         return false;
+    }
+
+    // Whether the initializer `init_expr`, of type `init_type` before any
+    // conversion, can initialize an entity of type `type`; reports the
+    // mismatch otherwise.
+    bool check_initializer_type(ASR::ttype_t* type, ASR::ttype_t* init_type,
+            ASR::expr_t* init_expr) {
+        if (ASRUtils::check_equal_type(type, ASRUtils::expr_type(init_expr),
+                nullptr, nullptr, false)) {
+            return true;
+        }
+        std::string ltype = ASRUtils::type_to_str_fortran_expr(type, nullptr);
+        std::string rtype = ASRUtils::type_to_str_fortran_expr(init_type, init_expr);
+        diag.add(Diagnostic(
+            "type mismatch in initialization: `" +
+            rtype + "` cannot be assigned to `" + ltype + "`",
+            Level::Error, Stage::Semantic, {
+                Label("", {init_expr->base.loc})
+            }));
+        return false;
+    }
+
+    // Reports that `name`, used at `loc` as a variable or a procedure, is
+    // the symbol `sym` (past any external symbol), which is neither.
+    void report_not_variable_or_procedure(const std::string &name,
+            const Location &loc, ASR::symbol_t *sym) {
+        std::string sym_type = ASRUtils::symbol_type_name(*sym);
+        diag.add(Diagnostic(
+            "Symbol '" + name + "' must be a variable or a procedure",
+            Level::Error, Stage::Semantic, {
+                Label("cannot use a '" + sym_type + "' as a variable", {loc}),
+                Label("'" + name + "' declared as a '" + sym_type + "' here",
+                    {sym->base.loc}, false),
+            }));
     }
 
     // Declares `sym` as an external procedure with the explicit interface of
@@ -10495,6 +10861,14 @@ public:
                             && ASR::is_a<ASR::FunctionType_t>(
                                 *ASR::down_cast<ASR::Pointer_t>(
                                     ASRUtils::type_get_past_allocatable(type))->m_type)) {
+                        if (AST::down_cast<AST::Name_t>(s.m_initializer)->n_member > 0) {
+                            this->visit_expr(*s.m_initializer);
+                            if (check_procedure_component_of_constant(
+                                    ASRUtils::EXPR(tmp),
+                                    "an initial procedure target")) {
+                                continue;
+                            }
+                        }
                         std::string init_name = to_lower(
                             AST::down_cast<AST::Name_t>(s.m_initializer)->m_id);
                         ASR::symbol_t *init_sym = current_scope->resolve_symbol(init_name);
@@ -10527,7 +10901,23 @@ public:
                                 }
                             }
                         }
-                        if ((!init_sym || is_pending_placeholder) &&
+                        // An interface that is a procedure or an interface
+                        // body defined later in the module is a placeholder
+                        // until the module defines it, so a procedure target
+                        // is checked against it only then. Any other target
+                        // is checked now. Components are excluded: their
+                        // known targets are bound directly below.
+                        bool is_pending_interface = !is_derived_type
+                            && init_sym
+                            && ASR::is_a<ASR::Function_t>(
+                                *ASRUtils::symbol_get_past_external(init_sym))
+                            && type_declaration
+                            && is_pending_proc_placeholder(type_declaration)
+                            && static_cast<Derived&>(*this).procedure_declared_later(
+                                ASRUtils::symbol_name(type_declaration))
+                                == ProcedureDeclaredLater::InModule;
+                        if ((!init_sym || is_pending_placeholder
+                                || is_pending_interface) &&
                                 variable_added_to_symtab) {
                             SymbolTable* init_resolve_scope = current_scope;
                             if (is_derived_type && current_scope->parent) {
@@ -10941,16 +11331,7 @@ public:
                         }
                         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &init_expr, init_type, type, diag);
                         LCOMPILERS_ASSERT(init_expr != nullptr);
-                        ASR::ttype_t* converted_type = ASRUtils::expr_type(init_expr);
-                        if (!ASRUtils::check_equal_type(type, converted_type, nullptr, nullptr, false)) {
-                            std::string ltype = ASRUtils::type_to_str_fortran_expr(type, nullptr);
-                            std::string rtype = ASRUtils::type_to_str_fortran_expr(init_type, init_expr);
-                            diag.add(Diagnostic(
-                                "type mismatch in initialization: `" +
-                                rtype + "` cannot be assigned to `" + ltype + "`",
-                                Level::Error, Stage::Semantic, {
-                                    Label("", {init_expr->base.loc})
-                                }));
+                        if (!check_initializer_type(type, init_type, init_expr)) {
                             throw SemanticAbort();
                         }
                         value = ASRUtils::expr_value(init_expr);
@@ -14721,6 +15102,8 @@ public:
                 continue;
             }
             ASR::expr_t* arg = vals[i].m_value;
+            check_procedure_component_of_constant(arg,
+                "a component value in a structure constructor");
             ASR::ttype_t* arg_type = ASRUtils::expr_type(arg);
             if (ASRUtils::is_procedure_pointer_value(member_var, arg)) {
                 // A procedure defined later, or one given to a component
@@ -15269,15 +15652,7 @@ public:
             }
             type = ASRUtils::duplicate_type(al, type, &empty_dims);
             if (arr_ref_val == nullptr) {
-                ASR::expr_t *val = ASRUtils::expr_value(v_Var);
-                if (val == nullptr &&
-                        ASR::is_a<ASR::StructInstanceMember_t>(*v_Var)) {
-                    ASR::StructInstanceMember_t* member_expr =
-                        ASR::down_cast<ASR::StructInstanceMember_t>(v_Var);
-                    val = ASRUtils::get_struct_member_value_from_constant(
-                        ASRUtils::expr_value(member_expr->m_v),
-                        member_expr->m_m);
-                }
+                ASR::expr_t *val = ASRUtils::designator_constant_value(al, v_Var);
                 if (val) {
                     val = ASRUtils::expr_value(val);
                 }
@@ -17670,6 +18045,7 @@ public:
         if( is_dt_present ) {
             ASR::expr_t* dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                 al, loc, args.p[0].m_value, v, proc_type, nullptr));
+            check_procedure_component_of_constant(dt, "called");
             ASR::call_arg_t* call_args = args.p + 1;
             size_t n_call_args = args.size() - 1;
             ASRUtils::insert_self_arg(al, v, call_args, n_call_args, dt);
@@ -17868,6 +18244,10 @@ public:
                 indices.p, indices.size(), loc);
             ASR::expr_t* array_item_value = ASRUtils::fold_ArrayItem_value(
                 al, expr, indices.p, indices.size());
+            if (ASRUtils::constant_names_procedure_outside(array_item_value,
+                    current_scope)) {
+                array_item_value = nullptr;
+            }
             array_item_node = ASRUtils::make_ArrayItem_t_util(al, loc, expr, indices.p,
                 indices.size(), ASRUtils::duplicate_type(al, ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(expr))),
                 ASR::arraystorageType::ColMajor, array_item_value, in_bounds);
@@ -20359,6 +20739,8 @@ public:
         std::vector<std::string> kwarg_names = {"pointer", "target"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 2, "associated");
         ASR::expr_t *ptr_ = args[0], *tgt_ = args[1];
+        check_procedure_component_of_constant(ptr_, "an argument of associated");
+        check_procedure_component_of_constant(tgt_, "an argument of associated");
         if (tgt_ != nullptr) {
             if (ASR::expr_t* tgt_value = ASRUtils::expr_value(tgt_)) {
                 if (ASR::is_a<ASR::PointerNullConstant_t>(*tgt_value)) {
@@ -22025,6 +22407,76 @@ public:
         }
     }
 
+    // The named constant `c` that `data_ref` is or is a subobject of, as in
+    // `c`, `c%inner` or `c(1)`, or nullptr.
+    ASR::expr_t* named_constant_of_data_ref(ASR::expr_t* data_ref) {
+        while (true) {
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*data_ref)) {
+                data_ref = ASR::down_cast<ASR::StructInstanceMember_t>(data_ref)->m_v;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*data_ref)) {
+                data_ref = ASR::down_cast<ASR::ArrayItem_t>(data_ref)->m_v;
+            } else {
+                break;
+            }
+        }
+        return ASRUtils::is_const(data_ref) ? data_ref : nullptr;
+    }
+
+    // Reports `data_ref % component` at `loc` if `component` is a procedure
+    // pointer component and `data_ref` is a named constant or a subobject of
+    // one, as in `c%f`, `c%inner%f` or `c(1)%f`. Such a reference is not a
+    // procedure component reference (F2023 R1040:
+    // `scalar-variable % procedure-component-name`), since a variable shall
+    // not be a constant or a subobject of a constant (C901). A procedure
+    // designator of a call (R1522), the target of a procedure pointer
+    // (R1041), also in `associated` and as a structure constructor component
+    // value (R758), and the actual argument of a dummy procedure or
+    // procedure pointer (R1524) can be a procedure component reference, but
+    // not such a reference; an initial procedure target (R1518) can only be
+    // a procedure name. `what` names its role. A type-bound procedure of a
+    // constant, `data-ref % binding-name` (R1522), is not a component.
+    // Returns whether it reported the reference.
+    bool check_procedure_component_of_constant(ASR::expr_t* data_ref,
+            ASR::symbol_t* component, const Location& loc,
+            const std::string& what) {
+        if (data_ref == nullptr || component == nullptr) {
+            return false;
+        }
+        component = ASRUtils::symbol_get_past_external(component);
+        if (!ASR::is_a<ASR::Variable_t>(*component) ||
+                !ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(
+                    ASR::down_cast<ASR::Variable_t>(component)->m_type))) {
+            return false;
+        }
+        ASR::expr_t* constant = named_constant_of_data_ref(data_ref);
+        if (constant == nullptr) {
+            return false;
+        }
+        diag.add(Diagnostic(
+            "a procedure pointer component of a named constant cannot be "
+            + what,
+            Level::Error, Stage::Semantic, {
+                Label("`" + std::string(ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::Var_t>(constant)->m_v))
+                    + "` is a named constant, not a variable",
+                    {loc})}));
+        if (!compiler_options.continue_compilation) throw SemanticAbort();
+        return true;
+    }
+
+    // Reports `expr` if it references a procedure pointer component of a
+    // named constant, see above.
+    bool check_procedure_component_of_constant(ASR::expr_t* expr,
+            const std::string& what) {
+        if (expr == nullptr || !ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+            return false;
+        }
+        ASR::StructInstanceMember_t* member =
+            ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+        return check_procedure_component_of_constant(member->m_v, member->m_m,
+            expr->base.loc, what);
+    }
+
     // `actual` associated with the dummy argument `dummy` of a procedure.
     ASR::expr_t* cast_procedure_actual(ASR::expr_t* actual, ASR::expr_t* dummy) {
         if (actual == nullptr || dummy == nullptr || !ASR::is_a<ASR::Var_t>(*dummy)) {
@@ -22033,6 +22485,7 @@ public:
         ASR::symbol_t* dummy_sym = ASRUtils::symbol_get_past_external(
             ASR::down_cast<ASR::Var_t>(dummy)->m_v);
         if (ASR::is_a<ASR::Function_t>(*dummy_sym)) {
+            check_procedure_component_of_constant(actual, "an actual argument");
             return cast_procedure(actual, ASRUtils::get_FunctionType(
                 ASR::down_cast<ASR::Function_t>(dummy_sym)), dummy_sym);
         }
@@ -22040,6 +22493,9 @@ public:
             return actual;
         }
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(dummy_sym);
+        if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(v->m_type))) {
+            check_procedure_component_of_constant(actual, "an actual argument");
+        }
         // A pointer dummy is associated with the pointer itself.
         if (ASRUtils::is_pointer(v->m_type) ||
                 !ASR::is_a<ASR::FunctionType_t>(*v->m_type)) {
@@ -26693,7 +27149,7 @@ public:
                                 value = mem_var->m_symbolic_value; // ArrayConstant
                             }
                         }
-                        value = ASRUtils::externalize_struct_refs_in_init(
+                        value = ASRUtils::import_folded_constant_value(
                             al, value, current_scope);
                     }
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp)) ||
@@ -26702,7 +27158,8 @@ public:
                     // itself a compile time constant, so the member selected
                     // from it has to be folded here as well: it has no
                     // storage to be read from later on.
-                    ASR::expr_t* base_value = ASRUtils::expr_value(ASRUtils::EXPR(tmp));
+                    ASR::expr_t* base_value = ASRUtils::designator_constant_value(
+                        al, ASRUtils::EXPR(tmp));
                     if (base_value) {
                         value = get_struct_member_value_from_constant_array(
                             base_value, tmp2_m_m_ext, tmp2_mem_type);
@@ -26717,7 +27174,7 @@ public:
                                 value = mem_var->m_symbolic_value; // ArrayConstant
                             }
                         }
-                        value = ASRUtils::externalize_struct_refs_in_init(
+                        value = ASRUtils::import_folded_constant_value(
                             al, value, current_scope);
                     }
                 }
@@ -26788,7 +27245,7 @@ public:
                             value = mem_var->m_symbolic_value; // ArrayConstant
                         }
                     }
-                    value = ASRUtils::externalize_struct_refs_in_init(
+                    value = ASRUtils::import_folded_constant_value(
                         al, value, current_scope);
                 }
             } else if (ASR::is_a<ASR::StructInstanceMember_t>(*ASRUtils::EXPR(tmp)) ||
@@ -26797,7 +27254,8 @@ public:
                 // a compile time constant, so the member selected from it has
                 // to be folded here as well: it has no storage to be read
                 // from later on.
-                ASR::expr_t* base_value = ASRUtils::expr_value(ASRUtils::EXPR(tmp));
+                ASR::expr_t* base_value = ASRUtils::designator_constant_value(
+                    al, ASRUtils::EXPR(tmp));
                 if (base_value) {
                     value = get_struct_member_value_from_constant_array(
                         base_value, tmp2_m_m_ext, tmp2_mem_type);
@@ -26812,7 +27270,7 @@ public:
                             value = mem_var->m_symbolic_value; // ArrayConstant
                         }
                     }
-                    value = ASRUtils::externalize_struct_refs_in_init(
+                    value = ASRUtils::import_folded_constant_value(
                         al, value, current_scope);
                 }
             }

@@ -52,10 +52,14 @@ public:
     // The constructs already reported. A loop nested in a loop that failed
     // fails on the same construct, and it is reported once.
     std::set<std::pair<uint32_t, uint32_t>> reported;
+    // The bodies of the separate module procedures a loop calls.
+    GpuProcedureImplementations implementations;
 
-    ParallelDispatchVisitor(const PassOptions &pass_options_) :
+    ParallelDispatchVisitor(Allocator &al, ASR::TranslationUnit_t &unit,
+            const PassOptions &pass_options_) :
         pass_options(pass_options_),
-        device_caps(gpu_device_capabilities(pass_options_)) {
+        device_caps(gpu_device_capabilities(pass_options_)),
+        implementations(al, unit, pass_options_) {
     }
 
     // Whether a loop that uses an unsupported construct runs on the host.
@@ -76,9 +80,18 @@ public:
             return;
         }
         std::vector<diag::Label> labels;
-        labels.push_back(diag::Label(
-            gpu_unsupported_construct_label(construct), {construct.loc}));
-        if (!construct.routine.empty()) {
+        if (construct.routine_elsewhere) {
+            // The procedure was compiled separately: point at the loop.
+            Location head = x.base.base.loc;
+            head.last = head.first;
+            labels.push_back(diag::Label(
+                gpu_unsupported_construct_label(construct), {head}));
+        } else {
+            labels.push_back(diag::Label(
+                gpu_unsupported_construct_label(construct),
+                {construct.loc}));
+        }
+        if (!construct.routine.empty() && !construct.routine_elsewhere) {
             // The construct is in a procedure, which can be far from the
             // loop, so point at the loop as well.
             Location head = x.base.base.loc;
@@ -108,7 +121,8 @@ public:
                 xx.m_exec_target = host_exec_target(pass_options);
             } else {
                 GpuUnsupportedConstruct construct =
-                    gpu_find_unsupported_construct(x, device_caps);
+                    gpu_find_unsupported_construct(x, device_caps,
+                        implementations);
                 if (construct.found()) {
                     report(x, construct);
                     xx.m_exec_target = host_exec_target(pass_options);
@@ -121,9 +135,9 @@ public:
     }
 };
 
-void pass_parallel_dispatch(Allocator &/*al*/, ASR::TranslationUnit_t &unit,
+void pass_parallel_dispatch(Allocator &al, ASR::TranslationUnit_t &unit,
                             const PassOptions &pass_options) {
-    ParallelDispatchVisitor v(pass_options);
+    ParallelDispatchVisitor v(al, unit, pass_options);
     v.visit_TranslationUnit(unit);
 }
 

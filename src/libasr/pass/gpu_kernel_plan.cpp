@@ -71,18 +71,15 @@ public:
                     GpuDecline(GpuDeclineReason::StructNonDataMember));
             }
             if (is_decomposed_member(member)) continue;
+            if (gpu_component_is_opaque(member)) continue;
             ASR::ttype_t *type = ASR::down_cast<ASR::Variable_t>(member)->m_type;
             if (ASRUtils::is_pointer(type)) {
                 return unsupported(
                     GpuDecline(GpuDeclineReason::StructPointerMember));
             }
             if (ASRUtils::is_allocatable(type)) {
-                if (ASRUtils::is_array(type)) {
-                    return unsupported(GpuDecline(
-                        GpuDeclineReason::StructAllocatableArrayMember));
-                }
                 return unsupported(GpuDecline(
-                    GpuDeclineReason::StructAllocatableScalarMember));
+                    GpuDeclineReason::StructAllocatableArrayMember));
             }
             if (ASRUtils::is_array(type) &&
                     ASRUtils::get_fixed_size_of_array(type) <= 0) {
@@ -146,6 +143,7 @@ public:
             ASR::ttype_t *member_type = ASRUtils::symbol_type(member);
             if (ASRUtils::is_allocatable_or_pointer(member_type)) {
                 if (is_decomposed_member(member)) continue;
+                if (gpu_component_is_opaque(member)) continue;
                 return unsupported(
                     GpuDecline(GpuDeclineReason::ClassAllocatableComponent));
             }
@@ -274,9 +272,91 @@ public:
         }
     };
 
+    // The first allocatable scalar component of a derived type, at any
+    // depth its value holds inline: its own components, those it inherits,
+    // and those of a component of a derived type that is not itself
+    // allocatable.
+    static ASR::symbol_t* opaque_component(ASR::symbol_t *struct_sym,
+            std::set<ASR::Struct_t*> &visited) {
+        ASR::Struct_t *st = gpu_struct_definition(struct_sym);
+        if (!st || !visited.insert(st).second) return nullptr;
+        if (st->m_parent) {
+            if (ASR::symbol_t *found = opaque_component(st->m_parent,
+                    visited)) {
+                return found;
+            }
+        }
+        for (size_t i = 0; i < st->n_members; i++) {
+            ASR::symbol_t *member = st->m_symtab->get_symbol(st->m_members[i]);
+            if (gpu_component_is_opaque(member)) return member;
+            if (!member || !ASR::is_a<ASR::Variable_t>(*member)) continue;
+            ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(member);
+            if (ASRUtils::is_allocatable_or_pointer(variable->m_type)) continue;
+            if (!ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::type_get_past_array(variable->m_type))) {
+                continue;
+            }
+            if (ASR::symbol_t *found = opaque_component(
+                    variable->m_type_declaration, visited)) {
+                return found;
+            }
+        }
+        return nullptr;
+    }
+
+    // The device carries an allocatable scalar component as the host's
+    // bytes, not as a value it can read (see `gpu_component_is_opaque`).
+    // A kernel that names the component, or that stores a whole value of a
+    // type holding one -- which would need the component allocated and
+    // copied, not its host address duplicated -- is turned down here
+    // rather than compiled into code that reads an address as data.
+    class OpaqueComponentUseFinder : public
+            ASRUtils::BlockBodyWalkVisitor<OpaqueComponentUseFinder> {
+    public:
+        GpuDecline found;
+
+        void visit_body(ASR::stmt_t **body, size_t n_body) {
+            for (size_t i = 0; i < n_body && !found.declined(); i++) {
+                visit_stmt(*body[i]);
+            }
+        }
+
+        void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+            ASR::symbol_t *member = ASRUtils::symbol_get_past_external(x.m_m);
+            if (!found.declined() && gpu_component_is_opaque(member)) {
+                found = GpuDecline(
+                    GpuDeclineReason::AllocatableScalarComponentUse,
+                    ASRUtils::symbol_name(member));
+                return;
+            }
+            ASRUtils::BlockBodyWalkVisitor<OpaqueComponentUseFinder>
+                ::visit_StructInstanceMember(x);
+        }
+
+        void visit_Assignment(const ASR::Assignment_t &x) {
+            if (!found.declined() && ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(ASRUtils::expr_type(
+                        x.m_target)))) {
+                std::set<ASR::Struct_t*> visited;
+                ASR::symbol_t *component = opaque_component(
+                    ASRUtils::get_struct_sym_from_struct_expr(x.m_target),
+                    visited);
+                if (component) {
+                    found = GpuDecline(
+                        GpuDeclineReason::AllocatableScalarComponentCopy,
+                        ASRUtils::symbol_name(component));
+                    return;
+                }
+            }
+            ASRUtils::BlockBodyWalkVisitor<OpaqueComponentUseFinder>
+                ::visit_Assignment(x);
+        }
+    };
+
     bool supported(ASR::symbol_t *kernel_sym,
             ASR::call_arg_t *call_args, size_t n_call_args,
-            const std::vector<GpuVlaWorkspace> &workspaces) {
+            const std::vector<GpuVlaWorkspace> &workspaces,
+            const Vec<ASR::symbol_t*> &device_functions) {
         ASR::Function_t *kernel = ASR::down_cast<ASR::Function_t>(kernel_sym);
         if (n_call_args != kernel->n_args) {
             return unsupported(
@@ -291,6 +371,14 @@ public:
                 GpuDeclineReason::NestedAllocatableComponent,
                 nested.member_name));
         }
+        OpaqueComponentUseFinder opaque;
+        opaque.visit_body(kernel->m_body, kernel->n_body);
+        for (size_t i = 0; i < device_functions.n; i++) {
+            ASR::Function_t *function =
+                ASR::down_cast<ASR::Function_t>(device_functions[i]);
+            opaque.visit_body(function->m_body, function->n_body);
+        }
+        if (opaque.found.declined()) return unsupported(opaque.found);
         for (auto &workspace : workspaces) {
             for (auto &dim : workspace.dims) {
                 if (!workspace_dim_can_expand(dim, kernel)) {
@@ -562,12 +650,6 @@ public:
                     }
                     call_args.push_back(al, arg);
                 }
-                // The host calls the function as well as the device.
-                ASR::FunctionType_t *signature =
-                    ASRUtils::get_FunctionType(callee);
-                if (signature->m_exec_space == ASR::exec_spaceType::Device) {
-                    signature->m_exec_space = ASR::exec_spaceType::HostDevice;
-                }
                 return ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
                     &callee->base, nullptr, call_args.p, call_args.n,
                     call->m_type, nullptr, nullptr));
@@ -625,6 +707,62 @@ public:
 
 } // namespace
 
+// The host calls every function a workspace extent calls, as well as the
+// device.
+class HostCalledFunctions : public ASR::BaseWalkVisitor<HostCalledFunctions> {
+public:
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
+        if (s != nullptr && ASR::is_a<ASR::Function_t>(*s)) {
+            ASR::FunctionType_t *signature = ASRUtils::get_FunctionType(
+                ASR::down_cast<ASR::Function_t>(s));
+            if (signature->m_exec_space == ASR::exec_spaceType::Device) {
+                signature->m_exec_space = ASR::exec_spaceType::HostDevice;
+            }
+        }
+        ASR::BaseWalkVisitor<HostCalledFunctions>::visit_FunctionCall(x);
+    }
+};
+
+ASR::expr_t* gpu_workspace_host_extent(Allocator &al,
+        ASR::Function_t &kernel, const GpuVlaDim &dim) {
+    const Location &loc = kernel.base.base.loc;
+    ASRUtils::ASRBuilder b(al, loc);
+    // An extent the host can evaluate once, for every thread, is written
+    // as that; one that changes from thread to thread is written over the
+    // thread index, and the launch sizes every thread's slice by its
+    // largest value.
+    ASR::expr_t *extent = nullptr;
+    if (dim.is_constant) {
+        extent = b.i32(dim.constant_value);
+    } else if (dim.is_struct_member_size) {
+        if (dim.struct_member_elem_index >= 0) {
+            extent = dim.source_extent;
+        }
+    } else if (dim.derived.ok()) {
+        Vec<ASR::call_arg_t> identity;
+        identity.reserve(al, kernel.n_args);
+        for (size_t i = 0; i < kernel.n_args; i++) {
+            ASR::call_arg_t arg;
+            arg.loc = loc;
+            arg.m_value = kernel.m_args[i];
+            identity.push_back(al, arg);
+        }
+        extent = GpuExtentBuilder::build_host_extent(al, loc,
+            &kernel, identity.p, identity.n, dim.derived);
+    }
+    if (extent == nullptr) {
+        ASR::expr_t *source = dim.source_extent;
+        if (source == nullptr && dim.source_array != nullptr) {
+            source = b.ArraySize(dim.source_array,
+                dim.source_array_dim > 0
+                    ? b.i32(dim.source_array_dim) : nullptr, int32);
+        }
+        extent = gpu_kernel_per_thread_extent(al, kernel, source);
+    }
+    return extent;
+}
+
 bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
         ASR::call_arg_t *args, size_t n_args, GpuDecline &decline) {
     if (kernel.m_gpu) return true;
@@ -670,19 +808,12 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
     if (!close_graph(&kernel)) return false;
     GpuLaunchSupport support(decline);
     auto workspaces = collect_gpu_vla_workspaces(kernel, 0);
-    if (!support.supported(&kernel.base, args, n_args, workspaces)) {
+    if (!support.supported(&kernel.base, args, n_args, workspaces,
+            device_functions)) {
         return false;
     }
     const Location &loc = kernel.base.base.loc;
     ASRUtils::ASRBuilder b(al, loc);
-    Vec<ASR::call_arg_t> identity;
-    identity.reserve(al, kernel.n_args);
-    for (size_t i = 0; i < kernel.n_args; i++) {
-        ASR::call_arg_t arg;
-        arg.loc = loc;
-        arg.m_value = kernel.m_args[i];
-        identity.push_back(al, arg);
-    }
     Vec<ASR::gpu_workspace_t> planned;
     planned.reserve(al, workspaces.size());
     for (const auto &workspace : workspaces) {
@@ -694,36 +825,15 @@ bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
         Vec<ASR::gpu_workspace_dimension_t> dims;
         dims.reserve(al, workspace.dims.size());
         for (const auto &dim : workspace.dims) {
-            // An extent the host can evaluate once, for every thread, is
-            // written as that; one that changes from thread to thread is
-            // written over the thread index, and the launch sizes every
-            // thread's slice by its largest value.
-            ASR::expr_t *extent = nullptr;
-            if (dim.is_constant) {
-                extent = b.i32(dim.constant_value);
-            } else if (dim.is_struct_member_size) {
-                if (dim.struct_member_elem_index >= 0) {
-                    extent = dim.source_extent;
-                }
-            } else if (dim.derived.ok()) {
-                extent = GpuExtentBuilder::build_host_extent(al, loc,
-                    &kernel, identity.p, identity.n, dim.derived);
-            }
-            if (extent == nullptr) {
-                ASR::expr_t *source = dim.source_extent;
-                if (source == nullptr && dim.source_array != nullptr) {
-                    source = b.ArraySize(dim.source_array,
-                        dim.source_array_dim > 0
-                            ? b.i32(dim.source_array_dim) : nullptr, int32);
-                }
-                extent = gpu_kernel_per_thread_extent(al, kernel, source);
-            }
+            ASR::expr_t *extent = gpu_workspace_host_extent(al, kernel, dim);
             if (!extent) {
                 decline = GpuDecline(
                     GpuDeclineReason::WorkspaceNotSizeableOnHost,
                     workspace.var_name);
                 return false;
             }
+            HostCalledFunctions host_calls;
+            host_calls.visit_expr(*extent);
             if (!gpu_bind_kernel_expression(al, kernel, args, n_args,
                     extent)) {
                 decline = GpuDecline(

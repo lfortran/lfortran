@@ -58,9 +58,9 @@ namespace LCompilers {
  * extent of each of its dimensions, and `rhs` gets these as leading
  * dimensions. If the assignment reallocates the variable, the extents are
  * those of the right-hand side and are stored for every index value.
- * Scalar subscripts and substring bounds of the variable that may read
- * it are stored like the right-hand side; vector subscripts are evaluated
- * when assigning.
+ * Subscripts and substring bounds of the variable that may read it are
+ * stored like the right-hand side; a vector subscript is stored with its
+ * size, with the largest size as the leading dimension.
  */
 
 // Whether `x` and `y` are the same designator with structurally identical
@@ -715,30 +715,49 @@ public:
         Vec<ASR::expr_t*> deallocate_args;
         deallocate_args.reserve(al, 4);
 
+        // The subscripts and substring bounds of the variable that may read
+        // it, which are stored.
+        bool through_pointer = false;
+        ASR::symbol_t *base_sym = target_base(asgn->m_target, through_pointer);
+        ASR::Variable_t *base = base_sym ? ASR::down_cast<ASR::Variable_t>(base_sym) : nullptr;
+        std::vector<bool> stored_subscripts;
+        for (ASR::expr_t **slot : subscripts) {
+            ForAllReferenceVisitor v;
+            v.visit_expr(**slot);
+            stored_subscripts.push_back(!base || reads_may_observe(base, through_pointer, v,
+                index_syms));
+        }
+
         // Count the active index values, and find the largest extents of an
-        // array-valued variable.
+        // array-valued variable and of the stored vector subscripts.
         ASR::symbol_t *count = new_variable("count", int_type, nullptr);
-        std::vector<ASR::symbol_t*> extents;
         std::vector<ASR::stmt_t*> count_body = {increment(count)};
         result.push_back(al, b.Assignment(b.Var(count), b.i_t(0, int_type)));
-        for (size_t d = 0; d < stored_rank; d++) {
+        auto largest_extent = [&](ASR::expr_t *array, size_t d) -> ASR::symbol_t* {
             ASR::symbol_t *e = new_variable("extent", int_type, nullptr);
             result.push_back(al, b.Assignment(b.Var(e), b.i_t(0, int_type)));
-            ASR::expr_t *shaped = value_shape ? value : asgn->m_target;
-            count_body.push_back(b.If(b.Gt(extent(shaped, d), b.Var(e)),
-                {b.Assignment(b.Var(e), extent(shaped, d))}, {}));
-            extents.push_back(e);
+            count_body.push_back(b.If(b.Gt(extent(array, d), b.Var(e)),
+                {b.Assignment(b.Var(e), extent(array, d))}, {}));
+            return e;
+        };
+        std::vector<ASR::symbol_t*> extents;
+        for (size_t d = 0; d < stored_rank; d++) {
+            extents.push_back(largest_extent(value_shape ? value : asgn->m_target, d));
+        }
+        std::vector<ASR::symbol_t*> subscript_extents(subscripts.size(), nullptr);
+        for (size_t j = 0; j < subscripts.size(); j++) {
+            if (stored_subscripts[j] && ASRUtils::is_array(ASRUtils::expr_type(*subscripts[j]))) {
+                subscript_extents[j] = largest_extent(*subscripts[j], 0);
+            }
         }
         result.push_back(al, index_loops(count_body));
 
-        auto allocate = [&](ASR::symbol_t *array, bool with_extents,
+        auto allocate = [&](ASR::symbol_t *array, const std::vector<ASR::symbol_t*> &leading,
                 ASR::expr_t *len_expr) {
             Vec<ASR::dimension_t> dims;
-            dims.reserve(al, stored_rank + 1);
-            if (with_extents) {
-                for (ASR::symbol_t *e : extents) {
-                    dims.push_back(al, b.set_dim(b.i_t(1, int_type), b.Var(e)));
-                }
+            dims.reserve(al, leading.size() + 1);
+            for (ASR::symbol_t *e : leading) {
+                dims.push_back(al, b.set_dim(b.i_t(1, int_type), b.Var(e)));
             }
             dims.push_back(al, b.set_dim(b.i_t(1, int_type), b.Var(count)));
             result.push_back(al, b.Allocate(b.Var(array), dims.p, dims.size(), len_expr));
@@ -752,7 +771,7 @@ public:
         }
         ASR::symbol_t *rhs = new_variable("rhs", allocatable_array(rhs_elem_type, stored_rank + 1),
             overloaded ? asgn->m_value : asgn->m_target);
-        allocate(rhs, true, string_length);
+        allocate(rhs, extents, string_length);
 
         // Evaluate everything the assignments need, in index order.
         ASR::symbol_t *position = new_variable("position", int_type, nullptr);
@@ -763,33 +782,62 @@ public:
             ASR::expr_t *v = level.first->m_v;
             ASR::symbol_t *idx = new_variable("index",
                 allocatable_array(ASRUtils::expr_type(v), 1), nullptr);
-            allocate(idx, false, nullptr);
+            allocate(idx, {}, nullptr);
             evaluate_body.push_back(b.Assignment(element(idx, position), dup.duplicate_expr(v)));
             indices.push_back({v, idx});
         }
         for (size_t d = 0; value_shape && d < stored_rank; d++) {
             ASR::symbol_t *shape = new_variable("shape", allocatable_array(int_type, 1), nullptr);
-            allocate(shape, false, nullptr);
+            allocate(shape, {}, nullptr);
             evaluate_body.push_back(b.Assignment(element(shape, position), extent(value, d)));
             shapes.push_back(shape);
         }
         ASR::expr_t *target = dup.duplicate_expr(asgn->m_target);
         std::vector<ASR::expr_t**> target_subscripts;
         collect_subscript_slots(target, target_subscripts);
-        bool through_pointer = false;
-        ASR::symbol_t *base_sym = target_base(asgn->m_target, through_pointer);
-        ASR::Variable_t *base = base_sym ? ASR::down_cast<ASR::Variable_t>(base_sym) : nullptr;
-        for (ASR::expr_t **slot : target_subscripts) {
-            // A vector subscript is evaluated when it is assigned.
-            if (ASRUtils::is_array(ASRUtils::expr_type(*slot))) continue;
-            ForAllReferenceVisitor v;
-            v.visit_expr(**slot);
-            if (base && !reads_may_observe(base, through_pointer, v, index_syms)) continue;
-            ASR::symbol_t *sub = new_variable("subscript",
-                allocatable_array(ASRUtils::expr_type(*slot), 1), nullptr);
-            allocate(sub, false, nullptr);
-            evaluate_body.push_back(b.Assignment(element(sub, position), *slot));
-            *slot = element(sub, position);
+        for (size_t j = 0; j < target_subscripts.size(); j++) {
+            if (!stored_subscripts[j]) continue;
+            ASR::expr_t **slot = target_subscripts[j];
+            ASR::ttype_t *slot_type = ASRUtils::expr_type(*slot);
+            if (!subscript_extents[j]) {
+                ASR::symbol_t *sub = new_variable("subscript",
+                    allocatable_array(slot_type, 1), nullptr);
+                allocate(sub, {}, nullptr);
+                evaluate_body.push_back(b.Assignment(element(sub, position), *slot));
+                *slot = element(sub, position);
+                continue;
+            }
+            // `sub(1:size(position), position)` for a vector subscript.
+            ASR::symbol_t *size = new_variable("size", allocatable_array(int_type, 1), nullptr);
+            allocate(size, {}, nullptr);
+            ASR::symbol_t *sub = new_variable("subscript", allocatable_array(
+                ASRUtils::type_get_past_array(slot_type), 2), nullptr);
+            allocate(sub, {subscript_extents[j]}, nullptr);
+            auto stored_subscript = [&]() -> ASR::expr_t* {
+                Vec<ASR::array_index_t> args;
+                args.reserve(al, 2);
+                ASR::array_index_t ai;
+                ai.loc = loc;
+                ai.m_left = b.i_t(1, int_type);
+                ai.m_right = element(size, position);
+                ai.m_step = b.i_t(1, int_type);
+                args.push_back(al, ai);
+                ai.m_left = nullptr;
+                ai.m_right = b.Var(position);
+                ai.m_step = nullptr;
+                args.push_back(al, ai);
+                Vec<ASR::dimension_t> dims;
+                dims.reserve(al, 1);
+                dims.push_back(al, b.set_dim(nullptr, nullptr));
+                ASR::ttype_t *type = ASRUtils::make_Array_t_util(al, loc, ASRUtils::duplicate_type(
+                    al, ASRUtils::type_get_past_array(slot_type)), dims.p, dims.size());
+                return ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc, b.Var(sub),
+                    args.p, args.size(), type, nullptr));
+            };
+            evaluate_body.push_back(b.Assignment(element(size, position), extent(*slot, 0)));
+            evaluate_body.push_back(ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
+                stored_subscript(), *slot, nullptr, false, false)));
+            *slot = stored_subscript();
         }
         evaluate_body.push_back(ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc,
             stored(rhs, position, asgn->m_target), value, nullptr, false, false)));

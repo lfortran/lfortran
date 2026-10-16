@@ -1658,7 +1658,8 @@ namespace LCompilers {
             ASR::ttype_t* casted_type=nullptr, bool skip_save_restore=false) {
             LCOMPILERS_ASSERT(result_var != nullptr);
             const Location& loc = x->base.base.loc;
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*result_var));
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*result_var) ||
+                ASR::is_a<ASR::StructInstanceMember_t>(*result_var));
             [[maybe_unused]] ASR::ttype_t* result_var_type = ASRUtils::expr_type(result_var);
             LCOMPILERS_ASSERT_MSG(ASRUtils::extract_n_dims_from_ttype(result_var_type) == 1,
                                 "Initialisation using ArrayConstructor is "

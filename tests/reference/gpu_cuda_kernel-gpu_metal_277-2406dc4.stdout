@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-__device__ inline float _lcompilers_dot_product_gpu_9(float* matrix_a, int __1matrix_a, float* matrix_b, int __1matrix_b) {
+__device__ inline float _lcompilers_dot_product_gpu_22(float* matrix_a, int __1matrix_a, float* matrix_b, int __size_matrix_b_dim1, int __stride_matrix_b_dim1) {
     float result;
     int __do_loop_end;
     int i;
@@ -9,7 +9,7 @@ __device__ inline float _lcompilers_dot_product_gpu_9(float* matrix_a, int __1ma
     i = (((int)1) - 1);
     while (((i + 1) <= __do_loop_end)) {
         i = (i + 1);
-        result = (result + (matrix_a[((int)(i) - (1))] * matrix_b[((int)(i) - (1))]));
+        result = (result + (matrix_a[((int)(i) - (1))] * matrix_b[(__stride_matrix_b_dim1 * ((int)(i) - (1)))]));
     }
     return result;
     return result;
@@ -34,7 +34,7 @@ __device__ inline void face_values_gpu_8(float* w, int __1w, float* c, int __1c,
     while (((row + 1) <= __do_loop_end)) {
         row = (row + 1);
         __libasr_created__intrinsic_array_function_DotProduct = c + ((int)(row) - (1));
-        __libasr__created__var__1__array_constructor_[((int)(__1__libasr_index_) - (1))] = _lcompilers_dot_product_gpu_9(w, __1w, __libasr_created__intrinsic_array_function_DotProduct, ((((((((row + (1 * ((int)__1w))) - 1)) - (row)) / (1)) + 1) - 1) + 1));
+        __libasr__created__var__1__array_constructor_[((int)(__1__libasr_index_) - (1))] = _lcompilers_dot_product_gpu_22(w, __1w, __libasr_created__intrinsic_array_function_DotProduct, ((((((row + (1 * ((int)__1w))) - 1)) - (row)) / (1)) + 1), 1);
         __1__libasr_index_ = (__1__libasr_index_ + 1);
     }
     row = __libasr__created__var__0__idl_save_;
@@ -74,7 +74,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* __libasr_created__function_call_face_values = __workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent1);
     int j;
     const int m = 3;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((__loop_end_0 - 1) + 1))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);

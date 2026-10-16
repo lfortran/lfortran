@@ -1,0 +1,13 @@
+{
+    "basename": "run-array_bounds_check_21-59f7913",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/array_bounds_check_21.f90",
+    "infile_hash": "be29d43fed603370d24d52c8195feb1c5bb1bfd55f9f8d8a97ec82a0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-array_bounds_check_21-59f7913.stderr",
+    "stderr_hash": "04ba0c1914f14c0213c1125bf97efe5d1133964f31202b66c0c0a47f",
+    "returncode": 1
+}

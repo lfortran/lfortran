@@ -475,6 +475,31 @@ void set_allocation_size_elemental_function(
     }
 }
 
+// The character length of the result of these intrinsics is that of their
+// first argument. Taking it from that argument avoids evaluating the
+// intrinsic itself, which is later implemented by a subroutine.
+static ASR::expr_t* intrinsic_array_result_len(Allocator& al,
+        const Location& loc, ASR::expr_t* value) {
+    if( !ASR::is_a<ASR::IntrinsicArrayFunction_t>(*value) ||
+            !ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
+        return nullptr;
+    }
+    ASR::IntrinsicArrayFunction_t* intrinsic_array_function =
+        ASR::down_cast<ASR::IntrinsicArrayFunction_t>(value);
+    switch( intrinsic_array_function->m_arr_intrinsic_id ) {
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Cshift):
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Eoshift):
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Pack):
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Spread):
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Transpose): {
+            ASRUtils::ASRBuilder b(al, loc);
+            return b.StringLen(intrinsic_array_function->m_args[0]);
+        }
+        default:
+            return nullptr;
+    }
+}
+
 bool set_allocation_size(
     Allocator& al, ASR::expr_t* value,
     ASR::expr_t* temporary_var,
@@ -508,6 +533,8 @@ bool set_allocation_size(
                 ASRUtils::expr_type(value));
             if( str_type->m_len ) {
                 len_allocte_expr = str_type->m_len;
+            } else if( ASR::expr_t* len = intrinsic_array_result_len(al, loc, value) ) {
+                len_allocte_expr = len;
             } else {
                 ASRUtils::ASRBuilder b(al, loc);
                 len_allocte_expr = ASRUtils::StringConcat::get_safe_string_len(al, loc, value, ASRUtils::expr_type(value), b);
@@ -785,6 +812,7 @@ bool set_allocation_size(
         case ASR::exprType::IntrinsicArrayFunction: {
             ASR::IntrinsicArrayFunction_t* intrinsic_array_function =
                 ASR::down_cast<ASR::IntrinsicArrayFunction_t>(value);
+            len_allocte_expr = intrinsic_array_result_len(al, loc, value);
             switch (intrinsic_array_function->m_arr_intrinsic_id) {
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::All):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Any):
@@ -870,10 +898,6 @@ bool set_allocation_size(
                         allocate_dim.m_length = size_i_1;
                         allocate_dims.push_back(al, allocate_dim);
                     }
-                    if (ASRUtils::is_character(*ASRUtils::expr_type(value))) {
-                        ASRUtils::ASRBuilder b(al, loc);
-                        len_allocte_expr = b.StringLen(intrinsic_array_function->m_args[0]);
-                    }
                     break;
                 }
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape): {
@@ -944,10 +968,6 @@ bool set_allocation_size(
 
                         allocate_dim.m_length = size_i;
                         allocate_dims.push_back(al, allocate_dim);
-                    }
-                    if( ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
-                        ASRUtils::ASRBuilder b(al, loc);
-                        len_allocte_expr = b.StringLen(intrinsic_array_function->m_args[0]);
                     }
                     break;
                 }
@@ -1662,6 +1682,27 @@ ASR::symbol_t* extract_symbol(ASR::expr_t* expr) {
     }
 }
 
+// The variable that `e` (a variable, or a component, element or section of
+// one) is part of, e.g. `u` for `u(i)%arr`
+ASR::symbol_t* get_root_var(ASR::expr_t* e) {
+    if (e == nullptr) return nullptr;
+    switch (e->type) {
+        case ASR::exprType::Var:
+            return ASR::down_cast<ASR::Var_t>(e)->m_v;
+        case ASR::exprType::StructInstanceMember:
+            return get_root_var(
+                ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v);
+        case ASR::exprType::ArrayItem:
+            return get_root_var(
+                ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
+        case ASR::exprType::ArraySection:
+            return get_root_var(
+                ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
+        default:
+            return nullptr;
+    }
+}
+
 bool is_common_symbol_present_in_lhs_and_rhs(Allocator &al, ASR::expr_t* lhs, ASR::expr_t* rhs) {
     if (lhs == nullptr) {
         return false;
@@ -2159,7 +2200,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             // add it is because there is currently no integration test
             // for it
             if (!ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value))) {
-                ASR::Var_t* v1 = ASR::down_cast<ASR::Var_t>(xx.m_target);
+                ASR::symbol_t* target_sym = extract_symbol(xx.m_target);
                 bool create_temp_var_for_rhs = false;
                 Vec<ASR::expr_t*> array_vars; array_vars.reserve(al, 1);
                 ArrayVarCollector array_var_collector(al, array_vars);
@@ -2168,9 +2209,17 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 // there is any common variable
                 for (size_t i=0; i < array_vars.size(); i++) {
                     ASR::symbol_t* sym = extract_symbol(array_vars[i]);
-                    if (sym && sym == v1->m_v) {
+                    if (sym && sym == target_sym) {
                         create_temp_var_for_rhs = true;
                     }
+                }
+                // An element of the variable, such as `u(i)%arr(j)` in
+                // `u(i)%arr = [(u(i)%arr(j), j=1,n)]` (left in a FORALL by
+                // implied_do_loops), is read after the reallocation too.
+                ASR::symbol_t* target_root = get_root_var(xx.m_target);
+                if (target_root &&
+                        ASRUtils::expr_references_symbol(xx.m_value, target_root)) {
+                    create_temp_var_for_rhs = true;
                 }
 
                 if (create_temp_var_for_rhs) {
@@ -2216,25 +2265,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         // mid-copy (especially via reallocation of nested allocatable
         // components), producing incorrect results / segfaults.
         {
-            std::function<ASR::symbol_t*(ASR::expr_t*)> get_root_var =
-                [&](ASR::expr_t* e) -> ASR::symbol_t* {
-                if (e == nullptr) return nullptr;
-                switch (e->type) {
-                    case ASR::exprType::Var:
-                        return ASR::down_cast<ASR::Var_t>(e)->m_v;
-                    case ASR::exprType::StructInstanceMember:
-                        return get_root_var(
-                            ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v);
-                    case ASR::exprType::ArrayItem:
-                        return get_root_var(
-                            ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
-                    case ASR::exprType::ArraySection:
-                        return get_root_var(
-                            ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
-                    default:
-                        return nullptr;
-                }
-            };
             if (ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value)) &&
                 !ASRUtils::is_array(ASRUtils::expr_type(xx.m_value)) &&
                 !ASRUtils::is_array(ASRUtils::expr_type(xx.m_target)) &&

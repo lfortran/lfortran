@@ -1,8 +1,7 @@
 module gpu_metal_391_m
   ! The result of `ramp(x(i), k)` is a temporary of the compiler whose
   ! extent `k` the loop sets twice, so the host cannot size it before the
-  ! launch: the GPU backends report an error (see tests/tests.toml), which
-  ! does not name the temporary, a name the program did not write.
+  ! launch: it is allocated on the device heap.
   implicit none
 contains
   pure function ramp(x, n) result(y)

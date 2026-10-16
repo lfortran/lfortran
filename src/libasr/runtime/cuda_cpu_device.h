@@ -45,6 +45,12 @@ void lfortran_gpu_cpu_barrier_unsupported(void);
 }
 #endif
 
+// The device heap takes memory with an atomic add (see GpuAtomicFetchAdd);
+// the emulated threads of a launch may run concurrently.
+static inline int atomicAdd(int *address, int value) {
+    return __atomic_fetch_add(address, value, __ATOMIC_RELAXED);
+}
+
 // Execution space qualifiers have no meaning on the host.
 #define __global__
 #define __device__

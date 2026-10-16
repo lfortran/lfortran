@@ -66,6 +66,13 @@ struct MetalDialect {
         return "uint";
     }
 
+    // A relaxed atomic add to an `int` in device memory, giving the old value.
+    std::string atomic_fetch_add(const std::string &address,
+            const std::string &increment) const {
+        return "atomic_fetch_add_explicit((device atomic_int*)(" + address
+            + "), " + increment + ", memory_order_relaxed)";
+    }
+
     // The scalars a kernel takes travel together in one read-only buffer.
     void emit_scalar_args_param(std::stringstream &src,
             const std::string &struct_name, int buffer_index) const {
