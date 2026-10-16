@@ -17661,11 +17661,23 @@ public:
                             continue;
                         }
 
-                        // Legacy sequence association passes the address of the first element.
-                        // For externals (implicit interface), force PointerArray to match the ABI.
-                        // For known/internal procedures (including recursive self-calls), do not
-                        // mutate the callee signature here; only rewrite the actual argument.
-                        if (callee_is_external_symbol) {
+                        // Explicit-shape (PointerArray) and assumed-size (UnboundedPointerArray)
+                        // dummies receive a raw pointer, so they are sequence associated with the
+                        // elements that start at the actual element. Decide this from the dummy's
+                        // own physical type: an assumed-shape (DescriptorArray) dummy needs a
+                        // descriptor, whether the callee is local or use-associated.
+                        ASR::ttype_t* original_dummy_type = ASRUtils::type_get_past_allocatable(
+                            ASRUtils::type_get_past_pointer(array_arg_idx[i]));
+                        ASR::array_physical_typeType original_phys_type = ASRUtils::extract_physical_type(original_dummy_type);
+                        bool raw_pointer_dummy =
+                            original_phys_type == ASR::array_physical_typeType::PointerArray ||
+                            original_phys_type == ASR::array_physical_typeType::UnboundedPointerArray;
+
+                        // For externals (implicit interface), pass raw-pointer dummies as
+                        // PointerArray to match the ABI. For known/internal procedures (including
+                        // recursive self-calls), do not mutate the callee signature here; only
+                        // rewrite the actual argument.
+                        if (callee_is_external_symbol && raw_pointer_dummy) {
                             expected_phys = ASR::array_physical_typeType::PointerArray;
                         }
                         // The actual argument is sequence associated with the dummy, so the
@@ -17685,11 +17697,31 @@ public:
                                                         ASRUtils::type_get_past_array(expected_arg_type_past_ptr),
                                                         array_t->m_dims, array_t->n_dims,
                                                         ASRUtils::extract_physical_type(expected_arg_type_past_ptr), ASR::memory_spaceType::Global);
-                        // make ArraySection
+                        ASR::array_physical_typeType expected_phys_type = ASRUtils::extract_physical_type(expected_arg_type);
+                        // Sequence association: use empty dims to skip per-dimension
+                        // runtime checks. The elements that start at the actual element
+                        // need not have the dummy's shape; the callee uses its own bounds.
+                        ASR::ttype_t* cast_target_type = ASRUtils::duplicate_type_with_empty_dims(
+                            al, ASRUtils::TYPE(expected_array), expected_phys_type, true);
+
+                        // Pass the address of the element to a raw-pointer dummy. This is
+                        // exactly the element sequence that starts at the element, whereas an
+                        // ArraySection a(i:, j:) does not describe it (and may be copied in as
+                        // a non-contiguous section). It also avoids materializing a temporary
+                        // ArraySection descriptor, preventing stack growth from
+                        // dimension-descriptor allocas.
+                        if (raw_pointer_dummy) {
+                            arg.m_value = ASRUtils::EXPR(ASR::make_GetPointer_t(
+                                al, array_item->base.base.loc, arg_expr, cast_target_type, nullptr));
+                            args_with_array_section.push_back(al, arg);
+                            continue;
+                        }
+
+                        // A descriptor dummy receives the section w(i:, j:, ...) that starts
+                        // at the element.
                         Vec<ASR::array_index_t> array_indices;
                         array_indices.reserve(al, array_item->n_args);
 
-                        ASR::array_physical_typeType expected_phys_type = ASRUtils::extract_physical_type(expected_arg_type);
                         ASRUtils::ASRBuilder builder(al, loc);
                         ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
                         ASR::expr_t* one = builder.i_t(1, int_type);
@@ -17702,99 +17734,19 @@ public:
                             array_indices.push_back(al, array_idx);
                         }
 
-                        // For sequence association: when passing array element to 1D assumed-size dummy,
-                        // compute total contiguous size from section indices instead of using empty dims.
-                        // Use the ORIGINAL physical type from array_arg_idx[i] (not the possibly-modified expected_phys_type)
-                        // because for external symbols, expected_phys_type is forced to PointerArray.
-                        ASR::ttype_t* original_dummy_type = ASRUtils::type_get_past_allocatable(
-                            ASRUtils::type_get_past_pointer(array_arg_idx[i]));
-                        ASR::array_physical_typeType original_phys_type = ASRUtils::extract_physical_type(original_dummy_type);
-                        int expected_n_dims = ASRUtils::extract_n_dims_from_ttype(original_dummy_type);
-                        bool is_assumed_size = (original_phys_type == ASR::array_physical_typeType::UnboundedPointerArray);
                         ASR::ttype_t* section_type = nullptr;
-
-                        ASR::ttype_t* cast_target_type = nullptr;
-                        if (is_assumed_size && expected_n_dims == 1 && array_indices.size() > 1) {
-                            // Sequence association: multi-dim source to 1D assumed-size dummy
-                            // Compute total size from section indices
-                            ASR::expr_t* total_size = nullptr;
-                            for (size_t dim_i = 0; dim_i < array_indices.size(); dim_i++) {
-                                ASR::expr_t* dim_size = nullptr;
-                                if (array_indices.p[dim_i].m_left && array_indices.p[dim_i].m_right) {
-                                    // size = right - left + 1
-                                    dim_size = builder.Add(builder.Sub(array_indices.p[dim_i].m_right,
-                                                                      array_indices.p[dim_i].m_left),
-                                                          one);
-                                } else if (array_indices.p[dim_i].m_right) {
-                                    dim_size = array_indices.p[dim_i].m_right;
-                                } else {
-                                    dim_size = one;
-                                }
-                                if (total_size == nullptr) {
-                                    total_size = dim_size;
-                                } else {
-                                    total_size = builder.Mul(total_size, dim_size);
-                                }
-                            }
-                            // Create 1D type with computed size
-                            Vec<ASR::dimension_t> dims;
-                            dims.reserve(al, 1);
-                            ASR::dimension_t dim;
-                            dim.loc = array_item->base.base.loc;
-                            dim.m_start = one;
-                            dim.m_length = total_size;
-                            dims.push_back(al, dim);
-                            ASR::ttype_t* elem_type = ASRUtils::type_get_past_array(expected_arg_type);
-                            section_type = ASRUtils::make_Array_t_util(al, array_item->base.base.loc,
-                                elem_type, dims.p, dims.n, ASR::abiType::Source, false,
-                                ASR::array_physical_typeType::DescriptorArray);
-                            // Cast target type should have empty dims (assumed-size semantics)
-                            // to avoid runtime size checks - the callee uses its own size parameter
-                            Vec<ASR::dimension_t> empty_dims;
-                            empty_dims.reserve(al, 1);
-                            ASR::dimension_t empty_dim;
-                            empty_dim.loc = array_item->base.base.loc;
-                            empty_dim.m_start = nullptr;
-                            empty_dim.m_length = nullptr;
-                            empty_dims.push_back(al, empty_dim);
-                            cast_target_type = ASRUtils::make_Array_t_util(al, array_item->base.base.loc,
-                                elem_type, empty_dims.p, empty_dims.n, ASR::abiType::Source, false,
-                                expected_phys_type);
+                        int expected_n_dims_cast = ASRUtils::extract_n_dims_from_ttype(original_dummy_type);
+                        int actual_n_dims = static_cast<int>(array_indices.size());
+                        if (expected_n_dims_cast != actual_n_dims) {
+                            section_type = ASRUtils::duplicate_type_with_empty_dims(
+                                al, ASRUtils::type_get_past_allocatable_pointer(
+                                    ASRUtils::expr_type(array_expr)),
+                                ASR::array_physical_typeType::DescriptorArray, true
+                            );
                         } else {
-                            int expected_n_dims_cast = ASRUtils::extract_n_dims_from_ttype(original_dummy_type);
-                            int actual_n_dims = static_cast<int>(array_indices.size());
-                            if (expected_n_dims_cast != actual_n_dims) {
-                                section_type = ASRUtils::duplicate_type_with_empty_dims(
-                                    al, ASRUtils::type_get_past_allocatable_pointer(
-                                        ASRUtils::expr_type(array_expr)),
-                                    ASR::array_physical_typeType::DescriptorArray, true
-                                );
-                            } else {
-                                section_type = ASRUtils::duplicate_type_with_empty_dims(
-                                    al, expected_arg_type, ASR::array_physical_typeType::DescriptorArray, true
-                                );
-                            }
-                            // Sequence association: use empty dims to skip per-dimension
-                            // runtime checks. The actual section may have different
-                            // per-dimension sizes than the dummy (e.g., a(3:3,1:2) passed
-                            // to x(2,2)), but the contiguous storage is valid.
-                            cast_target_type = ASRUtils::duplicate_type_with_empty_dims(
-                                al, ASRUtils::TYPE(expected_array), expected_phys_type, true);
-                        }
-
-                        // When the dummy is passed as a raw pointer (explicit-shape PointerArray
-                        // or assumed-size UnboundedPointerArray), pass the address of the element
-                        // directly. This is exactly the element sequence that starts at the
-                        // element, whereas an ArraySection a(i:, j:) does not describe it (and may
-                        // be copied in as a non-contiguous section). It also avoids materializing
-                        // a temporary ArraySection descriptor, preventing stack growth from
-                        // dimension-descriptor allocas.
-                        if (expected_phys_type == ASR::array_physical_typeType::PointerArray ||
-                            expected_phys_type == ASR::array_physical_typeType::UnboundedPointerArray) {
-                            arg.m_value = ASRUtils::EXPR(ASR::make_GetPointer_t(
-                                al, array_item->base.base.loc, arg_expr, cast_target_type, nullptr));
-                            args_with_array_section.push_back(al, arg);
-                            continue;
+                            section_type = ASRUtils::duplicate_type_with_empty_dims(
+                                al, expected_arg_type, ASR::array_physical_typeType::DescriptorArray, true
+                            );
                         }
 
                         ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
