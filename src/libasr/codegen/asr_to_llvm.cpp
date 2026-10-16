@@ -5036,6 +5036,7 @@ public:
             } else if (array_t->m_physical_type == ASR::array_physical_typeType::PointerArray &&
                        !LLVM::is_llvm_pointer(*x_mv_type) &&
                        is_bindc_array &&
+                       !ASRUtils::is_character(*x_mv_type_) &&
                        llvm::isa<llvm::GlobalVariable>(array)) {
                 // PointerArray global without Pointer/Allocatable wrapper (e.g. bind(C) globals):
                 // LLVM globals add a pointer level, so load to get data pointer
@@ -7546,8 +7547,20 @@ public:
                     value = x.m_symbolic_value;
                 }
                 if(value){LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));}
-                ptr = llvm::cast<llvm::Constant>(llvm_utils->handle_global_nonallocatable_stringArray(al,
-                    ASR::down_cast<ASR::Array_t>(x.m_type), value?ASR::down_cast<ASR::ArrayConstant_t>(value):nullptr, llvm_var_name));
+                if (x.m_abi == ASR::abiType::BindC) {
+                    // The C-visible name must be the character storage, as
+                    // for a bind(C) character scalar, not the descriptor. The
+                    // descriptor only points at that storage, so it can stay
+                    // private to each translation unit.
+                    ptr = llvm::cast<llvm::Constant>(llvm_utils->handle_global_nonallocatable_stringArray(al,
+                        ASR::down_cast<ASR::Array_t>(x.m_type), value?ASR::down_cast<ASR::ArrayConstant_t>(value):nullptr,
+                        llvm_var_name + "__desc", llvm_var_name,
+                        needs_common_linkage_for_global(x) ? llvm::GlobalValue::CommonLinkage
+                            : llvm::GlobalValue::ExternalLinkage));
+                } else {
+                    ptr = llvm::cast<llvm::Constant>(llvm_utils->handle_global_nonallocatable_stringArray(al,
+                        ASR::down_cast<ASR::Array_t>(x.m_type), value?ASR::down_cast<ASR::ArrayConstant_t>(value):nullptr, llvm_var_name));
+                }
 
             } else {
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(
