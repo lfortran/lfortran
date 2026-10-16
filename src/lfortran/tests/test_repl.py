@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Drive the interactive prompt (`lfortran` with no files) through stdin: a
-pipe or a pseudo-terminal."""
+pipe or a pseudo-terminal. Also run a compiled program on a pseudo-terminal."""
 
 import argparse
 import os
@@ -175,12 +175,95 @@ def check_read_from_terminal(lfortran):
                 % (expected, out))
 
 
+READ_TERMINAL_SOURCE = """\
+program read_terminal
+    character(len=8) :: a, b, c, d, e
+    print '(a)', 'ready'
+    read(*, '(a)') a
+    read(*, '(a/a)') b, c
+    read(*, '(a)') d, e
+    print '(11a)', '[', trim(a), '|', trim(b), '|', trim(c), '|', &
+        trim(d), '|', trim(e), ']'
+end program
+"""
+
+
+def check_compiled_read_from_terminal(lfortran):
+    # A compiled program reads the lines typed at the terminal in order, with
+    # a format that starts the record at a statement, a slash and a reversion
+    # (#15285). A terminal on macOS reports a successful ftell and fseek, but
+    # seeking discards the line stdio has buffered, and the terminal cannot
+    # send it again.
+    try:
+        import pty
+    except ImportError:
+        print("skipped: no pseudo-terminals")
+        return
+    with tempfile.TemporaryDirectory() as cwd:
+        with open(os.path.join(cwd, "read_terminal.f90"), "w") as f:
+            f.write(READ_TERMINAL_SOURCE)
+        exe = os.path.join(cwd, "read_terminal")
+        p = subprocess.run([lfortran, "--no-color", "read_terminal.f90",
+            "-o", exe], cwd=cwd, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
+        if p.returncode != 0:
+            sys.exit("compiling read_terminal.f90 failed:\n%s"
+                % p.stdout.decode(errors="replace"))
+        pid, fd = pty.fork()
+        if pid == 0:
+            try:
+                os.execv(exe, [exe])
+            finally:
+                os._exit(127)
+        deadline = time.monotonic() + 60
+        out = b""
+        typed = False
+        code = None
+        try:
+            # The lines are typed once the program has started. A terminal
+            # in line mode hands over at most one line per read, as if they
+            # were typed one by one. Ctrl-D ends the input, so a program
+            # that skipped a line stops at end of file.
+            while True:
+                left = deadline - time.monotonic()
+                if left <= 0:
+                    sys.exit("timed out running read_terminal:\n%s"
+                        % out.decode(errors="replace"))
+                if not select.select([fd], [], [], min(left, 0.1))[0]:
+                    continue
+                try:
+                    data = os.read(fd, 4096)
+                except OSError:
+                    # Linux reports the end of the output as an error
+                    data = b""
+                if not data:
+                    break
+                out += data
+                if not typed and b"ready" in out:
+                    typed = True
+                    for line in [b"one", b"two", b"three", b"four", b"five"]:
+                        os.write(fd, line + ENTER)
+                    os.write(fd, CTRL_D)
+            _, status = os.waitpid(pid, 0)
+            code = os.waitstatus_to_exitcode(status)
+        finally:
+            if code is None:
+                os.kill(pid, 9)
+                os.waitpid(pid, 0)
+            os.close(fd)
+    text = out.decode(errors="replace")
+    if code != 0 or "[one|two|three|four|five]" not in text:
+        sys.exit("read_terminal did not read the typed lines in order "
+            "(code %d):\n%s" % (code, text))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--lfortran", required=True)
     args = parser.parse_args()
     check_keeps_files_in_cwd(os.path.abspath(args.lfortran))
     check_read_from_terminal(os.path.abspath(args.lfortran))
+    check_compiled_read_from_terminal(os.path.abspath(args.lfortran))
     print("ok")
 
 
