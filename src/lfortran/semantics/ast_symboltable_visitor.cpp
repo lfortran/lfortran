@@ -287,6 +287,9 @@ public:
     std::vector<std::pair<std::string, Location>> assgn_proc_names_locations;
     std::vector<std::pair<std::string,Location>> simd_variables;
     std::map<std::string, std::vector<AST::arg_t>> entry_function_args;
+    // The scope of a procedure with ENTRY statements, by the scopes of its
+    // entries and of its master function, which are copies of it.
+    std::map<SymbolTable*, SymbolTable*> entry_scope_origin;
     std::set<std::string> loaded_submodules;
     std::string dt_name;
     bool in_submodule = false;
@@ -1573,7 +1576,19 @@ public:
             old_scope->erase_symbol(it);
         }
 
+        entry_scope_origin[current_scope] = old_scope;
         if (is_master) {
+            // The body is compiled in the master function, so its interface blocks are built here too.
+            for (auto *pending: {&generic_procedures, &overloaded_op_procs, &defined_op_procs}) {
+                for (auto &item: *pending) {
+                    std::vector<GenericSpecific> &specifics = item.second;
+                    for (size_t i = 0, n = specifics.size(); i < n; i++) {
+                        if (specifics[i].scope == old_scope) {
+                            specifics.push_back({specifics[i].name, specifics[i].loc, current_scope});
+                        }
+                    }
+                }
+            }
             // Create integer variable "entry__lcompilers"
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
             ASR::symbol_t* entry_lcompilers_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
@@ -4609,13 +4624,19 @@ public:
         return false;
     }
 
+    // The scope that `scope` was copied from, if it is the scope of an entry or of a master function.
+    SymbolTable *original_scope(SymbolTable *scope) {
+        auto it = entry_scope_origin.find(scope);
+        return it == entry_scope_origin.end() ? scope : it->second;
+    }
+
     // An external procedure has no explicit interface outside its own subprogram.
     bool check_specific_explicit_interface(ASR::symbol_t *specific,
             const std::string &name, const Location &loc) {
         if (!ASR::is_a<ASR::Function_t>(*specific)) return true;
         ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(specific);
         if (!ASRUtils::is_tu_scope(ASRUtils::symbol_parent_symtab(specific))
-                || is_enclosing_scope(f->m_symtab, current_scope)) {
+                || is_enclosing_scope(f->m_symtab, original_scope(current_scope))) {
             return true;
         }
         diag.add(Diagnostic(
