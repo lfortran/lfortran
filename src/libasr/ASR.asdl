@@ -113,8 +113,10 @@ stmt
     | DictClear(expr a)
     | SetClear(expr a)
     | Expr(expr expression)
-    | GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size, call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch)
+    | GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size, call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch, expr? stop_status, stmt* stop_replay)
     | GpuSync()
+    | GpuLaneBarrier()
+    | GpuDiscard(expr* vars)
 
 expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
@@ -238,6 +240,8 @@ expr
     | GpuBlockIndex(int dim, ttype type, expr? value)
     | GpuBlockSize(int dim, ttype type, expr? value)
     | GpuAtomicFetchAdd(expr target, expr increment, ttype type, expr? value)
+    | GpuLaneIndex(ttype type, expr? value)
+    | GpuLaneBroadcast(expr arg, ttype type, expr? value)
 
 ttype
     = Integer(int kind)
@@ -296,11 +300,11 @@ attribute = Attribute(identifier name, attribute_arg *args)
 attribute_arg = (identifier arg)
 call_arg = (expr? value)
 gpu_argument_kind = GpuArray | GpuStruct | GpuClass | GpuMemberData | GpuMemberOffsets | GpuMemberSizes | GpuScalar | GpuArrayExtent | GpuPackedOffset
-gpu_kernel_argument = (symbol variable, symbol? member, ttype type, gpu_argument_kind kind, int argument_index, int dimension)
+gpu_kernel_argument = (symbol variable, symbol? member, ttype type, gpu_argument_kind kind, int argument_index, int dimension, bool written)
 gpu_workspace_dimension = (expr extent, symbol? parameter)
 gpu_workspace = (symbol variable, gpu_workspace_dimension* dims, int buffer_index, int element_size)
 gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
-gpu_kernel_layout = (gpu_kernel_argument* buffers, gpu_kernel_argument* scalars, gpu_workspace* workspaces, bool packed, int source_argument_count, symbol* device_functions)
+gpu_kernel_layout = (gpu_kernel_argument* buffers, gpu_kernel_argument* scalars, gpu_workspace* workspaces, bool packed, int source_argument_count, symbol* device_functions, symbol? lanes)
 reduction_expr = (reduction_op op, expr arg)
 tbind = Bind(string lang, string name)
 array_index = (expr? left, expr? right, expr? step)

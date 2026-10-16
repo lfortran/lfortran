@@ -1,0 +1,13 @@
+{
+    "basename": "asr-pause1-51a5645",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/pause1.f90",
+    "infile_hash": "6db338522848fff4b7b1215254f36129bf92d5ac4f6b52405778960d",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-pause1-51a5645.stdout",
+    "stdout_hash": "6b4f5c67239c71f60f12a26a5bcd331651283cc82424330142dfc643",
+    "stderr": "asr-pause1-51a5645.stderr",
+    "stderr_hash": "5698e3b560bd0cb5dacb0d43f25d8cb1716dd41e5d008f29c0d4486b",
+    "returncode": 0
+}

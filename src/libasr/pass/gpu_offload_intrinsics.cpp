@@ -855,6 +855,48 @@ void GpuOffloadVisitor::inline_matmul_stmts(
                 0, elem_type, ASR::integerbozType::Decimal));
         }
 
+        // Each element of the product is accumulated in a scalar local,
+        // which the device keeps in a register, and stored into the
+        // target once: accumulating into the target itself would load
+        // and store device memory for every term of the sum.
+        auto make_accumulator = [&]() -> ASR::expr_t* {
+            std::string name = var_scope->get_unique_name("__gpu_mm_acc");
+            ASR::symbol_t *sym = gpu_new_variable(al, loc, var_scope, name,
+                ASRUtils::duplicate_type(al, elem_type));
+            return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+        };
+        auto assign = [&](ASR::expr_t *target,
+                ASR::expr_t *value) -> ASR::stmt_t* {
+            return ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
+                value, nullptr, false, false));
+        };
+        // acc = 0; do k ...: acc = acc + a*b; c = acc [OP other]
+        auto accumulate_element = [&](Vec<ASR::stmt_t*> &out,
+                ASR::expr_t *c_elem, ASR::expr_t *var_k,
+                ASR::expr_t *k_start, ASR::expr_t *k_end,
+                ASR::expr_t *a_elem, ASR::expr_t *b_elem,
+                ASR::expr_t *other_elem) {
+            ASR::expr_t *acc = make_accumulator();
+            Vec<ASR::stmt_t*> k_body;
+            k_body.reserve(al, 1);
+            ASR::expr_t *prod = ASRUtils::EXPR(
+                ASR::make_RealBinOp_t(al, loc, a_elem,
+                    ASR::binopType::Mul, b_elem, elem_type, nullptr));
+            k_body.push_back(al, assign(acc, ASRUtils::EXPR(
+                ASR::make_RealBinOp_t(al, loc, acc,
+                    ASR::binopType::Add, prod, elem_type, nullptr))));
+            out.push_back(al, assign(acc, zero));
+            out.push_back(al, make_do_loop(var_k, k_start, k_end, k_body));
+            ASR::expr_t *value = acc;
+            if (other_elem) {
+                ASR::expr_t *lhs = matmul_is_left ? acc : other_elem;
+                ASR::expr_t *rhs = matmul_is_left ? other_elem : acc;
+                value = ASRUtils::EXPR(ASR::make_RealBinOp_t(al, loc, lhs,
+                    binop_op, rhs, elem_type, nullptr));
+            }
+            out.push_back(al, assign(c_elem, value));
+        };
+
         int64_t overload_id = iaf->m_overload_id;
 
         if (overload_id == 2 && rank_a == 2 && rank_b == 1) {
@@ -877,40 +919,11 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             ASR::expr_t *b_k = make_section_item(arg_b,
                 {rebase_index(arg_b, dims_b, 0, var_k, k_start)});
 
-            // k-loop body: c(i) = c(i) + a(i,k) * b(k)
-            Vec<ASR::stmt_t*> k_body;
-            k_body.reserve(al, 1);
-            ASR::expr_t *prod = ASRUtils::EXPR(
-                ASR::make_RealBinOp_t(al, loc, a_ik,
-                    ASR::binopType::Mul, b_k, elem_type, nullptr));
-            ASR::expr_t *sum = ASRUtils::EXPR(
-                ASR::make_RealBinOp_t(al, loc, c_i,
-                    ASR::binopType::Add, prod, elem_type, nullptr));
-            k_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, c_i, sum,
-                    nullptr, false, false)));
-
-            // i-loop body: c(i) = 0; do k ...; [c(i) = c(i) OP other(i)]
             Vec<ASR::stmt_t*> i_body;
-            i_body.reserve(al, binop_other ? 3 : 2);
-            i_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, c_i, zero,
-                    nullptr, false, false)));
-            i_body.push_back(al,
-                make_do_loop(var_k, k_start, k_end, k_body));
-
-            if (binop_other) {
-                ASR::expr_t *other_i = make_binop_other_item(
-                    binop_other, {var_i}, {i_start});
-                ASR::expr_t *lhs = matmul_is_left ? c_i : other_i;
-                ASR::expr_t *rhs = matmul_is_left ? other_i : c_i;
-                ASR::expr_t *combined = ASRUtils::EXPR(
-                    ASR::make_RealBinOp_t(al, loc, lhs, binop_op,
-                        rhs, elem_type, nullptr));
-                i_body.push_back(al, ASRUtils::STMT(
-                    ASR::make_Assignment_t(al, loc, c_i, combined,
-                        nullptr, false, false)));
-            }
+            i_body.reserve(al, 3);
+            accumulate_element(i_body, c_i, var_k, k_start, k_end, a_ik,
+                b_k, binop_other ? make_binop_other_item(binop_other,
+                    {var_i}, {i_start}) : nullptr);
 
             new_body.push_back(al,
                 make_do_loop(var_i, i_start, i_end, i_body));
@@ -934,38 +947,11 @@ void GpuOffloadVisitor::inline_matmul_stmts(
                 ? make_section_item(arg_b, {var_j, var_k})
                 : make_section_item(arg_b, {var_k, var_j});
 
-            Vec<ASR::stmt_t*> k_body;
-            k_body.reserve(al, 1);
-            ASR::expr_t *prod = ASRUtils::EXPR(
-                ASR::make_RealBinOp_t(al, loc, a_k,
-                    ASR::binopType::Mul, b_kj, elem_type, nullptr));
-            ASR::expr_t *sum = ASRUtils::EXPR(
-                ASR::make_RealBinOp_t(al, loc, c_j,
-                    ASR::binopType::Add, prod, elem_type, nullptr));
-            k_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, c_j, sum,
-                    nullptr, false, false)));
-
             Vec<ASR::stmt_t*> j_body;
-            j_body.reserve(al, binop_other ? 3 : 2);
-            j_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, c_j, zero,
-                    nullptr, false, false)));
-            j_body.push_back(al,
-                make_do_loop(var_k, k_start, k_end, k_body));
-
-            if (binop_other) {
-                ASR::expr_t *other_j = make_binop_other_item(
-                    binop_other, {var_j}, {j_start});
-                ASR::expr_t *lhs = matmul_is_left ? c_j : other_j;
-                ASR::expr_t *rhs = matmul_is_left ? other_j : c_j;
-                ASR::expr_t *combined = ASRUtils::EXPR(
-                    ASR::make_RealBinOp_t(al, loc, lhs, binop_op,
-                        rhs, elem_type, nullptr));
-                j_body.push_back(al, ASRUtils::STMT(
-                    ASR::make_Assignment_t(al, loc, c_j, combined,
-                        nullptr, false, false)));
-            }
+            j_body.reserve(al, 3);
+            accumulate_element(j_body, c_j, var_k, k_start, k_end, a_k,
+                b_kj, binop_other ? make_binop_other_item(binop_other,
+                    {var_j}, {j_start}) : nullptr);
 
             new_body.push_back(al,
                 make_do_loop(var_j, j_start, j_end, j_body));
@@ -1000,38 +986,11 @@ void GpuOffloadVisitor::inline_matmul_stmts(
                 ? make_section_item(arg_b, {var_j, var_k_b})
                 : make_section_item(arg_b, {var_k_b, var_j});
 
-            Vec<ASR::stmt_t*> k_body;
-            k_body.reserve(al, 1);
-            ASR::expr_t *prod = ASRUtils::EXPR(
-                ASR::make_RealBinOp_t(al, loc, a_ik,
-                    ASR::binopType::Mul, b_kj, elem_type, nullptr));
-            ASR::expr_t *sum = ASRUtils::EXPR(
-                ASR::make_RealBinOp_t(al, loc, c_ij,
-                    ASR::binopType::Add, prod, elem_type, nullptr));
-            k_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, c_ij, sum,
-                    nullptr, false, false)));
-
             Vec<ASR::stmt_t*> j_body;
-            j_body.reserve(al, binop_other ? 3 : 2);
-            j_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, c_ij, zero,
-                    nullptr, false, false)));
-            j_body.push_back(al,
-                make_do_loop(var_k, k_start, k_end, k_body));
-
-            if (binop_other) {
-                ASR::expr_t *other_ij = make_binop_other_item(
-                    binop_other, {var_i, var_j}, {i_start, j_start});
-                ASR::expr_t *lhs = matmul_is_left ? c_ij : other_ij;
-                ASR::expr_t *rhs = matmul_is_left ? other_ij : c_ij;
-                ASR::expr_t *combined = ASRUtils::EXPR(
-                    ASR::make_RealBinOp_t(al, loc, lhs, binop_op,
-                        rhs, elem_type, nullptr));
-                j_body.push_back(al, ASRUtils::STMT(
-                    ASR::make_Assignment_t(al, loc, c_ij, combined,
-                        nullptr, false, false)));
-            }
+            j_body.reserve(al, 3);
+            accumulate_element(j_body, c_ij, var_k, k_start, k_end, a_ik,
+                b_kj, binop_other ? make_binop_other_item(binop_other,
+                    {var_i, var_j}, {i_start, j_start}) : nullptr);
 
             Vec<ASR::stmt_t*> i_body;
             i_body.reserve(al, 1);

@@ -9,13 +9,13 @@ struct t {
     activation_t act;
 };
 
-__device__ inline float f_gpu_16(activation_t self, float x) {
+__device__ inline float f_gpu_18(activation_t self, float x) {
     float r;
     r = (x * ((float)self.k));
     return r;
 }
 
-__device__ inline void get_vals_gpu_17(float* a, int __1a, int __2a, int i, float* v) {
+__device__ inline void get_vals_gpu_19(float* a, int __1a, int __2a, int i, float* v) {
     int __do_loop_end;
     float* __libasr_created__array_section_pointer_;
     int __libasr_index_0_;
@@ -61,14 +61,16 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;
     int __flat_idx;
-    float* __libasr_created__function_call_get_vals = __workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * (__workspace_extent);
     int i;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i = (__flat_idx + 1);
-    get_vals_gpu_17(a, __dim_a_0, __dim_a_1, i, __libasr_created__function_call_get_vals);
-    d[((int)(i) - (__lb_d_0))] = (__libasr_created__function_call_get_vals[((int)(1) - (1))] * f_gpu_16(self.act, z[((int)(1) - (1))]));
+    {
+        float* y = __workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
+        get_vals_gpu_19(a, __dim_a_0, __dim_a_1, i, y);
+        d[((int)(i) - (__lb_d_0))] = (y[((int)(1) - (1))] * f_gpu_18(self.act, z[((int)(1) - (1))]));
+    }
 }
 

@@ -5504,14 +5504,18 @@ namespace MatMul {
         } else {
             mul_value = b.Mul(a_ref, b_ref);
         }
+        // Each element is accumulated in a scalar local and stored once,
+        // rather than loading and storing the result for every term.
+        ASR::expr_t *acc = declare("acc",
+            ASRUtils::duplicate_type(al, expr_type(res_ref)), Local);
         ASR::stmt_t *init_stmt = nullptr;
         ASR::stmt_t *update_stmt = nullptr;
         if (is_logical(*expr_type(res_ref))) {
-            init_stmt = b.Assignment(res_ref, b.bool_t(false, expr_type(res_ref)));
-            update_stmt = b.Assignment(res_ref, b.Or(res_ref, mul_value));
+            init_stmt = b.Assignment(acc, b.bool_t(false, expr_type(res_ref)));
+            update_stmt = b.Assignment(acc, b.Or(acc, mul_value));
         } else {
-            init_stmt = b.Assign_Constant(res_ref, 0);
-            update_stmt = b.Assignment(res_ref, b.Add(res_ref, mul_value));
+            init_stmt = b.Assign_Constant(acc, 0);
+            update_stmt = b.Assignment(acc, b.Add(acc, mul_value));
         }
         body.push_back(al, b.DoLoop(i, a_lbound, a_ubound, {
             b.DoLoop(j, b_lbound, b_ubound, {
@@ -5519,6 +5523,7 @@ namespace MatMul {
                 b.DoLoop(k, b.GetLBound(args[1], 1), b.GetUBound(args[1], 1), {
                     update_stmt
                 }),
+                b.Assignment(res_ref, acc),
             })
         }));
         body.push_back(al, b.Return());

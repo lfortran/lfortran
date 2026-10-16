@@ -131,6 +131,7 @@ static inline int64_t stmt_label(AST::decl_stmt_t *f)
         LFORTRAN_STMT_LABEL_TYPE(Inquire)
         LFORTRAN_STMT_LABEL_TYPE(Nullify)
         LFORTRAN_STMT_LABEL_TYPE(Open)
+        LFORTRAN_STMT_LABEL_TYPE(Pause)
         LFORTRAN_STMT_LABEL_TYPE(Return)
         LFORTRAN_STMT_LABEL_TYPE(Pragma)
         LFORTRAN_STMT_LABEL_TYPE(Print)
@@ -13329,7 +13330,7 @@ public:
             } else {
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument,
-                    dims.size() > 0 && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
+                    dims.size() > 0 && is_argument && abi == ASR::abiType::BindC && (is_dimension_star || ASRUtils::is_fixed_size_array(dims.p, dims.n)) ? ASR::array_physical_typeType::StringArraySinglePointer :
                                     (is_dimension_star && is_argument) ? ASR::array_physical_typeType::UnboundedPointerArray :
                                     (ASRUtils::is_fixed_size_array(dims.p, dims.n) ||
                                      (is_argument && !ASRUtils::is_dimension_empty(dims.p, dims.n))) ?

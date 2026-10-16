@@ -98,8 +98,10 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     i = (__flat_idx + 1);
     y[((int)(i) - (1))] = (f_gpu_8(2, x[((int)(i) - (1))], __gpu_heap_r4, __gpu_heap_cap_r4, __gpu_heap_state, __gpu_stop_site, __gpu_stop_code) + ((float)0));
     if ((__gpu_stop_site != 0)) {
-        __gpu_stop_status[((int)((__gpu_stop_site + 1)) - (1))] = __gpu_stop_code;
-        __gpu_stop_status[((int)(1) - (1))] = __gpu_stop_site;
+        if ((__gpu_stop_status[((int)(1) - (1))] == 0)) {
+            __gpu_stop_status[((int)((__gpu_stop_site + 1)) - (1))] = __gpu_stop_code;
+            __gpu_stop_status[((int)(1) - (1))] = __gpu_stop_site;
+        }
         return;
     }
 }

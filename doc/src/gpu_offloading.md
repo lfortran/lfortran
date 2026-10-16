@@ -142,15 +142,27 @@ generates the device source. It never falls back to the CPU:
   or a section -- is an alias of it, in the loop body and in a procedure the
   loop calls, so what is written through the name reaches the variable: the
   selector takes the place of a scalar name (and of every name in the loop
-  body), and an array name of a procedure points at the selector. A selector
-  designates the object it designates on entry to the construct, so a
-  subscript of it that the construct may change
+  body, also inside the `block` and `associate` constructs in it), and an
+  array name of a procedure points at the selector. So the kernel is handed
+  the variable once, however many names the loop reads and writes it
+  through (`associate (w => self%w)` with `self` also used in the loop). A
+  selector designates the object it designates on entry to the construct,
+  so a subscript of it that the construct may change
   (`associate (e => w(j)); j = 3; e = 1`) is read into a variable of its own
   on entry.
 * An associate name of a construct the loop is in, bound to an expression
   (`associate (n => size(a))`), is the value the expression had when the
   construct was entered, which the kernel is handed as a scalar: the
   expression is not evaluated again, and what it reads is not handed over.
+* A call of a function that returns an array, in an array statement of the
+  loop body (`a(1:n, p) = x(p)%values() * 2`, `sum(x(p)%values())`, an
+  operand of `matmul`), is made once, before the statement, and its result
+  assigned to an array of the iteration, which the statement then reads
+  element by element; so is the call an associate name of a construct in
+  the loop is bound to (`associate (y => x(p)%values())`), on entry. The
+  array, like any allocatable of device code assigned the result of a
+  function, takes the shape the function gives its result, over the
+  actual arguments of the call.
 * An array an iteration needs whose size is known only at run time -- a
   local of a `block` with run-time extents, an allocatable local, or a
   temporary the compiler introduces, such as the result of a function or
@@ -158,7 +170,9 @@ generates the device source. It never falls back to the CPU:
   allocates before the launch, when the host can size it (the fast path),
   and on the device heap otherwise (see
   [Allocating on the device](#allocating-on-the-device)). Every thread uses
-  a slice of a host-sized buffer. When the size changes from one iteration
+  a slice of a host-sized buffer, one slice per iteration, which only the
+  device holds: what a slice holds on entry is undefined, as for any local,
+  and nothing is copied in or back. When the size changes from one iteration
   to the next (`allocate(w(m(k)))`, or `x(k)%values()` whose result has the
   size of a component of the iteration's element), the host works it out
   for every iteration before the launch, from the loop limits and the
@@ -404,7 +418,7 @@ generates the device source. It never falls back to the CPU:
 
 Every launch of a kernel that reaches a `stop` or `error stop` is given a
 small status buffer, an extra argument of the kernel, which the host clears
-before the launch. The offload pass numbers each such statement (its site)
+once, on entry to the procedure that launches it. The offload pass numbers each such statement (its site)
 and rewrites it, in ASR, before any backend sees it:
 
 * In the kernel, the statement records its stop code, when it has an integer
@@ -420,10 +434,15 @@ and rewrites it, in ASR, before any backend sees it:
   the limits of a `do` loop is tested at the start of each body as well, so
   no body runs with the value a stopped call returned. (The rest of the
   statement that made the call does run with that value.)
-* After the launch the host reads the buffer, and if a site is recorded it
-  runs that same statement on the host, with the recorded stop code. The
-  program therefore prints what it prints on the CPU (`ERROR STOP 42`,
-  `ERROR STOP evaluate: unknown activation`) and ends with the same status.
+* When the host next waits for the launch (see
+  [Asynchronous launches and data residency](#asynchronous-launches-and-data-residency))
+  it reads the buffer, and if a site is recorded it runs that same statement
+  on the host, with the recorded stop code. The program therefore prints
+  what it prints on the CPU (`ERROR STOP 42`, `ERROR STOP evaluate: unknown
+  activation`) and ends with the same status.
+* A thread records its stop only while no site is recorded: a site an
+  earlier launch recorded, which the host has not read yet, is where the
+  program ended, and the first launch that stopped is the one reported.
 
 The code is written before the site, and only by a thread that reached that
 site, so whichever thread's site the host reads, the code next to it was
@@ -590,6 +609,218 @@ host hands over, and it is never on the heap. Where it meets heap values:
   the host handed over. (`outs(i) = f(ins(i))` after `ins(i) = g(...)` in
   one iteration reads the new `ins(i)`.)
 
+## Asynchronous launches and data residency
+
+A launch does not wait for its kernel, and the data a kernel writes stays on
+the device until the host needs it. The host waits only where a host
+statement needs what a kernel wrote, so a host loop that launches kernels
+over and over (a training loop) runs without waiting for the device in
+every iteration. The decisions are made in ASR, by the passes below; the
+runtimes only act on what the compiler tells them.
+
+### What the runtime does
+
+Every buffer argument of a launch is handed to the runtime with how the
+kernel uses it, which `gpu_kernel_finalize` records in the kernel's layout
+(`gpu_kernel_argument.written`): a buffer is *read-only* when every
+reference of the kernel to it only reads it -- an operand, a subscript, the
+value of an assignment, an inquiry about its shape, an actual argument of
+an `intent(in)` dummy -- and *written* otherwise.
+
+* The host bytes of a read-only buffer are copied when the launch is made,
+  so the host may change or free them right after the launch.
+* A written buffer is *resident*: the runtime keeps a device buffer for its
+  host range in a table. When the device does not hold newer values than the
+  host (the entry is not *dirty*), the host bytes are copied in; after the
+  launch the entry is dirty. A later launch handed the same range -- to read
+  or to write -- uses the same device buffer, without copying anything.
+* `lfortran_gpu_sync` waits for every launch, copies every dirty entry back
+  to the host, and marks it clean.
+* `lfortran_gpu_discard` forgets the dirty entries of a host range that is
+  about to be freed, without copying anything back.
+* A range that overlaps a dirty one without being the same range makes the
+  runtime wait first, so that the bytes it copies are current.
+* The runtime never writes a device buffer that a pending launch may still
+  use: a copy into a resident buffer that is still in use goes into a fresh
+  buffer, and pooled buffers are reused once the launches that used them
+  have completed. A scratch buffer -- a run-time sized local of the kernel
+  (a workspace), an arena of the device heap -- is only on the device.
+
+On the CPU emulation (`--gpu=cuda_cpu`) a launch runs the kernel on the
+host's memory before it returns, so there is never anything to copy or wait
+for. The CUDA runtime keeps the same table and orders copies and launches
+on one stream.
+
+The Metal runtime encodes the launches one after another into one compute
+encoder and commits its command buffer every 64 launches and at every wait:
+encoding a dispatch costs the host about 2 us, committing a command buffer
+several times that, and each command buffer has an overhead of its own on
+the device. The encoder runs its dispatches concurrently, with a barrier
+before a dispatch that uses a device buffer that a dispatch since the last
+barrier writes, or writes one that such a dispatch reads: launches that do
+not depend on each other overlap, and the others run in launch order. At
+most three committed command buffers are pending; a host that launches
+faster than the device runs waits for the oldest, which also bounds how many
+buffers the pending launches hold. A scratch buffer is kept per kernel and
+argument and used by every launch of the kernel, which writes it, so
+launches of one kernel never overlap, and what a launch leaves in it is dead
+when it ends.
+
+### Where the host waits
+
+The `gpu_launch_sync` pass, which runs just before `device_launch_expand`,
+places the `GpuSync` statements. In each procedure that launches a kernel it
+follows the statements in order -- through `if`, `select case`, `block`,
+`associate`, `exit` and `cycle`, and to a fixed point through loops -- and
+keeps what pending launches may write and which of them may have recorded a
+stop. It waits:
+
+* before a host statement that may read or write, allocate or reallocate
+  storage a pending launch may write. Storage that a launch only reads needs
+  no wait;
+* before a statement that acts outside the program -- input/output, `stop`,
+  or a call to a procedure that is not pure and whose body may do
+  input/output or stop -- while a launch that may have recorded a stop is
+  pending, so that the stop the kernel recorded ends the program first;
+* before a launch of a kernel that can stop while a launch of another such
+  kernel is pending, so that the stop reported is the first one;
+* before `return`, `goto` and the end of the procedure while any launch is
+  pending;
+* before any statement it does not know.
+
+A wait in a loop that launches nothing is placed before the loop instead.
+After every `GpuSync` the pass runs the stop replay of each launch that may
+be pending there (`GpuKernelLaunch.stop_replay`), in launch order.
+
+Storage that a pending launch writes and the host frees is not waited for:
+a local of a `block` at the end of the block, or where `exit` or `cycle`
+leaves it, and an array the host deallocates, get a `GpuDiscard` instead,
+since nothing can read those values any more.
+
+What a statement accesses is worked out over *access paths*: a variable and
+a chain of components (`workspace%dcdw`), whatever the subscripts. A pointer
+the procedure associates with one designator only -- an associate name, or a
+pointer the compiler creates for a section -- stands for it. Two paths
+overlap when one is a prefix of the other, except that a copy of only the
+bytes of a derived-type value itself (a polymorphic value the host copies
+for a launch) does not reach the data of its allocatable components. Asking
+about the shape of an array (`size`, `lbound`, `allocated`) does not access
+its elements. A call accesses its actual arguments, and may access every
+variable that a pointer may point to or that another procedure can reach (a
+module variable, a variable of a procedure this one is contained in, a
+`target`); a call to a procedure contained in this one may access anything.
+Of a derived-type value it is handed, a call whose callee's body is known
+accesses only the components the body names.
+
+The data the host copies for a launch itself -- a contiguous copy of a
+strided array, the components of an array of derived type, the arrays of a
+packed launch, the plain components of a polymorphic value -- are host
+accesses of the launch, and `device_launch_expand` waits after the launch
+itself before it copies any of them back.
+
+### Whole-array assignments between launches
+
+In a host loop that launches kernels, a whole-array assignment on the data
+the kernels use -- clearing an accumulator (`dcdw = 0.`), or reducing what a
+kernel wrote (`dcdb = sum(reduce_dcdb, dim=3)`) -- would make the host wait
+for the device and copy the data back in every iteration, only to hand it to
+the next launch again. Such an assignment is a loop over the elements of its
+target whose iterations are independent, so the `gpu_array_statements` pass,
+which runs right after `parallel_dispatch`, makes it a parallel loop and
+sends it to the device too:
+
+```fortran
+dcdb = sum(reduce_dcdb, dim=3)
+! becomes
+do concurrent (i1 = 1:size(dcdb, 1), i2 = 1:size(dcdb, 2))
+    dcdb(lbound(dcdb, 1) + i1 - 1, lbound(dcdb, 2) + i2 - 1) = &
+        sum(reduce_dcdb(lbound(reduce_dcdb, 1) + i1 - 1, &
+                        lbound(reduce_dcdb, 2) + i2 - 1, :))
+end do
+```
+
+An assignment is sent to the device when all of this holds:
+
+* It is in a sequential host loop (`do`, `do while`) whose body has, at any
+  depth, a parallel loop the dispatch sent to the device, and its target or
+  an array it reads is one that such a loop names, or one that another
+  assignment sent to the device names.
+* Its target is a whole array of an intrinsic type -- a variable, a
+  component, or an associate name bound to a whole array -- and the
+  assignment cannot change its shape: not an allocatable it may reallocate
+  (with `--realloc-lhs-arrays`), not a pointer other than an associate name,
+  and not a defined assignment.
+* Its value is computed element by element: scalars, arrays of the target's
+  rank, intrinsic operators, casts and elemental intrinsic functions of them,
+  and `sum` or `product` with a constant `dim` of an array of one more
+  dimension. A scalar is evaluated by every iteration instead of once, so it
+  may not call a function. The value may read the target only element for
+  element (`x = 2*x`); a value that may read other elements of it
+  (`x = x(n:1:-1)`, `x = x(1)`) keeps the assignment on the host.
+* The loop passes the unsupported-construct check: an assignment the device
+  cannot run stays on the host, without an error or a warning that the
+  source did not have.
+
+The host still evaluates the bounds of the loop (`size`, `lbound`), which
+read only the shape of the arrays.
+
+An assignment whose every element is assigned again before anything reads it
+(`dcdw = 0.` followed by `dcdw = sum(reduce_dcdw, dim=4)`) is removed before
+this, by the `dead_array_store` pass, so it costs no launch at all.
+
+### Lanes: an iteration on a SIMD-group
+
+A loop with few iterations -- a training step over a mini-batch of one, a
+loop over the layers of a network -- leaves most of the GPU idle, and runs
+each iteration as one long chain of dependent memory accesses on one
+thread: a GPU thread does not run ahead of a load the way a CPU core does,
+so every element of every array statement inside the iteration costs a
+memory latency. The `gpu_vector_lanes` pass, right after
+`gpu_kernel_finalize`, rewrites such a kernel so that each iteration runs on
+the lanes of a SIMD-group, which share the loops inside it (Metal only, 32
+lanes; a device's capabilities say how many, see `GpuDeviceCapabilities::
+lanes_per_iteration`):
+
+* A loop whose iterations are independent -- it assigns every shared array
+  at one subscript list holding its variable, reads such an array only at
+  that subscript list (or at one provably different element: `a(i, l)` and
+  `a(k, l - 1)`), and every scalar it assigns is assigned first in each
+  iteration and dead after it -- is shared out: lane k takes iterations k,
+  k + lanes, ..., and the lanes wait for each other after it
+  (`GpuLaneBarrier`). Adjacent loops over the same iterations are joined
+  first, and a loop whose body is one more such loop shares out the pairs
+  of iterations of both.
+* A statement with an effect the lanes must not repeat -- one that writes
+  shared memory outside such a loop, calls a procedure that is not pure,
+  or takes elements of the device heap -- runs on the first lane, and the
+  others take the scalars it assigned from it (`GpuLaneBroadcast`).
+* Everything else runs on every lane, with the same values.
+
+A lane that stops in a shared-out loop records the stop and returns, as a
+thread does, and the other lanes return after the loop. A kernel is left as
+it is when a statement in the way cannot be run on one lane (it returns, or
+assigns a private array), and when it writes an element of a kernel argument
+that every iteration writes -- an array declared outside the loop that each
+iteration uses as a temporary, which the launch shares between all threads
+(a known limitation, which lanes would only make show more often).
+
+The host chooses the lanes per launch: the SIMD-group width for a launch of
+at most 1024 iterations, one otherwise, where the iterations fill the GPU
+anyway and the lanes would only repeat each other's work. The kernel takes
+the lanes as its last parameter (`gpu_kernel_layout.lanes`); its thread
+index then numbers the iterations, the host starts `lanes` threads per
+iteration, and a workspace slice belongs to an iteration, shared by its
+lanes.
+
+### Deliberate relaxations
+
+Two relaxations are deliberate. A pure procedure the host calls while a
+launch that may have recorded a stop is pending is not waited for, although
+it may itself `error stop`: when both stop, the program reports the
+procedure's stop. And an error of a kernel (a fault, the watchdog) is
+reported where the host next waits, and not at all when the program ends
+with a `stop` before that.
+
 ## Testing
 
 * Every entry of the unsupported list has a test for the error, and a test that
@@ -631,6 +862,12 @@ host hands over, and it is never on the heap. Where it meets heap values:
   calls into it costs time; recording the facts the check needs (which
   types a procedure uses, whether it does input/output) in the module file
   instead would avoid that.
+
+* **Waiting at the end of a procedure.** A procedure that launches kernels
+  waits for them before it returns, so a procedure that launches a kernel
+  and is called in a loop waits once per call. Keeping its launches pending
+  across the return needs what the callers do with the data, which this
+  analysis, one procedure at a time, does not see.
 
 ## Differences from the current implementation
 

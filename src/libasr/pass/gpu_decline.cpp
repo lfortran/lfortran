@@ -43,6 +43,8 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // so a device function cannot declare a local whose extent is
             // only known once the kernel runs.
             caps.device_function_runtime_sized_locals = false;
+            // Every Apple GPU runs SIMD-groups of 32 threads.
+            caps.lanes_per_iteration = 32;
             break;
         case GpuDevice::Cuda:
             caps.name = "CUDA";
