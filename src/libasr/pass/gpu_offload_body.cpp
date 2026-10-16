@@ -25,6 +25,10 @@ namespace LCompilers {
 // below can decline any more.
 void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
         const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map) {
+    // Every call of a function returning an array is made once, before
+    // the element loops below are built around its statement.
+    hoist_array_function_results(work);
+
     // Inline IntrinsicArrayFunction All before kernel extraction
     all_reduction_targets.clear();
     inline_intrinsic_all(work);
