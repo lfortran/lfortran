@@ -107,3 +107,86 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     }
 }
 
+__device__ inline void update_gpu_40(aggregate& q, int j) {
+    int __do_loop_end;
+    int __libasr_index_0_;
+    __do_loop_end = ((120000 - 1) + 1);
+    __libasr_index_0_ = (1 - 1);
+    while (((__libasr_index_0_ + 1) <= __do_loop_end)) {
+        __libasr_index_0_ = (__libasr_index_0_ + 1);
+        q.a[((int)(__libasr_index_0_) - (1))] = ((float)j);
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_2 {
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_2(
+    aggregate* shared,
+    float* y,
+    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args,
+    float* __workspace_3)
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    aggregate __gpu_struct_argument;
+    int j;
+    int k;
+    const int n = 4;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    j = (__flat_idx + 1);
+    {
+        float* large = __workspace_3 + (blockIdx.x * blockDim.x + threadIdx.x) * 20000;
+        k = (1 - 1);
+        while (((k + 1) <= 20000)) {
+            k = (k + 1);
+            large[((int)(k) - (1))] = ((float)(k + j));
+        }
+        __gpu_struct_argument = shared[((int)(j) - (1))];
+        update_gpu_40(__gpu_struct_argument, j);
+        shared[((int)(j) - (1))] = __gpu_struct_argument;
+        y[((int)(j) - (1))] = (large[((int)(20000) - (1))] + shared[((int)(j) - (1))].a[((int)(1) - (1))]);
+    }
+}
+
+__device__ inline float read_value_gpu_49(aggregate q) {
+    float read_value;
+    read_value = (q.a[((int)(1) - (1))] + q.a[((int)(120000) - (1))]);
+    return read_value;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_3 {
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_3(
+    aggregate* shared,
+    float* y,
+    __ScalarArgs___lfortran_gpu_kernel_3 __scalar_args,
+    float* __workspace_3)
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int j;
+    int k;
+    const int n = 4;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    j = (__flat_idx + 1);
+    {
+        float* large = __workspace_3 + (blockIdx.x * blockDim.x + threadIdx.x) * 20000;
+        k = (1 - 1);
+        while (((k + 1) <= 20000)) {
+            k = (k + 1);
+            large[((int)(k) - (1))] = ((float)(k + j));
+        }
+        y[((int)(j) - (1))] = (large[((int)(20000) - (1))] + read_value_gpu_49(shared[((int)(j) - (1))]));
+    }
+}
+

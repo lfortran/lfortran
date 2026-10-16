@@ -177,11 +177,14 @@ generates the device source. It never falls back to the CPU:
   the value it had before the loop and nothing can tell. Locality is a
   correctness decision, independent of array size or stack capacity.
   After array temporaries, inlining and materialization, `gpu_kernel_storage`
-  places the actual lowered arrays, before `gpu_memory_space` specializes
-  device calls. Small fixed-size arrays use `Thread` storage within the device
+  materializes updating aggregate arguments and places the actual lowered
+  arrays, before `gpu_memory_space` specializes device calls. Small fixed-size
+  arrays use `Thread` storage within the device
   stack budget (64 KiB with Metal, 512 KiB with CUDA), reserving 8 KiB for
   device compiler frames and register spills and accounting for the remaining
-  out-of-line device routines. Larger arrays use `Global` storage, recorded
+  out-of-line device routines, including their by-value aggregate parameters.
+  Non-spillable aggregate locals and argument copies consume that budget too.
+  Larger arrays use `Global` storage, recorded
   as per-thread workspaces in `Function.gpu` by `gpu_kernel_finalize`.
   Existing launch sizing and indexing give every iteration a separate slice;
   spilling never turns a private array back into a shared value. Every other

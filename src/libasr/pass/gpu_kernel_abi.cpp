@@ -1,6 +1,7 @@
 #include <libasr/asr_builder.h>
 #include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/pass/gpu_data_layout.h>
+#include <libasr/pass/gpu_memory_space.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/pass_utils.h>
@@ -521,6 +522,11 @@ void pass_gpu_kernel_storage(Allocator &al, ASR::TranslationUnit_t &unit,
         const PassOptions &options) {
     const auto caps = gpu_device_capabilities(options);
     if (!caps.device_selected()) return;
+    // A shared aggregate passed by reference to an updating routine needs
+    // a thread-local copy. Materialize it before measuring local storage.
+    // Scalar reference copies depend on the chosen address spaces and
+    // remain part of the frame reserve.
+    gpu_materialize_struct_arguments(al, unit);
     // Leave room for the device compiler's frames and register spills.
     const int64_t budget = std::max<int64_t>(caps.thread_stack_bytes - 8192, 0);
     for (auto &item : unit.m_symtab->get_scope()) {
@@ -542,7 +548,8 @@ void pass_gpu_kernel_storage(Allocator &al, ASR::TranslationUnit_t &unit,
             return bytes;
         };
         auto non_workspace_storage = [&](ASR::Function_t &fn,
-                const std::vector<GpuVlaWorkspace> &workspaces) {
+                const std::vector<GpuVlaWorkspace> &workspaces,
+                bool include_value_parameters) {
             std::set<ASR::symbol_t*> workspace_vars;
             for (const auto &ws : workspaces) workspace_vars.insert(ws.var);
             std::function<void(SymbolTable*)> scope = [&](SymbolTable *table) {
@@ -556,8 +563,15 @@ void pass_gpu_kernel_storage(Allocator &al, ASR::TranslationUnit_t &unit,
                     } else if (ASR::is_a<ASR::Variable_t>(*item.second) &&
                             !workspace_vars.count(item.second)) {
                         auto *var = ASR::down_cast<ASR::Variable_t>(item.second);
+                        // Read-only scalar aggregates are values in the
+                        // device ABI, unlike array and updating parameters.
+                        bool value_parameter = include_value_parameters &&
+                            ASR::is_a<ASR::StructType_t>(*var->m_type) &&
+                            var->m_intent != ASR::intentType::Out &&
+                            var->m_intent != ASR::intentType::InOut;
                         if ((var->m_intent != ASR::intentType::Local &&
-                                var->m_intent != ASR::intentType::ReturnVar) ||
+                                var->m_intent != ASR::intentType::ReturnVar &&
+                                !value_parameter) ||
                                 var->m_storage != ASR::storage_typeType::Default ||
                                 ASRUtils::is_allocatable_or_pointer(var->m_type)) {
                             continue;
@@ -576,14 +590,14 @@ void pass_gpu_kernel_storage(Allocator &al, ASR::TranslationUnit_t &unit,
             };
             scope(fn.m_symtab);
         };
-        non_workspace_storage(kernel, arrays);
+        non_workspace_storage(kernel, arrays, false);
         std::set<ASR::Function_t*> visited;
         std::function<void(ASR::Function_t*)> callees =
             [&](ASR::Function_t *fn) {
             if (!visited.insert(fn).second) return;
             if (fn != &kernel) {
                 auto locals = collect_gpu_vla_workspaces(*fn, 0, true);
-                non_workspace_storage(*fn, locals);
+                non_workspace_storage(*fn, locals, true);
                 for (const auto &ws : locals) {
                     int64_t bytes = array_bytes(ws);
                     if (bytes >= 0) remaining = std::max<int64_t>(remaining - bytes, 0);
