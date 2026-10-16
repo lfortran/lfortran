@@ -152,6 +152,24 @@ if (size(hk(spread(b, d, n), 1)) /= e(1)) error stop
 if (size(hk(spread(b, d, n), 3)) /= e(3)) error stop
 end subroutine
 
+function g2k(x) result(y)
+real :: x(:,:)
+real :: y(size(x, kind=8))
+y = 1.0
+end function
+
+! `size(x, kind=8)` of a `matmul` of explicit-shape operands.
+subroutine test_kind8_matmul(n)
+integer :: n
+real :: a2(2,3), m2(3,7), r(20)
+a2 = 1.0
+m2 = 1.0
+r = 0.0
+if (size(g2k(matmul(a2, m2(:, 1:n)))) /= 2*n) error stop
+r(:2*n) = 2.0*g2k(matmul(a2, m2(:, 1:n)))
+if (abs(sum(r) - 4.0*n) > 1e-5) error stop
+end subroutine
+
 end module
 
 program functions_68
@@ -169,5 +187,6 @@ call test_dim_expr(5, 3)
 call test_kind8(5, 1)
 call test_kind8(5, 2)
 call test_kind8(5, 3)
+call test_kind8_matmul(5)
 print *, "ok"
 end program
