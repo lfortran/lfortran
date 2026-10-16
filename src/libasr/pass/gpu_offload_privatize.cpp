@@ -439,47 +439,24 @@ public:
     }
 
 private:
-    // The value of an extent the declaration and the loop both name:
-    // a compile-time constant, or a variable whose value cannot change
-    // while the array exists -- a named constant or an intent(in)
-    // dummy argument.
-    static bool same_bound(ASR::expr_t *a, ASR::expr_t *b) {
-        if (a == nullptr || b == nullptr) return false;
-        int64_t va = 0, vb = 0;
-        bool ca = ASRUtils::extract_value(ASRUtils::expr_value(a), va);
-        bool cb = ASRUtils::extract_value(ASRUtils::expr_value(b), vb);
-        if (ca || cb) return ca && cb && va == vb;
-        if (!ASR::is_a<ASR::Var_t>(*a) || !ASR::is_a<ASR::Var_t>(*b)) {
-            return false;
-        }
-        ASR::symbol_t *s = ASR::down_cast<ASR::Var_t>(a)->m_v;
-        if (s != ASR::down_cast<ASR::Var_t>(b)->m_v) return false;
-        s = ASRUtils::symbol_get_past_external(s);
-        if (!ASR::is_a<ASR::Variable_t>(*s)) return false;
-        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
-        return v->m_storage == ASR::storage_typeType::Parameter
-            || v->m_intent == ASR::intentType::In;
+    // The array's bounds are compile-time constants (see
+    // privatize_iteration_arrays), so the loop names one by its value.
+    static bool constant(ASR::expr_t *e, int64_t &v) {
+        return e != nullptr
+            && ASRUtils::extract_value(ASRUtils::expr_value(e), v);
     }
 
     bool is_lower_bound(size_t d, ASR::expr_t *e) {
-        return same_bound(e, arr->m_dims[d].m_start);
+        int64_t s = 0, v = 0;
+        return constant(arr->m_dims[d].m_start, s) && constant(e, v)
+            && v == s;
     }
 
     bool is_upper_bound(size_t d, ASR::expr_t *e) {
-        ASR::expr_t *start = arr->m_dims[d].m_start;
-        ASR::expr_t *length = arr->m_dims[d].m_length;
-        if (start == nullptr || length == nullptr || e == nullptr) {
-            return false;
-        }
         int64_t s = 0, l = 0, v = 0;
-        if (!ASRUtils::extract_value(ASRUtils::expr_value(start), s)) {
-            return false;
-        }
-        if (ASRUtils::extract_value(ASRUtils::expr_value(length), l)) {
-            return ASRUtils::extract_value(ASRUtils::expr_value(e), v)
-                && v == s + l - 1;
-        }
-        return s == 1 && same_bound(e, length);
+        return constant(arr->m_dims[d].m_start, s)
+            && constant(arr->m_dims[d].m_length, l) && constant(e, v)
+            && v == s + l - 1;
     }
 
     static bool unit_step(ASR::expr_t *step) {
@@ -973,35 +950,19 @@ void GpuOffloadVisitor::privatize_iteration_arrays(
                 !ASR::is_a<ASR::Logical_t>(*elem)) {
             continue;
         }
-        // The local is declared with the extents the array was: they
-        // must still have the values they had when it was created.
-        bool fixed_extents = true;
+        // The local is declared with the extents the array was, which
+        // are compile-time constants: none of a run-time size (see above).
+        bool constant_bounds = true;
         for (size_t d = 0; d < arr->n_dims; d++) {
-            ASR::dimension_t &dim = arr->m_dims[d];
-            if (!dim.m_start || !dim.m_length) {
-                fixed_extents = false;
-                break;
-            }
-            std::set<ASR::symbol_t*> extent_names;
-            VarSymbolCollector c(extent_names);
-            c.visit_expr(*dim.m_start);
-            c.visit_expr(*dim.m_length);
-            for (ASR::symbol_t *e : extent_names) {
-                ASR::symbol_t *es = ASRUtils::symbol_get_past_external(e);
-                if (!ASR::is_a<ASR::Variable_t>(*es)) {
-                    fixed_extents = false;
-                    break;
-                }
-                ASR::Variable_t *ev = ASR::down_cast<ASR::Variable_t>(es);
-                if (ev->m_storage != ASR::storage_typeType::Parameter &&
-                        ev->m_intent != ASR::intentType::In) {
-                    fixed_extents = false;
-                    break;
-                }
-            }
+            int64_t value = 0;
+            constant_bounds = constant_bounds && arr->m_dims[d].m_start
+                && arr->m_dims[d].m_length
+                && ASRUtils::extract_value(ASRUtils::expr_value(
+                    arr->m_dims[d].m_start), value)
+                && ASRUtils::extract_value(ASRUtils::expr_value(
+                    arr->m_dims[d].m_length), value);
         }
-        if (!fixed_extents) continue;
-        // None for a run-time size (see above).
+        if (!constant_bounds) continue;
         int64_t bytes = ASRUtils::compute_type_size_align(v->m_type).first;
         if (bytes <= 0) continue;
 
