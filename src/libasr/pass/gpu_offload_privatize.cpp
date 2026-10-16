@@ -128,8 +128,10 @@ constexpr int64_t gpu_stack_frame_reserve_bytes = 8 * 1024;
 //   - a value a statement may hold in a temporary (is_temporary_needed),
 //     one an expression computes or a section with a vector subscript --
 //     except an elementwise one (is_vectorise_able, or a scalar broadcast
-//     to a shape) that is an operand of another or the value of an
-//     assignment, which is computed element by element into what uses it;
+//     to a shape) that is the value of an assignment or an operand of an
+//     operation that reads such operands in place
+//     (reads_elementwise_operands_in_place), which is computed element by
+//     element into what uses it;
 //   - of a section without a vector subscript, only a copy: of one whose
 //     elements are not adjacent, as an actual argument
 //     (gather_strided_section_arg), or of one of the array an assignment
@@ -175,7 +177,8 @@ public:
         bool in_elementwise = in_elementwise_value;
         bool argument = call_argument;
         int64_t outer_operands = operand_elements;
-        in_elementwise_value = cast ? in_elementwise : reads_in_place(e);
+        in_elementwise_value = cast ? in_elementwise
+            : reads_elementwise_operands_in_place(e->type);
         call_argument = cast && argument;
         operand_elements = -1;
         ASRUtils::BlockBodyWalkVisitor<GpuThreadStack>::visit_expr(x);
@@ -279,26 +282,6 @@ private:
 
     static bool elementwise(ASR::expr_t *e) {
         return ASR::is_a<ASR::ArrayBroadcast_t>(*e) || is_vectorise_able(e);
-    }
-
-    // Whether `e` reads an elementwise operand in place: the operations
-    // array_struct_temporary gives a temporary only an operand that is
-    // not elementwise.
-    static bool reads_in_place(ASR::expr_t *e) {
-        switch (e->type) {
-            case ASR::exprType::IntegerBinOp:
-            case ASR::exprType::RealBinOp:
-            case ASR::exprType::ComplexBinOp:
-            case ASR::exprType::LogicalBinOp:
-            case ASR::exprType::LogicalNot:
-            case ASR::exprType::RealUnaryMinus:
-            case ASR::exprType::IntegerCompare:
-            case ASR::exprType::RealCompare:
-            case ASR::exprType::StringCompare:
-                return true;
-            default:
-                return false;
-        }
     }
 
     // Whether `e`, a section without a vector subscript, is read where it

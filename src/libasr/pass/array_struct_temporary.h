@@ -23,6 +23,12 @@ namespace LCompilers {
     // place, without a temporary.
     bool is_vectorise_able(ASR::expr_t* x);
 
+    // Whether this pass reads an operand of an operation of type `op` that
+    // is elementwise itself (is_vectorise_able, or a scalar broadcast to a
+    // shape) in place, holding in a temporary only one that is not; an
+    // operand of any other expression it may hold in a temporary.
+    bool reads_elementwise_operands_in_place(ASR::exprType op);
+
     // Whether `rhs` names an array that `lhs` names as well, in which case
     // a section of it is copied rather than read in place.
     bool is_common_symbol_present_in_lhs_and_rhs(Allocator &al,
