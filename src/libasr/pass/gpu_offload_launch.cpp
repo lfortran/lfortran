@@ -247,8 +247,9 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
         ASR::make_IntegerConstant_t(al, loc, 256, plan.int_type,
             ASR::integerbozType::Decimal));
 
-    // Compute host-side total_elements = product of the extents
-    // max(0, end_d - start_d + 1)
+    // The number of iterations, the product of the extents
+    // max(0, end_d - start_d + 1): one thread runs each, and the launch
+    // rounds it up to whole blocks.
     ASR::expr_t *host_total = nullptr;
     for (size_t d = 0; d < plan.n_dims; d++) {
         ASR::expr_t *dim_range = gpu_loop_extent(al, loc,
@@ -263,16 +264,6 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                     dim_range, plan.int_type, nullptr));
         }
     }
-
-    // grid_size = (total + 255) / 256
-    ASR::expr_t *grid_padded = ASRUtils::EXPR(
-        ASR::make_IntegerBinOp_t(al, loc, host_total, ASR::binopType::Add,
-            ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 255, plan.int_type,
-                ASR::integerbozType::Decimal)),
-            plan.int_type, nullptr));
-    ASR::expr_t *grid_size = ASRUtils::EXPR(
-        ASR::make_IntegerBinOp_t(al, loc, grid_padded, ASR::binopType::Div,
-            block_size_const, plan.int_type, nullptr));
 
     // One accumulator per iteration, sized now that the iteration count
     // is known. The kernel sets each to the identity, so nothing is
@@ -305,10 +296,14 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                 nullptr, nullptr, nullptr)));
     }
 
+    ASRUtils::ExprStmtDuplicator total_copy(al);
+    total_copy.success = true;
+    ASR::expr_t *thread_count = total_copy.duplicate_expr(host_total);
+    LCOMPILERS_ASSERT(total_copy.success && thread_count);
     launch_stmts.push_back(al, ASRUtils::STMT(
         ASR::make_GpuKernelLaunch_t(al, loc,
             ASR::down_cast<ASR::symbol_t>(plan.kernel_func),
-            grid_size, block_size_const,
+            thread_count, block_size_const,
             plan.call_args.p, plan.call_args.n, component_fit, nullptr,
             0, nullptr, nullptr, 0)));
 

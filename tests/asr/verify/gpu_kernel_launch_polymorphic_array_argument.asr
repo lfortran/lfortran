@@ -237,7 +237,7 @@
         :body [
           (GpuKernelLaunch
             :kernel (SymbolRef 0 "__lfortran_gpu_kernel_0")
-            :grid_size (IntegerConstant
+            :thread_count (IntegerConstant
               :n 1
               :type (Integer
                 :kind 4

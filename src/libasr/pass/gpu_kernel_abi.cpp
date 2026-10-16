@@ -382,10 +382,11 @@ public:
 
     // Sets `largest` to the largest value the per-thread extent `value`
     // has in a thread of the launch that runs the kernel's body. The host
-    // goes over the launch's threads as the kernel numbers them, and skips
-    // a thread the kernel's prelude sends back before the body: such a
-    // thread has no iteration, and its extent may read past the end of
-    // what the iterations read.
+    // goes over the launch's `thread_count` threads as the kernel numbers
+    // them -- not over the whole blocks it starts -- and skips a thread the
+    // kernel's prelude sends back before the body: such a thread has no
+    // iteration, and its extent may read past the end of what the
+    // iterations read.
     void largest_over_threads(const ASR::GpuKernelLaunch_t &x,
             const ASR::Function_t &kernel, ASR::expr_t *value,
             ASR::expr_t *largest) {
@@ -393,13 +394,15 @@ public:
         ASRUtils::ASRBuilder b(al, loc);
         ASR::ttype_t *index_type = ASRUtils::TYPE(
             ASR::make_Integer_t(al, loc, 8));
+        ASR::expr_t *flat = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_replay_thread_id"),
+            index_type, ASR::intentType::Local);
         ASR::expr_t *block = b.Variable(current_scope,
             current_scope->get_unique_name("__gpu_replay_block"),
             index_type, ASR::intentType::Local);
         ASR::expr_t *thread = b.Variable(current_scope,
             current_scope->get_unique_name("__gpu_replay_thread"),
             index_type, ASR::intentType::Local);
-        ASR::expr_t *grid_size = b.i2i_t(x.m_grid_size, index_type);
         ASR::expr_t *block_size = b.i2i_t(x.m_block_size, index_type);
         GpuThreadReplay replay(al, block, thread, block_size);
         ASR::ttype_t *type = ASRUtils::expr_type(value);
@@ -415,12 +418,13 @@ public:
                 std::move(body));
             body = {guarded};
         }
+        body.insert(body.begin(), {
+            b.Assignment(block, b.Div(flat, block_size)),
+            b.Assignment(thread, b.Sub(flat, b.Mul(block, block_size)))});
         pass_result.push_back(al, b.Assignment(largest, b.i_t(0, type)));
-        pass_result.push_back(al, b.DoLoop(block, b.i_t(0, index_type),
-            b.Sub(grid_size, b.i_t(1, index_type)), {
-                b.DoLoop(thread, b.i_t(0, index_type),
-                    b.Sub(block_size, b.i_t(1, index_type)),
-                    std::move(body))}));
+        pass_result.push_back(al, b.DoLoop(flat, b.i_t(0, index_type),
+            b.Sub(b.i2i_t(x.m_thread_count, index_type),
+                b.i_t(1, index_type)), std::move(body)));
     }
 };
 

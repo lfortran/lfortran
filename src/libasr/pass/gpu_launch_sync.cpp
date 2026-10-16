@@ -966,7 +966,7 @@ private:
         // geometry, and the arguments it copies.
         Accesses acc;
         AccessCollector c(acc, routine, pointers, outside);
-        c.visit_expr(*x.m_grid_size);
+        c.visit_expr(*x.m_thread_count);
         c.visit_expr(*x.m_block_size);
         for (size_t i = 0; i < layout.n_scalars; i++) {
             const ASR::gpu_kernel_argument_t &e = layout.m_scalars[i];
