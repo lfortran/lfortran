@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <map>
+#include <set>
 #include <unordered_map>
 #include <utility>
 
@@ -308,6 +309,8 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
                 : b.Assignment(local, x->m_args[i].m_value));
         }
         AssociateVarResolverVisitor replace(al, substitutions);
+        std::vector<ASR::Associate_t*> array_bindings;
+        std::set<ASR::symbol_t*> unbound;
         for (size_t i = 0; i < function->n_args; i++) {
             auto *dummy = ASR::down_cast<ASR::Variable_t>(
                 ASR::down_cast<ASR::Var_t>(function->m_args[i])->m_v);
@@ -318,8 +321,8 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
                     ASR::array_physical_typeType::PointerArray &&
                     ASRUtils::is_dimension_empty(actual_type)) {
                 // A call-only data address acquires the dummy's shape when
-                // materialized as a descriptor. Bounds use the scalar bindings
-                // above, including arguments declared after this array.
+                // materialized as a descriptor. Substitute argument locals,
+                // which must be bound before this descriptor is constructed.
                 ASR::ttype_t *view_type = ASRUtils::duplicate_type(al,
                     dummy->m_type, nullptr,
                     ASR::array_physical_typeType::DescriptorArray, true);
@@ -329,8 +332,34 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
                     ASR::array_physical_typeType::DescriptorArray,
                     view_type, nullptr));
             }
-            bindings.push_back(ASRUtils::STMT(ASRUtils::make_Associate_t_util(
-                al, loc, substitutions.at(&dummy->base), actual)));
+            ASR::expr_t *local = substitutions.at(&dummy->base);
+            array_bindings.push_back(ASR::down_cast<ASR::Associate_t>(
+                ASRUtils::STMT(ASRUtils::make_Associate_t_util(
+                    al, loc, local, actual))));
+            unbound.insert(ASR::down_cast<ASR::Var_t>(local)->m_v);
+        }
+        while (!unbound.empty()) {
+            size_t remaining = unbound.size();
+            for (auto *binding : array_bindings) {
+                auto *local = ASR::down_cast<ASR::Var_t>(binding->m_target)->m_v;
+                if (!unbound.count(local)) continue;
+                Vec<ASR::symbol_t*> dependencies;
+                dependencies.reserve(al, 1);
+                VarCollector collect(al, dependencies);
+                collect.visit_expr(*binding->m_value);
+                bool ready = true;
+                for (size_t i = 0; i < dependencies.size(); i++) {
+                    if (unbound.count(dependencies[i])) {
+                        ready = false;
+                        break;
+                    }
+                }
+                if (!ready) continue;
+                bindings.push_back(&binding->base);
+                unbound.erase(local);
+            }
+            // A cycle has no safe association order; retain the original call.
+            if (unbound.size() == remaining) return;
         }
         ASR::expr_t *result = b.Variable(current_scope,
             current_scope->get_unique_name(

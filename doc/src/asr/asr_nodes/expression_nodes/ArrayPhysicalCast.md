@@ -43,6 +43,9 @@ call-only data address, such as an array element passed by sequence
 association, has no shape of its own. When inlining materializes that address
 as a descriptor, it uses the explicit-shape dummy's bounds, substituting the
 already-bound arguments so their actual expressions are not evaluated again.
+Array associations follow their argument-local dependencies: a descriptor
+whose bounds read another dummy's elements is constructed after that dummy
+is associated.
 
 ## Examples
 
