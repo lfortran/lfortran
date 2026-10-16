@@ -8360,6 +8360,7 @@ public:
                                                 v->m_type = ASRUtils::TYPE(
                                                     ASR::make_Pointer_t(al, x.base.base.loc, v->m_type));
                                             }
+                                            ensure_deferred_shape_for_allocatable_or_pointer_array(v->m_type, sym);
                                         }
                                     } else {
                                         assgnd_pointer.insert(sym);
@@ -8373,6 +8374,7 @@ public:
                                             if (!ASRUtils::is_allocatable(v->m_type)) {
                                                 v->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, v->m_type));
                                             }
+                                            ensure_deferred_shape_for_allocatable_or_pointer_array(v->m_type, sym);
                                         }
                                     } else {
                                         assgnd_allocatable.insert(to_lower(sym));
@@ -10202,6 +10204,18 @@ public:
                     type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                         is_allocatable, dims, &(x.m_syms[i]), type_declaration, s_abi,
                         (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star, is_assumed_rank);
+                    if (is_dimension_star && !is_assumed_rank
+                            && ASRUtils::is_array_t(type)
+                            && ASRUtils::is_allocatable_or_pointer(type)) {
+                        diag.add(Diagnostic(
+                            std::string(ASRUtils::is_allocatable(type) ? "Allocatable" : "Pointer") +
+                            " array '" + sym + "' must have a deferred shape or assumed rank",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {x.base.base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                    ensure_deferred_shape_for_allocatable_or_pointer_array(type, sym);
                 }
                 if (corank > 0
                         && (ASR::is_a<ASR::CPtr_t>(*ASRUtils::extract_type(type))
@@ -11773,7 +11787,8 @@ public:
             for (size_t i = 0; i < array_type->n_dims; i++) {
                 std::string const attr_name = ASRUtils::is_allocatable(type) ? 
                                                 "Allocatable" : "Pointer";
-                if (array_type->m_dims[i].m_start != nullptr ||
+                if (array_type->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ||
+                    array_type->m_dims[i].m_start != nullptr ||
                     array_type->m_dims[i].m_length != nullptr) {
                     diag.add(Diagnostic(
                         std::string(attr_name) + " array '" + sym +

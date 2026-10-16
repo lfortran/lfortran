@@ -299,6 +299,60 @@ semantic error: More than one main program found
 580 |    end program second_program_test
     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ second main program defined here
 
+semantic error: Allocatable array 'x' must have a deferred shape or assumed rank
+   --> tests/errors/continue_compilation_2.f90:649:9
+    |
+649 |         real, allocatable :: x(*)  ! {Error} Allocatable array 'x' must have a deferred shape or assumed rank
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'x' not defined
+   --> tests/errors/continue_compilation_2.f90:648:5 - 650:18
+    |
+648 |        subroutine cc2_ds_alloc(x)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+650 |        end subroutine
+    | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Pointer array 'y' must have a deferred shape or assumed rank
+   --> tests/errors/continue_compilation_2.f90:652:9
+    |
+652 |         real, pointer :: y(*)  ! {Error} Pointer array 'y' must have a deferred shape or assumed rank
+    |         ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'y' not defined
+   --> tests/errors/continue_compilation_2.f90:651:5 - 653:18
+    |
+651 |        subroutine cc2_ds_ptr(y)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+653 |        end subroutine
+    | ...^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Allocatable array 'z' must have a deferred shape or assumed rank
+   --> tests/errors/continue_compilation_2.f90:656:9
+    |
+656 |         allocatable :: z  ! {Error} Allocatable array 'z' must have a deferred shape or assumed rank
+    |         ^^^^^^^^^^^^^^^^ 
+
+semantic error: Allocatable array 'a' must have a deferred shape or assumed rank
+   --> tests/errors/continue_compilation_2.f90:659:9
+    |
+659 |         type(cc2_ds_t), allocatable :: a(*)  ! {Error} Allocatable array 'a' must have a deferred shape or assumed rank
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'a' not defined
+   --> tests/errors/continue_compilation_2.f90:658:5 - 660:18
+    |
+658 |        subroutine cc2_ds_type(a)
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+    |
+660 |        end subroutine
+    | ...^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Unexpected args, SetExponent expects (real, int) as arguments
   --> tests/errors/continue_compilation_2.f90:36:18
    |
