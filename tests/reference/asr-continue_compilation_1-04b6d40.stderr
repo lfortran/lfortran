@@ -1416,6 +1416,24 @@ semantic error: interface mismatch for procedure pointer component 'f' in struct
 3295 |     type(cc1_pci_t) :: cc1_pci_s = cc1_pci_t(f=cc1_pci_real_func)  ! {Error} interface mismatch for procedure pointer component 'f' in structure constructor
      |                                                ^^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pci_func_iface) and procedure(cc1_pci_real_func))
 
+semantic error: Symbol 'cc1_entry_undeclared_1' not declared
+    --> tests/errors/continue_compilation_1.f90:3362:9
+     |
+3362 |         procedure cc1_entry_undeclared_1  ! {Error} Symbol 'cc1_entry_undeclared_1' not declared
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Assignment procedure `cc1_entry_undeclared_3` not found
+    --> tests/errors/continue_compilation_1.f90:3368:9
+     |
+3368 |         procedure cc1_entry_undeclared_3  ! {Error} Assignment procedure `cc1_entry_undeclared_3` not found
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Symbol 'cc1_entry_undeclared_2' not declared
+    --> tests/errors/continue_compilation_1.f90:3365:9
+     |
+3365 |         procedure cc1_entry_undeclared_2  ! {Error} Symbol 'cc1_entry_undeclared_2' not declared
+     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

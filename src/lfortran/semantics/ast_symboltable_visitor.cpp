@@ -251,8 +251,7 @@ public:
         SymbolTable *enclosing;
         std::vector<std::string> enclosing_procedure_args;
         OperatorProcedureScope operator_procedures;
-        std::vector<std::pair<std::string, Location>>
-            enclosing_assgn_proc_names_locations;
+        std::vector<GenericSpecific> enclosing_assgn_proc_names_locations;
         ASR::accessType enclosing_dflt_access;
         bool enclosing_is_template;
 
@@ -276,6 +275,25 @@ public:
             v.is_template = enclosing_is_template;
         }
     };
+    // Drops the errors of an interface block built in a copy of a procedure's scope made for ENTRY:
+    // the same errors are reported for the procedure's own scope.
+    struct EntryCopyDiagnosticsScope {
+        diag::Diagnostics &diag;
+        size_t n_diagnostics;
+        bool drop;
+
+        EntryCopyDiagnosticsScope(SymbolTableVisitor &v, SymbolTable *scope)
+                : diag(v.diag), n_diagnostics(v.diag.diagnostics.size()),
+                  drop(v.compiler_options.continue_compilation
+                      && v.original_scope(scope) != scope) {}
+
+        ~EntryCopyDiagnosticsScope() {
+            if (drop) {
+                diag.diagnostics.erase(diag.diagnostics.begin() + n_diagnostics,
+                    diag.diagnostics.end());
+            }
+        }
+    };
     SymbolTable *global_scope;
     std::map<std::string, std::map<std::string, std::vector<std::string>>> generic_class_procedures;
     // The specific procedures of the operator interface blocks, by operator,
@@ -284,9 +302,13 @@ public:
     std::map<std::string, std::vector<GenericSpecific>> defined_op_procs;
     std::map<std::string, std::map<std::string, std::map<std::string, ClassProcInfo>>> class_procedures;
     std::map<std::string, std::map<std::string, std::map<std::string, Location>>> class_deferred_procedures;
-    std::vector<std::pair<std::string, Location>> assgn_proc_names_locations;
+    // The specific procedures of the assignment(=) blocks, with the scope of each block.
+    std::vector<GenericSpecific> assgn_proc_names_locations;
     std::vector<std::pair<std::string,Location>> simd_variables;
     std::map<std::string, std::vector<AST::arg_t>> entry_function_args;
+    // The scope of a procedure with ENTRY statements, by the scopes of its
+    // entries and of its master function, which are copies of it.
+    std::map<SymbolTable*, SymbolTable*> entry_scope_origin;
     std::set<std::string> loaded_submodules;
     std::string dt_name;
     bool in_submodule = false;
@@ -633,6 +655,7 @@ public:
                     // interfaces, or to define the procedures its procedure
                     // placeholders stand for.
                     add_generic_procedures();
+                    add_assignment_procedures();
                     evaluate_postponed_calls_to_genericProcedure();
                     resolve_proc_pointer_placeholders();
                     report_unresolved_proc_placeholders();
@@ -641,6 +664,7 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
                 // Drop what the aborted program unit left pending.
                 generic_procedures.clear();
+                assgn_proc_names_locations.clear();
                 postponed_genericProcedure_calls_vec.clear();
                 // An aborted program unit can leave its scope current.
                 current_scope = global_scope;
@@ -1369,9 +1393,6 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
-        // The assignment(=) blocks of the internal procedures are not the program's.
-        std::vector<std::pair<std::string, Location>> program_assgn_proc_names_locations
-            = assgn_proc_names_locations;
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -1386,7 +1407,6 @@ public:
             }
             default_storage_save = current_storage_save;
         }
-        assgn_proc_names_locations = program_assgn_proc_names_locations;
         for (size_t i : procedure_decl_indices) {
             try {
                 visit_decl_stmt(*x.m_items[i]);
@@ -1573,7 +1593,22 @@ public:
             old_scope->erase_symbol(it);
         }
 
+        entry_scope_origin[current_scope] = old_scope;
         if (is_master) {
+            // The body is compiled in the master function, so its interface blocks are built here too.
+            auto add_master_specifics = [&](std::vector<GenericSpecific> &specifics) {
+                for (size_t i = 0, n = specifics.size(); i < n; i++) {
+                    if (specifics[i].scope == old_scope) {
+                        specifics.push_back({specifics[i].name, specifics[i].loc, current_scope});
+                    }
+                }
+            };
+            for (auto *pending: {&generic_procedures, &overloaded_op_procs, &defined_op_procs}) {
+                for (auto &item: *pending) {
+                    add_master_specifics(item.second);
+                }
+            }
+            add_master_specifics(assgn_proc_names_locations);
             // Create integer variable "entry__lcompilers"
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
             ASR::symbol_t* entry_lcompilers_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
@@ -4198,7 +4233,9 @@ public:
             std::vector<GenericSpecific> &procs = defined_op_procs[op];
             procs.insert(procs.end(), specifics.begin(), specifics.end());
         }  else if (AST::is_a<AST::InterfaceHeaderAssignment_t>(*x.m_header)) {
-            fill_interface_proc_names_with_loc(x, assgn_proc_names_locations);
+            std::vector<GenericSpecific> specifics = interface_specifics(x);
+            assgn_proc_names_locations.insert(assgn_proc_names_locations.end(),
+                specifics.begin(), specifics.end());
         }  else if (AST::is_a<AST::InterfaceHeaderWrite_t>(*x.m_header)) {
             std::string op_name = to_lower(AST::down_cast<AST::InterfaceHeaderWrite_t>(x.m_header)->m_id);
             if (op_name != "formatted" && op_name != "unformatted") {
@@ -4496,6 +4533,7 @@ public:
             for (auto &[op, specifics] : *op_procs) {
                 for (auto &[scope, procs] : group_specifics_by_scope(specifics)) {
                     current_scope = scope;
+                    EntryCopyDiagnosticsScope entry_copy_diagnostics(*this, scope);
                     std::pair<const std::string,
                         std::vector<std::pair<std::string, Location>>> scope_procs = {op, procs};
                     add_custom_operator(scope_procs, ASR::accessType::Public);
@@ -4506,14 +4544,24 @@ public:
         current_scope = current_scope_copy;
     }
 
+    // Builds each pending assignment(=) generic in the scope of its interface blocks.
     void add_assignment_procedures() {
-        if( assgn_proc_names_locations.empty() ) {
-            return ;
+        SymbolTable *current_scope_copy = current_scope;
+        for (auto &[scope, procs] : group_specifics_by_scope(assgn_proc_names_locations)) {
+            current_scope = scope;
+            EntryCopyDiagnosticsScope entry_copy_diagnostics(*this, scope);
+            add_assignment_procedure(procs);
         }
+        current_scope = current_scope_copy;
+        assgn_proc_names_locations.clear();
+    }
+
+    void add_assignment_procedure(
+            const std::vector<std::pair<std::string, Location>> &proc_names_locations) {
         bool any_error = false;
         std::vector<std::pair<std::string, Location>> assgn_proc_names;
-        assgn_proc_names.reserve(assgn_proc_names_locations.size());
-        for (const auto &name_loc : assgn_proc_names_locations) {
+        assgn_proc_names.reserve(proc_names_locations.size());
+        for (const auto &name_loc : proc_names_locations) {
             ASR::symbol_t *sym = current_scope->resolve_symbol(to_lower(name_loc.first));
             if (!sym) {
                 diag.add(Diagnostic(
@@ -4598,7 +4646,6 @@ public:
 
             add_custom_operator(proc, assgn[current_scope]);
         }
-        assgn_proc_names_locations.clear();
     }
 
     // Whether `outer` is `scope` or one of its enclosing scopes.
@@ -4609,13 +4656,19 @@ public:
         return false;
     }
 
-    // An external procedure has no explicit interface outside its own subprogram.
+    // The scope that `scope` was copied from, if it is the scope of an entry or of a master function.
+    SymbolTable *original_scope(SymbolTable *scope) {
+        auto it = entry_scope_origin.find(scope);
+        return it == entry_scope_origin.end() ? scope : it->second;
+    }
+
+    // An external procedure or entry has no explicit interface outside the subprogram that defines it.
     bool check_specific_explicit_interface(ASR::symbol_t *specific,
             const std::string &name, const Location &loc) {
         if (!ASR::is_a<ASR::Function_t>(*specific)) return true;
         ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(specific);
         if (!ASRUtils::is_tu_scope(ASRUtils::symbol_parent_symtab(specific))
-                || is_enclosing_scope(f->m_symtab, current_scope)) {
+                || is_enclosing_scope(original_scope(f->m_symtab), original_scope(current_scope))) {
             return true;
         }
         diag.add(Diagnostic(
@@ -4708,6 +4761,7 @@ public:
         SymbolTable *current_scope_copy = current_scope;
         for (auto &proc : generics) {
             current_scope = proc.second[0].scope;
+            EntryCopyDiagnosticsScope entry_copy_diagnostics(*this, current_scope);
             Location loc;
             loc.first = 1;
             loc.last = 1;
