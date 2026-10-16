@@ -10492,10 +10492,16 @@ public:
                     !(ASRUtils::is_integer(*code_type) ||
                       (ASRUtils::is_character(*code_type) &&
                        ASRUtils::extract_kind_from_ttype_t(code_type) == 1))) {
+                ASR::ttype_t *element_type = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable_pointer(code_type));
+                std::string found = ASRUtils::type_to_str_with_kind(
+                    element_type, code);
+                if (ASRUtils::is_array(code_type)) {
+                    found += " array";
+                }
                 diag.add(Diagnostic(
                     "`pause` code must be a scalar integer or default character "
-                    "expression, found " +
-                    ASRUtils::type_to_str_fortran_expr(code_type, code),
+                    "expression, found " + found,
                     Level::Error, Stage::Semantic, {
                         Label("", {code->base.loc})
                     }));
