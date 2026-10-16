@@ -745,6 +745,7 @@ RUN(NAME functions_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME functions_65 LABELS gfortran llvm)
 RUN(NAME functions_66 LABELS gfortran llvm)
 RUN(NAME functions_67 LABELS gfortran llvm)
+RUN(NAME functions_68 LABELS gfortran llvm) # automatic array result sized by a spread actual argument (#15333)
 
 RUN(NAME common_01 LABELS gfortran)
 

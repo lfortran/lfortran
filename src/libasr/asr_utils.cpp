@@ -5143,16 +5143,20 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
 // its result type, so a `size(...)` query on one has to be answered from
 // the operands: matmul is (n,k)x(k,m) -> (n,m), (n,k)x(k) -> (n) and
 // (k)x(k,m) -> (m), and transpose swaps the two extents of its argument.
+// `spread(source, dim, ncopies)` inserts the extent `ncopies` into the
+// shape of `source` at position `dim`.
 // The general rule in `make_ArraySize_t_util` -- the size of the first
 // array argument, which holds for the intrinsics whose result has the
 // shape of their argument -- would answer `size(matmul(a, b))` with the
-// size of `a`.  Returns nullptr for every other intrinsic, and for an
-// operand rank combination that is not one of matmul's three.
+// size of `a`.  Returns nullptr for every other intrinsic, for an
+// operand rank combination that is not one of matmul's three, and for a
+// `spread` of an array whose `dim` is not a constant.
 static ASR::asr_t* array_intrinsic_shape_size(Allocator &al,
     const Location &a_loc, ASR::IntrinsicArrayFunction_t* af,
     ASR::expr_t* a_dim, ASR::ttype_t* a_type, bool for_type) {
     // Each dimension of the result, as the operand and the 1-based
-    // dimension of that operand whose extent it is.
+    // dimension of that operand whose extent it is; a null operand stands
+    // for the extent `ncopies` of `spread`.
     std::vector<std::pair<ASR::expr_t*, int64_t>> shape;
     ASRUtils::IntrinsicArrayFunctions id =
         static_cast<ASRUtils::IntrinsicArrayFunctions>(af->m_arr_intrinsic_id);
@@ -5180,12 +5184,45 @@ static ASR::asr_t* array_intrinsic_shape_size(Allocator &al,
         }
         shape.push_back({a, 2});
         shape.push_back({a, 1});
+    } else if( id == ASRUtils::IntrinsicArrayFunctions::Spread ) {
+        if( af->n_args != 3 ) return nullptr;
+        ASR::expr_t* source = ASRUtils::get_past_array_physical_cast(af->m_args[0]);
+        size_t rs = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(source));
+        size_t rr = ASRUtils::extract_n_dims_from_ttype(af->m_type);
+        // A scalar `source` is stored as a one-element array, so the
+        // result has the rank of the stored `source`.
+        if( rr == rs ) {
+            shape.push_back({nullptr, 1});
+        } else {
+            int dim = -1;
+            if( rr != rs + 1 || !ASRUtils::extract_value(
+                    ASRUtils::expr_value(af->m_args[1]), dim) ||
+                dim < 1 || (size_t) dim > rr ) {
+                return nullptr;
+            }
+            for( size_t i = 1; i <= rr; i++ ) {
+                if( i < (size_t) dim ) {
+                    shape.push_back({source, i});
+                } else if( i == (size_t) dim ) {
+                    shape.push_back({nullptr, i});
+                } else {
+                    shape.push_back({source, i - 1});
+                }
+            }
+        }
     } else {
         return nullptr;
     }
     ASRBuilder builder(al, a_loc);
     ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, 4));
     auto extent = [&](size_t i) {
+        if( shape[i].first == nullptr ) {
+            // The extent `ncopies` of `spread`, which is zero when negative.
+            ASR::expr_t* ncopies = CastingUtil::perform_casting(
+                af->m_args[2], a_type, al, a_loc);
+            return builder.Max(ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                al, a_loc, 0, a_type)), ncopies);
+        }
         ASR::expr_t* d = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
             al, a_loc, shape[i].second, int32_type));
         return ASRUtils::EXPR(make_ArraySize_t_util(al, a_loc, shape[i].first,
