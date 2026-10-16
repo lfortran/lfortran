@@ -18239,13 +18239,16 @@ public:
                     ASR::ttype_t* tmp_type = ret_type;
                     if (ASR::is_a<ASR::String_t>(*ret_type)) {
                         ASR::String_t* ret_str = ASR::down_cast<ASR::String_t>(ret_type);
+                        tmp_type = ASRUtils::duplicate_type(al, ret_type);
+                        ASR::down_cast<ASR::String_t>(tmp_type)->m_physical_type =
+                            ASR::string_physical_typeType::DescriptorString;
                         if (ret_str->m_len != nullptr &&
                                 !ASRUtils::is_value_constant(ret_str->m_len)) {
                             ASR::ttype_t* deferred_str_type = ASRUtils::TYPE(
                                 ASR::make_String_t(al, val->base.loc,
                                     ret_str->m_kind, nullptr,
                                     ASR::string_length_kindType::DeferredLength,
-                                    ret_str->m_physical_type));
+                                    ASR::string_physical_typeType::DescriptorString));
                             tmp_type = ASRUtils::TYPE(
                                 ASRUtils::make_Allocatable_t_util(al,
                                     val->base.loc, deferred_str_type));
