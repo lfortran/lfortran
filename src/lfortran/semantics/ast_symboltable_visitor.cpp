@@ -498,6 +498,27 @@ public:
         return forward_instantiation_procedures.count(sym) != 0;
     }
 
+    // Move a private specific of a use-associated generic to an internal name.
+    void hide_private_specific(SymbolTable *scope, const std::string &name) {
+        ASR::symbol_t *sym = scope->get_symbol(name);
+        if (sym == nullptr || !ASR::is_a<ASR::ExternalSymbol_t>(*sym)) {
+            return;
+        }
+        ASR::ExternalSymbol_t *ext = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
+        if (!ASR::is_a<ASR::Function_t>(*ext->m_external)) {
+            return;
+        }
+        if (ASR::down_cast<ASR::Function_t>(ext->m_external)->m_access
+                != ASR::accessType::Private) {
+            return;
+        }
+        std::string hidden_name = scope->get_unique_name(
+            name + "@" + std::string(ext->m_module_name), false);
+        scope->erase_symbol(name);
+        ext->m_name = s2c(al, hidden_name);
+        scope->add_symbol(hidden_name, sym);
+    }
+
     ASR::asr_t *complete_instantiation_procedure(ASR::asr_t *definition,
             SymbolTable *scope, const AST::program_unit_t &declaration) {
         for (auto it = forward_instantiation_procedures.begin();
@@ -2493,6 +2514,9 @@ public:
         bool update_gp = false;
         int gp_index_to_be_updated = -1;
         ASR::symbol_t* f1_ = nullptr;
+        if (!in_submodule) {
+            hide_private_specific(parent_scope, sym_name);
+        }
         if (parent_scope->get_symbol(sym_name) != nullptr
                 && !is_forward_instantiation_procedure(parent_scope->get_symbol(sym_name))) {
             f1_ = parent_scope->get_symbol(sym_name);
