@@ -9605,6 +9605,10 @@ inline int64_t get_ArrayConstant_data_size(size_t n_args, ASR::ttype_t* a_type) 
     if (ASR::is_a<ASR::CPtr_t>(*a_type)) {
         return n_args * sizeof(void*);
     }
+    // Logical data is stored as one `bool` per element, whatever the kind.
+    if (ASR::is_a<ASR::Logical_t>(*a_type)) {
+        return n_args * sizeof(bool);
+    }
     return n_args * ASRUtils::extract_kind_from_ttype_t(a_type);
 }
 

@@ -340,7 +340,7 @@
                             Any
                             [(ArrayPhysicalCast
                                 (ArrayConstant
-                                    12
+                                    3
                                     [.true., .true., .true.]
                                     (Array
                                         (Logical 4)

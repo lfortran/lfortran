@@ -112,6 +112,8 @@ public:
             ASR::String_t* str = ASR::down_cast<ASR::String_t>(
                 element_type);
             if(!ASRUtils::extract_value(str->m_len, kind)){LCOMPILERS_ASSERT(false)}
+        } else if (ASR::is_a<ASR::Logical_t>(*element_type)) {
+            kind = sizeof(bool);
         } else {
             kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         }
