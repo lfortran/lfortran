@@ -67,7 +67,9 @@ program bindc_73
     implicit none
     procedure(get_c), pointer :: p
     procedure(source_c), pointer :: source_p
+    character(3) :: buffer
     character :: c
+
     if (take_c(get_c()) /= iachar('q')) error stop 4
     if (take_value(get_c()) /= iachar('q')) error stop 5
     if (outer_c() /= 'q') error stop 15
@@ -77,6 +79,7 @@ program bindc_73
     calls = 0
     call take_string(get_c() // 'ab', 'qab')
     if (calls /= 1) error stop 12
+    calls = 0
     call take_string(repeat(get_c(), 3), 'qqq')
     p => get_c
     c = p()
@@ -88,4 +91,10 @@ program bindc_73
     call take_string(source_p(), 'rs')
     call source_callback(source_c)
     call source_callback(source_p)
+    write(buffer, '(a)') get_c()
+    if (buffer /= 'q  ') error stop 7
+    write(buffer, '(a)') p()
+    if (buffer /= 'q  ') error stop 8
+    write(buffer, '(a)') source_p()
+    if (buffer /= 'rs ') error stop 14
 end program

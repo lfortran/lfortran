@@ -2806,14 +2806,15 @@ Primitive_Types get_string_primitive_type(Serialization_Info* s_info){
                 s_info->serialization_string);
         exit(1);
     }
-    if(s_info->serialization_string[s_info->current_stop++] == 'D'){
+    char physical_type = s_info->serialization_string[s_info->current_stop++];
+    if(physical_type == 'D'){
         bool DESC = 
             s_info->serialization_string[s_info->current_stop++] == 'E' &&
             s_info->serialization_string[s_info->current_stop++] == 'S' && 
             s_info->serialization_string[s_info->current_stop++] == 'C';
         if(!DESC){fprintf(stderr, "%s", "ERROR: string serializatino\n");exit(1);}
         return STRING_DESCRIPTOR_TYPE;
-    } else if (s_info->serialization_string[s_info->current_stop++] == 'C'){
+    } else if (physical_type == 'C'){
         bool CCHAR = 
             s_info->serialization_string[s_info->current_stop++] == 'C' &&
             s_info->serialization_string[s_info->current_stop++] == 'H' && 
