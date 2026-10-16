@@ -2102,13 +2102,13 @@ public:
         std::string r = indent;
         r += "call ";
         r += ASRUtils::symbol_name(x.m_kernel);
-        r += "<<<";
-        visit_expr(*x.m_grid_size);
-        r += src;
-        r += ", ";
+        // The execution configuration as CUDA writes it: whole blocks.
+        visit_expr(*x.m_thread_count);
+        std::string thread_count = src;
         visit_expr(*x.m_block_size);
-        r += src;
-        r += ">>>(";
+        std::string block_size = src;
+        r += "<<<(" + thread_count + " + " + block_size + " - 1)/"
+            + block_size + ", " + block_size + ">>>(";
         for (size_t i = 0; i < x.n_args; i++) {
             visit_expr(*x.m_args[i].m_value);
             r += src;

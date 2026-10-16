@@ -24,8 +24,8 @@ The value of the expression.
 
 ## Description
 
-The block index counts from zero, up to the `grid_size` the kernel was
-launched with.
+The block index counts from zero, below the number of blocks the kernel was
+launched with: its `thread_count` rounded up to whole blocks.
 
 ## Examples
 

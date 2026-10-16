@@ -35,7 +35,7 @@ generators (asr_to_metal.cpp and asr_to_cuda.cpp) expect:
     ...
     scalars%x = x                       ! one struct holding every scalar
     call lfortran_gpu_set_scalar_arg(kernel, n, c_loc(scalars), sizeof(scalars))
-    grid = [grid_size, 1, 1]
+    grid = [(thread_count + block_size - 1) / block_size, 1, 1]
     block = [block_size, 1, 1]
     call lfortran_gpu_launch(ctx, kernel, c_loc(grid), c_loc(block))
     call lfortran_gpu_release_kernel(kernel)
@@ -52,7 +52,8 @@ workspace) is a scratch buffer.
 A scratch buffer of the launch (GpuKernelLaunch.scratch), which only the
 device holds, is set with lfortran_gpu_set_scratch_arg instead, read back
 after the launch with lfortran_gpu_read_scratch_arg when the launch says so,
-and freed with the kernel by lfortran_gpu_release_kernel.
+and freed with the kernel by lfortran_gpu_release_kernel. So is every
+per-thread workspace of the kernel, which is never read back.
 
 The finalized Function.gpu layout fixes the buffer order, scalar fields and
 workspace bindings. This pass expands that contract without deciding whether
@@ -960,6 +961,9 @@ class DeviceLaunchExpandVisitor :
                 "lfortran_gpu_set_buffer_arg",
                 {b.CPtr(), int32, b.CPtr(), int64, int32},
                 {true, true, true, true, true});
+            ASR::symbol_t *set_scratch_sym = runtime_subroutine(loc,
+                "lfortran_gpu_set_scratch_arg", {b.CPtr(), int32, int64},
+                {true, true, true});
             int buffer_idx = 0;
             std::vector<std::pair<BufferArg, int>> read_backs;
             std::vector<PackedBuffer> packed_buffers;
@@ -1015,11 +1019,8 @@ class DeviceLaunchExpandVisitor :
                         args.push_back(al, call_arg(loc,
                             b.i32(buffer_idx++)));
                         args.push_back(al, call_arg(loc, buffer.byte_size));
-                        out.push_back(al, b.SubroutineCall(
-                            runtime_subroutine(loc,
-                                "lfortran_gpu_set_scratch_arg",
-                                {b.CPtr(), int32, int64},
-                                {true, true, true}), args));
+                        out.push_back(al, b.SubroutineCall(set_scratch_sym,
+                            args));
                         continue;
                     }
                     args.push_back(al, call_arg(loc, b.i32(buffer_idx++)));
@@ -1082,22 +1083,32 @@ class DeviceLaunchExpandVisitor :
                     {true, true, true, true}), args));
             }
 
-            // The runtime takes the grid and block geometry as int[3].
+            // The threads that run the body are numbered from zero, and
+            // the runtime starts whole blocks of them, given as int[3]: the
+            // kernel sends the threads past the last back before its body.
+            // A loop of no iterations has a count below one.
+            ASR::expr_t *threads = declare_local(loc, "gpu_threads", int64);
+            out.push_back(al, b.Assignment(threads,
+                b.i2i_t(x.m_thread_count, int64)));
+            out.push_back(al, b.If(b.Lt(threads, b.i64(0)),
+                {b.Assignment(threads, b.i64(0))}, {}));
+            ASR::expr_t *block_size = b.i2i_t(x.m_block_size, int64);
             ASR::ttype_t *dim3 = b.Array({3}, int32);
             ASR::expr_t *grid = declare_local(loc, "gpu_grid", dim3);
             ASR::expr_t *block = declare_local(loc, "gpu_block", dim3);
-            fill_geometry(loc, out, grid, x.m_grid_size);
+            fill_geometry(loc, out, grid, b.Div(b.Sub(b.Add(threads,
+                block_size), b.i64(1)), block_size));
             fill_geometry(loc, out, block, x.m_block_size);
 
             // A block local variable length array in the kernel becomes an
-            // extra device buffer holding one instance per thread, because
-            // the device languages have no variable length arrays. Nothing
-            // of it is copied in or back, so only the device holds it.
+            // extra device buffer holding one instance per thread that runs
+            // the body, because the device languages have no variable
+            // length arrays. What a thread finds in its instance is
+            // undefined, as for any local, and nothing reads it after the
+            // launch, so it is a scratch buffer: only the device holds it.
             for (size_t w = 0; w < layout.n_workspaces; w++) {
                 const ASR::gpu_workspace_t &workspace = layout.m_workspaces[w];
-                ASR::expr_t *n_elements = b.Mul(
-                    b.i2i_t(x.m_grid_size, int64),
-                    b.i2i_t(x.m_block_size, int64));
+                ASR::expr_t *n_elements = threads;
                 for (size_t d = 0; d < workspace.n_dims; d++) {
                     const auto &dim = workspace.m_dims[d];
                     ASR::expr_t *extent = dim.m_parameter
@@ -1106,17 +1117,14 @@ class DeviceLaunchExpandVisitor :
                         : dim.m_extent;
                     n_elements = b.Mul(n_elements, b.i2i_t(extent, int64));
                 }
-                ASR::expr_t *n_bytes = b.Mul(n_elements,
-                    b.i64(workspace.m_element_size));
                 Vec<ASR::call_arg_t> args;
                 args.reserve(al, 3);
                 args.push_back(al, call_arg(loc, gpu_kernel));
                 args.push_back(al, call_arg(loc,
                     b.i32(workspace.m_buffer_index)));
-                args.push_back(al, call_arg(loc, n_bytes));
-                out.push_back(al, b.SubroutineCall(runtime_subroutine(loc,
-                    "lfortran_gpu_set_scratch_arg", {b.CPtr(), int32, int64},
-                    {true, true, true}), args));
+                args.push_back(al, call_arg(loc, b.Mul(n_elements,
+                    b.i64(workspace.m_element_size))));
+                out.push_back(al, b.SubroutineCall(set_scratch_sym, args));
             }
 
             Vec<ASR::call_arg_t> launch_args;

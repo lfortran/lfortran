@@ -161,7 +161,9 @@ generates the device source. It never falls back to the CPU:
   allocates before the launch, when the host can size it (the fast path),
   and on the device heap otherwise (see
   [Allocating on the device](#allocating-on-the-device)). Every thread uses
-  a slice of a host-sized buffer. When the size changes from one iteration
+  a slice of a host-sized buffer, one slice per iteration, which only the
+  device holds: what a slice holds on entry is undefined, as for any local,
+  and nothing is copied in or back. When the size changes from one iteration
   to the next (`allocate(w(m(k)))`, or `x(k)%values()` whose result has the
   size of a component of the iteration's element), the host works it out
   for every iteration before the launch, from the loop limits and the
