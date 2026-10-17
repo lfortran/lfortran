@@ -28936,6 +28936,19 @@ public:
         return;
     }
 
+    void wrap_string_function_result(ASR::ttype_t* type) {
+        if (ASRUtils::is_string_only(type)) {
+            llvm::Value* string_ptr = llvm_utils->CreateAlloca(
+                llvm_utils->get_StringType(type), nullptr, "string_ret_const");
+            builder->CreateStore(tmp, string_ptr);
+            tmp = string_ptr;
+        }
+        if (ASRUtils::is_character(*type)
+                && ASRUtils::get_string_type(type)->m_physical_type == ASR::DescriptorString) {
+            strings_to_be_deallocated.push_back(al, tmp);
+        }
+    }
+
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         if ( compiler_options.emit_debug_info ) debug_emit_loc(x);
         if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
@@ -28978,6 +28991,7 @@ public:
             llvm::FunctionType* fntype = llvm_utils->get_function_type(
                 *func, module.get());
             tmp = builder->CreateCall(fntype, callee, args);
+            wrap_string_function_result(x.m_type);
             return ;
         }
 
@@ -28994,6 +29008,7 @@ public:
         }
         if( is_deferred ) {
             visit_RuntimePolymorphicFunctionCall(x, proc_sym_name);
+            wrap_string_function_result(x.m_type);
             return ;
         }
 
@@ -29122,14 +29137,7 @@ public:
                 tmp = CreateCallUtil(fn, args, return_var_type0);
             }
         }
-        // Direct and indirect string calls both produce a pointer to the
-        // physical value: string_descriptor* or i8*.
-        if (ASRUtils::is_string_only(x.m_type)) {
-            llvm::Value* string_ptr = llvm_utils->CreateAlloca(
-                llvm_utils->get_StringType(x.m_type), nullptr, "string_ret_const");
-            builder->CreateStore(tmp, string_ptr);
-            tmp = string_ptr;
-        }
+        wrap_string_function_result(x.m_type);
         // Convert complex return value from platform ABI to internal representation
         if (s->m_return_var) {
             ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
@@ -29137,10 +29145,6 @@ public:
                 tmp = llvm_utils->complex_function_return_abi_to_internal(tmp,
                     return_var_type0);
             }
-        }
-        if (ASRUtils::is_character(*x.m_type)
-                && ASRUtils::get_string_type(x.m_type)->m_physical_type == ASR::DescriptorString) {
-            strings_to_be_deallocated.push_back(al, tmp);
         }
     }
 
