@@ -3086,6 +3086,18 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         if (!ASRUtils::is_array(x->m_type) &&
                 ASRUtils::is_character(*x->m_type)) {
             ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_FunctionCall(x);
+            // The old result length can still reference an unevaluated
+            // actual. Instantiate it again using the saved argument values,
+            // without changing the callee's signature or another call's type.
+            ASR::ttype_t* return_type = ASRUtils::get_FunctionType(
+                x->m_name)->m_return_var_type;
+            if (return_type) {
+                return_type = ASRUtils::duplicate_type(al, return_type);
+                ASRUtils::ReplaceFunctionParamWithArg replacer(
+                    al, x->m_args, x->n_args);
+                replacer.replace_type(return_type);
+                x->m_type = return_type;
+            }
         }
         if( ASRUtils::is_elemental(x->m_name) && !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
             // ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x->m_name);

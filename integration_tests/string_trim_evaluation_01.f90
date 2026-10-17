@@ -1,6 +1,6 @@
 program string_trim_evaluation_01
     implicit none
-    integer :: calls = 0, failures = 0, i, j, condition_calls = 0
+    integer :: calls = 0, failures = 0, i, j, condition_calls = 0, wrapper_calls = 0
     character(2) :: text
     character(16) :: padded
     character(10) :: array(3)
@@ -126,6 +126,51 @@ program string_trim_evaluation_01
     array = repeat(trim(get_text('ab')), 2) // '!'
     if (any(array /= 'abab!') .or. calls /= 1) error stop 23
 
+    calls = 0
+    wrapper_calls = 0
+    dynamic = copy_text(trim(get_varying())) // '!'
+    call check(dynamic, 'abc!', 1)
+    if (len(dynamic) /= 4 .or. wrapper_calls /= 1) error stop 25
+
+    calls = 0
+    wrapper_calls = 0
+    array = copy_text(trim(get_varying())) // '!'
+    if (any(array /= 'abc!') .or. calls /= 1 .or. wrapper_calls /= 1) error stop 26
+
+    calls = 0
+    wrapper_calls = 0
+    padded = copy_text(copy_text(trim(get_varying()))) // '!'
+    call check(padded, 'abc!', 1)
+    if (wrapper_calls /= 2) error stop 27
+
+    calls = 0
+    wrapper_calls = 0
+    dynamic = bracket(copy_text(trim(get_varying()))) // '!'
+    call check(dynamic, '[abc]!', 1)
+    if (len(dynamic) /= 6 .or. wrapper_calls /= 2) error stop 28
+
+    calls = 0
+    wrapper_calls = 0
+    dynamic = join_text(trim(get_changing()), trim(get_changing())) // '!'
+    call check(dynamic, 'xxx!', 2)
+    if (len(dynamic) /= 4 .or. wrapper_calls /= 1) error stop 29
+
+    calls = 0
+    wrapper_calls = 0
+    array = join_text(copy_text(trim(get_changing())), copy_text(trim(get_changing()))) // '!'
+    if (any(array /= 'xxx!') .or. calls /= 2 .or. wrapper_calls /= 3) error stop 30
+
+    calls = 0
+    condition_calls = 0
+    wrapper_calls = 0
+    i = 0
+    do while (matches(copy_text(trim(get_loop_text(2)))))
+        i = i + 1
+        if (i == 1) cycle
+        if (i == 5) exit
+    end do
+    if (i /= 2 .or. calls /= 3 .or. condition_calls /= 3 .or. wrapper_calls /= 3) error stop 31
+
     do i = 0, 3
         calls = 0
         dynamic = trim(get_dynamic(i)) // '!'
@@ -140,6 +185,18 @@ program string_trim_evaluation_01
         calls = 0
         array = trim(get_dynamic(i)) // '!'
         if (any(array /= repeat('x', i) // '!') .or. calls /= 1) error stop 24
+
+        calls = 0
+        wrapper_calls = 0
+        dynamic = bracket(copy_text(trim(get_dynamic(i)))) // '!'
+        call check(dynamic, '[' // repeat('x', i) // ']!', 1)
+        if (len(dynamic) /= i + 3 .or. wrapper_calls /= 2) error stop 32
+
+        calls = 0
+        wrapper_calls = 0
+        array = bracket(copy_text(trim(get_dynamic(i)))) // '!'
+        if (any(array /= '[' // repeat('x', i) // ']!') .or. calls /= 1) error stop 33
+        if (wrapper_calls /= 2) error stop 34
     end do
 
     if (failures /= 0) error stop 5
@@ -167,6 +224,37 @@ contains
         character(5) :: result
         calls = calls + 1
         result = repeat('x', calls)
+    end function
+
+    function get_varying() result(result)
+        character(5) :: result
+        calls = calls + 1
+        if (calls == 1) then
+            result = 'abc'
+        else
+            result = 'd'
+        end if
+    end function
+
+    function copy_text(value) result(result)
+        character(*), intent(in) :: value
+        character(len(value)) :: result
+        wrapper_calls = wrapper_calls + 1
+        result = value
+    end function
+
+    function bracket(value) result(result)
+        character(*), intent(in) :: value
+        character(len(value) + 2) :: result
+        wrapper_calls = wrapper_calls + 1
+        result = '[' // value // ']'
+    end function
+
+    function join_text(left, right) result(result)
+        character(*), intent(in) :: left, right
+        character(len(left) + len(right)) :: result
+        wrapper_calls = wrapper_calls + 1
+        result = left // right
     end function
 
     integer function get_count()
