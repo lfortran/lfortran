@@ -2903,8 +2903,6 @@
                                                     )
                                                     ()
                                                 )
-                                                FixedSizeArray
-                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -3074,8 +3072,6 @@
                                                     )
                                                     ()
                                                 )
-                                                FixedSizeArray
-                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -3245,8 +3241,6 @@
                                                     )
                                                     ()
                                                 )
-                                                FixedSizeArray
-                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -3416,8 +3410,6 @@
                                                     )
                                                     ()
                                                 )
-                                                FixedSizeArray
-                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -3587,8 +3579,6 @@
                                                     )
                                                     ()
                                                 )
-                                                FixedSizeArray
-                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -3758,8 +3748,6 @@
                                                     )
                                                     ()
                                                 )
-                                                FixedSizeArray
-                                                SIMDArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -5259,8 +5247,6 @@
                                                             ()
                                                             [((ArrayPhysicalCast
                                                                 (Var 5 a)
-                                                                DescriptorArray
-                                                                DescriptorArray
                                                                 (Array
                                                                     (Real 4)
                                                                     [(()
@@ -5274,8 +5260,6 @@
                                                             ))
                                                             ((ArrayPhysicalCast
                                                                 (Var 5 b)
-                                                                DescriptorArray
-                                                                DescriptorArray
                                                                 (Array
                                                                     (Real 4)
                                                                     [(()
@@ -5289,8 +5273,6 @@
                                                             ))
                                                             ((ArrayPhysicalCast
                                                                 (Var 5 c)
-                                                                DescriptorArray
-                                                                DescriptorArray
                                                                 (Array
                                                                     (Real 4)
                                                                     [(()

@@ -600,7 +600,7 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                 if (arg_phys != dummy_phys) {
                     arg = ASRUtils::EXPR(
                         ASRUtils::make_ArrayPhysicalCast_t_util(al, loc,
-                            arr_expr, arg_phys, dummy_phys,
+                            arr_expr,
                             ASRUtils::duplicate_type(al,
                                 ASRUtils::expr_type(arr_expr), nullptr,
                                 dummy_phys, true),

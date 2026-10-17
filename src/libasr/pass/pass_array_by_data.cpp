@@ -693,22 +693,21 @@ class EditProcedureReplacer: public ASR::BaseExprReplacer<EditProcedureReplacer>
         ASR::BaseExprReplacer<EditProcedureReplacer>::replace_ArrayPhysicalCast(x);
         // TODO: Allow for DescriptorArray to DescriptorArray physical cast for allocatables
         // later on
-        x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
-        if( (x->m_old == x->m_new &&
-             x->m_old != ASR::array_physical_typeType::DescriptorArray) ||
-            (x->m_old == x->m_new && x->m_old == ASR::array_physical_typeType::DescriptorArray &&
+        ASR::array_physical_typeType source = ASRUtils::array_physical_cast_source(x);
+        if( ASRUtils::is_noop_array_physical_cast(*x) ||
+            (source == ASRUtils::array_physical_cast_destination(x) &&
             (ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x->m_arg)) ||
              ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x->m_arg))) &&
             ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(x->m_arg)) ==
             ASRUtils::extract_n_dims_from_ttype(x->m_type))) {
             *current_expr = x->m_arg;
-        } else if (x->m_old == ASR::array_physical_typeType::AssumedRankArray &&
+        } else if (source == ASR::array_physical_typeType::AssumedRankArray &&
                    !ASRUtils::is_array(x->m_type)) {
             // rank(0): AssumedRankArray → scalar, nothing to update
         } else {
             ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(
                   ASRUtils::type_get_past_allocatable(x->m_type)));
-            if (ASRUtils::is_dimension_empty(arr->m_dims, arr->n_dims) && !(x->m_old == ASR::array_physical_typeType::AssumedRankArray)) {
+            if (ASRUtils::is_dimension_empty(arr->m_dims, arr->n_dims) && source != ASR::array_physical_typeType::AssumedRankArray) {
                 ASR::Array_t* src_arr = ASR::down_cast<ASR::Array_t>(
                     ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(
                         ASRUtils::expr_type(x->m_arg))));
@@ -1120,8 +1119,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                                     ASR::expr_t* physical_cast = ASRUtils::EXPR(
                                         ASRUtils::make_ArrayPhysicalCast_t_util(
                                             al, orig_args[i].m_value->base.loc,
-                                            orig_args[i].m_value, array_t->m_physical_type,
-                                            ASR::array_physical_typeType::PointerArray,
+                                            orig_args[i].m_value,
                                             ASRUtils::duplicate_type(al, arg_type, nullptr,
                                                 ASR::array_physical_typeType::PointerArray, true),
                                             nullptr));
@@ -1141,8 +1139,7 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(orig_arg_type)));
                     if( array_t->m_physical_type != ASR::array_physical_typeType::PointerArray ) {
                         ASR::expr_t* physical_cast = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                            al, orig_arg_i->base.loc, orig_arg_i, array_t->m_physical_type,
-                            ASR::array_physical_typeType::PointerArray, ASRUtils::duplicate_type(al, orig_arg_type,
+                            al, orig_arg_i->base.loc, orig_arg_i, ASRUtils::duplicate_type(al, orig_arg_type,
                             nullptr, ASR::array_physical_typeType::PointerArray, true), nullptr));
                         ASR::call_arg_t physical_cast_arg;
                         physical_cast_arg.loc = orig_arg_i->base.loc;

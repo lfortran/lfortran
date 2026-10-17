@@ -1184,8 +1184,6 @@
                                                         ))
                                                         ((ArrayPhysicalCast
                                                             (Var 10 a)
-                                                            DescriptorArray
-                                                            DescriptorArray
                                                             (Array
                                                                 (TypeParameter
                                                                     t
@@ -1204,8 +1202,6 @@
                                                         ((Var 10 m))
                                                         ((ArrayPhysicalCast
                                                             (Var 10 b)
-                                                            DescriptorArray
-                                                            DescriptorArray
                                                             (Array
                                                                 (TypeParameter
                                                                     t
@@ -1239,8 +1235,6 @@
                                                         ))
                                                         ((ArrayPhysicalCast
                                                             (Var 10 c)
-                                                            PointerArray
-                                                            DescriptorArray
                                                             (Array
                                                                 (TypeParameter
                                                                     t
@@ -2414,8 +2408,6 @@
                                         ))
                                         ((ArrayPhysicalCast
                                             (Var 15 a)
-                                            DescriptorArray
-                                            UnboundedPointerArray
                                             (Array
                                                 (Real 4)
                                                 [(()
@@ -2430,8 +2422,6 @@
                                         ((Var 15 m))
                                         ((ArrayPhysicalCast
                                             (Var 15 b)
-                                            DescriptorArray
-                                            UnboundedPointerArray
                                             (Array
                                                 (Real 4)
                                                 [(()
@@ -2457,8 +2447,6 @@
                                         ))
                                         ((ArrayPhysicalCast
                                             (Var 15 c)
-                                            PointerArray
-                                            UnboundedPointerArray
                                             (Array
                                                 (Real 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -4372,8 +4360,6 @@
                                                         ))
                                                         ((ArrayPhysicalCast
                                                             (Var 19 a)
-                                                            DescriptorArray
-                                                            DescriptorArray
                                                             (Array
                                                                 (TypeParameter
                                                                     t
@@ -4392,8 +4378,6 @@
                                                         ((Var 19 m))
                                                         ((ArrayPhysicalCast
                                                             (Var 19 b)
-                                                            DescriptorArray
-                                                            DescriptorArray
                                                             (Array
                                                                 (TypeParameter
                                                                     t
@@ -4427,8 +4411,6 @@
                                                         ))
                                                         ((ArrayPhysicalCast
                                                             (Var 19 c)
-                                                            PointerArray
-                                                            DescriptorArray
                                                             (Array
                                                                 (TypeParameter
                                                                     t
@@ -4848,8 +4830,6 @@
                                                         ))
                                                         ((ArrayPhysicalCast
                                                             (Var 24 a)
-                                                            DescriptorArray
-                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 4)
                                                                 [(()
@@ -4864,8 +4844,6 @@
                                                         ((Var 24 m))
                                                         ((ArrayPhysicalCast
                                                             (Var 24 b)
-                                                            DescriptorArray
-                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 4)
                                                                 [(()
@@ -4891,8 +4869,6 @@
                                                         ))
                                                         ((ArrayPhysicalCast
                                                             (Var 24 c)
-                                                            PointerArray
-                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 4)
                                                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -5257,8 +5233,6 @@
                                                         ))
                                                         ((ArrayPhysicalCast
                                                             (Var 25 a)
-                                                            DescriptorArray
-                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 8)
                                                                 [(()
@@ -5273,8 +5247,6 @@
                                                         ((Var 25 m))
                                                         ((ArrayPhysicalCast
                                                             (Var 25 b)
-                                                            DescriptorArray
-                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 8)
                                                                 [(()
@@ -5300,8 +5272,6 @@
                                                         ))
                                                         ((ArrayPhysicalCast
                                                             (Var 25 c)
-                                                            PointerArray
-                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 8)
                                                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -5898,8 +5868,6 @@
                                                         ))
                                                         ((ArrayPhysicalCast
                                                             (Var 22 a)
-                                                            DescriptorArray
-                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 8)
                                                                 [(()
@@ -5914,8 +5882,6 @@
                                                         ((Var 22 m))
                                                         ((ArrayPhysicalCast
                                                             (Var 22 b)
-                                                            DescriptorArray
-                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 8)
                                                                 [(()
@@ -5941,8 +5907,6 @@
                                                         ))
                                                         ((ArrayPhysicalCast
                                                             (Var 22 c)
-                                                            PointerArray
-                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 8)
                                                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -6307,8 +6271,6 @@
                                                         ))
                                                         ((ArrayPhysicalCast
                                                             (Var 21 a)
-                                                            DescriptorArray
-                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 4)
                                                                 [(()
@@ -6323,8 +6285,6 @@
                                                         ((Var 21 m))
                                                         ((ArrayPhysicalCast
                                                             (Var 21 b)
-                                                            DescriptorArray
-                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 4)
                                                                 [(()
@@ -6350,8 +6310,6 @@
                                                         ))
                                                         ((ArrayPhysicalCast
                                                             (Var 21 c)
-                                                            PointerArray
-                                                            UnboundedPointerArray
                                                             (Array
                                                                 (Real 4)
                                                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -6409,8 +6367,6 @@
                                             ()
                                             [((ArrayPhysicalCast
                                                 (Var 20 asp)
-                                                FixedSizeArray
-                                                DescriptorArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -6424,8 +6380,6 @@
                                             ))
                                             ((ArrayPhysicalCast
                                                 (Var 20 bsp)
-                                                FixedSizeArray
-                                                DescriptorArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -6460,8 +6414,6 @@
                                             ()
                                             [((ArrayPhysicalCast
                                                 (Var 20 adp)
-                                                FixedSizeArray
-                                                DescriptorArray
                                                 (Array
                                                     (Real 8)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -6475,8 +6427,6 @@
                                             ))
                                             ((ArrayPhysicalCast
                                                 (Var 20 bdp)
-                                                FixedSizeArray
-                                                DescriptorArray
                                                 (Array
                                                     (Real 8)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)

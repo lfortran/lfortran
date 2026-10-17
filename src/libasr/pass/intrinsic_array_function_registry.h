@@ -2328,7 +2328,7 @@ namespace Shape {
         declare_basic_variables("_lcompilers_shape");
         bool is_arg_assumed_rank = new_args[0].m_value &&
             ASR::is_a<ASR::ArrayPhysicalCast_t>(*new_args[0].m_value) &&
-            ASR::down_cast<ASR::ArrayPhysicalCast_t>(new_args[0].m_value)->m_old ==
+            ASRUtils::array_physical_cast_source(ASR::down_cast<ASR::ArrayPhysicalCast_t>(new_args[0].m_value)) ==
                 ASR::array_physical_typeType::AssumedRankArray;
         bool is_struct_type_arg = !is_arg_assumed_rank &&
             ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[0]));

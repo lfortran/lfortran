@@ -233,8 +233,6 @@
                   :arg (Var
                     :v (SymbolRef 1 "a")
                   )
-                  :old :FixedSizeArray
-                  :new :DescriptorArray
                   :type (Array
                     :type (Integer
                       :kind 4

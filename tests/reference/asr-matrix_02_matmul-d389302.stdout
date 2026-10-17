@@ -237,8 +237,6 @@
                                     )
                                     ColMajor
                                 )
-                                FixedSizeArray
-                                DescriptorArray
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -306,8 +304,6 @@
                                     )
                                     ColMajor
                                 )
-                                FixedSizeArray
-                                DescriptorArray
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -353,8 +349,6 @@
                             MatMul
                             [(ArrayPhysicalCast
                                 (Var 2 a)
-                                FixedSizeArray
-                                DescriptorArray
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -368,8 +362,6 @@
                             )
                             (ArrayPhysicalCast
                                 (Var 2 b)
-                                FixedSizeArray
-                                DescriptorArray
                                 (Array
                                     (Real 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)

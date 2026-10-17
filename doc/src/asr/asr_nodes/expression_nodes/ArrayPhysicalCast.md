@@ -7,18 +7,15 @@ Changes how an array is represented, not what it holds.
 ### Syntax
 
 ```text
-ArrayPhysicalCast(expr arg, array_physical_type old,
-    array_physical_type new, ttype type, expr? value)
+ArrayPhysicalCast(expr arg, ttype type, expr? value)
 ```
 
 ### Arguments
 
 | Argument | Description |
 |----------|-------------|
-| `arg` | the array expression to re-describe. |
-| `old` | its current representation; see [array_physical_type](../enum_nodes/array_physical_type.md). |
-| `new` | the representation to produce. |
-| `type` | the type of the result, whose `physical_type` is `new`. |
+| `arg` | the array expression to re-describe; the `physical_type` of its type is the representation the cast converts from (see [array_physical_type](../enum_nodes/array_physical_type.md)). |
+| `type` | the type of the result; its `physical_type` is the representation the cast converts to. |
 | `value` | the compile time value of the expression, when the frontend could fold it; `nil` otherwise. |
 
 ### Return values
@@ -34,8 +31,11 @@ the value.
 
 Passing a fixed size array to a procedure that takes an assumed shape
 argument, for instance, needs a descriptor to be built around it, and the cast
-is where that happens. The new physical type appears both in `new` and in the
-`physical_type` of `type`.
+is where that happens. Both representations are read from the types of `arg`
+and of the result, so they cannot disagree with them. The one exception is
+the `rank(0)` view of an assumed-rank array, whose result `type` is a scalar:
+the element is read through the descriptor (the destination counts as
+`DescriptorArray`).
 
 ## Examples
 
@@ -44,8 +44,6 @@ is where that happens. The new physical type appears both in `new` and in the
   :arg (Var
     :v (SymbolRef 1 "a")
   )
-  :old :FixedSizeArray
-  :new :DescriptorArray
   :type (Array
     :type (Integer
       :kind 4

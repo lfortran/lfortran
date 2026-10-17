@@ -653,12 +653,9 @@ class FixArrayPhysicalCast: public ASR::BaseExprReplacer<FixArrayPhysicalCast> {
 
         void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
             ASR::BaseExprReplacer<FixArrayPhysicalCast>::replace_ArrayPhysicalCast(x);
-            if( x->m_old != ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg)) ) {
-                x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
-            }
-            if( (x->m_old == x->m_new &&
-                x->m_old != ASR::array_physical_typeType::DescriptorArray) ||
-                (x->m_old == x->m_new && x->m_old == ASR::array_physical_typeType::DescriptorArray &&
+            if( ASRUtils::is_noop_array_physical_cast(*x) ||
+                (ASRUtils::array_physical_cast_source(x) ==
+                    ASRUtils::array_physical_cast_destination(x) &&
                 (ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x->m_arg)) ||
                 ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x->m_arg))) ) ) {
                 *current_expr = x->m_arg;
@@ -740,8 +737,6 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
                     ASR::array_physical_typeType::DescriptorArray ) {
                 arg = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
                     al, arg->base.loc, arg,
-                    ASRUtils::extract_physical_type(arg_type),
-                    ASR::array_physical_typeType::DescriptorArray,
                     ASRUtils::duplicate_type(al, arg_type,
                         nullptr, ASR::array_physical_typeType::DescriptorArray, true),
                     nullptr));
@@ -760,8 +755,6 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
                 ASR::Associate_t& xx = const_cast<ASR::Associate_t&>(x);
                 xx.m_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
                     al, x.m_value->base.loc, xx.m_value,
-                    ASRUtils::extract_physical_type(ASRUtils::expr_type(xx.m_value)),
-                    ASR::array_physical_typeType::DescriptorArray,
                     ASRUtils::duplicate_type(al, ASRUtils::expr_type(x.m_value),
                     nullptr, ASR::array_physical_typeType::DescriptorArray, true), nullptr));
             } else if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {

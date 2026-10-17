@@ -42,8 +42,6 @@ their lowering is different: an array intrinsic becomes a loop nest, and the
       :arg (Var
         :v (SymbolRef 1 "a")
       )
-      :old :FixedSizeArray
-      :new :DescriptorArray
       :type (Array
         :type (Integer
           :kind 4

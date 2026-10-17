@@ -242,8 +242,6 @@
                                                         )
                                                         ()
                                                     )
-                                                    FixedSizeArray
-                                                    DescriptorArray
                                                     (Array
                                                         (Logical 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -294,8 +292,6 @@
                                                         )
                                                         ()
                                                     )
-                                                    FixedSizeArray
-                                                    DescriptorArray
                                                     (Array
                                                         (Logical 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -351,8 +347,6 @@
                                     )
                                     ColMajor
                                 )
-                                FixedSizeArray
-                                DescriptorArray
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)

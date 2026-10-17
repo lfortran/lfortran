@@ -4854,9 +4854,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     expr2 = ASRUtils::EXPR(ASR::make_ArrayBroadcast_t(al, loc, expr2, dest_shape, ret_type, value));
 
     if (ASRUtils::extract_physical_type(expr1_type) != ASRUtils::extract_physical_type(ret_type)) {
-        expr2 = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, loc, expr2,
-            ASRUtils::extract_physical_type(ret_type),
-            ASRUtils::extract_physical_type(expr1_type), expr1_type, nullptr));
+        expr2 = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, loc, expr2, expr1_type, nullptr));
     }
 }
 

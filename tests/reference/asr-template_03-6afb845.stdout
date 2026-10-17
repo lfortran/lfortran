@@ -1459,8 +1459,6 @@
                                         [((Var 9 a))
                                         ((ArrayPhysicalCast
                                             (Var 9 x)
-                                            FixedSizeArray
-                                            DescriptorArray
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -1472,8 +1470,6 @@
                                         ))
                                         ((ArrayPhysicalCast
                                             (Var 9 y)
-                                            FixedSizeArray
-                                            DescriptorArray
                                             (Array
                                                 (Real 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)

@@ -1499,8 +1499,6 @@ bool GpuOffloadVisitor::replace_array_intrinsic_in_expr(ASR::expr_t* &expr,
         auto *c = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr);
         if (c->m_arg == (ASR::expr_t*)target) {
             c->m_arg = replacement;
-            c->m_old = ASRUtils::extract_physical_type(
-                ASRUtils::expr_type(replacement));
             return true;
         }
         return replace_array_intrinsic_in_expr(c->m_arg, target,

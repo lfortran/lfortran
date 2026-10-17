@@ -933,8 +933,6 @@
                         ()
                         [((ArrayPhysicalCast
                             (Var 4 __libasr_created__subroutine_call_sub)
-                            PointerArray
-                            DescriptorArray
                             (Array
                                 (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 [((IntegerConstant 1 (Integer 4) Decimal)

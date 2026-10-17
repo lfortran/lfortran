@@ -39,8 +39,6 @@
                                                 )
                                                 ColMajor
                                             )
-                                            FixedSizeArray
-                                            DescriptorArray
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -614,8 +612,6 @@
                                             (Var 4 b)
                                             (ArrayPhysicalCast
                                                 (Var 4 newshape)
-                                                FixedSizeArray
-                                                DescriptorArray
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -798,8 +794,6 @@
                                             (Var 4 d)
                                             (ArrayPhysicalCast
                                                 (Var 4 newshape1)
-                                                FixedSizeArray
-                                                DescriptorArray
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -1355,8 +1349,6 @@
                                             (Var 3 a)
                                             (ArrayPhysicalCast
                                                 (Var 3 newshape)
-                                                FixedSizeArray
-                                                DescriptorArray
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -1623,8 +1615,6 @@
                                             (Var 3 c)
                                             (ArrayPhysicalCast
                                                 (Var 3 newshape1)
-                                                FixedSizeArray
-                                                DescriptorArray
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -2101,8 +2091,6 @@
                                         ()
                                         [((ArrayPhysicalCast
                                             (Var 5 a)
-                                            FixedSizeArray
-                                            DescriptorArray
                                             (Array
                                                 (Real 8)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -2266,8 +2254,6 @@
                                         ()
                                         [((ArrayPhysicalCast
                                             (Var 5 d)
-                                            FixedSizeArray
-                                            DescriptorArray
                                             (Array
                                                 (Real 8)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)

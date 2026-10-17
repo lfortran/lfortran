@@ -2805,29 +2805,25 @@ public:
 
     void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
         BaseWalkVisitor<VerifyVisitor>::visit_ArrayPhysicalCast(x);
-        if( x.m_old != ASR::array_physical_typeType::DescriptorArray ) {
-            require(x.m_new != x.m_old, "ArrayPhysicalCast is redundant, "
-                "the old physical type and new physical type must be different.");
-        }
         if(check_external){
-            // For rank(0): AssumedRankArray → scalar, m_type is scalar so skip physical type check
-            bool is_rank0_scalar = (x.m_old == ASR::array_physical_typeType::AssumedRankArray
-                                    && !ASRUtils::is_array(x.m_type));
-            if (!is_rank0_scalar) {
-                require(x.m_new == ASRUtils::extract_physical_type(x.m_type),
-                    "Destination physical type conflicts with the physical type of target");
-            }
-            require(x.m_old == ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg)),
-                "Old physical type conflicts with the physical type of argument " + std::to_string(x.m_old)
-                + " " + std::to_string(ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg))));
+            require(ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(
+                    ASRUtils::expr_type(x.m_arg))),
+                "ArrayPhysicalCast::m_arg must be an array");
+            ASR::array_physical_typeType source = ASRUtils::array_physical_cast_source(x);
+            // A scalar type is only the rank(0) view of an assumed-rank array
+            require(source == ASR::array_physical_typeType::AssumedRankArray ||
+                    ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable_pointer(x.m_type)),
+                "ArrayPhysicalCast::m_type must be an array unless it casts from an assumed-rank array");
+            require(!ASRUtils::is_noop_array_physical_cast(x), "ArrayPhysicalCast is redundant, "
+                "the old physical type and new physical type must be different.");
             bool _inside_array_physical_cast_type_copy = _inside_array_physical_cast_type;
             _inside_array_physical_cast_type = true;
             bool _processing_assumed_rank_array_copy = _processing_assumed_rank_array;
             bool _processing_unbounded_pointer_array_copy = _processing_unbounded_pointer_array;
-            if (x.m_old == ASR::array_physical_typeType::AssumedRankArray) {
+            if (source == ASR::array_physical_typeType::AssumedRankArray) {
                 _processing_assumed_rank_array = true;
             }
-            if (x.m_old == ASR::array_physical_typeType::UnboundedPointerArray) {
+            if (source == ASR::array_physical_typeType::UnboundedPointerArray) {
                 _processing_unbounded_pointer_array = true;
             }
             visit_ttype(*x.m_type);

@@ -661,16 +661,18 @@ public:
 
     ASR::asr_t* duplicate_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t *x) {
         ASR::expr_t *arg = duplicate_expr(x->m_arg);
+        ASR::array_physical_typeType new_phys =
+            ASRUtils::array_physical_cast_destination(x);
         ASR::ttype_t *ttype = substitute_type(&x->base, x->m_type);
         if (ASR::is_a<ASR::Array_t>(*ttype)) {
             ASR::Array_t *arr_type = ASR::down_cast<ASR::Array_t>(ttype);
-            if (arr_type->m_physical_type != x->m_new) {
-                ttype = ASRUtils::duplicate_type(al, ttype, nullptr, x->m_new, true);
+            if (arr_type->m_physical_type != new_phys) {
+                ttype = ASRUtils::duplicate_type(al, ttype, nullptr, new_phys, true);
             }
         }
         ASR::expr_t *value = duplicate_expr(x->m_value);
         return ASR::make_ArrayPhysicalCast_t(al, x->base.base.loc,
-            arg, x->m_old, x->m_new, ttype, value);
+            arg, ttype, value);
     }
 
     ASR::ttype_t* substitute_type(ASR::expr_t* expr, ASR::ttype_t *ttype) {
@@ -3216,23 +3218,21 @@ public:
 
     ASR::asr_t* duplicate_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t *x) {
         ASR::expr_t *arg = duplicate_expr(x->m_arg);
+        ASR::array_physical_typeType new_phys =
+            ASRUtils::array_physical_cast_destination(x);
         ASR::ttype_t *ttype = substitute_type(&x->base, x->m_type);
         if (ASR::is_a<ASR::Array_t>(*ttype)) {
             ASR::Array_t *arr_type = ASR::down_cast<ASR::Array_t>(ttype);
-            if (arr_type->m_physical_type != x->m_new) {
-                ttype = ASRUtils::duplicate_type(al, ttype, nullptr, x->m_new, true);
+            if (arr_type->m_physical_type != new_phys) {
+                ttype = ASRUtils::duplicate_type(al, ttype, nullptr, new_phys, true);
             }
         }
         ASR::expr_t *value = duplicate_expr(x->m_value);
         // The instantiated argument may have a different physical type
         // than in the template (e.g. a FixedSizeArray once a deferred
-        // constant bound is known), so the cast must start from it.
-        ASR::array_physical_typeType old_phys = x->m_old;
-        if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
-            old_phys = ASRUtils::extract_physical_type(ASRUtils::expr_type(arg));
-        }
+        // constant bound is known); the cast starts from it.
         return ASRUtils::make_ArrayPhysicalCast_t_util(al, x->base.base.loc,
-            arg, old_phys, x->m_new, ttype, value);
+            arg, ttype, value);
     }
 
     ASR::asr_t* duplicate_ArraySection(ASR::ArraySection_t *x) {

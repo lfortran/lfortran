@@ -1340,8 +1340,6 @@
                                         [((Var 12 a))
                                         ((ArrayPhysicalCast
                                             (Var 12 x)
-                                            FixedSizeArray
-                                            DescriptorArray
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -1353,8 +1351,6 @@
                                         ))
                                         ((ArrayPhysicalCast
                                             (Var 12 y)
-                                            FixedSizeArray
-                                            DescriptorArray
                                             (Array
                                                 (Real 8)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)

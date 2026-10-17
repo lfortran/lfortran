@@ -224,8 +224,6 @@
                                         ))
                                         ((ArrayPhysicalCast
                                             (Var 8 littlefile)
-                                            DescriptorArray
-                                            PointerArray
                                             (Allocatable
                                                 (Array
                                                     (String 1 () DeferredLength DescriptorString)

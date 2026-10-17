@@ -1158,6 +1158,56 @@ static inline ASR::array_physical_typeType extract_physical_type(ASR::ttype_t* e
     }
 }
 
+// The physical type an ArrayPhysicalCast converts from: the one of its
+// argument.
+static inline ASR::array_physical_typeType array_physical_cast_source(
+        const ASR::ArrayPhysicalCast_t &x) {
+    return extract_physical_type(expr_type(x.m_arg));
+}
+
+static inline ASR::array_physical_typeType array_physical_cast_source(
+        const ASR::ArrayPhysicalCast_t *x) {
+    return array_physical_cast_source(*x);
+}
+
+// The physical type a cast to `type` converts to: the one of the type. A
+// scalar type is the `rank(0)` view of an assumed-rank array, whose element
+// is read through the descriptor.
+static inline ASR::array_physical_typeType array_physical_cast_destination(
+        ASR::ttype_t *type) {
+    type = type_get_past_allocatable_pointer(type);
+    if (!ASR::is_a<ASR::Array_t>(*type)) {
+        return ASR::array_physical_typeType::DescriptorArray;
+    }
+    return ASR::down_cast<ASR::Array_t>(type)->m_physical_type;
+}
+
+static inline ASR::array_physical_typeType array_physical_cast_destination(
+        const ASR::ArrayPhysicalCast_t &x) {
+    return array_physical_cast_destination(x.m_type);
+}
+
+static inline ASR::array_physical_typeType array_physical_cast_destination(
+        const ASR::ArrayPhysicalCast_t *x) {
+    return array_physical_cast_destination(x->m_type);
+}
+
+// Whether a cast of `arg` to `type` converts nothing: it starts and ends
+// with the same representation. A cast from one descriptor to another can
+// still give the array the bounds or rank of its type, so it is never a
+// no-op by physical type alone.
+static inline bool is_noop_array_physical_cast(ASR::expr_t *arg,
+        ASR::ttype_t *type) {
+    ASR::array_physical_typeType source = extract_physical_type(expr_type(arg));
+    return source == array_physical_cast_destination(type) &&
+        source != ASR::array_physical_typeType::DescriptorArray;
+}
+
+static inline bool is_noop_array_physical_cast(
+        const ASR::ArrayPhysicalCast_t &x) {
+    return is_noop_array_physical_cast(x.m_arg, x.m_type);
+}
+
 static inline ASR::abiType expr_abi(ASR::expr_t* e) {
     switch( e->type ) {
         case ASR::exprType::Var: {
@@ -9128,21 +9178,18 @@ static inline ASR::symbol_t* import_struct_sym_as_external(Allocator& al,
 }
 
 static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Location &a_loc,
-    ASR::expr_t* a_arg, ASR::array_physical_typeType a_old, ASR::array_physical_typeType a_new,
-    ASR::ttype_t* a_type, ASR::expr_t* a_value) {
+    ASR::expr_t* a_arg, ASR::ttype_t* a_type, ASR::expr_t* a_value) {
     if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_arg) ) {
-        ASR::ArrayPhysicalCast_t* a_arg_ = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_arg);
-        a_arg = a_arg_->m_arg;
-        a_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(a_arg_->m_arg));
+        a_arg = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_arg)->m_arg;
     }
 
-    LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(ASRUtils::expr_type(a_arg)) == a_old);
+    if( is_noop_array_physical_cast(a_arg, a_type) ) {
+        return (ASR::asr_t*) a_arg;
+    }
     // TODO: Allow for DescriptorArray to DescriptorArray physical cast for allocatables
     // later on
-    if( a_old == a_new ) {
-        if( a_old != ASR::array_physical_typeType::DescriptorArray ) {
-            return (ASR::asr_t*) a_arg;
-        }
+    if( ASRUtils::extract_physical_type(ASRUtils::expr_type(a_arg)) ==
+            array_physical_cast_destination(a_type) ) {
         if( (ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(a_arg)) ||
              ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(a_arg))) &&
             ASRUtils::check_equal_type(ASRUtils::expr_type(a_arg), a_type, nullptr, nullptr) ) {
@@ -9159,7 +9206,7 @@ static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Loc
         }
     }
 
-    return ASR::make_ArrayPhysicalCast_t(al, a_loc, a_arg, a_old, a_new, a_type, a_value);
+    return ASR::make_ArrayPhysicalCast_t(al, a_loc, a_arg, a_type, a_value);
 }
 
 // inline void flatten_ArrayConstant(Allocator& al, void* data, size_t n_args, Vec<ASR::expr_t*> &new_args) {
@@ -10304,8 +10351,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                         array_t = ASR::make_Array_t(al, arg->base.loc, orig_arg_array_t->m_type,
                         dims.p, dims.size(), ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global);
                         ASR::ttype_t* pointer_array_t = ASRUtils::TYPE(ASR::make_Pointer_t(al, arg->base.loc, ASRUtils::TYPE(array_t)));
-                        ASR::asr_t* array_physical_cast = ASR::make_ArrayPhysicalCast_t(al, arg->base.loc, cast_expr, ASR::array_physical_typeType::DescriptorArray,
-                                                        ASR::array_physical_typeType::PointerArray, pointer_array_t, nullptr);
+                        ASR::asr_t* array_physical_cast = ASR::make_ArrayPhysicalCast_t(al, arg->base.loc, cast_expr, pointer_array_t, nullptr);
 
                         a_args[i].m_value = ASRUtils::EXPR(array_physical_cast);
                     }
@@ -10456,8 +10502,6 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                                                     al,
                                                     arg->base.loc,
                                                     arg,
-                                                    arg_array_t->m_physical_type,
-                                                    cast_physical_type,
                                                     cast_target_type,
                                                     nullptr));
                 a_args[i] = physical_cast_arg;
@@ -10654,8 +10698,7 @@ static inline ASR::expr_t* cast_to_descriptor(Allocator& al, ASR::expr_t* arg) {
             ASRUtils::type_get_past_allocatable(arg_type)));
     if( arg_array_t->m_physical_type != ASR::array_physical_typeType::DescriptorArray ) {
         return ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-            al, arg->base.loc, arg, arg_array_t->m_physical_type,
-            ASR::array_physical_typeType::DescriptorArray,
+            al, arg->base.loc, arg,
             ASRUtils::duplicate_type(al, ASRUtils::expr_type(arg),
                 nullptr, ASR::array_physical_typeType::DescriptorArray, true),
             nullptr));
@@ -10738,8 +10781,7 @@ static inline ASR::asr_t* make_Associate_t_util(
                 }
                 dim_vec_ptr = &dim_vec;
             }
-            a_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, a_loc, a_value,
-                        value_ptype, target_ptype, ASRUtils::duplicate_type(al,
+            a_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, a_loc, a_value, ASRUtils::duplicate_type(al,
                         value_type, dim_vec_ptr, target_ptype, true), nullptr));
         }
     }
@@ -10915,7 +10957,7 @@ static inline ASR::asr_t* make_ArrayItem_t_util(Allocator &al, const Location &a
     ASR::expr_t* a_v, ASR::array_index_t* a_args, size_t n_args, ASR::ttype_t* a_type,
     ASR::arraystorageType a_storage_format, ASR::expr_t* a_value,
     bool a_in_bounds = false) {
-    if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_v) && !(ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_old == ASR::array_physical_typeType::AssumedRankArray)) {
+    if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_v) && !(ASRUtils::array_physical_cast_source(ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)) == ASR::array_physical_typeType::AssumedRankArray)) {
         a_v = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a_v)->m_arg;
     }
 
@@ -11081,7 +11123,7 @@ class RemoveArrayProcessingNodeReplacer: public ASR::BaseExprReplacer<RemoveArra
     }
 
     void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
-        if( x->m_new == ASR::array_physical_typeType::SIMDArray ) {
+        if( ASRUtils::array_physical_cast_destination(x) == ASR::array_physical_typeType::SIMDArray ) {
             return ;
         }
         ASR::BaseExprReplacer<RemoveArrayProcessingNodeReplacer>::replace_ArrayPhysicalCast(x);
@@ -11127,7 +11169,7 @@ class RemoveArrayProcessingNodeVisitor: public ASR::CallReplacerOnExpressionsVis
     }
 
     void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
-        if( x.m_new == ASR::array_physical_typeType::SIMDArray ) {
+        if( ASRUtils::array_physical_cast_destination(x) == ASR::array_physical_typeType::SIMDArray ) {
             return ;
         }
 

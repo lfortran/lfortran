@@ -562,9 +562,9 @@ public:
 
     void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t &x) {
         this->visit_expr(*x.m_arg);
-        switch (x.m_old) {
+        switch (ASRUtils::array_physical_cast_source(x)) {
             case (ASR::array_physical_typeType::FixedSizeArray): {
-                if (x.m_new == ASR::array_physical_typeType::PointerArray) {
+                if (ASRUtils::array_physical_cast_destination(x) == ASR::array_physical_typeType::PointerArray) {
                     mlir::Value zero = builder->create<mlir::LLVM::ConstantOp>(loc,
                         builder->getI64Type(), builder->getIndexAttr(0));
                     mlir::Type type = getType(x.m_type);
@@ -572,13 +572,13 @@ public:
                         tmp, mlir::ValueRange{zero, zero});
                 } else {
                     throw CodeGenError("ArrayPhysicalCast to of kind: `"+
-                        std::to_string(x.m_old) +"` is not supported yet",
+                        std::to_string(ASRUtils::array_physical_cast_source(x)) +"` is not supported yet",
                         x.base.base.loc);
                 }
                 break;
             } default: {
                 throw CodeGenError("ArrayPhysicalCast from of kind: `"+
-                    std::to_string(x.m_old) +"` is not supported yet",
+                    std::to_string(ASRUtils::array_physical_cast_source(x)) +"` is not supported yet",
                     x.base.base.loc);
             }
         }

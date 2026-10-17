@@ -338,8 +338,6 @@
                                                 Sum
                                                 [(ArrayPhysicalCast
                                                     (Var 9 b)
-                                                    PointerArray
-                                                    DescriptorArray
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -390,8 +388,6 @@
                                                 Sum
                                                 [(ArrayPhysicalCast
                                                     (Var 9 c)
-                                                    PointerArray
-                                                    DescriptorArray
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -1251,8 +1247,6 @@
                                                 Sum
                                                 [(ArrayPhysicalCast
                                                     (Var 4 b)
-                                                    PointerArray
-                                                    DescriptorArray
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -1718,8 +1712,6 @@
                                 Sum
                                 [(ArrayPhysicalCast
                                     (Var 6 b)
-                                    PointerArray
-                                    DescriptorArray
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -1770,8 +1762,6 @@
                                 Sum
                                 [(ArrayPhysicalCast
                                     (Var 6 c)
-                                    PointerArray
-                                    DescriptorArray
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)

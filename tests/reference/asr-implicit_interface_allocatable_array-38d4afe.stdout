@@ -478,8 +478,6 @@
                         [((IntegerConstant 1 (Integer 4) Decimal))
                         ((ArrayPhysicalCast
                             (Var 2 r_g)
-                            DescriptorArray
-                            PointerArray
                             (Array
                                 (Real 4)
                                 [(()
@@ -528,8 +526,6 @@
                         [((IntegerConstant 1 (Integer 4) Decimal))
                         ((ArrayPhysicalCast
                             (Var 2 r_t)
-                            DescriptorArray
-                            PointerArray
                             (Pointer
                                 (Array
                                     (Real 4)
