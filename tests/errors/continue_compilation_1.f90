@@ -3392,5 +3392,7 @@ contains
     subroutine cc1_len_use()
         type(cc1_len_t(*)) :: a  ! {Error} an assumed LEN type parameter `*` is only allowed for a dummy argument
         type(cc1_len_t(:)) :: b  ! {Error} a deferred LEN type parameter `:` requires the allocatable or pointer attribute
+        type(cc1_len_t(2)) :: c
+        c%n = 3  ! {Error} the LEN type parameter 'n' cannot be assigned
     end subroutine cc1_len_use
 end module cc1_len_type_parameters
