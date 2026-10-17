@@ -4313,3 +4313,9 @@ semantic error: the actual argument for the allocatable dummy argument 'a' must 
      |
 3500 |         call pp(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
      |                 ^^^ the component 'x' is not allocatable: its bounds or length depend on a LEN type parameter
+
+semantic error: the LEN type parameter 'n' cannot be an input item
+    --> tests/errors/continue_compilation_1.f90:3501:21
+     |
+3501 |         read(*, *) (v%n, i = 1, 1)  ! {Error} the LEN type parameter 'n' cannot be an input item
+     |                     ^^^ 

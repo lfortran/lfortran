@@ -2767,14 +2767,8 @@ public:
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
             check_io_item_not_function(expr);
-            if (_type == AST::decl_stmtType::Read
-                    && ASRUtils::is_len_type_param_inquiry(expr)) {
-                std::string name;
-                ASRUtils::get_component_struct(expr, name);
-                diag.add(Diagnostic(
-                    "the LEN type parameter '" + name + "' cannot be an input item",
-                    Level::Error, Stage::Semantic, {Label("", {expr->base.loc})}));
-                throw SemanticAbort();
+            if (_type == AST::decl_stmtType::Read) {
+                check_input_item_not_len_type_param(expr);
             }
             // For READ: expand implied-do loops to individual elements or array section
             if (_type == AST::decl_stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
@@ -4891,6 +4885,26 @@ public:
         throw LCompilersException("get_allocate_expr_sym: unhandled expression type " +
             std::to_string(v->type));
         return nullptr;
+    }
+
+    // A LEN type parameter inquiry cannot be defined, so it cannot be an
+    // input item, also not of an implied-DO loop.
+    void check_input_item_not_len_type_param(ASR::expr_t* expr) {
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+            for (size_t i = 0; i < idl->n_values; i++) {
+                check_input_item_not_len_type_param(idl->m_values[i]);
+            }
+            return;
+        }
+        if (ASRUtils::is_len_type_param_inquiry(expr)) {
+            std::string name;
+            ASRUtils::get_component_struct(expr, name);
+            diag.add(Diagnostic(
+                "the LEN type parameter '" + name + "' cannot be an input item",
+                Level::Error, Stage::Semantic, {Label("", {expr->base.loc})}));
+            throw SemanticAbort();
+        }
     }
 
     // A component whose bounds or length depend on a LEN type parameter is
