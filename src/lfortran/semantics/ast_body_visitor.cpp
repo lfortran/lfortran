@@ -665,12 +665,18 @@ public:
     //   * GoToTarget
     // The `body` Vec must already be reserved
     // Checks the calls in the statements that the last statement was
-    // transformed to (see LenTypeParamActualsChecker). A rejected statement
-    // is dropped, so the dependencies that it added, the first
-    // `n_function_dependencies` being older, are dropped too.
-    void check_len_type_param_actuals(size_t n_function_dependencies) {
+    // transformed to (see LenTypeParamActualsChecker): `tmp`, `tmp_vec` and
+    // the statements that its visit appended to `body` directly, those after
+    // the first `n_body`. A rejected statement is dropped, so the statements
+    // that it appended and the dependencies that it added, those after the
+    // first `n_function_dependencies`, are dropped too.
+    void check_len_type_param_actuals(Vec<ASR::stmt_t*> &body, size_t n_body,
+            size_t n_function_dependencies) {
         LenTypeParamActualsChecker checker(diag);
         try {
+            for (size_t i = n_body; i < body.size(); i++) {
+                checker.visit_stmt(*body[i]);
+            }
             if (tmp && ASR::is_a<ASR::stmt_t>(*tmp)) {
                 checker.visit_stmt(*ASRUtils::STMT(tmp));
             }
@@ -680,7 +686,9 @@ public:
                 }
             }
         } catch (const SemanticAbort &) {
-            current_function_dependencies.n = n_function_dependencies;
+            body.n = std::min(body.n, n_body);
+            current_function_dependencies.n = std::min(
+                current_function_dependencies.n, n_function_dependencies);
             throw;
         }
     }
@@ -701,10 +709,12 @@ public:
             }
             // Visit the statement
             LCOMPILERS_ASSERT(current_body != nullptr)
+            size_t n_body_stmts = body.size();
             size_t n_function_dependencies = current_function_dependencies.size();
             try {
                 this->visit_decl_stmt(*m_body[i]);
-                check_len_type_param_actuals(n_function_dependencies);
+                check_len_type_param_actuals(body, n_body_stmts,
+                    n_function_dependencies);
             } catch (const SemanticAbort &a) {
                 if (!compiler_options.continue_compilation) {
                     throw a;

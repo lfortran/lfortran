@@ -3501,3 +3501,46 @@ contains
         read(*, *) (v%n, i = 1, 1)  ! {Error} the LEN type parameter 'n' cannot be an input item
     end subroutine cc1_lenp_use
 end module cc1_len_call_paths
+
+! The statements that a call adds before itself, for an alternate return or
+! for an impure function hoisted into a temporary, are checked too, and are
+! dropped with a rejected statement.
+module cc1_len_hoisted_calls
+    implicit none
+    type :: cc1_lenh_t(n)
+        integer, len :: n
+        real :: x(n)
+    end type
+contains
+    subroutine cc1_lenh_salt(k, *)
+        integer, intent(out) :: k
+        k = 1
+        return 1
+    end subroutine cc1_lenh_salt
+    integer function cc1_lenh_fset(k)
+        integer, intent(out) :: k
+        k = 1
+        cc1_lenh_fset = 1
+    end function cc1_lenh_fset
+    integer function cc1_lenh_ident(j)
+        integer, intent(in) :: j
+        cc1_lenh_ident = j
+    end function cc1_lenh_ident
+    integer function cc1_lenh_fgrow(a)
+        real, allocatable, intent(inout) :: a(:)
+        cc1_lenh_fgrow = 1
+    end function cc1_lenh_fgrow
+    subroutine cc1_lenh_use()
+        type(cc1_lenh_t(3)) :: v
+        integer :: k
+        call cc1_lenh_salt(v%n, *10)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+        k = cc1_lenh_ident(cc1_lenh_fset(v%n))  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+10      print *, k
+    end subroutine cc1_lenh_use
+    subroutine cc1_lenh_drop()
+        type(cc1_lenh_t(3)) :: v
+        integer :: kk, ii
+        kk = cc1_lenh_ident(cc1_lenh_fset(ii)) + cc1_lenh_fgrow(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+        print *, kk
+    end subroutine cc1_lenh_drop
+end module cc1_len_hoisted_calls
