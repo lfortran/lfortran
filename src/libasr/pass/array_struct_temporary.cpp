@@ -1687,6 +1687,10 @@ bool contains_function_reference(ASR::expr_t* value) {
     return check.found;
 }
 
+void stabilize_association_actuals(Allocator& al, ASR::FunctionCall_t* call,
+    Vec<ASR::stmt_t*>* current_body, SymbolTable* current_scope,
+    ExprsWithTargetType& exprs_with_target, bool realloc_lhs);
+
 // Returns true if `value` is the null pointer constant and its type is an
 // array of rank >= 1, i.e. a value which is represented by an array
 // descriptor rather than by a plain address.
@@ -2735,6 +2739,10 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        if (!inside_where) {
+            stabilize_association_actuals(al, const_cast<ASR::FunctionCall_t*>(&x),
+                current_body, current_scope, exprs_with_target, realloc_lhs);
+        }
         visit_Call(x, "_function_call_");
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_FunctionCall(x);
     }
@@ -3122,13 +3130,162 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         }
     }
 
-    void replace_FunctionCall(ASR::FunctionCall_t* x) {
+    bool is_association_actual(ASR::expr_t* arg) {
+        if (!arg) {
+            return false;
+        }
+        arg = ASRUtils::get_past_array_physical_cast(arg);
+        switch (arg->type) {
+            case ASR::exprType::StringSection:
+                return is_association_actual(
+                    ASR::down_cast<ASR::StringSection_t>(arg)->m_arg);
+            case ASR::exprType::StringItem:
+                return is_association_actual(
+                    ASR::down_cast<ASR::StringItem_t>(arg)->m_arg);
+            case ASR::exprType::ComplexRe:
+                return is_association_actual(
+                    ASR::down_cast<ASR::ComplexRe_t>(arg)->m_arg);
+            case ASR::exprType::ComplexIm:
+                return is_association_actual(
+                    ASR::down_cast<ASR::ComplexIm_t>(arg)->m_arg);
+            case ASR::exprType::ArrayItem:
+                return is_association_actual(
+                    ASR::down_cast<ASR::ArrayItem_t>(arg)->m_v);
+            case ASR::exprType::ArraySection:
+                return is_association_actual(
+                    ASR::down_cast<ASR::ArraySection_t>(arg)->m_v);
+            case ASR::exprType::StructInstanceMember:
+                return is_association_actual(
+                    ASR::down_cast<ASR::StructInstanceMember_t>(arg)->m_v);
+            case ASR::exprType::FunctionCall:
+                return ASRUtils::is_pointer(ASRUtils::expr_type(arg));
+            default: {
+                ASR::Variable_t* root = designator_root_variable(arg);
+                return (root && root->m_storage != ASR::storage_typeType::Parameter) ||
+                    is_class_to_struct_view_of_variable(arg);
+            }
+        }
+    }
+
+    void stabilize_actual_selector(ASR::expr_t*& selector) {
+        if (!selector || !contains_function_reference(selector)) {
+            return;
+        }
+        ASR::expr_t** saved_expr = current_expr;
+        bool saved_context = in_array_context;
+        current_expr = &selector;
+        in_array_context = false;
+        replace_expr(selector);
+        if (is_evaluated_once(selector)) {
+            if (ASRUtils::is_array(ASRUtils::expr_type(selector))) {
+                force_replace_current_expr_for_array(current_expr,
+                    "_actual_selector_", al, current_body, current_scope,
+                    exprs_with_target, false);
+            } else {
+                force_replace_current_expr_for_scalar(current_expr,
+                    "_actual_selector_", al, current_body, current_scope,
+                    exprs_with_target);
+            }
+        }
+        in_array_context = saved_context;
+        current_expr = saved_expr;
+    }
+
+    // Actual variables denote storage even for an INTENT(IN) dummy (for
+    // example, a TARGET dummy may retain its address). Save selectors, never
+    // their selected values, and leave pointer/allocatable identity intact.
+    void stabilize_actual_designator(ASR::expr_t*& arg) {
+        switch (arg->type) {
+            case ASR::exprType::ArrayPhysicalCast:
+                stabilize_actual_designator(
+                    ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg)->m_arg);
+                break;
+            case ASR::exprType::ArrayItem: {
+                auto* item = ASR::down_cast<ASR::ArrayItem_t>(arg);
+                stabilize_actual_designator(item->m_v);
+                for (size_t i = 0; i < item->n_args; i++) {
+                    stabilize_actual_selector(item->m_args[i].m_left);
+                    stabilize_actual_selector(item->m_args[i].m_right);
+                    stabilize_actual_selector(item->m_args[i].m_step);
+                }
+                break;
+            }
+            case ASR::exprType::ArraySection: {
+                auto* section = ASR::down_cast<ASR::ArraySection_t>(arg);
+                stabilize_actual_designator(section->m_v);
+                for (size_t i = 0; i < section->n_args; i++) {
+                    stabilize_actual_selector(section->m_args[i].m_left);
+                    stabilize_actual_selector(section->m_args[i].m_right);
+                    stabilize_actual_selector(section->m_args[i].m_step);
+                }
+                break;
+            }
+            case ASR::exprType::StructInstanceMember:
+                stabilize_actual_designator(
+                    ASR::down_cast<ASR::StructInstanceMember_t>(arg)->m_v);
+                break;
+            case ASR::exprType::StringSection: {
+                auto* section = ASR::down_cast<ASR::StringSection_t>(arg);
+                stabilize_actual_designator(section->m_arg);
+                stabilize_actual_selector(section->m_start);
+                stabilize_actual_selector(section->m_end);
+                stabilize_actual_selector(section->m_step);
+                break;
+            }
+            case ASR::exprType::StringItem: {
+                auto* item = ASR::down_cast<ASR::StringItem_t>(arg);
+                stabilize_actual_designator(item->m_arg);
+                stabilize_actual_selector(item->m_idx);
+                break;
+            }
+            case ASR::exprType::ComplexRe:
+                stabilize_actual_designator(
+                    ASR::down_cast<ASR::ComplexRe_t>(arg)->m_arg);
+                break;
+            case ASR::exprType::ComplexIm:
+                stabilize_actual_designator(
+                    ASR::down_cast<ASR::ComplexIm_t>(arg)->m_arg);
+                break;
+            case ASR::exprType::FunctionCall: {
+                ASR::expr_t** saved_expr = current_expr;
+                bool saved_context = in_array_context;
+                current_expr = &arg;
+                in_array_context = false;
+                replace_expr(arg);
+                ASR::expr_t* pointer = ASRUtils::is_array(ASRUtils::expr_type(arg)) ?
+                    create_temporary_variable_for_array(al, arg, current_scope,
+                        "_actual_pointer_", true) :
+                    create_temporary_variable_for_scalar(al, arg, current_scope,
+                        "_actual_pointer_", true);
+                current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
+                    al, arg->base.loc, pointer, arg)));
+                arg = pointer;
+                current_expr = saved_expr;
+                in_array_context = saved_context;
+                break;
+            }
+            default:
+                break;
+        }
+    }
+
+    void normalize_function_actuals(ASR::FunctionCall_t* x) {
         size_t original_body_size = current_body->size();
         std::vector<ASR::expr_t*> original_args;
         for (size_t i = 0; i < x->n_args; i++) {
             original_args.push_back(x->m_args[i].m_value);
         }
-        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_FunctionCall(x);
+        ASR::expr_t** saved_expr = current_expr;
+        for (size_t i = 0; i < x->n_args; i++) {
+            ASR::expr_t*& arg = x->m_args[i].m_value;
+            if (is_association_actual(arg)) {
+                stabilize_actual_designator(arg);
+            } else {
+                current_expr = &arg;
+                replace_expr(arg);
+            }
+        }
+        current_expr = saved_expr;
         ASR::ttype_t* declared_type = ASRUtils::get_FunctionType(
             x->m_name)->m_return_var_type;
         if (declared_type) {
@@ -3143,7 +3300,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             for (size_t i: metadata_arguments.indices) {
                 LCOMPILERS_ASSERT(i < x->n_args);
                 ASR::expr_t* arg = x->m_args[i].m_value;
-                if (!arg || !is_evaluated_once(arg)) {
+                if (!arg || is_association_actual(arg) || !is_evaluated_once(arg)) {
                     continue;
                 }
                 ASR::expr_t** current_expr_copy = current_expr;
@@ -3211,9 +3368,32 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 normalize_casts.replace_ttype(return_type);
                 ASRUtils::ProcedureTypeImporter(al, current_scope, true)
                     .replace_ttype(return_type);
+                // Specification values are those on entry to this call, not
+                // values obtained after an INOUT/OUT dummy has changed storage.
+                class SaveMetadata: public ASR::BaseExprReplacer<SaveMetadata> {
+                    ReplaceExprWithTemporary& owner;
+                public:
+                    SaveMetadata(ReplaceExprWithTemporary& owner): owner(owner) {}
+                    void replace_expr(ASR::expr_t* expr) {
+                        if (expr && !ASRUtils::is_value_constant(
+                                ASRUtils::expr_value(expr))) {
+                            std::string name = PassUtils::temporary_name(
+                                owner.current_scope, "_result_metadata_");
+                            ASR::stmt_t* assignment;
+                            *current_expr = PassUtils::create_auxiliary_variable_for_expr(
+                                expr, name, owner.al, owner.current_scope, assignment);
+                            owner.current_body->push_back(owner.al, assignment);
+                        }
+                    }
+                } save_metadata(*this);
+                save_metadata.replace_ttype(return_type);
                 x->m_type = return_type;
             }
         }
+    }
+
+    void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        normalize_function_actuals(x);
         if( ASRUtils::is_elemental(x->m_name) && !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
             // ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x->m_name);
             // std::cout << f << "\n";
@@ -3600,6 +3780,27 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         current_expr = current_expr_copy_149;
     }
 };
+
+void stabilize_association_actuals(Allocator& al, ASR::FunctionCall_t* call,
+    Vec<ASR::stmt_t*>* current_body, SymbolTable* current_scope,
+    ExprsWithTargetType& exprs_with_target, bool realloc_lhs) {
+    ReplaceExprWithTemporary replacer(al, exprs_with_target, realloc_lhs);
+    replacer.current_body = current_body;
+    replacer.current_scope = current_scope;
+    ASR::expr_t* expr = &call->base;
+    replacer.current_expr = &expr;
+    // ArgSimplifier can allocate a function-result temporary before the
+    // general expression traversal. Its allocation must already use saved
+    // selectors and pre-call specification values, not copies of source calls.
+    for (size_t i = 0; i < call->n_args; i++) {
+        ASR::expr_t* arg = call->m_args[i].m_value;
+        if (replacer.is_association_actual(arg) &&
+                contains_function_reference(arg)) {
+            replacer.normalize_function_actuals(call);
+            return;
+        }
+    }
+}
 
 class ReplaceExprWithTemporaryVisitor:
     public ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor> {
