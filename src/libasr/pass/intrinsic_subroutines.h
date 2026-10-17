@@ -42,6 +42,7 @@ enum class IntrinsicImpureSubroutines : int64_t {
     CoBroadcast,
     Exit,
     GetCwd,
+    Pause,
     // ...
 };
 
@@ -458,7 +459,7 @@ namespace RandomNumber {
                 end do
             */
             ASR::dimension_t* array_dims = nullptr;
-            int array_rank = extract_dimensions_from_ttype(arg_types[0], array_dims);
+            int array_rank = checked_integer_cast<int>(extract_dimensions_from_ttype(arg_types[0], array_dims));
             std::vector<ASR::expr_t*> do_loop_variables;
             for (int i = 0; i < array_rank; i++) {
                 do_loop_variables.push_back(declare("i_" + std::to_string(i), int32, Local));
@@ -2049,6 +2050,65 @@ namespace Sleep {
     }
 
 } // namespace Sleep
+
+// The legacy PAUSE statement: write the stop code, if any, to stderr and wait
+// for a line on stdin; "go" resumes execution, anything else terminates it.
+namespace Pause {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args <= 1, "Unexpected number of args, pause takes at most 1 argument, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        if (x.n_args == 1) {
+            ASR::ttype_t* type = ASRUtils::expr_type(x.m_args[0]);
+            ASRUtils::require_impl(!ASRUtils::is_array(type) &&
+                (ASRUtils::is_integer(*type) || ASRUtils::is_character(*type)),
+                "The pause code must be a scalar integer or character", x.base.base.loc, diagnostics);
+        }
+    }
+
+    static inline ASR::stmt_t* instantiate_Pause(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_pause_");
+        bool numeric = arg_types.n == 1 && ASRUtils::is_integer(*arg_types[0]);
+        std::string c_func_name = numeric ? "_lfortran_pause_numeric" : "_lfortran_pause_string";
+        Vec<ASR::ttype_t*> c_types; c_types.reserve(al, 2);
+        Vec<ASR::expr_t*> c_args; c_args.reserve(al, 2);
+        if (numeric) {
+            fill_func_arg_sub("code", arg_types[0], In);
+            c_types.push_back(al, int64);
+            c_args.push_back(al, CastingUtil::perform_casting(args[0], int64, al, loc));
+        } else {
+            ASR::expr_t* code;
+            if (arg_types.n == 1) {
+                fill_func_arg_sub("code", b.String(nullptr, ASR::AssumedLength), In);
+                code = args[0];
+            } else {
+                code = b.StringConstant("", b.String(b.i32(0), ASR::ExpressionLength));
+            }
+            c_types.push_back(al, b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1));
+            c_types.push_back(al, int64);
+            c_args.push_back(al, create_string_physical_cast(al, code, ASR::CChar));
+            c_args.push_back(al, EXPR(ASR::make_StringLen_t(al, loc, code, int64, nullptr)));
+        }
+        std::vector<std::string> c_arg_names(c_types.size(), "x");
+        std::vector<bool> c_arg_value(c_types.size(), true);
+        ASR::symbol_t* c_sym = b.create_c_subroutine_interface(c_func_name, fn_symtab,
+            c_types, c_arg_names, c_arg_value);
+        fn_symtab->add_symbol(c_func_name, c_sym);
+        dep.push_back(al, s2c(al, c_func_name));
+        Vec<ASR::call_arg_t> call_args; call_args.reserve(al, c_args.size());
+        for (size_t i = 0; i < c_args.size(); i++) {
+            ASR::call_arg_t arg; arg.loc = loc; arg.m_value = c_args[i];
+            call_args.push_back(al, arg);
+        }
+        body.push_back(al, b.SubroutineCall(c_sym, call_args));
+        ASR::symbol_t* subroutine = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, subroutine);
+        return b.SubroutineCall(subroutine, new_args);
+    }
+
+} // namespace Pause
 
 namespace Exit {
 

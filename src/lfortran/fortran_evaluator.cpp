@@ -126,7 +126,7 @@ uint32_t FortranEvaluator::open_cell(const std::string &code,
     // Provisional, so that a diagnostic raised before the cell is closed still
     // resolves to this cell. close_cell() corrects it once the text the parser
     // is given is known.
-    lm.file_ends.push_back(start + code.size());
+    lm.file_ends.push_back(LFortran::source_offset(start + code.size()));
     return start;
 }
 
@@ -145,7 +145,7 @@ void FortranEvaluator::close_cell(const std::string &code, LocationManager &lm)
             fl.out_start[i] += cell_start;
         }
     }
-    lm.file_ends.back() = cell_start + code.size();
+    lm.file_ends.back() = LFortran::source_offset(cell_start + code.size());
     cell_files.push_back(fl);
     cell_ends.push_back(lm.file_ends.back());
 }
@@ -453,7 +453,7 @@ Result<std::string> FortranEvaluator::get_asr(const std::string &code,
     }
 }
 
-LCompilers::ASR::asr_t* FortranEvaluator::handle_lookup_name(LCompilers::ASR::TranslationUnit_t* tu, uint64_t pos) {
+LCompilers::ASR::asr_t* FortranEvaluator::handle_lookup_name(LCompilers::ASR::TranslationUnit_t* tu, uint32_t pos) {
     LCompilers::LFortran::LookupNameVisitor lnv(pos);
     lnv.visit_TranslationUnit(*tu);
     if (lnv.node_to_return != nullptr) {
@@ -811,7 +811,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     diag::Diagnostics &/*diagnostics*/, LocationManager &/*lm*/
 #endif
 , [[maybe_unused]] const std::string &infile,
-  [[maybe_unused]] int* time_opt=nullptr)
+  [[maybe_unused]] int64_t* time_opt=nullptr)
 {
 #ifdef HAVE_LFORTRAN_LLVM
     eval_count++;

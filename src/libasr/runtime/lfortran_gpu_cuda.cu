@@ -17,12 +17,53 @@ extern "C" {
 
 typedef void (*kernel_func_t)(void);
 
+/*
+Launches are asynchronous, and the device keeps what a kernel writes; this is
+the same model as the Metal runtime (see lfortran_gpu_metal.m), with the
+default stream ordering every copy and launch:
+
+* A buffer argument the kernel may write (LFORTRAN_GPU_WRITE) is resident: it
+  has an entry in a table of host ranges, which owns device memory. The host
+  bytes are copied in when the entry is not dirty; after the launch the
+  entry is dirty, a later launch handed the same range uses the same memory
+  without a copy, and lfortran_gpu_sync copies every dirty entry back.
+* A buffer the kernel only reads is copied in, before the launch on the
+  stream, into memory the argument slot of its kernel keeps; the stream
+  orders that copy after every earlier launch that read the memory. When it
+  is a dirty range, the kernel reads the resident memory instead.
+* A range that overlaps a dirty one without being the same range makes the
+  runtime sync first.
+* Memory a launch may still use is freed only at the next sync.
+*/
+
+enum { MAX_RESIDENT = 1024, MAX_DEFERRED = 4096 };
+
+typedef struct resident {
+    void *host;
+    size_t size;
+    void *device;
+    size_t capacity;
+    int dirty;
+    int used;
+} resident;
+
+typedef struct slot_cache {
+    void *buffers[MAX_ARGS];
+    size_t capacities[MAX_ARGS];
+} slot_cache;
+
 // Registry for pre-compiled CUDA kernels
 static struct {
     const char *name;
     kernel_func_t func;
+    slot_cache cache;
 } kernel_registry[MAX_KERNELS];
 static int n_registered = 0;
+
+static resident entries[MAX_RESIDENT];
+static int n_entries = 0;
+static void *deferred_free[MAX_DEFERRED];
+static int n_deferred = 0;
 
 extern "C" void lfortran_gpu_register_kernel(const char *name, kernel_func_t func) {
     if (n_registered >= MAX_KERNELS) {
@@ -43,19 +84,138 @@ struct lfortran_gpu_ctx {
     int device_id;
 };
 
+enum { ARG_NONE = 0, ARG_BUFFER, ARG_SCALAR, ARG_SCRATCH };
+
 struct lfortran_gpu_kernel {
     kernel_func_t func;
     lfortran_gpu_ctx *ctx;
-    // Argument storage
     void *buffer_host_ptrs[MAX_ARGS];
     void *buffer_device_ptrs[MAX_ARGS];
     size_t buffer_sizes[MAX_ARGS];
+    int access[MAX_ARGS];
     scalar_arg scalar_args[MAX_ARGS];
-    int arg_is_buffer[MAX_ARGS]; // 1 = buffer, 0 = scalar
-    // A buffer only the device holds: nothing is copied in or back.
-    int arg_is_scratch[MAX_ARGS];
+    int kind[MAX_ARGS];
     int n_args;
+    slot_cache *cache;
 };
+
+static void check(cudaError_t err, const char *what) {
+    if (err != cudaSuccess) {
+        fprintf(stderr, "lfortran_gpu: %s failed: %s\n", what,
+            cudaGetErrorString(err));
+        exit(1);
+    }
+}
+
+static void* device_alloc(size_t size) {
+    void *d_ptr = NULL;
+    check(cudaMalloc(&d_ptr, size), "cudaMalloc");
+    return d_ptr;
+}
+
+static void sync_all(void);
+
+// Frees device memory at the next sync, when no launch can use it anymore.
+static void free_later(void *d_ptr) {
+    if (!d_ptr) return;
+    if (n_deferred == MAX_DEFERRED) sync_all();
+    deferred_free[n_deferred++] = d_ptr;
+}
+
+static int overlaps(const void *a, size_t na, const void *b, size_t nb) {
+    const char *pa = (const char *)a, *pb = (const char *)b;
+    return na > 0 && nb > 0 && pa < pb + nb && pb < pa + na;
+}
+
+static int find_entry(void *host) {
+    for (int i = 0; i < n_entries; i++) {
+        if (entries[i].used && entries[i].host == host) return i;
+    }
+    return -1;
+}
+
+static void remove_entry(int i) {
+    free_later(entries[i].device);
+    memset(&entries[i], 0, sizeof(resident));
+}
+
+static void sync_all(void) {
+    check(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
+    for (int i = 0; i < n_entries; i++) {
+        if (!entries[i].used || !entries[i].dirty) continue;
+        check(cudaMemcpy(entries[i].host, entries[i].device, entries[i].size,
+            cudaMemcpyDeviceToHost), "cudaMemcpy D2H");
+        entries[i].dirty = 0;
+    }
+    for (int i = 0; i < n_deferred; i++) cudaFree(deferred_free[i]);
+    n_deferred = 0;
+}
+
+static int overlaps_dirty(void *host, size_t size) {
+    for (int i = 0; i < n_entries; i++) {
+        resident *e = &entries[i];
+        if (!e->used || !e->dirty) continue;
+        if (e->host == host && e->size == size) continue;
+        if (overlaps(e->host, e->size, host, size)) return 1;
+    }
+    return 0;
+}
+
+static void* resident_for_write(void *host, size_t size) {
+    int i = find_entry(host);
+    if (i >= 0 && entries[i].size != size) {
+        if (entries[i].dirty) sync_all();
+        entries[i].size = size;
+    }
+    if (i < 0) {
+        for (int j = 0; j < n_entries; j++) {
+            if (!entries[j].used) { i = j; break; }
+        }
+        if (i < 0) {
+            if (n_entries == MAX_RESIDENT) {
+                sync_all();
+                for (int j = 0; j < n_entries; j++) remove_entry(j);
+                n_entries = 0;
+            }
+            i = n_entries++;
+        }
+        entries[i].host = host;
+        entries[i].size = size;
+        entries[i].used = 1;
+    }
+    resident *e = &entries[i];
+    if (e->dirty) return e->device;
+    if (!e->device || e->capacity < size) {
+        free_later(e->device);
+        e->device = device_alloc(size);
+        e->capacity = size;
+    }
+    check(cudaMemcpyAsync(e->device, host, size, cudaMemcpyHostToDevice, 0),
+        "cudaMemcpyAsync H2D");
+    e->dirty = 1;
+    return e->device;
+}
+
+static void* dirty_resident(void *host, size_t size) {
+    int i = find_entry(host);
+    if (i < 0 || !entries[i].dirty || entries[i].size != size) return NULL;
+    return entries[i].device;
+}
+
+// The memory argument `idx` of a kernel keeps for what it only reads.
+static void* slot_buffer(slot_cache *cache, int idx, size_t size) {
+    if (cache->buffers[idx] && cache->capacities[idx] >= size) {
+        return cache->buffers[idx];
+    }
+    free_later(cache->buffers[idx]);
+    size_t length = size;
+    if (cache->capacities[idx] * 2 > length) {
+        length = cache->capacities[idx] * 2;
+    }
+    cache->buffers[idx] = device_alloc(length);
+    cache->capacities[idx] = length;
+    return cache->buffers[idx];
+}
 
 extern "C" {
 
@@ -77,6 +237,13 @@ lfortran_gpu_ctx* lfortran_gpu_init(void) {
 
 void lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx) {
     if (!ctx) return;
+    sync_all();
+    // The reset frees all device memory, the kept buffers included.
+    for (int i = 0; i < n_registered; i++) {
+        memset(&kernel_registry[i].cache, 0, sizeof(slot_cache));
+    }
+    memset(entries, 0, sizeof(entries));
+    n_entries = 0;
     cudaDeviceReset();
     free(ctx);
 }
@@ -89,35 +256,32 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
     char name_buf[LFORTRAN_GPU_MAX_KERNEL_NAME];
     lfortran_gpu_copy_kernel_name(name_buf, entry_point, entry_point_len);
 
-    // Look up the kernel in the registry
-    kernel_func_t func = NULL;
+    int entry = -1;
     for (int i = 0; i < n_registered; i++) {
         if (strcmp(kernel_registry[i].name, name_buf) == 0) {
-            func = kernel_registry[i].func;
+            entry = i;
             break;
         }
     }
-    if (!func) {
+    if (entry < 0) {
         fprintf(stderr, "lfortran_gpu_load_kernel: kernel '%s' not found in registry\n",
             name_buf);
         exit(1);
     }
 
     lfortran_gpu_kernel *k = (lfortran_gpu_kernel*)calloc(1, sizeof(lfortran_gpu_kernel));
-    k->func = func;
+    k->func = kernel_registry[entry].func;
     k->ctx = ctx;
     k->n_args = 0;
+    k->cache = &kernel_registry[entry].cache;
     return k;
 }
 
 void lfortran_gpu_release_kernel(lfortran_gpu_kernel* k) {
     if (!k) return;
-    // Free device buffers
     for (int i = 0; i < k->n_args; i++) {
-        if (k->arg_is_buffer[i] && k->buffer_device_ptrs[i]) {
-            cudaFree(k->buffer_device_ptrs[i]);
-        }
-        if (!k->arg_is_buffer[i] && k->scalar_args[i].data) {
+        if (k->kind[i] == ARG_SCRATCH) free_later(k->buffer_device_ptrs[i]);
+        if (k->kind[i] == ARG_SCALAR && k->scalar_args[i].data) {
             free(k->scalar_args[i].data);
         }
     }
@@ -125,29 +289,14 @@ void lfortran_gpu_release_kernel(lfortran_gpu_kernel* k) {
 }
 
 void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
-    void* ptr, size_t size)
+    void* ptr, size_t size, int access)
 {
     if (!k || idx >= MAX_ARGS) return;
     k->buffer_host_ptrs[idx] = ptr;
     k->buffer_sizes[idx] = size;
-    k->arg_is_buffer[idx] = 1;
+    k->access[idx] = access;
+    k->kind[idx] = ARG_BUFFER;
     if (idx >= k->n_args) k->n_args = idx + 1;
-
-    // Allocate device memory and copy host → device
-    void *d_ptr = NULL;
-    cudaError_t err = cudaMalloc(&d_ptr, size);
-    if (err != cudaSuccess) {
-        fprintf(stderr, "lfortran_gpu_set_buffer_arg: cudaMalloc failed: %s\n",
-            cudaGetErrorString(err));
-        exit(1);
-    }
-    err = cudaMemcpy(d_ptr, ptr, size, cudaMemcpyHostToDevice);
-    if (err != cudaSuccess) {
-        fprintf(stderr, "lfortran_gpu_set_buffer_arg: cudaMemcpy H2D failed: %s\n",
-            cudaGetErrorString(err));
-        exit(1);
-    }
-    k->buffer_device_ptrs[idx] = d_ptr;
 }
 
 void lfortran_gpu_set_scratch_arg(lfortran_gpu_kernel* k, int idx,
@@ -156,37 +305,23 @@ void lfortran_gpu_set_scratch_arg(lfortran_gpu_kernel* k, int idx,
     if (!k || idx >= MAX_ARGS) return;
     k->buffer_host_ptrs[idx] = NULL;
     k->buffer_sizes[idx] = size;
-    k->arg_is_buffer[idx] = 1;
-    k->arg_is_scratch[idx] = 1;
+    k->kind[idx] = ARG_SCRATCH;
     if (idx >= k->n_args) k->n_args = idx + 1;
-    void *d_ptr = NULL;
-    if (size > 0) {
-        cudaError_t err = cudaMalloc(&d_ptr, size);
-        if (err != cudaSuccess) {
-            fprintf(stderr, "lfortran_gpu_set_scratch_arg: cudaMalloc "
-                "failed: %s\n", cudaGetErrorString(err));
-            exit(1);
-        }
-    }
-    k->buffer_device_ptrs[idx] = d_ptr;
+    k->buffer_device_ptrs[idx] = size > 0 ? device_alloc(size) : NULL;
 }
 
 void lfortran_gpu_read_scratch_arg(lfortran_gpu_kernel* k, int idx,
     void* dst, size_t size)
 {
     if (!k || idx >= MAX_ARGS || size == 0) return;
-    if (!k->arg_is_scratch[idx] || size > k->buffer_sizes[idx]) {
+    if (k->kind[idx] != ARG_SCRATCH || size > k->buffer_sizes[idx]) {
         fprintf(stderr, "lfortran_gpu_read_scratch_arg: no scratch buffer "
             "%d of %zu bytes\n", idx, size);
         exit(1);
     }
-    cudaError_t err = cudaMemcpy(dst, k->buffer_device_ptrs[idx], size,
-        cudaMemcpyDeviceToHost);
-    if (err != cudaSuccess) {
-        fprintf(stderr, "lfortran_gpu_read_scratch_arg: cudaMemcpy D2H "
-            "failed: %s\n", cudaGetErrorString(err));
-        exit(1);
-    }
+    sync_all();
+    check(cudaMemcpy(dst, k->buffer_device_ptrs[idx], size,
+        cudaMemcpyDeviceToHost), "cudaMemcpy D2H");
 }
 
 void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
@@ -199,7 +334,7 @@ void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
     k->scalar_args[idx].data = malloc(size);
     memcpy(k->scalar_args[idx].data, val, size);
     k->scalar_args[idx].size = size;
-    k->arg_is_buffer[idx] = 0;
+    k->kind[idx] = ARG_SCALAR;
     if (idx >= k->n_args) k->n_args = idx + 1;
 }
 
@@ -208,59 +343,70 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
 {
     if (!ctx || !k) return;
 
-    // Build the kernel argument array for cudaLaunchKernel.
-    // Arguments are in order: buffer args first (device pointers),
-    // then scalar args (values).
+    for (int i = 0; i < k->n_args; i++) {
+        if (k->kind[i] == ARG_BUFFER
+                && overlaps_dirty(k->buffer_host_ptrs[i],
+                    k->buffer_sizes[i])) {
+            sync_all();
+            break;
+        }
+    }
+    // The ranges the kernel may write first, so that one it is also handed
+    // to read is read from the same memory.
+    for (int i = 0; i < k->n_args; i++) {
+        if (k->kind[i] != ARG_BUFFER || k->access[i] != LFORTRAN_GPU_WRITE)
+            continue;
+        k->buffer_device_ptrs[i] = k->buffer_sizes[i] == 0 ? NULL
+            : resident_for_write(k->buffer_host_ptrs[i], k->buffer_sizes[i]);
+    }
+    for (int i = 0; i < k->n_args; i++) {
+        if (k->kind[i] != ARG_BUFFER || k->access[i] == LFORTRAN_GPU_WRITE)
+            continue;
+        size_t size = k->buffer_sizes[i];
+        void *host = k->buffer_host_ptrs[i];
+        void *d_ptr = NULL;
+        if (size > 0) {
+            d_ptr = dirty_resident(host, size);
+            if (!d_ptr) {
+                d_ptr = slot_buffer(k->cache, i, size);
+                check(cudaMemcpyAsync(d_ptr, host, size,
+                    cudaMemcpyHostToDevice, 0), "cudaMemcpyAsync H2D");
+            }
+        }
+        k->buffer_device_ptrs[i] = d_ptr;
+    }
+
+    // Build the kernel argument array for cudaLaunchKernel: a device
+    // pointer for a buffer, the value for a scalar.
     void *args[MAX_ARGS];
     int arg_idx = 0;
     for (int i = 0; i < k->n_args; i++) {
-        if (k->arg_is_buffer[i]) {
-            args[arg_idx++] = &k->buffer_device_ptrs[i];
-        } else {
+        if (k->kind[i] == ARG_SCALAR) {
             args[arg_idx++] = k->scalar_args[i].data;
+        } else {
+            args[arg_idx++] = &k->buffer_device_ptrs[i];
         }
     }
 
     dim3 gridDim(grid[0], grid[1], grid[2]);
     dim3 blockDim(block[0], block[1], block[2]);
-
-    cudaError_t err = cudaLaunchKernel(
-        (const void*)k->func, gridDim, blockDim,
-        args, 0, 0);
-    if (err != cudaSuccess) {
-        fprintf(stderr, "lfortran_gpu_launch: cudaLaunchKernel failed: %s\n",
-            cudaGetErrorString(err));
-        exit(1);
-    }
-
-    // Synchronize and copy results back
-    err = cudaDeviceSynchronize();
-    if (err != cudaSuccess) {
-        fprintf(stderr, "lfortran_gpu_launch: cudaDeviceSynchronize failed: %s\n",
-            cudaGetErrorString(err));
-        exit(1);
-    }
-
-    // Copy device → host for all buffer args
-    for (int i = 0; i < k->n_args; i++) {
-        if (k->arg_is_buffer[i] && !k->arg_is_scratch[i]
-                && k->buffer_device_ptrs[i]) {
-            err = cudaMemcpy(k->buffer_host_ptrs[i],
-                k->buffer_device_ptrs[i],
-                k->buffer_sizes[i],
-                cudaMemcpyDeviceToHost);
-            if (err != cudaSuccess) {
-                fprintf(stderr, "lfortran_gpu_launch: cudaMemcpy D2H failed: %s\n",
-                    cudaGetErrorString(err));
-                exit(1);
-            }
-        }
-    }
+    check(cudaLaunchKernel((const void*)k->func, gridDim, blockDim, args, 0,
+        0), "cudaLaunchKernel");
 }
 
 void lfortran_gpu_sync(lfortran_gpu_ctx* ctx) {
-    (void)ctx;
-    cudaDeviceSynchronize();
+    if (!ctx) return;
+    sync_all();
+}
+
+void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
+    if (!ctx || size == 0) return;
+    for (int i = 0; i < n_entries; i++) {
+        if (entries[i].used
+                && overlaps(entries[i].host, entries[i].size, ptr, size)) {
+            remove_entry(i);
+        }
+    }
 }
 
 } // extern "C"

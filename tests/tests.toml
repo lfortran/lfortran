@@ -766,6 +766,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "pause1.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/stop_03.f90"
 run = true
 
@@ -1874,6 +1878,12 @@ pass = "dead_code_removal"
 julia = true
 c = true
 cpp = true
+
+# A whole-array assignment assigned again before anything reads it is
+# removed; one that is read is kept.
+[[test]]
+filename = "../integration_tests/dead_array_store_01.f90"
+pass = "dead_array_store"
 
 [[test]]
 filename = "../integration_tests/case_07.f90"
@@ -3528,6 +3538,10 @@ filename = "errors/continue_compilation_initial_proc_target.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/continue_compilation_proc_component_constant.f90"
+continue_compilation = true
+
+[[test]]
 filename = "errors/namelist_implicit_type_01.f90"
 semantics_only_cc = true
 options = "--implicit-typing"
@@ -3756,6 +3770,10 @@ ast = true
 
 [[test]]
 filename = "errors/fixed_form_13.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_14.f"
 ast = true
 
 [[test]]
@@ -4355,6 +4373,10 @@ filename = "../integration_tests/gpu_kernel_source_07.f90"
 gpu_cuda_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_kernel_source_08.f90"
+gpu_cuda_kernel = true
+
+[[test]]
 filename = "../integration_tests/gpu_metal_213.f90"
 gpu_cuda_kernel = true
 
@@ -4740,6 +4762,55 @@ gpu_offload_metal = true
 # shape is not known on entry, so it is allocated on the device heap.
 [[test]]
 filename = "../integration_tests/gpu_metal_408.f90"
+gpu_cuda_kernel = true
+
+# Every matmul an offloaded loop lowers inline accumulates each element in a
+# scalar local and stores it into the target once.
+[[test]]
+filename = "../integration_tests/gpu_metal_455.f90"
+gpu_cuda_kernel = true
+
+# An associate name bound to the result of a function is that result, made
+# once on entry: one call, not one for every element read through the name.
+[[test]]
+filename = "../integration_tests/gpu_metal_452.f90"
+gpu_cuda_kernel = true
+options = "--realloc-lhs-arrays"
+
+# A call of a function returning an array, in an array expression, is made
+# once before the statement, not once for every element it computes.
+[[test]]
+filename = "../integration_tests/gpu_metal_453.f90"
+gpu_cuda_kernel = true
+options = "--realloc-lhs-arrays"
+
+# A fixed-size array each iteration defines whole before it references it
+# is a local of the kernel, not a kernel argument every thread shares; one
+# read after the loop stays an argument.
+[[test]]
+filename = "../integration_tests/gpu_metal_474.f90"
+gpu_cuda_kernel = true
+
+# Large and runtime-sized arrays stay private in workspace slices.
+[[test]]
+filename = "../integration_tests/gpu_metal_476.f90"
+gpu_cuda_kernel = true
+
+# Automatic callee locals are measured after inlining.
+[[test]]
+filename = "../integration_tests/gpu_metal_477.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_478.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_479.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_09.f90"
 gpu_cuda_kernel = true
 
 [[test]]
@@ -5644,6 +5715,11 @@ asr = true
 [[test]]
 filename = "errors/proc_ptr_undefined_interface.f90"
 asr = true
+
+[[test]]
+filename = "errors/cyclic_dummy_procedure_interface.f90"
+asr = true
+semantics_only_cc = true
 
 [[test]]
 filename = "errors/template_deferred_interface_procedure.f90"

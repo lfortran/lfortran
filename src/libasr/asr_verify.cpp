@@ -1606,7 +1606,11 @@ public:
                 is_struct = true;
             }
         }
-        if( symtab->parent != nullptr &&
+        // Classifying an initializer looks through ExternalSymbol, which is
+        // possible only once external symbols are resolved (a module file
+        // is verified with check_external=false before that), so the check
+        // runs then.
+        if( check_external && symtab->parent != nullptr &&
             !is_module && !is_struct) {
             // For now restrict this check only to variables which are present
             // inside symbols which have a body.
@@ -3132,7 +3136,7 @@ public:
                 ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v);
         }
         std::set<ASR::symbol_t*> workspaces, extent_parameters;
-        int slot = (layout.m_packed ? 1 : layout.n_buffers) +
+        int64_t slot = (layout.m_packed ? 1 : layout.n_buffers) +
             (layout.n_scalars > 0);
         for (size_t i = 0; i < layout.n_workspaces; i++) {
             const auto &workspace = layout.m_workspaces[i];
@@ -3192,8 +3196,22 @@ public:
                 }
             }
         }
-        require_id(extent_parameters.size() + layout.m_source_argument_count ==
-                kernel.n_args,
+        // The parameter giving the lanes of an iteration, when there is
+        // one, follows the extent parameters: it is the last one.
+        if (layout.m_lanes) {
+            require_id(kernel.n_args > 0 && ASR::is_a<ASR::Var_t>(
+                    *kernel.m_args[kernel.n_args - 1]) &&
+                    ASR::down_cast<ASR::Var_t>(kernel.m_args[kernel.n_args - 1])
+                        ->m_v == layout.m_lanes &&
+                    bound.count(layout.m_lanes) &&
+                    ASRUtils::is_integer(*ASRUtils::symbol_type(
+                        layout.m_lanes)),
+                "asr.verify.gpu_layout.lanes",
+                "the lanes of a GPU kernel must be its last parameter, an "
+                "integer scalar");
+        }
+        require_id(extent_parameters.size() + layout.m_source_argument_count
+                + (layout.m_lanes ? 1 : 0) == kernel.n_args,
             "asr.verify.gpu_layout.complete_extent_parameters",
             "every generated GPU parameter must belong to a workspace dimension");
     }
@@ -3289,6 +3307,40 @@ public:
             "asr.verify.gpu_atomic_fetch_add.value",
             "GpuAtomicFetchAdd has no compile-time value");
         BaseWalkVisitor<VerifyVisitor>::visit_GpuAtomicFetchAdd(x);
+    }
+
+    // The lanes of an iteration exist only in a kernel laid out to run
+    // each iteration on several of them (gpu_vector_lanes.cpp).
+    bool in_kernel_with_lanes() {
+        const ASR::Function_t *fn = enclosing_function(current_symtab);
+        return fn != nullptr && fn->m_gpu != nullptr
+            && fn->m_gpu->m_lanes != nullptr;
+    }
+    void visit_GpuLaneBarrier(const GpuLaneBarrier_t &x) {
+        require_id(in_kernel_with_lanes(), "asr.verify.gpu_lanes.kernel",
+            "GpuLaneBarrier is only allowed in a GPU kernel with lanes");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuLaneBarrier(x);
+    }
+    void visit_GpuLaneIndex(const GpuLaneIndex_t &x) {
+        require_id(in_kernel_with_lanes(), "asr.verify.gpu_lanes.kernel",
+            "GpuLaneIndex is only allowed in a GPU kernel with lanes");
+        require_id(ASRUtils::is_integer(*x.m_type) && x.m_value == nullptr,
+            "asr.verify.gpu_lanes.index",
+            "GpuLaneIndex must be an integer without a compile-time value");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuLaneIndex(x);
+    }
+    void visit_GpuLaneBroadcast(const GpuLaneBroadcast_t &x) {
+        require_id(in_kernel_with_lanes(), "asr.verify.gpu_lanes.kernel",
+            "GpuLaneBroadcast is only allowed in a GPU kernel with lanes");
+        ASR::ttype_t *t = ASRUtils::expr_type(x.m_arg);
+        require_id(!ASRUtils::is_array(t) && (ASRUtils::is_integer(*t)
+                || ASRUtils::is_real(*t) || ASRUtils::is_logical(*t))
+                && ASRUtils::check_equal_type(t, x.m_type, nullptr, nullptr)
+                && x.m_value == nullptr,
+            "asr.verify.gpu_lanes.broadcast",
+            "GpuLaneBroadcast must broadcast an integer, real or logical "
+            "scalar of its own type");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuLaneBroadcast(x);
     }
 
     void visit_SubroutineCall(const SubroutineCall_t &x) {
@@ -4131,13 +4183,20 @@ public:
     }
 
     void visit_StructConstant(const StructConstant_t &x) {
-        for (size_t i = 0; i < x.n_args; i++) {
-            if (x.m_args[i].m_value == nullptr) continue;
-            require_with_loc_id(is_struct_constant_argument(x.m_args[i].m_value),
-                "asr.verify.struct_constant.argument_is_constant",
-                "StructConstant argument " + std::to_string(i + 1)
-                    + " is not a constant",
-                x.m_args[i].m_value->base.loc);
+        // Classifying an argument looks through ExternalSymbol, which is
+        // possible only once external symbols are resolved (a module file
+        // is verified with check_external=false before that), so the check
+        // runs then.
+        if (check_external) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i].m_value == nullptr) continue;
+                require_with_loc_id(
+                    is_struct_constant_argument(x.m_args[i].m_value),
+                    "asr.verify.struct_constant.argument_is_constant",
+                    "StructConstant argument " + std::to_string(i + 1)
+                        + " is not a constant",
+                    x.m_args[i].m_value->base.loc);
+            }
         }
         verify_struct_constructor_arguments("StructConstant",
             "asr.verify.struct_constant", x.m_dt_sym, x.m_args, x.n_args,

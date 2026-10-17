@@ -1,10 +1,13 @@
 #include <libasr/asr_builder.h>
 #include <libasr/pass/gpu_kernel_abi.h>
+#include <libasr/pass/gpu_data_layout.h>
+#include <libasr/pass/gpu_memory_space.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
 #include <libasr/pass/pass_utils.h>
 
 #include <utility>
+#include <algorithm>
 
 namespace LCompilers {
 
@@ -382,10 +385,11 @@ public:
 
     // Sets `largest` to the largest value the per-thread extent `value`
     // has in a thread of the launch that runs the kernel's body. The host
-    // goes over the launch's threads as the kernel numbers them, and skips
-    // a thread the kernel's prelude sends back before the body: such a
-    // thread has no iteration, and its extent may read past the end of
-    // what the iterations read.
+    // goes over the launch's `thread_count` threads as the kernel numbers
+    // them -- not over the whole blocks it starts -- and skips a thread the
+    // kernel's prelude sends back before the body: such a thread has no
+    // iteration, and its extent may read past the end of what the
+    // iterations read.
     void largest_over_threads(const ASR::GpuKernelLaunch_t &x,
             const ASR::Function_t &kernel, ASR::expr_t *value,
             ASR::expr_t *largest) {
@@ -393,13 +397,15 @@ public:
         ASRUtils::ASRBuilder b(al, loc);
         ASR::ttype_t *index_type = ASRUtils::TYPE(
             ASR::make_Integer_t(al, loc, 8));
+        ASR::expr_t *flat = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_replay_thread_id"),
+            index_type, ASR::intentType::Local);
         ASR::expr_t *block = b.Variable(current_scope,
             current_scope->get_unique_name("__gpu_replay_block"),
             index_type, ASR::intentType::Local);
         ASR::expr_t *thread = b.Variable(current_scope,
             current_scope->get_unique_name("__gpu_replay_thread"),
             index_type, ASR::intentType::Local);
-        ASR::expr_t *grid_size = b.i2i_t(x.m_grid_size, index_type);
         ASR::expr_t *block_size = b.i2i_t(x.m_block_size, index_type);
         GpuThreadReplay replay(al, block, thread, block_size);
         ASR::ttype_t *type = ASRUtils::expr_type(value);
@@ -415,12 +421,13 @@ public:
                 std::move(body));
             body = {guarded};
         }
+        body.insert(body.begin(), {
+            b.Assignment(block, b.Div(flat, block_size)),
+            b.Assignment(thread, b.Sub(flat, b.Mul(block, block_size)))});
         pass_result.push_back(al, b.Assignment(largest, b.i_t(0, type)));
-        pass_result.push_back(al, b.DoLoop(block, b.i_t(0, index_type),
-            b.Sub(grid_size, b.i_t(1, index_type)), {
-                b.DoLoop(thread, b.i_t(0, index_type),
-                    b.Sub(block_size, b.i_t(1, index_type)),
-                    std::move(body))}));
+        pass_result.push_back(al, b.DoLoop(flat, b.i_t(0, index_type),
+            b.Sub(b.i2i_t(x.m_thread_count, index_type),
+                b.i_t(1, index_type)), std::move(body)));
     }
 };
 
@@ -509,6 +516,120 @@ ASR::expr_t* gpu_kernel_per_thread_extent(Allocator &al,
     reader.visit_expr(*out);
     if (reader.found) return nullptr;
     return out;
+}
+
+void pass_gpu_kernel_storage(Allocator &al, ASR::TranslationUnit_t &unit,
+        const PassOptions &options) {
+    const auto caps = gpu_device_capabilities(options);
+    if (!caps.device_selected()) return;
+    // A shared aggregate passed by reference to an updating routine needs
+    // a thread-local copy. Materialize it before measuring local storage.
+    // Scalar reference copies depend on the chosen address spaces and
+    // remain part of the frame reserve.
+    gpu_materialize_struct_arguments(al, unit);
+    // Leave room for the device compiler's frames and register spills.
+    const int64_t budget = std::max<int64_t>(caps.thread_stack_bytes - 8192, 0);
+    for (auto &item : unit.m_symtab->get_scope()) {
+        if (!ASRUtils::is_device_kernel(item.second)) continue;
+        auto &kernel = *ASR::down_cast<ASR::Function_t>(item.second);
+        auto arrays = collect_gpu_vla_workspaces(kernel, 0, true);
+
+        // These are the actual remaining device routines, not a prediction
+        // of the routines gpu_offload might inline. Count each scope once.
+        int64_t remaining = budget;
+        auto array_bytes = [&](const GpuVlaWorkspace &ws) {
+            int64_t bytes = ws.elem_size;
+            for (const auto &dim : ws.dims) {
+                if (!dim.is_constant) return int64_t(-1);
+                int64_t extent = std::max<int64_t>(dim.constant_value, 0);
+                bytes = extent > 0 && bytes > budget / extent
+                    ? budget + 1 : bytes * extent;
+            }
+            return bytes;
+        };
+        auto non_workspace_storage = [&](ASR::Function_t &fn,
+                const std::vector<GpuVlaWorkspace> &workspaces,
+                bool include_value_parameters) {
+            std::set<ASR::symbol_t*> workspace_vars;
+            for (const auto &ws : workspaces) workspace_vars.insert(ws.var);
+            std::function<void(SymbolTable*)> scope = [&](SymbolTable *table) {
+                for (const auto &item : table->get_scope()) {
+                    if (ASR::is_a<ASR::Block_t>(*item.second)) {
+                        scope(ASR::down_cast<ASR::Block_t>(
+                            item.second)->m_symtab);
+                    } else if (ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
+                        scope(ASR::down_cast<ASR::AssociateBlock_t>(
+                            item.second)->m_symtab);
+                    } else if (ASR::is_a<ASR::Variable_t>(*item.second) &&
+                            !workspace_vars.count(item.second)) {
+                        auto *var = ASR::down_cast<ASR::Variable_t>(item.second);
+                        // Read-only scalar aggregates are values in the
+                        // device ABI, unlike array and updating parameters.
+                        bool value_parameter = include_value_parameters &&
+                            ASR::is_a<ASR::StructType_t>(*var->m_type) &&
+                            var->m_intent != ASR::intentType::Out &&
+                            var->m_intent != ASR::intentType::InOut;
+                        if ((var->m_intent != ASR::intentType::Local &&
+                                var->m_intent != ASR::intentType::ReturnVar &&
+                                !value_parameter) ||
+                                var->m_storage != ASR::storage_typeType::Default ||
+                                ASRUtils::is_allocatable_or_pointer(var->m_type)) {
+                            continue;
+                        }
+                        ASR::expr_t *value = ASRUtils::EXPR(ASR::make_Var_t(
+                            al, var->base.base.loc, item.second));
+                        ASR::ttype_t *type = gpu_size_of_type_argument(al,
+                            value, var->m_type);
+                        int64_t bytes = ASRUtils::compute_type_size_align(type).first;
+                        // Storage not representable by a numeric workspace
+                        // (notably aggregates) is never room for another array.
+                        remaining = bytes < 0 ? 0
+                            : std::max<int64_t>(remaining - bytes, 0);
+                    }
+                }
+            };
+            scope(fn.m_symtab);
+        };
+        non_workspace_storage(kernel, arrays, false);
+        std::set<ASR::Function_t*> visited;
+        std::function<void(ASR::Function_t*)> callees =
+            [&](ASR::Function_t *fn) {
+            if (!visited.insert(fn).second) return;
+            if (fn != &kernel) {
+                auto locals = collect_gpu_vla_workspaces(*fn, 0, true);
+                non_workspace_storage(*fn, locals, true);
+                for (const auto &ws : locals) {
+                    int64_t bytes = array_bytes(ws);
+                    if (bytes >= 0) remaining = std::max<int64_t>(remaining - bytes, 0);
+                }
+            }
+            for (auto *callee : gpu_callees(fn->m_body, fn->n_body, true)) {
+                callees(callee);
+            }
+        };
+        callees(&kernel);
+        std::vector<std::pair<int64_t, ASR::symbol_t*>> fixed;
+        for (const auto &ws : arrays) {
+            int64_t bytes = array_bytes(ws);
+            if (bytes >= 0) fixed.emplace_back(bytes, ws.var);
+        }
+        std::sort(fixed.begin(), fixed.end(), [](const auto &a, const auto &b) {
+            if (a.first != b.first) return a.first < b.first;
+            return std::string(ASRUtils::symbol_name(a.second))
+                < std::string(ASRUtils::symbol_name(b.second));
+        });
+        for (auto &array : fixed) {
+            auto *var = ASR::down_cast<ASR::Variable_t>(array.second);
+            var->m_type = ASRUtils::duplicate_type(al, var->m_type);
+            auto *type = ASR::down_cast<ASR::Array_t>(
+                ASRUtils::type_get_past_allocatable(var->m_type));
+            // Global here means private storage in a workspace, not a
+            // shared value. The ABI planner records its per-thread slice.
+            type->m_memory_space = array.first <= remaining
+                ? ASR::memory_spaceType::Thread : ASR::memory_spaceType::Global;
+            if (array.first <= remaining) remaining -= array.first;
+        }
+    }
 }
 
 void pass_gpu_kernel_finalize(Allocator &al, ASR::TranslationUnit_t &unit,

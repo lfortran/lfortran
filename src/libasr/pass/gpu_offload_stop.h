@@ -18,10 +18,14 @@ sides of the launch:
   number from 1) and, when the statement has an integer stop code, the value
   of that code, in a small status buffer the kernel takes as an argument, and
   returns. Other threads carry on; the program ends after the launch anyway.
-* On the host, after the launch, the status buffer is read, and if a site was
-  recorded, that same statement is run on the host, with the recorded value
-  as its stop code. So the program prints and exits exactly as the statement
-  does on the CPU.
+* On the host, the status buffer is read once the host has waited for the
+  launch, and if a site was recorded, that same statement is run on the host,
+  with the recorded value as its stop code. So the program prints and exits
+  exactly as the statement does on the CPU. The launch does not wait for the
+  kernel, so the statement is attached to the launch and run at the first
+  wait the `gpu_launch_sync` pass places after it; the buffer is cleared once,
+  on entry to the procedure, and a thread records its stop only while no
+  site is recorded, so the first launch that stopped is the one reported.
 
 The buffer holds the site in its first element, and one more element per
 site for the stop code of that site. A thread writes the code first and the
@@ -49,9 +53,8 @@ struct GpuDeviceStops {
     // when the kernel reaches no `stop`, in which case nothing else here is
     // set either.
     ASR::symbol_t *host_status = nullptr;
-    // Host statements that clear the status before the launch.
-    std::vector<ASR::stmt_t*> before_launch;
-    // Host statements that run the recorded statement after the launch.
+    // Host statements that run the recorded statement once the host has
+    // waited for the launch (GpuKernelLaunch.stop_replay).
     std::vector<ASR::stmt_t*> after_launch;
 };
 
@@ -62,6 +65,19 @@ struct GpuDeviceStops {
 // changed.
 GpuDecline gpu_lower_device_stops(Allocator &al, const Location &loc,
     ASR::Function_t &kernel, SymbolTable *host_scope, GpuDeviceStops &stops);
+
+// The status buffer `s` records a stop in, when `s` is such a record: the
+// `if` that writes a site, and the code of the site, while no site is
+// recorded. nullptr otherwise. Any number of threads may run such records
+// at once (see above).
+ASR::symbol_t* gpu_stop_record_status(const ASR::stmt_t &s);
+
+// Whether `s` is the test that follows a call of a procedure that can stop,
+// and if so, the site and the code the call hands back (`code` is nullptr
+// when the test does not record one). Both hold zero after the test on a
+// thread that goes on: one that stopped returns.
+bool gpu_stopped_check_scalars(const ASR::stmt_t &s, ASR::symbol_t **site,
+    ASR::symbol_t **code);
 
 } // namespace LCompilers
 

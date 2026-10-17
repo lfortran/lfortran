@@ -49,7 +49,7 @@ void pass_wrap_global_stmts(Allocator &al,
                 s.from_str(al, fn_name_s + std::to_string(idx));
                 var_name = s.c_str(al);
 
-                int a_kind = down_cast<ASR::Integer_t>(ASRUtils::expr_type(value))->m_kind;
+                int a_kind = checked_integer_cast<int>(down_cast<ASR::Integer_t>(ASRUtils::expr_type(value))->m_kind);
 
                 type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
                 return_var = ASRUtils::make_Variable_t_util(al, loc,
@@ -66,7 +66,7 @@ void pass_wrap_global_stmts(Allocator &al,
                 s.from_str(al, fn_name_s + std::to_string(idx));
                 var_name = s.c_str(al);
 
-                int a_kind = down_cast<ASR::Logical_t>(ASRUtils::expr_type(value))->m_kind;
+                int a_kind = checked_integer_cast<int>(down_cast<ASR::Logical_t>(ASRUtils::expr_type(value))->m_kind);
 
                 type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, a_kind));
                 return_var = ASRUtils::make_Variable_t_util(al, loc,

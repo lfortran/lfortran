@@ -104,9 +104,9 @@ namespace LCompilers {
                 */
                 virtual
                 llvm::Type* get_argument_type(llvm::Type* type,
-                    std::uint32_t, std::string,
+                    std::uint64_t, std::string,
                     std::unordered_map
-                    <std::uint32_t, std::unordered_map
+                    <std::uint64_t, std::unordered_map
                                     <std::string, llvm::Type*>>&
                                     arr_arg_type_cache) = 0;
 
@@ -511,9 +511,9 @@ namespace LCompilers {
 
                 virtual
                 llvm::Type* get_argument_type(llvm::Type* type,
-                    std::uint32_t m_h, std::string arg_name,
+                    std::uint64_t m_h, std::string arg_name,
                     std::unordered_map
-                    <std::uint32_t, std::unordered_map
+                    <std::uint64_t, std::unordered_map
                                     <std::string, llvm::Type*>>&
                         arr_arg_type_cache);
 

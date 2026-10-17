@@ -688,7 +688,7 @@ public:
     std::string gpu_type(ASR::ttype_t *type) {
         switch (type->type) {
             case ASR::ttypeType::Integer: {
-                int kind = ASR::down_cast<ASR::Integer_t>(type)->m_kind;
+                int kind = checked_integer_cast<int>(ASR::down_cast<ASR::Integer_t>(type)->m_kind);
                 if (kind == 4) return "int";
                 if (kind == 8) return "long";
                 // gpu_scalar_width_supported keeps the launch from handing
@@ -698,13 +698,13 @@ public:
                 return unsupported_gpu_type("integer", kind);
             }
             case ASR::ttypeType::Real: {
-                int kind = ASR::down_cast<ASR::Real_t>(type)->m_kind;
+                int kind = checked_integer_cast<int>(ASR::down_cast<ASR::Real_t>(type)->m_kind);
                 if (kind == 4 || kind == 8) return dialect.real_type(kind);
                 return unsupported_gpu_type("real", kind);
             }
             case ASR::ttypeType::Logical: {
                 // Use int to match LLVM's i32 representation for Logical(4)
-                int kind = ASR::down_cast<ASR::Logical_t>(type)->m_kind;
+                int kind = checked_integer_cast<int>(ASR::down_cast<ASR::Logical_t>(type)->m_kind);
                 if (kind == 1) return "char";
                 if (kind == 2) return "short";
                 if (kind == 4) return "int";
@@ -4337,6 +4337,13 @@ public:
                 throw CodeGenError("gpu offload: a stop statement reached "
                     "the device code generator", stmt->base.loc);
             }
+            case ASR::stmtType::GpuLaneBarrier: {
+                LCOMPILERS_ASSERT(current_kernel_layout != nullptr
+                    && current_kernel_layout->m_lanes != nullptr);
+                dialect.emit_lane_barrier(src, get_indent(),
+                    ASRUtils::symbol_name(current_kernel_layout->m_lanes));
+                break;
+            }
             case ASR::stmtType::Return: {
                 // A Fortran RETURN in a function hands back the result
                 // variable, which the device language spells out.
@@ -4869,8 +4876,8 @@ public:
                         int dim_idx = 0;
                         if (ab->m_dim) {
                             if (ASR::is_a<ASR::IntegerConstant_t>(*ab->m_dim)) {
-                                dim_idx = ASR::down_cast<ASR::IntegerConstant_t>(
-                                    ab->m_dim)->m_n - 1;
+                                dim_idx = checked_integer_cast<int>(ASR::down_cast<ASR::IntegerConstant_t>(
+                                    ab->m_dim)->m_n - 1);
                             }
                         }
                         // A deferred-shape array -- a component of a
@@ -5268,6 +5275,22 @@ public:
             }
             case ASR::exprType::GpuBlockSize: {
                 src << dialect.block_size();
+                break;
+            }
+            case ASR::exprType::GpuLaneIndex: {
+                src << dialect.lane_index();
+                break;
+            }
+            case ASR::exprType::GpuLaneBroadcast: {
+                ASR::GpuLaneBroadcast_t *b =
+                    ASR::down_cast<ASR::GpuLaneBroadcast_t>(expr);
+                // A logical travels as an integer.
+                if (ASRUtils::is_logical(*b->m_type)) {
+                    src << "(" << dialect.lane_broadcast("(int)("
+                        + expr_str(b->m_arg) + ")") << " != 0)";
+                } else {
+                    src << dialect.lane_broadcast(expr_str(b->m_arg));
+                }
                 break;
             }
             case ASR::exprType::GpuAtomicFetchAdd: {

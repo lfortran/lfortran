@@ -112,7 +112,7 @@ public:
     const ASR::Function_t *current_function = nullptr;
     std::map<uint64_t, SymbolInfo> sym_info;
     std::map<uint64_t, std::string> const_var_names;
-    std::map<int32_t, std::string> gotoid2name;
+    std::map<int64_t, std::string> gotoid2name;
     std::map<std::string, std::string> emit_headers;
     std::string array_types_decls;
     std::string forward_decl_functions;
@@ -2063,7 +2063,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         self().visit_expr(*x.m_target);
         std::string target_desc = src;
 
-        int value_rank = array_section->n_args, target_rank = 0;
+        int value_rank = checked_integer_cast<int>(array_section->n_args), target_rank = 0;
         std::vector<std::string> lbs(value_rank);
         std::vector<std::string> ubs(value_rank);
         std::vector<std::string> ds(value_rank);
@@ -2092,7 +2092,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
             value_desc = value_desc + "->data";
             ASR::dimension_t* m_dims = nullptr;
             // Fill in m_dims:
-            [[maybe_unused]] int array_value_rank = ASRUtils::extract_dimensions_from_ttype(array_type, m_dims);
+            [[maybe_unused]] int array_value_rank = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(array_type, m_dims));
             LCOMPILERS_ASSERT(array_value_rank == value_rank);
             std::vector<std::string> diminfo;
             diminfo.reserve(value_rank * 2);

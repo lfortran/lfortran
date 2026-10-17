@@ -415,7 +415,7 @@ void append_header_bytes(Allocator &al, T src, Vec<uint8_t> &des) {
 
 void align_by_byte(Allocator &al, Vec<uint8_t> &code, uint64_t alignment) {
     uint64_t code_size = code.size() ;
-    uint64_t padding_size = (alignment * ceil(code_size / (double)alignment)) - code_size;
+    uint64_t padding_size = (alignment - code_size % alignment) % alignment;
     for (size_t i = 0; i < padding_size; i++) {
         code.push_back(al, 0);
     }

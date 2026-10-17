@@ -2007,6 +2007,65 @@ bool struct_constant_names_procedure(ASR::expr_t* value) {
     return false;
 }
 
+bool constant_names_procedure_outside(ASR::expr_t* value,
+        SymbolTable* scope) {
+    if (value == nullptr) {
+        return false;
+    }
+    switch (value->type) {
+        case ASR::exprType::Var: {
+            ASR::symbol_t* v = ASR::down_cast<ASR::Var_t>(value)->m_v;
+            return ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v))
+                && !ASRUtils::is_visible_from(v, scope);
+        }
+        case ASR::exprType::StructConstant: {
+            ASR::StructConstant_t* sc = ASR::down_cast<ASR::StructConstant_t>(value);
+            for (size_t i = 0; i < sc->n_args; i++) {
+                if (constant_names_procedure_outside(sc->m_args[i].m_value, scope)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        case ASR::exprType::ArrayConstructor: {
+            ASR::ArrayConstructor_t* ac = ASR::down_cast<ASR::ArrayConstructor_t>(value);
+            for (size_t i = 0; i < ac->n_args; i++) {
+                if (constant_names_procedure_outside(ac->m_args[i], scope)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        case ASR::exprType::ArrayConstant: {
+            ASR::ArrayConstant_t* ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
+            if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(ac->m_type))) {
+                return false;
+            }
+            ASR::expr_t** elements = static_cast<ASR::expr_t**>(ac->m_data);
+            int64_t n = ASRUtils::get_fixed_size_of_array(ac->m_type);
+            for (int64_t i = 0; i < n; i++) {
+                if (constant_names_procedure_outside(elements[i], scope)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        case ASR::exprType::ArrayBroadcast:
+            return constant_names_procedure_outside(
+                ASR::down_cast<ASR::ArrayBroadcast_t>(value)->m_array, scope);
+        default:
+            return false;
+    }
+}
+
+ASR::expr_t* import_folded_constant_value(Allocator& al,
+        ASR::expr_t* value, SymbolTable* scope) {
+    if (constant_names_procedure_outside(value, scope)) {
+        return nullptr;
+    }
+    return externalize_struct_refs_in_init(al, value, scope);
+}
+
 ASR::expr_t* get_struct_member_value_from_constant(ASR::expr_t* value,
                             ASR::symbol_t* member) {
     if (value == nullptr) {
@@ -2132,6 +2191,29 @@ ASR::expr_t* get_struct_member_value_from_constant_array(Allocator &al,
         ASR::arraystorageType::ColMajor));
 }
 
+ASR::expr_t* designator_constant_value(Allocator& al, ASR::expr_t* expr) {
+    ASR::expr_t* value = ASRUtils::expr_value(expr);
+    if (value != nullptr) {
+        return value;
+    }
+    if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+        ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(expr);
+        return fold_ArrayItem_value(al, item->m_v, item->m_args, item->n_args);
+    }
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+        ASR::StructInstanceMember_t* member =
+            ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+        if (!ASR::is_a<ASR::Variable_t>(
+                *ASRUtils::symbol_get_past_external(member->m_m))) {
+            return nullptr;
+        }
+        return get_struct_member_value_from_constant_array(al, expr->base.loc,
+            designator_constant_value(al, member->m_v), member->m_m,
+            member->m_type);
+    }
+    return nullptr;
+}
+
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                             ASR::asr_t* v_var, ASR::symbol_t *v,
                             ASR::symbol_t* member, SymbolTable* current_scope) {
@@ -2198,7 +2280,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope);
         ASR::expr_t* value = nullptr;
         ASR::expr_t* base_value = base_is_parameter ?
-            ASRUtils::expr_value(ASRUtils::EXPR(v_var)) : nullptr;
+            designator_constant_value(al, ASRUtils::EXPR(v_var)) : nullptr;
         if (base_is_parameter && base_value != nullptr) {
             value = get_struct_member_value_from_constant_array(
                 al, loc, base_value, member, member_type);
@@ -2223,7 +2305,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                 value = nullptr;
             }
         }
-        value = ASRUtils::externalize_struct_refs_in_init(al, value, current_scope);
+        value = import_folded_constant_value(al, value, current_scope);
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
             member_ext, member_type, value);
     }
@@ -4114,7 +4196,8 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
             int src_kind = ASRUtils::extract_kind_from_ttype_t(rc->m_type);
             if (src_kind != 16) {
                 int64_t v = src_kind == 10
-                    ? ASRUtils::real_constant_get_r10(rc) : rc->m_r;
+                    ? static_cast<int64_t>(ASRUtils::real_constant_get_r10(rc))
+                    : static_cast<int64_t>(rc->m_r);
                 value = ASR::down_cast<ASR::expr_t>(
                         ASR::make_IntegerConstant_t(al, a_loc, v, a_type));
             }
@@ -4233,7 +4316,7 @@ static T perform_binop(T left_value, T right_value, ASR::binopType op) {
             result = left_value / right_value;
             break;
         case ASR::Pow:
-            result = std::pow(left_value, right_value);
+            result = static_cast<T>(std::pow(left_value, right_value));
             break;
         default:
             LCOMPILERS_ASSERT(false);
@@ -4257,7 +4340,7 @@ static std::complex<double> complex_integer_pow(T re, T im, int64_t n) {
         p = re_;
         q = im_;
     };
-    uint64_t u = n < 0 ? -(uint64_t)n : (uint64_t)n;
+    uint64_t u = n < 0 ? 0 - static_cast<uint64_t>(n) : static_cast<uint64_t>(n);
     T base_re = re, base_im = im;
     while ((u & 1) == 0) {
         mul(base_re, base_im, base_re, base_im);
@@ -4330,8 +4413,8 @@ ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
         }
         if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 4) {
             // Evaluate in single precision, as the program would.
-            float left_value = lc->m_r;
-            float right_value = rc->m_r;
+            float left_value = static_cast<float>(lc->m_r);
+            float right_value = static_cast<float>(rc->m_r);
             float result = perform_binop(left_value, right_value, op);
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, left->base.loc,
                 result, dest_type));
@@ -4392,7 +4475,8 @@ ASR::expr_t* fold_binop_constants(Allocator &al, ASR::expr_t* left,
         std::complex<double> result;
         if (ASRUtils::extract_kind_from_ttype_t(dest_type) == 4) {
             // Evaluate in single precision, as the program would.
-            result = complex_integer_pow<float>(lc->m_re, lc->m_im, n);
+            result = complex_integer_pow<float>(static_cast<float>(lc->m_re),
+                static_cast<float>(lc->m_im), n);
         } else {
             result = complex_integer_pow<double>(lc->m_re, lc->m_im, n);
         }

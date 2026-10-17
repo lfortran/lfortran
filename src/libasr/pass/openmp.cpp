@@ -996,7 +996,7 @@ class ParallelRegionVisitor :
             for (size_t i=0; i<n_body; i++) {
                 pass_result.n = 0;
                 pass_result_allocatable.n = 0;
-                current_stmt_index = i;
+                current_stmt_index = checked_integer_cast<int>(i);
                 pass_result.reserve(al, 1);
                 pass_result_allocatable.reserve(al, 1);
                 remove_original_statement = false;
@@ -1028,7 +1028,7 @@ class ParallelRegionVisitor :
             current_n_body = n_body;
             for (size_t i=0; i<n_body; i++) {
                 pass_result.n = 0;
-                current_stmt_index = i;
+                current_stmt_index = checked_integer_cast<int>(i);
                 pass_result.reserve(al, 1);
                 remove_original_statement = false;
                 visit_stmt(*m_body[i]);
@@ -1299,7 +1299,7 @@ class ParallelRegionVisitor :
                     for (size_t i = 0; i < func->n_args; i++) {
                         std::string arg_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v);
                         if (std::find(array_variables.begin(), array_variables.end(), arg_name) != array_variables.end()) {
-                            array_arg_mapping[arg_name] = i;
+                            array_arg_mapping[arg_name] = checked_integer_cast<int>(i);
                             func->m_args[i] = b.Var(func->m_symtab->resolve_symbol(arg_name));
                         }
                     }
@@ -2137,7 +2137,7 @@ class ParallelRegionVisitor :
                         int arg_index = -1;
                         for (size_t i = 0; i < func->n_args; i++) {
                             if (ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v) == it.first) {
-                                arg_index = i;
+                                arg_index = checked_integer_cast<int>(i);
                                 break;
                             }
                         }
@@ -2649,7 +2649,7 @@ class ParallelRegionVisitor :
             int num_threads=0;
             for (size_t i=0;i<x.n_clauses;i++) {
                 if (x.m_clauses[i]->type == ASR::omp_clauseType::OMPNumThreads) {
-                    num_threads = ASR::down_cast<ASR::IntegerConstant_t>(((ASR::down_cast<ASR::OMPNumThreads_t>(x.m_clauses[i]))->m_num_threads))->m_n;
+                    num_threads = static_cast<int>(ASR::down_cast<ASR::IntegerConstant_t>(((ASR::down_cast<ASR::OMPNumThreads_t>(x.m_clauses[i]))->m_num_threads))->m_n);
                 }
             }
             if (num_threads != 0) {
@@ -2746,7 +2746,7 @@ class ParallelRegionVisitor :
                     if(clauses_heirarchial[nesting_lvl][j]->type == ASR::omp_clauseType::OMPReduction) {
                         reduction_clauses.push_back(al, ASR::down_cast<ASR::OMPReduction_t>(clauses_heirarchial[nesting_lvl][j]));
                     } else if(clauses_heirarchial[nesting_lvl][j]->type == ASR::omp_clauseType::OMPCollapse) {
-                        collapse_levels = ASR::down_cast<ASR::IntegerConstant_t>(((ASR::down_cast<ASR::OMPCollapse_t>(clauses_heirarchial[nesting_lvl][j]))->m_count))->m_n;
+                        collapse_levels = static_cast<int>(ASR::down_cast<ASR::IntegerConstant_t>(((ASR::down_cast<ASR::OMPCollapse_t>(clauses_heirarchial[nesting_lvl][j]))->m_count))->m_n);
                     } else if(clauses_heirarchial[nesting_lvl][j]->type == ASR::omp_clauseType::OMPSchedule) {
                         ASR::OMPSchedule_t* schedule_clause = ASR::down_cast<ASR::OMPSchedule_t>(clauses_heirarchial[nesting_lvl][j]);
                         schedule_kind = schedule_clause->m_kind;
@@ -2766,7 +2766,7 @@ class ParallelRegionVisitor :
                     chunk_size = schedule_clause->m_chunk_size;
                     has_schedule_clause = true;
                 } else if(clauses_heirarchial[nesting_lvl][j]->type == ASR::omp_clauseType::OMPCollapse) {
-                    collapse_levels = ASR::down_cast<ASR::IntegerConstant_t>(((ASR::down_cast<ASR::OMPCollapse_t>(clauses_heirarchial[nesting_lvl][j]))->m_count))->m_n;
+                    collapse_levels = static_cast<int>(ASR::down_cast<ASR::IntegerConstant_t>(((ASR::down_cast<ASR::OMPCollapse_t>(clauses_heirarchial[nesting_lvl][j]))->m_count))->m_n);
                 }
             }
             // Step 2: A reduction on a worksharing `do` (the enclosing parallel
@@ -4059,8 +4059,8 @@ class ParallelRegionVisitor :
             // Extract collapse levels and process similar to OMPDo
             for(size_t i = 0; i < x.n_clauses; i++) {
                 if(x.m_clauses[i]->type == ASR::omp_clauseType::OMPCollapse) {
-                    collapse_levels = ASR::down_cast<ASR::IntegerConstant_t>(
-                        ((ASR::down_cast<ASR::OMPCollapse_t>(x.m_clauses[i]))->m_count))->m_n;
+                    collapse_levels = static_cast<int>(ASR::down_cast<ASR::IntegerConstant_t>(
+                        ((ASR::down_cast<ASR::OMPCollapse_t>(x.m_clauses[i]))->m_count))->m_n);
                 }
             }
             

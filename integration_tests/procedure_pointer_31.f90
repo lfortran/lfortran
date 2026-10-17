@@ -1,5 +1,7 @@
 ! A named constant of derived type whose procedure pointer component is
-! associated with a module procedure, called through the component.
+! associated with a module procedure, called through the component of a dummy
+! argument associated with the constant, since a procedure pointer component
+! of a constant cannot be called directly (R1040, C901).
 module procedure_pointer_31_mod
 implicit none
 abstract interface
@@ -37,10 +39,19 @@ end module
 program procedure_pointer_31
 use procedure_pointer_31_types
 implicit none
-call s%pf()
-call s%pf()
+call run(s)
+call run(s)
 if (cnt /= 2) error stop
 if (t%n /= 7) error stop
-if (t%f(t%n) /= 14) error stop
-print *, cnt, t%f(t%n)
+if (apply(t) /= 14) error stop
+print *, cnt, apply(t)
+contains
+    subroutine run(x)
+        type(pp), intent(in) :: x
+        call x%pf()
+    end subroutine
+    integer function apply(x)
+        type(pf_t), intent(in) :: x
+        apply = x%f(x%n)
+    end function
 end program

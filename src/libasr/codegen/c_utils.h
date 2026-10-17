@@ -1329,9 +1329,9 @@ class CCPPDSUtils {
                               "x->capacity * sizeof(bool));\n";
             generated_code += indent + tab + "for(size_t i=0; i<x->capacity/2; i++) {\n";
             generated_code += indent + tab + tab + "if(tmp_p[i]) {\n";
-            generated_code += indent + tab + tab + tab + "int j=tmp_key[i]\%x->capacity;\n";
-            generated_code += indent + tab + tab + tab + "j=(j+x->capacity)\%x->capacity;\n";
-            generated_code += indent + tab + tab + tab + "while(x->present[j]) j=(j+1)\%x->capacity;\n";
+            generated_code += indent + tab + tab + tab + "int j=tmp_key[i]%x->capacity;\n";
+            generated_code += indent + tab + tab + tab + "j=(j+x->capacity)%x->capacity;\n";
+            generated_code += indent + tab + tab + tab + "while(x->present[j]) j=(j+1)%x->capacity;\n";
             generated_code += indent + tab + tab + tab + \
                 "x->key[j] = tmp_key[i]; x->value[j] = tmp_val[i]; x->present[j] = true;\n";
             generated_code += indent + tab + tab + "}\n" + indent + tab + "}\n";
@@ -1375,13 +1375,13 @@ class CCPPDSUtils {
             func_decls += indent + "inline " + signature + ";\n";
             signature = indent + signature;
             generated_code += indent + signature + " {\n";
-            generated_code += indent + tab + "int j=k\%x->capacity; int c = 0;\n";
-            generated_code += indent + tab + "j=(j+x->capacity)\%x->capacity;\n";
-            generated_code += indent + tab + "while(c < x->capacity && x->present[j] && x->key[j]!=k) j=(j+1)\%x->capacity, c++;\n";
+            generated_code += indent + tab + "int j=k%x->capacity; int c = 0;\n";
+            generated_code += indent + tab + "j=(j+x->capacity)%x->capacity;\n";
+            generated_code += indent + tab + "while(c < x->capacity && x->present[j] && x->key[j]!=k) j=(j+1)%x->capacity, c++;\n";
             generated_code += indent + tab + "if (c == x->capacity) {\n";
             generated_code += indent + tab + tab + dict_rz + "(x);\n";
-            generated_code += indent + tab + tab + "j=k\%x->capacity; j=(j+x->capacity)\%x->capacity;\n";
-            generated_code += indent + tab + tab + "while(x->present[j]) j=(j+1)\%x->capacity;\n";
+            generated_code += indent + tab + tab + "j=k%x->capacity; j=(j+x->capacity)%x->capacity;\n";
+            generated_code += indent + tab + tab + "while(x->present[j]) j=(j+1)%x->capacity;\n";
             generated_code += indent + tab + "}\n";
             generated_code += indent + tab + \
                 "x->key[j] = k; x->value[j] = v; x->present[j] = true;\n";
@@ -1430,9 +1430,9 @@ class CCPPDSUtils {
             func_decls += indent + "inline " + signature + ";\n";
             signature = indent + signature;
             generated_code += indent + signature + " {\n";
-            generated_code += indent + tab + "int j=k\%x->capacity, c = 0;\n";
-            generated_code += indent + tab + "j=(j+x->capacity)\%x->capacity;\n";
-            generated_code += indent + tab + "while(c<x->capacity && x->present[j] && !(x->key[j] == k)) j=(j+1)\%x->capacity, c++;\n";
+            generated_code += indent + tab + "int j=k%x->capacity, c = 0;\n";
+            generated_code += indent + tab + "j=(j+x->capacity)%x->capacity;\n";
+            generated_code += indent + tab + "while(c<x->capacity && x->present[j] && !(x->key[j] == k)) j=(j+1)%x->capacity, c++;\n";
             generated_code += indent + tab + "if (x->present[j] && x->key[j] == k) return x->value[j];\n";
             generated_code += indent + tab + "printf(\"Key not found\\n\");\n";
             generated_code += indent + tab + "exit(1);\n";
@@ -1475,9 +1475,9 @@ class CCPPDSUtils {
             func_decls += indent + "inline " + signature + ";\n";
             signature = indent + signature;
             generated_code += indent + signature + " {\n";
-            generated_code += indent + tab + "int j=k\%x->capacity, c = 0;\n";
-             generated_code += indent + tab + "j=(j+x->capacity)\%x->capacity;\n";
-            generated_code += indent + tab + "while(c<x->capacity && x->present[j] && !(x->key[j] == k)) j=(j+1)\%x->capacity, c++;\n";
+            generated_code += indent + tab + "int j=k%x->capacity, c = 0;\n";
+             generated_code += indent + tab + "j=(j+x->capacity)%x->capacity;\n";
+            generated_code += indent + tab + "while(c<x->capacity && x->present[j] && !(x->key[j] == k)) j=(j+1)%x->capacity, c++;\n";
             generated_code += indent + tab + "if (x->present[j] && x->key[j] == k) return x->value[j];\n";
             generated_code += indent + tab + "return dv;\n";
             generated_code += indent + "}\n\n";
@@ -1535,14 +1535,14 @@ class CCPPDSUtils {
             func_decls += indent + "inline " + signature + ";\n";
             signature = indent + signature;
             generated_code += indent + signature + " {\n";
-            generated_code += indent + tab + "int j = k\%x->capacity;\n";
-            generated_code += indent + tab + "j=(j+x->capacity)\%x->capacity;\n";
+            generated_code += indent + tab + "int j = k%x->capacity;\n";
+            generated_code += indent + tab + "j=(j+x->capacity)%x->capacity;\n";
             generated_code += indent + tab + "for(int i=0; i < x->capacity; i++) {\n";
             generated_code += indent + tab + tab + "if (x->present[j] && x->key[j] == k) {\n";
             generated_code += indent + tab + tab + tab + "x->present[j] = false;\n";
             generated_code += indent + tab + tab + tab + "return x->value[j];\n";
             generated_code += indent + tab + tab + "}\n";
-            generated_code += indent + tab + tab + "j = (j+1)\%x->capacity;\n";
+            generated_code += indent + tab + tab + "j = (j+1)%x->capacity;\n";
             generated_code += indent + tab + "}\n";
             generated_code += indent + tab + "printf(\"Key not found\\n\"); exit(1);\n";
             generated_code += indent + "}\n\n";

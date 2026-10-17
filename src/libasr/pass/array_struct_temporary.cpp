@@ -1587,6 +1587,29 @@ bool is_array_struct_member_designator(ASR::expr_t* value) {
         root->m_storage != ASR::storage_typeType::Parameter;
 }
 
+// Inside a TYPE IS block, a reference to the selector `x` (no associate
+// name) is `Cast(x, ClassToStruct)`: it designates the dynamic value of `x`
+// with the guard type, the same object as `x` itself. It is passed as it is to
+// a procedure, like `x`, which may define the dummy, and a copy of it would be
+// finalized although no new entity was created (F2018 7.5.6.3). For a VALUE
+// dummy the copy is still made: the callee's own copy of a VALUE dummy shares
+// the allocatable components of the actual argument.
+bool is_class_to_struct_view_of_variable(ASR::expr_t* value) {
+    if( value == nullptr ) {
+        return false;
+    }
+    value = ASRUtils::get_past_array_physical_cast(value);
+    if( !ASR::is_a<ASR::Cast_t>(*value) ) {
+        return false;
+    }
+    ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(value);
+    if( cast->m_kind != ASR::cast_kindType::ClassToStruct ) {
+        return false;
+    }
+    return ASR::is_a<ASR::Var_t>(
+        *ASRUtils::get_past_array_physical_cast(cast->m_arg));
+}
+
 // `w%y` or `w%u(1)`, with `w` an array of derived type: a designator whose
 // elements are strided by the size of an element of `w`.
 bool is_strided_struct_designator(ASR::expr_t* value) {
@@ -1600,6 +1623,23 @@ bool is_strided_struct_designator(ASR::expr_t* value) {
     return ASR::is_a<ASR::ArrayItem_t>(*value) &&
         ASRUtils::struct_base_lending_shape(
             ASR::down_cast<ASR::ArrayItem_t>(value)) != nullptr;
+}
+
+bool reads_elementwise_operands_in_place(ASR::exprType op) {
+    switch (op) {
+        case ASR::exprType::IntegerBinOp:
+        case ASR::exprType::RealBinOp:
+        case ASR::exprType::ComplexBinOp:
+        case ASR::exprType::LogicalBinOp:
+        case ASR::exprType::LogicalNot:
+        case ASR::exprType::RealUnaryMinus:
+        case ASR::exprType::IntegerCompare:
+        case ASR::exprType::RealCompare:
+        case ASR::exprType::StringCompare:
+            return true;
+        default:
+            return false;
+    }
 }
 
 bool is_temporary_needed(ASR::expr_t* value) {
@@ -2093,6 +2133,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
                        !ASR::is_a<ASR::ArrayItem_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
+                       !(is_call && !(dummy && dummy->m_value_attr) &&
+                         is_class_to_struct_view_of_variable(x_m_args[i].m_value)) &&
                        // A component is passed as it is to a procedure,
                        // which may define the dummy, e.g. `h%item` with an
                        // allocatable `item` bound to a dummy without intent.
@@ -2356,6 +2398,21 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_FileWrite(const ASR::FileWrite_t& x) {
         ASR::FileWrite_t& xx = const_cast<ASR::FileWrite_t&>(x);
+        if( xx.m_unit && ASR::is_a<ASR::ArraySection_t>(*xx.m_unit) &&
+                xx.m_nml == nullptr ) {
+            // An internal file that is an array section is written through a contiguous copy.
+            LCOMPILERS_ASSERT(body_after_curr_stmt != nullptr && !inside_where);
+            visit_expr(*xx.m_unit);
+            ASR::expr_t* section_pointer = create_and_allocate_temporary_variable_for_array(
+                xx.m_unit, "_file_write_unit_pointer_", al, current_body, current_scope,
+                exprs_with_target, true);
+            xx.m_unit = create_and_allocate_temporary_variable_for_array(
+                section_pointer, "_file_write_unit_", al, current_body, current_scope,
+                exprs_with_target);
+            body_after_curr_stmt->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+                al, section_pointer->base.loc, section_pointer, xx.m_unit, nullptr,
+                exprs_with_target)));
+        }
         visit_IO(xx.m_values, xx.n_values, "file_write");
         CallReplacerOnExpressionsVisitor::visit_FileWrite(x);
     }
@@ -2386,8 +2443,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     ASR::expr_t* visit_BinOp_expr(ASR::expr_t* expr, const std::string& name_hint, ASR::exprType allowed_expr) {
         if (ASRUtils::is_array(ASRUtils::expr_type(expr)) &&
-            !ASR::is_a<ASR::ArrayBroadcast_t>(*expr) &&
-            !is_vectorise_able(expr) &&
+            !(reads_elementwise_operands_in_place(allowed_expr) &&
+                (ASR::is_a<ASR::ArrayBroadcast_t>(*expr) ||
+                 is_vectorise_able(expr))) &&
             (expr->type != allowed_expr)
         ) {
             visit_expr(*expr);
