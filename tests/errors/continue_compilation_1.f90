@@ -3432,3 +3432,17 @@ contains
         i = cc1_lenc_bump(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(inout) dummy argument 'k'
     end subroutine cc1_lenc_use
 end module cc1_len_dependent_components
+
+module cc1_len_structure_constructor
+    implicit none
+    type :: cc1_label_t(size)
+        integer, len :: size
+        character(len=size) :: text
+    end type
+contains
+    subroutine cc1_label_use()
+        type(cc1_label_t(5)) :: e
+        e = cc1_label_t(5)("hello")  ! {Error} a structure constructor of the derived type 'cc1_label_t', which has LEN type parameters, is not supported yet
+        e = cc1_label_t(size=5)(text="hello")  ! {Error} a structure constructor of the derived type 'cc1_label_t', which has LEN type parameters, is not supported yet
+    end subroutine cc1_label_use
+end module cc1_len_structure_constructor

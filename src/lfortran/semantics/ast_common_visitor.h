@@ -15547,6 +15547,16 @@ public:
     ASR::asr_t* create_DerivedTypeConstructor(const AST::FuncCallOrArray_t& x,
             ASR::symbol_t *v, bool is_const = false) {
         const Location& loc = x.base.base.loc;
+        ASR::Struct_t* constructed = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(v));
+        if (ASRUtils::struct_has_len_params(constructed)) {
+            diag.add(Diagnostic(
+                "a structure constructor of the derived type '"
+                + std::string(ASRUtils::symbol_name(v))
+                + "', which has LEN type parameters, is not supported yet",
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
         StructConstructorInfo info = get_struct_constructor_info(v);
         bool is_pdt = !info.kind_indices.empty();
         // A parameterized derived type constructor with a separate component
