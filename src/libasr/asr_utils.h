@@ -10408,6 +10408,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 Vec<ASR::dimension_t> dimension_;
                 dimension_.from_pointer_n_copy(al, orig_arg_array_t->m_dims, orig_arg_array_t->n_dims);
                 ASR::ttype_t* physical_cast_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arg));
+                // An assumed-rank dummy receives a descriptor of the actual
+                // argument's rank. The dummy's own type is shared by every
+                // call, so the target physical type is kept separately.
+                ASR::array_physical_typeType cast_physical_type = orig_arg_array_t->m_physical_type;
 
                 if (ASRUtils::is_pointer(physical_cast_type) &&
                     orig_arg_array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
@@ -10416,7 +10420,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     // callee reads the rank field — no need for 15-slot descriptors.
                     dimension_.from_pointer_n_copy(al, arg_array_t->m_dims, arg_array_t->n_dims);
                     dimensions = &dimension_;
-                    orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::DescriptorArray;
+                    cast_physical_type = ASR::array_physical_typeType::DescriptorArray;
                 } else if (ASRUtils::is_pointer(physical_cast_type) &&
                            orig_arg_array_t->m_physical_type != ASR::array_physical_typeType::FixedSizeArray) {
                     dimensions = nullptr;
@@ -10428,7 +10432,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     // callee reads the rank field — no need for 15-slot descriptors.
                     dimension_.from_pointer_n_copy(al, arg_array_t->m_dims, arg_array_t->n_dims);
                     dimensions = &dimension_;
-                    orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::DescriptorArray;
+                    cast_physical_type = ASR::array_physical_typeType::DescriptorArray;
                 } else if (arg_array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
                     // Assumed-rank actual argument (0 compile-time dims) passed
                     // to a known-rank formal parameter (e.g. inside select rank).
@@ -10492,7 +10496,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 ASR::ttype_t* cast_target_type = ASRUtils::duplicate_type(al,
                                                                             physical_cast_type,
                                                                             dimensions,
-                                                                            orig_arg_array_t->m_physical_type,
+                                                                            cast_physical_type,
                                                                             true);
                 // For assumed-rank allocatable/pointer parameters, preserve the
                 // Allocatable/Pointer wrapper so the LLVM backend knows to use
@@ -10522,13 +10526,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                                                     arg->base.loc,
                                                     arg,
                                                     arg_array_t->m_physical_type,
-                                                    orig_arg_array_t->m_physical_type,
+                                                    cast_physical_type,
                                                     cast_target_type,
                                                     nullptr));
                 a_args[i] = physical_cast_arg;
-                if (is_orig_assumed_rank) {
-                    orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::AssumedRankArray;
-                }
             }
         }
         if(is_stringToArray_cast_needed(arg_type, orig_arg_type)){
