@@ -5,6 +5,7 @@
 
 #include <libasr/diagnostics.h>
 #include <lfortran/parser/parser.h>
+#include <lfortran/parser/source_offset.h>
 
 namespace {
 
@@ -71,10 +72,10 @@ TEST_CASE("Error Render: primary/secondary labels, single line") {
         lm.get_newlines(input, fl.in_newlines);
         fl.out_start.push_back(0);
         fl.in_start.push_back(0);
-        fl.in_start.push_back(input.size());
-        fl.out_start.push_back(input.size());
+        fl.in_start.push_back(LCompilers::LFortran::source_offset(input.size()));
+        fl.out_start.push_back(LCompilers::LFortran::source_offset(input.size()));
         lm.files.push_back(fl);
-        lm.file_ends.push_back(input.size());
+        lm.file_ends.push_back(LCompilers::LFortran::source_offset(input.size()));
     }
 
     loc1.first = 4;
@@ -249,10 +250,10 @@ TEST_CASE("Error Render: primary/secondary labels, multi line") {
         lm.get_newlines(input, fl.in_newlines);
         fl.out_start.push_back(0);
         fl.in_start.push_back(0);
-        fl.in_start.push_back(input.size());
-        fl.out_start.push_back(input.size());
+        fl.in_start.push_back(LCompilers::LFortran::source_offset(input.size()));
+        fl.out_start.push_back(LCompilers::LFortran::source_offset(input.size()));
         lm.files.push_back(fl);
-        lm.file_ends.push_back(input.size());
+        lm.file_ends.push_back(LCompilers::LFortran::source_offset(input.size()));
     }
 
     loc1.first = 4; // 1 line

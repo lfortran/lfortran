@@ -3389,3 +3389,11 @@ module cc1_bindc_character_length
     character(len=5), bind(c) :: s  ! {Error} bind(c) variable `s` must have character length one
     character(len=5), bind(c) :: a(3)  ! {Error} bind(c) variable `a` must have character length one
 end module cc1_bindc_character_length
+
+function cc1_bindc_implicit_result() bind(c)
+    character(len=5) :: cc1_bindc_implicit_result  ! {Error} character function result `cc1_bindc_implicit_result` must have constant length one in a BIND(C) procedure
+end function
+
+function cc1_bindc_explicit_result() result(c) bind(c)
+    character(len=5) :: c  ! {Error} character function result `c` must have constant length one in a BIND(C) procedure
+end function

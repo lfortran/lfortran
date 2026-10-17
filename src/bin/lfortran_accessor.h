@@ -59,7 +59,8 @@ namespace LCompilers::LLanguageServer {
                 if (LCompilers::LFortran::is_generated_symbol_name(a.first)) {
                     continue;
                 }
-                std::size_t index = symbol_lists.size();
+                // document_symbols::parent_index is an int, with -1 for no parent
+                int index = static_cast<int>(symbol_lists.size());
                 LCompilers::document_symbols &loc = symbol_lists.emplace_back();
                 loc.parent_index = parent_index;
                 loc.symbol_name = a.first;

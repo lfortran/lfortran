@@ -1428,6 +1428,38 @@ semantic error: bind(c) variable `a` must have character length one
 3390 |     character(len=5), bind(c) :: a(3)  ! {Error} bind(c) variable `a` must have character length one
      |                                  ^^^^ 
 
+semantic error: character function result `cc1_bindc_implicit_result` must have constant length one in a BIND(C) procedure
+    --> tests/errors/continue_compilation_1.f90:3394:5
+     |
+3394 |     character(len=5) :: cc1_bindc_implicit_result  ! {Error} character function result `cc1_bindc_implicit_result` must have constant length one in a BIND(C) procedure
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Return type not specified
+    --> tests/errors/continue_compilation_1.f90:3393:1 - 3395:12
+     |
+3393 |    function cc1_bindc_implicit_result() bind(c)
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3395 |    end function
+     | ...^^^^^^^^^^^^ 
+
+semantic error: character function result `c` must have constant length one in a BIND(C) procedure
+    --> tests/errors/continue_compilation_1.f90:3398:5
+     |
+3398 |     character(len=5) :: c  ! {Error} character function result `c` must have constant length one in a BIND(C) procedure
+     |     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Return type not specified
+    --> tests/errors/continue_compilation_1.f90:3397:1 - 3399:12
+     |
+3397 |    function cc1_bindc_explicit_result() result(c) bind(c)
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3399 |    end function
+     | ...^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

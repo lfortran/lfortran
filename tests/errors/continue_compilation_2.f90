@@ -224,7 +224,7 @@ program continue_compilation_2
     integer, parameter, target :: foo=4
     integer :: x_bad_implicit
     !unsupported kind
-    real*16 :: unsupported_kind
+    real*12 :: unsupported_kind
     ! argument not specified
     type(Circle) :: myCircle2 = Circle()
     ! invalid keyword argument specified

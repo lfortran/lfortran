@@ -463,6 +463,7 @@ void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit
     });
     ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicid);
     u.visit_TranslationUnit(unit);
+    PassUtils::normalize_string_physical_casts(al, unit);
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);
 }

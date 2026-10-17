@@ -900,8 +900,8 @@ std::string token(unsigned char *tok, unsigned char* cur)
 void token_loc(Location &loc, unsigned char *cur, unsigned char *tok,
         unsigned char *string_start, uint32_t loc_offset)
 {
-    loc.first = tok-string_start+loc_offset;
-    loc.last = cur-string_start-1+loc_offset;
+    loc.first = source_offset(tok-string_start+loc_offset);
+    loc.last = source_offset(cur-string_start-1+loc_offset);
 }
 
 void lex_format(unsigned char *&cur, Location &loc,

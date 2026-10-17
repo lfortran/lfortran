@@ -34,26 +34,26 @@ inline void save_asr(const ASR::TranslationUnit_t &m, std::string& asr_string, L
     // Currently empty.
 
     // Full LocationManager:
-    b.write_int32(lm.files.size());
+    b.write_int32(checked_integer_cast<uint32_t>(lm.files.size()));
     for(auto file: lm.files) {
         // std::vector<FileLocations> files;
         b.write_string(file.in_filename);
         b.write_int32(file.current_line);
 
         // std::vector<uint32_t> out_start
-        b.write_int32(file.out_start.size());
+        b.write_int32(checked_integer_cast<uint32_t>(file.out_start.size()));
         for(auto i: file.out_start) {
             b.write_int32(i);
         }
 
         // std::vector<uint32_t> in_start
-        b.write_int32(file.in_start.size());
+        b.write_int32(checked_integer_cast<uint32_t>(file.in_start.size()));
         for(auto i: file.in_start) {
             b.write_int32(i);
         }
 
         // std::vector<uint32_t> in_newlines
-        b.write_int32(file.in_newlines.size());
+        b.write_int32(checked_integer_cast<uint32_t>(file.in_newlines.size()));
         for(auto i: file.in_newlines) {
             b.write_int32(i);
         }
@@ -62,38 +62,38 @@ inline void save_asr(const ASR::TranslationUnit_t &m, std::string& asr_string, L
         b.write_int32(file.preprocessor);
 
         // std::vector<uint32_t> out_start0
-        b.write_int32(file.out_start0.size());
+        b.write_int32(checked_integer_cast<uint32_t>(file.out_start0.size()));
         for(auto i: file.out_start0) {
             b.write_int32(i);
         }
 
         // std::vector<uint32_t> in_start0
-        b.write_int32(file.in_start0.size());
+        b.write_int32(checked_integer_cast<uint32_t>(file.in_start0.size()));
         for(auto i: file.in_start0) {
             b.write_int32(i);
         }
 
         // std::vector<uint32_t> in_size0
-        b.write_int32(file.in_size0.size());
+        b.write_int32(checked_integer_cast<uint32_t>(file.in_size0.size()));
         for(auto i: file.in_size0) {
             b.write_int32(i);
         }
 
         // std::vector<uint32_t> interval_type0
-        b.write_int32(file.interval_type0.size());
+        b.write_int32(checked_integer_cast<uint32_t>(file.interval_type0.size()));
         for(auto i: file.interval_type0) {
             b.write_int32(i);
         }
 
         // std::vector<uint32_t> in_newlines0
-        b.write_int32(file.in_newlines0.size());
+        b.write_int32(checked_integer_cast<uint32_t>(file.in_newlines0.size()));
         for(auto i: file.in_newlines0) {
             b.write_int32(i);
         }
     }
 
     // std::vector<uint32_t> file_ends
-    b.write_int32(lm.file_ends.size());
+    b.write_int32(checked_integer_cast<uint32_t>(lm.file_ends.size()));
     for(auto i: lm.file_ends) {
         b.write_int32(i);
     }
