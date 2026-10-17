@@ -33,7 +33,8 @@ if (abs(r(2*n) - 2.0) > 1e-6) error stop
 r = g(spread(a, 1, n))
 if (abs(r(1) - 1.0) > 1e-6) error stop
 if (abs(r(2*n) - 2.0) > 1e-6) error stop
-if (size(f(spread(12.0, 1, n - 10))) /= 0) error stop
+! Zero copies; GFortran 13 on Ubuntu aborts for a negative `ncopies`.
+if (size(f(spread(12.0, 1, n - 3))) /= 0) error stop
 if (size(f(spread(12.0, 1, n8))) /= n) error stop
 end subroutine
 
