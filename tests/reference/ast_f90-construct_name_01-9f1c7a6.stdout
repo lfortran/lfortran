@@ -8,12 +8,10 @@ class(*), allocatable :: p
 n = 0
 chk: if (n > 0) then
     n = 10
+else if (n < 0) then
+    n = 20
 else
-    if (n < 0) then
-        n = 20
-    else
-        n = 1
-    end if
+    n = 1
 end if chk
 if (n /= 1) error stop
 sel: select case (n)
