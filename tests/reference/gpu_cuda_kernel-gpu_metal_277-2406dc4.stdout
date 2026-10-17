@@ -15,7 +15,7 @@ __device__ inline float _lcompilers_dot_product_gpu_26(float* matrix_a, int __1m
     return result;
 }
 
-__device__ inline void face_values_gpu_11(float* w, int __1w, float* c, int __1c, float* faces, float* __libasr__created__var__1__array_constructor_) {
+__device__ inline void face_values_device_ggtg_gpu_34(float* w, int __1w, float* c, int __1c, float* faces, float* __libasr__created__var__1__array_constructor_) {
     const int end_point = 1;
     int __1__libasr_index_;
     int __do_loop_end;
@@ -54,7 +54,6 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
     int __loop_end_0;
     int __workspace_extent;
     int __workspace_extent1;
-    int __workspace_extent2;
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
@@ -69,7 +68,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;
     int __workspace_extent1 = __scalar_args.__workspace_extent1;
-    int __workspace_extent2 = __scalar_args.__workspace_extent2;
     int __flat_idx;
     int __gpu_sec_i;
     int j;
@@ -84,10 +82,12 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int __do_loop_end1;
         float* __gpu_call_result = __workspace_4 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
         float* __libasr__created__var__1__array_constructor_ = __workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent1;
-        float* __libasr_created__function_call_face_values = __workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent2;
+        float* __libasr_created__function_call_face_values = __workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * 7;
+        int __libasr_created__result_metadata_;
         int __libasr_index_0_;
         int __libasr_index_0_1;
-        face_values_gpu_11(w, 2, c, 6, __libasr_created__function_call_face_values, __libasr__created__var__1__array_constructor_);
+        __libasr_created__result_metadata_ = ((int)((1 * (((1 * ((int)6)) - (1 * ((int)2))) + 1)) + 2));
+        face_values_device_ggtg_gpu_34(w, 2, c, 6, __libasr_created__function_call_face_values, __libasr__created__var__1__array_constructor_);
         __libasr_index_0_1 = 1;
         __do_loop_end = (1 + ((int)((1 * (((1 * ((int)6)) - (1 * ((int)2))) + 1)) + 2)) - 1);
         __libasr_index_0_ = (1 - 1);
