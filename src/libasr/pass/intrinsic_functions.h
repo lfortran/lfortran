@@ -8117,6 +8117,30 @@ namespace Max {
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
+    // The extent of an explicit-shape dimension whose length `ub - lb + 1`
+    // is `length`: max(0, length) (Fortran 2018, 8.5.8.2).
+    static inline ASR::expr_t* create_extent(Allocator &al,
+            ASR::expr_t* length) {
+        const Location &loc = length->base.loc;
+        ASR::ttype_t* type = ASRUtils::expr_type(length);
+        int64_t value = 0;
+        ASR::expr_t* length_value = ASRUtils::expr_value(length);
+        if (length_value != nullptr
+                && ASRUtils::extract_value(length_value, value)) {
+            if (value >= 0) {
+                return length;
+            }
+            return EXPR(ASR::make_IntegerConstant_t(al, loc, 0, type));
+        }
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, 2);
+        args.push_back(al, EXPR(ASR::make_IntegerConstant_t(al, loc, 0, type)));
+        args.push_back(al, length);
+        return EXPR(ASR::make_IntrinsicElementalFunction_t(al, loc,
+            static_cast<int64_t>(IntrinsicElementalFunctions::Max),
+            args.p, args.size(), 0, type, nullptr));
+    }
+
 }  // namespace Max
 
 namespace Min {
