@@ -7024,11 +7024,15 @@ _lfortran_open(int32_t unit_num,
     
     bool ini_file = true;
     if (f_name == NULL) {  // Not Provided
-        // Unknown, including the default, is fort.<unit> (same as implicit
-        // ENDFILE/READ/WRITE). That name is not removed at shutdown.
-        // Scratch keeps the generated name, which close/atexit delete.
-        bool use_fort_unit = (status == NULL)
-            || fortran_str_eq(status, status_len, "unknown");
+        // Unknown, including the default, is fort.<unit> for a nonnegative
+        // unit (same name as implicit ENDFILE/READ/WRITE). That name is not
+        // removed at shutdown. Negative units, including NEWUNIT, and
+        // STATUS='scratch' keep the generated name, which close/atexit
+        // delete. fort.<negative> would survive and be reopened by the
+        // next NEWUNIT.
+        bool use_fort_unit = unit_num >= 0
+            && (status == NULL
+                || fortran_str_eq(status, status_len, "unknown"));
         if (use_fort_unit) {
             char fort_filename[64];
             snprintf(fort_filename, sizeof(fort_filename), "fort.%d", unit_num);
