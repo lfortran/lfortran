@@ -147,6 +147,44 @@ ASR::expr_t* rebuild_array_physical_cast(Allocator& al,
         cast->m_new, cast->m_type, cast->m_value));
 }
 
+ASR::ttype_t* rebind_prepared_actuals_in_type(Allocator& al, ASR::ttype_t* type,
+        const std::vector<ASR::expr_t*>& original_args, ASR::expr_t** args) {
+    class RebindActuals: public ASR::BaseExprStmtDuplicator<RebindActuals> {
+    public:
+        std::map<ASR::expr_t*, ASR::expr_t*> actuals;
+
+        RebindActuals(Allocator& al): ASR::BaseExprStmtDuplicator<RebindActuals>(al) {}
+
+        ASR::expr_t* duplicate_expr(ASR::expr_t* expr) {
+            auto actual = actuals.find(expr);
+            if (actual != actuals.end()) {
+                return actual->second;
+            }
+            return ASR::BaseExprStmtDuplicator<RebindActuals>::duplicate_expr(expr);
+        }
+    } rebind(al);
+    bool actuals_changed = false;
+    for (size_t i = 0; i < original_args.size(); i++) {
+        if (original_args[i] && args[i]) {
+            actuals_changed |= original_args[i] != args[i];
+            rebind.actuals[original_args[i]] = args[i];
+            ASR::expr_t* original = ASRUtils::get_past_array_physical_cast(original_args[i]);
+            ASR::expr_t* prepared = ASRUtils::get_past_array_physical_cast(args[i]);
+            rebind.actuals[original] = prepared;
+        }
+    }
+    if (!type || !actuals_changed) {
+        return type;
+    }
+    // Intrinsic metadata shares operand occurrences with its data arguments.
+    // Preserve unchanged occurrences too: a later preparation may save them.
+    // Copy the enclosing type without changing other users of its metadata.
+    rebind.success = true;
+    ASR::ttype_t* prepared_type = rebind.duplicate_ttype(type);
+    LCOMPILERS_ASSERT(rebind.success);
+    return prepared_type;
+}
+
 const std::vector<ASR::exprType>& exprs_with_no_type = {
 };
 
@@ -2644,11 +2682,17 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     template <typename T>
     void visit_IntrinsicCall(const T& x, const std::string& name_hint) {
+        std::vector<ASR::expr_t*> original_args;
+        for (size_t i = 0; i < x.n_args; i++) {
+            original_args.push_back(x.m_args[i]);
+        }
         Vec<ASR::expr_t*> x_m_args; x_m_args.reserve(al, x.n_args);
         traverse_args(x_m_args, x.m_args, x.n_args, name_hint);
         T& xx = const_cast<T&>(x);
         xx.m_args = x_m_args.p;
         xx.n_args = x_m_args.size();
+        xx.m_type = rebind_prepared_actuals_in_type(al, x.m_type,
+            original_args, xx.m_args);
     }
 
     void visit_IntrinsicImpureSubroutine(const ASR::IntrinsicImpureSubroutine_t& x) {
@@ -2764,13 +2808,15 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+        // Normalize children before call preparation can materialize an
+        // actual. The emitted assignments are not revisited by this visitor.
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_FunctionCall(x);
         if (!inside_where) {
             prepare_function_actuals(al, const_cast<ASR::FunctionCall_t*>(&x),
                 current_body, current_scope, exprs_with_target, realloc_lhs,
                 call_preparation);
         }
         visit_Call(x, "_function_call_");
-        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_FunctionCall(x);
     }
 
     void replace_expr_with_temporary_variable(ASR::expr_t* &xx_member,
@@ -3499,7 +3545,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
+        std::vector<ASR::expr_t*> original_args;
+        for (size_t i = 0; i < x->n_args; i++) {
+            original_args.push_back(x->m_args[i]);
+        }
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_IntrinsicArrayFunction(x);
+        x->m_type = rebind_prepared_actuals_in_type(al, x->m_type,
+            original_args, x->m_args);
         std::string name_hint = std::string("_intrinsic_array_function_") + ASRUtils::get_array_intrinsic_name(x->m_arr_intrinsic_id);
         if (!(is_current_expr_linked_to_target(exprs_with_target, current_expr) || ASRUtils::is_array(x->m_type))) {
             force_replace_current_expr_for_scalar(current_expr, name_hint, al, current_body, current_scope, exprs_with_target);
@@ -3698,12 +3750,18 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
+        std::vector<ASR::expr_t*> original_args;
+        for (size_t i = 0; i < x->n_args; i++) {
+            original_args.push_back(x->m_args[i]);
+        }
         ASR::expr_t** current_expr_copy = current_expr;
         for (size_t i=0; i<x->n_args; i++) {
             current_expr = &(x->m_args[i]);
             replace_expr(*current_expr);
         }
         current_expr = current_expr_copy;
+        x->m_type = rebind_prepared_actuals_in_type(al, x->m_type,
+            original_args, x->m_args);
         // Statement-only intrinsics have no result to materialize.
         if (x->m_type != nullptr && !ASRUtils::is_array(x->m_type) &&
                 ASRUtils::is_character(*x->m_type) &&
