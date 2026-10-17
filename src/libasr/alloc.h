@@ -67,7 +67,7 @@ public:
             }
             return (void*)addr;
 #ifdef LCOMPILERS_FAST_ALLOC
-        } catch (const std::bad_alloc &e) {
+        } catch (const std::bad_alloc &) {
             return new_chunk(s);
         }
 #endif

@@ -67,8 +67,8 @@ program continue_compilation_initial_proc_target
     type(callback) :: w
     w = callback(a)
     w%f => a
-    call my_f%f(5)
-    call my_a%f(5)
+    call call_f(my_f)
+    call call_a(my_a)
     block
         type(callback), parameter :: in_block = callback(a)  ! {Error} named constant of a block
     end block
@@ -80,5 +80,13 @@ contains
     subroutine b(i)
         integer, intent(in) :: i
         type(cc_ipt_t), parameter :: earlier = cc_ipt_t(a)  ! {Error} internal procedure defined earlier
+    end subroutine
+    subroutine call_f(x)
+        type(callback), intent(in) :: x
+        call x%f(5)
+    end subroutine
+    subroutine call_a(x)
+        type(callback_a), intent(in) :: x
+        call x%f(5)
     end subroutine
 end program

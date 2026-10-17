@@ -6,6 +6,7 @@
 #include <libasr/pass/gpu_memory_space.h>
 #include <libasr/serialization.h>
 #include <lfortran/fortran_evaluator.h>
+#include <lfortran/parser/source_offset.h>
 
 using namespace LCompilers;
 
@@ -84,7 +85,7 @@ end program
         LocationManager::FileLocations file;
         file.in_filename = "gpu_unsupported_io.f90";
         lm.files.push_back(file);
-        lm.file_ends.push_back(source.size());
+        lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
         diag::Diagnostics diagnostics;
         auto parsed = evaluator.get_asr2(source, lm, diagnostics);
         INFO(diagnostics.render2());
@@ -153,7 +154,7 @@ end program
     LocationManager::FileLocations file;
     file.in_filename = "gpu_layout.f90";
     lm.files.push_back(file);
-    lm.file_ends.push_back(source.size());
+    lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
     diag::Diagnostics diagnostics;
     auto parsed = evaluator.get_asr2(source, lm, diagnostics);
     INFO(diagnostics.render2());
@@ -273,7 +274,7 @@ end subroutine
     LocationManager::FileLocations file;
     file.in_filename = "gpu_interface.f90";
     lm.files.push_back(file);
-    lm.file_ends.push_back(source.size());
+    lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
     diag::Diagnostics diagnostics;
     auto parsed = evaluator.get_asr2(source, lm, diagnostics);
     INFO(diagnostics.render2());

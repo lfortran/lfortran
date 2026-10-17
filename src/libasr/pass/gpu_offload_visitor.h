@@ -14,6 +14,7 @@
 #include <libasr/utils.h>
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_offload_rewrite.h>
+#include <libasr/pass/gpu_procedure_implementation.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/parallel_canonicalize.h>
 #include <libasr/pass/stmt_walk_visitor.h>
@@ -59,7 +60,8 @@ public:
     GpuOffloadVisitor(Allocator &al, PassOptions pass_options_,
                       ASR::TranslationUnit_t &tu_)
         : StatementWalkVisitor(al), pass_options(pass_options_),
-          device_caps(gpu_device_capabilities(pass_options_)), tu(tu_) {}
+          device_caps(gpu_device_capabilities(pass_options_)), tu(tu_),
+          implementations(al, tu_, pass_options) {}
 
     void load_submodule_deps(ASR::TranslationUnit_t &sub_tu);
 
@@ -83,14 +85,8 @@ public:
             SymbolTable *orig_scope, SymbolTable *kernel_scope,
             const Location &loc);
 
-    void find_array_section_bounds(ASR::expr_t *e,
-            ASR::expr_t *&loop_start, ASR::expr_t *&loop_end);
-
     void find_array_section_all_bounds(ASR::expr_t *e,
             std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> &dim_bounds);
-
-    ASR::expr_t* elementize_mask(ASR::expr_t *e, ASR::expr_t *loop_var,
-            ASR::ttype_t *logical_type, const Location &loc);
 
     ASR::expr_t* elementize_mask_multi(ASR::expr_t *e,
             std::vector<ASR::expr_t*> &loop_vars,
@@ -126,18 +122,10 @@ public:
     // inline_device_function_calls() afterwards.
     std::set<ASR::Function_t*> functions_to_inline;
 
-    // The implementation already found for an interface declaration.
-    // Loading a submodule from disk builds a fresh copy of its symbol
-    // table every time, so without this the same `module procedure`
-    // would resolve to a different Function_t at every call. The
-    // inliner identifies a planned callee by pointer, so the plan and
-    // the splice would then disagree and the callee would silently stay
-    // an out-of-line device function.
-    std::map<ASR::Function_t*, ASR::Function_t*> function_implementations;
+    // The bodies of the separate module procedures device code calls.
+    GpuProcedureImplementations implementations;
 
     ASR::Function_t* resolve_function_implementation(ASR::Function_t *fn);
-
-    ASR::Function_t* find_function_implementation(ASR::Function_t *fn);
 
     ASR::Function_t* resolve_device_function(ASR::symbol_t *sym);
 
@@ -186,6 +174,13 @@ public:
             GpuDecline &decline,
             bool spliceable = true);
 
+    // The section `actual` that splicing `fn` copies into a contiguous
+    // array for its dummy `dummy` (gather_section_actual), with the
+    // dimensions it spans; nullptr when splicing passes it on as it is.
+    ASR::ArraySection_t* spliced_section_copy(ASR::Function_t *fn,
+            ASR::symbol_t *dummy, ASR::expr_t *actual,
+            std::vector<int> &range_dims);
+
     ASR::expr_t* gather_section_actual(const Location &loc,
             SymbolTable *block_scope, ASR::Function_t *fn,
             ASR::symbol_t *dummy, ASR::expr_t *actual, bool writable,
@@ -206,6 +201,11 @@ public:
             ASR::binopType &binop_op, bool &matmul_is_left);
 
     void inline_matmul_stmts(ASR::stmt_t** &body, size_t &n_body);
+
+    void hoist_array_function_results(ParallelLoopNest &nest);
+
+    void hoist_array_function_results_in_body(ASR::stmt_t** &body,
+            size_t &n_body, SymbolTable *scope, SymbolTable *&block_scope);
 
     void hoist_nested_matmuls(ParallelLoopNest &nest);
 
@@ -318,7 +318,7 @@ public:
     void materialize_aliased_assignments(ParallelLoopNest &nest);
 
     void materialize_aliased_in_body(ASR::stmt_t** &body, size_t &n_body,
-            bool &changed);
+            SymbolTable *scope, bool &changed);
 
     void inline_array_section_assignment(ParallelLoopNest &nest);
 
@@ -398,6 +398,8 @@ public:
 
     void gather_strided_sections_in_body(ASR::stmt_t** &body,
             size_t &n_body, SymbolTable *scope, const GpuVaries &varies);
+
+    void gather_strided_sections_in_routine(ASR::Function_t &fn);
 
     void inline_elemental_array_var_assignment(ParallelLoopNest &nest);
 
@@ -526,6 +528,7 @@ public:
         ASR::ttype_t *int_type = nullptr;
         size_t n_dims = 0;
         Vec<ASR::call_arg_t> call_args;
+        Vec<ASR::stmt_t*> private_shapes;
         Vec<ASR::stmt_t*> gather_stmts;
         Vec<ASR::stmt_t*> scatter_stmts;
         std::vector<LiveoutScalarInfo> liveout_scalars;
@@ -546,6 +549,20 @@ public:
     void resolve_enclosing_associates(ParallelLoopNest &work, size_t n_dims,
             std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
 
+    // Gives each iteration its own copy of an array of unspecified
+    // locality that the iteration defines whole before it references it,
+    // by making it a local of a BLOCK around the body (see
+    // gpu_offload_privatize.cpp).
+    void privatize_iteration_arrays(const ASR::OMPRegion_t &region,
+            ParallelLoopNest &work,
+            const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map,
+            Vec<ASR::stmt_t*> &private_shapes);
+
+    // The arrays privatize_iteration_arrays may make local.
+    std::vector<ASR::symbol_t*> iteration_array_candidates(
+            const ASR::OMPRegion_t &region, ParallelLoopNest &work,
+            const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
+
     bool offloadable_before_rewrites(const ParallelLoopNest &work,
             const std::set<SymbolTable*> &enclosing_block_scopes,
             const Location &loc);
@@ -563,7 +580,7 @@ public:
     // array elements the loop `loop` writes the storage the kernel writes
     // into, or check that they have it, before the launch. `starts` and
     // `ends` hold the limits of each loop of the nest, already evaluated.
-    std::vector<ASR::stmt_t*> build_component_fit(
+    ASR::symbol_t* build_component_fit(
             const ParallelLoopNest &loop,
             const std::vector<ASR::expr_t*> &starts,
             const std::vector<ASR::expr_t*> &ends, const Location &loc);

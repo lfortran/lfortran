@@ -14,6 +14,9 @@ namespace LCompilers {
 
     namespace PassUtils {
 
+    // Restore casts after replacements change the physical types of shared operands.
+    void normalize_string_physical_casts(Allocator &al, ASR::TranslationUnit_t &unit);
+
     // The name of a temporary a pass creates, `__libasr_created_` followed
     // by `hint`, made unique in `scope`. The hint is often the name of the
     // symbol a call is made through, which can be an alias that is not an
@@ -296,10 +299,10 @@ namespace LCompilers {
 
         ASR::ttype_t* get_matching_type(ASR::expr_t* sibling, Allocator& al);
 
-        ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
+        ASR::expr_t* create_var(int64_t counter, std::string suffix, const Location& loc,
                                 ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope, ASR::expr_t* var = nullptr);
 
-        ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
+        ASR::expr_t* create_var(int64_t counter, std::string suffix, const Location& loc,
                                 ASR::expr_t* sibling, Allocator& al, SymbolTable*& current_scope);
 
         void create_vars(Vec<ASR::expr_t*>& vars, int n_vars, const Location& loc,
@@ -330,7 +333,7 @@ namespace LCompilers {
         ASR::expr_t* create_binop_helper(Allocator &al, const Location &loc, ASR::expr_t* left, ASR::expr_t* right,
                                             ASR::binopType op);
 
-        ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim, std::string bound,
+        ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int64_t dim, std::string bound,
                                 Allocator& al, int integer_kind = 4);
 
         ASR::expr_t* get_flipsign(ASR::expr_t* arg0, ASR::expr_t* arg1,
@@ -1347,7 +1350,7 @@ namespace LCompilers {
             ASR::ArrayItem_t* array_item, Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& temp_idx_vars,
             Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body, SymbolTable* current_scope,
             Vec<ASR::stmt_t*>* result_vec) {
-            int value_rank = array_item->n_args;
+            int value_rank = checked_integer_cast<int>(array_item->n_args);
             PassUtils::create_idx_vars(idx_vars, value_rank, loc, al, current_scope, "_t");
             LCOMPILERS_ASSERT(value_rank == (int) idx_vars.size())
             temp_idx_vars.reserve(al, array_item->n_args);
@@ -1389,7 +1392,7 @@ namespace LCompilers {
             ASR::ArraySection_t* array_section, Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& temp_idx_vars,
             Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body, SymbolTable* current_scope,
             Vec<ASR::stmt_t*>* result_vec) {
-            PassUtils::create_idx_vars(idx_vars, array_section->n_args, loc, al, current_scope, "_t");
+            PassUtils::create_idx_vars(idx_vars, checked_integer_cast<int>(array_section->n_args), loc, al, current_scope, "_t");
             LCOMPILERS_ASSERT(array_section->n_args == idx_vars.size())
             temp_idx_vars.reserve(al, array_section->n_args);
             for( size_t i = 0; i < array_section->n_args; i++ ) {
@@ -1658,7 +1661,8 @@ namespace LCompilers {
             ASR::ttype_t* casted_type=nullptr, bool skip_save_restore=false) {
             LCOMPILERS_ASSERT(result_var != nullptr);
             const Location& loc = x->base.base.loc;
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*result_var));
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*result_var) ||
+                ASR::is_a<ASR::StructInstanceMember_t>(*result_var));
             [[maybe_unused]] ASR::ttype_t* result_var_type = ASRUtils::expr_type(result_var);
             LCOMPILERS_ASSERT_MSG(ASRUtils::extract_n_dims_from_ttype(result_var_type) == 1,
                                 "Initialisation using ArrayConstructor is "

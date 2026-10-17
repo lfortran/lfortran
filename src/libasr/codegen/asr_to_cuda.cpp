@@ -69,6 +69,31 @@ struct CudaDialect {
     void emit_thread_id_param(std::stringstream & /*src*/,
             bool /*has_prev*/) const {}
 
+    // An iteration runs on one thread: the CUDA capabilities give each
+    // iteration one lane (gpu_decline.cpp), so no kernel has lanes here.
+    void emit_lane_thread_params(std::stringstream & /*src*/,
+            bool /*has_prev*/) const {
+        LCOMPILERS_ASSERT(false);
+    }
+    void emit_lane_prologue(std::stringstream & /*src*/,
+            const std::string & /*indent*/,
+            const std::string & /*lanes*/) const {
+        LCOMPILERS_ASSERT(false);
+    }
+    std::string lane_index() const {
+        LCOMPILERS_ASSERT(false);
+        return "0";
+    }
+    std::string lane_broadcast(const std::string &value) const {
+        LCOMPILERS_ASSERT(false);
+        return value;
+    }
+    void emit_lane_barrier(std::stringstream & /*src*/,
+            const std::string & /*indent*/,
+            const std::string & /*lanes*/) const {
+        LCOMPILERS_ASSERT(false);
+    }
+
     // A bare literal is double precision, which would pick the wrong
     // overload of an intrinsic taking single precision arguments.
     std::string real_literal(double value, int kind) const {
@@ -88,6 +113,13 @@ struct CudaDialect {
 
     std::string uint_type() const {
         return "unsigned int";
+    }
+
+    // A relaxed atomic add to an `int` in device memory, giving the old
+    // value. The CPU emulation defines atomicAdd in cuda_cpu_device.h.
+    std::string atomic_fetch_add(const std::string &address,
+            const std::string &increment) const {
+        return "atomicAdd(" + address + ", " + increment + ")";
     }
 
     // Every scalar arrives in one struct, passed by value, which is what the

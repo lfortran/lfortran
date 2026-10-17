@@ -766,6 +766,10 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "pause1.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/stop_03.f90"
 run = true
 
@@ -1874,6 +1878,12 @@ pass = "dead_code_removal"
 julia = true
 c = true
 cpp = true
+
+# A whole-array assignment assigned again before anything reads it is
+# removed; one that is read is kept.
+[[test]]
+filename = "../integration_tests/dead_array_store_01.f90"
+pass = "dead_array_store"
 
 [[test]]
 filename = "../integration_tests/case_07.f90"
@@ -3528,6 +3538,10 @@ filename = "errors/continue_compilation_initial_proc_target.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/continue_compilation_proc_component_constant.f90"
+continue_compilation = true
+
+[[test]]
 filename = "errors/namelist_implicit_type_01.f90"
 semantics_only_cc = true
 options = "--implicit-typing"
@@ -3756,6 +3770,10 @@ ast = true
 
 [[test]]
 filename = "errors/fixed_form_13.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_14.f"
 ast = true
 
 [[test]]
@@ -4355,6 +4373,10 @@ filename = "../integration_tests/gpu_kernel_source_07.f90"
 gpu_cuda_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_kernel_source_08.f90"
+gpu_cuda_kernel = true
+
+[[test]]
 filename = "../integration_tests/gpu_metal_213.f90"
 gpu_cuda_kernel = true
 
@@ -4470,7 +4492,6 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_320.f90"
 gpu_cuda_kernel = true
-gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_327.f90"
@@ -4564,14 +4585,11 @@ filename = "../integration_tests/gpu_decline_15.f90"
 gpu_offload_cuda = true
 
 [[test]]
-filename = "gpu_decline_impure_condition.f90"
+filename = "../integration_tests/gpu_decline_16.f90"
 gpu_offload_cuda = true
 
-# Indexing an ASSOCIATE bound to a strided section inside a kernel. The
-# extent honours the step, so the count was right; the device pointer holds
-# only an address, so the elements were not. Refused rather than answered.
 [[test]]
-filename = "../integration_tests/gpu_metal_338.f90"
+filename = "gpu_decline_impure_condition.f90"
 gpu_offload_cuda = true
 
 # A program whose loops need a lowering the offload pass does not have yet.
@@ -4612,7 +4630,7 @@ gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_206.f90"
-gpu_offload_cuda = true
+gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_207.f90"
@@ -4620,11 +4638,11 @@ gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_208.f90"
-gpu_offload_cuda = true
+gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_209.f90"
-gpu_offload_cuda = true
+gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_220.f90"
@@ -4717,12 +4735,11 @@ filename = "../integration_tests/gpu_unsupported_07.f90"
 gpu_offload_cuda = true
 gpu_offload_metal = true
 
-# A temporary of the compiler the host cannot size, on every device: the error
-# does not name it.
+# A temporary of the compiler the host cannot size, allocated on the device
+# heap.
 [[test]]
 filename = "../integration_tests/gpu_metal_391.f90"
-gpu_offload_cuda = true
-gpu_offload_metal = true
+gpu_cuda_kernel = true
 
 # A run-time sized array of device code whose extent reads a dummy argument
 # the routine changes before the call the array is passed to: the host cannot
@@ -4742,11 +4759,59 @@ gpu_offload_metal = true
 
 # An allocatable of a device routine allocated twice with a shape that reads
 # a local the routine changes in between, through an associate name: the
-# shape is not known on entry, an error on every device.
+# shape is not known on entry, so it is allocated on the device heap.
 [[test]]
 filename = "../integration_tests/gpu_metal_408.f90"
-gpu_offload_cuda = true
-gpu_offload_metal = true
+gpu_cuda_kernel = true
+
+# Every matmul an offloaded loop lowers inline accumulates each element in a
+# scalar local and stores it into the target once.
+[[test]]
+filename = "../integration_tests/gpu_metal_455.f90"
+gpu_cuda_kernel = true
+
+# An associate name bound to the result of a function is that result, made
+# once on entry: one call, not one for every element read through the name.
+[[test]]
+filename = "../integration_tests/gpu_metal_452.f90"
+gpu_cuda_kernel = true
+options = "--realloc-lhs-arrays"
+
+# A call of a function returning an array, in an array expression, is made
+# once before the statement, not once for every element it computes.
+[[test]]
+filename = "../integration_tests/gpu_metal_453.f90"
+gpu_cuda_kernel = true
+options = "--realloc-lhs-arrays"
+
+# A fixed-size array each iteration defines whole before it references it
+# is a local of the kernel, not a kernel argument every thread shares; one
+# read after the loop stays an argument.
+[[test]]
+filename = "../integration_tests/gpu_metal_474.f90"
+gpu_cuda_kernel = true
+
+# Large and runtime-sized arrays stay private in workspace slices.
+[[test]]
+filename = "../integration_tests/gpu_metal_476.f90"
+gpu_cuda_kernel = true
+
+# Automatic callee locals are measured after inlining.
+[[test]]
+filename = "../integration_tests/gpu_metal_477.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_478.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_479.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_09.f90"
+gpu_cuda_kernel = true
 
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
@@ -4823,6 +4888,18 @@ run = true
 
 [[test]]
 filename = "errors/array_bounds_check_19.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_20.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_21.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_22.f90"
 run = true
 
 [[test]]
@@ -5640,6 +5717,11 @@ filename = "errors/proc_ptr_undefined_interface.f90"
 asr = true
 
 [[test]]
+filename = "errors/cyclic_dummy_procedure_interface.f90"
+asr = true
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/template_deferred_interface_procedure.f90"
 asr = true
 
@@ -6323,6 +6405,26 @@ asr = true
 
 [[test]]
 filename = "asr/verify/gpu_kernel_launch_argument_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/gpu_kernel_launch_component_fit_not_block.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/gpu_kernel_launch_scratch_not_allocatable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/gpu_atomic_fetch_add_host_code.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/gpu_atomic_fetch_add_target_scalar.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/gpu_atomic_fetch_add_target_kind.asr"
 asr = true
 
 [[test]]

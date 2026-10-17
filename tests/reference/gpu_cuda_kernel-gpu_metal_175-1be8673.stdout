@@ -15,7 +15,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __flat_idx;
     int __gpu_sec_i;
     int i;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((2 - 1) + 1))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 2)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
@@ -24,7 +24,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __gpu_sec_i = (1 - 1);
     while (((__gpu_sec_i + 1) <= __do_loop_end)) {
         __gpu_sec_i = (__gpu_sec_i + 1);
-        a[((int)(__gpu_sec_i) - (1)) + (2 * ((int)(i) - (1)))] = __data_arr_v[__offsets_arr_v[((int)(i) - (1))] + ((int)(__gpu_sec_i) - (1))];
+        a[((int)(__gpu_sec_i) - (1)) + (2 * ((int)(i) - (1)))] = __data_arr_v[__offsets_arr_v[((int)(i) - (1))] + ((int)(__gpu_sec_i) - (__sizes_arr_v[(((int)(i) - (1))) * 2 + 1]))];
     }
 }
 
@@ -46,7 +46,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     int __gpu_elem_i;
     int __gpu_sec_i1;
     int i;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((2 - 1) + 1))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 2)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
@@ -55,11 +55,11 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         int __do_loop_end;
         int __do_loop_end1;
         float* r = __workspace_6 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
-        __do_loop_end = (__sizes_arr_v[((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))]);
+        __do_loop_end = (__sizes_arr_v[(((int)((((blockIdx.x * blockDim.x) + threadIdx.x) + 1)) - (1))) * 2 + 0]);
         __gpu_elem_i = (1 - 1);
         while (((__gpu_elem_i + 1) <= __do_loop_end)) {
             __gpu_elem_i = (__gpu_elem_i + 1);
-            r[((int)(__gpu_elem_i) - (1))] = __data_arr_v[__offsets_arr_v[((int)(i) - (1))] + ((int)(__gpu_elem_i) - (1))];
+            r[((int)(__gpu_elem_i) - (1))] = __data_arr_v[__offsets_arr_v[((int)(i) - (1))] + ((int)(__gpu_elem_i) - (__sizes_arr_v[(((int)(i) - (1))) * 2 + 1]))];
         }
         __do_loop_end1 = ((((int)2) + ((int)1)) - 1);
         __gpu_sec_i1 = (1 - 1);

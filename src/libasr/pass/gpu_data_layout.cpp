@@ -35,6 +35,19 @@ bool gpu_component_is_decomposed(ASR::symbol_t *component) {
         && ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(type));
 }
 
+bool gpu_component_is_opaque(ASR::symbol_t *component) {
+    if (!component || !ASR::is_a<ASR::Variable_t>(*component)) return false;
+    ASR::ttype_t *type = ASR::down_cast<ASR::Variable_t>(component)->m_type;
+    return ASRUtils::is_allocatable(type) && !ASRUtils::is_array(type);
+}
+
+size_t gpu_opaque_component_words(ASR::symbol_t *component) {
+    ASR::ttype_t *type = ASRUtils::symbol_type(
+        ASRUtils::symbol_get_past_external(component));
+    return !ASRUtils::is_array(type) && ASRUtils::is_character(*type)
+        ? 2 : 1;
+}
+
 static void collect_decomposed_components(ASR::Struct_t *st,
         std::vector<GpuComponentLayout> &out,
         std::set<ASR::Struct_t*> &seen) {

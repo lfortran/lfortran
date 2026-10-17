@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-"""Drive the interactive prompt (`lfortran` with no files) through stdin."""
+"""Drive the interactive prompt (`lfortran` with no files) through stdin: a
+pipe or a pseudo-terminal. Also run a compiled program on a pseudo-terminal."""
 
 import argparse
 import os
 import re
+import select
 import subprocess
 import sys
 import tempfile
 import threading
+import time
 
 ENTER = b"\r"
 CTRL_D = b"\x04"
@@ -66,11 +69,201 @@ def check_keeps_files_in_cwd(lfortran):
                 % sorted(os.listdir(cwd)))
 
 
+class PtyRepl:
+    """The prompt on a pseudo-terminal, typed at as by a user."""
+
+    def __init__(self, pty, termios, lfortran, cwd, timeout):
+        self.termios = termios
+        self.pid, self.fd = pty.fork()
+        if self.pid == 0:
+            try:
+                os.chdir(cwd)
+                os.execv(lfortran, [lfortran, "--no-color"])
+            finally:
+                os._exit(127)
+        self.deadline = time.monotonic() + timeout
+        self.out = b""
+        self.prompts = 0
+        self.cells = 0
+
+    def text(self):
+        return re.sub(rb"\x1b\[[0-9;?]*[A-Za-z]", b"", self.out).decode(
+            errors="replace")
+
+    def wait(self, done, what):
+        # Reads the output until `done()`, answering the cursor position
+        # query that starts every prompt as a terminal would. Returns False
+        # if the output ends first.
+        while not done():
+            left = self.deadline - time.monotonic()
+            if left <= 0:
+                sys.exit("timed out waiting for %s:\n%s" % (what, self.text()))
+            if not select.select([self.fd], [], [], min(left, 0.1))[0]:
+                continue
+            try:
+                data = os.read(self.fd, 4096)
+            except OSError:
+                # Linux reports the end of the output as an error
+                data = b""
+            if not data:
+                return False
+            self.out += data
+            while self.prompts < self.out.count(b"\x1b[6n"):
+                os.write(self.fd, b"\x1b[1;1R")
+                self.prompts += 1
+        return True
+
+    def cell(self, text, keys=None):
+        if not self.wait(lambda: self.prompts > self.cells, "the prompt"):
+            sys.exit("the prompt exited before %r:\n%s" % (text, self.text()))
+        self.cells += 1
+        os.write(self.fd, text.encode() + ENTER)
+        if keys is not None:
+            # The cell reads `keys` from the terminal, which it must have in
+            # line mode, not in the raw mode of the prompt.
+            if not self.wait(lambda: self.termios.tcgetattr(self.fd)[3]
+                    & self.termios.ICANON, "the cell to read"):
+                sys.exit("the prompt exited instead of reading in %r:\n%s"
+                    % (text, self.text()))
+            os.write(self.fd, keys)
+
+    def exit(self):
+        if self.wait(lambda: self.prompts > self.cells, "the prompt"):
+            os.write(self.fd, CTRL_D)
+            self.wait(lambda: False, "the prompt to exit")
+        _, status = os.waitpid(self.pid, 0)
+        return os.waitstatus_to_exitcode(status)
+
+
+def check_read_from_terminal(lfortran):
+    # A cell reads the lines typed at the terminal (#15284), also after a
+    # READ ended by Ctrl-D.
+    try:
+        import pty
+        import termios
+    except ImportError:
+        print("skipped: no pseudo-terminals")
+        return
+    with tempfile.TemporaryDirectory() as cwd:
+        repl = PtyRepl(pty, termios, lfortran, cwd, timeout=60)
+        code = None
+        try:
+            repl.cell("integer :: n, ios")
+            repl.cell("read(*,*) n", b"42" + ENTER)
+            repl.cell("print *, n + 1")
+            repl.cell("block; character(len=20) :: s; read(*,'(A)') s; "
+                "print *, '[' // trim(s) // ']'; end block",
+                b"hello world" + ENTER)
+            repl.cell("read(*,*,iostat=ios) n", CTRL_D)
+            repl.cell("print *, ios")
+            repl.cell("read(*,*) n", b"7" + ENTER)
+            repl.cell("print *, 3 * n")
+            code = repl.exit()
+        finally:
+            if code is None:
+                os.kill(repl.pid, 9)
+                os.waitpid(repl.pid, 0)
+            os.close(repl.fd)
+    out = repl.text()
+    if code != 0 or "Exiting." not in out:
+        sys.exit("the prompt did not exit cleanly (code %d):\n%s"
+            % (code, out))
+    for expected in [r"^\s*43\r?$", r"^\s*\[hello world\]\r?$",
+            r"^\s*-1\r?$", r"^\s*21\r?$"]:
+        if not re.search(expected, out, re.M):
+            sys.exit("expected %r in the prompt output:\n%s"
+                % (expected, out))
+
+
+READ_TERMINAL_SOURCE = """\
+program read_terminal
+    character(len=8) :: a, b, c, d, e
+    print '(a)', 'ready'
+    read(*, '(a)') a
+    read(*, '(a/a)') b, c
+    read(*, '(a)') d, e
+    print '(11a)', '[', trim(a), '|', trim(b), '|', trim(c), '|', &
+        trim(d), '|', trim(e), ']'
+end program
+"""
+
+
+def check_compiled_read_from_terminal(lfortran):
+    # A compiled program reads the lines typed at the terminal in order, with
+    # a format that starts the record at a statement, a slash and a reversion
+    # (#15285). A terminal on macOS reports a successful ftell and fseek, but
+    # seeking discards the line stdio has buffered, and the terminal cannot
+    # send it again.
+    try:
+        import pty
+    except ImportError:
+        print("skipped: no pseudo-terminals")
+        return
+    with tempfile.TemporaryDirectory() as cwd:
+        with open(os.path.join(cwd, "read_terminal.f90"), "w") as f:
+            f.write(READ_TERMINAL_SOURCE)
+        exe = os.path.join(cwd, "read_terminal")
+        p = subprocess.run([lfortran, "--no-color", "read_terminal.f90",
+            "-o", exe], cwd=cwd, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
+        if p.returncode != 0:
+            sys.exit("compiling read_terminal.f90 failed:\n%s"
+                % p.stdout.decode(errors="replace"))
+        pid, fd = pty.fork()
+        if pid == 0:
+            try:
+                os.execv(exe, [exe])
+            finally:
+                os._exit(127)
+        deadline = time.monotonic() + 60
+        out = b""
+        typed = False
+        code = None
+        try:
+            # The lines are typed once the program has started. A terminal
+            # in line mode hands over at most one line per read, as if they
+            # were typed one by one. Ctrl-D ends the input, so a program
+            # that skipped a line stops at end of file.
+            while True:
+                left = deadline - time.monotonic()
+                if left <= 0:
+                    sys.exit("timed out running read_terminal:\n%s"
+                        % out.decode(errors="replace"))
+                if not select.select([fd], [], [], min(left, 0.1))[0]:
+                    continue
+                try:
+                    data = os.read(fd, 4096)
+                except OSError:
+                    # Linux reports the end of the output as an error
+                    data = b""
+                if not data:
+                    break
+                out += data
+                if not typed and b"ready" in out:
+                    typed = True
+                    for line in [b"one", b"two", b"three", b"four", b"five"]:
+                        os.write(fd, line + ENTER)
+                    os.write(fd, CTRL_D)
+            _, status = os.waitpid(pid, 0)
+            code = os.waitstatus_to_exitcode(status)
+        finally:
+            if code is None:
+                os.kill(pid, 9)
+                os.waitpid(pid, 0)
+            os.close(fd)
+    text = out.decode(errors="replace")
+    if code != 0 or "[one|two|three|four|five]" not in text:
+        sys.exit("read_terminal did not read the typed lines in order "
+            "(code %d):\n%s" % (code, text))
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--lfortran", required=True)
     args = parser.parse_args()
     check_keeps_files_in_cwd(os.path.abspath(args.lfortran))
+    check_read_from_terminal(os.path.abspath(args.lfortran))
+    check_compiled_read_from_terminal(os.path.abspath(args.lfortran))
     print("ok")
 
 

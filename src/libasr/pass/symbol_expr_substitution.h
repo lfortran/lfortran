@@ -81,6 +81,12 @@ public:
         replacer.current_expr = current_expr;
         replacer.replace_expr(*current_expr);
     }
+
+    // A BLOCK of the statements is part of them: its body, and the
+    // declarations of its locals (`real :: w(m)`), name the same symbols.
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        visit_symbol(*x.m_m);
+    }
 };
 
 } // namespace LCompilers

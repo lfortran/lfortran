@@ -43,6 +43,16 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // so a device function cannot declare a local whose extent is
             // only known once the kernel runs.
             caps.device_function_runtime_sized_locals = false;
+            // Every Apple GPU runs SIMD-groups of 32 threads.
+            caps.lanes_per_iteration = 32;
+            // A kernel is compiled for the GPU that runs it, so this is the
+            // smallest stack of a device Metal runs on. An Apple silicon Mac
+            // gives a thread 256 KiB (a local array of 65,500 `float`s is
+            // rejected with "Compute function exceeds available stack
+            // space", one of 65,400 is not), the Apple Paravirtual device of
+            // a macOS virtual machine 64 KiB (65,472 bytes build, 65,520 are
+            // rejected with "Compilation failed").
+            caps.thread_stack_bytes = 64 * 1024;
             break;
         case GpuDevice::Cuda:
             caps.name = "CUDA";
@@ -54,6 +64,10 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // whose size the compiler has to know -- so a run-time sized
             // local has to be moved to kernel scope here too.
             caps.device_function_runtime_sized_locals = false;
+            // A CUDA thread has at most 512 KiB of local memory, where its
+            // stack lives (CUDA C++ Programming Guide, "Features and
+            // Technical Specifications", compute capability 2.0 and up).
+            caps.thread_stack_bytes = 512 * 1024;
             break;
         case GpuDevice::None:
             break;
@@ -107,10 +121,7 @@ static std::string article(const std::string &word) {
     }
 }
 
-// Whether `name` is one the program can have written, which a diagnostic
-// may show. A Fortran name begins with a letter (F2018 6.2.2), and every
-// name the compiler makes up for a temporary does not.
-static bool gpu_source_name(const std::string &name) {
+bool gpu_source_name(const std::string &name) {
     return !name.empty() && std::isalpha(static_cast<unsigned char>(name[0]))
         && !ASRUtils::is_compiler_generated_name(name);
 }
@@ -227,6 +238,9 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             }
             return "workspace '" + decline.name +
                 "' cannot be sized on the host";
+        case GpuDeclineReason::HeapArrayUse:
+            return "the array " + decline.name + " on the device heap is not "
+                "supported yet";
         case GpuDeclineReason::StructComponentNotSizeable: {
             // `value%component`: a temporary value is not named.
             std::string component = decline.name;
@@ -269,9 +283,6 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::StructAllocatableArrayMember:
             return unsupported + "a derived type with an allocatable array "
                 "member the gpu backend cannot decompose";
-        case GpuDeclineReason::StructAllocatableScalarMember:
-            return unsupported +
-                "a derived type with an allocatable scalar member";
         case GpuDeclineReason::StructAssumedShapeArrayMember:
             return unsupported +
                 "a derived type with an assumed shape array member";
@@ -323,6 +334,14 @@ std::string gpu_decline_message(const GpuDecline &decline) {
             return unsupported + "an allocatable component `" + decline.name +
                 "` reached through another component, which has no buffer "
                 "of its own";
+        case GpuDeclineReason::AllocatableScalarComponentUse:
+            return unsupported + "the allocatable scalar component `" +
+                decline.name + "` on the device, which has no buffer of "
+                "its own";
+        case GpuDeclineReason::AllocatableScalarComponentCopy:
+            return unsupported + "assigning a whole value of a derived type "
+                "with the allocatable scalar component `" + decline.name +
+                "` on the device, which cannot allocate it";
         case GpuDeclineReason::MissingArgument:
             return unsupported + "a missing argument";
         case GpuDeclineReason::ScalarTypeWidth:

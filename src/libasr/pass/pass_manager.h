@@ -67,8 +67,14 @@
 #include <libasr/pass/replace_gpu_offload.h>
 #include <libasr/pass/device_partition.h>
 #include <libasr/pass/device_launch_expand.h>
+#include <libasr/pass/gpu_launch_sync.h>
+#include <libasr/pass/gpu_array_statements.h>
+#include <libasr/pass/dead_array_store.h>
+#include <libasr/pass/gpu_vector_lanes.h>
 #include <libasr/pass/gpu_memory_space.h>
 #include <libasr/pass/gpu_device_workspace.h>
+#include <libasr/pass/gpu_struct_component_args.h>
+#include <libasr/pass/gpu_device_heap.h>
 #include <libasr/pass/gpu_kernel_abi.h>
 #include <libasr/pass/replace_with_compile_time_values.h>
 #include <libasr/pass/replace_coarray.h>
@@ -133,13 +139,20 @@ namespace LCompilers {
             {"openmp", &pass_replace_openmp},
             {"parallel_canonicalize", &pass_parallel_canonicalize},
             {"parallel_dispatch", &pass_parallel_dispatch},
+            {"dead_array_store", &pass_dead_array_store},
+            {"gpu_array_statements", &pass_gpu_array_statements},
             {"omp_region_flatten", &pass_flatten_omp_regions},
             {"gpu_offload", &pass_replace_gpu_offload},
             {"device_partition", &pass_device_partition},
+            {"gpu_launch_sync", &pass_gpu_launch_sync},
             {"device_launch_expand", &pass_device_launch_expand},
             {"gpu_device_workspace", &pass_gpu_device_workspace},
+            {"gpu_struct_component_args", &pass_gpu_struct_component_args},
+            {"gpu_device_heap", &pass_gpu_device_heap},
             {"gpu_memory_space", &pass_gpu_memory_space},
             {"gpu_kernel_finalize", &pass_gpu_kernel_finalize},
+            {"gpu_kernel_storage", &pass_gpu_kernel_storage},
+            {"gpu_vector_lanes", &pass_gpu_vector_lanes},
             {"print_struct_type", &pass_replace_print_struct_type},
             {"unique_symbols", &pass_unique_symbols},
             {"intent_out_deallocate", &pass_intent_out_deallocate},
@@ -232,7 +245,7 @@ namespace LCompilers {
                 }
                 auto t2 = std::chrono::high_resolution_clock::now();
                 if (pass_options.time_report) {
-                    int time_taken_by_current_pass = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+                    auto time_taken_by_current_pass = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
                     double time_in_milliseconds = (double) time_taken_by_current_pass / 1000.0;
                     std::string message = "";
                     if ( time_in_milliseconds >= 1.0 ) {
@@ -291,6 +304,12 @@ namespace LCompilers {
                 // region.
                 "parallel_canonicalize",
                 "parallel_dispatch",
+                // A whole-array assignment that is assigned again before
+                // anything reads it goes, before it can cost a launch.
+                "dead_array_store",
+                // A whole-array assignment in a host loop that launches
+                // kernels, on the data they use, runs on the device too.
+                "gpu_array_statements",
                 // Each statement that references a function whose result is
                 // finalized after the statement becomes a BLOCK here, before
                 // the passes below split it into several statements.
@@ -308,6 +327,9 @@ namespace LCompilers {
                 // Everything a kernel reaches is device code, and the
                 // passes below have to know which routines those are.
                 "device_partition",
+                // A derived-type component holding device buffers becomes
+                // an argument of its own wherever device code uses it.
+                "gpu_struct_component_args",
                 "gpu_device_allocatable",
                 "conditional_expr",
                 // A FORALL becomes a DO CONCURRENT loop before temporaries
@@ -345,10 +367,17 @@ namespace LCompilers {
                 "print_list_tuple",
                 "print_struct_type",
                 "array_dim_intrinsics_update",
+                // What the host cannot size before the launch is allocated
+                // on the device heap, and every `stop` of device code is
+                // lowered, once nothing else can add one.
+                "gpu_device_heap",
                 // A run-time sized local of a device routine becomes an
                 // argument its callers give it, up to the kernel, where the
                 // host sizes it before the launch.
                 "gpu_device_workspace",
+                // Place the actual lowered arrays before specializing device
+                // calls by the address spaces of their storage.
+                "gpu_kernel_storage",
                 // A device routine's address spaces are settled here, once
                 // every array of device code has the type it is emitted
                 // with, and before the code generators read those types.
@@ -356,6 +385,12 @@ namespace LCompilers {
                 // Lay out each kernel, now that shared lowering has given it
                 // the shape the device code generators see.
                 "gpu_kernel_finalize",
+                // An iteration of a kernel with few runs on the lanes of a
+                // SIMD-group, which share the loops inside it.
+                "gpu_vector_lanes",
+                // A launch does not wait for its kernel: the host waits
+                // where it next needs what a kernel wrote.
+                "gpu_launch_sync",
                 "device_launch_expand",
                 "do_loops",
                 "while_else",
@@ -421,8 +456,9 @@ namespace LCompilers {
             }
             auto t2 = std::chrono::high_resolution_clock::now();
             if (pass_options.time_report) {
-                int overall_time_in_passes = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-                overall_time_in_passes = overall_time_in_passes - cummulative_time_taken_by_passes_in_microseconds;
+                // The cumulative pass time is a sum of whole microsecond counts.
+                auto overall_time_in_passes = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()
+                    - static_cast<std::chrono::microseconds::rep>(cummulative_time_taken_by_passes_in_microseconds);
                 double time_in_milliseconds = (double) overall_time_in_passes / 1000.0;
                 std::string message = "";
                 if ( time_in_milliseconds >= 1.0 ) {

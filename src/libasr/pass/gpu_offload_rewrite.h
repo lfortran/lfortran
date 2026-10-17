@@ -1,6 +1,7 @@
 #ifndef LIBASR_PASS_GPU_OFFLOAD_REWRITE_H
 #define LIBASR_PASS_GPU_OFFLOAD_REWRITE_H
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <set>
@@ -31,6 +32,35 @@ bool gpu_reads_changed(const GpuIterationVaryingSymbols &changed,
 bool gpu_writes_symbol(const GpuIterationVaryingSymbols &changed,
     ASR::symbol_t *s);
 
+// What the statements of an ASSOCIATE scope from `from` on can change, as
+// it bears on a selector bound before them: a selector designates the
+// object it designates where it is bound, so a subscript of it that reads
+// something the statements may change has to be read once, there. A
+// variable bound to an associate name of the scope, at any depth, that
+// they write is changed too.
+class GpuAssociateScopeWrites {
+public:
+    GpuAssociateScopeWrites(ASR::stmt_t **body, size_t n_body, size_t from);
+    bool may_change(ASR::expr_t *e) const;
+private:
+    std::shared_ptr<GpuIterationVaryingSymbols> changed;
+    std::set<ASR::symbol_t*> aliased;
+};
+
+// The selector of an associate name, with every subscript that `writes`
+// may change replaced by a new variable of `scope`, assigned that
+// subscript by a statement appended to `inits`. The selector then stands
+// for the associate name wherever the name is used.
+ASR::expr_t* gpu_fix_selector_subscripts(Allocator &al,
+    ASR::expr_t *selector, const GpuAssociateScopeWrites &writes,
+    SymbolTable *scope, Vec<ASR::stmt_t*> &inits);
+
+// Makes every scalar associate name of a device routine bound to a
+// variable an alias of it: the selector replaces the name. The code
+// generators declare a scalar as a value, so the name would otherwise be
+// a copy, and what is written through it would be lost.
+void gpu_alias_scalar_associate_names(Allocator &al, ASR::Function_t &fn);
+
 // A new variable named `name` in `scope`, added to it.
 //
 // This pass creates a great many variables: loop indices, temporaries for
@@ -43,6 +73,29 @@ ASR::symbol_t* gpu_new_variable(Allocator &al, const Location &loc,
         SymbolTable *scope, const std::string &name, ASR::ttype_t *type,
         ASR::intentType intent = ASR::intentType::Local,
         ASR::symbol_t *type_decl = nullptr);
+
+// The kernel parameters through which the allocatable array components of
+// a scalar derived-type kernel parameter `name` of type `st` reach the
+// device, and the actual arguments of the launch, read from the host value
+// `host_member` gives each component. The extents come first: the total
+// size of each component, the lower bound of each of its dimensions, and,
+// for a component of rank more than one, the extent of each dimension.
+// The data follows, one array per component. The parameters are named as
+// the device code generators look them up (see GpuNames), so they find the
+// component's buffers by the name of the parameter and the component.
+void gpu_struct_member_extent_arguments(Allocator &al, const Location &loc,
+        SymbolTable *kernel_scope, const std::string &name, ASR::Struct_t *st,
+        const std::function<ASR::expr_t*(ASR::symbol_t*)> &host_member,
+        Vec<ASR::expr_t*> &kernel_args, Vec<ASR::call_arg_t> &call_args);
+
+// `element_declaration` gives the kernel's declaration of the derived type
+// of the elements of a component that has elements of one.
+void gpu_struct_member_data_arguments(Allocator &al, const Location &loc,
+        SymbolTable *kernel_scope, const std::string &name, ASR::Struct_t *st,
+        const std::function<ASR::expr_t*(ASR::symbol_t*)> &host_member,
+        const std::function<ASR::symbol_t*(ASR::Struct_t*)>
+            &element_declaration,
+        Vec<ASR::expr_t*> &kernel_args, Vec<ASR::call_arg_t> &call_args);
 
 // Fill in the `start`/`end` bounds of a synthesized `do` loop head for
 // dimension `d` of `arr_expr`. Descriptor arrays (allocatables, pointers,
@@ -230,6 +283,14 @@ public:
     void call_replacer() {
         replacer.current_expr = current_expr;
         replacer.replace_expr(*current_expr);
+    }
+
+    // A call statement names its procedure as a function reference does.
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        ASR::SubroutineCall_t &xx = const_cast<ASR::SubroutineCall_t&>(x);
+        replacer.retarget_call(xx.m_name, xx.m_original_name);
+        ASR::CallReplacerOnExpressionsVisitor<GpuReplaceSymbolsVisitor>
+            ::visit_SubroutineCall(x);
     }
 };
 
@@ -620,6 +681,17 @@ public:
         this->visit_symbol(*x.m_m);
     }
 };
+
+// `present(x)` of an optional dummy argument of the procedure a loop is in
+// is the same in every iteration, and only the host can tell it: whether
+// an absent argument is passed is a fact about the call, not about any
+// storage the kernel is handed. Each such test in `body` becomes a logical
+// local of `host_scope`, set by a statement appended to `before_launch`,
+// which the kernel reads like any other scalar of the host. The argument
+// itself is then no longer named by the loop just for the test, so a loop
+// that names it only in such tests runs when it is absent too.
+void gpu_hoist_present_tests(Allocator &al, SymbolTable *host_scope,
+    ASR::stmt_t **body, size_t n_body, Vec<ASR::stmt_t*> &before_launch);
 
 } // namespace LCompilers
 

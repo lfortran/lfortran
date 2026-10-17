@@ -17,8 +17,18 @@ inline std::string gpu_workspace_buffer_name(int slot) {
 void pass_gpu_kernel_finalize(Allocator &al, ASR::TranslationUnit_t &unit,
     const PassOptions &options);
 
+void pass_gpu_kernel_storage(Allocator &al, ASR::TranslationUnit_t &unit,
+    const PassOptions &options);
+
 bool gpu_create_kernel_layout(Allocator &al, ASR::Function_t &kernel,
     ASR::call_arg_t *args, size_t n_args, GpuDecline &decline);
+
+// The extent `dim` of a workspace of `kernel` has, written as the host
+// evaluates it before the launch, or nullptr when the host cannot work it
+// out: it reads a value the kernel computes. Such an array is allocated on
+// the device heap instead (see gpu_device_heap.cpp).
+ASR::expr_t* gpu_workspace_host_extent(Allocator &al,
+    ASR::Function_t &kernel, const GpuVlaDim &dim);
 
 ASR::expr_t* gpu_bind_kernel_expression(Allocator &al,
     const ASR::Function_t &kernel, ASR::call_arg_t *args, size_t n_args,
@@ -112,8 +122,8 @@ inline std::vector<GpuVlaWorkspace> gpu_kernel_workspaces(
         GpuVlaWorkspace ws;
         ws.var = source.m_variable;
         ws.var_name = ASRUtils::symbol_name(source.m_variable);
-        ws.elem_size = source.m_element_size;
-        ws.buffer_index = source.m_buffer_index;
+        ws.elem_size = checked_integer_cast<int>(source.m_element_size);
+        ws.buffer_index = checked_integer_cast<int>(source.m_buffer_index);
         for (size_t d = 0; d < source.n_dims; d++) {
             GpuVlaDim dim;
             dim.source_extent = source.m_dims[d].m_extent;

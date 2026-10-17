@@ -1,9 +1,0 @@
-ASR pass error: parallel loop cannot be offloaded to the GPU yet: a temporary array cannot be sized on the host
-  --> tests/../integration_tests/gpu_metal_391.f90:28:3 - 35:8
-   |
-28 |      do concurrent (i = 1:m)
-   |      ^^^^^^^^^^^^^^^^^^^^^^^...
-...
-   |
-35 |      end do
-   | ...^^^^^^^^ a temporary array cannot be sized on the host

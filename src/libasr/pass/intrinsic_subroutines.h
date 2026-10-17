@@ -42,6 +42,7 @@ enum class IntrinsicImpureSubroutines : int64_t {
     CoBroadcast,
     Exit,
     GetCwd,
+    Pause,
     // ...
 };
 
@@ -58,6 +59,27 @@ typedef ASR::asr_t* (*create_intrinsic_subroutine)(
 typedef void (*verify_subroutine)(
     const ASR::IntrinsicImpureSubroutine_t&,
     diag::Diagnostics&);
+
+// The type of a dummy for a rank 1 array argument that is accessed element
+// by element from index 1: assumed shape, or assumed size for an assumed-size
+// actual argument, which has no extent to describe it with.
+static inline ASR::ttype_t* elementwise_array_dummy_type(Allocator& al,
+        const Location& loc, ASR::ttype_t* t) {
+    t = ASRUtils::type_get_past_allocatable_pointer(t);
+    if (ASRUtils::extract_physical_type(t) !=
+            ASR::array_physical_typeType::UnboundedPointerArray) {
+        return ASRUtils::duplicate_type_with_empty_dims(al, t);
+    }
+    Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
+    ASR::dimension_t dim;
+    dim.loc = loc;
+    dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+    dim.m_length = nullptr;
+    dims.push_back(al, dim);
+    return ASRUtils::duplicate_type(al, t, &dims,
+        ASR::array_physical_typeType::UnboundedPointerArray, true);
+}
 
 typedef ASR::expr_t* (*get_initial_value_sub)(Allocator&, ASR::ttype_t*);
 
@@ -229,7 +251,7 @@ namespace RandomSeed {
         }
         if (!is_real(*arg_types[1])) {
             flag = 1;
-            ASR::ttype_t* put_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[1]);
+            ASR::ttype_t* put_type = elementwise_array_dummy_type(al, loc, arg_types[1]);
             fill_func_arg_sub("put", put_type, In);
             std::string put_func_name = "_lfortran_random_seed_put_i32";
             if (fn_symtab->get_symbol(put_func_name) == nullptr) {
@@ -260,7 +282,7 @@ namespace RandomSeed {
             fill_func_arg_sub("put", real32, In);
         }
         if (!is_real(*arg_types[2])) {
-            ASR::ttype_t* get_type = ASRUtils::duplicate_type_with_empty_dims(al, arg_types[2]);
+            ASR::ttype_t* get_type = elementwise_array_dummy_type(al, loc, arg_types[2]);
             fill_func_arg_sub("get", get_type, Out);
             if (flag == 1) {
                 body.push_back(al, b.Assignment(args[2], args[1]));
@@ -282,7 +304,12 @@ namespace RandomSeed {
                     body.push_back(al, b.Assignment(xx, b.Call(s_get, get_call_args, int32)));
                     vals.push_back(xx);
                 }
-                body.push_back(al, b.Assignment(args[2], b.ArrayConstant(vals, elem_type, false)));
+                // `get` can be larger than the seed, which is stored into
+                // its first elements
+                for (size_t i = 0; i < vals.size(); i++) {
+                    std::vector<ASR::expr_t*> idx = {b.i32(i + 1)};
+                    body.push_back(al, b.Assignment(b.ArrayItem_01(args[2], idx), vals[i]));
+                }
             }
         } else {
             fill_func_arg_sub("get", real32, In);
@@ -432,7 +459,7 @@ namespace RandomNumber {
                 end do
             */
             ASR::dimension_t* array_dims = nullptr;
-            int array_rank = extract_dimensions_from_ttype(arg_types[0], array_dims);
+            int array_rank = checked_integer_cast<int>(extract_dimensions_from_ttype(arg_types[0], array_dims));
             std::vector<ASR::expr_t*> do_loop_variables;
             for (int i = 0; i < array_rank; i++) {
                 do_loop_variables.push_back(declare("i_" + std::to_string(i), int32, Local));
@@ -1066,7 +1093,8 @@ namespace DateAndTime {
             fill_func_arg_sub("zone", real32, In);
         }
         if (!is_real(*arg_types[3])) {
-            fill_func_arg_sub("values", arg_types[3], Out);
+            ASR::ttype_t* values_type = elementwise_array_dummy_type(al, loc, arg_types[3]);
+            fill_func_arg_sub("values", values_type, Out);
             std::vector<LCompilers::ASR::expr_t *> vals;
             ASR::symbol_t *s_4 = b.create_c_func_subroutines(c_func_name_4, fn_symtab, 1, int32);
             fn_symtab->add_symbol(c_func_name_4, s_4);
@@ -1083,7 +1111,12 @@ namespace DateAndTime {
                 }
                 vals.push_back(xx_casted);
             }
-            body.push_back(al, b.Assignment(args[3], b.ArrayConstant(vals, extract_type(arg_types[3]), false)));
+            // `values` can be larger than 8, the values are stored into its
+            // first elements
+            for (size_t i = 0; i < vals.size(); i++) {
+                std::vector<ASR::expr_t*> idx = {b.i32(i + 1)};
+                body.push_back(al, b.Assignment(b.ArrayItem_01(args[3], idx), vals[i]));
+            }
         } else {
             fill_func_arg_sub("values", real32, In);
         }
@@ -2017,6 +2050,65 @@ namespace Sleep {
     }
 
 } // namespace Sleep
+
+// The legacy PAUSE statement: write the stop code, if any, to stderr and wait
+// for a line on stdin; "go" resumes execution, anything else terminates it.
+namespace Pause {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        ASRUtils::require_impl(x.n_args <= 1, "Unexpected number of args, pause takes at most 1 argument, found " + std::to_string(x.n_args), x.base.base.loc, diagnostics);
+        if (x.n_args == 1) {
+            ASR::ttype_t* type = ASRUtils::expr_type(x.m_args[0]);
+            ASRUtils::require_impl(!ASRUtils::is_array(type) &&
+                (ASRUtils::is_integer(*type) || ASRUtils::is_character(*type)),
+                "The pause code must be a scalar integer or character", x.base.base.loc, diagnostics);
+        }
+    }
+
+    static inline ASR::stmt_t* instantiate_Pause(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_pause_");
+        bool numeric = arg_types.n == 1 && ASRUtils::is_integer(*arg_types[0]);
+        std::string c_func_name = numeric ? "_lfortran_pause_numeric" : "_lfortran_pause_string";
+        Vec<ASR::ttype_t*> c_types; c_types.reserve(al, 2);
+        Vec<ASR::expr_t*> c_args; c_args.reserve(al, 2);
+        if (numeric) {
+            fill_func_arg_sub("code", arg_types[0], In);
+            c_types.push_back(al, int64);
+            c_args.push_back(al, CastingUtil::perform_casting(args[0], int64, al, loc));
+        } else {
+            ASR::expr_t* code;
+            if (arg_types.n == 1) {
+                fill_func_arg_sub("code", b.String(nullptr, ASR::AssumedLength), In);
+                code = args[0];
+            } else {
+                code = b.StringConstant("", b.String(b.i32(0), ASR::ExpressionLength));
+            }
+            c_types.push_back(al, b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar), 1));
+            c_types.push_back(al, int64);
+            c_args.push_back(al, create_string_physical_cast(al, code, ASR::CChar));
+            c_args.push_back(al, EXPR(ASR::make_StringLen_t(al, loc, code, int64, nullptr)));
+        }
+        std::vector<std::string> c_arg_names(c_types.size(), "x");
+        std::vector<bool> c_arg_value(c_types.size(), true);
+        ASR::symbol_t* c_sym = b.create_c_subroutine_interface(c_func_name, fn_symtab,
+            c_types, c_arg_names, c_arg_value);
+        fn_symtab->add_symbol(c_func_name, c_sym);
+        dep.push_back(al, s2c(al, c_func_name));
+        Vec<ASR::call_arg_t> call_args; call_args.reserve(al, c_args.size());
+        for (size_t i = 0; i < c_args.size(); i++) {
+            ASR::call_arg_t arg; arg.loc = loc; arg.m_value = c_args[i];
+            call_args.push_back(al, arg);
+        }
+        body.push_back(al, b.SubroutineCall(c_sym, call_args));
+        ASR::symbol_t* subroutine = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, subroutine);
+        return b.SubroutineCall(subroutine, new_args);
+    }
+
+} // namespace Pause
 
 namespace Exit {
 

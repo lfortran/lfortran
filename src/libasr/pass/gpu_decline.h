@@ -66,6 +66,17 @@ struct GpuDeviceCapabilities {
     // which turns its locals into kernel-level ones directly.
     bool device_function_runtime_sized_locals = true;
 
+    // How many threads may run one iteration of a kernel together, its
+    // lanes: the threads of one SIMD-group, which wait for each other
+    // cheaply and see each other's writes after such a wait. One means an
+    // iteration runs on one thread (see gpu_vector_lanes.cpp).
+    int lanes_per_iteration = 1;
+
+    // How many bytes of stack a thread of a kernel has. Late kernel storage
+    // placement spills private arrays that do not fit to per-thread slices
+    // of global workspace buffers; it never changes their locality.
+    int64_t thread_stack_bytes = 0;
+
     // Whether the device has a scalar type of the same in-memory width as
     // `t`. Every dialect shares a floor -- the widths in
     // gpu_scalar_width_supported() -- and the kinds above narrow it further.
@@ -142,6 +153,9 @@ enum class GpuDeclineReason {
     // code, which has no heap to allocate it from, whose shape cannot be
     // told on entry to the routine (see gpu_device_struct_storage.cpp).
     StructComponentNotSizeable,
+    // An array on the device heap (see gpu_device_heap.cpp) used in a way
+    // the heap does not lower yet; the name says which array and how.
+    HeapArrayUse,
 
     // --- what the device has no type for ---
     LocalTypeWidth,
@@ -165,7 +179,6 @@ enum class GpuDeclineReason {
     StructNonDataMember,
     StructPointerMember,
     StructAllocatableArrayMember,
-    StructAllocatableScalarMember,
     StructAssumedShapeArrayMember,
     StructMemberTypeWidth,
     StructMemberNotNumeric,
@@ -189,6 +202,12 @@ enum class GpuDeclineReason {
     LaunchVlaExtentNotRebuildable,
     KernelArgumentCountMismatch,
     NestedAllocatableComponent,
+    // The kernel names an allocatable scalar component, which reaches the
+    // device only as the host's bytes (see `gpu_component_is_opaque`).
+    AllocatableScalarComponentUse,
+    // The kernel assigns a whole value of a derived type holding an
+    // allocatable scalar component, which would have to be allocated.
+    AllocatableScalarComponentCopy,
     MissingArgument,
     ScalarTypeWidth,
     ScalarNotNumeric,
@@ -267,6 +286,11 @@ GpuDevice gpu_device_selected(const PassOptions &pass_options);
 // anything.
 GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device);
 GpuDeviceCapabilities gpu_device_capabilities(const PassOptions &pass_options);
+
+// Whether `name` is one the program can have written, which a diagnostic
+// may show. A Fortran name begins with a letter (F2018 6.2.2), and every
+// name the compiler makes up for a temporary does not.
+bool gpu_source_name(const std::string &name);
 
 // The whole clause the diagnostic reads, lowercase and naming nothing
 // internal. This is the only place the wording of a decline is written.

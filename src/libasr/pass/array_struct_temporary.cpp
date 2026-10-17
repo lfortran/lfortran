@@ -475,6 +475,31 @@ void set_allocation_size_elemental_function(
     }
 }
 
+// The character length of the result of these intrinsics is that of their
+// first argument. Taking it from that argument avoids evaluating the
+// intrinsic itself, which is later implemented by a subroutine.
+static ASR::expr_t* intrinsic_array_result_len(Allocator& al,
+        const Location& loc, ASR::expr_t* value) {
+    if( !ASR::is_a<ASR::IntrinsicArrayFunction_t>(*value) ||
+            !ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
+        return nullptr;
+    }
+    ASR::IntrinsicArrayFunction_t* intrinsic_array_function =
+        ASR::down_cast<ASR::IntrinsicArrayFunction_t>(value);
+    switch( intrinsic_array_function->m_arr_intrinsic_id ) {
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Cshift):
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Eoshift):
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Pack):
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Spread):
+        case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Transpose): {
+            ASRUtils::ASRBuilder b(al, loc);
+            return b.StringLen(intrinsic_array_function->m_args[0]);
+        }
+        default:
+            return nullptr;
+    }
+}
+
 bool set_allocation_size(
     Allocator& al, ASR::expr_t* value,
     ASR::expr_t* temporary_var,
@@ -508,6 +533,8 @@ bool set_allocation_size(
                 ASRUtils::expr_type(value));
             if( str_type->m_len ) {
                 len_allocte_expr = str_type->m_len;
+            } else if( ASR::expr_t* len = intrinsic_array_result_len(al, loc, value) ) {
+                len_allocte_expr = len;
             } else {
                 ASRUtils::ASRBuilder b(al, loc);
                 len_allocte_expr = ASRUtils::StringConcat::get_safe_string_len(al, loc, value, ASRUtils::expr_type(value), b);
@@ -785,6 +812,7 @@ bool set_allocation_size(
         case ASR::exprType::IntrinsicArrayFunction: {
             ASR::IntrinsicArrayFunction_t* intrinsic_array_function =
                 ASR::down_cast<ASR::IntrinsicArrayFunction_t>(value);
+            len_allocte_expr = intrinsic_array_result_len(al, loc, value);
             switch (intrinsic_array_function->m_arr_intrinsic_id) {
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::All):
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Any):
@@ -870,10 +898,6 @@ bool set_allocation_size(
                         allocate_dim.m_length = size_i_1;
                         allocate_dims.push_back(al, allocate_dim);
                     }
-                    if (ASRUtils::is_character(*ASRUtils::expr_type(value))) {
-                        ASRUtils::ASRBuilder b(al, loc);
-                        len_allocte_expr = b.StringLen(intrinsic_array_function->m_args[0]);
-                    }
                     break;
                 }
                 case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Shape): {
@@ -944,10 +968,6 @@ bool set_allocation_size(
 
                         allocate_dim.m_length = size_i;
                         allocate_dims.push_back(al, allocate_dim);
-                    }
-                    if( ASRUtils::is_character(*ASRUtils::expr_type(value)) ) {
-                        ASRUtils::ASRBuilder b(al, loc);
-                        len_allocte_expr = b.StringLen(intrinsic_array_function->m_args[0]);
                     }
                     break;
                 }
@@ -1567,6 +1587,29 @@ bool is_array_struct_member_designator(ASR::expr_t* value) {
         root->m_storage != ASR::storage_typeType::Parameter;
 }
 
+// Inside a TYPE IS block, a reference to the selector `x` (no associate
+// name) is `Cast(x, ClassToStruct)`: it designates the dynamic value of `x`
+// with the guard type, the same object as `x` itself. It is passed as it is to
+// a procedure, like `x`, which may define the dummy, and a copy of it would be
+// finalized although no new entity was created (F2018 7.5.6.3). For a VALUE
+// dummy the copy is still made: the callee's own copy of a VALUE dummy shares
+// the allocatable components of the actual argument.
+bool is_class_to_struct_view_of_variable(ASR::expr_t* value) {
+    if( value == nullptr ) {
+        return false;
+    }
+    value = ASRUtils::get_past_array_physical_cast(value);
+    if( !ASR::is_a<ASR::Cast_t>(*value) ) {
+        return false;
+    }
+    ASR::Cast_t* cast = ASR::down_cast<ASR::Cast_t>(value);
+    if( cast->m_kind != ASR::cast_kindType::ClassToStruct ) {
+        return false;
+    }
+    return ASR::is_a<ASR::Var_t>(
+        *ASRUtils::get_past_array_physical_cast(cast->m_arg));
+}
+
 // `w%y` or `w%u(1)`, with `w` an array of derived type: a designator whose
 // elements are strided by the size of an element of `w`.
 bool is_strided_struct_designator(ASR::expr_t* value) {
@@ -1580,6 +1623,23 @@ bool is_strided_struct_designator(ASR::expr_t* value) {
     return ASR::is_a<ASR::ArrayItem_t>(*value) &&
         ASRUtils::struct_base_lending_shape(
             ASR::down_cast<ASR::ArrayItem_t>(value)) != nullptr;
+}
+
+bool reads_elementwise_operands_in_place(ASR::exprType op) {
+    switch (op) {
+        case ASR::exprType::IntegerBinOp:
+        case ASR::exprType::RealBinOp:
+        case ASR::exprType::ComplexBinOp:
+        case ASR::exprType::LogicalBinOp:
+        case ASR::exprType::LogicalNot:
+        case ASR::exprType::RealUnaryMinus:
+        case ASR::exprType::IntegerCompare:
+        case ASR::exprType::RealCompare:
+        case ASR::exprType::StringCompare:
+            return true;
+        default:
+            return false;
+    }
 }
 
 bool is_temporary_needed(ASR::expr_t* value) {
@@ -1659,6 +1719,27 @@ ASR::symbol_t* extract_symbol(ASR::expr_t* expr) {
         default: {
             return nullptr;
         }
+    }
+}
+
+// The variable that `e` (a variable, or a component, element or section of
+// one) is part of, e.g. `u` for `u(i)%arr`
+ASR::symbol_t* get_root_var(ASR::expr_t* e) {
+    if (e == nullptr) return nullptr;
+    switch (e->type) {
+        case ASR::exprType::Var:
+            return ASR::down_cast<ASR::Var_t>(e)->m_v;
+        case ASR::exprType::StructInstanceMember:
+            return get_root_var(
+                ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v);
+        case ASR::exprType::ArrayItem:
+            return get_root_var(
+                ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
+        case ASR::exprType::ArraySection:
+            return get_root_var(
+                ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
+        default:
+            return nullptr;
     }
 }
 
@@ -2052,6 +2133,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
                        !ASR::is_a<ASR::ArrayItem_t>(
                             *ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)) &&
+                       !(is_call && !(dummy && dummy->m_value_attr) &&
+                         is_class_to_struct_view_of_variable(x_m_args[i].m_value)) &&
                        // A component is passed as it is to a procedure,
                        // which may define the dummy, e.g. `h%item` with an
                        // allocatable `item` bound to a dummy without intent.
@@ -2159,7 +2242,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             // add it is because there is currently no integration test
             // for it
             if (!ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value))) {
-                ASR::Var_t* v1 = ASR::down_cast<ASR::Var_t>(xx.m_target);
+                ASR::symbol_t* target_sym = extract_symbol(xx.m_target);
                 bool create_temp_var_for_rhs = false;
                 Vec<ASR::expr_t*> array_vars; array_vars.reserve(al, 1);
                 ArrayVarCollector array_var_collector(al, array_vars);
@@ -2168,9 +2251,17 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 // there is any common variable
                 for (size_t i=0; i < array_vars.size(); i++) {
                     ASR::symbol_t* sym = extract_symbol(array_vars[i]);
-                    if (sym && sym == v1->m_v) {
+                    if (sym && sym == target_sym) {
                         create_temp_var_for_rhs = true;
                     }
+                }
+                // An element of the variable, such as `u(i)%arr(j)` in
+                // `u(i)%arr = [(u(i)%arr(j), j=1,n)]` (left in a FORALL by
+                // implied_do_loops), is read after the reallocation too.
+                ASR::symbol_t* target_root = get_root_var(xx.m_target);
+                if (target_root &&
+                        ASRUtils::expr_references_symbol(xx.m_value, target_root)) {
+                    create_temp_var_for_rhs = true;
                 }
 
                 if (create_temp_var_for_rhs) {
@@ -2216,25 +2307,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         // mid-copy (especially via reallocation of nested allocatable
         // components), producing incorrect results / segfaults.
         {
-            std::function<ASR::symbol_t*(ASR::expr_t*)> get_root_var =
-                [&](ASR::expr_t* e) -> ASR::symbol_t* {
-                if (e == nullptr) return nullptr;
-                switch (e->type) {
-                    case ASR::exprType::Var:
-                        return ASR::down_cast<ASR::Var_t>(e)->m_v;
-                    case ASR::exprType::StructInstanceMember:
-                        return get_root_var(
-                            ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v);
-                    case ASR::exprType::ArrayItem:
-                        return get_root_var(
-                            ASR::down_cast<ASR::ArrayItem_t>(e)->m_v);
-                    case ASR::exprType::ArraySection:
-                        return get_root_var(
-                            ASR::down_cast<ASR::ArraySection_t>(e)->m_v);
-                    default:
-                        return nullptr;
-                }
-            };
             if (ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value)) &&
                 !ASRUtils::is_array(ASRUtils::expr_type(xx.m_value)) &&
                 !ASRUtils::is_array(ASRUtils::expr_type(xx.m_target)) &&
@@ -2326,6 +2398,21 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_FileWrite(const ASR::FileWrite_t& x) {
         ASR::FileWrite_t& xx = const_cast<ASR::FileWrite_t&>(x);
+        if( xx.m_unit && ASR::is_a<ASR::ArraySection_t>(*xx.m_unit) &&
+                xx.m_nml == nullptr ) {
+            // An internal file that is an array section is written through a contiguous copy.
+            LCOMPILERS_ASSERT(body_after_curr_stmt != nullptr && !inside_where);
+            visit_expr(*xx.m_unit);
+            ASR::expr_t* section_pointer = create_and_allocate_temporary_variable_for_array(
+                xx.m_unit, "_file_write_unit_pointer_", al, current_body, current_scope,
+                exprs_with_target, true);
+            xx.m_unit = create_and_allocate_temporary_variable_for_array(
+                section_pointer, "_file_write_unit_", al, current_body, current_scope,
+                exprs_with_target);
+            body_after_curr_stmt->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
+                al, section_pointer->base.loc, section_pointer, xx.m_unit, nullptr,
+                exprs_with_target)));
+        }
         visit_IO(xx.m_values, xx.n_values, "file_write");
         CallReplacerOnExpressionsVisitor::visit_FileWrite(x);
     }
@@ -2356,8 +2443,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     ASR::expr_t* visit_BinOp_expr(ASR::expr_t* expr, const std::string& name_hint, ASR::exprType allowed_expr) {
         if (ASRUtils::is_array(ASRUtils::expr_type(expr)) &&
-            !ASR::is_a<ASR::ArrayBroadcast_t>(*expr) &&
-            !is_vectorise_able(expr) &&
+            !(reads_elementwise_operands_in_place(allowed_expr) &&
+                (ASR::is_a<ASR::ArrayBroadcast_t>(*expr) ||
+                 is_vectorise_able(expr))) &&
             (expr->type != allowed_expr)
         ) {
             visit_expr(*expr);
