@@ -3091,8 +3091,17 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             // without changing the callee's signature or another call's type.
             ASR::ttype_t* return_type = ASRUtils::get_FunctionType(
                 x->m_name)->m_return_var_type;
-            if (return_type) {
-                return_type = ASRUtils::duplicate_type(al, return_type);
+            ASR::String_t* return_string = return_type ?
+                ASRUtils::get_string_type(return_type) : nullptr;
+            // An assumed-length result takes its length from the caller;
+            // a deferred-length result carries it in the returned descriptor.
+            if (return_string && return_string->m_len &&
+                    return_string->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
+                    ASRUtils::get_string_type(x->m_type)->m_len_kind ==
+                        ASR::string_length_kindType::ExpressionLength &&
+                    !ASRUtils::is_value_constant(
+                        ASRUtils::expr_value(return_string->m_len))) {
+                return_type = ASRUtils::duplicate_type(al, x->m_type);
                 // Shape inquiries in the result type use the actual's
                 // descriptor, not its call-only physical conversion.
                 Vec<ASR::call_arg_t> type_args;
@@ -3107,7 +3116,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 }
                 ASRUtils::ReplaceFunctionParamWithArg replacer(
                     al, type_args.p, type_args.size());
-                replacer.replace_type(return_type);
+                ASRUtils::get_string_type(return_type)->m_len =
+                    replacer.replace_FunctionParam_with_arg(return_string->m_len);
                 ASRUtils::ProcedureTypeImporter(al, current_scope, true)
                     .replace_ttype(return_type);
                 x->m_type = return_type;
