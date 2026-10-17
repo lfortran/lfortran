@@ -1,6 +1,6 @@
 program string_trim_evaluation_01
     implicit none
-    integer :: calls = 0, failures = 0, i
+    integer :: calls = 0, failures = 0, i, j, condition_calls = 0
     character(2) :: text
     character(16) :: padded
     character(:), allocatable :: dynamic
@@ -73,6 +73,37 @@ program string_trim_evaluation_01
     end do
     if (calls /= 1) error stop 12
 
+    calls = 0
+    condition_calls = 0
+    i = 0
+    do while (matches(trim(get_loop_text(2))))
+        i = i + 1
+        if (i == 1) cycle
+        if (i == 5) exit
+    end do
+    if (i /= 2 .or. calls /= 3 .or. condition_calls /= 3) error stop 14
+
+    calls = 0
+    condition_calls = 0
+    do while (matches(trim(get_loop_text(0))))
+        error stop 15
+    end do
+    if (calls /= 1 .or. condition_calls /= 1) error stop 16
+
+    calls = 0
+    condition_calls = 0
+    i = 0
+    outer: do while (matches(trim(get_text('yes'))))
+        i = i + 1
+        j = 0
+        inner: do while (matches(trim(get_text('yes'))))
+            j = j + 1
+            if (j == 2) cycle outer
+            if (i == 3) exit outer
+        end do inner
+    end do outer
+    if (i /= 3 .or. calls /= 8 .or. condition_calls /= 8) error stop 17
+
     do i = 0, 3
         calls = 0
         dynamic = trim(get_dynamic(i)) // '!'
@@ -115,6 +146,23 @@ contains
     integer function get_count()
         calls = calls + 1
         get_count = 2
+    end function
+
+    function get_loop_text(limit) result(result)
+        integer, intent(in) :: limit
+        character(5) :: result
+        calls = calls + 1
+        if (calls <= limit) then
+            result = 'yes'
+        else
+            result = 'no'
+        end if
+    end function
+
+    logical function matches(value)
+        character(*), intent(in) :: value
+        condition_calls = condition_calls + 1
+        matches = value == 'yes'
     end function
 
     subroutine check(actual, expected, expected_calls)

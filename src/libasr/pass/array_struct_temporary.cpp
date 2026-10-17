@@ -3518,9 +3518,14 @@ class ReplaceExprWithTemporaryVisitor:
         current_expr = const_cast<ASR::expr_t**>(&x.m_test);
         call_replacer();
         current_expr = current_expr_copy;
+        if (x.m_test && visit_expr_after_replacement) {
+            visit_expr(*x.m_test);
+        }
         current_body = parent_body;
 
-        ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_WhileLoop(x);
+        ASR::WhileLoop_t& xx = const_cast<ASR::WhileLoop_t&>(x);
+        transform_stmts(xx.m_body, xx.n_body);
+        transform_stmts(xx.m_orelse, xx.n_orelse);
         if (check_stmts.empty()) {
             return;
         }
@@ -3546,7 +3551,6 @@ class ReplaceExprWithTemporaryVisitor:
         for (size_t i = 0; i < x.n_body; i++) {
             body.push_back(al, x.m_body[i]);
         }
-        ASR::WhileLoop_t& xx = const_cast<ASR::WhileLoop_t&>(x);
         xx.m_test = builder.logical_true();
         xx.m_body = body.p;
         xx.n_body = body.size();
