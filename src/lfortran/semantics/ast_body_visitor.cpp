@@ -7337,6 +7337,12 @@ public:
         fn->n_dependencies = current_function_dependencies.n;
         current_function_dependencies.clear(al);
         current_scope = parent_scope;
+        // The statement function is not a statement of the host body, so
+        // `transform_stmts` does not check the calls in its body.
+        LenTypeParamActualsChecker checker(diag);
+        for (size_t i = 0; i < body.size(); i++) {
+            checker.visit_stmt(*body[i]);
+        }
     }
 
     /**
