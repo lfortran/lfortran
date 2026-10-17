@@ -317,13 +317,13 @@ only once, redirect to a log file and then examine the log file.
   it should only lower what ASR gives it. If codegen needs a type workaround,
   the bug is upstream.
 - Backends lower ASR; they must not create it. Every node codegen lowers
-  must exist before codegen (built in semantics or an ASR pass), where
-  `asr_verify` checks it. Do not call `ASR::make_*_t` or
-  `ASRUtils::make_*_util` in `src/libasr/codegen/`.
-  `ci/check_backend_asr_construction.py` (run by Quick checks) ratchets the
-  remaining legacy sites against `ci/backend_asr_construction_baseline.txt`:
-  the count may only go down, and a PR that removes a site lowers the
-  baseline (`--update`).
+  must be built before codegen, in semantics or an ASR pass, where
+  `asr_verify` checks it. Do not call `ASR::make_*_t`, `ASRUtils::make_*` or
+  any other helper that builds nodes in `src/libasr/codegen/`.
+  `ci/check_backend_asr_construction.py` (run by Quick checks) caps the
+  remaining legacy sites at the per-file counts in
+  `ci/backend_asr_construction_baseline.txt`. Never raise a count; a PR
+  that removes a site lowers it (`--update` only lowers counts).
 - libasr is frontend-independent. Never reference `_lfortran` or any
   frontend-specific names in libasr code. Use enums or structured types,
   not string comparisons.
