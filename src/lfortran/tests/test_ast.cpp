@@ -446,6 +446,24 @@ end program
     CHECK(ASR::down_cast<ASR::Var_t>(ASR::down_cast<ASR::ArrayPhysicalCast_t>(
         fmt->m_args[1])->m_arg)->m_v != prog->m_symtab->get_symbol("y"));
 
+    // A PointerArray argument whose type lacks a dimension length is caught.
+    ASR::dimension_t *dims = nullptr;
+    REQUIRE(ASRUtils::extract_dimensions_from_ttype(
+        ASRUtils::expr_type(fmt->m_args[0]), dims) == 1);
+    ASR::expr_t *length = dims[0].m_length;
+    dims[0].m_length = nullptr;
+    CHECK(!asr_verify(*asr, after_pass, diagnostics));
+    bool dimension_missing = false;
+    for (const diag::Diagnostic &d : diagnostics.diagnostics) {
+        if (d.code == "asr.verify.string_format.array_argument_dimension_missing") {
+            dimension_missing = true;
+        }
+    }
+    CHECK(dimension_missing);
+    diagnostics.diagnostics.clear();
+    dims[0].m_length = length;
+    CHECK(asr_verify(*asr, after_pass, diagnostics));
+
     // A descriptor argument is caught again.
     fmt->m_args[0] = ASR::down_cast<ASR::ArrayPhysicalCast_t>(fmt->m_args[0])->m_arg;
     CHECK(!asr_verify(*asr, after_pass, diagnostics));
