@@ -2289,9 +2289,10 @@ RUN(NAME select_type_57 LABELS gfortran llvm)
 RUN(NAME select_type_58 LABELS gfortran llvm)
 RUN(NAME select_type_59 LABELS gfortran llvm)
 RUN(NAME select_type_60 LABELS gfortran llvm)
-# GFortran 15 copies a VALUE dummy with allocatable components shallowly.
-RUN(NAME select_type_63 LABELS llvm)
 RUN(NAME select_type_61 LABELS gfortran llvm)
+RUN(NAME select_type_63 LABELS llvm)
+RUN(NAME select_type_64 LABELS gfortran llvm)
+
 
 RUN(NAME where_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
