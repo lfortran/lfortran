@@ -1,4 +1,7 @@
 #include <libasr/asr.h>
+#include <cstdint>
+#include <cstring>
+#include <vector>
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/intrinsic_subroutine_registry.h>
@@ -2873,9 +2876,78 @@ public:
 
     // void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t &x) {}
 
+    std::string real16_to_string(const uint8_t* b) {
+        uint64_t lo, hi;
+        std::memcpy(&lo, b, 8);
+        std::memcpy(&hi, b + 8, 8);
+        bool neg = (hi >> 63) & 1;
+        int bexp = (int)((hi >> 48) & 0x7FFF);
+        uint64_t mhi = hi & 0xFFFFFFFFFFFFULL;
+        if (bexp == 0x7FFF) {
+            if (mhi == 0 && lo == 0) return neg ? "-Infinity" : "Infinity";
+            return "NaN";
+        }
+        if (bexp == 0 && mhi == 0 && lo == 0) return neg ? "-0.0e0_16" : "0.0e0_16";
+        std::vector<uint32_t> v(1, 0);
+        auto mul = [&](uint32_t k, uint32_t add) {
+            uint64_t carry = add;
+            for (auto &d : v) {
+                uint64_t t = (uint64_t)d * k + carry;
+                d = (uint32_t)(t % 1000000000u);
+                carry = t / 1000000000u;
+            }
+            while (carry) {
+                v.push_back((uint32_t)(carry % 1000000000u));
+                carry /= 1000000000u;
+            }
+        };
+        mul(2, bexp != 0 ? 1 : 0);
+        for (int i = 47; i >= 0; i--) mul(2, (uint32_t)((mhi >> i) & 1));
+        for (int i = 63; i >= 0; i--) mul(2, (uint32_t)((lo >> i) & 1));
+        long e = (long)(bexp == 0 ? 1 : bexp) - 16383 - 112;
+        long point = 0;
+        if (e >= 0) {
+            for (long i = 0; i < e; i++) mul(2, 0);
+        } else {
+            point = -e;
+            for (long i = 0; i < point; i++) mul(5, 0);
+        }
+        std::string s = std::to_string(v.back());
+        for (size_t i = v.size() - 1; i-- > 0;) {
+            std::string part = std::to_string(v[i]);
+            s += std::string(9 - part.size(), '0') + part;
+        }
+        if ((long)s.size() <= point) s = std::string(point + 1 - s.size(), '0') + s;
+        size_t int_len = s.size() - (size_t)point;
+        size_t f = s.find_first_not_of('0');
+        long dexp = (long)int_len - 1 - (long)f;
+        std::string sig = s.substr(f);
+        if (sig.size() > 36) {
+            bool up = sig[36] >= '5';
+            sig.resize(36);
+            if (up) {
+                int i = 35;
+                while (i >= 0 && sig[i] == '9') { sig[i] = '0'; i--; }
+                if (i >= 0) {
+                    sig[i]++;
+                } else {
+                    sig.insert(sig.begin(), '1');
+                    sig.resize(36);
+                    dexp++;
+                }
+            }
+        }
+        while (sig.size() > 1 && sig.back() == '0') sig.pop_back();
+        return std::string(neg ? "-" : "") + sig.substr(0, 1) + "." +
+            (sig.size() > 1 ? sig.substr(1) : std::string("0")) +
+            "e" + std::to_string(dexp) + "_16";
+    }
+
     void visit_RealConstant(const ASR::RealConstant_t &x) {
         int kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        if (kind >= 8) {
+        if (kind == 16) {
+            src = real16_to_string(ASRUtils::real_constant_get_r16_bytes(&x));
+        } else if (kind >= 8) {
             src = ASRUtils::to_string_with_precision(x.m_r, 16) + "_8";
         } else {
             src = ASRUtils::to_string_with_precision(x.m_r, 8);
