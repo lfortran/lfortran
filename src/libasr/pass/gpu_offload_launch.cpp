@@ -169,7 +169,10 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     Vec<ASR::stmt_t*> launch_stmts;
     launch_stmts.reserve(al, plan.gather_stmts.n + pre_launch_stmts.n
         + plan.scatter_stmts.n + plan.liveout_scalars.size() + 2
-        + plan.liveout_scalars.size());
+        + plan.liveout_scalars.size() + plan.private_shapes.n);
+    for (size_t i = 0; i < plan.private_shapes.n; i++) {
+        launch_stmts.push_back(al, plan.private_shapes[i]);
+    }
     // The limits of the loops are evaluated once, as the loop evaluates
     // them before its first iteration, into host variables that everything
     // below reads: the component fit, the kernel's arguments and the grid.

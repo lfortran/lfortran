@@ -4,9 +4,11 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_array_function_registry.h>
 
 #include <map>
 #include <set>
+#include <string>
 #include <tuple>
 #include <vector>
 
@@ -525,6 +527,15 @@ public:
     }
     void visit_ArrayRank(const ASR::ArrayRank_t &/*x*/) {}
     void visit_ArrayIsContiguous(const ASR::ArrayIsContiguous_t &/*x*/) {}
+    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &x) {
+        if (x.m_arr_intrinsic_id == static_cast<int64_t>(
+                ASRUtils::IntrinsicArrayFunctions::Shape) &&
+                x.n_args == 1 && ASR::is_a<ASR::Var_t>(
+                    *ASRUtils::get_past_array_physical_cast(x.m_args[0]))) {
+            return;
+        }
+        BaseWalkVisitor::visit_IntrinsicArrayFunction(x);
+    }
     void visit_PointerAssociated(const ASR::PointerAssociated_t &/*x*/) {}
     void visit_IntrinsicImpureFunction(
             const ASR::IntrinsicImpureFunction_t &x) {
@@ -642,6 +653,79 @@ public:
             ASRUtils::symbol_get_past_external(x.m_m));
         declarations(b->m_symtab);
         for (size_t i = 0; i < b->n_body; i++) visit_stmt(*b->m_body[i]);
+    }
+};
+
+// Whether `acc`, the accesses of something in the procedure whose scope is
+// `routine`, may access what `x` names.
+inline bool conflicts(const Accesses &acc, const Path &x,
+        SymbolTable *routine) {
+    if (acc.everything) return true;
+    if (acc.globals && reachable_elsewhere(x.root, routine)) return true;
+    for (const Path &a : acc.paths) {
+        if (overlap(a, x)) return true;
+    }
+    return false;
+}
+
+// Whether a statement may transfer control out of itself: `return`,
+// `goto`, or an `exit` or `cycle` of a loop or construct it is not in.
+class Leaves : public ASR::BaseWalkVisitor<Leaves> {
+public:
+    bool found = false;
+    std::vector<std::string> names;
+    int loops = 0;
+    std::set<ASR::symbol_t*> blocks;
+
+    template <typename Loop>
+    void loop(const Loop &x, const char *name) {
+        names.push_back(name ? name : "");
+        loops++;
+        for (size_t i = 0; i < x.n_body; i++) visit_stmt(*x.m_body[i]);
+        loops--;
+        names.pop_back();
+    }
+    void visit_DoLoop(const ASR::DoLoop_t &x) {
+        loop(x, x.m_name);
+        for (size_t i = 0; i < x.n_orelse; i++) visit_stmt(*x.m_orelse[i]);
+    }
+    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
+        loop(x, x.m_name);
+        for (size_t i = 0; i < x.n_orelse; i++) visit_stmt(*x.m_orelse[i]);
+    }
+    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
+        loop(x, nullptr);
+    }
+    void transfer(const char *name) {
+        if (name == nullptr) {
+            if (loops == 0) found = true;
+            return;
+        }
+        for (const std::string &n : names) {
+            if (n == name) return;
+        }
+        found = true;
+    }
+    void visit_Exit(const ASR::Exit_t &x) { transfer(x.m_stmt_name); }
+    void visit_Cycle(const ASR::Cycle_t &x) { transfer(x.m_stmt_name); }
+    void visit_Return(const ASR::Return_t &/*x*/) { found = true; }
+    void visit_GoTo(const ASR::GoTo_t &/*x*/) { found = true; }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(s).second) return;
+        ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(s);
+        // `exit` names the block it leaves.
+        names.push_back(b->m_name);
+        for (size_t i = 0; i < b->n_body; i++) visit_stmt(*b->m_body[i]);
+        names.pop_back();
+    }
+    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!blocks.insert(s).second) return;
+        ASR::AssociateBlock_t *b = ASR::down_cast<ASR::AssociateBlock_t>(s);
+        names.push_back(b->m_name);
+        for (size_t i = 0; i < b->n_body; i++) visit_stmt(*b->m_body[i]);
+        names.pop_back();
     }
 };
 
