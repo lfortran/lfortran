@@ -1,7 +1,6 @@
 program char_array_broadcast_01
     ! Broadcast a non-constant character scalar over character arrays of
-    ! fixed and run-time shape, in assignments, comparisons and
-    ! concatenations.
+    ! fixed and run-time shape by assignment, then check the results.
     implicit none
     character(len=5) :: a(3), s
     character(len=3) :: b(2, 2)
