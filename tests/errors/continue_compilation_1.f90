@@ -3379,3 +3379,18 @@ end function
 function cc1_bindc_explicit_result() result(c) bind(c)
     character(len=5) :: c  ! {Error} character function result `c` must have constant length one in a BIND(C) procedure
 end function
+
+! An array element passed to an assumed-shape dummy is never sequence
+! associated, so the error does not suggest --legacy-array-sections.
+module cc1_element_assumed_shape
+implicit none
+contains
+    subroutine cc1_eas_dummy(x)
+        integer, intent(in) :: x(:)
+    end subroutine cc1_eas_dummy
+    subroutine cc1_eas_use()
+        integer :: c(5)
+        c = 1
+        call cc1_eas_dummy(c(2))  ! {Error} Passing a scalar argument to an array dummy argument is not allowed
+    end subroutine cc1_eas_use
+end module cc1_element_assumed_shape
