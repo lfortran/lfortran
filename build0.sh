@@ -3,14 +3,13 @@
 # CMake runs this with the Prefix `shell`; keep to syntax Bash also supports.
 
 set -e
-
-# Generate the `version` file (before `set -x`, which `shell` captures in `$(...)`)
-source ci/version.sh
-
 set -x
 
 RE2C=${RE2C:-re2c}
 BISON=${BISON:-bison}
+
+# Generate the `version` file (sourced: Windows cannot run the script directly)
+source ci/version.sh
 
 # Generate a Fortran AST from AST.asdl (C++)
 python src/libasr/asdl_cpp.py grammar/AST.asdl src/lfortran/ast.h
