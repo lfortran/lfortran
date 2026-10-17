@@ -4813,6 +4813,16 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
     for( size_t i = 0; i < n_dims; i++ ) {
         if( m_dims[i].m_length && ASR::is_a<ASR::ArraySize_t>(*m_dims[i].m_length) ) {
             ASR::ArraySize_t* as = ASR::down_cast<ASR::ArraySize_t>(m_dims[i].m_length);
+            int64_t compile_time_size = -1;
+            if( ASRUtils::extract_value(as->m_value, compile_time_size) ) {
+                // Rebuilding the size from the operand's dimensions would
+                // drop its compile-time value and turn a fixed-size array,
+                // e.g. the result of `spread(x, 1, size(a))` for a parameter
+                // `a`, into one of unknown size. Keep the extent constant.
+                m_dims[i].m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, as->base.base.loc, compile_time_size, as->m_type));
+                continue;
+            }
             m_dims[i].m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
                 al, as->base.base.loc, as->m_v, as->m_dim, as->m_type, nullptr, for_type));
         }
