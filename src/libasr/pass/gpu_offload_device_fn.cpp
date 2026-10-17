@@ -547,11 +547,9 @@ bool GpuOffloadVisitor::plan_device_function_inlining(
 // per-thread workspace buffer rather than one buffer shared by every
 // thread; an extent the host cannot work out is caught by the workspace
 // pre-flight, which declines the loop.
-ASR::expr_t* GpuOffloadVisitor::gather_section_actual(const Location &loc,
-        SymbolTable *block_scope, ASR::Function_t *fn,
-        ASR::symbol_t *dummy, ASR::expr_t *actual, bool writable,
-        std::vector<ASR::stmt_t*> &gathers,
-        std::vector<ASR::stmt_t*> &scatters) {
+ASR::ArraySection_t* GpuOffloadVisitor::spliced_section_copy(
+        ASR::Function_t *fn, ASR::symbol_t *dummy, ASR::expr_t *actual,
+        std::vector<int> &range_dims) {
     if (!actual || !ASR::is_a<ASR::ArraySection_t>(*actual)) {
         return nullptr;
     }
@@ -563,7 +561,7 @@ ASR::expr_t* GpuOffloadVisitor::gather_section_actual(const Location &loc,
             && !ASR::is_a<ASR::StructInstanceMember_t>(*as->m_v)) {
         return nullptr;
     }
-    std::vector<int> range_dims;
+    range_dims.clear();
     for (size_t d = 0; d < as->n_args; d++) {
         if (as->m_args[d].m_left && as->m_args[d].m_right
                 && as->m_args[d].m_step) {
@@ -588,7 +586,19 @@ ASR::expr_t* GpuOffloadVisitor::gather_section_actual(const Location &loc,
         implied_do.visit_stmt(*fn->m_body[i]);
     }
     if (implied_do.found) return nullptr;
+    return as;
+}
 
+// Makes the copy spliced_section_copy finds is needed.
+ASR::expr_t* GpuOffloadVisitor::gather_section_actual(const Location &loc,
+        SymbolTable *block_scope, ASR::Function_t *fn,
+        ASR::symbol_t *dummy, ASR::expr_t *actual, bool writable,
+        std::vector<ASR::stmt_t*> &gathers,
+        std::vector<ASR::stmt_t*> &scatters) {
+    std::vector<int> range_dims;
+    ASR::ArraySection_t *as = spliced_section_copy(fn, dummy, actual,
+        range_dims);
+    if (as == nullptr) return nullptr;
     Vec<ASR::expr_t*> extents;
     extents.reserve(al, range_dims.size());
     for (int d : range_dims) {

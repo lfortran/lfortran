@@ -90,67 +90,6 @@ public:
     }
 };
 
-// Whether a statement may transfer control out of itself: `return`,
-// `goto`, or an `exit` or `cycle` of a loop or construct it is not in.
-class Leaves : public ASR::BaseWalkVisitor<Leaves> {
-public:
-    bool found = false;
-    std::vector<std::string> names;
-    int loops = 0;
-    std::set<ASR::symbol_t*> blocks;
-
-    template <typename Loop>
-    void loop(const Loop &x, const char *name) {
-        names.push_back(name ? name : "");
-        loops++;
-        for (size_t i = 0; i < x.n_body; i++) visit_stmt(*x.m_body[i]);
-        loops--;
-        names.pop_back();
-    }
-    void visit_DoLoop(const ASR::DoLoop_t &x) {
-        loop(x, x.m_name);
-        for (size_t i = 0; i < x.n_orelse; i++) visit_stmt(*x.m_orelse[i]);
-    }
-    void visit_WhileLoop(const ASR::WhileLoop_t &x) {
-        loop(x, x.m_name);
-        for (size_t i = 0; i < x.n_orelse; i++) visit_stmt(*x.m_orelse[i]);
-    }
-    void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-        loop(x, nullptr);
-    }
-    void transfer(const char *name) {
-        if (name == nullptr) {
-            if (loops == 0) found = true;
-            return;
-        }
-        for (const std::string &n : names) {
-            if (n == name) return;
-        }
-        found = true;
-    }
-    void visit_Exit(const ASR::Exit_t &x) { transfer(x.m_stmt_name); }
-    void visit_Cycle(const ASR::Cycle_t &x) { transfer(x.m_stmt_name); }
-    void visit_Return(const ASR::Return_t &/*x*/) { found = true; }
-    void visit_GoTo(const ASR::GoTo_t &/*x*/) { found = true; }
-    void visit_BlockCall(const ASR::BlockCall_t &x) {
-        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_m);
-        if (!blocks.insert(s).second) return;
-        ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(s);
-        // `exit` names the block it leaves.
-        names.push_back(b->m_name);
-        for (size_t i = 0; i < b->n_body; i++) visit_stmt(*b->m_body[i]);
-        names.pop_back();
-    }
-    void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t &x) {
-        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_m);
-        if (!blocks.insert(s).second) return;
-        ASR::AssociateBlock_t *b = ASR::down_cast<ASR::AssociateBlock_t>(s);
-        names.push_back(b->m_name);
-        for (size_t i = 0; i < b->n_body; i++) visit_stmt(*b->m_body[i]);
-        names.pop_back();
-    }
-};
-
 class DeadArrayStores {
 public:
     DeadArrayStores(SymbolTable *routine_, const PointerTargets &pointers_)
@@ -251,12 +190,7 @@ private:
     }
 
     bool conflicts(const Accesses &acc, const Path &x) {
-        if (acc.everything) return true;
-        if (acc.globals && reachable_elsewhere(x.root, routine)) return true;
-        for (const Path &a : acc.paths) {
-            if (overlap(a, x)) return true;
-        }
-        return false;
+        return AccessPaths::conflicts(acc, x, routine);
     }
 
     // The assignment `s`, when it is one this pass may remove.

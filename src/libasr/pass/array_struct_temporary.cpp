@@ -1625,6 +1625,23 @@ bool is_strided_struct_designator(ASR::expr_t* value) {
             ASR::down_cast<ASR::ArrayItem_t>(value)) != nullptr;
 }
 
+bool reads_elementwise_operands_in_place(ASR::exprType op) {
+    switch (op) {
+        case ASR::exprType::IntegerBinOp:
+        case ASR::exprType::RealBinOp:
+        case ASR::exprType::ComplexBinOp:
+        case ASR::exprType::LogicalBinOp:
+        case ASR::exprType::LogicalNot:
+        case ASR::exprType::RealUnaryMinus:
+        case ASR::exprType::IntegerCompare:
+        case ASR::exprType::RealCompare:
+        case ASR::exprType::StringCompare:
+            return true;
+        default:
+            return false;
+    }
+}
+
 bool is_temporary_needed(ASR::expr_t* value) {
     if(!value) { return false; }
     bool is_expr_with_no_type = (std::find(exprs_with_no_type.begin(), exprs_with_no_type.end(),
@@ -2426,8 +2443,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     ASR::expr_t* visit_BinOp_expr(ASR::expr_t* expr, const std::string& name_hint, ASR::exprType allowed_expr) {
         if (ASRUtils::is_array(ASRUtils::expr_type(expr)) &&
-            !ASR::is_a<ASR::ArrayBroadcast_t>(*expr) &&
-            !is_vectorise_able(expr) &&
+            !(reads_elementwise_operands_in_place(allowed_expr) &&
+                (ASR::is_a<ASR::ArrayBroadcast_t>(*expr) ||
+                 is_vectorise_able(expr))) &&
             (expr->type != allowed_expr)
         ) {
             visit_expr(*expr);

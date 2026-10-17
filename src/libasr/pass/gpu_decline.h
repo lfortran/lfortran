@@ -72,6 +72,11 @@ struct GpuDeviceCapabilities {
     // iteration runs on one thread (see gpu_vector_lanes.cpp).
     int lanes_per_iteration = 1;
 
+    // How many bytes of stack a thread of a kernel has. Late kernel storage
+    // placement spills private arrays that do not fit to per-thread slices
+    // of global workspace buffers; it never changes their locality.
+    int64_t thread_stack_bytes = 0;
+
     // Whether the device has a scalar type of the same in-memory width as
     // `t`. Every dialect shares a floor -- the widths in
     // gpu_scalar_width_supported() -- and the kinds above narrow it further.
