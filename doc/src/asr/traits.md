@@ -1713,6 +1713,14 @@ implementation. A message that is not generic may also take such arrays of
 explicit shape (see "Explicit-shape array arguments" below).
 A message that is not generic may also take bare views of runtime traits as
 arguments other than its receiver (see "Trait-object arguments" below).
+It may also take ordinary scalar `class(DerivedType)` arguments with
+`intent(in)` or `intent(inout)`, preserving their dynamic type and ordinary
+class calling convention. These arguments must be required, nonallocatable,
+nonpointer, and have no VALUE, TARGET, VOLATILE or codimension attributes;
+unlimited polymorphism is not included. This supports incremental migration
+where a trait message still uses an inheritance-based interface.
+`traits_runtime_class_argument_01` checks dispatch and mutation through both
+concrete and polymorphic actuals, with a standard inheritance oracle.
 Array descriptors pass by reference, so strided, reversed and empty sections
 reach the implementation without a copy. Normal argument
 intents, kinds, keyword names, and the ordinary Fortran calling convention
