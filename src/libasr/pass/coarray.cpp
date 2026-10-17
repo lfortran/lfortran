@@ -3392,6 +3392,20 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                                 size_t n_codims = x->m_args[j].n_codims;
                                 replacer.prif.make_allocate_coarray_stmts(
                                     x->base.base.loc, a, dims, n_dims, codims, n_codims, x->m_stat, x->m_errmsg, body, x->m_source);
+                                // The Allocate is replaced, so the array_op
+                                // pass does not copy SOURCE= into the new
+                                // elements of an array: copy it here. The
+                                // elements are defined by the copy, not
+                                // finalized (F2018 7.5.6.3).
+                                if (x->m_source && x->m_args[j].m_type == nullptr &&
+                                        ASRUtils::is_array(ASRUtils::expr_type(a))) {
+                                    ASRUtils::ExprStmtDuplicator duplicator(replacer.al);
+                                    ASR::expr_t *source_copy = duplicator.duplicate_expr(x->m_source);
+                                    body.push_back(replacer.al, ASRUtils::STMT(
+                                        ASRUtils::make_Assignment_t_util(replacer.al,
+                                            x->base.base.loc, a, source_copy, nullptr,
+                                            false, false, true)));
+                                }
                             } else {
                                 non_coarray_args.push_back(replacer.al, x->m_args[j]);
                             }
