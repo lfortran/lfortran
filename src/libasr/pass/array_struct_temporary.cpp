@@ -3251,10 +3251,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 bool saved_context = in_array_context;
                 current_expr = &arg;
                 in_array_context = false;
-                replace_expr(arg);
+                normalize_function_actuals(ASR::down_cast<ASR::FunctionCall_t>(arg));
                 ASR::expr_t* pointer = ASRUtils::is_array(ASRUtils::expr_type(arg)) ?
                     create_temporary_variable_for_array(al, arg, current_scope,
-                        "_actual_pointer_", true) :
+                        "_actual_pointer_") :
                     create_temporary_variable_for_scalar(al, arg, current_scope,
                         "_actual_pointer_", true);
                 current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
