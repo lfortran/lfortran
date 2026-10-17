@@ -150,12 +150,59 @@ public:
     void replace_FunctionType(ASR::FunctionType_t* /*x*/) {}
 };
 
+ASR::ttype_t* rebind_prepared_array_shape(Allocator& al, ASR::ttype_t* type,
+        ASR::expr_t* array) {
+    ASR::dimension_t *dims, *array_dims;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
+    [[maybe_unused]] size_t array_rank = ASRUtils::extract_dimensions_from_ttype(
+        ASRUtils::expr_type(array), array_dims);
+    LCOMPILERS_ASSERT(n_dims == array_rank);
+    Vec<ASR::dimension_t> prepared_dims;
+    prepared_dims.reserve(al, n_dims);
+    bool changed = false;
+    for (size_t i = 0; i < n_dims; i++) {
+        ASR::dimension_t dim = dims[i];
+        if (dim.m_length && !ASRUtils::is_value_constant(
+                ASRUtils::expr_value(dim.m_length))) {
+            // The operand has already been evaluated. Its shape, not a copy
+            // of the original function's specification expression, owns the
+            // extent of an elementwise expression or physical conversion.
+            dim.m_length = array_dims[i].m_length ?
+                array_dims[i].m_length : ASRUtils::get_size(
+                    array, i + 1, al);
+            changed |= dim.m_length != dims[i].m_length;
+        }
+        prepared_dims.push_back(al, dim);
+    }
+    return changed ? ASRUtils::duplicate_type(al, type, &prepared_dims,
+        ASRUtils::extract_physical_type(type), true) : type;
+}
+
 ASR::expr_t* rebuild_array_physical_cast(Allocator& al,
         ASR::ArrayPhysicalCast_t* cast) {
+    ASR::ttype_t* type = cast->m_type;
+    // An assumed-rank conversion can intentionally change the rank.
+    if (ASRUtils::extract_n_dims_from_ttype(type) ==
+            ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(cast->m_arg))) {
+        type = rebind_prepared_array_shape(al, type, cast->m_arg);
+    }
     return ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
         cast->base.base.loc, cast->m_arg,
         ASRUtils::extract_physical_type(ASRUtils::expr_type(cast->m_arg)),
-        cast->m_new, cast->m_type, cast->m_value));
+        cast->m_new, type, cast->m_value));
+}
+
+ASR::ttype_t* rebind_prepared_elemental_shape(Allocator& al, ASR::ttype_t* type,
+        ASR::expr_t** args, size_t n_args) {
+    if (type && ASRUtils::is_array(type) && !ASRUtils::is_simd_array(type)) {
+        for (size_t i = 0; i < n_args; i++) {
+            if (args[i] && ASRUtils::is_array(ASRUtils::expr_type(args[i])) &&
+                    !ASR::is_a<ASR::ArrayBroadcast_t>(*args[i])) {
+                return rebind_prepared_array_shape(al, type, args[i]);
+            }
+        }
+    }
+    return type;
 }
 
 ASR::ttype_t* rebind_prepared_actuals_in_type(Allocator& al, ASR::ttype_t* type,
@@ -2560,6 +2607,12 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         return true;
     }
 
+    template <typename T>
+    void rebind_BinOp_shape(T& x) {
+        ASR::expr_t* args[] = {x.m_left, x.m_right};
+        x.m_type = rebind_prepared_elemental_shape(al, x.m_type, args, 2);
+    }
+
     void visit_IntegerBinOp(const ASR::IntegerBinOp_t& x) {
         ASR::IntegerBinOp_t& xx = const_cast<ASR::IntegerBinOp_t&>(x);
         std::pair<ASR::expr_t*, ASR::expr_t*> binop;
@@ -2569,6 +2622,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         xx.m_left = binop.first;
         xx.m_right = binop.second;
         CallReplacerOnExpressionsVisitor::visit_IntegerBinOp(x);
+        rebind_BinOp_shape(xx);
     }
 
     void visit_RealBinOp(const ASR::RealBinOp_t& x) {
@@ -2580,6 +2634,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         xx.m_left = binop.first;
         xx.m_right = binop.second;
         CallReplacerOnExpressionsVisitor::visit_RealBinOp(x);
+        rebind_BinOp_shape(xx);
     }
 
     void visit_ComplexBinOp(const ASR::ComplexBinOp_t& x) {
@@ -2591,6 +2646,12 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         xx.m_left = binop.first;
         xx.m_right = binop.second;
         CallReplacerOnExpressionsVisitor::visit_ComplexBinOp(x);
+        rebind_BinOp_shape(xx);
+    }
+
+    void visit_UnsignedIntegerBinOp(const ASR::UnsignedIntegerBinOp_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_UnsignedIntegerBinOp(x);
+        rebind_BinOp_shape(const_cast<ASR::UnsignedIntegerBinOp_t&>(x));
     }
 
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t& x) {
@@ -2602,12 +2663,14 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         xx.m_left = binop.first;
         xx.m_right = binop.second;
         CallReplacerOnExpressionsVisitor::visit_LogicalBinOp(x);
+        rebind_BinOp_shape(xx);
     }
 
     void visit_LogicalNot(const ASR::LogicalNot_t& x) {
         ASR::LogicalNot_t& xx = const_cast<ASR::LogicalNot_t&>(x);
         xx.m_arg = visit_BinOp_expr(x.m_arg, "logical_not_", ASR::exprType::LogicalNot);
         CallReplacerOnExpressionsVisitor::visit_LogicalNot(x);
+        xx.m_type = rebind_prepared_elemental_shape(al, xx.m_type, &xx.m_arg, 1);
     }
 
     void visit_RealUnaryMinus(const ASR::RealUnaryMinus_t& x) {
@@ -2620,6 +2683,25 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             xx.m_arg = visit_BinOp_expr(x.m_arg, "real_unary_minus_", ASR::exprType::RealUnaryMinus);
         }
         CallReplacerOnExpressionsVisitor::visit_RealUnaryMinus(x);
+        xx.m_type = rebind_prepared_elemental_shape(al, xx.m_type, &xx.m_arg, 1);
+    }
+
+    void visit_IntegerUnaryMinus(const ASR::IntegerUnaryMinus_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_IntegerUnaryMinus(x);
+        auto& xx = const_cast<ASR::IntegerUnaryMinus_t&>(x);
+        xx.m_type = rebind_prepared_elemental_shape(al, xx.m_type, &xx.m_arg, 1);
+    }
+
+    void visit_ComplexUnaryMinus(const ASR::ComplexUnaryMinus_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_ComplexUnaryMinus(x);
+        auto& xx = const_cast<ASR::ComplexUnaryMinus_t&>(x);
+        xx.m_type = rebind_prepared_elemental_shape(al, xx.m_type, &xx.m_arg, 1);
+    }
+
+    void visit_Cast(const ASR::Cast_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_Cast(x);
+        auto& xx = const_cast<ASR::Cast_t&>(x);
+        xx.m_type = rebind_prepared_elemental_shape(al, xx.m_type, &xx.m_arg, 1);
     }
 
     void visit_RealCompare(const ASR::RealCompare_t& x) {
@@ -2631,6 +2713,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         xx.m_left = binop.first;
         xx.m_right = binop.second;
         CallReplacerOnExpressionsVisitor::visit_RealCompare(x);
+        rebind_BinOp_shape(xx);
     }
 
     void visit_IntegerCompare(const ASR::IntegerCompare_t& x) {
@@ -2642,6 +2725,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         xx.m_left = binop.first;
         xx.m_right = binop.second;
         CallReplacerOnExpressionsVisitor::visit_IntegerCompare(x);
+        rebind_BinOp_shape(xx);
     }
 
     void visit_StringCompare(const ASR::StringCompare_t& x) {
@@ -2653,6 +2737,22 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         xx.m_left = binop.first;
         xx.m_right = binop.second;
         CallReplacerOnExpressionsVisitor::visit_StringCompare(x);
+        rebind_BinOp_shape(xx);
+    }
+
+    void visit_ComplexCompare(const ASR::ComplexCompare_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_ComplexCompare(x);
+        rebind_BinOp_shape(const_cast<ASR::ComplexCompare_t&>(x));
+    }
+
+    void visit_LogicalCompare(const ASR::LogicalCompare_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_LogicalCompare(x);
+        rebind_BinOp_shape(const_cast<ASR::LogicalCompare_t&>(x));
+    }
+
+    void visit_UnsignedIntegerCompare(const ASR::UnsignedIntegerCompare_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_UnsignedIntegerCompare(x);
+        rebind_BinOp_shape(const_cast<ASR::UnsignedIntegerCompare_t&>(x));
     }
 
     template <typename T>
@@ -2742,6 +2842,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         if (!ASRUtils::is_value_constant(x.m_value)) {   // Only simplify runtime function's args
             visit_IntrinsicCall(x, "_intrinsic_elemental_function_" +
                 ASRUtils::get_intrinsic_name(x.m_intrinsic_id));
+            auto& xx = const_cast<ASR::IntrinsicElementalFunction_t&>(x);
+            xx.m_type = rebind_prepared_elemental_shape(al, xx.m_type,
+                xx.m_args, xx.n_args);
         }
     }
 
@@ -3371,9 +3474,29 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             } else {
                 current_expr = &arg;
                 replace_expr(arg);
+                // Canonical specification expressions can call a helper
+                // with this array. Prepare its data operand before emitting
+                // either that helper call or the result allocation.
+                if (arg && ASRUtils::is_array(ASRUtils::expr_type(arg)) &&
+                        is_temporary_needed(arg)) {
+                    force_replace_current_expr_for_array(current_expr,
+                        "_result_arg_", al, current_body, current_scope,
+                        exprs_with_target, is_assignment_target_array_section_item);
+                }
             }
         }
         current_expr = saved_expr;
+        if (ASRUtils::is_elemental(x->m_name)) {
+            for (size_t i = 0; i < x->n_args; i++) {
+                if (x->m_args[i].m_value && ASRUtils::is_array(
+                        ASRUtils::expr_type(x->m_args[i].m_value)) &&
+                        !ASR::is_a<ASR::ArrayBroadcast_t>(*x->m_args[i].m_value)) {
+                    x->m_type = rebind_prepared_elemental_shape(al, x->m_type,
+                        &x->m_args[i].m_value, 1);
+                    break;
+                }
+            }
+        }
         ASR::ttype_t* declared_type = ASRUtils::get_FunctionType(
             x->m_name)->m_return_var_type;
         if (declared_type) {
@@ -3451,21 +3574,32 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 ASRUtils::ReplaceFunctionParamWithArg replacer(
                     al, type_args.p, type_args.size());
                 reinstantiate_result_type(return_type, declared_type, replacer);
-                class NormalizeMetadataCasts:
-                    public FunctionResultMetadataReplacer<NormalizeMetadataCasts> {
+                class NormalizeMetadata:
+                    public FunctionResultMetadataReplacer<NormalizeMetadata> {
                     Allocator& al;
                 public:
-                    NormalizeMetadataCasts(Allocator& al): al(al) {}
+                    NormalizeMetadata(Allocator& al): al(al) {}
 
                     void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* cast) {
-                        ASR::BaseExprReplacer<NormalizeMetadataCasts>
+                        ASR::BaseExprReplacer<NormalizeMetadata>
                             ::replace_ArrayPhysicalCast(cast);
                         *current_expr = rebuild_array_physical_cast(al, cast);
                     }
-                } normalize_casts(al);
+                    void replace_ArraySize(ASR::ArraySize_t* size) {
+                        ASR::BaseExprReplacer<NormalizeMetadata>
+                            ::replace_ArraySize(size);
+                        if (ASR::is_a<ASR::ArraySection_t>(
+                                *ASRUtils::get_past_array_physical_cast(size->m_v))) {
+                            *current_expr = ASRUtils::EXPR(
+                                ASRUtils::make_ArraySize_t_util(al, size->base.base.loc,
+                                    size->m_v, size->m_dim, size->m_type,
+                                    size->m_value, true));
+                        }
+                    }
+                } normalize_metadata(al);
                 // A formal descriptor in a metadata inquiry may have been
                 // replaced by a fixed-size or pointer-array actual.
-                normalize_casts.replace_ttype(return_type);
+                normalize_metadata.replace_ttype(return_type);
                 ASRUtils::ProcedureTypeImporter(al, current_scope, true)
                     .replace_ttype(return_type);
                 // Specification values are those on entry to this call, not
@@ -3776,6 +3910,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         current_expr = current_expr_copy;
         x->m_type = rebind_prepared_actuals_in_type(al, x->m_type,
             original_args, x->m_args);
+        x->m_type = rebind_prepared_elemental_shape(al, x->m_type,
+            x->m_args, x->n_args);
         // Statement-only intrinsics have no result to materialize.
         if (x->m_type != nullptr && !ASRUtils::is_array(x->m_type) &&
                 ASRUtils::is_character(*x->m_type) &&
