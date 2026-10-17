@@ -394,12 +394,6 @@ semantic error: ‘shape’ argument of ‘reshape’ intrinsic has negative ele
 302 |     integer, parameter :: qval(2) = reshape([7, 8], -[z])
     |                                                     ^^^^ 
 
-semantic error: LEN parameters in parameterized derived types are not supported yet
-   --> tests/errors/continue_compilation_1.f90:305:9
-    |
-305 |         integer, len :: n
-    |         ^^^^^^^^^^^^^^^^^ 
-
 semantic error: Intent attribute can only be applied to procedure arguments
    --> tests/errors/continue_compilation_1.f90:614:14
     |
@@ -1459,6 +1453,18 @@ semantic error: Return type not specified
      |
 3381 |    end function
      | ...^^^^^^^^^^^^ 
+
+semantic error: an assumed LEN type parameter `*` is only allowed for a dummy argument
+    --> tests/errors/continue_compilation_1.f90:3393:31
+     |
+3393 |         type(cc1_len_t(*)) :: a  ! {Error} an assumed LEN type parameter `*` is only allowed for a dummy argument
+     |                               ^ 
+
+semantic error: a deferred LEN type parameter `:` requires the allocatable or pointer attribute
+    --> tests/errors/continue_compilation_1.f90:3394:31
+     |
+3394 |         type(cc1_len_t(:)) :: b  ! {Error} a deferred LEN type parameter `:` requires the allocatable or pointer attribute
+     |                               ^ 
 
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
