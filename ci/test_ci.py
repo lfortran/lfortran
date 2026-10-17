@@ -229,7 +229,6 @@ class MacOSEnvironmentTests(unittest.TestCase):
         self.assertLess(check, source.index("      - name: Build\n"))
 
 
-
 class BackendASRConstructionTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -277,17 +276,33 @@ class BackendASRConstructionTests(unittest.TestCase):
         self.assertEqual(self.checker.construction_sites(text), [
             (1, "ASR::make_Var_t"), (2, "ASR::make_Var_t"), (3, "ASR::make_Var_t")])
 
-    def tree(self, directory, sources, baseline):
+    def repo(self, directory):
         root = Path(directory)
+
+        def git(*args):
+            return subprocess.run(["git", *args], cwd=root, check=True, text=True,
+                                  capture_output=True).stdout.strip()
+
+        git("init", "-q")
+        git("config", "user.email", "ci-tests@example.invalid")
+        git("config", "user.name", "CI Tests")
+        git("config", "commit.gpgsign", "false")
+        return root, git
+
+    def write(self, root, sources):
         codegen = root / "src/libasr/codegen"
-        codegen.mkdir(parents=True)
+        codegen.mkdir(parents=True, exist_ok=True)
         for name, count in sources.items():
-            (codegen / name).write_text("ASR::make_Var_t(al, loc, s);\n" * count)
-        (root / "ci").mkdir()
-        path = root / "ci/backend_asr_construction_baseline.txt"
-        path.write_text("# comment\n\n" + "".join(
-            f"src/libasr/codegen/{name} {count}\n" for name, count in baseline.items()))
-        return root, path
+            if count is None:
+                (codegen / name).unlink()
+            else:
+                (codegen / name).write_text("ASR::make_Var_t(al, loc, s);\n" * count)
+
+    def commit(self, git, root, sources):
+        self.write(root, sources)
+        git("add", "-A")
+        git("commit", "-qm", "fixture")
+        return git("rev-parse", "HEAD")
 
     def run_checker(self, root, *args):
         stdout, stderr = io.StringIO(), io.StringIO()
@@ -295,79 +310,114 @@ class BackendASRConstructionTests(unittest.TestCase):
             status = self.checker.main(list(args), root=root)
         return status, stdout.getvalue(), stderr.getvalue()
 
-    def test_count_equal_to_baseline_passes(self):
+    def test_unchanged_counts_pass(self):
         with tempfile.TemporaryDirectory() as directory:
-            root, _ = self.tree(directory, {"a.cpp": 2, "b.h": 1}, {"a.cpp": 2, "b.h": 1})
-            status, out, err = self.run_checker(root)
-            self.assertEqual(status, 0)
-            self.assertIn("OK --- 3 ASR construction calls in 2 backend files", out)
-            self.assertNotIn("NOTICE", out)
-            self.assertEqual(err, "")
+            root, git = self.repo(directory)
+            base = self.commit(git, root, {"a.cpp": 2, "b.h": 1, "notes.txt": 0})
+            self.commit(git, root, {"notes.txt": 3})
+            status, out, err = self.run_checker(root, "--base", base)
+            self.assertEqual((status, err), (0, ""))
+            self.assertIn("OK --- 3 ASR construction calls in 2 backend files, "
+                          f"3 at the base {base[:10]}", out)
 
-    def test_count_over_baseline_fails(self):
+    def test_more_calls_than_at_the_base_fail(self):
         with tempfile.TemporaryDirectory() as directory:
-            root, _ = self.tree(directory, {"a.cpp": 2}, {"a.cpp": 1})
-            status, _, err = self.run_checker(root)
+            root, git = self.repo(directory)
+            base = self.commit(git, root, {"a.cpp": 1, "b.h": 1})
+            self.commit(git, root, {"a.cpp": 2})
+            status, _, err = self.run_checker(root, "--base", base)
             self.assertEqual(status, 1)
-            self.assertIn("src/libasr/codegen/a.cpp: 2 ASR construction calls, "
-                          "baseline allows 1.", err)
+            self.assertIn("src/libasr/codegen/a.cpp: 1 at the base, 2 now", err)
+            self.assertNotIn("b.h", err)
             self.assertIn("--list", err)
+            self.assertIn(f"git diff {base[:10]}", err)
 
-    def test_file_not_in_baseline_fails(self):
+    def test_new_or_renamed_file_with_calls_fails(self):
+        for change in ({"new.cpp": 1}, {"a.cpp": None, "renamed.cpp": 1}):
+            with self.subTest(change=change), tempfile.TemporaryDirectory() as directory:
+                root, git = self.repo(directory)
+                base = self.commit(git, root, {"a.cpp": 1})
+                self.commit(git, root, change)
+                status, _, err = self.run_checker(root, "--base", base)
+                self.assertEqual(status, 1)
+                name = next(iter(change.keys() - {"a.cpp"}))
+                self.assertIn(f"src/libasr/codegen/{name}: 0 at the base, 1 now", err)
+
+    def test_removals_pass_and_are_locked_in_once_they_are_the_base(self):
         with tempfile.TemporaryDirectory() as directory:
-            root, _ = self.tree(directory, {"a.cpp": 1, "new.cpp": 1}, {"a.cpp": 1})
+            root, git = self.repo(directory)
+            base = self.commit(git, root, {"a.cpp": 3, "gone.h": 1})
+            removed = self.commit(git, root, {"a.cpp": 2, "gone.h": None})
+            status, out, err = self.run_checker(root, "--base", base)
+            self.assertEqual((status, err), (0, ""))
+            self.assertIn("OK --- 2 ASR construction calls in 1 backend file, 4 at the base", out)
+            self.commit(git, root, {"a.cpp": 3})
+            status, _, err = self.run_checker(root, "--base", removed)
+            self.assertEqual(status, 1)
+            self.assertIn("src/libasr/codegen/a.cpp: 2 at the base, 3 now", err)
+
+    def test_working_tree_is_checked_except_ignored_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, git = self.repo(directory)
+            (root / ".gitignore").write_text("src/libasr/codegen/generated.h\n")
+            base = self.commit(git, root, {"a.cpp": 1})
+            self.write(root, {"generated.h": 5})
+            self.assertEqual(self.run_checker(root, "--base", base)[0], 0)
+            for change in ({"a.cpp": 2}, {"a.cpp": 1, "untracked.cpp": 1}):
+                with self.subTest(change=change):
+                    self.write(root, change)
+                    status, _, err = self.run_checker(root, "--base", base)
+                    self.assertEqual(status, 1)
+                    self.assertIn("1 at the base, 2 now" if change["a.cpp"] == 2
+                                  else "untracked.cpp: 0 at the base, 1 now", err)
+                    self.assertNotIn("generated.h", err)
+                    self.write(root, {"a.cpp": 1})
+
+    def test_default_base_is_the_merge_base_with_origin_main(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, git = self.repo(directory)
+            base = self.commit(git, root, {"a.cpp": 1})
+            self.commit(git, root, {"a.cpp": 2})
             status, _, err = self.run_checker(root)
             self.assertEqual(status, 1)
-            self.assertIn("src/libasr/codegen/new.cpp: 1 ASR construction call, "
-                          "baseline allows 0.", err)
-            self.assertNotIn("a.cpp", err)
+            self.assertIn("FAIL --- cannot determine the base commit", err)
+            self.assertIn("--base", err)
+            git("update-ref", "refs/remotes/origin/main", base)
+            status, _, err = self.run_checker(root)
+            self.assertEqual(status, 1)
+            self.assertIn(f"compared with the merge base {base[:10]} with origin/main", err)
+            self.assertIn("src/libasr/codegen/a.cpp: 1 at the base, 2 now", err)
 
-    def test_count_under_baseline_passes_with_notice(self):
+    def test_unknown_base_fails(self):
         with tempfile.TemporaryDirectory() as directory:
-            root, _ = self.tree(directory, {"a.cpp": 1}, {"a.cpp": 3, "gone.h": 1})
-            status, out, err = self.run_checker(root)
-            self.assertEqual(status, 0)
-            self.assertEqual(err, "")
-            self.assertIn("NOTICE --- src/libasr/codegen/a.cpp: 1 ASR construction call, "
-                          "baseline allows 3; lower the baseline with", out)
-            self.assertIn("NOTICE --- src/libasr/codegen/gone.h: 0 ASR construction calls, "
-                          "baseline allows 1;", out)
-            self.assertIn("--update", out)
+            root, git = self.repo(directory)
+            self.commit(git, root, {"a.cpp": 1})
+            status, out, err = self.run_checker(root, "--base", "0" * 40)
+            self.assertEqual((status, out), (1, ""))
+            self.assertIn("FAIL --- cannot determine the base commit", err)
 
-    def test_update_lowers_counts_and_drops_empty_files(self):
+    def test_list_prints_working_tree_calls(self):
         with tempfile.TemporaryDirectory() as directory:
-            root, path = self.tree(directory, {"a.cpp": 1, "b.h": 2},
-                                   {"a.cpp": 3, "b.h": 2, "gone.h": 1})
-            status, out, _ = self.run_checker(root, "--update")
+            root, git = self.repo(directory)
+            base = self.commit(git, root, {"a.cpp": 2})
+            status, out, _ = self.run_checker(root, "--list", "--base", base)
             self.assertEqual(status, 0)
-            self.assertIn("3 ASR construction calls in 2 backend files", out)
-            self.assertEqual(self.checker.read_baseline(path), {
-                "src/libasr/codegen/a.cpp": 1, "src/libasr/codegen/b.h": 2})
-            self.assertTrue(path.read_text().startswith(self.checker.BASELINE_HEADER))
-            status, out, _ = self.run_checker(root)
-            self.assertEqual(status, 0)
-            self.assertNotIn("NOTICE", out)
+            self.assertEqual(out.splitlines()[:2], [
+                "src/libasr/codegen/a.cpp:1: ASR::make_Var_t",
+                "src/libasr/codegen/a.cpp:2: ASR::make_Var_t"])
 
-    def test_update_refuses_to_raise_a_count_or_add_a_file(self):
-        for sources in ({"a.cpp": 2}, {"a.cpp": 1, "new.cpp": 1}):
-            with self.subTest(sources=sources), tempfile.TemporaryDirectory() as directory:
-                root, path = self.tree(directory, sources, {"a.cpp": 1, "b.h": 1})
-                before = path.read_text()
-                status, _, err = self.run_checker(root, "--update")
-                self.assertEqual(status, 1)
-                self.assertIn("refusing to update", err)
-                self.assertIn("only lowers counts", err)
-                self.assertEqual(path.read_text(), before)
-
-    def test_repository_is_within_the_baseline_and_checked_in_quick(self):
-        status, _, err = self.run_checker(ROOT)
-        self.assertEqual(status, 0, err)
+    def test_quick_compares_with_the_pr_base_or_the_previous_commit(self):
+        self.assertFalse((ROOT / "ci/backend_asr_construction_baseline.txt").exists())
         quick = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
         step = quick.split("      - name: Check for ASR Construction in Backends\n", 1)[1]
         step = step.split("\n      - ", 1)[0]
         self.assertIn("if: ${{ !cancelled() && contains(matrix.os, 'ubuntu') "
                       "&& contains(matrix.llvm-version, '21') }}", step)
-        self.assertIn("run: python3 ci/check_backend_asr_construction.py", step)
+        self.assertIn("BACKEND_ASR_BASE: ${{ github.event.pull_request.base.sha "
+                      "|| github.event.before }}", step)
+        self.assertIn("git rev-parse --verify --quiet 'HEAD^'", step)
+        self.assertIn('git fetch --no-tags --depth=1 origin "$base"', step)
+        self.assertIn('python3 ci/check_backend_asr_construction.py --base "$base"', step)
 
 
 class RunnerTests(unittest.TestCase):

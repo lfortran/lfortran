@@ -242,12 +242,25 @@ jobs:
         run: |
           ./ci/grammar_conflicts.sh
 
-      # Backends lower ASR, they do not create it; the count may only go down.
-      # Report a violation even if an earlier step failed.
+      # Backends lower ASR, they do not create it: no backend file may have more
+      # construction calls than at the base (the PR base, or the commit before
+      # the push, as for the coarray selection). Manual and new-tag runs compare
+      # with the first parent. Report a violation even if an earlier step failed.
       - name: Check for ASR Construction in Backends
         if: ${{ !cancelled() && contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21') }}
         shell: bash -e -l {0}
-        run: python3 ci/check_backend_asr_construction.py
+        env:
+          BACKEND_ASR_BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          base="$BACKEND_ASR_BASE"
+          if [[ -z "$base" || "$base" =~ ^0+$ ]]; then
+            if ! base=$(git rev-parse --verify --quiet 'HEAD^'); then
+              echo "::notice::No base commit to compare backend ASR construction with; skipped."
+              exit 0
+            fi
+          fi
+          git cat-file -e "$base^{commit}" 2>/dev/null || git fetch --no-tags --depth=1 origin "$base"
+          python3 ci/check_backend_asr_construction.py --base "$base"
 
       # Run last among history checks. Binary script checks out commits in PR history.
       - name: Check for Added Binary Files

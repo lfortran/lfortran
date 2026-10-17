@@ -320,10 +320,9 @@ only once, redirect to a log file and then examine the log file.
   must be built before codegen, in semantics or an ASR pass, where
   `asr_verify` checks it. Do not call `ASR::make_*_t`, `ASRUtils::make_*` or
   any other helper that builds nodes in `src/libasr/codegen/`.
-  `ci/check_backend_asr_construction.py` (run by Quick checks) caps the
-  remaining legacy sites at the per-file counts in
-  `ci/backend_asr_construction_baseline.txt`. Never raise a count; a PR
-  that removes a site lowers it (`--update` only lowers counts).
+  `ci/check_backend_asr_construction.py` (run by Quick checks) fails if any
+  file there has more such calls than at the base commit (by default the
+  merge base with `origin/main`), so legacy sites can only be removed.
 - libasr is frontend-independent. Never reference `_lfortran` or any
   frontend-specific names in libasr code. Use enums or structured types,
   not string comparisons.
