@@ -113,7 +113,9 @@ public:
     bool use_loop_variable_after_loop = false;
     PassOptions pass_options;
     DoLoopVisitor(Allocator &al, PassOptions pass_options_) :
-        StatementWalkVisitor(al), pass_options(pass_options_) { }
+        StatementWalkVisitor(al), pass_options(pass_options_) {
+        pass_result.reserve(al, 3);
+    }
 
     void visit_Function(const ASR::Function_t &x) {
         bool saved = device_code;
