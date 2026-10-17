@@ -139,6 +139,17 @@ struct FunctionCallPreparation {
     }
 };
 
+template <class Derived>
+class FunctionResultMetadataReplacer: public ASR::BaseExprReplacer<Derived> {
+public:
+    // These types describe declarations, not this invocation's result bounds
+    // or length. In particular, StructType members can share their types with
+    // the declaration and must never acquire a caller's metadata temporaries.
+    void replace_StructType(ASR::StructType_t* /*x*/) {}
+    void replace_UnionType(ASR::UnionType_t* /*x*/) {}
+    void replace_FunctionType(ASR::FunctionType_t* /*x*/) {}
+};
+
 ASR::expr_t* rebuild_array_physical_cast(Allocator& al,
         ASR::ArrayPhysicalCast_t* cast) {
     return ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
@@ -3369,6 +3380,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             class MetadataArguments: public ASR::BaseWalkVisitor<MetadataArguments> {
             public:
                 std::set<size_t> indices;
+                void visit_StructType(const ASR::StructType_t& /*x*/) {}
+                void visit_UnionType(const ASR::UnionType_t& /*x*/) {}
+                void visit_FunctionType(const ASR::FunctionType_t& /*x*/) {}
                 void visit_FunctionParam(const ASR::FunctionParam_t& param) {
                     indices.insert(param.m_param_number);
                 }
@@ -3401,7 +3415,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             for (size_t i = 0; i < x->n_args; i++) {
                 actuals_changed |= original_args[i] != x->m_args[i].m_value;
             }
-            class PendingMetadata: public ASR::BaseExprReplacer<PendingMetadata> {
+            class PendingMetadata: public FunctionResultMetadataReplacer<PendingMetadata> {
                 const FunctionCallPreparation& preparation;
             public:
                 bool found = false;
@@ -3438,7 +3452,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                     al, type_args.p, type_args.size());
                 reinstantiate_result_type(return_type, declared_type, replacer);
                 class NormalizeMetadataCasts:
-                    public ASR::BaseExprReplacer<NormalizeMetadataCasts> {
+                    public FunctionResultMetadataReplacer<NormalizeMetadataCasts> {
                     Allocator& al;
                 public:
                     NormalizeMetadataCasts(Allocator& al): al(al) {}
@@ -3456,7 +3470,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                     .replace_ttype(return_type);
                 // Specification values are those on entry to this call, not
                 // values obtained after an INOUT/OUT dummy has changed storage.
-                class SaveMetadata: public ASR::BaseExprReplacer<SaveMetadata> {
+                class SaveMetadata: public FunctionResultMetadataReplacer<SaveMetadata> {
                     ReplaceExprWithTemporary& owner;
                 public:
                     SaveMetadata(ReplaceExprWithTemporary& owner): owner(owner) {}
