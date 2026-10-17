@@ -3369,6 +3369,11 @@ class ASRToLLVMVisitor;
             // call_struct_finalize_fn if the i1 `cond` is true.
             void call_struct_finalize_fn_if(llvm::Value* cond, llvm::Value* ptr,
                 ASR::ttype_t* ty, ASR::Struct_t* struct_sym);
+
+            // If the i1 `cond` is true, call the final subroutines of the
+            // nonpolymorphic array `ptr` (F2018 7.5.6.2 steps 1 and 3).
+            void call_array_final_fn_if(llvm::Value* cond, llvm::Value* ptr,
+                ASR::ttype_t* arr_type, ASR::Struct_t* struct_sym);
     };
 
     class LLVMTuple {
