@@ -1416,48 +1416,70 @@ semantic error: interface mismatch for procedure pointer component 'f' in struct
 3295 |     type(cc1_pci_t) :: cc1_pci_s = cc1_pci_t(f=cc1_pci_real_func)  ! {Error} interface mismatch for procedure pointer component 'f' in structure constructor
      |                                                ^^^^^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pci_func_iface) and procedure(cc1_pci_real_func))
 
-semantic error: bind(c) variable `s` must have character length one
-    --> tests/errors/continue_compilation_1.f90:3371:34
+semantic error: Duplicate DIMENSION attribute specified
+    --> tests/errors/continue_compilation_1.f90:3361:30
      |
-3371 |     character(len=5), bind(c) :: s  ! {Error} bind(c) variable `s` must have character length one
+3361 |     integer, dimension(3) :: arr  ! {Error} Duplicate DIMENSION attribute specified
+     |                              ^^^ 
+
+semantic error: Duplicate DIMENSION attribute specified
+    --> tests/errors/continue_compilation_1.f90:3363:13
+     |
+3363 |     real :: x(*)  ! {Error} Duplicate DIMENSION attribute specified
+     |             ^^^^ 
+
+semantic error: Dummy argument 'x' not defined
+    --> tests/errors/continue_compilation_1.f90:3359:1 - 3364:43
+     |
+3359 |    subroutine cc1_duplicate_dimension_attr(x)
+     |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3364 |    end subroutine cc1_duplicate_dimension_attr
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: bind(c) variable `s` must have character length one
+    --> tests/errors/continue_compilation_1.f90:3380:34
+     |
+3380 |     character(len=5), bind(c) :: s  ! {Error} bind(c) variable `s` must have character length one
      |                                  ^ 
 
 semantic error: bind(c) variable `a` must have character length one
-    --> tests/errors/continue_compilation_1.f90:3372:34
+    --> tests/errors/continue_compilation_1.f90:3381:34
      |
-3372 |     character(len=5), bind(c) :: a(3)  ! {Error} bind(c) variable `a` must have character length one
+3381 |     character(len=5), bind(c) :: a(3)  ! {Error} bind(c) variable `a` must have character length one
      |                                  ^^^^ 
 
 semantic error: character function result `cc1_bindc_implicit_result` must have constant length one in a BIND(C) procedure
-    --> tests/errors/continue_compilation_1.f90:3376:5
+    --> tests/errors/continue_compilation_1.f90:3385:5
      |
-3376 |     character(len=5) :: cc1_bindc_implicit_result  ! {Error} character function result `cc1_bindc_implicit_result` must have constant length one in a BIND(C) procedure
+3385 |     character(len=5) :: cc1_bindc_implicit_result  ! {Error} character function result `cc1_bindc_implicit_result` must have constant length one in a BIND(C) procedure
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Return type not specified
-    --> tests/errors/continue_compilation_1.f90:3375:1 - 3377:12
+    --> tests/errors/continue_compilation_1.f90:3384:1 - 3386:12
      |
-3375 |    function cc1_bindc_implicit_result() bind(c)
+3384 |    function cc1_bindc_implicit_result() bind(c)
      |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
      |
-3377 |    end function
+3386 |    end function
      | ...^^^^^^^^^^^^ 
 
 semantic error: character function result `c` must have constant length one in a BIND(C) procedure
-    --> tests/errors/continue_compilation_1.f90:3380:5
+    --> tests/errors/continue_compilation_1.f90:3389:5
      |
-3380 |     character(len=5) :: c  ! {Error} character function result `c` must have constant length one in a BIND(C) procedure
+3389 |     character(len=5) :: c  ! {Error} character function result `c` must have constant length one in a BIND(C) procedure
      |     ^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Return type not specified
-    --> tests/errors/continue_compilation_1.f90:3379:1 - 3381:12
+    --> tests/errors/continue_compilation_1.f90:3388:1 - 3390:12
      |
-3379 |    function cc1_bindc_explicit_result() result(c) bind(c)
+3388 |    function cc1_bindc_explicit_result() result(c) bind(c)
      |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
 ...
      |
-3381 |    end function
+3390 |    end function
      | ...^^^^^^^^^^^^ 
 
 semantic error: Restriction type mismatch with provided function argument
@@ -4189,25 +4211,25 @@ semantic error: interface mismatch for procedure pointer component 'p' in struct
      |                       ^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pcd_iface) and procedure(cc1_pcd_b_arg))
 
 warning: the `pause` statement is a deleted feature (deleted in Fortran 95)
-    --> tests/errors/continue_compilation_1.f90:3364:9
+    --> tests/errors/continue_compilation_1.f90:3373:9
      |
-3364 |         pause 3.0  ! {Error} `pause` code must be a scalar integer or default character expression, found real(4)
+3373 |         pause 3.0  ! {Error} `pause` code must be a scalar integer or default character expression, found real(4)
      |         ^^^^^^^^^ 
 
 semantic error: `pause` code must be a scalar integer or default character expression, found real(4)
-    --> tests/errors/continue_compilation_1.f90:3364:15
+    --> tests/errors/continue_compilation_1.f90:3373:15
      |
-3364 |         pause 3.0  ! {Error} `pause` code must be a scalar integer or default character expression, found real(4)
+3373 |         pause 3.0  ! {Error} `pause` code must be a scalar integer or default character expression, found real(4)
      |               ^^^ 
 
 warning: the `pause` statement is a deleted feature (deleted in Fortran 95)
-    --> tests/errors/continue_compilation_1.f90:3365:9
+    --> tests/errors/continue_compilation_1.f90:3374:9
      |
-3365 |         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
+3374 |         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
      |         ^^^^^^^^^^^ 
 
 semantic error: `pause` code must be a scalar integer or default character expression, found integer(4) array
-    --> tests/errors/continue_compilation_1.f90:3365:15
+    --> tests/errors/continue_compilation_1.f90:3374:15
      |
-3365 |         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
+3374 |         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
      |               ^^^^^ 
