@@ -55,11 +55,8 @@ namespace LCompilers {
                 llvm::Module &module, llvm::IRBuilder<> &builder) {
             llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
             std::string func_name = get_allocator_function_name();
-            llvm::Function *fn = module.getFunction(func_name);
-            if (!fn) {
-                llvm::FunctionType *ft = llvm::FunctionType::get(i8_ptr_type, {}, false);
-                fn = llvm::Function::Create(ft, llvm::Function::ExternalLinkage, func_name, &module);
-            }
+            llvm::Function *fn = LLVM::get_or_declare_function(module, func_name,
+                i8_ptr_type, {});
             return builder.CreateCall(fn, {});
         }
 
@@ -76,16 +73,11 @@ namespace LCompilers {
             std::string func_name = "_lfortran_malloc_alloc";
             arg_size = builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context));
             llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
-            llvm::Function *fn = module.getFunction(func_name);
-            if (!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        i8_ptr_type, {
-                            i8_ptr_type,
-                            llvm::Type::getInt64Ty(context)
-                        }, false);
-                fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, &module);
-            }
+            llvm::Function *fn = LLVM::get_or_declare_function(module, func_name,
+                    i8_ptr_type, {
+                        i8_ptr_type,
+                        llvm::Type::getInt64Ty(context)
+                    });
             llvm::Value* allocator = get_allocator(context, module, builder);
             return builder.CreateCall(fn, {allocator, arg_size});
         }
@@ -94,16 +86,11 @@ namespace LCompilers {
                 llvm::IRBuilder<> &builder, llvm::Value* allocator, llvm::Value* arg_size) {
             std::string func_name = "_lfortran_malloc_alloc";
             arg_size = builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context));
-            llvm::Function *fn = module.getFunction(func_name);
-            if (!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getInt8Ty(context)->getPointerTo(), {
-                            llvm::Type::getInt8Ty(context)->getPointerTo(),
-                            llvm::Type::getInt64Ty(context)
-                        }, false);
-                fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, &module);
-            }
+            llvm::Function *fn = LLVM::get_or_declare_function(module, func_name,
+                    llvm::Type::getInt8Ty(context)->getPointerTo(), {
+                        llvm::Type::getInt8Ty(context)->getPointerTo(),
+                        llvm::Type::getInt64Ty(context)
+                    });
             return builder.CreateCall(fn, {allocator, arg_size});
         }
         /* 
@@ -119,16 +106,11 @@ namespace LCompilers {
             std::string func_name = "_lfortran_string_malloc_alloc";
             arg_size = builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context));
             llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
-            llvm::Function *fn = module.getFunction(func_name);
-            if (!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        i8_ptr_type, {
-                            i8_ptr_type,
-                            llvm::Type::getInt64Ty(context)
-                        }, false);
-                fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, &module);
-            }
+            llvm::Function *fn = LLVM::get_or_declare_function(module, func_name,
+                    i8_ptr_type, {
+                        i8_ptr_type,
+                        llvm::Type::getInt64Ty(context)
+                    });
             llvm::Value* allocator = get_allocator(context, module, builder);
             return builder.CreateCall(fn, {allocator, arg_size});
         }
@@ -137,17 +119,12 @@ namespace LCompilers {
                 llvm::IRBuilder<> &builder, llvm::Value* count, llvm::Value* type_size) {
             std::string func_name = "_lfortran_calloc_alloc";
             llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
-            llvm::Function *fn = module.getFunction(func_name);
-            if (!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        i8_ptr_type, {
-                            i8_ptr_type,
-                            llvm::Type::getInt64Ty(context),
-                            llvm::Type::getInt64Ty(context)
-                        }, false);
-                fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, &module);
-            }
+            llvm::Function *fn = LLVM::get_or_declare_function(module, func_name,
+                    i8_ptr_type, {
+                        i8_ptr_type,
+                        llvm::Type::getInt64Ty(context),
+                        llvm::Type::getInt64Ty(context)
+                    });
             llvm::Value* allocator = get_allocator(context, module, builder);
             count     = builder.CreateSExt(count, llvm::Type::getInt64Ty(context));
             type_size = builder.CreateSExt(type_size, llvm::Type::getInt64Ty(context));
@@ -158,17 +135,12 @@ namespace LCompilers {
                 llvm::IRBuilder<> &builder, llvm::Value* ptr, llvm::Value* arg_size) {
             std::string func_name = "_lfortran_realloc_alloc";
             llvm::Type* i8_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
-            llvm::Function *fn = module.getFunction(func_name);
-            if (!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        i8_ptr_type, {
-                            i8_ptr_type,
-                            i8_ptr_type,
-                            llvm::Type::getInt64Ty(context)
-                        }, false);
-                fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, &module);
-            }
+            llvm::Function *fn = LLVM::get_or_declare_function(module, func_name,
+                    i8_ptr_type, {
+                        i8_ptr_type,
+                        i8_ptr_type,
+                        llvm::Type::getInt64Ty(context)
+                    });
             llvm::Value* allocator = get_allocator(context, module, builder);
             return builder.CreateCall(fn, {
                 allocator,
@@ -180,17 +152,12 @@ namespace LCompilers {
         llvm::Value* lfortran_realloc_alloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* allocator, llvm::Value* ptr, llvm::Value* arg_size) {
             std::string func_name = "_lfortran_realloc_alloc";
-            llvm::Function *fn = module.getFunction(func_name);
-            if (!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getInt8Ty(context)->getPointerTo(), {
-                            llvm::Type::getInt8Ty(context)->getPointerTo(),
-                            llvm::Type::getInt8Ty(context)->getPointerTo(),
-                            llvm::Type::getInt64Ty(context)
-                        }, false);
-                fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, func_name, &module);
-            }
+            llvm::Function *fn = LLVM::get_or_declare_function(module, func_name,
+                    llvm::Type::getInt8Ty(context)->getPointerTo(), {
+                        llvm::Type::getInt8Ty(context)->getPointerTo(),
+                        llvm::Type::getInt8Ty(context)->getPointerTo(),
+                        llvm::Type::getInt64Ty(context)
+                    });
             return builder.CreateCall(fn, {
                 allocator,
                 builder.CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()),
@@ -264,15 +231,11 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::lfortran_free(llvm::Value* ptr) {
         std::string func_name = "_lfortran_free_alloc";
-        llvm::Function *fn = module->getFunction(func_name);
-        if (!fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {
-                        llvm::Type::getInt8Ty(context)->getPointerTo(),
-                        llvm::Type::getInt8Ty(context)->getPointerTo()
-                    }, false);
-            fn = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, func_name, module);
-        }
+        llvm::Function *fn = LLVM::get_or_declare_function(*module, func_name,
+                void_type, {
+                    i8_ptr,
+                    i8_ptr
+                });
         // Get allocator BEFORE the branch so the SSA value dominates all uses
         llvm::Value* allocator = get_allocator(module);
         // Null check prevents freeing null pointers and ensures dominance
@@ -293,15 +256,11 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::lfortran_free_alloc(llvm::Value* allocator, llvm::Value* ptr) {
         std::string func_name = "_lfortran_free_alloc";
-        llvm::Function *fn = module->getFunction(func_name);
-        if (!fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {
-                        llvm::Type::getInt8Ty(context)->getPointerTo(),
-                        llvm::Type::getInt8Ty(context)->getPointerTo()
-                    }, false);
-            fn = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, func_name, module);
-        }
+        llvm::Function *fn = LLVM::get_or_declare_function(*module, func_name,
+                void_type, {
+                    i8_ptr,
+                    i8_ptr
+                });
         llvm::Value* is_null = builder->CreateIsNull(ptr);
         llvm::Function* current_fn = builder->GetInsertBlock()->getParent();
         llvm::BasicBlock* free_bb = llvm::BasicBlock::Create(context, "free_nonnull", current_fn);
@@ -317,15 +276,11 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::lfortran_free_nocheck(llvm::Value* ptr) {
         std::string func_name = "_lfortran_free_alloc";
-        llvm::Function *fn = module->getFunction(func_name);
-        if (!fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {
-                        llvm::Type::getInt8Ty(context)->getPointerTo(),
-                        llvm::Type::getInt8Ty(context)->getPointerTo()
-                    }, false);
-            fn = llvm::Function::Create(function_type, llvm::Function::ExternalLinkage, func_name, module);
-        }
+        llvm::Function *fn = LLVM::get_or_declare_function(*module, func_name,
+                void_type, {
+                    i8_ptr,
+                    i8_ptr
+                });
         llvm::Type* const i8PtrTy = llvm::Type::getInt8Ty(context)->getPointerTo();
         llvm::Value* allocator = get_allocator(module);
         builder->CreateCall(fn, {allocator, builder->CreateBitCast(ptr, i8PtrTy)});
@@ -348,13 +303,8 @@ namespace LCompilers {
         llvm::Type* allocator_ptr_type = llvm::Type::getInt8Ty(context)->getPointerTo();
 
         std::string func_name = LLVM::get_allocator_function_name();
-        llvm::Function *fn = mod->getFunction(func_name);
-        if (!fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                allocator_ptr_type, {}, false);
-            fn = llvm::Function::Create(function_type,
-                llvm::Function::ExternalLinkage, func_name, mod);
-        }
+        llvm::Function *fn = LLVM::get_or_declare_function(*mod, func_name,
+            allocator_ptr_type, {});
         // Insert at the entry block so the value dominates all basic blocks
         llvm::BasicBlock& entry_bb = current_fn->getEntryBlock();
         llvm::IRBuilder<> entry_builder(&entry_bb, entry_bb.getFirstInsertionPt());
@@ -364,23 +314,19 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::string_format_fortran(const std::vector<llvm::Value*> &args, llvm::Value* decimal_mode, llvm::Value* sign_mode, llvm::Value* round_mode, bool leading_blank)
     {
-        llvm::Function *fn_printf = module->getFunction("_lcompilers_string_format_fortran");
-        if (!fn_printf) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getInt8Ty(context)->getPointerTo(),
-                    {llvm::Type::getInt8Ty(context)->getPointerTo(), // allocator
-                    llvm::Type::getInt8Ty(context)->getPointerTo(), llvm::Type::getInt64Ty(context),
-                    llvm::Type::getInt8Ty(context)->getPointerTo(),
-                    llvm::Type::getInt64Ty(context)->getPointerTo(),
-                    llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt32Ty(context),
-                    llvm::Type::getInt32Ty(context)}, true);
-            fn_printf = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, "_lcompilers_string_format_fortran", module);
-        }
+        llvm::Function *fn_printf = LLVM::get_or_declare_function(
+            *module, "_lcompilers_string_format_fortran",
+            i8_ptr,
+            {i8_ptr, // allocator
+            i8_ptr, i64,
+            i8_ptr,
+            i64->getPointerTo(),
+            i32,
+            i32,
+            i32,
+            i32,
+            i32,
+            i32}, true);
 
         std::vector<llvm::Value*> full_args;
         full_args.push_back(get_allocator(module));
@@ -413,6 +359,137 @@ namespace LCompilers {
     }
     void LLVMUtils::set_module(llvm::Module* module_) {
         module = module_;
+        runtime_error_strings.clear();
+        runtime_error_infos.clear();
+    }
+
+    llvm::Constant* LLVMUtils::get_runtime_error_string(const std::string &str) {
+        auto it = runtime_error_strings.find(str);
+        if (it != runtime_error_strings.end()) {
+            return it->second;
+        }
+        llvm::Constant* str_ptr = LCompilers::create_global_string_ptr(
+            context, *module, *builder, str);
+        runtime_error_strings[str] = str_ptr;
+        return str_ptr;
+    }
+
+    // Number of arguments consumed by a printf-style format string
+    [[maybe_unused]] static size_t count_format_arguments(const std::string &format) {
+        size_t n = 0;
+        for (size_t i = 0; i < format.size(); i++) {
+            if (format[i] == '%') {
+                if (i + 1 < format.size() && format[i + 1] == '%') {
+                    i++;
+                } else {
+                    n++;
+                }
+            }
+        }
+        return n;
+    }
+
+    void LLVMUtils::generate_runtime_error(llvm::Value* cond, const std::string &message,
+            const std::vector<RuntimeLabel> &labels, std::string &infile,
+            LocationManager& lm, const std::vector<llvm::Value*> &args) {
+        llvm::Type* i8_ptr = llvm::Type::getInt8Ty(context)->getPointerTo();
+        // These mirror `Span`, `lfortran_runtime_error_label` and
+        // `lfortran_runtime_error_info` in lfortran_intrinsics.h
+        llvm::StructType* span_type = llvm::StructType::get(context,
+            {i8_ptr, i32, i32, i32, i32});
+        llvm::StructType* label_type = llvm::StructType::get(context,
+            {llvm::Type::getInt8Ty(context), i8_ptr, span_type->getPointerTo(), i32});
+        llvm::StructType* info_type = llvm::StructType::get(context,
+            {i8_ptr, label_type->getPointerTo(), i32});
+
+        llvm::Function *fn = builder->GetInsertBlock()->getParent();
+        llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
+        llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+        builder->CreateCondBr(cond, thenBB, mergeBB);
+        builder->SetInsertPoint(thenBB);
+
+        auto create_constant_array = [&](llvm::StructType* element_type,
+                const std::vector<llvm::Constant*> &elements) -> llvm::Constant* {
+            if (elements.empty()) {
+                return llvm::ConstantPointerNull::get(element_type->getPointerTo());
+            }
+            llvm::ArrayType* array_type = llvm::ArrayType::get(element_type, elements.size());
+            llvm::GlobalVariable* array = new llvm::GlobalVariable(*module, array_type,
+                true, llvm::GlobalValue::PrivateLinkage,
+                llvm::ConstantArray::get(array_type, elements));
+            array->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+            return llvm::ConstantExpr::getBitCast(array, element_type->getPointerTo());
+        };
+
+        struct SpanLineCol {
+            std::string filename;
+            uint32_t start_l, start_c, last_l, last_c;
+        };
+        std::vector<std::vector<SpanLineCol>> label_spans;
+        // Identical runtime errors (e.g. repeated checks of one expression)
+        // share their constant data
+        std::string info_key = message;
+        // All format arguments share one argument list, so each format
+        // string must receive exactly its own arguments
+        LCOMPILERS_ASSERT(count_format_arguments(message) == args.size());
+        std::vector<llvm::Value*> call_args = {nullptr};
+        call_args.insert(call_args.end(), args.begin(), args.end());
+        for (const RuntimeLabel &label : labels) {
+            LCOMPILERS_ASSERT(count_format_arguments(label.message) == label.args.size());
+            label_spans.emplace_back();
+            info_key += std::string(1, '\0') + (label.primary ? "1" : "0")
+                + std::to_string(label.spans.size()) + std::string(1, '\0') + label.message;
+            for (const diag::Span &span : label.spans) {
+                SpanLineCol s;
+                lm.pos_to_linecol(lm.output_to_input_pos(span.loc.first, false), s.start_l, s.start_c, infile);
+                lm.pos_to_linecol(lm.output_to_input_pos(span.loc.last, false), s.last_l, s.last_c, infile);
+                s.filename = infile;
+                info_key += std::string(1, '\0') + s.filename + ":" + std::to_string(s.start_l)
+                    + ":" + std::to_string(s.start_c) + ":" + std::to_string(s.last_l)
+                    + ":" + std::to_string(s.last_c);
+                label_spans.back().push_back(s);
+            }
+            call_args.insert(call_args.end(), label.args.begin(), label.args.end());
+        }
+
+        llvm::Constant*& info = runtime_error_infos[info_key];
+        if (!info) {
+            std::vector<llvm::Constant*> label_values;
+            for (size_t i = 0; i < labels.size(); i++) {
+                std::vector<llvm::Constant*> span_values;
+                for (const SpanLineCol &s : label_spans[i]) {
+                    span_values.push_back(llvm::ConstantStruct::get(span_type, {
+                        get_runtime_error_string(s.filename),
+                        llvm::ConstantInt::get(i32, s.start_l),
+                        llvm::ConstantInt::get(i32, s.start_c),
+                        llvm::ConstantInt::get(i32, s.last_l),
+                        llvm::ConstantInt::get(i32, s.last_c)}));
+                }
+                label_values.push_back(llvm::ConstantStruct::get(label_type, {
+                    llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), labels[i].primary),
+                    get_runtime_error_string(labels[i].message),
+                    create_constant_array(span_type, span_values),
+                    llvm::ConstantInt::get(i32, span_values.size())}));
+            }
+            llvm::GlobalVariable* info_global = new llvm::GlobalVariable(*module, info_type,
+                true, llvm::GlobalValue::PrivateLinkage,
+                llvm::ConstantStruct::get(info_type, {
+                    get_runtime_error_string(message),
+                    create_constant_array(label_type, label_values),
+                    llvm::ConstantInt::get(i32, labels.size())}));
+            info_global->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+            info = llvm::ConstantExpr::getBitCast(info_global, i8_ptr);
+        }
+        call_args[0] = info;
+
+        llvm::Function* error_fn = LLVM::get_or_declare_function(*module,
+            "_lcompilers_runtime_error_exit", void_type, {i8_ptr}, true);
+        error_fn->addFnAttr(llvm::Attribute::NoReturn);
+        error_fn->addFnAttr(llvm::Attribute::NoUnwind);
+        error_fn->addFnAttr(llvm::Attribute::Cold);
+        builder->CreateCall(error_fn, call_args);
+        builder->CreateUnreachable();
+        start_new_block(mergeBB);
     }
     std::string LLVMUtils::get_llvm_type_as_string(llvm::Type* type){
         return LLVM::get_type_as_string(type);
@@ -2193,16 +2270,11 @@ namespace LCompilers {
 
     llvm::Function* LLVMUtils::_Deallocate() {
         std::string func_name = "_lfortran_free_alloc";
-        llvm::Function *free_fn = module->getFunction(func_name);
-        if (!free_fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {
-                        llvm::Type::getInt8Ty(context)->getPointerTo(),
-                        character_type
-                    }, false);
-            free_fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, func_name, module);
-        }
+        llvm::Function *free_fn = LLVM::get_or_declare_function(*module, func_name,
+                void_type, {
+                    i8_ptr,
+                    character_type
+                });
         return free_fn;
     }
 
@@ -2265,16 +2337,11 @@ namespace LCompilers {
                                              std::string runtime_func_name, llvm::Module& module)
     {
         llvm::Type* character_type = llvm::Type::getInt8Ty(context)->getPointerTo();
-        llvm::Function *fn = module.getFunction(runtime_func_name);
-        if(!fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getInt1Ty(context), {
-                        character_type->getPointerTo(),
-                        character_type->getPointerTo()
-                    }, false);
-            fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, &module);
-        }
+        llvm::Function *fn = LLVM::get_or_declare_function(module, runtime_func_name,
+                i1, {
+                    character_type->getPointerTo(),
+                    character_type->getPointerTo()
+                });
         llvm::AllocaInst *pleft_arg = LLVMUtils::CreateAlloca(character_type);
         LLVM::CreateStore(*builder, left_arg, pleft_arg);
         llvm::AllocaInst *pright_arg = LLVMUtils::CreateAlloca(character_type);
@@ -2898,7 +2965,6 @@ namespace LCompilers {
         }
         ASR::String_t* dest_str_type = ASRUtils::get_string_type(dest_type);
         ASR::String_t* src_str_type = ASRUtils::get_string_type(src_type);
-        llvm::Type* i64 = llvm::Type::getInt64Ty(context);
 
         llvm::Value* src_data = get_string_data(src_str_type, src);
         llvm::Value* src_len = get_string_length(src_str_type, src);
@@ -2940,21 +3006,16 @@ namespace LCompilers {
         }
 
         std::string runtime_func_name = "_lfortran_strcpy_alloc";
-        llvm::Function *fn = module->getFunction(runtime_func_name);
-        if (!fn) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context),
-                    {
-                        llvm::Type::getInt8Ty(context)->getPointerTo(),
-                        llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(),
-                        llvm::Type::getInt64Ty(context)->getPointerTo(),
-                        llvm::Type::getInt8Ty(context), llvm::Type::getInt8Ty(context),
-                        llvm::Type::getInt8Ty(context)->getPointerTo(),
-                        llvm::Type::getInt64Ty(context), llvm::Type::getInt32Ty(context)
-                    }, false);
-            fn = llvm::Function::Create(function_type,
-                    llvm::Function::ExternalLinkage, runtime_func_name, module);
-        }
+        llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
+                void_type,
+                {
+                    i8_ptr,
+                    i8_ptr->getPointerTo(),
+                    i64->getPointerTo(),
+                    i8, i8,
+                    i8_ptr,
+                    i64, i32
+                });
         llvm::Value* allocator = get_allocator(module);
         return builder->CreateCall(fn, {
             allocator,
@@ -3158,7 +3219,8 @@ namespace LCompilers {
 
 llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     Allocator& /*al*/, ASR::Array_t* array_t, 
-    ASR::ArrayConstant_t* arrayConst_t, std::string name) 
+    ASR::ArrayConstant_t* arrayConst_t, std::string name,
+    std::string data_name, llvm::GlobalValue::LinkageTypes data_linkage)
 {
     LCOMPILERS_ASSERT(array_t->m_physical_type == ASR::PointerArray)
 
@@ -3201,12 +3263,15 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             sequence.resize(total_len, ' '); 
 
             llvm::ArrayType *char_array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context), total_len);
-            llvm::Constant *const_data_as_array = llvm::ConstantDataArray::getString(context, sequence, false);
-            
-            // Keep the exact original linkage, mutability, and literal "_data" naming convention
+            // A common symbol must be zero initialized
+            llvm::Constant *const_data_as_array =
+                data_linkage == llvm::GlobalValue::CommonLinkage
+                    ? llvm::ConstantAggregateZero::get(char_array_type)
+                    : llvm::ConstantDataArray::getString(context, sequence, false);
+
             llvm::GlobalVariable *global_string_as_array = new llvm::GlobalVariable(
                 *module, char_array_type, false, 
-                llvm::GlobalValue::PrivateLinkage, const_data_as_array, "_data"
+                data_linkage, const_data_as_array, data_name
             );
 
             llvm::Value *zero_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);

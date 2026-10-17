@@ -219,6 +219,7 @@ static const std::unordered_map<std::string, yytokentype> &identifier_token_map(
     {"out", KW_OUT},
     {"parameter", KW_PARAMETER},
     {"pass", KW_PASS},
+    {"pause", KW_PAUSE},
     {"pointer", KW_POINTER},
     {"post", KW_POST},
     {"precision", KW_PRECISION},
@@ -296,7 +297,19 @@ const std::vector<std::string> declarators{
             "type",
             "class",
             "public",
-            "private"
+            "private",
+            "allocatable",
+            "asynchronous",
+            "bind",
+            "codimension",
+            "contiguous",
+            "intent",
+            "optional",
+            "pointer",
+            "protected",
+            "target",
+            "value",
+            "volatile"
         };
 
 std::vector<std::string> lines{};
@@ -1388,6 +1401,12 @@ struct FixedFormRecursiveDescent {
 
         if (next_is(cur, "stop")) {
             push_token_advance(cur, "stop");
+            tokenize_line(cur);
+            return true;
+        }
+
+        if (next_is(cur, "pause")) {
+            push_token_advance(cur, "pause");
             tokenize_line(cur);
             return true;
         }

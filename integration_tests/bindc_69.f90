@@ -1,93 +1,40 @@
-! An absent optional dummy passed on to an optional dummy of a bind(c)
-! procedure is absent there too
 module bindc_69_mod
-    use iso_c_binding, only: c_int, c_double, c_ptr, c_loc, c_associated
+    use iso_c_binding, only: c_char
     implicit none
-    type, bind(c) :: pt
-        integer(c_int) :: x, y
-    end type
-contains
-    integer(c_int) function opt_int(p) bind(c)
-        integer(c_int), intent(in), optional :: p
-        opt_int = -1
-        if (present(p)) opt_int = p
-    end function
-
-    subroutine opt_double(p, r) bind(c)
-        real(c_double), intent(inout), optional :: p
-        integer(c_int), intent(out) :: r
-        r = -1
-        if (present(p)) then
-            r = int(p)
-            p = 8
-        end if
-    end subroutine
-
-    integer(c_int) function opt_struct(t) bind(c)
-        type(pt), intent(in), optional :: t
-        opt_struct = -1
-        if (present(t)) opt_struct = t%y
-    end function
-
-    integer(c_int) function opt_cptr(p) bind(c)
-        type(c_ptr), optional :: p
-        opt_cptr = -1
-        if (present(p)) opt_cptr = merge(1, 0, c_associated(p))
-    end function
-
-    integer function fwd_int(p)
-        integer(c_int), intent(in), optional :: p
-        fwd_int = opt_int(p) + 100 * opt_int(p)
-    end function
-
-    integer function fwd_double(p)
-        real(c_double), intent(inout), optional :: p
-        integer(c_int) :: r
-        call opt_double(p, r)
-        fwd_double = r
-    end function
-
-    integer function fwd_struct(t)
-        type(pt), intent(in), optional :: t
-        fwd_struct = opt_struct(t)
-    end function
-
-    integer function fwd_cptr(p)
-        type(c_ptr), optional :: p
-        fwd_cptr = opt_cptr(p)
-    end function
-
-    integer function fwd_twice(p)
-        integer(c_int), intent(in), optional :: p
-        fwd_twice = fwd_int(p)
-    end function
+    character(kind=c_char), bind(C, name="bindc_69_init") :: b(3) = ['x', 'y', 'z']
+    character(kind=c_char), bind(C, name="bindc_69_grid") :: g(3,2)
+    character(kind=c_char), bind(C, name="bindc_69_buf") :: buf(5)
 end module
 
 program bindc_69
-    use bindc_69_mod
+    use iso_c_binding, only: c_char, c_int
+    use bindc_69_mod, only: b, g, buf
     implicit none
-    integer(c_int), target :: z
-    real(c_double) :: d
-    type(pt) :: s
-    type(c_ptr) :: q
+    interface
+        integer(c_int) function bindc_69_check() bind(C)
+            import :: c_int
+        end function
+        subroutine bindc_69_fill() bind(C)
+        end subroutine
+    end interface
+    integer :: i, j
 
-    if (fwd_int(7) /= 707) error stop 1
-    if (fwd_int() /= -101) error stop 2
+    if (any(b /= ['x', 'y', 'z'])) error stop
+    do j = 1, 2
+        do i = 1, 3
+            g(i,j) = achar(iachar('A') + (i-1) + 3*(j-1))
+        end do
+    end do
+    buf = ['1', '2', '3', '4', '5']
+    if (bindc_69_check() /= 0) error stop
 
-    d = 3
-    if (fwd_double(d) /= 3) error stop 3
-    if (d /= 8) error stop 4
-    if (fwd_double() /= -1) error stop 5
-
-    s = pt(1, 9)
-    if (fwd_struct(s) /= 9) error stop 6
-    if (fwd_struct() /= -1) error stop 7
-
-    q = c_loc(z)
-    if (fwd_cptr(q) /= 1) error stop 8
-    if (fwd_cptr() /= -1) error stop 9
-
-    if (fwd_twice(7) /= 707) error stop 10
-    if (fwd_twice() /= -101) error stop 11
-    print *, "ok"
+    call bindc_69_fill()
+    if (any(b /= ['x', 'Y', 'z'])) error stop
+    do j = 1, 2
+        do i = 1, 3
+            if (g(i,j) /= achar(iachar('a') + (i-1) + 3*(j-1))) error stop
+        end do
+    end do
+    if (any(buf /= ['h', 'e', 'l', 'l', 'o'])) error stop
+    print *, b, g, buf
 end program

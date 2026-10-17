@@ -155,13 +155,13 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
             return false;
         }
         // An array assignment whose two sides overlap the same array
-        // needs a temporary (see materialize_aliased_assignments).
-        // If that temporary cannot be fixed-size, it is an error.
+        // needs a temporary (see materialize_aliased_assignments). One
+        // that cannot be fixed-size is a per-thread workspace, and it
+        // is an error when the host could not size it.
         std::vector<std::string> alias_arg_names;
         collect_kernel_arg_names(work, enclosing_block_scopes,
             alias_arg_names);
-        if (body_needs_unsupported_alias_temp(work.body, work.n_body,
-                true, alias_arg_names)) {
+        if (body_needs_unsupported_alias_temp(work, alias_arg_names)) {
             report_not_offloaded(loc,
                 GpuDecline(GpuDeclineReason::AliasTemporaryRuntimeSized));
             return false;
@@ -239,7 +239,7 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
         std::string in_routine;
         if (finder.reason == GpuDeclineReason::None) {
             for (ASR::Function_t *fn : reachable_routines(work.body,
-                    work.n_body)) {
+                    work.n_body, implementations)) {
                 GpuUnsupportedStatementFinder callee_finder(device_caps);
                 for (size_t i = 0; i < fn->n_body; i++) {
                     callee_finder.visit_stmt(*fn->m_body[i]);
@@ -294,10 +294,12 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
     // A device function may need a run-time sized local -- an
     // array-constructor temporary sized from an assumed-shape dummy,
     // say -- which a device that has no variable-length arrays cannot
-    // declare. Work out here which callees have to be spliced into the
+    // declare. Work out here which callees can be spliced into the
     // kernel body to move those locals to kernel scope, where the VLA
-    // workspace machinery applies. This is analysis only; the splice
-    // itself happens below, after the offload decision.
+    // workspace machinery applies; the locals of every other callee
+    // become arguments the kernel gives it (gpu_device_workspace.cpp).
+    // This is analysis only; the splice itself happens below, after the
+    // offload decision.
     functions_to_inline.clear();
     if (device_caps.splices_device_functions()) {
         std::map<ASR::Function_t*, bool> needs_inline_memo;
@@ -305,8 +307,8 @@ bool GpuOffloadVisitor::offloadable_before_rewrites(
         GpuDecline decline;
         if (!plan_device_function_inlining(work.body, work.n_body,
                 needs_inline_memo, on_stack, decline)) {
-            // A callee that cannot be spliced, or whose result allocation
-            // cannot reach the device, is an error.
+            // A callee whose result allocation cannot reach the device is
+            // an error.
             functions_to_inline.clear();
             if (!decline.declined()) {
                 decline = GpuDecline(GpuDeclineReason::DeviceFunctionInlining);

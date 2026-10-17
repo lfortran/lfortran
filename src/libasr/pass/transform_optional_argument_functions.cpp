@@ -485,13 +485,15 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 std::string m_arg_i_name = scope->get_unique_name("__libasr_created_variable_");
                 ASR::ttype_t* arg_type = ASRUtils::duplicate_type(al, func_arg_j->m_type);
                 if(ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(arg_type))){// Create String type with dummy len info.
-                    arg_type = ASRUtils::duplicate_type(al, arg_type); // New-duplicated node
                     ASR::String_t* str = ASR::down_cast<ASR::String_t>(
                         ASRUtils::extract_type(arg_type));
-                    if( str->m_len &&
-                        !ASR::is_a<ASR::IntegerConstant_t>(*str->m_len)){
+                    // The absent argument is represented by a local, which
+                    // cannot inherit an assumed length from the dummy.
+                    if( str->m_len_kind == ASR::AssumedLength ||
+                        (str->m_len && !ASR::is_a<ASR::IntegerConstant_t>(*str->m_len))){
                         str->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arg_type->base.loc, 0,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, arg_type->base.loc, 4))));
+                        str->m_len_kind = ASR::ExpressionLength;
                     }
                 }
                 ASR::symbol_t* arg_decl = func_arg_j->m_type_declaration;

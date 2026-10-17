@@ -681,6 +681,7 @@
                                                 (Integer 4)
                                                 ColMajor
                                                 ()
+                                                .false.
                                             ))
                                             ((ArrayItem
                                                 (Var 6 idx)
@@ -702,6 +703,7 @@
                                                 (Integer 4)
                                                 ColMajor
                                                 ()
+                                                .false.
                                             ))]
                                             ()
                                             .false.
@@ -741,6 +743,7 @@
                                                             (Integer 4)
                                                             ColMajor
                                                             ()
+                                                            .false.
                                                         )
                                                         ())]
                                                         (StructType
@@ -753,6 +756,7 @@
                                                         )
                                                         ColMajor
                                                         ()
+                                                        .false.
                                                     ))
                                                     ((ArrayItem
                                                         (Var 6 list)
@@ -765,6 +769,7 @@
                                                             (Integer 4)
                                                             ColMajor
                                                             ()
+                                                            .false.
                                                         )
                                                         ())]
                                                         (StructType
@@ -777,6 +782,7 @@
                                                         )
                                                         ColMajor
                                                         ()
+                                                        .false.
                                                     ))]
                                                     (Logical 4)
                                                     ()
@@ -806,6 +812,7 @@
                                                         (Integer 4)
                                                         ColMajor
                                                         ()
+                                                        .false.
                                                     ))
                                                     ((ArrayItem
                                                         (Var 6 idx)
@@ -815,6 +822,7 @@
                                                         (Integer 4)
                                                         ColMajor
                                                         ()
+                                                        .false.
                                                     ))]
                                                     ()
                                                     .false.
@@ -834,6 +842,7 @@
                                                 (Integer 4)
                                                 ColMajor
                                                 ()
+                                                .false.
                                             ))
                                             ((ArrayItem
                                                 (Var 6 idx)
@@ -843,6 +852,7 @@
                                                 (Integer 4)
                                                 ColMajor
                                                 ()
+                                                .false.
                                             ))]
                                             ()
                                             .false.
@@ -1451,6 +1461,7 @@
                                                 )
                                                 ColMajor
                                                 ()
+                                                .false.
                                             )
                                             (ArrayItem
                                                 (Var 5 sorted)
@@ -1463,6 +1474,7 @@
                                                     (Integer 4)
                                                     ColMajor
                                                     ()
+                                                    .false.
                                                 )
                                                 ())]
                                                 (StructType
@@ -1475,6 +1487,7 @@
                                                 )
                                                 ColMajor
                                                 ()
+                                                .false.
                                             )
                                             ()
                                             .false.

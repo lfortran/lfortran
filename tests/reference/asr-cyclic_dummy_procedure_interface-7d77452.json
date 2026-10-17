@@ -1,0 +1,13 @@
+{
+    "basename": "asr-cyclic_dummy_procedure_interface-7d77452",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/cyclic_dummy_procedure_interface.f90",
+    "infile_hash": "8000ce7d3b292d64bbeccc01f471dac316a059ef75b49cc511739e89",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-cyclic_dummy_procedure_interface-7d77452.stderr",
+    "stderr_hash": "23613a8223ec5500dbc4c0488dd4e13b50f2f7f1740aa3cf0fe17532",
+    "returncode": 2
+}

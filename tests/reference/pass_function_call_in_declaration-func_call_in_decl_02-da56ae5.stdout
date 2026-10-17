@@ -164,6 +164,7 @@
                                 (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (StringConstant
@@ -189,6 +190,7 @@
                                 (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             NotEq
                             (StringConstant

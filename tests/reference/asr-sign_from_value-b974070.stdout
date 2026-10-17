@@ -954,6 +954,7 @@
                             (Real 4)
                             ColMajor
                             ()
+                            .false.
                         )
                         ()
                         .false.
@@ -983,6 +984,7 @@
                                 (Real 4)
                                 ColMajor
                                 ()
+                                .true.
                             )
                             (Logical 4)
                             ()

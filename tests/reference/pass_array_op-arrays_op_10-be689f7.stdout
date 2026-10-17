@@ -149,6 +149,7 @@
                                                 (Real 4)
                                                 ColMajor
                                                 ()
+                                                .false.
                                             )
                                             (Cast
                                                 (Var 3 i)
@@ -180,6 +181,7 @@
                                                     (Real 4)
                                                     ColMajor
                                                     ()
+                                                    .false.
                                                 )]
                                                 FormatFortran
                                                 (Allocatable
@@ -199,6 +201,7 @@
                                                     (Real 4)
                                                     ColMajor
                                                     ()
+                                                    .false.
                                                 )
                                                 NotEq
                                                 (Cast
@@ -294,6 +297,7 @@
                                             (Real 4)
                                             ColMajor
                                             ()
+                                            .false.
                                         )
                                         (RealConstant
                                             1.000000
@@ -312,6 +316,7 @@
                                             (Real 4)
                                             ColMajor
                                             ()
+                                            .false.
                                         )
                                         (RealConstant
                                             1.000000

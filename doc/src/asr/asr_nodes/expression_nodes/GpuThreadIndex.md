@@ -26,7 +26,11 @@ The value of the expression.
 
 Every thread of a kernel runs the same body, and this is what tells them
 apart. The index counts from zero within the block; the position in the whole
-grid is `GpuBlockIndex * GpuBlockSize + GpuThreadIndex`.
+grid is `GpuBlockIndex * GpuBlockSize + GpuThreadIndex`. In a kernel whose
+layout has `lanes` (see
+[gpu_kernel_layout](../helper_nodes/gpu_kernel_layout.md)), that position
+numbers the iterations, which several threads share: the lanes, which
+[GpuLaneIndex](GpuLaneIndex.md) tells apart.
 
 ## Examples
 
