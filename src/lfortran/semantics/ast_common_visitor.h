@@ -11994,6 +11994,14 @@ public:
                     }
                 }
             }
+            // All type parameters, KIND and LEN, in the order of the
+            // type-param-name-list, which positional type parameter values
+            // follow.
+            Vec<char*> type_params;
+            type_params.reserve(al, x.n_namelist);
+            for (size_t i = 0; i < x.n_namelist; i++) {
+                type_params.push_back(al, s2c(al, to_lower(x.m_namelist[i])));
+            }
 
             // First pass: process only kind/len parameter declarations
             for (size_t i = 0; i < x.n_items; i++) {
@@ -12053,7 +12061,8 @@ public:
                 is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, struct_access, false, is_abstract,
                 is_sequence,
                 nullptr, 0, nullptr, parent_sym,
-                kind_params.p, kind_params.size());
+                kind_params.p, kind_params.size(),
+                type_params.p, type_params.size(), nullptr, 0);
             ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
             parent_scope_pdt->add_symbol(dt_name, derived_type_sym);
 
@@ -12169,7 +12178,7 @@ public:
             is_bindc ? ASR::abiType::BindC : ASR::abiType::Source, struct_access, false, is_abstract,
             is_sequence,
             nullptr, 0, nullptr, parent_sym,
-            nullptr, 0);
+            nullptr, 0, nullptr, 0, nullptr, 0);
 
         ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
@@ -12837,7 +12846,10 @@ public:
             pdt_final_proc_names.p, pdt_final_proc_names.size(),
             ASR::abiType::Source, dflt_access, false, pdt_struct->m_is_abstract,
             pdt_struct->m_is_sequence,
-            nullptr, 0, nullptr, new_parent, nullptr, 0);
+            nullptr, 0, nullptr, new_parent, nullptr, 0,
+            pdt_struct->m_type_params, pdt_struct->n_type_params,
+            pdt_struct->m_len_dependent_members,
+            pdt_struct->n_len_dependent_members);
 
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(
@@ -13389,7 +13401,8 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, current_scope,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
-                                                        nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0,
+                                                        nullptr, 0, nullptr, 0);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -13760,7 +13773,8 @@ public:
                         ASR::asr_t* dtype = ASR::make_Struct_t(al, loc, struct_symtab,
                                                         s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                         nullptr, 0, ASR::abiType::Source, dflt_access, false, true, false,
-                                                        nullptr, 0, nullptr, nullptr, nullptr, 0);
+                                                        nullptr, 0, nullptr, nullptr, nullptr, 0,
+                                                        nullptr, 0, nullptr, 0);
                         ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);

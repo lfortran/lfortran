@@ -2,12 +2,12 @@
     "basename": "asr-allocate_unrelated_dynamic_type-4e638cf",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/allocate_unrelated_dynamic_type.asr",
-    "infile_hash": "1b97b151406cacf4499c823a9c45f9aea29d7d378b42ccf0f0862389",
+    "infile_hash": "6da2eed89f2dffc02b867d347d1cd96423cb97e0643b9646f32023e6",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-allocate_unrelated_dynamic_type-4e638cf.stderr",
-    "stderr_hash": "93c9df75d139bd7dede580f7acec18101e8c1227912df7b695069b67",
+    "stderr_hash": "aa62c72d8c32c992fa2e1308b8b1a2e2ffe6470f652539f6eddc44af",
     "returncode": 2
 }

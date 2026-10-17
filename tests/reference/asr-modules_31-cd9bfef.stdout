@@ -429,6 +429,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 ),
                             fpm_update_settings:
                                 (Struct
@@ -550,6 +552,8 @@
                                     ()
                                     4 fpm_cmd_settings
                                     []
+                                    []
+                                    []
                                 )
                         })
                     fpm_cmd_update_modules_31
@@ -649,6 +653,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    []
                                     []
                                 ),
                             dependency_node_t:
@@ -801,6 +807,8 @@
                                     []
                                     ()
                                     9 dependency_config_t
+                                    []
+                                    []
                                     []
                                 ),
                             dependency_tree_t:
@@ -1054,6 +1062,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 ),
                             error_t:
                                 (Struct
@@ -1108,6 +1118,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    []
                                     []
                                 ),
                             update_dependency:

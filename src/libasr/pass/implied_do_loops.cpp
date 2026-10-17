@@ -1379,7 +1379,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                     loc, members_scope, s2c(al, name), nullptr, nullptr, 0,
                     members.p, members.size(), nullptr, 0, ASR::Source,
                     ASR::Public, false, false, false, nullptr, 0, nullptr,
-                    nullptr, nullptr, 0));
+                    nullptr, nullptr, 0, nullptr, 0, nullptr, 0));
                 ASR::down_cast<ASR::Struct_t>(sym)->m_struct_signature =
                     ASRUtils::make_StructType_t_util(al, loc, sym, true);
                 global_scope->add_symbol(name, sym);
@@ -1463,7 +1463,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 loc, members_scope, s2c(al, name), nullptr, nullptr, 0,
                 members.p, members.size(), nullptr, 0, ASR::Source,
                 ASR::Public, false, false, false, nullptr, 0, nullptr,
-                nullptr, nullptr, 0));
+                nullptr, nullptr, 0, nullptr, 0, nullptr, 0));
             ASR::down_cast<ASR::Struct_t>(sym)->m_struct_signature =
                 ASRUtils::make_StructType_t_util(al, loc, sym, true);
             global_scope->add_symbol(name, sym);

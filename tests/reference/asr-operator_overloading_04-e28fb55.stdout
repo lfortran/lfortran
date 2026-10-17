@@ -181,6 +181,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 ),
                             trim_string:
                                 (Function

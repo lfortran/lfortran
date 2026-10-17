@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.assignment.move_allocatable_operands]: Move assignment target and value must both be allocatable arrays, or both be allocatable noncharacter scalars with a target type compatible with the value
-   --> tests/asr/verify/assignment_move_type_mismatch.asr:158:12
+   --> tests/asr/verify/assignment_move_type_mismatch.asr:162:12
     |
-158 |           (Assignment
+162 |           (Assignment
     |            ^^^^^^^^^^ failed here

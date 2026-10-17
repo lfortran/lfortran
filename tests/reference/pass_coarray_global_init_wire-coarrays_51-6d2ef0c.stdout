@@ -146,6 +146,8 @@
                     ()
                     ()
                     []
+                    []
+                    []
                 ),
             __module_prif_prif_get:
                 (Function
@@ -920,6 +922,8 @@
                     []
                     ()
                     ()
+                    []
+                    []
                     []
                 ),
             __module_prif_prif_this_image_no_coarray:
@@ -1859,6 +1863,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 ),
                             pts:
                                 (Variable
@@ -2276,6 +2282,8 @@
                     []
                     ()
                     ()
+                    []
+                    []
                     []
                 )
         })

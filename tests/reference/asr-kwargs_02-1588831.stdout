@@ -352,6 +352,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 )
                         })
                     kwargs_02_stdlib_logger

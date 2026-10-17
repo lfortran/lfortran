@@ -2,12 +2,12 @@
     "basename": "asr-deferred_binding_not_overridden-d06c875",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/deferred_binding_not_overridden.asr",
-    "infile_hash": "5167820032b57cbd81744159895b8528123cd130f4b4e42f88f9ab23",
+    "infile_hash": "2ef0d218f1fefb3bae15c81387dcf39f101ac625b61e9955eae520be",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-deferred_binding_not_overridden-d06c875.stderr",
-    "stderr_hash": "b8093cb6d1a9bb5dec8b2af3d77baa6aceacb051df4e1958d67d17b3",
+    "stderr_hash": "bebe361f13ff5b402e99c39d7b6d1ec0979b79c4a663dc8de195f647",
     "returncode": 2
 }

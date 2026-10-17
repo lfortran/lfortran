@@ -133,6 +133,8 @@
                                     ()
                                     15 toml_structure
                                     []
+                                    []
+                                    []
                                 ),
                             toml_structure:
                                 (Struct
@@ -169,6 +171,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    []
                                     []
                                 )
                         })
@@ -639,6 +643,8 @@
                                     ()
                                     4 toml_value
                                     []
+                                    []
+                                    []
                                 ),
                             toml_ordered:
                                 (ExternalSymbol
@@ -810,6 +816,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    []
                                     []
                                 )
                         })
