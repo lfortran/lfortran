@@ -3108,6 +3108,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 ASRUtils::ReplaceFunctionParamWithArg replacer(
                     al, type_args.p, type_args.size());
                 replacer.replace_type(return_type);
+                ASRUtils::ProcedureTypeImporter(al, current_scope, true)
+                    .replace_ttype(return_type);
                 x->m_type = return_type;
             }
         }

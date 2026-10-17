@@ -1,4 +1,15 @@
+module string_trim_evaluation_helpers
+    implicit none
+contains
+    function at_least_one(value) result(result)
+        character(*), intent(in) :: value
+        character(max(1, len(value))) :: result
+        result = value
+    end function
+end module
+
 program string_trim_evaluation_01
+    use string_trim_evaluation_helpers, only: at_least_one
     implicit none
     integer :: calls = 0, failures = 0, i, j, condition_calls = 0, wrapper_calls = 0
     character(2) :: text
@@ -173,6 +184,19 @@ program string_trim_evaluation_01
 
     call check_shape_length(['a', 'b', 'c'])
 
+    calls = 0
+    dynamic = at_least_one(trim(get_varying())) // '!'
+    call check(dynamic, 'abc!', 1)
+    if (len(dynamic) /= 4) error stop 37
+
+    calls = 0
+    array = at_least_one(trim(get_varying())) // '!'
+    if (any(array /= 'abc!') .or. calls /= 1) error stop 38
+
+    calls = 0
+    i = len(at_least_one(trim(get_varying())))
+    if (i /= 3 .or. calls /= 1) error stop 40
+
     do i = 0, 3
         calls = 0
         dynamic = trim(get_dynamic(i)) // '!'
@@ -199,6 +223,11 @@ program string_trim_evaluation_01
         array = bracket(copy_text(trim(get_dynamic(i)))) // '!'
         if (any(array /= '[' // repeat('x', i) // ']!') .or. calls /= 1) error stop 33
         if (wrapper_calls /= 2) error stop 34
+
+        calls = 0
+        dynamic = at_least_one(trim(get_dynamic(i))) // '!'
+        call check(dynamic, repeat('x', i) // repeat(' ', max(1 - i, 0)) // '!', 1)
+        if (len(dynamic) /= max(1, i) + 1) error stop 39
     end do
 
     if (failures /= 0) error stop 5
