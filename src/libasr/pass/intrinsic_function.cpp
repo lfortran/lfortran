@@ -142,15 +142,33 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
                 // every dimension, so the implementation takes them as
                 // assumed-shape dummies. An allocatable or pointer dummy would
                 // keep the lower bounds of the actual argument instead.
-                arg_type = ASRUtils::ArrIntrinsic::assumed_length_if_deferred(al,
+                arg_type = ASRUtils::ArrIntrinsic::assumed_length_if_not_constant(al,
                     ASRUtils::type_get_past_allocatable_pointer(arg_type));
+            } else if( ASRUtils::ArrIntrinsic::has_variable_string_length(arg_type) ) {
+                arg_type = ASRUtils::ArrIntrinsic::assumed_length_if_not_constant(al, arg_type);
             }
             arg_types.push_back(al, arg_type);
+        }
+        // The implementation cannot use a result length that names variables
+        // of the caller, so its result gets an assumed length. The call stays
+        // in the caller and keeps the length expression.
+        ASR::ttype_t* return_type = x->m_type;
+        bool caller_len_result = ASRUtils::ArrIntrinsic::has_variable_string_length(x->m_type);
+        if( caller_len_result ) {
+            return_type = ASRUtils::ArrIntrinsic::assumed_length_if_not_constant(al,
+                ASRUtils::type_get_past_allocatable_pointer(x->m_type));
+            if( ASRUtils::is_allocatable(x->m_type) ) {
+                return_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al,
+                    return_type->base.loc, return_type));
+            }
         }
         ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
             PassUtils::instantiation_scope(global_scope, caller_scope,
                 new_args),
-            arg_types, x->m_type, new_args, x->m_overload_id, index_kind);
+            arg_types, return_type, new_args, x->m_overload_id, index_kind);
+        if( caller_len_result && ASR::is_a<ASR::FunctionCall_t>(*current_expr_) ) {
+            ASR::down_cast<ASR::FunctionCall_t>(current_expr_)->m_type = x->m_type;
+        }
         ASR::expr_t* func_call = current_expr_;
         *current_expr = current_expr_;
         bool condition = ASR::is_a<ASR::FunctionCall_t>(*func_call);

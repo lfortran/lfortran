@@ -2001,6 +2001,8 @@ RUN(NAME intrinsics_495 LABELS gfortran llvm) # cshift/eoshift of deferred-lengt
 RUN(NAME intrinsics_496 LABELS gfortran llvm) # transpose/spread of deferred-length character arrays (#14775)
 RUN(NAME intrinsics_497 LABELS gfortran llvm) # spread with ncopies from size() of a parameter array (#15327)
 RUN(NAME intrinsics_498 LABELS gfortran llvm) # compile-time dot_product/merge_bits/max/min/ibset/btest of integer(8)
+RUN(NAME intrinsics_499 LABELS gfortran llvm) # pack/cshift/eoshift/maxval of a character array whose length is not a constant (#15132)
+RUN(NAME intrinsics_500 LABELS gfortran llvm) # eoshift of a character array without boundary fills with blanks of the element length (#15132)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
