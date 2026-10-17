@@ -2688,11 +2688,20 @@ public:
         }
         read_write = (_type == AST::decl_stmtType::Write) ? "~write" : "~read";
         read_write += (formatted) ? "_formatted" : "_unformatted";
+        // The integer dummies of a defined input/output procedure are of
+        // default kind, so the arguments built for its call must be too.
+        ASR::ttype_t* dtio_int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+            compiler_options.po.default_integer_kind));
+        ASR::stmt_t* dtio_iostat_copy_back = nullptr;
         if (n_values > 0) {
             Vec<ASR::expr_t*> overload_args;
             overload_args.reserve(al, 2);
             overload_args.push_back(al, a_values_vec[0]);
-            overload_args.push_back(al, a_unit);
+            ASR::expr_t* dtio_unit = a_unit;
+            if (a_unit && ASRUtils::is_integer(*ASRUtils::expr_type(a_unit))) {
+                dtio_unit = CastingUtil::perform_casting(a_unit, dtio_int_type, al, loc);
+            }
+            overload_args.push_back(al, dtio_unit);
             if (formatted) {
                 if (a_fmt) {
                     // For user-defined derived-type I/O, the iotype argument
@@ -2747,7 +2756,7 @@ public:
                     overload_args.push_back(al, list_directed);
                 }
                 const Location& loc = read_write_stmt.base.loc;
-                ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                ASR::ttype_t* int_type = dtio_int_type;
                 Vec<ASR::dimension_t> dims;
                 dims.reserve(al, 1);
                 ASR::dimension_t dim;
@@ -2764,10 +2773,10 @@ public:
             }
             ASR::expr_t *a_tmp_iostat = a_iostat;
             std::string tmp_iostat_name;
-            if (a_tmp_iostat == nullptr) {
-                ASR::ttype_t* int_type =
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-
+            // An iostat variable of another kind gets the value through a
+            // temporary, copied back after the call.
+            if (a_tmp_iostat == nullptr || ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(a_iostat)) != compiler_options.po.default_integer_kind) {
                 tmp_iostat_name =
                     current_scope->get_unique_name("lfortran_tmp_iostat");
 
@@ -2775,10 +2784,17 @@ public:
                     declare_implicit_variable2(
                         loc, tmp_iostat_name,
                         ASRUtils::intent_local,
-                        int_type);
+                        dtio_int_type);
 
                 a_tmp_iostat =
                     ASRUtils::EXPR(ASR::make_Var_t(al, loc, iostat_sym));
+                if (a_iostat != nullptr) {
+                    dtio_iostat_copy_back = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                        al, loc, a_iostat, CastingUtil::perform_casting(a_tmp_iostat,
+                            ASRUtils::type_get_past_allocatable_pointer(
+                                ASRUtils::expr_type(a_iostat)), al, loc),
+                        nullptr, false, false));
+                }
             }
             overload_args.push_back(al, a_tmp_iostat);
             ASR::expr_t *a_tmp_iomsg = a_iomsg;
@@ -2923,6 +2939,7 @@ public:
             if (overloaded_stmt != nullptr) {
                 needs_internal_iostat = true;
             } else {
+                dtio_iostat_copy_back = nullptr;
                 // No DTIO overload found; remove temp variables from scope
                 if (!tmp_iostat_name.empty()) {
                     current_scope->erase_symbol(tmp_iostat_name);
@@ -3066,6 +3083,9 @@ public:
             tmp_vec.push_back(file_write_asr_t);
         }
         tmp_vec.push_back(tmp);
+        if (dtio_iostat_copy_back != nullptr) {
+            tmp_vec.push_back((ASR::asr_t*)dtio_iostat_copy_back);
+        }
         if (_type == AST::decl_stmtType::Read && (end_label != -1 || err_label != -1)) {
             emit_read_end_err_label_jumps(end_label, err_label, a_iostat, loc, tmp_vec);
             if (inserted_iostat) {
