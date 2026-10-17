@@ -173,6 +173,41 @@ static std::string compute_llvm_function_name(
     return fn_name;
 }
 
+// The name of an array physical type, for internal compiler error messages.
+static std::string array_physical_type_name(ASR::array_physical_typeType t) {
+    switch (t) {
+        case ASR::array_physical_typeType::DescriptorArray:
+            return "DescriptorArray";
+        case ASR::array_physical_typeType::PointerArray:
+            return "PointerArray";
+        case ASR::array_physical_typeType::UnboundedPointerArray:
+            return "UnboundedPointerArray";
+        case ASR::array_physical_typeType::FixedSizeArray:
+            return "FixedSizeArray";
+        case ASR::array_physical_typeType::StringArraySinglePointer:
+            return "StringArraySinglePointer";
+        case ASR::array_physical_typeType::NumPyArray:
+            return "NumPyArray";
+        case ASR::array_physical_typeType::ISODescriptorArray:
+            return "ISODescriptorArray";
+        case ASR::array_physical_typeType::SIMDArray:
+            return "SIMDArray";
+        case ASR::array_physical_typeType::AssumedRankArray:
+            return "AssumedRankArray";
+    }
+    return "unknown array physical type " + std::to_string(static_cast<int>(t));
+}
+
+// The internal error for an array physical cast that the LLVM backend cannot
+// lower.
+static std::string unsupported_array_physical_cast_message(
+        ASR::array_physical_typeType old_type,
+        ASR::array_physical_typeType new_type) {
+    return "internal error: the LLVM backend does not support the array "
+        "physical cast from " + array_physical_type_name(old_type) + " to "
+        + array_physical_type_name(new_type);
+}
+
 // The variables an expression references, in the order it references them.
 class ReferencedVariables : public ASR::BaseWalkVisitor<ReferencedVariables> {
 public:
@@ -5092,38 +5127,6 @@ public:
                         unsigned idx_bits = idx_type->getIntegerBitWidth();
                         dim_size = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0));
                         check_for_bounds = false;
-                    }
-                    llvm_diminfo.push_back(al, dim_start);
-                    llvm_diminfo.push_back(al, dim_size);
-                }
-                ptr_loads = ptr_loads_copy;
-            } else if( array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
-                int64_t ptr_loads_copy = ptr_loads;
-                for( size_t idim = 0; idim < x.n_args; idim++ ) {
-                    llvm::Value* dim_start = nullptr;
-                    if (m_dims[idim].m_start) {
-                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
-                        this->visit_expr_wrapper(m_dims[idim].m_start, true);
-                        dim_start = tmp;
-                    } else {
-                        llvm::Type* idx_type = arr_descr->get_index_type();
-                        unsigned idx_bits = idx_type->getIntegerBitWidth();
-                        dim_start = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1));
-                    }
-                    llvm::Value* dim_size = nullptr;
-                    if (m_dims[idim].m_length) {
-                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_length));
-                        if (is_intent_in) {
-                            this->visit_expr_wrapper(m_dims[idim].m_length, true);
-                        } else {
-                            load_array_size_deep_copy(m_dims[idim].m_length);
-                        }
-                        dim_size = tmp;
-                    } else {
-                        // Last dimension of assumed-size array has no length
-                        llvm::Type* idx_type = arr_descr->get_index_type();
-                        unsigned idx_bits = idx_type->getIntegerBitWidth();
-                        dim_size = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0));
                     }
                     llvm_diminfo.push_back(al, dim_start);
                     llvm_diminfo.push_back(al, dim_size);
@@ -13215,7 +13218,10 @@ public:
 
                     builder->CreateStore(target_desc, llvm_target);
                 } else {
-                    throw CodeGenError("Unsupported ArrayPhysicalCast in Associate with class value and non-class array target");
+                    throw CodeGenError(unsupported_array_physical_cast_message(
+                        apc->m_old, apc->m_new) + " in an associate of a "
+                        "polymorphic selector with a non-polymorphic array "
+                        "target", x.m_value->base.loc);
                 }
             } else if (!is_target_class && is_value_class) {
                 llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
@@ -16274,7 +16280,8 @@ public:
                 m_arg, m_type, module.get())->getPointerTo();
             tmp = builder->CreateBitCast(tmp, target_type);
         } else {
-            LCOMPILERS_ASSERT(false);
+            throw CodeGenError(unsupported_array_physical_cast_message(
+                m_old, m_new), m_arg->base.loc);
         }
     }
 
