@@ -544,15 +544,14 @@ ASR::expr_t* get_first_array_function_args(T* func) {
 ASR::symbol_t* extract_symbol(ASR::expr_t* expr);
 
 /*
-    sets allocation size of an elemental function, which can be
+    sets allocation dimensions of an elemental function, which can be
     either an intrinsic elemental function or a user-defined
 */
 template <typename T>
-void set_allocation_size_elemental_function(
+void set_allocation_dims_elemental_function(
     Allocator& al, const Location& loc,
     T* elemental_function,
-    Vec<ASR::dimension_t>& allocate_dims,
-    ASR::expr_t* &len_allocate_expr
+    Vec<ASR::dimension_t>& allocate_dims
 ) {
     ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                 al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
@@ -571,21 +570,6 @@ void set_allocation_size_elemental_function(
             ASRUtils::expr_type(int32_one), nullptr));
         allocate_dim.m_length = size_i_1;
         allocate_dims.push_back(al, allocate_dim);
-    }
-    // Set len_allocate_expr ( e.g. `allocate(character(5) :: arr(10))` )
-    if( ASRUtils::is_character(*ASRUtils::expr_type(first_array_arg)) ) {
-        ASRUtils::ASRBuilder b(al, loc);
-        if constexpr (std::is_same_v<T, ASR::IntrinsicElementalFunction_t>) {
-            // The result of a concatenation is longer than its first operand.
-            if( elemental_function->m_intrinsic_id == static_cast<int64_t>(
-                    ASRUtils::IntrinsicElementalFunctions::StringConcat) ) {
-                len_allocate_expr = ASRUtils::StringConcat::get_safe_string_len(al, loc,
-                    &elemental_function->base,
-                    elemental_function->m_type, b);
-                return;
-            }
-        }
-        len_allocate_expr = b.StringLen(first_array_arg);
     }
 }
 
@@ -667,8 +651,7 @@ bool set_allocation_size(
                 len_allocte_expr = ASRUtils::get_string_type(type)->m_len;
             }
             if (ASRUtils::is_elemental(function_call->m_name)) {
-                set_allocation_size_elemental_function(al, loc, function_call, allocate_dims,
-                    len_allocte_expr);
+                set_allocation_dims_elemental_function(al, loc, function_call, allocate_dims);
                 break;
             }
             ASRUtils::ExprStmtDuplicator duplicator(al);
@@ -922,8 +905,20 @@ bool set_allocation_size(
         case ASR::exprType::IntrinsicElementalFunction: {
             ASR::IntrinsicElementalFunction_t* intrinsic_elemental_function =
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
-            set_allocation_size_elemental_function(al, loc, intrinsic_elemental_function,
-                        allocate_dims, len_allocte_expr);
+            set_allocation_dims_elemental_function(al, loc, intrinsic_elemental_function,
+                        allocate_dims);
+            if( ASRUtils::is_character(*intrinsic_elemental_function->m_type) ) {
+                ASRUtils::ASRBuilder b(al, loc);
+                if( ASRUtils::get_string_type(intrinsic_elemental_function->m_type)->m_len ||
+                    intrinsic_elemental_function->m_intrinsic_id == static_cast<int64_t>(
+                        ASRUtils::IntrinsicElementalFunctions::StringConcat) ) {
+                    len_allocte_expr = ASRUtils::StringConcat::get_safe_string_len(al, loc,
+                        value, intrinsic_elemental_function->m_type, b);
+                } else {
+                    len_allocte_expr = b.StringLen(
+                        get_first_array_function_args(intrinsic_elemental_function));
+                }
+            }
             break;
         }
         case ASR::exprType::IntrinsicArrayFunction: {

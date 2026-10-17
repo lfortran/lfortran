@@ -81,7 +81,13 @@ its descriptor from them. Both temporary creation and return-slot creation use
 the same string-type normalization.
 
 For a nonallocatable result, the caller's allocation carries the prepared
-length along with any extents. An allocatable result owns its allocation in the
+length along with any extents. For elemental calls, array actuals supply the
+iteration shape, not the result's element type, kind or character length.
+Allocation and assignment reallocation preserve the prepared result length
+even when it differs from every actual's length or a scalar actual is
+broadcast.
+
+An allocatable result owns its allocation in the
 callee, but may still have an explicit, nondeferred character length. Before
 passing a deferred-length return slot to its converted `intent(out)` result
 dummy, the caller establishes that explicit length with an allocation (empty
