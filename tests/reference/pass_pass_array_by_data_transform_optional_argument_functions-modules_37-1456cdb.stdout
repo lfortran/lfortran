@@ -814,8 +814,6 @@
                                         2 build_package_build_target_ptr____0
                                         [((ArrayPhysicalCast
                                             (Var 10 targets)
-                                            DescriptorArray
-                                            PointerArray
                                             (Allocatable
                                                 (Array
                                                     (StructType

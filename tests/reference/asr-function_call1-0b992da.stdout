@@ -342,8 +342,6 @@
                                             [((Var 5 self))
                                             ((ArrayPhysicalCast
                                                 (Var 5 x)
-                                                DescriptorArray
-                                                DescriptorArray
                                                 (Array
                                                     (Real 4)
                                                     [(()

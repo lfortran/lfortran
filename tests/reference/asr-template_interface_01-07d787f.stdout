@@ -3426,8 +3426,6 @@
                                             ()
                                             [((ArrayPhysicalCast
                                                 (Var 17 ai)
-                                                FixedSizeArray
-                                                DescriptorArray
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -3452,8 +3450,6 @@
                                             ()
                                             [((ArrayPhysicalCast
                                                 (Var 17 ar)
-                                                FixedSizeArray
-                                                DescriptorArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -3501,8 +3497,6 @@
                                                 ()
                                                 [((ArrayPhysicalCast
                                                     (Var 17 ai)
-                                                    FixedSizeArray
-                                                    DescriptorArray
                                                     (Array
                                                         (Integer 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -3531,8 +3525,6 @@
                                                 ()
                                                 [((ArrayPhysicalCast
                                                     (Var 17 ar)
-                                                    FixedSizeArray
-                                                    DescriptorArray
                                                     (Array
                                                         (Real 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)

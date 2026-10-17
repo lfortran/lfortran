@@ -800,8 +800,6 @@
                                 6 mergegp
                                 [((ArrayPhysicalCast
                                     (Var 6 a1)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -813,8 +811,6 @@
                                 ))
                                 ((ArrayPhysicalCast
                                     (Var 6 b1)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -844,8 +840,6 @@
                                 6 mergegp
                                 [((ArrayPhysicalCast
                                     (Var 6 a1)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -857,8 +851,6 @@
                                 ))
                                 ((ArrayPhysicalCast
                                     (Var 6 b1)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -870,8 +862,6 @@
                                 ))
                                 ((ArrayPhysicalCast
                                     (Var 6 m1)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -900,8 +890,6 @@
                                 6 mergegp
                                 [((ArrayPhysicalCast
                                     (Var 6 a1)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -913,8 +901,6 @@
                                 ))
                                 ((ArrayPhysicalCast
                                     (Var 6 b1)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -926,8 +912,6 @@
                                 ))
                                 ((ArrayPhysicalCast
                                     (Var 6 m1)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -956,8 +940,6 @@
                                 6 mergegp
                                 [((ArrayPhysicalCast
                                     (Var 6 a2)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -969,8 +951,6 @@
                                 ))
                                 ((ArrayPhysicalCast
                                     (Var 6 b2)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -1000,8 +980,6 @@
                                 6 mergegp
                                 [((ArrayPhysicalCast
                                     (Var 6 a2)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -1013,8 +991,6 @@
                                 ))
                                 ((ArrayPhysicalCast
                                     (Var 6 b2)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -1026,8 +1002,6 @@
                                 ))
                                 ((ArrayPhysicalCast
                                     (Var 6 m2)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -1056,8 +1030,6 @@
                                 6 mergegp
                                 [((ArrayPhysicalCast
                                     (Var 6 a2)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -1069,8 +1041,6 @@
                                 ))
                                 ((ArrayPhysicalCast
                                     (Var 6 b2)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -1082,8 +1052,6 @@
                                 ))
                                 ((ArrayPhysicalCast
                                     (Var 6 m2)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Real 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)

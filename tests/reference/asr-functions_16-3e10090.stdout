@@ -869,8 +869,6 @@
                                             ()
                                             [((ArrayPhysicalCast
                                                 (Var 6 list)
-                                                DescriptorArray
-                                                DescriptorArray
                                                 (Array
                                                     (StructType
                                                         [(Allocatable
@@ -889,8 +887,6 @@
                                             ))
                                             ((ArrayPhysicalCast
                                                 (Var 6 idx)
-                                                DescriptorArray
-                                                DescriptorArray
                                                 (Array
                                                     (Integer 4)
                                                     [(()
@@ -917,8 +913,6 @@
                                             ()
                                             [((ArrayPhysicalCast
                                                 (Var 6 list)
-                                                DescriptorArray
-                                                DescriptorArray
                                                 (Array
                                                     (StructType
                                                         [(Allocatable
@@ -937,8 +931,6 @@
                                             ))
                                             ((ArrayPhysicalCast
                                                 (Var 6 idx)
-                                                DescriptorArray
-                                                DescriptorArray
                                                 (Array
                                                     (Integer 4)
                                                     [(()

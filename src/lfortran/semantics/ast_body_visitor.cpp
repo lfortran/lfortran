@@ -3376,9 +3376,7 @@ public:
                 ASR::ttype_t* desc_type = ASRUtils::create_array_type_with_empty_dims(
                     al, it->second, elem_type);
                 value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
-                    value->base.loc, value,
-                    ASR::array_physical_typeType::AssumedRankArray,
-                    ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr));
+                    value->base.loc, value, desc_type, nullptr));
             }
         }
         // A conditional expression produces a value, not an object, so it is
@@ -4187,8 +4185,7 @@ public:
                         ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(source));
                         ASR::ttype_t* new_type = ASRUtils::create_array_type_with_empty_dims(al, rank, elem_type);
                         source = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, source->base.loc,
-                            source, ASR::array_physical_typeType::AssumedRankArray,
-                            ASR::array_physical_typeType::DescriptorArray, new_type, nullptr));
+                            source, new_type, nullptr));
                     }
                 }
                 set_string_len_if_needed(x, alloc_args_vec, source_cond, source);
@@ -4298,8 +4295,7 @@ public:
                                                 al, n_dims, elem_type);
                                             mold_for_bounds = ASRUtils::EXPR(
                                                 ASRUtils::make_ArrayPhysicalCast_t_util(al, mold->base.loc,
-                                                    mold, ASR::array_physical_typeType::AssumedRankArray,
-                                                    ASR::array_physical_typeType::DescriptorArray, new_type, nullptr));
+                                                    mold, new_type, nullptr));
                                         }
                                     }
                                     Vec<ASR::dimension_t> mold_dims_vec; mold_dims_vec.reserve(al, n_dims);
@@ -4934,8 +4930,7 @@ public:
                         if (ASRUtils::is_class_type(variable_type) && rank == 0) {
                             cast_expr = m_selector;
                         } else {
-                            cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, m_selector->base.loc, m_selector,
-                                ASR::array_physical_typeType::AssumedRankArray, ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr));
+                            cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, m_selector->base.loc, m_selector, desc_type, nullptr));
                         }
                         ASR::stmt_t* assoc_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, x.base.base.loc, assoc_var, cast_expr));
                         rank_body.push_back(al, assoc_stmt);
@@ -5560,13 +5555,8 @@ public:
                                         assoc_arr->m_type, dims.p, dims.size(),
                                         ASR::abiType::Source, false, assoc_arr->m_physical_type, true);
                                 }
-                                ASR::array_physical_typeType old_ptype =
-                                    ASRUtils::extract_physical_type(ASRUtils::expr_type(m_selector));
-                                ASR::array_physical_typeType new_ptype =
-                                    ASRUtils::extract_physical_type(assoc_variable->m_type);
                                 assoc_value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                                    al, type_stmt_type->base.base.loc, assoc_value,
-                                    old_ptype, new_ptype, cast_type, nullptr));
+                                    al, type_stmt_type->base.base.loc, assoc_value, cast_type, nullptr));
                             }
                         }
                         // Do NOT wrap in ClassToIntrinsic at the Associate level.
@@ -7288,8 +7278,7 @@ public:
                 ASR::ttype_t* target_type = ASRUtils::create_array_type_with_empty_dims(
                     al, rank, ASRUtils::extract_type(ASRUtils::expr_type(target)));
                 ASR::expr_t* cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                    al, target->base.loc, target, ASR::array_physical_typeType::AssumedRankArray, 
-                    ASR::array_physical_typeType::DescriptorArray, target_type, nullptr));
+                    al, target->base.loc, target, target_type, nullptr));
                 target = cast_expr;
             }
         }
@@ -7368,8 +7357,7 @@ public:
                 // returns elem_type directly when rank == 0); for rank >= 1 it is a DescriptorArray.
                 ASR::ttype_t* new_type = ASRUtils::create_array_type_with_empty_dims(al, rank, elem_type);
                 value = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, value->base.loc,
-                    value, ASR::array_physical_typeType::AssumedRankArray,
-                    ASR::array_physical_typeType::DescriptorArray, new_type, nullptr));
+                    value, new_type, nullptr));
             }
         }
         ASR::stmt_t *overloaded_stmt = nullptr;
@@ -9447,8 +9435,7 @@ public:
                         ASR::array_physical_typeType::DescriptorArray, false, false, true
                     );
                     ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(
-                        al, expr->base.loc, expr, ASR::array_physical_typeType::AssumedRankArray,
-                        ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr
+                        al, expr->base.loc, expr, desc_type, nullptr
                     );
                     expr = ASRUtils::EXPR(array_cast);
                 }

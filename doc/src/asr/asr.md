@@ -205,7 +205,8 @@ the `id` is only unique within a procedure.
 1. **Cast**: It changes the value (the bits) of the `arg`.
 2. **ArrayPhysicalCast**: only the physical type changes; the logical type
 does not.
-    > Note: the "new" physical type here will also be part of the "type" member
+    > Note: the source physical type is the one of "arg" and the destination
+    > physical type is the one of the "type" member
 
     This allows to represent any combination, but we'll only support a few; at least we need:
     - Descriptor -> Pointer

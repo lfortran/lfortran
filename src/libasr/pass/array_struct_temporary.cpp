@@ -904,7 +904,7 @@ bool set_allocation_size(
                     ASR::expr_t* source_arg = intrinsic_array_function->m_args[0];
                     bool is_source_assumed_rank =
                         ASR::is_a<ASR::ArrayPhysicalCast_t>(*source_arg) &&
-                        ASR::down_cast<ASR::ArrayPhysicalCast_t>(source_arg)->m_old ==
+                        ASRUtils::array_physical_cast_source(ASR::down_cast<ASR::ArrayPhysicalCast_t>(source_arg)) ==
                             ASR::array_physical_typeType::AssumedRankArray;
                     if (is_source_assumed_rank) {
                         ASR::expr_t* source_orig =
@@ -1382,7 +1382,7 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
             al, loc, array_var_temporary, array_expr)));
     } else {
         insert_allocate_stmt_for_array(al, array_var_temporary, allocate_size_reference, current_body);
-        bool is_array_assumed_rank = ASR::is_a<ASR::ArrayPhysicalCast_t>(*array_expr) && ASR::down_cast<ASR::ArrayPhysicalCast_t>(array_expr)->m_old == ASR::array_physical_typeType::AssumedRankArray;
+        bool is_array_assumed_rank = ASR::is_a<ASR::ArrayPhysicalCast_t>(*array_expr) && ASRUtils::array_physical_cast_source(ASR::down_cast<ASR::ArrayPhysicalCast_t>(array_expr)) == ASR::array_physical_typeType::AssumedRankArray;
         if (!is_array_assumed_rank) {
             array_expr = ASRUtils::get_past_array_physical_cast(array_expr);
         }
@@ -1823,7 +1823,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         const std::string& name_hint, SymbolTable* current_scope, ExprsWithTargetType& exprs_with_target) {
         ASR::expr_t* x_m_args_i = ASRUtils::get_past_array_physical_cast(expr);
         if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) && 
-        ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)->m_old == ASR::array_physical_typeType::AssumedRankArray) {
+        ASRUtils::array_physical_cast_source(ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr)) == ASR::array_physical_typeType::AssumedRankArray) {
             x_m_args_i = expr;
         }
         ASR::expr_t* array_var_temporary = nullptr;
@@ -1855,9 +1855,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_values[i]) ) {
                     ASR::ArrayPhysicalCast_t* x_m_values_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_values[i]);
                     struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                        al, struct_var_temporary->base.loc, struct_var_temporary,
-                        ASRUtils::extract_physical_type(ASRUtils::expr_type(struct_var_temporary)),
-                        x_m_values_i->m_new, x_m_values_i->m_type, nullptr));
+                        al, struct_var_temporary->base.loc, struct_var_temporary, x_m_values_i->m_type, nullptr));
                 }
                 x_m_values.push_back(al, struct_var_temporary);
             } else if( ASR::is_a<ASR::ImpliedDoLoop_t>(*x_values[i]) ) {
@@ -1896,9 +1894,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i]) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i]);
                     array_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                        al, array_var_temporary->base.loc, array_var_temporary,
-                        ASRUtils::extract_physical_type(ASRUtils::expr_type(array_var_temporary)),
-                        x_m_args_i->m_new, x_m_args_i->m_type, nullptr));
+                        al, array_var_temporary->base.loc, array_var_temporary, x_m_args_i->m_type, nullptr));
                 }
                 x_m_args_vec.push_back(al, array_var_temporary);
             } else if( ASRUtils::is_struct(*ASRUtils::expr_type(x_m_args[i])) &&
@@ -1909,9 +1905,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i]) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i]);
                     struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                        al, struct_var_temporary->base.loc, struct_var_temporary,
-                        ASRUtils::extract_physical_type(ASRUtils::expr_type(struct_var_temporary)),
-                        x_m_args_i->m_new, x_m_args_i->m_type, nullptr));
+                        al, struct_var_temporary->base.loc, struct_var_temporary, x_m_args_i->m_type, nullptr));
                 }
                 x_m_args_vec.push_back(al, struct_var_temporary);
             } else {
@@ -2017,9 +2011,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg) ) {
             ASR::ArrayPhysicalCast_t* cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg);
             passed = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                al, array_var_temporary->base.loc, array_var_temporary,
-                ASRUtils::extract_physical_type(ASRUtils::expr_type(array_var_temporary)),
-                cast->m_new, cast->m_type, nullptr));
+                al, array_var_temporary->base.loc, array_var_temporary, cast->m_type, nullptr));
         }
         if( copy_out ) {
             body_after_curr_stmt->push_back(al, ASRUtils::STMT(make_Assignment_t_util(
@@ -2110,9 +2102,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
                     array_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                        al, array_var_temporary->base.loc, array_var_temporary,
-                        ASRUtils::extract_physical_type(ASRUtils::expr_type(array_var_temporary)),
-                        x_m_args_i->m_new, x_m_args_i->m_type, nullptr));
+                        al, array_var_temporary->base.loc, array_var_temporary, x_m_args_i->m_type, nullptr));
                 }
                 ASR::call_arg_t call_arg;
                 call_arg.loc = array_var_temporary->base.loc;
@@ -2161,9 +2151,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
                 if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x_m_args[i].m_value) ) {
                     ASR::ArrayPhysicalCast_t* x_m_args_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x_m_args[i].m_value);
                     struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                        al, struct_var_temporary->base.loc, struct_var_temporary,
-                        ASRUtils::extract_physical_type(ASRUtils::expr_type(struct_var_temporary)),
-                        x_m_args_i->m_new, x_m_args_i->m_type, nullptr));
+                        al, struct_var_temporary->base.loc, struct_var_temporary, x_m_args_i->m_type, nullptr));
                 }
                 ASR::call_arg_t struct_var_temporary_arg;
                 struct_var_temporary_arg.loc = struct_var_temporary->base.loc;
@@ -2370,9 +2358,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*xx.m_text) ) {
                 ASR::ArrayPhysicalCast_t* x_m_values_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(xx.m_text);
                 struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                    al, struct_var_temporary->base.loc, struct_var_temporary,
-                    ASRUtils::extract_physical_type(ASRUtils::expr_type(struct_var_temporary)),
-                    x_m_values_i->m_new, x_m_values_i->m_type, nullptr));
+                    al, struct_var_temporary->base.loc, struct_var_temporary, x_m_values_i->m_type, nullptr));
             }
             xx.m_text = struct_var_temporary;
         } else if( ASR::is_a<ASR::ImpliedDoLoop_t>(*xx.m_text) ) {
@@ -2461,9 +2447,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*expr) ) {
                 ASR::ArrayPhysicalCast_t* x_m_values_i = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expr);
                 struct_var_temporary = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                    al, struct_var_temporary->base.loc, struct_var_temporary,
-                    ASRUtils::extract_physical_type(ASRUtils::expr_type(struct_var_temporary)),
-                    x_m_values_i->m_new, x_m_values_i->m_type, nullptr));
+                    al, struct_var_temporary->base.loc, struct_var_temporary, x_m_values_i->m_type, nullptr));
             }
             return struct_var_temporary;
         } else {
@@ -2765,15 +2749,14 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             ASR::array_physical_typeType shape_ptype = ASRUtils::extract_physical_type(shape_ttype);
             if( shape_ptype != ASR::array_physical_typeType::DescriptorArray ) {
                 xx.m_shape = ASRUtils::EXPR(ASR::make_ArrayPhysicalCast_t(
-                    al, xx.m_shape->base.loc, xx.m_shape, shape_ptype,
-                    ASR::array_physical_typeType::DescriptorArray,
+                    al, xx.m_shape->base.loc, xx.m_shape,
                     ASRUtils::duplicate_type(al, shape_ttype, nullptr,
                         ASR::array_physical_typeType::DescriptorArray, true),
                     nullptr)
                 );
             }
         }
-        if ( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_array) && ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_array)->m_old ==
+        if ( ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_array) && ASRUtils::array_physical_cast_source(ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_array)) ==
             ASR::array_physical_typeType::AssumedRankArray ) {
             return ; 
         }
@@ -4173,7 +4156,7 @@ class VerifySimplifierASROutput:
 
     void visit_Assignment(const ASR::Assignment_t& x) {
         bool is_value_assumed_rank = ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value) && 
-            ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_value)->m_old == ASR::array_physical_typeType::AssumedRankArray;
+            ASRUtils::array_physical_cast_source(ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_value)) == ASR::array_physical_typeType::AssumedRankArray;
         if( !ASRUtils::is_simd_array(x.m_value) && !is_value_assumed_rank) {
             LCOMPILERS_ASSERT(!ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value));
         }

@@ -213,7 +213,7 @@ expr
     | OverloadedUnaryMinus(expr arg, ttype type, expr? value, expr overloaded)
     | OverloadedStringConcat(expr left, expr right, ttype type, expr? value, expr overloaded)
     | Cast(expr arg, cast_kind kind, ttype type, expr? value, expr? dest)
-    | ArrayPhysicalCast(expr arg, array_physical_type old, array_physical_type new, ttype type, expr? value)
+    | ArrayPhysicalCast(expr arg, ttype type, expr? value)
     | ComplexRe(expr arg, ttype type, expr? value)
     | ComplexIm(expr arg, ttype type, expr? value)
     | DictItem(expr a, expr key, expr? default, ttype type, expr? value)

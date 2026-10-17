@@ -145,8 +145,6 @@
                                         ()
                                         [((ArrayPhysicalCast
                                             (Var 5 w)
-                                            FixedSizeArray
-                                            UnboundedPointerArray
                                             (Array
                                                 (Real 8)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -920,8 +918,6 @@
                         ((Var 3 mvndnt))
                         ((ArrayPhysicalCast
                             (Var 3 w)
-                            DescriptorArray
-                            UnboundedPointerArray
                             (Pointer
                                 (Array
                                     (Real 8)

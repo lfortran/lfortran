@@ -645,9 +645,7 @@ public:
                             ASRUtils::extract_physical_type(dummy);
                         arg.m_value = ASRUtils::EXPR(
                             ASRUtils::make_ArrayPhysicalCast_t_util(al, loc,
-                                arg.m_value,
-                                ASRUtils::extract_physical_type(type),
-                                physical, ASRUtils::duplicate_type(al, type,
+                                arg.m_value, ASRUtils::duplicate_type(al, type,
                                     nullptr, physical, true), nullptr));
                     }
                     call_args.push_back(al, arg);

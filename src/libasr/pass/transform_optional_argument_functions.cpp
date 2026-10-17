@@ -468,8 +468,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                     ASR::ttype_t* m_type = ASRUtils::duplicate_type(al, arg_type, nullptr,
                         ASRUtils::extract_physical_type(func_arg_j->m_type), true);
                     m_arg_i = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                        al, m_arg_i->base.loc, m_arg_i, ASRUtils::extract_physical_type(arg_type),
-                        ASRUtils::extract_physical_type(func_arg_j->m_type), m_type, nullptr));
+                        al, m_arg_i->base.loc, m_arg_i, m_type, nullptr));
                 }
                 ASR::call_arg_t m_call_arg_i;
                 m_call_arg_i.loc = x.m_args[i].loc;

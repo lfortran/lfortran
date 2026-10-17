@@ -492,11 +492,6 @@ public:
         }
     }
 
-    void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
-        ASR::BaseExprReplacer<ReplacerNestedVars>::replace_ArrayPhysicalCast(x);
-        x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
-    }
-
     void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
         ASR::expr_t** current_expr_copy_161 = current_expr;
         current_expr = &(x->m_array);

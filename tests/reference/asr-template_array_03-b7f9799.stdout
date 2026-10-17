@@ -2100,8 +2100,6 @@
                                         ((IntegerConstant 2 (Integer 4) Decimal))
                                         ((ArrayPhysicalCast
                                             (Var 19 arr)
-                                            FixedSizeArray
-                                            PointerArray
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -2115,8 +2113,6 @@
                                         ))
                                         ((ArrayPhysicalCast
                                             (Var 19 arr)
-                                            FixedSizeArray
-                                            PointerArray
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -2130,8 +2126,6 @@
                                         ))
                                         ((ArrayPhysicalCast
                                             (Var 19 r)
-                                            FixedSizeArray
-                                            PointerArray
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)

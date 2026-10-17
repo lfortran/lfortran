@@ -186,10 +186,6 @@ static std::string array_physical_type_name(ASR::array_physical_typeType t) {
             return "FixedSizeArray";
         case ASR::array_physical_typeType::StringArraySinglePointer:
             return "StringArraySinglePointer";
-        case ASR::array_physical_typeType::NumPyArray:
-            return "NumPyArray";
-        case ASR::array_physical_typeType::ISODescriptorArray:
-            return "ISODescriptorArray";
         case ASR::array_physical_typeType::SIMDArray:
             return "SIMDArray";
         case ASR::array_physical_typeType::AssumedRankArray:
@@ -13156,8 +13152,8 @@ public:
                        ASRUtils::is_array(ASRUtils::type_get_past_pointer(target_type)) &&
                        ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_value)) {
                 ASR::ArrayPhysicalCast_t* apc = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_value);
-                if (apc->m_old == ASR::array_physical_typeType::AssumedRankArray &&
-                    apc->m_new == ASR::array_physical_typeType::DescriptorArray) {
+                if (ASRUtils::array_physical_cast_source(apc) == ASR::array_physical_typeType::AssumedRankArray &&
+                    ASRUtils::array_physical_cast_destination(apc) == ASR::array_physical_typeType::DescriptorArray) {
                     ASR::ttype_t* src_asr_type = ASRUtils::expr_type(apc->m_arg);
                     ASR::ttype_t* dst_asr_type = ASRUtils::type_get_past_pointer(target_type);
                     ASR::ttype_t* src_arr_asr_type = ASRUtils::type_get_past_allocatable_pointer(src_asr_type);
@@ -13219,7 +13215,9 @@ public:
                     builder->CreateStore(target_desc, llvm_target);
                 } else {
                     throw CodeGenError(unsupported_array_physical_cast_message(
-                        apc->m_old, apc->m_new) + " in an associate of a "
+                        ASRUtils::array_physical_cast_source(apc),
+                        ASRUtils::array_physical_cast_destination(apc))
+                        + " in an associate of a "
                         "polymorphic selector with a non-polymorphic array "
                         "target", x.m_value->base.loc);
                 }
@@ -14843,7 +14841,7 @@ public:
             this->visit_expr_wrapper(apc->m_arg, false);
             ptr_loads = ptr_loads_copy;
             llvm::Value* arg = tmp;
-            if (apc->m_old == ASR::array_physical_typeType::AssumedRankArray &&
+            if (ASRUtils::array_physical_cast_source(apc) == ASR::array_physical_typeType::AssumedRankArray &&
                 !ASRUtils::is_array(apc->m_type)) {
                 llvm::Type* data_type = llvm_utils->get_el_type(
                     apc->m_arg, ASRUtils::extract_type(src_asr_type), module.get());
@@ -14859,7 +14857,7 @@ public:
                 // (%array.15*), not the loaded descriptor value. Use
                 // ptr_loads=1 to load just once through the alloca.
                 bool is_assumed_rank_alloc_target =
-                    apc->m_old == ASR::array_physical_typeType::AssumedRankArray &&
+                    ASRUtils::array_physical_cast_source(apc) == ASR::array_physical_typeType::AssumedRankArray &&
                     LLVM::is_llvm_pointer(*src_asr_type);
                 int64_t saved_ptr_loads = ptr_loads;
                 if (is_assumed_rank_alloc_target) {
@@ -14870,7 +14868,7 @@ public:
                 is_assignment_target = false;
                 ptr_loads = saved_ptr_loads;
                 target = tmp;
-                if (apc->m_old == ASR::array_physical_typeType::AssumedRankArray) {
+                if (ASRUtils::array_physical_cast_source(apc) == ASR::array_physical_typeType::AssumedRankArray) {
                     target_expr_for_type = apc->m_arg;
                 }
             }
@@ -16286,9 +16284,9 @@ public:
     }
 
     void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
-        if( x.m_old != ASR::array_physical_typeType::DescriptorArray ) {
-            LCOMPILERS_ASSERT(x.m_new != x.m_old);
-        }
+        ASR::array_physical_typeType m_old = ASRUtils::array_physical_cast_source(x);
+        ASR::array_physical_typeType m_new = ASRUtils::array_physical_cast_destination(x);
+        LCOMPILERS_ASSERT(!ASRUtils::is_noop_array_physical_cast(x));
         ASR::ttype_t* src_asr_type = ASRUtils::expr_type(x.m_arg);
         int target_n_dims = ASRUtils::extract_n_dims_from_ttype(x.m_type);
         int src_n_dims = ASRUtils::extract_n_dims_from_ttype(src_asr_type);
@@ -16300,8 +16298,8 @@ public:
         // with rank expansion), where both source AND target are allocatable/pointer,
         // we need the unloaded pointer (%array.N**) so we can
         // bitcast it to %array.15** without losing the pointer-to-pointer semantics.
-        bool is_alloc_rank_expand = (x.m_old == ASR::array_physical_typeType::DescriptorArray &&
-                                     x.m_new == ASR::array_physical_typeType::DescriptorArray &&
+        bool is_alloc_rank_expand = (m_old == ASR::array_physical_typeType::DescriptorArray &&
+                                     m_new == ASR::array_physical_typeType::DescriptorArray &&
                                      target_n_dims > src_n_dims &&
                                      is_src_alloc_or_ptr && is_dst_alloc_or_ptr);
         int64_t ptr_loads_copy = ptr_loads;
@@ -16318,7 +16316,7 @@ public:
         if (target_n_dims > src_n_dims && src_n_dims > 0) {
             m_type_for_dims = src_asr_type;
         }
-        visit_ArrayPhysicalCastUtil(tmp, x.m_arg, x.m_type, m_type_for_dims, x.m_old, x.m_new);
+        visit_ArrayPhysicalCastUtil(tmp, x.m_arg, x.m_type, m_type_for_dims, m_old, m_new);
     }
 
     void visit_AssociateBlockCall(const ASR::AssociateBlockCall_t& x) {
@@ -26019,8 +26017,8 @@ public:
                 ASR::ArrayPhysicalCast_t* apc = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
                     x.m_args[i].m_value);
                 int64_t ptr_loads_copy = ptr_loads;
-                if (apc->m_old == ASR::array_physical_typeType::AssumedRankArray &&
-                        apc->m_new == ASR::array_physical_typeType::DescriptorArray &&
+                if (ASRUtils::array_physical_cast_source(apc) == ASR::array_physical_typeType::AssumedRankArray &&
+                        ASRUtils::array_physical_cast_destination(apc) == ASR::array_physical_typeType::DescriptorArray &&
                         !ASRUtils::is_array(apc->m_type)) {
                     ptr_loads = 0;
                 }
@@ -28116,7 +28114,7 @@ public:
                     }
                 }
 
-                if (arr_cast->m_old == ASR::DescriptorArray && (arr_cast->m_new == ASR::PointerArray || arr_cast->m_new == ASR::FixedSizeArray)) {
+                if (ASRUtils::array_physical_cast_source(arr_cast) == ASR::DescriptorArray && (ASRUtils::array_physical_cast_destination(arr_cast) == ASR::PointerArray || ASRUtils::array_physical_cast_destination(arr_cast) == ASR::FixedSizeArray)) {
                     int64_t ptr_loads_copy = ptr_loads;
                     ptr_loads = 1 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(arr_cast->m_arg));
                     this->visit_expr_wrapper(arr_cast->m_arg, true);
@@ -28211,7 +28209,7 @@ public:
                             pointer_size);
                     builder->CreateBr(mergeBB);
                     start_new_block(mergeBB);
-                } else if (arr_cast->m_old == ASR::FixedSizeArray && arr_cast->m_new == ASR::PointerArray) {
+                } else if (ASRUtils::array_physical_cast_source(arr_cast) == ASR::FixedSizeArray && ASRUtils::array_physical_cast_destination(arr_cast) == ASR::PointerArray) {
                     ASR::ttype_t* fixed_size_type = ASRUtils::expr_type(arr_cast->m_arg);
                     ASR::dimension_t* m_dims_fixed = nullptr;
                     int n_dims_fixed = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(fixed_size_type, m_dims_fixed));
@@ -29779,11 +29777,10 @@ public:
                     } else if(arr->m_physical_type != ASR::array_physical_typeType::PointerArray){
                         ASR::ttype_t* array_type = ASRUtils::TYPE(
                                                     ASR::make_Array_t(al, arr->base.base.loc,arr->m_type,
-                                                    arr->m_dims, arr->n_dims,ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+                                                    arr->m_dims, arr->n_dims,ASR::array_physical_typeType::PointerArray, ASR::memory_spaceType::Global));
                         ASR::expr_t* array_casted_to_pointer = ASRUtils::EXPR(
                                                                 ASR::make_ArrayPhysicalCast_t(al, arr->base.base.loc,
-                                                                x.m_args[i],arr->m_physical_type,
-                                                                ASR::array_physical_typeType::PointerArray,
+                                                                x.m_args[i],
                                                                 array_type, nullptr));
                         this->visit_expr(*array_casted_to_pointer);
                     } else {

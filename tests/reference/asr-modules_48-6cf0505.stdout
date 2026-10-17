@@ -461,8 +461,6 @@
                             ()
                             [((ArrayPhysicalCast
                                 (Var 8 string_var)
-                                FixedSizeArray
-                                DescriptorArray
                                 (Array
                                     (StructType
                                         [(Allocatable
@@ -495,8 +493,6 @@
                             ()
                             [((ArrayPhysicalCast
                                 (Var 8 string_var)
-                                FixedSizeArray
-                                DescriptorArray
                                 (Array
                                     (StructType
                                         [(Allocatable
@@ -555,8 +551,6 @@
                             ()
                             [((ArrayPhysicalCast
                                 (Var 8 string_var)
-                                FixedSizeArray
-                                DescriptorArray
                                 (Array
                                     (StructType
                                         [(Allocatable
@@ -645,8 +639,6 @@
                             ()
                             [((ArrayPhysicalCast
                                 (Var 8 string_var)
-                                FixedSizeArray
-                                DescriptorArray
                                 (Array
                                     (StructType
                                         [(Allocatable

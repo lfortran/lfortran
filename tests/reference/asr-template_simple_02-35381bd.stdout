@@ -2396,8 +2396,6 @@
                                             ()
                                             [((ArrayPhysicalCast
                                                 (Var 13 a_i)
-                                                FixedSizeArray
-                                                DescriptorArray
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -2422,8 +2420,6 @@
                                             ()
                                             [((ArrayPhysicalCast
                                                 (Var 13 a_r)
-                                                FixedSizeArray
-                                                DescriptorArray
                                                 (Array
                                                     (Real 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -2448,8 +2444,6 @@
                                             ()
                                             [((ArrayPhysicalCast
                                                 (Var 13 a_i)
-                                                FixedSizeArray
-                                                DescriptorArray
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)

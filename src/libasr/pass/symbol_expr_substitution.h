@@ -54,18 +54,21 @@ public:
     void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t *x) {
         bool substituted = ASR::is_a<ASR::Var_t>(*x->m_arg)
             && assoc_map.count(ASR::down_cast<ASR::Var_t>(x->m_arg)->m_v);
+        if (!substituted) {
+            ASR::BaseExprReplacer<AssociateVarResolver>::replace_ArrayPhysicalCast(x);
+            return;
+        }
+        ASR::array_physical_typeType name_physical_type =
+            ASRUtils::array_physical_cast_source(x);
         ASR::BaseExprReplacer<AssociateVarResolver>::replace_ArrayPhysicalCast(x);
-        if (!substituted || !ASRUtils::is_array(ASRUtils::expr_type(x->m_arg))) {
+        if (!ASRUtils::is_array(ASRUtils::expr_type(x->m_arg))) {
             return;
         }
-        ASR::array_physical_typeType from =
-            ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
-        if (from == x->m_old) return;
-        if (from == x->m_new) {
+        ASR::array_physical_typeType from = ASRUtils::array_physical_cast_source(x);
+        if (from != name_physical_type &&
+                from == ASRUtils::array_physical_cast_destination(x)) {
             *current_expr = x->m_arg;
-            return;
         }
-        x->m_old = from;
     }
 };
 

@@ -15536,9 +15536,8 @@ public:
         } else {
             v_Var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
             if (is_assumed_rank) {
-                ASR::expr_t* cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, loc, 
-                    v_Var, ASR::array_physical_typeType::AssumedRankArray, ASR::array_physical_typeType::DescriptorArray, 
-                    root_v_type, nullptr));
+                ASR::expr_t* cast_expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al, loc,
+                    v_Var, root_v_type, nullptr));
                 v_Var = cast_expr;
             }
         }
@@ -17797,8 +17796,7 @@ public:
                         ASR::expr_t* array_section = ASRUtils::EXPR(ASR::make_ArraySection_t(al, array_item->base.base.loc,
                                                     array_expr, array_indices.p, array_indices.size(),
                                                     section_type, nullptr));
-                        ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(al, array_item->base.base.loc, array_section,
-                                                ASRUtils::extract_physical_type(section_type), expected_phys_type, cast_target_type, nullptr);
+                        ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(al, array_item->base.base.loc, array_section, cast_target_type, nullptr);
                         arg.m_value = ASRUtils::EXPR(array_cast);
 
                         args_with_array_section.push_back(al, arg);
@@ -17810,13 +17808,10 @@ public:
                         int actual_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(arg_expr));
 
                         if (expected_n_dims_cast != actual_n_dims) {
-                            ASR::array_physical_typeType actual_phys_type =
-                                ASRUtils::extract_physical_type(ASRUtils::expr_type(arg_expr));
                             ASR::ttype_t* cast_target_type = ASRUtils::duplicate_type_with_empty_dims(
                                 al, expected_arg_type, expected_phys, true);
                             ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(
-                                al, arg_expr->base.loc, arg_expr, actual_phys_type,
-                                expected_phys, cast_target_type, nullptr);
+                                al, arg_expr->base.loc, arg_expr, cast_target_type, nullptr);
                             arg.m_value = ASRUtils::EXPR(array_cast);
                         }
 
@@ -18825,8 +18820,7 @@ public:
                             ASR::array_physical_typeType::DescriptorArray, false, false, true
                             );
                         ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(
-                            al, arg_expr->base.loc, temp, ASR::array_physical_typeType::AssumedRankArray,
-                            ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr
+                            al, arg_expr->base.loc, temp, desc_type, nullptr
                         );
                         temp = ASRUtils::EXPR(array_cast);
                     } else if (!(intrinsic_name == "len" || intrinsic_name == "size" || intrinsic_name == "lbound" || intrinsic_name == "ubound" || 
@@ -19336,8 +19330,7 @@ public:
                 ASR::ttype_t* array_type = ASRUtils::create_array_type_with_empty_dims(al, rank, 
                                                 ASRUtils::extract_type(ASRUtils::expr_type(array)));
                 array = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
-                    al, array->base.loc, array, ASR::array_physical_typeType::AssumedRankArray,
-                    ASR::array_physical_typeType::DescriptorArray, array_type, nullptr
+                    al, array->base.loc, array, array_type, nullptr
                 ));
             }
         }
@@ -25366,8 +25359,7 @@ public:
         ASR::ttype_t* desc_type = ASRUtils::create_array_type_with_empty_dims(al,
             it->second, ASRUtils::extract_type(ASRUtils::expr_type(expr)));
         return ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
-            expr->base.loc, expr, ASR::array_physical_typeType::AssumedRankArray,
-            ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr));
+            expr->base.loc, expr, desc_type, nullptr));
     }
 
     // An assumed rank array that is not the selector of an enclosing
@@ -26605,8 +26597,6 @@ public:
                             al, rank, elem_type);
                     expr = ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(
                         al, expr->base.loc, expr,
-                        ASR::array_physical_typeType::AssumedRankArray,
-                        ASR::array_physical_typeType::DescriptorArray,
                         new_type, nullptr));
                 }
             }

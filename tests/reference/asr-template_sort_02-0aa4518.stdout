@@ -1484,8 +1484,6 @@
                                                             ()
                                                             [((ArrayPhysicalCast
                                                                 (Var 12 arr)
-                                                                DescriptorArray
-                                                                DescriptorArray
                                                                 (Array
                                                                     (TypeParameter
                                                                         t
@@ -1509,8 +1507,6 @@
                                                             ()
                                                             [((ArrayPhysicalCast
                                                                 (Var 12 arr)
-                                                                DescriptorArray
-                                                                DescriptorArray
                                                                 (Array
                                                                     (TypeParameter
                                                                         t
@@ -3125,8 +3121,6 @@
                                                             ()
                                                             [((ArrayPhysicalCast
                                                                 (Var 19 arr)
-                                                                DescriptorArray
-                                                                DescriptorArray
                                                                 (Array
                                                                     (Integer 4)
                                                                     [(()
@@ -3146,8 +3140,6 @@
                                                             ()
                                                             [((ArrayPhysicalCast
                                                                 (Var 19 arr)
-                                                                DescriptorArray
-                                                                DescriptorArray
                                                                 (Array
                                                                     (Integer 4)
                                                                     [(()
@@ -3519,8 +3511,6 @@
                                                             ()
                                                             [((ArrayPhysicalCast
                                                                 (Var 20 arr)
-                                                                DescriptorArray
-                                                                DescriptorArray
                                                                 (Array
                                                                     (Real 4)
                                                                     [(()
@@ -3540,8 +3530,6 @@
                                                             ()
                                                             [((ArrayPhysicalCast
                                                                 (Var 20 arr)
-                                                                DescriptorArray
-                                                                DescriptorArray
                                                                 (Array
                                                                     (Real 4)
                                                                     [(()
@@ -3957,8 +3945,6 @@
                                                             ()
                                                             [((ArrayPhysicalCast
                                                                 (Var 21 arr)
-                                                                DescriptorArray
-                                                                DescriptorArray
                                                                 (Array
                                                                     (StructType
                                                                         [(Real 4)]
@@ -3983,8 +3969,6 @@
                                                             ()
                                                             [((ArrayPhysicalCast
                                                                 (Var 21 arr)
-                                                                DescriptorArray
-                                                                DescriptorArray
                                                                 (Array
                                                                     (StructType
                                                                         [(Real 4)]
@@ -4249,8 +4233,6 @@
                                         ()
                                         [((ArrayPhysicalCast
                                             (Var 15 xi)
-                                            FixedSizeArray
-                                            DescriptorArray
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -4270,8 +4252,6 @@
                                         ()
                                         [((ArrayPhysicalCast
                                             (Var 15 xr)
-                                            FixedSizeArray
-                                            DescriptorArray
                                             (Array
                                                 (Real 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -4291,8 +4271,6 @@
                                         ()
                                         [((ArrayPhysicalCast
                                             (Var 15 xm)
-                                            FixedSizeArray
-                                            DescriptorArray
                                             (Array
                                                 (StructType
                                                     [(Real 4)]

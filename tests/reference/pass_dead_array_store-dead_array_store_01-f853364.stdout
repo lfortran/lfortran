@@ -294,8 +294,6 @@
                         [((Var 5 workspace))
                         ((ArrayPhysicalCast
                             (Var 5 r)
-                            FixedSizeArray
-                            DescriptorArray
                             (Array
                                 (Real 4)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -550,8 +548,6 @@
                                     )
                                     ()
                                 )
-                                FixedSizeArray
-                                DescriptorArray
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
@@ -726,8 +722,6 @@
                                         )
                                         ()
                                     )
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Logical 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -912,8 +906,6 @@
                                                                             Sum
                                                                             [(ArrayPhysicalCast
                                                                                 (Var 7 reduce)
-                                                                                PointerArray
-                                                                                DescriptorArray
                                                                                 (Array
                                                                                     (Real 4)
                                                                                     [((IntegerConstant 1 (Integer 4) Decimal)

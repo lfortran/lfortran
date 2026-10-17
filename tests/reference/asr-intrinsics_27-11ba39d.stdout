@@ -58,8 +58,6 @@
                                 Shape
                                 [(ArrayPhysicalCast
                                     (Var 2 a)
-                                    FixedSizeArray
-                                    DescriptorArray
                                     (Array
                                         (Integer 4)
                                         [((IntegerUnaryMinus

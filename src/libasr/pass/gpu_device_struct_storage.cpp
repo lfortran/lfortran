@@ -1283,10 +1283,10 @@ public:
         ASR::symbol_t *s = storage_of(x->m_arg);
         Base::replace_ArrayPhysicalCast(x);
         if (s == nullptr) return;
-        ASR::array_physical_typeType physical =
-            ASRUtils::extract_physical_type(ASRUtils::symbol_type(s));
-        x->m_old = physical;
-        if (x->m_old == x->m_new) *current_expr = x->m_arg;
+        if (ASRUtils::array_physical_cast_source(x) ==
+                ASRUtils::array_physical_cast_destination(x)) {
+            *current_expr = x->m_arg;
+        }
     }
 
     // Storage always exists.

@@ -2321,8 +2321,6 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 ASRUtils::extract_type(base_type));
         ASR::expr_t* casted_target = ASRUtils::EXPR(
             ASRUtils::make_ArrayPhysicalCast_t_util(al, loc, target_var,
-                ASR::array_physical_typeType::AssumedRankArray,
-                ASR::array_physical_typeType::DescriptorArray,
                 descriptor_array_type, nullptr));
 
         Vec<ASR::expr_t*> index_exprs;
@@ -2785,10 +2783,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             return ;
         }
         bool is_target_assumed_rank = (ASR::is_a<ASR::ArrayPhysicalCast_t>(*xx.m_target) && 
-            ASR::down_cast<ASR::ArrayPhysicalCast_t>(xx.m_target)->m_old == ASR::array_physical_typeType::AssumedRankArray) 
+            ASRUtils::array_physical_cast_source(ASR::down_cast<ASR::ArrayPhysicalCast_t>(xx.m_target)) == ASR::array_physical_typeType::AssumedRankArray) 
             || ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(xx.m_target));
         bool is_value_assumed_rank = (ASR::is_a<ASR::ArrayPhysicalCast_t>(*xx.m_value) && 
-            ASR::down_cast<ASR::ArrayPhysicalCast_t>(xx.m_value)->m_old == ASR::array_physical_typeType::AssumedRankArray)
+            ASRUtils::array_physical_cast_source(ASR::down_cast<ASR::ArrayPhysicalCast_t>(xx.m_value)) == ASR::array_physical_typeType::AssumedRankArray)
             || ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(xx.m_value));
         xx.m_value = ASRUtils::get_past_array_broadcast(xx.m_value);
         const Location loc = x.base.base.loc;

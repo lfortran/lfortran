@@ -1689,11 +1689,9 @@ public:
         Base::replace_ArrayPhysicalCast(x);
         ASR::ttype_t *type = ASRUtils::expr_type(x->m_arg);
         if (!ASRUtils::is_array(type)) return;
-        x->m_old = ASRUtils::extract_physical_type(type);
         // A cast from one descriptor to another gives the array the bounds
         // of its type, such as the lower bounds a plain dummy is handed.
-        if (x->m_old == x->m_new &&
-                x->m_old != ASR::array_physical_typeType::DescriptorArray) {
+        if (ASRUtils::is_noop_array_physical_cast(*x)) {
             *current_expr = x->m_arg;
         }
     }
