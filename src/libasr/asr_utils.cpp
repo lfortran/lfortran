@@ -6988,7 +6988,8 @@ static bool runtime_trait_character(ASR::ttype_t *type)
 // finite set of slots. A message that is not generic may also take borrowed
 // views of runtime traits other than as its receiver: bare, required `class(T)`
 // arguments with intent(in) or intent(inout), passed by reference like the bare
-// view dummies of ordinary procedures.
+// view dummies of ordinary procedures. Scalar polymorphic derived-type dummies
+// with the same attributes keep their ordinary class calling convention.
 static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
         const std::map<std::string, ASR::ttype_t*> &members)
 {
@@ -7013,7 +7014,10 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
         auto *symbol = symbol_get_past_external(ASR::down_cast<ASR::Var_t>(method.m_args[i])->m_v);
         if (!ASR::is_a<ASR::Variable_t>(*symbol)) return false;
         auto *arg = ASR::down_cast<ASR::Variable_t>(symbol);
-        if (ASR::is_a<ASR::TraitObjectType_t>(*arg->m_type)) {
+        if (ASR::is_a<ASR::TraitObjectType_t>(*arg->m_type) ||
+                (ASR::is_a<ASR::StructType_t>(*arg->m_type) &&
+                 is_class_type(arg->m_type) &&
+                 !is_unlimited_polymorphic_type(arg->m_type))) {
             if (trait_method_template(method) ||
                     (arg->m_intent != ASR::intentType::In &&
                      arg->m_intent != ASR::intentType::InOut) ||
