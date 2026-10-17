@@ -346,6 +346,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 ),
                             ~div:
                                 (CustomOperator

@@ -86,6 +86,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 ),
                             point_dist_func:
                                 (Function

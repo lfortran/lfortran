@@ -30,6 +30,8 @@
               nil
               nil
               []
+              []
+              []
             )
             "t2" (Struct
               (SymbolTable
@@ -54,6 +56,8 @@
               []
               nil
               nil
+              []
+              []
               []
             )
           }

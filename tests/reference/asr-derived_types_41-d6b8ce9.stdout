@@ -334,6 +334,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 ),
                             mytype_instance:
                                 (Variable

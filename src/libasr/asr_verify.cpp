@@ -1446,6 +1446,22 @@ public:
                 "Struct::m_parent of '" + std::string(x.m_name) +
                 "' cannot point outside of its symbol table");
         }
+        for (size_t i = 0; i < x.n_type_params; i++) {
+            ASR::symbol_t* param = x.m_symtab->get_symbol(x.m_type_params[i]);
+            require_id(param != nullptr && ASR::is_a<ASR::Variable_t>(*param),
+                "asr.verify.struct.type_param_is_variable",
+                "the type parameter '" + std::string(x.m_type_params[i]) +
+                "' of '" + std::string(x.m_name) +
+                "' must be a variable of its symbol table");
+        }
+        for (size_t i = 0; i < x.n_len_dependent_members; i++) {
+            require_id(present(x.m_members, x.n_members,
+                    x.m_len_dependent_members[i]),
+                "asr.verify.struct.len_dependent_member_is_member",
+                "'" + std::string(x.m_len_dependent_members[i]) +
+                "' of '" + std::string(x.m_name) +
+                "' depends on a LEN type parameter, so it must be a component");
+        }
         verify_deferred_bindings(x);
         verify_final_procedures(x);
         visit_UserDefinedType(x);
@@ -2673,6 +2689,18 @@ public:
                             "Actual argument type " +
                                 ASRUtils::get_type_code(actual_type) +
                                 " is not allocatable, but the dummy is " +
+                                ASRUtils::get_type_code(formal_type),
+                            passed_arg_expr->base.loc);
+                        // A component whose bounds or length depend on a
+                        // LEN type parameter is stored as allocatable, but
+                        // it is not allocatable.
+                        require_with_loc_id(
+                            !ASRUtils::is_len_dependent_component(
+                                passed_arg_expr),
+                            "asr.verify.call.actual_allocatable_matches_formal",
+                            "Actual argument is a component whose bounds or "
+                                "length depend on a LEN type parameter, so it "
+                                "is not allocatable, but the dummy is " +
                                 ASRUtils::get_type_code(formal_type),
                             passed_arg_expr->base.loc);
                     }

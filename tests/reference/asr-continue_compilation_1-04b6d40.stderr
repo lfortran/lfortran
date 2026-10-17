@@ -394,12 +394,6 @@ semantic error: ‘shape’ argument of ‘reshape’ intrinsic has negative ele
 302 |     integer, parameter :: qval(2) = reshape([7, 8], -[z])
     |                                                     ^^^^ 
 
-semantic error: LEN parameters in parameterized derived types are not supported yet
-   --> tests/errors/continue_compilation_1.f90:305:9
-    |
-305 |         integer, len :: n
-    |         ^^^^^^^^^^^^^^^^^ 
-
 semantic error: Intent attribute can only be applied to procedure arguments
    --> tests/errors/continue_compilation_1.f90:614:14
     |
@@ -1459,6 +1453,18 @@ semantic error: Return type not specified
      |
 3381 |    end function
      | ...^^^^^^^^^^^^ 
+
+semantic error: an assumed LEN type parameter `*` is only allowed for a dummy argument
+    --> tests/errors/continue_compilation_1.f90:3393:31
+     |
+3393 |         type(cc1_len_t(*)) :: a  ! {Error} an assumed LEN type parameter `*` is only allowed for a dummy argument
+     |                               ^ 
+
+semantic error: a deferred LEN type parameter `:` requires the allocatable or pointer attribute
+    --> tests/errors/continue_compilation_1.f90:3394:31
+     |
+3394 |         type(cc1_len_t(:)) :: b  ! {Error} a deferred LEN type parameter `:` requires the allocatable or pointer attribute
+     |                               ^ 
 
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
@@ -4211,3 +4217,129 @@ semantic error: `pause` code must be a scalar integer or default character expre
      |
 3365 |         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
      |               ^^^^^ 
+
+semantic error: the LEN type parameter 'n' cannot be assigned
+    --> tests/errors/continue_compilation_1.f90:3396:9
+     |
+3396 |         c%n = 3  ! {Error} the LEN type parameter 'n' cannot be assigned
+     |         ^^^ 
+
+semantic error: the actual argument for the allocatable dummy argument 'a' must be allocatable
+    --> tests/errors/continue_compilation_1.f90:3425:28
+     |
+3425 |         call cc1_lenc_grow(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+     |                            ^^^ the component 'x' is not allocatable: its bounds or length depend on a LEN type parameter
+
+semantic error: `from` argument of `move_alloc` must be allocatable
+    --> tests/errors/continue_compilation_1.f90:3426:25
+     |
+3426 |         call move_alloc(v%x, tmp)  ! {Error} `from` argument of `move_alloc` must be allocatable
+     |                         ^^^ must be allocatable
+
+semantic error: Intrinsic `allocated` can be called only on allocatable argument
+    --> tests/errors/continue_compilation_1.f90:3427:18
+     |
+3427 |         print *, allocated(v%x)  ! {Error} Intrinsic `allocated` can be called only on allocatable argument
+     |                  ^^^^^^^^^^^^^^ 
+
+semantic error: the component 'x' is not allocatable and cannot be deallocated
+    --> tests/errors/continue_compilation_1.f90:3428:20
+     |
+3428 |         deallocate(v%x)  ! {Error} the component 'x' is not allocatable and cannot be deallocated
+     |                    ^^^ its bounds or length depend on a LEN type parameter
+
+semantic error: the component 'x' is not allocatable and cannot be allocated
+    --> tests/errors/continue_compilation_1.f90:3429:18
+     |
+3429 |         allocate(v%x(5))  ! {Error} the component 'x' is not allocatable and cannot be allocated
+     |                  ^^^^^^ its bounds or length depend on a LEN type parameter
+
+semantic error: the LEN type parameter 'n' cannot be an input item
+    --> tests/errors/continue_compilation_1.f90:3430:20
+     |
+3430 |         read(*, *) v%n  ! {Error} the LEN type parameter 'n' cannot be an input item
+     |                    ^^^ 
+
+semantic error: the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+    --> tests/errors/continue_compilation_1.f90:3431:27
+     |
+3431 |         call cc1_lenc_set(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+     |                           ^^^ 
+
+semantic error: the LEN type parameter 'n' cannot be passed to the intent(inout) dummy argument 'k'
+    --> tests/errors/continue_compilation_1.f90:3432:27
+     |
+3432 |         i = cc1_lenc_bump(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(inout) dummy argument 'k'
+     |                           ^^^ 
+
+semantic error: a structure constructor of the derived type 'cc1_label_t', which has LEN type parameters, is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3445:13
+     |
+3445 |         e = cc1_label_t(5)("hello")  ! {Error} a structure constructor of the derived type 'cc1_label_t', which has LEN type parameters, is not supported yet
+     |             ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a structure constructor of the derived type 'cc1_label_t', which has LEN type parameters, is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3446:13
+     |
+3446 |         e = cc1_label_t(size=5)(text="hello")  ! {Error} a structure constructor of the derived type 'cc1_label_t', which has LEN type parameters, is not supported yet
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the actual argument for the allocatable dummy argument 'a' must be allocatable
+    --> tests/errors/continue_compilation_1.f90:3490:16
+     |
+3490 |         call f(w%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+     |                ^^^ the component 'x' is not allocatable: its bounds or length depend on a LEN type parameter
+
+semantic error: the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+    --> tests/errors/continue_compilation_1.f90:3497:28
+     |
+3497 |         call v%cc1_lenp_tr(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+     |                            ^^^ 
+
+semantic error: the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+    --> tests/errors/continue_compilation_1.f90:3498:27
+     |
+3498 |         k = v%cc1_lenp_tf(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+     |                           ^^^ 
+
+semantic error: the actual argument for the allocatable dummy argument 'a' must be allocatable
+    --> tests/errors/continue_compilation_1.f90:3499:26
+     |
+3499 |         k = cc1_lenp_gen(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+     |                          ^^^ the component 'x' is not allocatable: its bounds or length depend on a LEN type parameter
+
+semantic error: the actual argument for the allocatable dummy argument 'a' must be allocatable
+    --> tests/errors/continue_compilation_1.f90:3500:17
+     |
+3500 |         call pp(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+     |                 ^^^ the component 'x' is not allocatable: its bounds or length depend on a LEN type parameter
+
+semantic error: the LEN type parameter 'n' cannot be an input item
+    --> tests/errors/continue_compilation_1.f90:3501:21
+     |
+3501 |         read(*, *) (v%n, i = 1, 1)  ! {Error} the LEN type parameter 'n' cannot be an input item
+     |                     ^^^ 
+
+semantic error: the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+    --> tests/errors/continue_compilation_1.f90:3536:31
+     |
+3536 |         sf(j) = cc1_lenh_fset(v%n) + j  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+     |                               ^^^ 
+
+semantic error: the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+    --> tests/errors/continue_compilation_1.f90:3537:28
+     |
+3537 |         call cc1_lenh_salt(v%n, *10)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+     |                            ^^^ 
+
+semantic error: the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+    --> tests/errors/continue_compilation_1.f90:3538:42
+     |
+3538 |         k = cc1_lenh_ident(cc1_lenh_fset(v%n))  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+     |                                          ^^^ 
+
+semantic error: the actual argument for the allocatable dummy argument 'a' must be allocatable
+    --> tests/errors/continue_compilation_1.f90:3544:65
+     |
+3544 |         kk = cc1_lenh_ident(cc1_lenh_fset(ii)) + cc1_lenh_fgrow(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+     |                                                                 ^^^ the component 'x' is not allocatable: its bounds or length depend on a LEN type parameter

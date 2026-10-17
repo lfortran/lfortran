@@ -317,6 +317,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 ),
                             write_formatted:
                                 (Function
