@@ -4053,7 +4053,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         ensure_dest_array_descriptor();
                         deepcopy(src_expr, src, dest,
                                 alloc_type->m_type, ASRUtils::type_get_past_allocatable(asr_dest_type),
-                                module);
+                                module, false, finalize_dest);
                     }
                 } else if(ASRUtils::is_string_only(alloc_type->m_type)){ //non-primitive type (vector)
                     lfortran_str_copy(dest, src,
@@ -4067,7 +4067,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     }
                     deepcopy(src_expr, src, dest,
                         ASRUtils::type_get_past_allocatable(asr_dest_type), alloc_type->m_type,
-                        module);
+                        module, false, finalize_dest);
                 } else if (ASRUtils::is_unlimited_polymorphic_type(src_expr)) {
                     src = CreateLoad2(llvm_type->getPointerTo(), src);
                     if (ASRUtils::is_allocatable(asr_dest_type)) {
@@ -4075,7 +4075,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     }
                     deepcopy(src_expr, src, dest,
                         ASRUtils::type_get_past_allocatable(asr_dest_type), alloc_type->m_type,
-                        module);
+                        module, false, finalize_dest);
                 } else {
                     LLVM::CreateStore(*builder, src, dest);
                 }
@@ -11343,7 +11343,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                             }
                             llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)), src_member, dest_member,
                             member_type, member_type,
-                            module);
+                            module, false, finalize_dest);
                         }, [&]() {
                             if (is_alloc_scalar_intrinsic) {
                                 // The source component is unallocated, so the
