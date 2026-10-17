@@ -1,0 +1,14 @@
+# Allowed ASR construction calls per backend source file.
+#
+# Backends lower ASR; they must not create it. Everything a backend lowers has
+# to exist before codegen, where asr_verify checks it (see "Architecture &
+# Scope" in AGENTS.md). ci/check_backend_asr_construction.py fails if a file
+# has more calls than listed here, or fewer: when you remove a construction
+# site, lower its count in the same PR (or run the script with --update).
+# Never raise a count or add a file; create the node before codegen instead.
+
+src/libasr/codegen/asr_to_llvm.cpp 164
+src/libasr/codegen/asr_to_wasm.cpp 1
+src/libasr/codegen/c_utils.h 1
+src/libasr/codegen/llvm_utils.cpp 5
+src/libasr/codegen/llvm_utils.h 1

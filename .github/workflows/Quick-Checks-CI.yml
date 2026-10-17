@@ -242,6 +242,12 @@ jobs:
         run: |
           ./ci/grammar_conflicts.sh
 
+      # Backends lower ASR, they do not create it; the count may only go down.
+      - name: Check for ASR Construction in Backends
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
+        shell: bash -e -l {0}
+        run: python3 ci/check_backend_asr_construction.py
+
       # Run last among history checks. Binary script checks out commits in PR history.
       - name: Check for Added Binary Files
         shell: bash -e -l {0}
