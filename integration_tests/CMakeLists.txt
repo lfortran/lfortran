@@ -3397,6 +3397,7 @@ RUN(NAME string_array_concat_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_array_concat_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_array_concat_03 LABELS gfortran llvm)
 RUN(NAME string_array_concat_04 LABELS gfortran) # llvm: ICE in is_proper_array_of_strings_llvm_var
+RUN(NAME string_array_concat_05 LABELS gfortran llvm)
 
 RUN(NAME substring_read LABELS gfortran llvm)
 
