@@ -4904,7 +4904,8 @@ public:
 
     void sync_pdt_specialization_symbols(ASR::Struct_t* template_struct,
         SymbolTable* enclosing_scope) {
-        if (template_struct->n_kind_params == 0) {
+        if (template_struct->n_kind_params == 0
+                && !ASRUtils::struct_has_len_params(template_struct)) {
             return;
         }
 
@@ -5031,7 +5032,8 @@ public:
 
         ASR::Struct_t* candidate_struct = ASR::down_cast<ASR::Struct_t>(candidate_sym);
         ASR::Struct_t* template_struct = ASR::down_cast<ASR::Struct_t>(template_sym);
-        if (template_struct->n_kind_params == 0) {
+        if (template_struct->n_kind_params == 0
+                && !ASRUtils::struct_has_len_params(template_struct)) {
             return false;
         }
 

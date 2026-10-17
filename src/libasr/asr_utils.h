@@ -8841,6 +8841,45 @@ static inline bool is_allocatable(ASR::ttype_t* type) {
     return ASR::is_a<ASR::Allocatable_t>(*type);
 }
 
+// A type parameter of a parameterized derived type is listed in
+// `Struct::m_type_params`. A KIND type parameter is a named constant of the
+// type, while a LEN type parameter is an integer component that every
+// object of the type stores.
+static inline bool is_len_type_param(const ASR::Struct_t* st,
+        const std::string& name) {
+    for (size_t i = 0; i < st->n_type_params; i++) {
+        if (name == st->m_type_params[i]) {
+            ASR::symbol_t* sym = st->m_symtab->get_symbol(name);
+            return sym != nullptr && ASR::is_a<ASR::Variable_t>(*sym)
+                && ASR::down_cast<ASR::Variable_t>(sym)->m_storage
+                    != ASR::storage_typeType::Parameter;
+        }
+    }
+    return false;
+}
+
+static inline bool struct_has_len_params(const ASR::Struct_t* st) {
+    for (size_t i = 0; i < st->n_type_params; i++) {
+        if (is_len_type_param(st, st->m_type_params[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// A component whose bounds or length depend on a LEN type parameter is
+// allocated when an object is created and stays allocated, with the same
+// bounds and length, until the object ceases to exist.
+static inline bool is_len_dependent_member(const ASR::Struct_t* st,
+        const std::string& name) {
+    for (size_t i = 0; i < st->n_len_dependent_members; i++) {
+        if (name == st->m_len_dependent_members[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
     return is_allocatable(type) || is_pointer(type);
 }

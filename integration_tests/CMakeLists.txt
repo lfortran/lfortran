@@ -2735,6 +2735,12 @@ RUN(NAME pdt_20 LABELS gfortran llvm)
 # depend on a kind parameter, so this test is not labelled `gfortran`
 RUN(NAME pdt_21 LABELS llvm)
 RUN(NAME pdt_22 LABELS gfortran llvm)
+RUN(NAME pdt_23 LABELS gfortran llvm)
+RUN(NAME pdt_24 LABELS gfortran llvm)
+# GFortran 15 leaves the components of a function result whose LEN type
+# parameters depend on the dummy arguments empty, so this test is not
+# labelled `gfortran`
+RUN(NAME pdt_25 LABELS llvm)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)

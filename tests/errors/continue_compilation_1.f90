@@ -301,7 +301,7 @@ program continue_compilation_1
     integer, parameter :: z(1) = 2
     integer, parameter :: qval(2) = reshape([7, 8], -[z])
     integer :: u
-    type matrix(n)
+    type len_matrix(n)
         integer, len :: n
         real :: data(n)
     end type
@@ -3379,3 +3379,18 @@ end function
 function cc1_bindc_explicit_result() result(c) bind(c)
     character(len=5) :: c  ! {Error} character function result `c` must have constant length one in a BIND(C) procedure
 end function
+
+! An assumed LEN type parameter needs a dummy argument, and a deferred one
+! the allocatable or pointer attribute.
+module cc1_len_type_parameters
+    implicit none
+    type :: cc1_len_t(n)
+        integer, len :: n
+        real :: x(n)
+    end type
+contains
+    subroutine cc1_len_use()
+        type(cc1_len_t(*)) :: a  ! {Error} an assumed LEN type parameter `*` is only allowed for a dummy argument
+        type(cc1_len_t(:)) :: b  ! {Error} a deferred LEN type parameter `:` requires the allocatable or pointer attribute
+    end subroutine cc1_len_use
+end module cc1_len_type_parameters

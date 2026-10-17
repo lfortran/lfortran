@@ -551,6 +551,11 @@ public:
                 ASRUtils::EXPR(ASR::make_Var_t(al, variable->base.loc, variable)))));
         }
         construct_variable_pointers.clear();
+        auto& scope_data_block = data_structure[current_scope->counter];
+        for (auto it: scope_data_block) {
+            body.push_back(al, it);
+        }
+        scope_data_block.clear();
         transform_stmts(body, x.n_items, x.m_items);
         block_t->m_body = body.p;
         block_t->n_body = body.size();
@@ -7757,8 +7762,52 @@ public:
 
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
 
+        if (overloaded_stmt == nullptr) {
+            target = keep_len_dependent_string_length(target);
+        }
         tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, target, value,
                             overloaded_stmt, compiler_options.po.realloc_lhs_arrays, false);
+    }
+
+    // A character component whose length is a LEN type parameter keeps its
+    // length when it is assigned, although it is stored as allocatable
+    // storage: the assignment is to the substring that is the whole
+    // component, which pads or truncates the value.
+    ASR::expr_t* keep_len_dependent_string_length(ASR::expr_t* target) {
+        if (!ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
+            return target;
+        }
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+        if (ASRUtils::is_array(target_type) || !ASRUtils::is_character(*target_type)) {
+            return target;
+        }
+        ASR::symbol_t* member = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::StructInstanceMember_t>(target)->m_m);
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(member);
+        if (owner == nullptr || !ASR::is_a<ASR::Struct_t>(*owner)
+                || !ASRUtils::is_len_dependent_member(
+                    ASR::down_cast<ASR::Struct_t>(owner),
+                    ASRUtils::symbol_name(member))) {
+            return target;
+        }
+        const Location& loc = target->base.loc;
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+            compiler_options.po.default_integer_kind));
+        ASR::expr_t* start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+            loc, 1, int_type));
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        duplicator.allow_procedure_calls = true;
+        ASR::expr_t* end = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc,
+            duplicator.duplicate_expr(target), int_type, nullptr));
+        ASR::ttype_t* section_type = ASRUtils::TYPE(ASR::make_String_t(al, loc,
+            ASRUtils::extract_kind_from_ttype_t(target_type),
+            duplicator.duplicate_expr(end),
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::DescriptorString));
+        ASR::expr_t* step = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+            loc, 1, int_type));
+        return ASRUtils::EXPR(ASR::make_StringSection_t(al, loc, target, start,
+            end, step, section_type, nullptr));
     }
 
     ASR::asr_t* create_CFPointer(const AST::SubroutineCall_t& x) {
