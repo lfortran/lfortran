@@ -2648,6 +2648,9 @@ public:
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
             check_io_item_not_function(expr);
+            if (_type == AST::decl_stmtType::Write && formatted) {
+                expr = cast_assumed_rank_output_item(expr, loc, "write");
+            }
             // For READ: expand implied-do loops to individual elements or array section
             if (_type == AST::decl_stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
                 expand_implied_do_for_read(
@@ -9372,6 +9375,46 @@ public:
         throw SemanticAbort();
     }
 
+    // Inside a `rank (n)` block of `select rank`, an assumed-rank output
+    // item is the selector viewed as a rank n descriptor (a scalar for
+    // `rank (0)`).
+    ASR::expr_t* cast_assumed_rank_output_item(ASR::expr_t* expr,
+            const Location& loc, const std::string& statement) {
+        if (!ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
+            return expr;
+        }
+        ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(expr);
+        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(v->m_v);
+        std::string var_name = var->m_name;
+        if (assumed_rank_arrays.find(var_name) == assumed_rank_arrays.end()) {
+            diag.add(diag::Diagnostic(
+                "Assumed-rank arrays are not supported in " + statement + " statements",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {expr->base.loc})
+                }));
+            throw SemanticAbort();
+        }
+        int rank = assumed_rank_arrays[var_name];
+        Vec<ASR::dimension_t> dims; dims.reserve(al, rank);
+        for (int r = 0; r < rank; r++) {
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = nullptr;
+            dim.m_length = nullptr;
+            dims.push_back(al, dim);
+        }
+        ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(expr));
+        ASR::ttype_t* desc_type = ASRUtils::make_Array_t_util(al, loc,
+            elem_type, dims.p, dims.size(), ASR::abiType::Source, false,
+            ASR::array_physical_typeType::DescriptorArray, false, false, true
+        );
+        ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(
+            al, expr->base.loc, expr, ASR::array_physical_typeType::AssumedRankArray,
+            ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr
+        );
+        return ASRUtils::EXPR(array_cast);
+    }
+
     void visit_Print(const AST::Print_t &x) {
         mark_IO_side_effect();
         Vec<ASR::expr_t*> body;
@@ -9426,39 +9469,7 @@ public:
             this->visit_expr(*x.m_values[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             check_io_item_not_function(expr);
-            if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
-                ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(expr);
-                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(v->m_v);
-                std::string var_name = var->m_name;
-                if (assumed_rank_arrays.find(var_name) == assumed_rank_arrays.end()) {
-                    diag.add(diag::Diagnostic(
-                        "Assumed-rank arrays are not supported in print statements",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {expr->base.loc})
-                        }));
-                    throw SemanticAbort();
-                } else {
-                    int rank = assumed_rank_arrays[var_name];
-                    Vec<ASR::dimension_t> dims; dims.reserve(al, rank);
-                    for (int r = 0; r < rank; r++) {
-                        ASR::dimension_t dim;
-                        dim.loc = x.base.base.loc;
-                        dim.m_start = nullptr;
-                        dim.m_length = nullptr;
-                        dims.push_back(al, dim);
-                    }
-                    ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(expr));
-                    ASR::ttype_t* desc_type = ASRUtils::make_Array_t_util(al, x.base.base.loc,
-                        elem_type, dims.p, dims.size(), ASR::abiType::Source, false,
-                        ASR::array_physical_typeType::DescriptorArray, false, false, true
-                    );
-                    ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(
-                        al, expr->base.loc, expr, ASR::array_physical_typeType::AssumedRankArray,
-                        ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr
-                    );
-                    expr = ASRUtils::EXPR(array_cast);
-                }
-            }
+            expr = cast_assumed_rank_output_item(expr, x.base.base.loc, "print");
             body.push_back(al, expr);
         }
         if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {
