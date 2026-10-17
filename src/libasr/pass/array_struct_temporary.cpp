@@ -3093,8 +3093,20 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 x->m_name)->m_return_var_type;
             if (return_type) {
                 return_type = ASRUtils::duplicate_type(al, return_type);
+                // Shape inquiries in the result type use the actual's
+                // descriptor, not its call-only physical conversion.
+                Vec<ASR::call_arg_t> type_args;
+                type_args.reserve(al, x->n_args);
+                for (size_t i = 0; i < x->n_args; i++) {
+                    ASR::call_arg_t arg = x->m_args[i];
+                    if (arg.m_value) {
+                        arg.m_value = ASRUtils::get_past_array_physical_cast(
+                            arg.m_value);
+                    }
+                    type_args.push_back(al, arg);
+                }
                 ASRUtils::ReplaceFunctionParamWithArg replacer(
-                    al, x->m_args, x->n_args);
+                    al, type_args.p, type_args.size());
                 replacer.replace_type(return_type);
                 x->m_type = return_type;
             }

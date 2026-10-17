@@ -171,6 +171,8 @@ program string_trim_evaluation_01
     end do
     if (i /= 2 .or. calls /= 3 .or. condition_calls /= 3 .or. wrapper_calls /= 3) error stop 31
 
+    call check_shape_length(['a', 'b', 'c'])
+
     do i = 0, 3
         calls = 0
         dynamic = trim(get_dynamic(i)) // '!'
@@ -256,6 +258,31 @@ contains
         wrapper_calls = wrapper_calls + 1
         result = left // right
     end function
+
+    function shaped_text(value, shape) result(result)
+        character(*), intent(in) :: value
+        character(1), intent(in) :: shape(:)
+        character(len(value) + size(shape)) :: result
+        wrapper_calls = wrapper_calls + 1
+        result = value // repeat('#', size(shape))
+    end function
+
+    subroutine check_shape_length(shape)
+        character(1), intent(in) :: shape(:)
+        character(:), allocatable :: scalar
+        character(10) :: broadcast(2)
+
+        calls = 0
+        wrapper_calls = 0
+        scalar = shaped_text(trim(get_varying()), shape) // '!'
+        call check(scalar, 'abc###!', 1)
+        if (len(scalar) /= 7 .or. wrapper_calls /= 1) error stop 35
+
+        calls = 0
+        wrapper_calls = 0
+        broadcast = shaped_text(trim(get_varying()), shape) // '!'
+        if (any(broadcast /= 'abc###!') .or. calls /= 1 .or. wrapper_calls /= 1) error stop 36
+    end subroutine
 
     integer function get_count()
         calls = calls + 1
