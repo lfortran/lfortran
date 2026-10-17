@@ -75,6 +75,8 @@
               :alignment nil
               :parent nil
               :kind_params []
+              :type_params []
+              :len_dependent_members []
             )
             "circle_area" (Function
               :symtab (SymbolTable

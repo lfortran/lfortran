@@ -112,6 +112,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 ),
                             ~unlimited_polymorphic_type:
                                 (Struct
@@ -138,6 +140,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    []
                                     []
                                 )
                         })

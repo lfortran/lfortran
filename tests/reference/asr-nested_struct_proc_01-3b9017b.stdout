@@ -282,6 +282,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 ),
                             integer_kinds:
                                 (ExternalSymbol
@@ -594,6 +596,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    []
                                     []
                                 ),
                             omap_insert_key_value:
@@ -1109,6 +1113,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    []
                                     []
                                 ),
                             output_unit:

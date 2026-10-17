@@ -2,12 +2,12 @@
     "basename": "asr-struct_member_element_of_array_base-f04e524",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/struct_member_element_of_array_base.asr",
-    "infile_hash": "f69cc087e32360cd1edae2f2d8f946c4bd130869de6f71ad07a754f2",
+    "infile_hash": "8529835637193219b2dd3841e03b081e23814737972183a9ad1b7226",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-struct_member_element_of_array_base-f04e524.stderr",
-    "stderr_hash": "b4dda0d79fb8b66c5ff501fa6c4505116c4c018c15f38f1aa830efe3",
+    "stderr_hash": "f484c776a77f13eb6af360f52e69fdfbb0405002473465749eb9ebae",
     "returncode": 2
 }

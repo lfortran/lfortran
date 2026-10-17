@@ -84,6 +84,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 )
                         })
                     derived_type_collection
@@ -188,6 +190,8 @@
                                     []
                                     ()
                                     4 point
+                                    []
+                                    []
                                     []
                                 ),
                             cp:
@@ -373,6 +377,8 @@
                                     []
                                     ()
                                     4 point
+                                    []
+                                    []
                                     []
                                 ),
                             ~select_type_block_:
