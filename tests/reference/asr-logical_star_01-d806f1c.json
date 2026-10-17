@@ -1,0 +1,13 @@
+{
+    "basename": "asr-logical_star_01-d806f1c",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/../integration_tests/logical_star_01.f90",
+    "infile_hash": "fd66b40dde78c0cba7e7c1b09853ec82810496c2ab26b5e92e6282cc",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-logical_star_01-d806f1c.stderr",
+    "stderr_hash": "5754d1c63e461b5a1f7deda838878e37c835842a1b841a5d3ff484fe",
+    "returncode": 0
+}
