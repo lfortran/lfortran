@@ -3,11 +3,17 @@
 ! ALLOCATE), whether the element type is finalizable itself or only through
 ! a component, and no defined assignment of a component is invoked, as it
 ! would be by an intrinsic assignment.
+!
+! The nonelemental scalar FINAL procedure `fin` does not apply to arrays
+! (F2018 7.5.6.2), so the type `eitem` with an impure elemental FINAL
+! procedure, which an intrinsic assignment to the array does invoke per
+! element, checks the same cases.
 module finalization_45_m
     implicit none
     integer :: nf = 0
     integer :: nfc = 0
     integer :: na = 0
+    integer :: ne = 0
 
     type :: item
         integer :: v = 0
@@ -16,6 +22,16 @@ module finalization_45_m
     end type
 
     type, extends(item) :: sub
+        integer :: w = 0
+    end type
+
+    type :: eitem
+        integer :: v = 0
+    contains
+        final :: efin
+    end type
+
+    type, extends(eitem) :: esub
         integer :: w = 0
     end type
 
@@ -46,6 +62,11 @@ contains
         nf = nf + 1
     end subroutine
 
+    impure elemental subroutine efin(x)
+        type(eitem), intent(inout) :: x
+        ne = ne + 1
+    end subroutine
+
     subroutine fin_comp(x)
         type(comp_t), intent(inout) :: x
         nfc = nfc + 1
@@ -69,6 +90,9 @@ program finalization_45
     type(holder_t), allocatable :: arr(:)
     type(asg_holder_t) :: hs(2)
     type(asg_holder_t), allocatable :: ha(:)
+    type(eitem) :: ea(2), e
+    type(eitem), allocatable :: cea(:), ceb(:)
+    class(eitem), allocatable :: ecza(:), ecca(:)
 
     ! Array source of a finalizable type.
     za%v = [1, 2]
@@ -125,6 +149,40 @@ program finalization_45
     allocate(ha, source=hs)
     if (na /= 0) error stop 16
     if (any(ha%c%k /= [4, 5])) error stop 17
+
+    ! The same with an impure elemental FINAL procedure.
+    ea%v = [1, 2]
+    ne = 0
+    allocate(cea, source=ea)
+    if (ne /= 0) error stop 18
+    if (any(cea%v /= [1, 2])) error stop 19
+    ! Control: intrinsic assignment finalizes each element of the target.
+    ne = 0
+    cea = ea
+    if (ne /= 2) error stop 20
+
+    allocate(esub :: ecza(2))
+    select type (ecza)
+    type is (esub)
+        ecza%v = [3, 4]
+        ecza%w = [5, 6]
+    end select
+    ne = 0
+    allocate(ecca, source=ecza)
+    if (ne /= 0) error stop 21
+    select type (ecca)
+    type is (esub)
+        if (any(ecca%v /= [3, 4])) error stop 22
+        if (any(ecca%w /= [5, 6])) error stop 23
+    class default
+        error stop 24
+    end select
+
+    e%v = 7
+    ne = 0
+    allocate(ceb(3), source=e)
+    if (ne /= 0) error stop 25
+    if (any(ceb%v /= 7)) error stop 26
 
     print *, "ok"
 end program
