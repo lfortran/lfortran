@@ -1,6 +1,6 @@
 program shared_library_01
 ! Calls procedures from a shared library that is linked by the compiler
-! driver with `-shared` (see `SHARED_LIBRARY_FILES` in CMakeLists.txt)
+! driver with `--shared` (see `SHARED_LIBRARY_FILES` in CMakeLists.txt)
 use iso_c_binding, only: c_int
 use shared_library_01_mod, only: add_one, counter
 implicit none
