@@ -68,10 +68,11 @@ end if
 An expression that cannot be associated with a pointer (`z%re`, a
 `select rank` selector) is always copied.
 
-The pass runs after `print_arr` and `print_struct_type`, which expand array
-items for the code generators that use them, and after every pass that
-changes the physical type of an array, and before `do_loops`, which lowers
-the copy loops. When the passes are verified, it checks the invariant it
+Only the LLVM backend reads this form; the other backends skip the pass and
+expand or reject the array items themselves. The pass runs after `print_arr`
+and `print_struct_type`, which expand array items for the code generators
+that use them, and after every pass that changes the physical type of an
+array, and before `do_loops`, which lowers the copy loops. When the passes are verified, it checks the invariant it
 establishes (ASRVerifyOptions::string_format_array_args).
 */
 

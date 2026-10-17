@@ -435,7 +435,11 @@ namespace LCompilers {
                 "print_list_tuple",
                 "do_loops",
                 "select_case",
-                "inline_function_calls"
+                "inline_function_calls",
+                // Only the LLVM backend formats the arrays of a StringFormat
+                // through their contiguous data; the C backend expands or
+                // rejects them itself.
+                "string_format_array_args"
             };
             _user_defined_passes.clear();
         }
