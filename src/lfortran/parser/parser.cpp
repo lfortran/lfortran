@@ -585,7 +585,9 @@ bool parse_string(std::string &out, const std::string &s, size_t &pos,
 
     while (pos < s.size()) {
         if (fixed_form) {
-	    if (col > 72 || s[pos] == '\n') {
+	    bool line_end = s[pos] == '\n'
+		|| (s[pos] == '\r' && s[pos+1] == '\n');
+	    if (col > 72 || line_end) {
 		// The literal continues on the next continuation line, which
 		// may be preceded by comment or blank lines
 		size_t next = pos;
@@ -601,6 +603,8 @@ bool parse_string(std::string &out, const std::string &s, size_t &pos,
 		} else {
 		    return false;
 		}
+		// A line that ends before column 72 is padded with blanks
+		if (col <= 72) out.append(73 - col, ' ');
 		col = 7;
 		if (lm) {
 		    lm->files.back().out_start.push_back(out.size());
@@ -831,6 +835,14 @@ bool is_include(const std::string &s, uint32_t pos) {
     }
 }
 
+// Makes the range of the current file in `lm` hold every position in `out`
+void cover_output(LocationManager &lm, const std::string &out)
+{
+    if (!lm.file_ends.empty() && lm.file_ends.back() < out.size()) {
+        lm.file_ends.back() = out.size();
+    }
+}
+
 /*
 The prescan phase includes:
 - Removal of whitespace (fixed-form only)
@@ -936,6 +948,7 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
                     if ((s[pos] == '"') || (s[pos] == '\'')) {
                         if (!process_include(out, s, lm, pos, fixed_form,
                                 include_dirs, col, diagnostics)) {
+                            cover_output(lm, out);
                             Error error;
                             return error;
                         }
@@ -947,6 +960,7 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
                 }
             };
             if (!ok) {
+                cover_output(lm, out);
                 Error error;
                 return error;
             }
@@ -954,6 +968,7 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
         }
         lm.files.back().in_start.push_back(pos);
         lm.files.back().out_start.push_back(out.size());
+        cover_output(lm, out);
         return out;
     } else {
          // `pos` is the position in the original code `s`
@@ -979,6 +994,7 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
                 while (pos < s.size() && s[pos] == ' ') pos++;
                 LCOMPILERS_ASSERT(pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')));
                 if (!process_include(out, s, lm, pos, fixed_form, include_dirs, col, diagnostics)) {
+                    cover_output(lm, out);
                     Error error;
                     return error;
                 }
@@ -1030,6 +1046,7 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
         // file has it
         lm.files.back().in_start.push_back(pos);
         lm.files.back().out_start.push_back(out.size());
+        cover_output(lm, out);
         return out;
     }
 }
