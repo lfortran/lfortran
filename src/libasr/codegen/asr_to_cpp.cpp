@@ -172,7 +172,7 @@ public:
             sub += indent + format_type("", type_name, v_m_name, use_ref, dummy, false);
             sub += " = &" + variable_name + ";\n";
             if( !is_pointer ) {
-                for (int i = 0; i < n_dims; i++) {
+                for (size_t i = 0; i < n_dims; i++) {
                     if( m_dims[i].m_start ) {
                         this->visit_expr(*m_dims[i].m_start);
                         sub += indent + std::string(v_m_name) +

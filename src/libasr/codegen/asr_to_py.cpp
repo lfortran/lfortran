@@ -182,7 +182,7 @@ public:
                 this_arg_info.asr_obj = arg;                                                       \
                 this_arg_info.ctype   = CTYPE_STR;                                                 \
                 this_arg_info.ndims   = n_dims;                                                    \
-                for (int j = 0; j < this_arg_info.ndims; j++) {                                    \
+                for (size_t j = 0; j < this_arg_info.ndims; j++) {                                 \
                     auto lbound_ptr = m_dims[j].m_start;                                           \
                     if (!is_a<ASR::IntegerConstant_t>(*lbound_ptr)) {                              \
                         throw CodeGenError(errmsg1);                                               \
@@ -289,7 +289,7 @@ public:
             fargs_wip += it->asr_obj->m_name;
             if(it->ndims > 0) {
                 fargs_wip += "[0";
-                for(int h = 1; h < it->ndims; h++)
+                for(size_t h = 1; h < it->ndims; h++)
                     fargs_wip += ",0";
                 fargs_wip += "]";
             }

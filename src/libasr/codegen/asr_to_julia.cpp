@@ -262,7 +262,7 @@ public:
             if (is_allocate)
                 return;
         }
-        for (int i = 0; i < n_dims; i++) {
+        for (size_t i = 0; i < n_dims; i++) {
             if (m_dims[i].m_length) {
                 visit_expr(*m_dims[i].m_length);
                 if (init_default)
