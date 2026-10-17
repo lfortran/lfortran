@@ -4259,3 +4259,29 @@ semantic error: open with status 'REPLACE' requires a file specifier
      |
 3400 |     open(4, status='REPLACE')  ! {Error} open with status 'REPLACE' requires a file specifier
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Passing a scalar argument to an array dummy argument is not allowed
+    --> tests/errors/continue_compilation_1.f90:3422:28
+     |
+3422 |         call cc1_eas_dummy(c(2))  ! {Error} Passing a scalar argument to an array dummy argument is not allowed
+     |                            ^^^^ scalar argument
+     |
+3416 |        subroutine cc1_eas_dummy(x)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3418 |        end subroutine cc1_eas_dummy
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ assumed-shape array dummy argument
+
+semantic error: Passing an element of a pointer array to an array dummy argument is not allowed
+    --> tests/errors/continue_compilation_1.f90:3437:28
+     |
+3437 |         call cc1_epa_dummy(p(2,1))  ! {Error} Passing an element of a pointer array to an array dummy argument is not allowed
+     |                            ^^^^^^ element of a pointer array
+     |
+3431 |        subroutine cc1_epa_dummy(x)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3433 |        end subroutine cc1_epa_dummy
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ array dummy argument

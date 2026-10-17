@@ -6687,3 +6687,10 @@ semantics_only_cc = true
 filename = "errors/legacy_array_sections_assumed_shape_01.f90"
 semantics_only_cc = true
 options = "--legacy-array-sections"
+
+# An element of a pointer, assumed-shape or polymorphic array passed to an
+# explicit-shape or assumed-size dummy.
+[[test]]
+filename = "errors/legacy_array_sections_pointer_element_01.f90"
+semantics_only_cc = true
+options = "--legacy-array-sections"
