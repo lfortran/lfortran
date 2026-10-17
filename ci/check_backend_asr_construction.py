@@ -18,11 +18,13 @@ without a checkout. The default base is the merge base of HEAD and
 origin/main; if the base cannot be determined, the check fails. --list prints
 every counted call in the working tree.
 
-Counted calls are ASR::make_<Name>_t(...) and ASRUtils::make_<Name>(...) (any
-ASRUtils maker, such as make_<Name>_t_util or make_Cast_t_value), outside
-comments and string and character literals. Known limitations: macros that
-construct nodes (such as make_ConstantWithType in asr_builder.h, unused in
-codegen) and indirect helpers (such as ASRUtils::duplicate_type or
+Counted are references to ASR::make_<Name>_t and to any ASRUtils::make_<Name>
+(such as make_<Name>_t_util or make_Cast_t_value): calls, also when split
+across lines, and taking a maker's address. Comments and string and character
+literals (including raw strings) are skipped; C++14 digit separators and //
+comments continued with a trailing backslash are handled. Known limitations:
+macros that construct nodes (such as make_ConstantWithType in asr_builder.h,
+unused in codegen) and indirect helpers (such as ASRUtils::duplicate_type or
 ASRBuilder) are not counted, and calls in #if 0 blocks are counted.
 """
 
@@ -38,7 +40,7 @@ BACKEND_DIR = "src/libasr/codegen"
 SOURCE_SUFFIXES = (".cpp", ".h")
 SCRIPT = "python3 ci/check_backend_asr_construction.py"
 CONSTRUCTION = re.compile(
-    r"\b(?:ASR\s*::\s*make_\w+_t|ASRUtils\s*::\s*make_\w+)\s*\(")
+    r"\b(?:ASR\s*::\s*make_\w+_t|ASRUtils\s*::\s*make_\w+)\b")
 RAW_STRING = re.compile(r'(?:u8|[uUL])?R"([^()\\\s]{0,16})\(')
 
 
@@ -64,6 +66,17 @@ def is_digit_separator(text, i):
     return start < i and text[start].isdigit()
 
 
+def line_comment_end(text, i):
+    """End of the // comment at text[i], following backslash-newline splices."""
+    while True:
+        end = text.find("\n", i)
+        if end == -1:
+            return len(text)
+        if not text[i:end].rstrip("\r").endswith("\\"):
+            return end
+        i = end + 1
+
+
 def strip_comments_and_strings(text):
     """Blank out comments and string/character literals, keeping newlines."""
     out = []
@@ -76,8 +89,7 @@ def strip_comments_and_strings(text):
     while i < n:
         c = text[i]
         if text.startswith("//", i):
-            end = text.find("\n", i)
-            end = n if end == -1 else end
+            end = line_comment_end(text, i)
             blank(text[i:end])
             i = end
         elif text.startswith("/*", i):
@@ -111,8 +123,7 @@ def strip_comments_and_strings(text):
 def construction_sites(text):
     """Return (line, maker) for every construction call in a source text."""
     code = strip_comments_and_strings(text)
-    return [(code.count("\n", 0, m.start()) + 1,
-             re.sub(r"\s+", "", m.group(0)).rstrip("("))
+    return [(code.count("\n", 0, m.start()) + 1, re.sub(r"\s+", "", m.group(0)))
             for m in CONSTRUCTION.finditer(code)]
 
 

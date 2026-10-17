@@ -276,6 +276,15 @@ class BackendASRConstructionTests(unittest.TestCase):
         self.assertEqual(self.checker.construction_sites(text), [
             (1, "ASR::make_Var_t"), (2, "ASR::make_Var_t"), (3, "ASR::make_Var_t")])
 
+    def test_continued_line_comments_and_maker_addresses(self):
+        text = ("// note \\\nASR::make_Var_t(al);\n"
+                "// note \\\r\nASR::make_Var_t(al);\n"
+                "ASR::make_Var_t(al); // \\ not at the end\n"
+                "auto f = &ASR::make_Var_t; auto g = &ASRUtils::make_Function_t_util;\n")
+        self.assertEqual(self.checker.construction_sites(text), [
+            (5, "ASR::make_Var_t"), (6, "ASR::make_Var_t"),
+            (6, "ASRUtils::make_Function_t_util")])
+
     def repo(self, directory):
         root = Path(directory)
 
