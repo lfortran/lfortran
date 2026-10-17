@@ -22,6 +22,10 @@ contains
         integer, intent(in) :: x(2,2)
         sum_2x2 = sum(x)
     end function
+    pure integer function sum_3(x)
+        integer, intent(in) :: x(3)
+        sum_3 = x(1) + x(2) + x(3)
+    end function
     subroutine check_as2(x, expected)
         integer, intent(in) :: x(2,*), expected(4)
         if (any([x(:,1), x(:,2)] /= expected)) error stop 4
@@ -72,6 +76,7 @@ program legacy_array_sections_28
     call set_out(b(1,2))
     if (any(reshape(b, [6]) /= [1, 20, 7, 8, 9, 6])) error stop 2
     if (sum_2x2(b(2,1)) /= 20 + 7 + 8 + 9) error stop 3
+    if (sum_3(b(2,1)) /= 20 + 7 + 8) error stop 21
 
     b = reshape([(i, i = 1, 6)], [2, 3])
     call check_as2(b(2,1), [2, 3, 4, 5])
