@@ -2912,9 +2912,15 @@ namespace Spread {
         return nullptr;
     }
 
-    static inline ASR::expr_t* get_result_dimension(Allocator& al, const Location& loc,
+    // The extent of dimension `i_ + 1` of `spread(array, dim, ncopies)`,
+    // where `ncopies` is the extent of the new dimension and `array_size(j)`
+    // gives the extent of dimension `j` of `array`, with the type of
+    // `ncopies`. `j` is always an integer constant.
+    static inline ASR::expr_t* result_extent(Allocator& al, const Location& loc,
         ASR::expr_t* array, ASR::expr_t* ncopies, int64_t i_, ASR::expr_t* dim,
-        bool is_dim_const, diag::Diagnostics& diag) {
+        bool is_dim_const,
+        const std::function<ASR::expr_t*(ASR::expr_t*)>& array_size,
+        diag::Diagnostics& diag) {
         int64_t i = i_ + 1;
         ASRUtils::ASRBuilder b(al, loc);
         if( is_dim_const ) {
@@ -2923,43 +2929,23 @@ namespace Spread {
             if( i == dim_ ) {
                 return ncopies;
             }
-
-            bool is_fixed_size_array = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(array));
-            ASR::dimension_t* array_dims = nullptr;
-            ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(array), array_dims);
-            if( i < dim_ ) {
-                if( is_fixed_size_array ) {
-                    return array_dims[i - 1].m_length;
-                }
-                return b.ArraySize(array, b.i32(i), int32);
-            } else {
-                if( is_fixed_size_array ) {
-                    return array_dims[i - 2].m_length;
-                }
-
-                return b.ArraySize(array, b.i32(i - 1), int32);
-            }
+            return array_size(b.i32(i < dim_ ? i : i - 1));
         }
-        // merge(ncopies, merge(original_shape[i], original_shape[merge(1, i - 1, i == 1)], i < dim), i == dim)
-        Vec<ASR::expr_t*> args_merge1; args_merge1.reserve(al, 3);
+        // merge(ncopies, merge(original_shape[i], original_shape[i - 1], i < dim), i == dim)
         Vec<ASR::expr_t*> args_merge2; args_merge2.reserve(al, 3);
         Vec<ASR::expr_t*> args_merge3; args_merge3.reserve(al, 3);
 
-        args_merge1.push_back(al, b.i32(1));
-        args_merge1.push_back(al, b.i32(i - 1));
-        args_merge1.push_back(al, b.Eq(b.i32(i), b.i32(1)));
-        ASR::expr_t* merge_for_i = EXPR(Merge::create_Merge(al, loc, args_merge1, diag));
-
         // `i` runs over the result's dimensions, one more than the array
-        // has. This branch is only selected when `i < dim`, so it is never
-        // the appended dimension, but the index still has to name a
-        // dimension the array actually has for the expression to be
-        // well formed.
+        // has. Only `dim` is a run-time value, so the two candidate
+        // dimensions of the array are constants. The first is only
+        // selected when `i < dim`, so it is never the appended dimension,
+        // and the second only when `i > dim`, so it is never dimension 0,
+        // but each index still has to name a dimension the array actually
+        // has for the expression to be well formed.
         int64_t array_rank = ASRUtils::extract_n_dims_from_ttype(
             ASRUtils::expr_type(array));
-        args_merge2.push_back(al, b.ArraySize(
-            array, b.i32(std::min(i, array_rank)), int32));
-        args_merge2.push_back(al, b.ArraySize(array, merge_for_i, int32));
+        args_merge2.push_back(al, array_size(b.i32(std::min(i, array_rank))));
+        args_merge2.push_back(al, array_size(b.i32(std::max<int64_t>(i - 1, 1))));
         args_merge2.push_back(al, b.Lt(b.i32(i), dim));
         ASR::expr_t* merge_for_i_ne_dim = EXPR(Merge::create_Merge(al, loc, args_merge2, diag));
 
@@ -2967,6 +2953,24 @@ namespace Spread {
         args_merge3.push_back(al, merge_for_i_ne_dim);
         args_merge3.push_back(al, b.Eq(b.i32(i), dim));
         return EXPR(Merge::create_Merge(al, loc, args_merge3, diag));
+    }
+
+    static inline ASR::expr_t* get_result_dimension(Allocator& al, const Location& loc,
+        ASR::expr_t* array, ASR::expr_t* ncopies, int64_t i_, ASR::expr_t* dim,
+        bool is_dim_const, diag::Diagnostics& diag) {
+        ASRUtils::ASRBuilder b(al, loc);
+        bool is_fixed_size_array = ASRUtils::is_fixed_size_array(ASRUtils::expr_type(array));
+        ASR::dimension_t* array_dims = nullptr;
+        ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(array), array_dims);
+        return result_extent(al, loc, array, ncopies, i_, dim, is_dim_const,
+            [&](ASR::expr_t* j) -> ASR::expr_t* {
+                int64_t j_ = -1;
+                if( is_dim_const && is_fixed_size_array &&
+                        ASRUtils::extract_value(j, j_) ) {
+                    return array_dims[j_ - 1].m_length;
+                }
+                return b.ArraySize(array, j, int32);
+            }, diag);
     }
 
     static inline ASR::asr_t* create_Spread(Allocator& al, const Location& loc,

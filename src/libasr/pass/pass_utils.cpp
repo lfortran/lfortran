@@ -11,6 +11,35 @@ namespace LCompilers {
 
     namespace PassUtils {
 
+        class NormalizeStringPhysicalCasts:
+                public ASR::CallReplacerOnExpressionsVisitor<NormalizeStringPhysicalCasts> {
+        public:
+            Allocator &al;
+
+            NormalizeStringPhysicalCasts(Allocator &al_): al{al_} {
+                call_replacer_on_value = false;
+            }
+
+            void call_replacer() {
+                if (!ASR::is_a<ASR::StringPhysicalCast_t>(**current_expr)) return;
+                ASR::StringPhysicalCast_t *x =
+                    ASR::down_cast<ASR::StringPhysicalCast_t>(*current_expr);
+                ASR::string_physical_typeType physical =
+                    ASRUtils::get_string_type(ASRUtils::expr_type(x->m_arg))->m_physical_type;
+                if (physical == x->m_new) {
+                    *current_expr = x->m_arg;
+                } else if (physical != x->m_old) {
+                    *current_expr = ASRUtils::create_string_physical_cast(al,
+                        x->m_arg, x->m_new, ASRUtils::is_allocatable(x->m_type));
+                }
+            }
+        };
+
+        void normalize_string_physical_casts(Allocator &al, ASR::TranslationUnit_t &unit) {
+            NormalizeStringPhysicalCasts casts(al);
+            casts.visit_TranslationUnit(unit);
+        }
+
         void make_new_tu_functions_private(ASR::TranslationUnit_t &unit,
                 const std::function<void()> &instantiate) {
             std::set<std::string> existing_symbols;
