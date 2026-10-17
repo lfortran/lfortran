@@ -7,7 +7,6 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/string_format_array_args.h>
 
-#include <iostream>
 #include <vector>
 
 /*

@@ -7,6 +7,8 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/casting_utils.h>
 
+#include <iostream>
+
 namespace LCompilers {
 
     namespace PassUtils {
