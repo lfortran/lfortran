@@ -4810,8 +4810,23 @@ filename = "../integration_tests/gpu_metal_479.f90"
 gpu_cuda_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_metal_480.f90"
+gpu_metal_kernel = true
+
+[[test]]
 filename = "../integration_tests/gpu_kernel_source_09.f90"
 gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_10.f90"
+gpu_cuda_kernel = true
+gpu_metal_kernel = true
+options = "--fast"
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_11.f90"
+asr = true
+options = "--gpu=metal --pass=gpu_offload --cumulative"
 
 [[test]]
 filename = "errors/array_bounds_check_01.f90"

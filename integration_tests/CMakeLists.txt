@@ -6297,6 +6297,7 @@ RUN(NAME gpu_metal_476 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_477 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_478 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_479 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_480 LABELS gfortran llvm metal cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
@@ -6369,6 +6370,8 @@ RUN(NAME gpu_kernel_source_06 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_07 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_08 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_09 LABELS gfortran llvm)
+RUN(NAME gpu_kernel_source_10 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_kernel_source_11 LABELS gfortran llvm metal cuda_cpu)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)
