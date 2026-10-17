@@ -7880,10 +7880,30 @@ public:
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
 
         if (overloaded_stmt == nullptr) {
+            check_len_type_param_not_assigned(target);
             target = keep_len_dependent_string_length(target);
         }
         tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, target, value,
                             overloaded_stmt, compiler_options.po.realloc_lhs_arrays, false);
+    }
+
+    // A type parameter inquiry such as `x%n` is not a variable (F2023 9.4.5).
+    void check_len_type_param_not_assigned(ASR::expr_t* target) {
+        if (!ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
+            return;
+        }
+        ASR::symbol_t* member = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::StructInstanceMember_t>(target)->m_m);
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(member);
+        if (owner != nullptr && ASR::is_a<ASR::Struct_t>(*owner)
+                && ASRUtils::is_len_type_param(ASR::down_cast<ASR::Struct_t>(owner),
+                    ASRUtils::symbol_name(member))) {
+            diag.add(Diagnostic(
+                "the LEN type parameter '" + std::string(ASRUtils::symbol_name(member))
+                + "' cannot be assigned",
+                Level::Error, Stage::Semantic, {Label("", {target->base.loc})}));
+            throw SemanticAbort();
+        }
     }
 
     // A character component whose length is a LEN type parameter keeps its

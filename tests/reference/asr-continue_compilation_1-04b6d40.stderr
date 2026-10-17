@@ -4217,3 +4217,9 @@ semantic error: `pause` code must be a scalar integer or default character expre
      |
 3365 |         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
      |               ^^^^^ 
+
+semantic error: the LEN type parameter 'n' cannot be assigned
+    --> tests/errors/continue_compilation_1.f90:3396:9
+     |
+3396 |         c%n = 3  ! {Error} the LEN type parameter 'n' cannot be assigned
+     |         ^^^ 
