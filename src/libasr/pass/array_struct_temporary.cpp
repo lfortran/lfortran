@@ -3334,7 +3334,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             replace_expr(*current_expr);
         }
         current_expr = current_expr_copy;
-        if (!ASRUtils::is_array(x->m_type) &&
+        // Statement-only intrinsics have no result to materialize.
+        if (x->m_type != nullptr && !ASRUtils::is_array(x->m_type) &&
                 ASRUtils::is_character(*x->m_type) &&
                 is_evaluated_once(&x->base)) {
             ASR::String_t* string_type = ASRUtils::get_string_type(&x->base);
