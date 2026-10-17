@@ -4319,3 +4319,21 @@ semantic error: the LEN type parameter 'n' cannot be an input item
      |
 3501 |         read(*, *) (v%n, i = 1, 1)  ! {Error} the LEN type parameter 'n' cannot be an input item
      |                     ^^^ 
+
+semantic error: the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+    --> tests/errors/continue_compilation_1.f90:3536:28
+     |
+3536 |         call cc1_lenh_salt(v%n, *10)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+     |                            ^^^ 
+
+semantic error: the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+    --> tests/errors/continue_compilation_1.f90:3537:42
+     |
+3537 |         k = cc1_lenh_ident(cc1_lenh_fset(v%n))  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+     |                                          ^^^ 
+
+semantic error: the actual argument for the allocatable dummy argument 'a' must be allocatable
+    --> tests/errors/continue_compilation_1.f90:3543:65
+     |
+3543 |         kk = cc1_lenh_ident(cc1_lenh_fset(ii)) + cc1_lenh_fgrow(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+     |                                                                 ^^^ the component 'x' is not allocatable: its bounds or length depend on a LEN type parameter
