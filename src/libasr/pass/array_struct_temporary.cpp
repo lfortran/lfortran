@@ -2991,6 +2991,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         }
         if (in_array_context && type != nullptr && !is_array_expr &&
                 is_evaluated_once(x)) {
+            if (ASRUtils::is_character(*type)) {
+                // Normalize nested string intrinsics before saving the whole
+                // scalar operand, whose assignment is not visited again.
+                in_array_context = false;
+                ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_expr(x);
+                in_array_context = true;
+            }
             if (ASRUtils::is_struct(*type)) {
                 force_replace_current_expr_for_struct(current_expr,
                     "_scalar_operand_", al, current_body, current_scope,
@@ -3076,6 +3083,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        if (!ASRUtils::is_array(x->m_type) &&
+                ASRUtils::is_character(*x->m_type)) {
+            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_FunctionCall(x);
+        }
         if( ASRUtils::is_elemental(x->m_name) && !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
             // ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x->m_name);
             // std::cout << f << "\n";

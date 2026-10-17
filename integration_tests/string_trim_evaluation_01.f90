@@ -3,6 +3,7 @@ program string_trim_evaluation_01
     integer :: calls = 0, failures = 0, i, j, condition_calls = 0
     character(2) :: text
     character(16) :: padded
+    character(10) :: array(3)
     character(:), allocatable :: dynamic
     character(16) :: output
 
@@ -104,6 +105,27 @@ program string_trim_evaluation_01
     end do outer
     if (i /= 3 .or. calls /= 8 .or. condition_calls /= 8) error stop 17
 
+    calls = 0
+    array = trim(get_text('array')) // '!'
+    if (any(array /= 'array!') .or. calls /= 1) error stop 18
+
+    calls = 0
+    array(1:2) = trim(get_text('part')) // '!'
+    if (any(array(1:2) /= 'part!') .or. calls /= 1) error stop 19
+    if (array(3) /= 'array!') error stop 20
+
+    calls = 0
+    array = trim(get_changing()) // trim(get_changing())
+    if (any(array /= 'xxx') .or. calls /= 2) error stop 21
+
+    calls = 0
+    array = trim(get_text(trim(get_text('nest')))) // '!'
+    if (any(array /= 'nest!') .or. calls /= 2) error stop 22
+
+    calls = 0
+    array = repeat(trim(get_text('ab')), 2) // '!'
+    if (any(array /= 'abab!') .or. calls /= 1) error stop 23
+
     do i = 0, 3
         calls = 0
         dynamic = trim(get_dynamic(i)) // '!'
@@ -114,6 +136,10 @@ program string_trim_evaluation_01
         dynamic = trim(adjustl(get_dynamic(i))) // '!'
         call check(dynamic, repeat('x', i) // '!', 1)
         if (len(dynamic) /= i + 1) error stop 13
+
+        calls = 0
+        array = trim(get_dynamic(i)) // '!'
+        if (any(array /= repeat('x', i) // '!') .or. calls /= 1) error stop 24
     end do
 
     if (failures /= 0) error stop 5
