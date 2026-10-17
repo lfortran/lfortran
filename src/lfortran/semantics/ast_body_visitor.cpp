@@ -3842,6 +3842,63 @@ public:
             }
         }
 
+    // A type-spec that names a parameterized derived type, e.g.
+    // `allocate(t(k=8, n=4) :: x)`, selects an instantiation of the type.
+    // Its LEN type parameter values are left in `last_pdt_len_spec`.
+    bool lower_pdt_allocate_type_spec(const std::string& type_name,
+            AST::fnarg_t* args, size_t n_args, AST::keyword_t* keywords,
+            size_t n_keywords, ASR::alloc_arg_t& alloc_arg, const Location& loc) {
+        ASR::symbol_t* sym = current_scope->resolve_symbol(type_name);
+        if (sym == nullptr || !ASR::is_a<ASR::Struct_t>(
+                *ASRUtils::symbol_get_past_external(sym))) {
+            return false;
+        }
+        ASR::Struct_t* pdt = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(sym));
+        if (pdt->n_kind_params == 0 && !ASRUtils::struct_has_len_params(pdt)) {
+            return false;
+        }
+        Vec<AST::kind_item_t> items;
+        items.reserve(al, n_args + n_keywords);
+        for (size_t i = 0; i < n_args; i++) {
+            if (args[i].m_start || args[i].m_step || args[i].m_end == nullptr) {
+                diag.add(Diagnostic(
+                    "a type parameter value in the type-spec of an allocation "
+                    "must be an expression",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+            AST::kind_item_t item;
+            item.loc = args[i].m_end->base.loc;
+            item.m_id = nullptr;
+            item.m_value = args[i].m_end;
+            item.m_type = AST::kind_item_typeType::Value;
+            items.push_back(al, item);
+        }
+        for (size_t i = 0; i < n_keywords; i++) {
+            AST::kind_item_t item;
+            item.loc = keywords[i].loc;
+            item.m_id = keywords[i].m_arg;
+            item.m_value = keywords[i].m_value;
+            item.m_type = AST::kind_item_typeType::Value;
+            items.push_back(al, item);
+        }
+        AST::AttrType_t* type_spec = AST::down_cast<AST::AttrType_t>(
+            AST::down_cast<AST::decl_attribute_t>(AST::make_AttrType_t(al, loc,
+                AST::decl_typeType::TypeType, items.p, items.size(), nullptr,
+                nullptr, AST::symbolType::None)));
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 0);
+        ASR::symbol_t* type_declaration = nullptr;
+        last_pdt_len_spec = PdtLenSpec();
+        instantiate_pdt(loc, type_name, type_spec, false, false, dims,
+            type_declaration, ASR::abiType::Source, false);
+        alloc_arg.m_type = ASRUtils::make_StructType_t_util(al, loc,
+            type_declaration, true);
+        alloc_arg.m_sym_subclass = type_declaration;
+        return true;
+    }
+
     // Lowers the type-spec of a typed allocation into the type fields of
     // `alloc_arg`.
     void lower_allocate_type_spec(AST::expr_t* type_spec, ASR::alloc_arg_t& alloc_arg,
@@ -3850,6 +3907,11 @@ public:
             AST::FuncCallOrArray_t* func_call_t =
                 AST::down_cast<AST::FuncCallOrArray_t>(type_spec);
             std::string type_name = to_lower(std::string(func_call_t->m_func));
+            if( lower_pdt_allocate_type_spec(type_name, func_call_t->m_args,
+                    func_call_t->n_args, func_call_t->m_keywords,
+                    func_call_t->n_keywords, alloc_arg, loc) ) {
+                return;
+            }
             if( type_name == "character" ) {
                 if (func_call_t->n_args > 0 && func_call_t->n_args <= 2
                     && func_call_t->m_args[0].m_end) {
@@ -3926,6 +3988,9 @@ public:
             } else if( name_lower == "logical" ) {
                 alloc_arg.m_type = ASRUtils::TYPE(ASR::make_Logical_t(al,
                     loc, 4));
+            } else if (lower_pdt_allocate_type_spec(name_lower, nullptr, 0,
+                    nullptr, 0, alloc_arg, loc)) {
+                return;
             } else {
                 ASR::symbol_t *v = current_scope->resolve_symbol(name_lower);
                 if (v) {
@@ -3961,8 +4026,15 @@ public:
         type_spec_arg.m_len_expr = nullptr;
         type_spec_arg.m_type = nullptr;
         type_spec_arg.m_sym_subclass = nullptr;
+        // LEN type parameter values of a type-spec that names a parameterized
+        // derived type, for each allocation object.
+        std::vector<PdtLenSpec> len_specs(x.n_args);
+        PdtLenSpec type_spec_len;
         if( has_type_spec ) {
+            last_pdt_len_spec = PdtLenSpec();
             lower_allocate_type_spec(x.m_args[0].m_start, type_spec_arg, x.base.base.loc);
+            type_spec_len = last_pdt_len_spec;
+            last_pdt_len_spec = PdtLenSpec();
             ASR::expr_t* len_expr = type_spec_arg.m_len_expr;
             if( x.n_args > 1 && len_expr && !ASRUtils::expr_value(len_expr) &&
                     !ASR::is_a<ASR::Var_t>(*len_expr) ) {
@@ -4097,6 +4169,7 @@ public:
                     }
                 }
                 new_arg.m_sym_subclass = type_spec_arg.m_sym_subclass;
+                len_specs[i] = type_spec_len;
             } else if( plain_object ) {
                 tmp_stmt = visit_ast_alloc_expr(x.m_args[i].m_end);
 
@@ -4110,7 +4183,10 @@ public:
                 }
             } else if( x.m_args[i].m_start && !x.m_args[i].m_end && x.m_args[i].m_step ) {
                 tmp_stmt = visit_ast_alloc_expr(x.m_args[i].m_step);
+                last_pdt_len_spec = PdtLenSpec();
                 lower_allocate_type_spec(x.m_args[i].m_start, new_arg, x.base.base.loc);
+                len_specs[i] = last_pdt_len_spec;
+                last_pdt_len_spec = PdtLenSpec();
             }
             ASR::expr_t *array_stmt = tmp_stmt;
             // Assume that tmp is an `ArraySection` or `ArrayItem`
@@ -4582,6 +4658,43 @@ public:
         tmp = ASR::make_Allocate_t(al, x.base.base.loc,
                                     alloc_args_vec.p, alloc_args_vec.size(),
                                     stat, errmsg, source);
+
+        // An object allocated with a type-spec that gives LEN type parameter
+        // values gets them, and its components that depend on them, right
+        // after its allocation.
+        Vec<ASR::stmt_t*> len_init;
+        len_init.reserve(al, 0);
+        for (size_t i = 0; i < alloc_args_vec.size() && i < len_specs.size(); i++) {
+            if (len_specs[i].template_struct == nullptr) {
+                continue;
+            }
+            for (const PdtLenActual& actual : len_specs[i].params) {
+                if (actual.kind != PdtLenActual::Kind::Value) {
+                    diag.add(Diagnostic(
+                        "a LEN type parameter in the type-spec of an allocation "
+                        "must be given a value",
+                        Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+            if (ASRUtils::is_array(ASRUtils::expr_type(alloc_args_vec[i].m_a))) {
+                diag.add(Diagnostic(
+                    "a typed allocation of an array of a derived type with LEN "
+                    "type parameters is not supported yet",
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            build_pdt_len_initialization(alloc_args_vec[i].m_a, len_specs[i],
+                x.base.base.loc, len_init);
+        }
+        if (len_init.size() > 0) {
+            current_body->push_back(al, ASRUtils::STMT(tmp));
+            for (size_t i = 0; i + 1 < len_init.size(); i++) {
+                current_body->push_back(al, len_init[i]);
+            }
+            tmp = (ASR::asr_t*)len_init[len_init.size() - 1];
+            return;
+        }
 
         if (source) {
             current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, x.base.base.loc,
