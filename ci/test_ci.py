@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
+import contextlib
 import importlib.util
+import io
 import json
 import os
 from pathlib import Path
@@ -225,6 +227,147 @@ class MacOSEnvironmentTests(unittest.TestCase):
         check = source.index("python ci/check_macos_environment.py")
         self.assertGreater(check, source.index("always_copy: true"))
         self.assertLess(check, source.index("      - name: Build\n"))
+
+
+
+class BackendASRConstructionTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        spec = importlib.util.spec_from_file_location(
+            "check_backend_asr_construction",
+            ROOT / "ci/check_backend_asr_construction.py")
+        cls.checker = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cls.checker)
+
+    def calls(self, text):
+        return [call for _, call in self.checker.construction_sites(text)]
+
+    def test_comments_and_strings_are_not_counted(self):
+        text = "\n".join([
+            "// ASR::make_Var_t(al, loc, s);",
+            "/* ASR::make_Var_t(al, loc, s);",
+            "   ASRUtils::make_Function_t_util(al); */",
+            'f("ASR::make_Var_t(", \'"\', "\\\\", "\\"ASR::make_Var_t(");',
+            "char q = '\\''; char b = '\\\\';",
+            'g(R"x(ASR::make_Var_t( )" )x", u8R"(ASR::make_Var_t()", LR"(ASRUtils::make_X()");',
+            "ASR::make_Var_t(al, loc, s);",
+        ])
+        self.assertEqual(self.checker.construction_sites(text), [(7, "ASR::make_Var_t")])
+
+    def test_calls_split_across_lines_are_counted(self):
+        text = ("ASR::make_Var_t\n    (al);\n"
+                "LCompilers::ASR::\n    make_IntegerConstant_t (al);\n"
+                "ASRUtils::make_StructType_t_util(al);\n"
+                "ASRUtils::make_Cast_t_value(al);\n")
+        self.assertEqual(self.checker.construction_sites(text), [
+            (1, "ASR::make_Var_t"), (3, "ASR::make_IntegerConstant_t"),
+            (5, "ASRUtils::make_StructType_t_util"), (6, "ASRUtils::make_Cast_t_value"),
+        ])
+
+    def test_identifier_embedded_names_are_not_counted(self):
+        text = ("FooASR::make_Var_t(al); my_ASR::make_Var_t(al);\n"
+                "ASR::make_Var_tx(al); ASR::make_Var(al); MyASRUtils::make_X(al);\n"
+                "ASR::is_a<ASR::Var_t>(*x); ASRUtils::EXPR(x);\n")
+        self.assertEqual(self.calls(text), [])
+
+    def test_digit_separators_do_not_hide_calls(self):
+        text = ("int n = 1'000; ASR::make_Var_t(al);\n"
+                "long m = 0xFF'FF'FF; ASR::make_Var_t(al);\n"
+                "char c = '1'; char u = u8'a'; ASR::make_Var_t(al);\n")
+        self.assertEqual(self.checker.construction_sites(text), [
+            (1, "ASR::make_Var_t"), (2, "ASR::make_Var_t"), (3, "ASR::make_Var_t")])
+
+    def tree(self, directory, sources, baseline):
+        root = Path(directory)
+        codegen = root / "src/libasr/codegen"
+        codegen.mkdir(parents=True)
+        for name, count in sources.items():
+            (codegen / name).write_text("ASR::make_Var_t(al, loc, s);\n" * count)
+        (root / "ci").mkdir()
+        path = root / "ci/backend_asr_construction_baseline.txt"
+        path.write_text("# comment\n\n" + "".join(
+            f"src/libasr/codegen/{name} {count}\n" for name, count in baseline.items()))
+        return root, path
+
+    def run_checker(self, root, *args):
+        stdout, stderr = io.StringIO(), io.StringIO()
+        with contextlib.redirect_stdout(stdout), contextlib.redirect_stderr(stderr):
+            status = self.checker.main(list(args), root=root)
+        return status, stdout.getvalue(), stderr.getvalue()
+
+    def test_count_equal_to_baseline_passes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, _ = self.tree(directory, {"a.cpp": 2, "b.h": 1}, {"a.cpp": 2, "b.h": 1})
+            status, out, err = self.run_checker(root)
+            self.assertEqual(status, 0)
+            self.assertIn("OK --- 3 ASR construction calls in 2 backend files", out)
+            self.assertNotIn("NOTICE", out)
+            self.assertEqual(err, "")
+
+    def test_count_over_baseline_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, _ = self.tree(directory, {"a.cpp": 2}, {"a.cpp": 1})
+            status, _, err = self.run_checker(root)
+            self.assertEqual(status, 1)
+            self.assertIn("src/libasr/codegen/a.cpp: 2 ASR construction calls, "
+                          "baseline allows 1.", err)
+            self.assertIn("--list", err)
+
+    def test_file_not_in_baseline_fails(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, _ = self.tree(directory, {"a.cpp": 1, "new.cpp": 1}, {"a.cpp": 1})
+            status, _, err = self.run_checker(root)
+            self.assertEqual(status, 1)
+            self.assertIn("src/libasr/codegen/new.cpp: 1 ASR construction call, "
+                          "baseline allows 0.", err)
+            self.assertNotIn("a.cpp", err)
+
+    def test_count_under_baseline_passes_with_notice(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, _ = self.tree(directory, {"a.cpp": 1}, {"a.cpp": 3, "gone.h": 1})
+            status, out, err = self.run_checker(root)
+            self.assertEqual(status, 0)
+            self.assertEqual(err, "")
+            self.assertIn("NOTICE --- src/libasr/codegen/a.cpp: 1 ASR construction call, "
+                          "baseline allows 3; lower the baseline with", out)
+            self.assertIn("NOTICE --- src/libasr/codegen/gone.h: 0 ASR construction calls, "
+                          "baseline allows 1;", out)
+            self.assertIn("--update", out)
+
+    def test_update_lowers_counts_and_drops_empty_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root, path = self.tree(directory, {"a.cpp": 1, "b.h": 2},
+                                   {"a.cpp": 3, "b.h": 2, "gone.h": 1})
+            status, out, _ = self.run_checker(root, "--update")
+            self.assertEqual(status, 0)
+            self.assertIn("3 ASR construction calls in 2 backend files", out)
+            self.assertEqual(self.checker.read_baseline(path), {
+                "src/libasr/codegen/a.cpp": 1, "src/libasr/codegen/b.h": 2})
+            self.assertTrue(path.read_text().startswith(self.checker.BASELINE_HEADER))
+            status, out, _ = self.run_checker(root)
+            self.assertEqual(status, 0)
+            self.assertNotIn("NOTICE", out)
+
+    def test_update_refuses_to_raise_a_count_or_add_a_file(self):
+        for sources in ({"a.cpp": 2}, {"a.cpp": 1, "new.cpp": 1}):
+            with self.subTest(sources=sources), tempfile.TemporaryDirectory() as directory:
+                root, path = self.tree(directory, sources, {"a.cpp": 1, "b.h": 1})
+                before = path.read_text()
+                status, _, err = self.run_checker(root, "--update")
+                self.assertEqual(status, 1)
+                self.assertIn("refusing to update", err)
+                self.assertIn("only lowers counts", err)
+                self.assertEqual(path.read_text(), before)
+
+    def test_repository_is_within_the_baseline_and_checked_in_quick(self):
+        status, _, err = self.run_checker(ROOT)
+        self.assertEqual(status, 0, err)
+        quick = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
+        step = quick.split("      - name: Check for ASR Construction in Backends\n", 1)[1]
+        step = step.split("\n      - ", 1)[0]
+        self.assertIn("if: ${{ !cancelled() && contains(matrix.os, 'ubuntu') "
+                      "&& contains(matrix.llvm-version, '21') }}", step)
+        self.assertIn("run: python3 ci/check_backend_asr_construction.py", step)
 
 
 class RunnerTests(unittest.TestCase):
