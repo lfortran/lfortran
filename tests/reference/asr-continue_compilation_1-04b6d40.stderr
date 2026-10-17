@@ -4283,3 +4283,33 @@ semantic error: a structure constructor of the derived type 'cc1_label_t', which
      |
 3446 |         e = cc1_label_t(size=5)(text="hello")  ! {Error} a structure constructor of the derived type 'cc1_label_t', which has LEN type parameters, is not supported yet
      |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: the actual argument for the allocatable dummy argument 'a' must be allocatable
+    --> tests/errors/continue_compilation_1.f90:3490:16
+     |
+3490 |         call f(w%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+     |                ^^^ the component 'x' is not allocatable: its bounds or length depend on a LEN type parameter
+
+semantic error: the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+    --> tests/errors/continue_compilation_1.f90:3497:28
+     |
+3497 |         call v%cc1_lenp_tr(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+     |                            ^^^ 
+
+semantic error: the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+    --> tests/errors/continue_compilation_1.f90:3498:27
+     |
+3498 |         k = v%cc1_lenp_tf(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+     |                           ^^^ 
+
+semantic error: the actual argument for the allocatable dummy argument 'a' must be allocatable
+    --> tests/errors/continue_compilation_1.f90:3499:26
+     |
+3499 |         k = cc1_lenp_gen(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+     |                          ^^^ the component 'x' is not allocatable: its bounds or length depend on a LEN type parameter
+
+semantic error: the actual argument for the allocatable dummy argument 'a' must be allocatable
+    --> tests/errors/continue_compilation_1.f90:3500:17
+     |
+3500 |         call pp(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+     |                 ^^^ the component 'x' is not allocatable: its bounds or length depend on a LEN type parameter

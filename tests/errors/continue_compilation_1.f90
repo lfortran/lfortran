@@ -3446,3 +3446,57 @@ contains
         e = cc1_label_t(size=5)(text="hello")  ! {Error} a structure constructor of the derived type 'cc1_label_t', which has LEN type parameters, is not supported yet
     end subroutine cc1_label_use
 end module cc1_len_structure_constructor
+
+! Every call is checked, whatever way it is resolved.
+module cc1_len_call_paths
+    implicit none
+    type :: cc1_lenp_t(n)
+        integer, len :: n
+        real :: x(n)
+    contains
+        procedure, pass(self) :: cc1_lenp_tr
+        procedure :: cc1_lenp_tf
+    end type
+    interface cc1_lenp_gen
+        module procedure cc1_lenp_fgrow
+    end interface
+    abstract interface
+        subroutine cc1_lenp_grow_i(a)
+            real, allocatable, intent(inout) :: a(:)
+        end subroutine
+    end interface
+contains
+    subroutine cc1_lenp_tr(k, self)
+        integer, intent(out) :: k
+        class(cc1_lenp_t(*)), intent(in) :: self
+        k = 1
+    end subroutine cc1_lenp_tr
+    integer function cc1_lenp_tf(self, k)
+        class(cc1_lenp_t(*)), intent(in) :: self
+        integer, intent(out) :: k
+        k = 1
+        cc1_lenp_tf = 1
+    end function cc1_lenp_tf
+    integer function cc1_lenp_fgrow(a)
+        real, allocatable, intent(inout) :: a(:)
+        cc1_lenp_fgrow = 1
+    end function cc1_lenp_fgrow
+    subroutine cc1_lenp_grow(a)
+        real, allocatable, intent(inout) :: a(:)
+    end subroutine cc1_lenp_grow
+    subroutine cc1_lenp_dummy(f, w)
+        procedure(cc1_lenp_grow_i) :: f
+        type(cc1_lenp_t(*)), intent(inout) :: w
+        call f(w%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+    end subroutine cc1_lenp_dummy
+    subroutine cc1_lenp_use()
+        type(cc1_lenp_t(3)) :: v
+        procedure(cc1_lenp_grow_i), pointer :: pp
+        integer :: k
+        pp => cc1_lenp_grow
+        call v%cc1_lenp_tr(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+        k = v%cc1_lenp_tf(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+        k = cc1_lenp_gen(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+        call pp(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+    end subroutine cc1_lenp_use
+end module cc1_len_call_paths

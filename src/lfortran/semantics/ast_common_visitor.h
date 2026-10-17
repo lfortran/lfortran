@@ -18534,53 +18534,6 @@ public:
 
     // Diagnoses a function reference to `func` with more actual than formal
     // arguments or with a required argument missing.
-    // A component whose bounds or length depend on a LEN type parameter is
-    // not allocatable, so it cannot be associated with an allocatable dummy
-    // argument. A LEN type parameter inquiry is not a variable, so it cannot
-    // be associated with a dummy argument that may be redefined. `offset` is
-    // the number of leading dummies (a passed object) without an actual in
-    // `args`.
-    void check_len_type_param_actuals(Vec<ASR::call_arg_t>& args,
-            ASR::Function_t* func, size_t offset) {
-        for (size_t i = 0; i < args.size() && i + offset < func->n_args; i++) {
-            ASR::expr_t* actual = args[i].m_value;
-            if (actual == nullptr
-                    || !ASR::is_a<ASR::Var_t>(*func->m_args[i + offset])) {
-                continue;
-            }
-            ASR::symbol_t* dummy_sym = ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::Var_t>(func->m_args[i + offset])->m_v);
-            if (!ASR::is_a<ASR::Variable_t>(*dummy_sym)) {
-                continue;
-            }
-            ASR::Variable_t* dummy = ASR::down_cast<ASR::Variable_t>(dummy_sym);
-            std::string name;
-            if (ASRUtils::is_allocatable(dummy->m_type)
-                    && ASRUtils::is_len_dependent_component(actual)) {
-                ASRUtils::get_component_struct(actual, name);
-                diag.add(Diagnostic(
-                    "the actual argument for the allocatable dummy argument '"
-                    + std::string(dummy->m_name) + "' must be allocatable",
-                    Level::Error, Stage::Semantic, {Label("the component '" + name
-                        + "' is not allocatable: its bounds or length depend "
-                        "on a LEN type parameter", {actual->base.loc})}));
-                throw SemanticAbort();
-            }
-            if ((dummy->m_intent == ASR::intentType::Out
-                    || dummy->m_intent == ASR::intentType::InOut)
-                    && ASRUtils::is_len_type_param_inquiry(actual)) {
-                ASRUtils::get_component_struct(actual, name);
-                std::string intent = dummy->m_intent == ASR::intentType::Out
-                    ? "intent(out)" : "intent(inout)";
-                diag.add(Diagnostic(
-                    "the LEN type parameter '" + name + "' cannot be passed to the "
-                    + intent + " dummy argument '" + std::string(dummy->m_name) + "'",
-                    Level::Error, Stage::Semantic, {Label("", {actual->base.loc})}));
-                throw SemanticAbort();
-            }
-        }
-    }
-
     void validate_function_call_argument_count(const Location &loc,
                 Vec<ASR::call_arg_t>& args, ASR::Function_t* func) {
         if (args.size() > func->n_args) {
@@ -18641,7 +18594,6 @@ public:
         }
         
         validate_function_call_argument_count(loc, args, func);
-        check_len_type_param_actuals(args, func, 0);
 
         ASR::ttype_t *return_type = nullptr;
         ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
