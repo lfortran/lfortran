@@ -2295,6 +2295,7 @@ RUN(NAME select_type_61 LABELS gfortran llvm)
 RUN(NAME select_type_63 LABELS llvm)
 RUN(NAME select_type_64 LABELS gfortran llvm)
 RUN(NAME select_type_65 LABELS gfortran llvm)
+RUN(NAME select_type_66 LABELS gfortran llvm)
 
 
 RUN(NAME where_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -4504,6 +4505,7 @@ RUN(NAME iso_c_binding_02 LABELS gfortran llvm)
 RUN(NAME iso_c_binding_05 LABELS gfortran llvm)
 
 RUN(NAME iso_c_binding_07 LABELS gfortran llvm)
+RUN(NAME iso_c_binding_08 LABELS gfortran llvm)
 
 RUN(NAME array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME array_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
