@@ -29935,7 +29935,7 @@ public:
                 for (size_t k = 0; k < x.n_dtio_bindings; k++) {
                     ASR::symbol_t* callback = x.m_dtio_bindings[k].m_callback;
                     LCOMPILERS_ASSERT(callback != nullptr);
-                    uint32_t h = get_hash((ASR::asr_t*)
+                    uint64_t h = get_hash((ASR::asr_t*)
                         ASRUtils::symbol_get_past_external(callback));
                     LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
                     callbacks.push_back(llvm::ConstantExpr::getBitCast(
