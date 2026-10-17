@@ -2851,6 +2851,10 @@ public:
                         }
                         for (size_t j = 0; j < struct_def->n_members; j++) {
                             char *member_name = struct_def->m_members[j];
+                            // A LEN type parameter is not a component.
+                            if (ASRUtils::is_len_type_param(struct_def, member_name)) {
+                                continue;
+                            }
                             ASR::symbol_t *member_sym =
                                 struct_def->m_symtab->resolve_symbol(std::string(member_name));
 
