@@ -71,4 +71,23 @@ WITH THIS CLASS :
     4. If transformation is needed, We transform function's member `return_var` into intentOUT argument and we nullify the member.
     5. We also store the original return type in a map for later use.
 
+### Runtime character result metadata
 
+Call preparation in `array_struct_temporary` saves result specification values
+before evaluating the call. A generated character temporary whose length is
+such a runtime value must have deferred length: its declaration is processed on
+procedure entry, before those specification assignments, and cannot initialize
+its descriptor from them. Both temporary creation and return-slot creation use
+the same string-type normalization.
+
+For a nonallocatable result, the caller's allocation carries the prepared
+length along with any extents. An allocatable result owns its allocation in the
+callee, but may still have an explicit, nondeferred character length. Before
+passing a deferred-length return slot to its converted `intent(out)` result
+dummy, the caller establishes that explicit length with an allocation (empty
+in every dimension for an array whose returned shape is not yet known).
+The dummy's normal entry deallocation releases this allocation before the
+function body executes; its descriptor retains the specified element length.
+Thus the body sees an unallocated result with the correct length, including
+zero-sized results and calls with different lengths in a loop. No speculative
+evaluation of the function is needed to discover its shape or length.

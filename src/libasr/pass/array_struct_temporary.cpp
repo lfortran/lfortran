@@ -310,16 +310,16 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
  * 1) AssumedLength strings cannot be used as temporaries, hence use to DeferredLength
  * 2) Any DeferredLength string must be allocatable. 
  */
-inline ASR::ttype_t* normalize_string_temporary_type(
+ASR::ttype_t* normalize_string_temporary_type(
     Allocator& al, const Location& loc, ASR::ttype_t* var_type,
-    bool capture_length=false) {
+    bool capture_length) {
     if (!ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(var_type))) {
         return var_type;
     }
     
     ASR::ttype_t* type_duplicated = ASRUtils::duplicate_type(al, var_type);
     ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(type_duplicated));
-    // A scalar value's runtime length belongs to this evaluation, not to the
+    // A value's runtime length belongs to this evaluation, not to the
     // declaration of the temporary (e.g. when its length changes in a loop).
     bool runtime_length = capture_length &&
         !ASRUtils::is_pointer(type_duplicated) &&
@@ -445,7 +445,7 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
             var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, var_type->base.loc, var_type));
         }
     }
-    var_type = normalize_string_temporary_type(al, value->base.loc, var_type);
+    var_type = normalize_string_temporary_type(al, value->base.loc, var_type, true);
     if (ASR::is_a<ASR::FunctionCall_t>(*value)) {
         ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(value);
         ASRUtils::ReplaceFunctionParamWithArg replacer(al, func_call->m_args, func_call->n_args);
@@ -662,6 +662,9 @@ bool set_allocation_size(
             ASR::ttype_t* type = function_call->m_type;
             if( ASRUtils::is_allocatable(type) || ASRUtils::is_pointer(type) ) {
                 return false;
+            }
+            if (ASRUtils::is_character(*type)) {
+                len_allocte_expr = ASRUtils::get_string_type(type)->m_len;
             }
             if (ASRUtils::is_elemental(function_call->m_name)) {
                 set_allocation_size_elemental_function(al, loc, function_call, allocate_dims,
