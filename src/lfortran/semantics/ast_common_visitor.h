@@ -17289,6 +17289,50 @@ public:
             phys_type != ASR::array_physical_typeType::DescriptorArray;
     }
 
+    // An element of an assumed-shape, pointer or polymorphic array is not
+    // followed in memory by the elements that follow it in array element
+    // order, so it does not designate an element sequence and may not be
+    // passed to an array dummy argument (F2023 15.5.2.4 p14). Returns a
+    // description of `actual` for the diagnostic, or nullptr when it is not
+    // such an element. A character element is exempt: character sequence
+    // association applies to it, and every character kind is the C
+    // character kind.
+    static const char* element_of_nonsequence_array(ASR::expr_t *actual) {
+        if (!ASR::is_a<ASR::ArrayItem_t>(*actual)) {
+            return nullptr;
+        }
+        ASR::expr_t *array = ASR::down_cast<ASR::ArrayItem_t>(actual)->m_v;
+        ASR::ttype_t *array_type = ASRUtils::expr_type(array);
+        if (ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(array_type))) {
+            return nullptr;
+        }
+        if (ASRUtils::is_pointer(array_type)) {
+            return "element of a pointer array";
+        }
+        if (ASR::is_a<ASR::Var_t>(*array)) {
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(array)->m_v);
+            if (ASR::is_a<ASR::Variable_t>(*sym) &&
+                    ASRUtils::is_arg_dummy(ASR::down_cast<ASR::Variable_t>(sym)->m_intent) &&
+                    !ASRUtils::is_allocatable(array_type) &&
+                    ASRUtils::extract_physical_type(array_type) ==
+                        ASR::array_physical_typeType::DescriptorArray) {
+                return "element of an assumed-shape array";
+            }
+        }
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(array_type))) {
+            return "element of a polymorphic array";
+        }
+        return nullptr;
+    }
+
+    // Whether the array element `actual` is sequence associated with the
+    // array dummy argument `dummy`.
+    static bool is_sequence_associable_element(ASR::expr_t *actual, ASR::expr_t *dummy) {
+        return is_sequence_associable_dummy(ASRUtils::expr_type(dummy)) &&
+            element_of_nonsequence_array(actual) == nullptr;
+    }
+
     // A scalar actual argument requires a scalar dummy argument. The only
     // exception, an element sequence, needs --legacy-array-sections, so
     // suggest it only where sequence association applies.
@@ -17296,8 +17340,14 @@ public:
             ASR::expr_t *actual, ASR::expr_t *dummy) {
         ASR::ttype_t *dummy_type = ASRUtils::expr_type(dummy);
         std::string message = "Passing a scalar argument to an array dummy argument is not allowed";
+        std::string actual_label = "scalar argument";
         std::string dummy_label = "array dummy argument";
-        if (is_sequence_associable_dummy(dummy_type)) {
+        const char *nonsequence_element = element_of_nonsequence_array(actual);
+        if (is_sequence_associable_dummy(dummy_type) && nonsequence_element != nullptr) {
+            actual_label = nonsequence_element;
+            message = std::string("Passing an ") + nonsequence_element +
+                " to an array dummy argument is not allowed";
+        } else if (is_sequence_associable_dummy(dummy_type)) {
             message += ". Use --legacy-array-sections to enable sequence association";
         } else if (ASRUtils::is_allocatable(dummy_type)) {
             dummy_label = "allocatable array dummy argument";
@@ -17307,7 +17357,7 @@ public:
             dummy_label = "assumed-shape array dummy argument";
         }
         diag.add(diag::Diagnostic(message, diag::Level::Error, diag::Stage::Semantic, {
-                diag::Label("scalar argument", {actual->base.loc}),
+                diag::Label(actual_label, {actual->base.loc}),
                 diag::Label(dummy_label, {dummy->base.loc})
             }));
         throw SemanticAbort();
@@ -17433,7 +17483,7 @@ public:
                         // array element designator, so it is left unchanged.
                         if ( arg_expr != nullptr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr) &&
                                 !ASRUtils::is_array(ASRUtils::expr_type(arg_expr)) ) {
-                            if (!is_sequence_associable_dummy(dummy_type)) {
+                            if (!is_sequence_associable_element(arg_expr, f->m_args[arg_i])) {
                                 report_array_element_for_array_dummy(diag, arg_expr, f->m_args[arg_i]);
                             }
                             ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
@@ -17688,8 +17738,10 @@ public:
                         ASR::expr_t* array_expr = array_item->m_v;
 
                         // Only explicit-shape and assumed-size dummies are sequence
-                        // associated with the elements that start at the actual element.
-                        if (!is_sequence_associable_dummy(array_arg_idx[i])) {
+                        // associated with the elements that start at the actual element,
+                        // and only when the elements that follow it in the array follow
+                        // it in memory.
+                        if (!is_sequence_associable_element(arg_expr, f->m_args[i])) {
                             report_array_element_for_array_dummy(diag, arg_expr, f->m_args[i]);
                         }
 

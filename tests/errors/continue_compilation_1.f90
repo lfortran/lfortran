@@ -3422,3 +3422,18 @@ contains
         call cc1_eas_dummy(c(2))  ! {Error} Passing a scalar argument to an array dummy argument is not allowed
     end subroutine cc1_eas_use
 end module cc1_element_assumed_shape
+
+! An element of a pointer array may not be contiguous with the elements that
+! follow it, so it is never sequence associated with an array dummy.
+module cc1_element_pointer_array
+implicit none
+contains
+    subroutine cc1_epa_dummy(x)
+        integer, intent(inout) :: x(2,2)
+    end subroutine cc1_epa_dummy
+    subroutine cc1_epa_use()
+        integer, pointer :: p(:,:)
+        allocate(p(2,3))
+        call cc1_epa_dummy(p(2,1))  ! {Error} Passing an element of a pointer array to an array dummy argument is not allowed
+    end subroutine cc1_epa_use
+end module cc1_element_pointer_array
