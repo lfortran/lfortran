@@ -120,7 +120,6 @@ public:
         loc.last = source_offset(cur-string_start-1+loc_offset);
     }
     void add_rel_warning(diag::Diagnostics &diagnostics, bool fixed_form, int rel_token) const;
-    void add_q_exponent_warning(diag::Diagnostics &diagnostics) const;
 
     // Lex an OpenMP directive whose first line spans `tok` to `cur` (which
     // points to the newline). Free-form continuation lines (`&` at the end
