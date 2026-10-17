@@ -3433,6 +3433,7 @@ RUN(NAME nested_vars_allocatable_call LABELS gfortran llvm)
 RUN(NAME nested_vars_20 LABELS gfortran llvm)
 RUN(NAME nested_vars_21 LABELS gfortran llvm)
 RUN(NAME nested_vars_22 LABELS gfortran llvm)
+RUN(NAME nested_vars_23 LABELS gfortran llvm)
 
 RUN(NAME nbody LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
