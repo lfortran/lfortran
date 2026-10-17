@@ -4806,6 +4806,7 @@ RUN(NAME character_module_array_15364 LABELS gfortran llvm EXTRAFILES character_
 RUN(NAME character_assignment_01 LABELS gfortran llvm)
 RUN(NAME char_array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME char_array_broadcast_01 LABELS gfortran llvm)
 RUN(NAME char_array_indexing LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_indexing_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME character_parameter_padding_trimming LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
