@@ -4211,3 +4211,9 @@ semantic error: `pause` code must be a scalar integer or default character expre
      |
 3365 |         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
      |               ^^^^^ 
+
+semantic error: no specific procedure of the generic 'ieee_is_nan' matches the arguments
+    --> tests/errors/continue_compilation_1.f90:3388:14
+     |
+3388 |     print *, ieee_is_nan(1)  ! {Error} no specific procedure of the generic 'ieee_is_nan' matches the arguments
+     |              ^^^^^^^^^^^^^^ 

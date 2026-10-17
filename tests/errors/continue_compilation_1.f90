@@ -3379,3 +3379,11 @@ end function
 function cc1_bindc_explicit_result() result(c) bind(c)
     character(len=5) :: c  ! {Error} character function result `c` must have constant length one in a BIND(C) procedure
 end function
+
+! An ieee_arithmetic generic with no specific procedure for the argument is
+! reported as such, not as a missing 'use, intrinsic :: ieee_arithmetic'.
+subroutine cc1_ieee_generic_no_specific()
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
+    implicit none
+    print *, ieee_is_nan(1)  ! {Error} no specific procedure of the generic 'ieee_is_nan' matches the arguments
+end subroutine cc1_ieee_generic_no_specific
