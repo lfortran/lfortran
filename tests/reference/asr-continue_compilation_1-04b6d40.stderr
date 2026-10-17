@@ -1461,27 +1461,27 @@ semantic error: Return type not specified
      | ...^^^^^^^^^^^^ 
 
 semantic error: Kind 16 is not supported for Complex
-    --> tests/errors/continue_compilation_1.f90:3387:5
+    --> tests/errors/continue_compilation_1.f90:3454:5
      |
-3387 |     complex*32 :: cc1_cs_z32  ! {Error} Kind 16 is not supported for Complex
+3454 |     complex*32 :: cc1_cs_z32  ! {Error} Kind 16 is not supported for Complex
      |     ^^^^^^^^^^ 
 
 semantic error: Kind 10 is not supported for Complex
-    --> tests/errors/continue_compilation_1.f90:3388:5
+    --> tests/errors/continue_compilation_1.f90:3455:5
      |
-3388 |     complex*20 :: cc1_cs_z20  ! {Error} Kind 10 is not supported for Complex
+3455 |     complex*20 :: cc1_cs_z20  ! {Error} Kind 10 is not supported for Complex
      |     ^^^^^^^^^^ 
 
 semantic error: Kind 3 is not supported for Complex
-    --> tests/errors/continue_compilation_1.f90:3389:5
+    --> tests/errors/continue_compilation_1.f90:3456:5
      |
-3389 |     complex*7 :: cc1_cs_z7  ! {Error} Kind 3 is not supported for Complex
+3456 |     complex*7 :: cc1_cs_z7  ! {Error} Kind 3 is not supported for Complex
      |     ^^^^^^^^^ 
 
 semantic error: Kind 3 is not supported for Logical
-    --> tests/errors/continue_compilation_1.f90:3390:5
+    --> tests/errors/continue_compilation_1.f90:3457:5
      |
-3390 |     logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
+3457 |     logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
      |     ^^^^^^^^^ 
 
 semantic error: Restriction type mismatch with provided function argument
