@@ -201,8 +201,10 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         float* __gpu_call_result = __workspace_21 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent9;
         float* __libasr_created__function_call_twice;
         float* __libasr_created__function_call_twice1 = __workspace_22 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent10;
+        int __libasr_created__result_metadata_;
         int __libasr_index_0_;
         int __libasr_index_0_1;
+        __libasr_created__result_metadata_ = (((0 > (1 * (((n - 1) / 1) + 1)))) ? (0) : ((1 * (((n - 1) / 1) + 1))));
         __libasr_created__function_call_twice = a + ((int)(1) - (1)) + (3 * ((int)(p) - (1)));
         twice_gpu_41(__libasr_created__function_call_twice, ((((n) - (1)) / (1)) + 1), 1, __libasr_created__function_call_twice1);
         __libasr_index_0_1 = 1;

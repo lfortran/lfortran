@@ -42,6 +42,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         int __gpu_heap___gpu_call_result_n1;
         int __gpu_sum_k;
         float __gpu_sum_res;
+        int __libasr_created__result_metadata_;
         int k;
         __gpu_heap___gpu_call_result_base = -1;
         k = 2;
@@ -57,6 +58,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             }
             return;
         }
+        __libasr_created__result_metadata_ = k;
         __gpu_heap___gpu_call_result_lb1 = 1;
         __gpu_heap___gpu_call_result_n1 = (((k > 0)) ? (k) : (0));
         __gpu_heap___gpu_call_result_base = atomicAdd(&(__gpu_heap_state[((int)(1) - (1))]), __gpu_heap___gpu_call_result_n1);
