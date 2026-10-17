@@ -3082,46 +3082,106 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr(x, "_complex_constructor_");
     }
 
-    void replace_FunctionCall(ASR::FunctionCall_t* x) {
-        if (!ASRUtils::is_array(x->m_type) &&
-                ASRUtils::is_character(*x->m_type)) {
-            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_FunctionCall(x);
-            // The old result length can still reference an unevaluated
-            // actual. Instantiate it again using the saved argument values,
-            // without changing the callee's signature or another call's type.
-            ASR::ttype_t* return_type = ASRUtils::get_FunctionType(
-                x->m_name)->m_return_var_type;
-            ASR::String_t* return_string = return_type ?
-                ASRUtils::get_string_type(return_type) : nullptr;
-            // An assumed-length result takes its length from the caller;
-            // a deferred-length result carries it in the returned descriptor.
-            if (return_string && return_string->m_len &&
-                    return_string->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
-                    ASRUtils::get_string_type(x->m_type)->m_len_kind ==
-                        ASR::string_length_kindType::ExpressionLength &&
-                    !ASRUtils::is_value_constant(
-                        ASRUtils::expr_value(return_string->m_len))) {
-                return_type = ASRUtils::duplicate_type(al, x->m_type);
-                // Shape inquiries in the result type use the actual's
-                // descriptor, not its call-only physical conversion.
-                Vec<ASR::call_arg_t> type_args;
-                type_args.reserve(al, x->n_args);
-                for (size_t i = 0; i < x->n_args; i++) {
-                    ASR::call_arg_t arg = x->m_args[i];
-                    if (arg.m_value) {
-                        arg.m_value = ASRUtils::get_past_array_physical_cast(
-                            arg.m_value);
+    void reinstantiate_result_type(ASR::ttype_t* type, ASR::ttype_t* declared_type,
+            ASRUtils::ReplaceFunctionParamWithArg& replacer) {
+        type = ASRUtils::type_get_past_allocatable_pointer(type);
+        declared_type = ASRUtils::type_get_past_allocatable_pointer(declared_type);
+        if (ASR::is_a<ASR::Array_t>(*type)) {
+            ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(type);
+            if (ASR::is_a<ASR::Array_t>(*declared_type)) {
+                ASR::Array_t* declared_array = ASR::down_cast<ASR::Array_t>(declared_type);
+                LCOMPILERS_ASSERT(array->n_dims == declared_array->n_dims);
+                for (size_t i = 0; i < array->n_dims; i++) {
+                    if (array->m_dims[i].m_start && declared_array->m_dims[i].m_start) {
+                        array->m_dims[i].m_start = replacer.replace_FunctionParam_with_arg(
+                            declared_array->m_dims[i].m_start);
                     }
-                    type_args.push_back(al, arg);
+                    if (array->m_dims[i].m_length && declared_array->m_dims[i].m_length) {
+                        array->m_dims[i].m_length = replacer.replace_FunctionParam_with_arg(
+                            declared_array->m_dims[i].m_length);
+                    }
                 }
-                ASRUtils::ReplaceFunctionParamWithArg replacer(
-                    al, type_args.p, type_args.size());
-                ASRUtils::get_string_type(return_type)->m_len =
-                    replacer.replace_FunctionParam_with_arg(return_string->m_len);
-                ASRUtils::ProcedureTypeImporter(al, current_scope, true)
-                    .replace_ttype(return_type);
-                x->m_type = return_type;
+                declared_type = declared_array->m_type;
             }
+            // An elemental reference has the actual's shape, but its element
+            // type still comes from the scalar declared result.
+            reinstantiate_result_type(array->m_type, declared_type, replacer);
+        } else if (ASR::is_a<ASR::String_t>(*type) &&
+                ASR::is_a<ASR::String_t>(*declared_type)) {
+            ASR::String_t* string = ASR::down_cast<ASR::String_t>(type);
+            ASR::String_t* declared_string = ASR::down_cast<ASR::String_t>(declared_type);
+            // Assumed lengths belong to the caller; deferred lengths and
+            // shapes belong to the returned descriptor, not the signature.
+            if (string->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
+                    declared_string->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
+                    declared_string->m_len && !ASRUtils::is_value_constant(
+                        ASRUtils::expr_value(declared_string->m_len))) {
+                string->m_len = replacer.replace_FunctionParam_with_arg(
+                    declared_string->m_len);
+            }
+        }
+    }
+
+    void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_FunctionCall(x);
+        ASR::ttype_t* declared_type = ASRUtils::get_FunctionType(
+            x->m_name)->m_return_var_type;
+        if (declared_type) {
+            class MetadataArguments: public ASR::BaseWalkVisitor<MetadataArguments> {
+            public:
+                std::set<size_t> indices;
+                void visit_FunctionParam(const ASR::FunctionParam_t& param) {
+                    indices.insert(param.m_param_number);
+                }
+            } metadata_arguments;
+            metadata_arguments.visit_ttype(*declared_type);
+            for (size_t i: metadata_arguments.indices) {
+                LCOMPILERS_ASSERT(i < x->n_args);
+                ASR::expr_t* arg = x->m_args[i].m_value;
+                if (!arg || !is_evaluated_once(arg)) {
+                    continue;
+                }
+                ASR::expr_t** current_expr_copy = current_expr;
+                current_expr = &x->m_args[i].m_value;
+                if (ASRUtils::is_array(ASRUtils::expr_type(arg))) {
+                    force_replace_current_expr_for_array(current_expr,
+                        "_result_arg_", al, current_body, current_scope,
+                        exprs_with_target, is_assignment_target_array_section_item);
+                } else if (ASRUtils::is_struct(*ASRUtils::expr_type(arg))) {
+                    force_replace_current_expr_for_struct(current_expr,
+                        "_result_arg_", al, current_body, current_scope,
+                        exprs_with_target);
+                } else {
+                    force_replace_current_expr_for_scalar(current_expr,
+                        "_result_arg_", al, current_body, current_scope,
+                        exprs_with_target);
+                }
+                current_expr = current_expr_copy;
+            }
+            // Rebuild all call-local result metadata from the canonical
+            // formulas, after actuals have been saved. The instantiated old
+            // type may contain independent copies of those source expressions.
+            ASR::ttype_t* return_type = ASRUtils::duplicate_type(al, x->m_type,
+                nullptr, ASRUtils::is_array(x->m_type) ?
+                    ASRUtils::extract_physical_type(x->m_type) :
+                    ASR::array_physical_typeType::DescriptorArray, true);
+            Vec<ASR::call_arg_t> type_args;
+            type_args.reserve(al, x->n_args);
+            for (size_t i = 0; i < x->n_args; i++) {
+                ASR::call_arg_t arg = x->m_args[i];
+                if (arg.m_value) {
+                    // Metadata inquiries use the descriptor, not the
+                    // call-only physical conversion.
+                    arg.m_value = ASRUtils::get_past_array_physical_cast(arg.m_value);
+                }
+                type_args.push_back(al, arg);
+            }
+            ASRUtils::ReplaceFunctionParamWithArg replacer(
+                al, type_args.p, type_args.size());
+            reinstantiate_result_type(return_type, declared_type, replacer);
+            ASRUtils::ProcedureTypeImporter(al, current_scope, true)
+                .replace_ttype(return_type);
+            x->m_type = return_type;
         }
         if( ASRUtils::is_elemental(x->m_name) && !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
             // ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x->m_name);
