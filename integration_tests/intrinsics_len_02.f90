@@ -1,7 +1,7 @@
 ! Regression test for https://github.com/lfortran/lfortran/issues/15249
 ! A zero-size allocated character array passed to a function whose result
 ! length is max(len(xx),len(yy)) must not be indexed when evaluating LEN.
-module string_array_concat_05_mod
+module intrinsics_len_02_mod
 implicit none
 contains
 pure function concat_char_vec(xx,yy) result(zz)
@@ -21,10 +21,10 @@ allocate(yy(size(xx)))
 yy=xx
 if(present(nsize)) nsize=size(yy)
 end subroutine set_alloc_character_vec
-end module string_array_concat_05_mod
+end module intrinsics_len_02_mod
 
-program string_array_concat_05
-use string_array_concat_05_mod
+program intrinsics_len_02
+use intrinsics_len_02_mod
 implicit none
 character(len=10), allocatable :: xchar(:),char_vec(:)
 integer :: n
@@ -44,4 +44,4 @@ if (n /= 2) error stop
 if (size(char_vec) /= 2) error stop
 if (len(char_vec) /= 10) error stop
 if (char_vec(1) /= 'ab' .or. char_vec(2) /= 'cd') error stop
-end program string_array_concat_05
+end program intrinsics_len_02
