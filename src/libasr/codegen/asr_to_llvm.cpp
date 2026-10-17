@@ -186,10 +186,6 @@ static std::string array_physical_type_name(ASR::array_physical_typeType t) {
             return "FixedSizeArray";
         case ASR::array_physical_typeType::StringArraySinglePointer:
             return "StringArraySinglePointer";
-        case ASR::array_physical_typeType::NumPyArray:
-            return "NumPyArray";
-        case ASR::array_physical_typeType::ISODescriptorArray:
-            return "ISODescriptorArray";
         case ASR::array_physical_typeType::SIMDArray:
             return "SIMDArray";
         case ASR::array_physical_typeType::AssumedRankArray:
