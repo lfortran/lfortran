@@ -46,6 +46,7 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             // Every Apple GPU runs SIMD-groups of 32 threads.
             caps.lanes_per_iteration = 32;
             caps.threads_per_block = 64;
+            caps.sequential_loop_unroll_factor = 16;
             // A kernel is compiled for the GPU that runs it, so this is the
             // smallest stack of a device Metal runs on. An Apple silicon Mac
             // gives a thread 256 KiB (a local array of 65,500 `float`s is
