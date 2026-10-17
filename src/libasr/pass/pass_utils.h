@@ -5,6 +5,7 @@
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/asr_pass_walk_visitor.h>
+#include <libasr/asr_verify.h>
 
 #include <cctype>
 #include <deque>
@@ -16,6 +17,14 @@ namespace LCompilers {
 
     // Restore casts after replacements change the physical types of shared operands.
     void normalize_string_physical_casts(Allocator &al, ASR::TranslationUnit_t &unit);
+
+    // Verifies the invariant that `verify_options` selects, which the pass
+    // `pass_name` has just established, whenever the passes are verified.
+    // The verification after each pass does not know which passes have run,
+    // so a pass that establishes an invariant checks it itself.
+    void verify_pass_invariant(const ASR::TranslationUnit_t &unit,
+        const PassOptions &pass_options, const ASRVerifyOptions &verify_options,
+        const std::string &pass_name);
 
     // The name of a temporary a pass creates, `__libasr_created_` followed
     // by `hint`, made unique in `scope`. The hint is often the name of the

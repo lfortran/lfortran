@@ -304,28 +304,6 @@ public:
     }
 };
 
-// The verification after each pass does not know which passes have run, so
-// this pass checks the invariant it establishes itself, whenever the passes
-// are verified.
-void verify_string_format_array_args(const ASR::TranslationUnit_t &unit,
-        const LCompilers::PassOptions &pass_options) {
-    bool verify = pass_options.verify_all_passes;
-#if defined(WITH_LFORTRAN_ASSERT)
-    verify = true;
-#endif
-    if (!verify) return;
-    diag::Diagnostics local_diagnostics;
-    diag::Diagnostics &diagnostics = pass_options.diagnostics != nullptr
-        ? *pass_options.diagnostics : local_diagnostics;
-    ASRVerifyOptions verify_options;
-    verify_options.string_format_array_args = true;
-    if (!asr_verify(unit, verify_options, diagnostics)) {
-        std::cerr << diagnostics.render2();
-        throw LCompilersException("pass=string_format_array_args",
-            LFORTRAN_ASR_PASS_VERIFY_FAILED);
-    }
-}
-
 } // namespace
 
 void pass_string_format_array_args(Allocator &al, ASR::TranslationUnit_t &unit,
@@ -334,7 +312,10 @@ void pass_string_format_array_args(Allocator &al, ASR::TranslationUnit_t &unit,
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
     u.visit_TranslationUnit(unit);
-    verify_string_format_array_args(unit, pass_options);
+    ASRVerifyOptions verify_options;
+    verify_options.string_format_array_args = true;
+    PassUtils::verify_pass_invariant(unit, pass_options, verify_options,
+        "string_format_array_args");
 }
 
 } // namespace LCompilers
