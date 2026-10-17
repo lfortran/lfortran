@@ -688,7 +688,7 @@ public:
     std::string gpu_type(ASR::ttype_t *type) {
         switch (type->type) {
             case ASR::ttypeType::Integer: {
-                int kind = ASR::down_cast<ASR::Integer_t>(type)->m_kind;
+                int kind = checked_integer_cast<int>(ASR::down_cast<ASR::Integer_t>(type)->m_kind);
                 if (kind == 4) return "int";
                 if (kind == 8) return "long";
                 // gpu_scalar_width_supported keeps the launch from handing
@@ -698,13 +698,13 @@ public:
                 return unsupported_gpu_type("integer", kind);
             }
             case ASR::ttypeType::Real: {
-                int kind = ASR::down_cast<ASR::Real_t>(type)->m_kind;
+                int kind = checked_integer_cast<int>(ASR::down_cast<ASR::Real_t>(type)->m_kind);
                 if (kind == 4 || kind == 8) return dialect.real_type(kind);
                 return unsupported_gpu_type("real", kind);
             }
             case ASR::ttypeType::Logical: {
                 // Use int to match LLVM's i32 representation for Logical(4)
-                int kind = ASR::down_cast<ASR::Logical_t>(type)->m_kind;
+                int kind = checked_integer_cast<int>(ASR::down_cast<ASR::Logical_t>(type)->m_kind);
                 if (kind == 1) return "char";
                 if (kind == 2) return "short";
                 if (kind == 4) return "int";
@@ -4876,8 +4876,8 @@ public:
                         int dim_idx = 0;
                         if (ab->m_dim) {
                             if (ASR::is_a<ASR::IntegerConstant_t>(*ab->m_dim)) {
-                                dim_idx = ASR::down_cast<ASR::IntegerConstant_t>(
-                                    ab->m_dim)->m_n - 1;
+                                dim_idx = checked_integer_cast<int>(ASR::down_cast<ASR::IntegerConstant_t>(
+                                    ab->m_dim)->m_n - 1);
                             }
                         }
                         // A deferred-shape array -- a component of a

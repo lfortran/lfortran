@@ -337,7 +337,7 @@ bool Parser::parse(const std::string &input)
                     return false;
                 return true;
             }
-        } catch (const parser_local::TokenizerAbort &e) {
+        } catch (const parser_local::TokenizerAbort &) {
             return false;
         }
     } else {
@@ -401,7 +401,7 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
             Location l;
             try {
                 token = t.lex(al, y, l, diagnostics, continue_compilation);
-            } catch (const parser_local::TokenizerAbort &e) {
+            } catch (const parser_local::TokenizerAbort &) {
                 return Error();
             }
             tst.push_back(token);
@@ -603,8 +603,8 @@ bool parse_string(std::string &out, const std::string &s, size_t &pos,
 		}
 		col = 7;
 		if (lm) {
-		    lm->files.back().out_start.push_back(out.size());
-		    lm->files.back().in_start.push_back(pos);
+		    lm->files.back().out_start.push_back(source_offset(out.size()));
+		    lm->files.back().in_start.push_back(source_offset(pos));
 		}
 		continue;
 	    } else if (s[pos] == quote && (col == 72 || s[pos+1] != quote)) {
@@ -696,8 +696,8 @@ bool copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
         }
         if (s[pos] == '"' || s[pos] == '\'') {
             Location loc;
-            loc.first = out.size();
-            loc.last = out.size();
+            loc.first = source_offset(out.size());
+            loc.last = source_offset(out.size());
             if (!parse_string(out, s, pos, true, col, &lm)) {
                 report_unterminated_literal(diagnostics, loc, col);
                 return false;
@@ -710,14 +710,14 @@ bool copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
             // Skip white space in a fixed-form parser
             pos++;
             col++;
-            lm.files.back().out_start.push_back(out.size());
-            lm.files.back().in_start.push_back(pos);
+            lm.files.back().out_start.push_back(source_offset(out.size()));
+            lm.files.back().in_start.push_back(source_offset(pos));
         } else if (s[pos] == '\r') {
             // Skip CR in a fixed-form parser
             pos++;
             // Don't advance the column count here
-            lm.files.back().out_start.push_back(out.size());
-            lm.files.back().in_start.push_back(pos);
+            lm.files.back().out_start.push_back(source_offset(out.size()));
+            lm.files.back().in_start.push_back(source_offset(pos));
         } else {
             // Copy the character, but covert to lowercase
             out += tolower(s[pos]);
@@ -755,11 +755,11 @@ bool process_include(std::string& out, const std::string& s,
     size_t quote_pos = pos;
     if (!parse_string(include_filename, s, pos, fixed_form, col, nullptr)) {
         // Map the current output position to the opening quote
-        lm.files.back().out_start.push_back(out.size());
-        lm.files.back().in_start.push_back(quote_pos);
+        lm.files.back().out_start.push_back(source_offset(out.size()));
+        lm.files.back().in_start.push_back(source_offset(quote_pos));
         Location loc;
-        loc.first = out.size();
-        loc.last = out.size();
+        loc.first = source_offset(out.size());
+        loc.last = source_offset(out.size());
         report_unterminated_literal(diagnostics, loc, col);
         return false;
     }
@@ -782,8 +782,8 @@ bool process_include(std::string& out, const std::string& s,
 
     if (!file_found) {
         Location loc;
-        loc.first = pos;
-        loc.last = pos;
+        loc.first = source_offset(pos);
+        loc.last = source_offset(pos);
         diagnostics.add(diag::Diagnostic(
             "Include file '" + include_filename
             + "' not found. If an include path "
@@ -810,12 +810,12 @@ bool process_include(std::string& out, const std::string& s,
     // lm.files.back().out_start.push_back(out.size());
     out += include;
     while (pos < s.size() && s[pos] != '\n') pos++;
-    lm.files.back().out_start.push_back(out.size());
-    lm.files.back().in_start.push_back(pos);
+    lm.files.back().out_start.push_back(source_offset(out.size()));
+    lm.files.back().in_start.push_back(source_offset(pos));
     return true;
 }
 
-bool is_include(const std::string &s, uint32_t pos) {
+bool is_include(const std::string &s, size_t pos) {
     while (pos < s.size() && s[pos] == ' ') pos++;
     if (pos + 6 < s.size() && str_compare_ci(
             (const unsigned char*)&s[pos], "include")) {
@@ -880,23 +880,23 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
                 case LineType::Comment : {
                     // Skip
                     skip_rest_of_line(s, pos);
-                    lm.files.back().out_start.push_back(out.size());
-                    lm.files.back().in_start.push_back(pos);
+                    lm.files.back().out_start.push_back(source_offset(out.size()));
+                    lm.files.back().in_start.push_back(source_offset(pos));
                     break;
                 }
                 case LineType::Statement : {
                     // Copy from column 7
                     pos += 6;
-                    lm.files.back().out_start.push_back(out.size());
-                    lm.files.back().in_start.push_back(pos);
+                    lm.files.back().out_start.push_back(source_offset(out.size()));
+                    lm.files.back().in_start.push_back(source_offset(pos));
                     ok = copy_rest_of_line(out, s, pos, lm, col, diagnostics);
                     break;
                 }
                 case LineType::StatementTab : {
                     // Copy from column 2
                     pos += 1;
-                    lm.files.back().out_start.push_back(out.size());
-                    lm.files.back().in_start.push_back(pos);
+                    lm.files.back().out_start.push_back(source_offset(out.size()));
+                    lm.files.back().in_start.push_back(source_offset(pos));
                     ok = copy_rest_of_line(out, s, pos, lm, col, diagnostics);
                     break;
                 }
@@ -904,8 +904,8 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
                     // Copy the label
                     copy_label(out, s, pos);
                     // Copy from column 7
-                    lm.files.back().out_start.push_back(out.size());
-                    lm.files.back().in_start.push_back(pos);
+                    lm.files.back().out_start.push_back(source_offset(out.size()));
+                    lm.files.back().in_start.push_back(source_offset(pos));
                     ok = copy_rest_of_line(out, s, pos, lm, col, diagnostics);
                     break;
                 }
@@ -913,8 +913,8 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
                     // Append from column 7 to previous line
                     out = out.substr(0, out.size()-1); // Remove the last '\n'
                     pos += 6;
-                    lm.files.back().out_start.push_back(out.size());
-                    lm.files.back().in_start.push_back(pos);
+                    lm.files.back().out_start.push_back(source_offset(out.size()));
+                    lm.files.back().in_start.push_back(source_offset(pos));
                     ok = copy_rest_of_line(out, s, pos, lm, col, diagnostics);
                     break;
                 }
@@ -922,8 +922,8 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
                     // Append from column 3 to previous line
                     out = out.substr(0, out.size()-1); // Remove the last '\n'
                     pos += 2;
-                    lm.files.back().out_start.push_back(out.size());
-                    lm.files.back().in_start.push_back(pos);
+                    lm.files.back().out_start.push_back(source_offset(out.size()));
+                    lm.files.back().in_start.push_back(source_offset(pos));
                     ok = copy_rest_of_line(out, s, pos, lm, col, diagnostics);
                     break;
                 }
@@ -952,8 +952,8 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
             }
             if (lt == LineType::EndOfFile) break;
         }
-        lm.files.back().in_start.push_back(pos);
-        lm.files.back().out_start.push_back(out.size());
+        lm.files.back().in_start.push_back(source_offset(pos));
+        lm.files.back().out_start.push_back(source_offset(out.size()));
         return out;
     } else {
          // `pos` is the position in the original code `s`
@@ -995,11 +995,11 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
                 size_t pos2=pos+1;
                 bool ws_or_comment = false;
                 cont1(s, pos2, in_string, quote, ws_or_comment);
-                if (ws_or_comment) lm.files.back().in_newlines.push_back(pos2-1);
+                if (ws_or_comment) lm.files.back().in_newlines.push_back(source_offset(pos2-1));
                 if (ws_or_comment) {
                     while (ws_or_comment) {
                         cont1(s, pos2, in_string, quote, ws_or_comment);
-                        if (ws_or_comment) lm.files.back().in_newlines.push_back(pos2-1);
+                        if (ws_or_comment) lm.files.back().in_newlines.push_back(source_offset(pos2-1));
                     }}
                     // `pos` will move by more than 1, close the old interval
                     //lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
@@ -1007,12 +1007,12 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
                     pos = pos2;
                     // Start a new interval (just the starts, the size will be
                     // filled in later)
-                    lm.files.back().out_start.push_back(out.size());
-                    lm.files.back().in_start.push_back(pos);
+                    lm.files.back().out_start.push_back(source_offset(out.size()));
+                    lm.files.back().in_start.push_back(source_offset(pos));
                 
             } else {
                 if (s[pos] == '\n') {
-                    lm.files.back().in_newlines.push_back(pos);
+                    lm.files.back().in_newlines.push_back(source_offset(pos));
                     newline = true;
                 }
             }
@@ -1028,8 +1028,8 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
 
         // Add the position of EOF as the last \n, whether or not the original
         // file has it
-        lm.files.back().in_start.push_back(pos);
-        lm.files.back().out_start.push_back(out.size());
+        lm.files.back().in_start.push_back(source_offset(pos));
+        lm.files.back().out_start.push_back(source_offset(out.size()));
         return out;
     }
 }

@@ -638,6 +638,7 @@ RUN(NAME doloop_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME doloop_18 LABELS gfortran llvm)
 RUN(NAME doloop_19 LABELS gfortran llvm)
 RUN(NAME doloop_20 LABELS gfortran llvm)
+RUN(NAME doloop_21 LABELS gfortran llvm)
 
 RUN(NAME cycle_and_exit1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME cycle_and_exit2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -1998,6 +1999,8 @@ RUN(NAME intrinsics_493 LABELS gfortran llvm) # dot_product/pack/unpack of kind=
 RUN(NAME intrinsics_494 LABELS gfortran llvm NO_FAST_MATH) # aint/anint of values beyond integer(8) range and of infinity (#15040)
 RUN(NAME intrinsics_495 LABELS gfortran llvm) # cshift/eoshift of deferred-length character arrays (#14451)
 RUN(NAME intrinsics_496 LABELS gfortran llvm) # transpose/spread of deferred-length character arrays (#14775)
+RUN(NAME intrinsics_497 LABELS gfortran llvm) # spread with ncopies from size() of a parameter array (#15327)
+RUN(NAME intrinsics_498 LABELS gfortran llvm) # compile-time dot_product/merge_bits/max/min/ibset/btest of integer(8)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
@@ -2007,6 +2010,8 @@ RUN(NAME extends_type_of_01 LABELS gfortran llvm)
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
 RUN(NAME integer_boz_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME integer_star_01 LABELS gfortran llvm)
+RUN(NAME real_star_01 LABELS gfortran llvm)
 
 RUN(NAME test_dshiftr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -2287,6 +2292,11 @@ RUN(NAME select_type_56 LABELS gfortran llvm)
 RUN(NAME select_type_57 LABELS gfortran llvm)
 RUN(NAME select_type_58 LABELS gfortran llvm)
 RUN(NAME select_type_59 LABELS gfortran llvm)
+RUN(NAME select_type_60 LABELS gfortran llvm)
+RUN(NAME select_type_61 LABELS gfortran llvm)
+RUN(NAME select_type_63 LABELS llvm)
+RUN(NAME select_type_64 LABELS gfortran llvm)
+
 
 RUN(NAME where_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME where_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -2504,6 +2514,7 @@ RUN(NAME implicit_typing_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortra
 RUN(NAME implicit_typing_10 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_11 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_12 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
+RUN(NAME implicit_typing_13 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 
 RUN(NAME generic_name_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME generic_name_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -6375,6 +6386,7 @@ if (CMAKE_SYSTEM_NAME STREQUAL "Linux" AND CMAKE_SYSTEM_PROCESSOR MATCHES "x86_6
     RUN(NAME real80_cast_01 LABELS gfortran llvm)
     RUN(NAME real80_compare_01 LABELS gfortran llvm)
     RUN(NAME real80_unary_minus_01 LABELS gfortran llvm)
+    RUN(NAME real_star_02 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 endif()
 RUN(NAME equivalence_39 LABELS gfortran llvm)
 RUN(NAME equivalence_40 LABELS gfortran llvm)
