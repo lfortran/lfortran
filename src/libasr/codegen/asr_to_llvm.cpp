@@ -16046,6 +16046,11 @@ public:
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::SIMDArray) {
             tmp = llvm_utils->CreateLoad2(m_arg_llvm_type, arg);
+        } else if (
+            m_new == ASR::array_physical_typeType::PointerArray &&
+            m_old == ASR::array_physical_typeType::SIMDArray) {
+            // The elements of a SIMD vector are stored contiguously.
+            tmp = builder->CreateBitCast(arg, data_type->getPointerTo());
         } else if(
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
@@ -16166,18 +16171,9 @@ public:
         } else if (
             m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::StringArraySinglePointer) {
-        //
-            if (ASRUtils::is_fixed_size_array(m_type)) {
-                if( ((m_arg_value &&
-                    !ASR::is_a<ASR::ArrayConstant_t>(*m_arg_value) &&
-                    !is_array_constructor_value) ||
-                    m_arg_value == nullptr) &&
-                    !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
-                    tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
-                }
-            } else {
-                tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(),arr_descr->get_pointer_to_data(arr_type, tmp));
-            }
+            // A StringArraySinglePointer is the `char*` of one flat buffer of
+            // C characters, which is also how a PointerArray of C characters
+            // is represented.
         } else if (
             m_new == ASR::array_physical_typeType::StringArraySinglePointer &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
@@ -29786,6 +29782,15 @@ public:
                         this->visit_expr(*array_casted_to_pointer);
                     } else {
                         this->visit_expr(*x.m_args[i]);
+                        if (ASRUtils::is_character(*expr_type(x.m_args[i])) &&
+                                ASRUtils::get_string_type(expr_type(x.m_args[i]))->m_physical_type
+                                    == ASR::CChar) {
+                            // The runtime reads the `char*` of a C character
+                            // array through a pointer, like that of a scalar.
+                            llvm::Value* tmp_ptr = llvm_utils->CreateAlloca(llvm_utils->i8_ptr);
+                            builder->CreateStore(tmp, tmp_ptr);
+                            tmp = tmp_ptr;
+                        }
                     }
                 } else if (ASRUtils::is_character(*expr_type(x.m_args[i])) &&
                     ASRUtils::get_string_type(expr_type(x.m_args[i]))->m_physical_type == ASR::CChar) {
