@@ -4225,8 +4225,8 @@ public:
         // 7.5.6.3 p5) is left in place when every object is a scalar, since
         // it is then not duplicated: assigning it to a temporary would
         // finalize the undefined temporary, and the result and the temporary
-        // would both be finalized. An array object is also assigned the
-        // source below, so the temporary is kept for it.
+        // would both be finalized. The array_op pass copies the source into
+        // an array object separately, so the temporary is kept for it.
         bool source_used_once = source_cond && source != nullptr &&
             ASRUtils::is_finalizable_function_reference(source);
         for (size_t i = 0; source_used_once && i < alloc_args_vec.size(); i++) {
@@ -4603,14 +4603,15 @@ public:
             // Pushing assignment statements to source
             if (source_cond) {
                 for (size_t i = 0; i < alloc_args_vec.n ; i++) {
-                    // Create assignment statement only for non-struct types
+                    // Create assignment statement only for scalars that are
+                    // not of derived type. The backend copies the source into
+                    // a scalar of derived type, and the array_op pass into
+                    // the elements of an array.
                     // All validation was already done above before creating the Allocate ASR node
-                    if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(alloc_args_vec[i].m_a)))) {
-                        ASR::ttype_t* tgt_t = ASRUtils::type_get_past_allocatable_pointer(
-                            ASRUtils::expr_type(alloc_args_vec[i].m_a));
-                        if (ASRUtils::is_assumed_rank_array(tgt_t)) {
-                            continue;
-                        }
+                    ASR::ttype_t* tgt_t = ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(alloc_args_vec[i].m_a));
+                    if (!ASR::is_a<ASR::StructType_t>(*tgt_t) &&
+                            !ASRUtils::is_array(tgt_t)) {
                         ASRUtils::ExprStmtDuplicator expr_duplicator(al);
                         ASR::expr_t* source_copy = expr_duplicator.duplicate_expr(source);
                         ASR::stmt_t* assign_stmt = ASRUtils::STMT(
