@@ -4458,6 +4458,12 @@ public:
         }
         require(x.n_dims != 0, "Array type cannot have 0 dimensions.")
         require(!ASR::is_a<ASR::Array_t>(*x.m_type), "Array type cannot be nested.")
+        // A "StringArraySinglePointer" array is a flat buffer of C characters,
+        // so it can only hold strings.
+        require(x.m_physical_type != ASR::StringArraySinglePointer ||
+            ASRUtils::is_character(*x.m_type),
+            "Array with physical type \"StringArraySinglePointer\" must have"
+            " a string element type")
         if(ASRUtils::is_character(*x.m_type)){
             require(x.m_physical_type != ASR::FixedSizeArray,
                 "Array of strings' physical type shouldn't be \"FixedSizeArray\"")

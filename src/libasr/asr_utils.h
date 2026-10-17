@@ -11013,8 +11013,16 @@ inline ASR::ttype_t* make_Pointer_t_util(Allocator& al, const Location& loc, ASR
     if( ASRUtils::is_array(type) && !ASRUtils::is_assumed_rank_array(type) ) {
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
-        if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
-            type = ASRUtils::duplicate_type_with_empty_dims(al, type);
+        // A pointer to an array must have deferred shape, so drop the
+        // dimensions if any of them still carries a length. Checking only
+        // whether some dimension is empty is not enough: an assumed-size
+        // array such as `a(1, *)` has an empty last dimension but an
+        // explicit first one.
+        for( size_t i = 0; i < n_dims; i++ ) {
+            if( m_dims[i].m_length != nullptr ) {
+                type = ASRUtils::duplicate_type_with_empty_dims(al, type);
+                break;
+            }
         }
     }
 

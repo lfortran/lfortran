@@ -1142,12 +1142,10 @@ class ASRToLLVMVisitor;
             auto* const struct_sym = get_struct_sym(v);
             if (LLVM::is_struct_value_dummy_copied(*v)) {
                 // A dummy argument is not finalized (F2018 7.5.6.3): only
-                // free the class wrappers that the procedure's copy owns.
-                llvm_utils_->visit_class_pointer_components(struct_sym, llvm_var,
-                    llvm_utils_->module, [&](llvm::Value* slot, llvm::Type* wrapper_type) {
-                        llvm_utils_->lfortran_free(llvm_utils_->CreateLoad2(
-                            wrapper_type->getPointerTo(), slot));
-                    });
+                // free the memory that the procedure's copy owns.
+                with_final_subroutines(false, [&]() {
+                    finalize(llvm_var, v->m_type, struct_sym, false);
+                });
                 return;
             }
             call_final_of_allocatable_local(v, llvm_var, struct_sym);
