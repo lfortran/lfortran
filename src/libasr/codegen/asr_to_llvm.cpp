@@ -2695,7 +2695,8 @@ public:
                         if (!curr_arg.m_type) {
                             llvm_utils->deepcopy(m_source, source_handle, target_struct,
                                 ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(m_source)),
-                                curr_arg_m_a_type, module.get(), false, false);
+                                curr_arg_m_a_type, module.get(), false,
+                                llvm::ConstantInt::getFalse(context));
                         }
 
                         continue;
@@ -2750,7 +2751,7 @@ public:
                             ptr_loads = ptr_loads_copy;
 
                             llvm_utils->deepcopy(m_source, tmp, x_arr, ASRUtils::expr_type(m_source), curr_arg_m_a_type, module.get(),
-                                false, false);
+                                false, llvm::ConstantInt::getFalse(context));
                         }
                     } else {
                         ASR::ttype_t* dest_asr_type = curr_arg.m_type;
@@ -2925,7 +2926,7 @@ public:
                                 src = llvm_utils->CreateLoad2(dest_type, src);
                             }
                             llvm_utils->deepcopy(m_source, src, dest, dest_asr_type, dest_asr_type, module.get(),
-                                false, false);
+                                false, llvm::ConstantInt::getFalse(context));
                         }
                     }
                 }
@@ -14098,9 +14099,13 @@ public:
         }
 
         // When assigning to a StructInstanceMember, whose instance is allocatable
-        // Check if the underlying struct instance is allocated, if not allocate
+        // Check if the underlying struct instance is allocated, if not allocate.
+        // A derived-type assignment below allocates its variable itself, and
+        // then does not finalize it (F2018 7.5.6.3 p1).
         if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
-            !ASRUtils::is_character(*asr_value_type)) {
+            !ASRUtils::is_character(*asr_value_type) &&
+            !((is_target_class || is_target_struct) &&
+              (is_value_class || is_value_struct))) {
             if (ASRUtils::is_allocatable(x.m_target) && !ASRUtils::is_array(asr_target_type)) {
                 check_and_allocate_scalar(x.m_target, x.m_value, asr_value_type);
             }
@@ -14535,22 +14540,10 @@ public:
                     deepcopy_var = x.m_value;
                 }
 
-                bool finalize_target = true;
-                if (target_is_new != nullptr) {
-                    finalize_target = false;
-                    ASR::Struct_t* target_struct_sym = ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(
-                            ASRUtils::get_struct_sym_from_struct_expr(deepcopy_var)));
-                    llvm::ConstantInt* is_new_constant =
-                        llvm::dyn_cast<llvm::ConstantInt>(target_is_new);
-                    if ((is_new_constant == nullptr || !is_new_constant->isOne()) &&
-                            LLVMFinalize::chain_has_final_procedure(target_struct_sym)) {
-                        llvm::Value* finalized_target = target_struct;
-                        llvm_utils->create_if_else(builder->CreateNot(target_is_new), [&]() {
-                            struct_api->call_struct_finalize_fn(finalized_target, deepcopy_type,
-                                target_struct_sym);
-                        }, []() {});
-                    }
+                llvm::Value* finalize_target = nullptr;
+                if (target_is_new != nullptr && ASRUtils::struct_needs_finalization(
+                        ASRUtils::get_struct_sym_from_struct_expr(deepcopy_var))) {
+                    finalize_target = builder->CreateNot(target_is_new);
                 }
                 llvm_utils->deepcopy(deepcopy_var, value_struct, target_struct,
                     deepcopy_type, deepcopy_type, module.get(), true, finalize_target);

@@ -892,12 +892,13 @@ class ASRToLLVMVisitor;
 
             void set_set_api(ASR::Set_t* set_type);
 
-            // `finalize_dest` false: `dest` has just been allocated, so the
-            // copy defines it rather than assigning to it, and it is not
-            // finalized first.
+            // `finalize_dest` is an i1 that says whether `dest` is finalized
+            // before it is defined; nullptr means that it is. It is false when
+            // `dest` has just been allocated, so the copy defines it rather
+            // than assigning to it.
             void deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                 ASR::ttype_t* asr_dest_type, ASR::ttype_t* asr_src_type, llvm::Module* module,
-                bool use_defined_assignment = false, bool finalize_dest = true);
+                bool use_defined_assignment = false, llvm::Value* finalize_dest = nullptr);
 
             // A scalar class pointer is a heap-allocated class wrapper
             // {vptr, data*} owned by the pointer (freed by nullify and
@@ -3319,7 +3320,7 @@ class ASRToLLVMVisitor;
 
             void struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                 ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
-                bool use_defined_assignment = false, bool finalize_dest = true);
+                bool use_defined_assignment = false, llvm::Value* finalize_dest = nullptr);
 
             // Copy dimension descriptors, rank and offset from src to dest array descriptor.
             void copy_dimension_descriptors(
@@ -3362,6 +3363,10 @@ class ASRToLLVMVisitor;
              * NOTICE : It doesn't handle arrays
             */
             void call_struct_finalize_fn(llvm::Value* ptr, ASR::ttype_t* ty, ASR::Struct_t* struct_sym);
+
+            // call_struct_finalize_fn if the i1 `cond` is true.
+            void call_struct_finalize_fn_if(llvm::Value* cond, llvm::Value* ptr,
+                ASR::ttype_t* ty, ASR::Struct_t* struct_sym);
     };
 
     class LLVMTuple {

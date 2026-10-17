@@ -3907,7 +3907,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     void LLVMUtils::deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                              ASR::ttype_t* asr_dest_type,
                              ASR::ttype_t* asr_src_type, llvm::Module* module,
-                             bool use_defined_assignment, bool finalize_dest) {
+                             bool use_defined_assignment, llvm::Value* finalize_dest) {
         switch( ASRUtils::type_get_past_array(asr_src_type)->type ) {
             case ASR::ttypeType::Integer:
             case ASR::ttypeType::UnsignedInteger:
@@ -10483,15 +10483,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         llvm::Value *dst = builder->CreateBitCast(argsVec[1], struct_type->getPointerTo());
         // A destination that has just been allocated is defined by the copy,
         // and not finalized (F2018 7.5.6.3 p1).
-        if (LLVMFinalize::chain_has_final_procedure(ASR::down_cast<ASR::Struct_t>(struct_sym))) {
-            llvm_utils->create_if_else(argsVec[2], [&]() {
-                call_struct_finalize_fn(dst, ASRUtils::symbol_type(struct_sym),
-                    ASR::down_cast<ASR::Struct_t>(struct_sym));
-            }, []() {});
-        }
         llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, struct_sym->base.loc, struct_sym)), src, dst,
             ASRUtils::symbol_type(struct_sym), ASRUtils::symbol_type(struct_sym), module,
-            false, false);
+            false, argsVec[2]);
         builder->CreateRetVoid();
 
         if (savedBB) {
@@ -10759,9 +10753,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
 
     void LLVMStruct::struct_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, ASR::ttype_t* src_ty,
                                     ASR::ttype_t* dest_ty, llvm::Value* dest, llvm::Module* module,
-                                    bool use_defined_assignment, bool finalize_dest)
+                                    bool use_defined_assignment, llvm::Value* finalize_dest)
     {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(src_ty)));
+        if (finalize_dest == nullptr) {
+            finalize_dest = llvm::ConstantInt::getTrue(context);
+        }
         ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(
             ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(src_expr)));
         bool is_src_class = ASRUtils::is_class_type(ASRUtils::extract_type(src_ty));
@@ -10884,7 +10881,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     llvm::Value* dest_elem = builder->CreateGEP(
                         llvm::Type::getInt8Ty(context), dest_raw_data, byte_offset);
                     builder->CreateCall(fnTy, src_w.copy_fn, {src_elem, dest_elem,
-                        llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), finalize_dest)});
+                        finalize_dest});
                     builder->CreateStore(
                         builder->CreateAdd(ui_val, llvm::ConstantInt::get(i64_ty, 1)), ui);
                 });
@@ -10956,7 +10953,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     llvm::Value* dest_elem = builder->CreateGEP(
                         llvm::Type::getInt8Ty(context), dest_raw_data, byte_offset);
                     builder->CreateCall(fnTy, fn, {src_elem, dest_elem,
-                        llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), finalize_dest)});
+                        finalize_dest});
                     builder->CreateStore(
                         builder->CreateAdd(ui_val, llvm::ConstantInt::get(i64_ty, 1)), ui);
                 });
@@ -11023,12 +11020,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 copy_dimension_descriptors(llvm_array_type, src, dest, module);
             }
         } else {
-            if (finalize_dest) {
-                call_struct_finalize_fn(dest, dest_ty,
-                    ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(
-                            ASRUtils::get_struct_sym_from_struct_expr(src_expr)))); /*Assume src and dest are same*/
-            }
+            call_struct_finalize_fn_if(finalize_dest, dest, dest_ty,
+                ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(src_expr)))); /*Assume src and dest are same*/
             if (ASRUtils::is_class_type(ASRUtils::extract_type(dest_ty))) {
                 if (!ASRUtils::is_value_constant(src_expr)) {
                     // Store Vptr from src to dest
@@ -11075,8 +11070,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     dest_ptr = builder->CreateBitCast(dest_ptr, llvm_utils->i8_ptr);
                 }
 
-                builder->CreateCall(fnTy, fn, {src_ptr, dest_ptr,
-                    llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), finalize_dest)});
+                builder->CreateCall(fnTy, fn, {src_ptr, dest_ptr, finalize_dest});
                 return ;
             }
 
@@ -11161,8 +11155,25 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                             ASR::is_a<ASR::StructType_t>(
                                 *ASRUtils::type_get_past_allocatable(member_type))) {
                         llvm::Value* dest_member_ptr = dest_member;
+                        // The member is finalized with `dest`, unless it is
+                        // an unallocated allocatable component, which the
+                        // copy allocates.
+                        llvm::Value* finalize_member = finalize_dest;
                         if (ASRUtils::is_allocatable(member_type)) {
                             dest_member = llvm_utils->CreateLoad2(mem_type, dest_member);
+                            llvm::ConstantInt* finalize_dest_constant =
+                                llvm::dyn_cast<llvm::ConstantInt>(finalize_dest);
+                            bool member_may_need_finalization =
+                                ASRUtils::is_class_type(ASRUtils::extract_type(member_type)) ||
+                                ASRUtils::struct_needs_finalization(
+                                    ASR::down_cast<ASR::Variable_t>(mem_sym)->m_type_declaration);
+                            if (member_may_need_finalization &&
+                                    !(finalize_dest_constant && finalize_dest_constant->isZero())) {
+                                finalize_member = builder->CreateAnd(
+                                    builder->CreateICmpNE(dest_member,
+                                        llvm::Constant::getNullValue(dest_member->getType())),
+                                    finalize_dest);
+                            }
                         }
                         llvm::Value* dest_member_copy = dest_member;
                         llvm_utils->create_if_else(is_allocated, [&]() {
@@ -11261,7 +11272,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                             src_member = builder->CreateBitCast(src_member, llvm_utils->i8_ptr);
                             dest_member = builder->CreateBitCast(dest_member, llvm_utils->i8_ptr);
                             builder->CreateCall(fnTy, fn, {src_member, dest_member,
-                                llvm::ConstantInt::getTrue(context)});
+                                finalize_member});
                         }, [&]() {
                             if (ASRUtils::is_allocatable(member_type)) {
                                 // If source allocatable struct is not allocated, then
@@ -11438,6 +11449,23 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         }
 
     }
+    void LLVMStruct::call_struct_finalize_fn_if(llvm::Value* cond, llvm::Value* ptr,
+            ASR::ttype_t* ty, ASR::Struct_t* struct_sym) {
+        if (ASRUtils::is_pointer(ty) ||
+                !LLVMFinalize::chain_has_final_procedure(struct_sym)) {
+            return;
+        }
+        if (llvm::ConstantInt* cond_constant = llvm::dyn_cast<llvm::ConstantInt>(cond)) {
+            if (cond_constant->isOne()) {
+                call_struct_finalize_fn(ptr, ty, struct_sym);
+            }
+            return;
+        }
+        llvm_utils->create_if_else(cond, [&]() {
+            call_struct_finalize_fn(ptr, ty, struct_sym);
+        }, []() {});
+    }
+
     void LLVMStruct::call_struct_finalize_fn(llvm::Value* ptr, ASR::ttype_t* ty, ASR::Struct_t* struct_sym) {
         if( ASRUtils::is_pointer(ty) ) return; // Final fn never invoked on pointers
         if (!LLVMFinalize::chain_has_final_procedure(struct_sym)) return;
