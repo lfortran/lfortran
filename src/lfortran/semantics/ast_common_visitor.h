@@ -2473,7 +2473,7 @@ public:
         SymbolTable* current_scope; // The scope where the `AST::FuncCallOrArray` should've been evaluated. 
         AST::expr_t* func_call; // `AST::FuncCallOrArray`
         const char* var_name; // Name of the `ASR::Variable` that the functionCall is part of [integer :: arr(genericCall())]
-        std::function<void(ASR::expr_t*)> check; // Lambda function in case the returning `ASR::expr` should be checked in specific way.
+        std::function<void(ASR::expr_t*)> check; // Lambda function called with the returning `ASR::expr`, to check it or to build what needs it.
         // Constructor
         postponed_genericProcedure_call( ASR::expr_t** holder, SymbolTable* current_scope,
             AST::expr_t* func_call, const char* var_name,
@@ -3683,6 +3683,16 @@ public:
         return call->n_member > 0;
     }
 
+    // Whether a bound of `dim` is a postponed call
+    bool has_postponed_bound(const ASR::dimension_t &dim) {
+        for (auto &call : postponed_genericProcedure_calls_vec) {
+            if (call.holder == &dim.m_start || call.holder == &dim.m_length) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     // The objects that a scoping unit's COMMON statements place in a common
     // block, lower cased. A specification expression may read one of them
     // (Fortran 2023 10.1.11), and the COMMON statements of a specification
@@ -4097,12 +4107,15 @@ public:
 	        ASR::dimension_t &dim  = const_cast<ASR::dimension_t&>(dims[dims.size()-1]);
 	        dim.m_length = nullptr; dim.m_start = nullptr;
 	        dim.loc = m_dim[i].loc;
+            bool start_postponed = false;
+            size_t start_call = postponed_genericProcedure_calls_vec.size();
             if (m_dim[i].m_start) {
                 if(is_funcCall_to_unresolved_genereicProcedure(m_dim[i].m_start)){
                     postponed_genericProcedure_calls_vec.emplace_back(&dim.m_start,
                         current_scope, m_dim[i].m_start, var_name, 
                         [this](ASR::expr_t* start){dimension_attribute_error_check(start);});
                     dim.m_start = nullptr;
+                    start_postponed = true;
                 } else {
                     this->visit_expr(*m_dim[i].m_start);
                     dim.m_start = ASRUtils::EXPR(tmp);
@@ -4131,7 +4144,11 @@ public:
                    is_type_bound_func_call(m_dim[i].m_end)){ // Delay
                     postponed_genericProcedure_calls_vec.emplace_back(&dim.m_length,
                         current_scope, m_dim[i].m_end, var_name, 
-                        [this](ASR::expr_t* start){dimension_attribute_error_check(start);});
+                        [this, dim_ptr = &dim](ASR::expr_t* end){
+                            dimension_attribute_error_check(end);
+                            dim_ptr->m_length = ASRUtils::compute_length_from_start_end(
+                                this->al, dim_ptr->m_start, end);
+                        });
                     dim.m_length = nullptr;
                 } else {
                     this->visit_expr(*m_dim[i].m_end);
@@ -4149,13 +4166,21 @@ public:
                     } else {
                         end = end_read;
                     }
-                    if (pdt_kind_bound) {
+                    if (start_postponed) {
+                        // The length needs the start, so build it when the start is known
+                        postponed_genericProcedure_calls_vec[start_call].check =
+                            [this, dim_ptr = &dim, end](ASR::expr_t* start){
+                                dimension_attribute_error_check(start);
+                                dim_ptr->m_length = ASRUtils::compute_length_from_start_end(
+                                    this->al, start, end);
+                            };
+                    } else if (pdt_kind_bound) {
                         dim.m_length = pdt_component_extent(dim.m_start, end);
                     } else {
                         dim.m_length = ASRUtils::compute_length_from_start_end(al,
                             dim.m_start, end);
                     }
-                    if (is_derived_type && !pdt_kind_bound) {
+                    if (is_derived_type && !pdt_kind_bound && !start_postponed) {
                         ASR::expr_t* length_value = ASRUtils::expr_value(dim.m_length);
                         if (length_value != nullptr) {
                             dim.m_length = length_value;
@@ -4165,7 +4190,7 @@ public:
             } else {
                 dim.m_length = nullptr;
             }
-            if ( !dim.m_length && (!dim.m_start ||
+            if ( !dim.m_length && ((!dim.m_start && !start_postponed) ||
                     m_dim[i].m_end_star == AST::dimension_typeType::DimensionStar) ) {
                 is_compile_time = true;
             }
@@ -9738,6 +9763,8 @@ public:
                     ? current_procedure_abi_type : ASR::abiType::Source;
                 Vec<ASR::dimension_t> dims;
                 dims.reserve(al, 0);
+                // the array-spec that `dims` is built from
+                AST::dimension_t* dims_ast = nullptr;
                 // location for dimension(...) if present
                 Location dims_attr_loc;
                 is_allocatable = false;
@@ -9893,6 +9920,7 @@ public:
                                 throw SemanticAbort();
                             }
                             dims_attr_loc = ad->base.base.loc;
+                            dims_ast = ad->m_dim;
                             HiddenDerivedTypeComponents hidden_components(
                                 current_scope, is_derived_type, hidden_derived_type_components);
                             process_dims(al, dims, ad->m_dim, ad->n_dim, is_compile_time, is_char_type,
@@ -10029,6 +10057,7 @@ public:
                             "");
                         throw SemanticAbort();
                     }
+                    dims_ast = s.m_dim;
                     HiddenDerivedTypeComponents hidden_components(
                         current_scope, is_derived_type, hidden_derived_type_components);
                     process_dims(al, dims, s.m_dim, s.n_dim, is_compile_time, is_char_type,
@@ -10157,7 +10186,9 @@ public:
                 if (!is_argument && !is_allocatable && !is_pointer
                         && !is_dimension_star && dims.size() > 0) {
                     for (size_t j = 0; j < dims.size(); j++) {
-                        if (dims[j].m_start == nullptr && dims[j].m_length == nullptr) {
+                        // A postponed bound is null here, so the source says if there is an upper bound
+                        if (dims[j].m_start == nullptr && dims[j].m_length == nullptr
+                                && dims_ast[j].m_end == nullptr) {
                             diag.semantic_error_label(
                                 "Array '" + std::string(s.m_name) +
                                 "' with a deferred shape cannot be a local variable; "
@@ -11769,7 +11800,8 @@ public:
                 std::string const attr_name = ASRUtils::is_allocatable(type) ? 
                                                 "Allocatable" : "Pointer";
                 if (array_type->m_dims[i].m_start != nullptr ||
-                    array_type->m_dims[i].m_length != nullptr) {
+                    array_type->m_dims[i].m_length != nullptr ||
+                    has_postponed_bound(array_type->m_dims[i])) {
                     diag.add(Diagnostic(
                         std::string(attr_name) + " array '" + sym +
                         "' must have a deferred shape or assumed rank",
