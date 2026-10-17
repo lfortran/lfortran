@@ -59,7 +59,7 @@ elseif (NOT LFORTRAN_BACKEND AND APPLE)
     endif()
 endif()
 
-macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
+macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS RUN_SHARED_LIBRARY_FILES)
     set(fail ${${RUN_FAIL}})
     set(name ${${RUN_NAME}})
     set(file_name ${${RUN_FILE_NAME}})
@@ -68,6 +68,7 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
     set(extra_args ${${RUN_EXTRA_ARGS}})
     set(copy_to_bin ${${RUN_COPY_TO_BIN}})
     set(gfortran_args ${${RUN_GFORTRAN_ARGS}})
+    set(shared_library_files ${${RUN_SHARED_LIBRARY_FILES}})
 
     if (NOT name)
         message(FATAL_ERROR "Must specify the NAME argument")
@@ -94,6 +95,11 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
 
     if (LFORTRAN_SMOKE AND NOT RUN_SMOKE_NAME IN_LIST LFORTRAN_SMOKE_TESTS)
         set(ADD_TEST OFF)
+    endif()
+
+    if (ADD_TEST AND shared_library_files AND LFORTRAN_BACKEND
+            AND NOT LFORTRAN_BACKEND STREQUAL "llvm")
+        message(FATAL_ERROR "SHARED_LIBRARY_FILES is only supported with the gfortran and llvm labels")
     endif()
 
     if (ADD_TEST)
@@ -195,6 +201,11 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             if (ISO_FORTRAN_BINDING_INCLUDE_DIR)
                 target_include_directories(${name} PRIVATE ${ISO_FORTRAN_BINDING_INCLUDE_DIR})
             endif()
+            if (shared_library_files)
+                add_library(${name}_lib SHARED ${shared_library_files})
+                target_compile_options(${name}_lib PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${extra_args}>)
+                target_link_libraries(${name} PRIVATE ${name}_lib)
+            endif()
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_omp")
             add_executable(${name} ${file_name}.f90 ${extra_files})
@@ -257,6 +268,11 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             if (ISO_FORTRAN_BINDING_INCLUDE_DIR)
                 target_include_directories(${name} PRIVATE ${ISO_FORTRAN_BINDING_INCLUDE_DIR})
             endif()
+            if (shared_library_files)
+                add_library(${name}_lib SHARED ${shared_library_files})
+                target_compile_options(${name}_lib PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${gfortran_args}>)
+                target_link_libraries(${name} PRIVATE ${name}_lib)
+            endif()
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         endif()
 
@@ -277,7 +293,7 @@ endmacro(RUN_UTIL)
 macro(RUN)
     set(options FAIL NO_FAST NO_FAST_MATH NO_DETECT_LEAKS NO_STD_F23 NO_LLVM_GOC)
     set(oneValueArgs NAME FILE INCLUDE_PATH COPY_TO_BIN NUM_IMAGES)
-    set(multiValueArgs LABELS EXTRAFILES EXTRA_ARGS GFORTRAN_ARGS)
+    set(multiValueArgs LABELS EXTRAFILES EXTRA_ARGS GFORTRAN_ARGS SHARED_LIBRARY_FILES)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
                         "${multiValueArgs}" ${ARGN} )
     set(RUN_SMOKE_NAME "${RUN_NAME}")
@@ -324,9 +340,9 @@ macro(RUN)
         endif()
         set(RUN_NAME "${RUN_NAME}_FAST")
         list(REMOVE_ITEM RUN_LABELS gfortran) # remove gfortran from --fast test
-        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
+        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS RUN_SHARED_LIBRARY_FILES)
     else ()
-        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
+        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS RUN_SHARED_LIBRARY_FILES)
     endif()
 
 endmacro(RUN)
@@ -408,6 +424,11 @@ RUN(NAME ilp64_logical_read_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer
 RUN(NAME ilp64_complex_literal_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME ilp64_logical_compare_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME fpie_flag_01 LABELS gfortran llvm EXTRA_ARGS -fPIE GFORTRAN_ARGS -fPIE)
+# CMake links the shared library through the compiler driver with `-shared`.
+# On macOS CMake uses `-dynamiclib` instead, and Windows needs an import library.
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    RUN(NAME shared_library_01 LABELS gfortran llvm SHARED_LIBRARY_FILES shared_library_01_lib.f90)
+endif()
 
 RUN(NAME procedure_pointer_array_01 LABELS gfortran llvm)
 

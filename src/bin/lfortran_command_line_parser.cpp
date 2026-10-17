@@ -108,6 +108,16 @@ namespace LCompilers::CommandLineInterface {
         std::exit(1);
     }
 
+    // CLI11 only accepts single-character names after a single dash, so
+    // GCC-compatible driver options such as `-shared` are mapped to their
+    // double-dash spelling before parsing.
+    static std::string normalize_gcc_style_arg(const std::string &arg) {
+        if (arg == "-shared") {
+            return "--shared";
+        }
+        return arg;
+    }
+
     static void initialize_subcommands(LFortranCommandLineParser &parser) {
         parser.fmt = parser.app.add_subcommand("fmt", "Format Fortran source files.");
         parser.fmt->add_option("file", parser.opts.arg_fmt_file,
@@ -337,7 +347,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output")->group(group_backend_codegen_options);
         app.add_flag("--separate-compilation", compiler_options.separate_compilation, "Generate object code into .o files")->group(group_backend_codegen_options);
         app.add_flag("--static", opts.static_link, "Create a static executable")->group(group_backend_codegen_options);
-        app.add_flag("--shared", opts.shared_link, "Create a shared executable")->group(group_backend_codegen_options);
+        app.add_flag("--shared", opts.shared_link, "Create a shared library (also accepted as `-shared`)")->group(group_backend_codegen_options);
         app.add_flag("--linker", opts.linker, "Specify the linker to be used, available options: clang or gcc")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--linker-path", opts.linker_path, "Use the linker from this path")->capture_default_str()->group(group_backend_codegen_options);
         app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str()->group(group_backend_codegen_options);
@@ -406,8 +416,22 @@ namespace LCompilers::CommandLineInterface {
         }
 
         if (argv != nullptr) {
-            app.parse(argc, argv);
+            std::vector<std::string> normalized_args;
+            normalized_args.reserve(static_cast<size_t>(argc));
+            for (int i = 0; i < argc; ++i) {
+                normalized_args.push_back(i == 0 ? std::string(argv[i])
+                    : normalize_gcc_style_arg(argv[i]));
+            }
+            std::vector<const char *> normalized_argv;
+            normalized_argv.reserve(normalized_args.size());
+            for (const std::string &arg : normalized_args) {
+                normalized_argv.push_back(arg.c_str());
+            }
+            app.parse(argc, normalized_argv.data());
         } else {
+            for (std::string &arg : args) {
+                arg = normalize_gcc_style_arg(arg);
+            }
             app.parse(args);
         }
 
