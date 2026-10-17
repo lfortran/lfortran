@@ -1221,126 +1221,12 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             return array_constant;
         }
 
-        class VarSubstituter : public ASR::BaseExprReplacer<VarSubstituter> {
-        public:
-            Allocator& al;
-            ASR::symbol_t* loop_var;
-            ASR::expr_t* replacement;
-            
-            VarSubstituter(Allocator& al_, ASR::symbol_t* var, ASR::expr_t* repl) 
-                : BaseExprReplacer(), al(al_), loop_var(var), replacement(repl) {}
-            
-            void replace_Var(ASR::Var_t* x) {
-                if (x->m_v == loop_var) {
-                    *current_expr = replacement;
-                }
-            }
-        };
-        
-        // Loops whose bounds are all integer literals have always been
-        // expanded in full. Bounds that are only folded constants (a named
-        // constant, `size()` of a fixed size array) are often large, and
-        // every iteration costs compile time and code size, so such loops
-        // are expanded only up to this many iterations in total, nested
-        // loops included; larger ones keep the run-time loop.
-        static constexpr uint64_t max_folded_bounds_expansion = 256;
-
-        static bool implied_do_loop_has_literal_bounds(ASR::ImpliedDoLoop_t* idl) {
-            if (!ASR::is_a<ASR::IntegerConstant_t>(*idl->m_start) ||
-                !ASR::is_a<ASR::IntegerConstant_t>(*idl->m_end) ||
-                (idl->m_increment &&
-                 !ASR::is_a<ASR::IntegerConstant_t>(*idl->m_increment))) {
-                return false;
-            }
-            for (size_t i = 0; i < idl->n_values; i++) {
-                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i]) &&
-                    !implied_do_loop_has_literal_bounds(
-                        ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]))) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
+        // The values of `idl` with the loop variables replaced by their
+        // values (see `ASRUtils::expand_implied_do_loop`), if it can be
+        // expanded at compile time.
         bool expand_implied_do_loop_flat(ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*>& result) {
-            uint64_t budget = implied_do_loop_has_literal_bounds(idl)
-                ? std::numeric_limits<uint64_t>::max() : max_folded_bounds_expansion;
-            return expand_implied_do_loop_flat(idl, result, budget);
-        }
-
-        // `budget` is the number of iterations that may still be expanded.
-        bool expand_implied_do_loop_flat(ASR::ImpliedDoLoop_t* idl,
-                Vec<ASR::expr_t*>& result, uint64_t& budget) {
-            // A nested loop that reuses an enclosing loop's variable (not
-            // conforming, but accepted) had its own variable substituted by
-            // the enclosing loop's value; leave it to the run-time loop.
-            if (!ASR::is_a<ASR::Var_t>(*idl->m_var)) {
-                return false;
-            }
-            // The bounds only have to be integer compile-time constants,
-            // e.g. `size(a)` of a fixed size array or a named constant.
-            int64_t start_val = 0, end_val = 0, step_val = 1;
-            if (!ASRUtils::is_value_constant(ASRUtils::expr_value(idl->m_start), start_val) ||
-                !ASRUtils::is_value_constant(ASRUtils::expr_value(idl->m_end), end_val)) {
-                return false;
-            }
-            if (idl->m_increment &&
-                !ASRUtils::is_value_constant(ASRUtils::expr_value(idl->m_increment), step_val)) {
-                return false;
-            }
-            
-            if (step_val == 0 || (step_val > 0 && start_val > end_val) || 
-                (step_val < 0 && start_val < end_val)) {
-                return true;
-            }
-            
-            // The trip count is (end - start) / step + 1. It is computed in
-            // unsigned arithmetic, which cannot overflow here, and the loop
-            // runs on a counter, so bounds near huge() are safe.
-            uint64_t distance = step_val > 0
-                ? uint64_t(end_val) - uint64_t(start_val)
-                : uint64_t(start_val) - uint64_t(end_val);
-            uint64_t abs_step = step_val > 0
-                ? uint64_t(step_val) : uint64_t(0) - uint64_t(step_val);
-            uint64_t last_trip = distance / abs_step;
-            if (last_trip >= budget) {
-                return false;
-            }
-            budget -= last_trip + 1;
-
-            ASR::symbol_t* loop_var_symbol = ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v;
-            
-            for (uint64_t trip = 0; trip <= last_trip; trip++) {
-                // start + trip * step, which lies between start and end.
-                int64_t i = int64_t(uint64_t(start_val) + trip * uint64_t(step_val));
-                ASR::expr_t* loop_var_val = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                    al, idl->base.base.loc, i, 
-                    ASRUtils::expr_type(idl->m_var)));
-                
-                for (size_t j = 0; j < idl->n_values; j++) {
-                    ASR::expr_t* val = idl->m_values[j];
-                    
-                    // A nested loop is expanded with this loop's variable
-                    // substituted, both in its values and in its bounds.
-                    ASRUtils::ExprStmtDuplicator duplicator(al);
-                    ASR::expr_t* substituted = duplicator.duplicate_expr(val);
-                    VarSubstituter substituter(al, loop_var_symbol, loop_var_val);
-                    substituter.current_expr = &substituted;
-                    substituter.replace_expr(substituted);
-
-                    if (ASR::is_a<ASR::ImpliedDoLoop_t>(*substituted)) {
-                        if (!expand_implied_do_loop_flat(
-                                ASR::down_cast<ASR::ImpliedDoLoop_t>(substituted),
-                                result, budget)) {
-                            return false;
-                        }
-                    } else {
-                        result.push_back(al, substituted);
-                    }
-                }
-            }
-            
-            return true;
+            return ASRUtils::expand_implied_do_loop(al, idl, result).blocker ==
+                ASRUtils::ImpliedDoExpansionBlocker::None;
         }
 
         // I/O items may have different character lengths. Store each in a
@@ -1559,7 +1445,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 al, loc, m_unit, accum_ref, nullptr, false, false));
         }
 
-        ASR::stmt_t* create_do_loop_form_idl(ASR::ImpliedDoLoop_t* x, ASR::expr_t* format_string) {
+        ASR::stmt_t* create_do_loop_form_idl(ASR::ImpliedDoLoop_t* x, const ASR::StringFormat_t &source) {
             ASR::stmt_t* do_loop = nullptr;
 
             ASR::do_loop_head_t do_loop_head;
@@ -1574,15 +1460,16 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             for (size_t i = 0; i < x->n_values; i++ ) {
                 if ( ASR::is_a<ASR::ImpliedDoLoop_t>(*x->m_values[i]) ) {
                     do_loop_body.push_back(al, create_do_loop_form_idl(
-                        ASR::down_cast<ASR::ImpliedDoLoop_t>(x->m_values[i]), format_string));
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(x->m_values[i]), source));
                 } else {
                     args.push_back(al, x->m_values[i]);
                 }
             }
             
             if (args.size() > 0) {
-                ASR::expr_t* fmt_val = ASRUtils::EXPR(ASR::make_StringFormat_t(al,x->base.base.loc, format_string,
+                ASR::expr_t* fmt_val = ASRUtils::EXPR(ASR::make_StringFormat_t(al,x->base.base.loc, source.m_fmt,
                     args.p, args.size(), ASR::string_format_kindType::FormatFortran,
+                    source.m_dtio_bindings, source.n_dtio_bindings, source.m_dtio_unit,
                     ASRUtils::TYPE(ASR::make_Allocatable_t(al, x->base.base.loc, 
                         ASRUtils::TYPE(ASR::make_String_t(al,x->base.base.loc, 1,
                             nullptr,
@@ -1775,10 +1662,14 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                         // default ArrayConstructor path so that siblings are
                         // preserved in the same StringFormat / write statement.
                     }
-                    if ( (x.m_fmt != nullptr) && !is_internal_file &&
+                    if ( (x.m_fmt != nullptr) &&
                          (ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) ||
-                          implied_do_loop_has_string_trim(implied_do_loop)) ) {
-                        // Try flat expansion first to preserve sibling args
+                          (!is_internal_file &&
+                           implied_do_loop_has_string_trim(implied_do_loop))) ) {
+                        // Try flat expansion first to preserve sibling args.
+                        // Values of different types cannot share a temporary
+                        // array, so an internal file is expanded too; only a
+                        // write per iteration would overwrite it.
                         Vec<ASR::expr_t*> expanded_values;
                         expanded_values.reserve(al, 16);
                         if (expand_implied_do_loop_flat(implied_do_loop, expanded_values)) {
@@ -1811,7 +1702,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                             this->visit_expr(*string_format_stmt->m_args[i]);
                             continue;
                         }
-                        {
+                        if (!is_internal_file) {
                             // Use DO loop to preserve trim() semantics.
                             // When there are sibling args (n_args > 1), merge
                             // non-IDL siblings into the IDL values so each
@@ -1848,7 +1739,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                                 }
                             }
                             remove_original_statement = true;
-                            pass_result.push_back(al, create_do_loop_form_idl(idl_for_loop, x.m_fmt));
+                            pass_result.push_back(al, create_do_loop_form_idl(idl_for_loop, x));
                             continue;
                         }
                     }

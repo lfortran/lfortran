@@ -3735,6 +3735,21 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
                                SetChar& /*current_module_dependencies*/,
                                const std::function<void (const std::string &, const Location &)> err);
 
+// The specific procedure of the defined input/output generic `read_write`
+// (such as "~write_formatted") that `item` is transferred with, imported into
+// `curr_scope` with the dependencies a call needs: the symbol a
+// SubroutineCall names, or nullptr if there is none. `a_original_name`
+// receives the call's original name, and `expr_dt` the item for a type-bound
+// procedure (the call's `m_dt`), or nullptr. With `elementwise`, `item` may be
+// an array whose elements are transferred one by one.
+ASR::symbol_t* resolve_defined_io_procedure(std::string &read_write, ASR::expr_t* item,
+                               SymbolTable* curr_scope, Allocator &al, const Location& loc,
+                               SetChar& current_function_dependencies,
+                               SetChar& current_module_dependencies,
+                               const std::function<void (const std::string &, const Location &)> err,
+                               ASR::symbol_t*& a_original_name, ASR::expr_t*& expr_dt,
+                               bool elementwise=false);
+
 void set_intrinsic(ASR::symbol_t* sym);
 
 static inline bool is_pointer(ASR::ttype_t *x) {
@@ -4396,6 +4411,59 @@ static inline bool expr_references_symbol(ASR::expr_t* expr, ASR::symbol_t* sym)
     visitor.visit_expr(*expr);
     return visitor.found;
 }
+
+// Output implied-do loops whose bounds are all integer literals are expanded
+// at compile time in full. Bounds that are only folded constants (a named
+// constant, `size()` of a fixed size array) are often large, and every
+// iteration costs compile time and code size, so such loops are expanded
+// only up to this many iterations in total, nested loops included; the
+// `implied_do_loops` pass keeps the run-time loop for larger ones.
+constexpr uint64_t implied_do_loop_folded_bounds_expansion_limit = 256;
+
+// The largest number of values into which an output implied-do loop with
+// values of two or more different derived types is expanded at compile
+// time. All expanded values are passed to one runtime call, each struct
+// value through its own temporary, so compile time grows faster than
+// linearly with their number: 1000 values compile in about half a second,
+// 4000 in about 10 seconds and 8000 in over a minute. Real output lists are
+// far shorter.
+constexpr uint64_t implied_do_loop_expansion_limit = 1000;
+
+// What keeps an output implied-do loop from being expanded at compile time
+// into the list of its values.
+enum class ImpliedDoExpansionBlocker {
+    None,
+    // The start, end or step of the loop or of a nested loop has no constant
+    // value once the variables of the enclosing loops are replaced by theirs.
+    RunTimeBounds,
+    // A nested loop has the variable of an enclosing loop as its variable
+    // (not conforming, but accepted).
+    ReusedVariable,
+    // The bounds are not all integer literals and the loop has more than
+    // `implied_do_loop_folded_bounds_expansion_limit` iterations, those of
+    // its nested loops included.
+    TooManyIterations,
+    // The loop has values of two or more different derived types and more
+    // than `implied_do_loop_expansion_limit` values, those of its nested
+    // loops included.
+    TooManyValues,
+};
+
+struct ImpliedDoExpansion {
+    ImpliedDoExpansionBlocker blocker;
+    // The bound, step or nested loop that blocks the expansion, if any.
+    ASR::expr_t* culprit;
+};
+
+// Expands the output implied-do loop `idl` at compile time: appends its
+// values for each iteration to `result`, with the variables of the loops
+// replaced by their values, and returns `ImpliedDoExpansionBlocker::None`.
+// Otherwise returns what keeps it from being expanded, and `result` is
+// incomplete. The `implied_do_loops` pass expands loops with values of
+// different types this way; the semantic checks use it to reject the loops
+// over derived types that cannot be expanded.
+ImpliedDoExpansion expand_implied_do_loop(Allocator &al,
+    ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*> &result);
 
 // This replacer is used for replacing FunctionParam in expressions by the arguments which are passed in.
 // To be used when creating FunctionCall or SubroutineCall.
@@ -10000,7 +10068,8 @@ static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
                 ASR::string_physical_typeType::DescriptorString))));
         return ASR::make_Print_t(al, loc,
             ASRUtils::EXPR(ASR::make_StringFormat_t(al, loc, nullptr, a_args,n_args,
-            ASR::string_format_kindType::FormatFortran, char_type, nullptr)));
+            ASR::string_format_kindType::FormatFortran, nullptr, 0, nullptr,
+            char_type, nullptr)));
     }
 }
 
@@ -10624,6 +10693,7 @@ static inline void promote_ints_to_kind_8(ASR::expr_t** m_args, size_t n_args,
 
 static inline ASR::asr_t* make_StringFormat_t_util(Allocator &al, const Location &a_loc,
         ASR::expr_t* a_fmt, ASR::expr_t** a_args, size_t n_args, ASR::string_format_kindType a_kind,
+        ASR::dtio_binding_t* a_dtio_bindings, size_t n_dtio_bindings, ASR::expr_t* a_dtio_unit,
         ASR::ttype_t* a_type, ASR::expr_t* a_value) {
     if (a_fmt && ASR::is_a<ASR::Var_t>(*a_fmt)) {
         ASR::Variable_t* fmt_str = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(a_fmt)->m_v));
@@ -10643,7 +10713,8 @@ static inline ASR::asr_t* make_StringFormat_t_util(Allocator &al, const Location
             }
         }
     }
-    return ASR::make_StringFormat_t(al, a_loc, a_fmt, a_args, n_args, a_kind, a_type, a_value);
+    return ASR::make_StringFormat_t(al, a_loc, a_fmt, a_args, n_args, a_kind,
+        a_dtio_bindings, n_dtio_bindings, a_dtio_unit, a_type, a_value);
 }
 
 static inline ASR::expr_t* cast_to_descriptor(Allocator& al, ASR::expr_t* arg) {

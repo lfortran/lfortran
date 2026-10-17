@@ -24164,7 +24164,8 @@ public:
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
         if( x.m_overloaded ) {
-            // DTIO: set child I/O mode to suppress record terminators in
+            // Unformatted DTIO (formatted output goes through the runtime
+            // formatter): set child I/O mode to suppress record terminators in
             // child writes, call the user-defined I/O subroutine, then
             // clear child mode and write the parent record terminator.
             llvm::Value *unit_val;
@@ -24780,6 +24781,24 @@ public:
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
                 llvm_utils->void_type, args_type, true);
         tmp = builder->CreateCall(fn, printf_args);
+        bool has_dtio_bindings = false;
+        for (size_t i = 0; i < x.n_values; i++) {
+            if (ASR::is_a<ASR::StringFormat_t>(*x.m_values[i]) &&
+                    ASR::down_cast<ASR::StringFormat_t>(
+                        x.m_values[i])->n_dtio_bindings > 0) {
+                has_dtio_bindings = true;
+            }
+        }
+        if (x.m_iomsg && has_dtio_bindings) {
+            // The iomsg of a defined output procedure whose error the
+            // statement took.
+            llvm::Value *iomsg_data, *iomsg_len;
+            std::tie(iomsg_data, iomsg_len) = get_string_data_and_length(x.m_iomsg);
+            llvm::Function *iomsg_fn = LLVM::get_or_declare_function(*module,
+                "_lfortran_io_take_iomsg", llvm::Type::getVoidTy(context),
+                {character_type, llvm::Type::getInt64Ty(context)});
+            builder->CreateCall(iomsg_fn, {iomsg_data, iomsg_len});
+        }
         for (llvm::Value* copy_ptr : unformatted_copies_to_free) {
             llvm_utils->lfortran_free(copy_ptr);
         }
@@ -25014,11 +25033,60 @@ public:
         }
         return res;
     }
-    // Serializes the types of a list of expressions.
-    llvm::Value* SerializeExprTypes(ASR::expr_t** args, size_t n_args){
+    // The index of the defined output binding of the StringFormat `x` that
+    // writes its item `arg`, or each element of an array item, or -1.
+    int64_t dtio_binding_index(const ASR::StringFormat_t &x, ASR::expr_t* arg) {
+        if (x.n_dtio_bindings == 0 || ASR::is_a<ASR::ImpliedDoLoop_t>(*arg)) {
+            return -1;
+        }
+        ASR::ttype_t* type = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(arg)));
+        if (!ASR::is_a<ASR::StructType_t>(*type)) {
+            return -1;
+        }
+        ASR::symbol_t* struct_sym = ASRUtils::get_struct_sym_from_struct_expr(arg);
+        if (struct_sym == nullptr) {
+            return -1;
+        }
+        struct_sym = ASRUtils::symbol_get_past_external(struct_sym);
+        bool polymorphic = ASRUtils::is_class_type(type);
+        for (size_t k = 0; k < x.n_dtio_bindings; k++) {
+            if (ASRUtils::symbol_get_past_external(
+                    x.m_dtio_bindings[k].m_type_declaration) == struct_sym &&
+                    x.m_dtio_bindings[k].m_polymorphic == polymorphic) {
+                return (int64_t) k;
+            }
+        }
+        return -1;
+    }
+
+    // Serializes the types of a list of expressions. An item written by
+    // defined output procedure `k` of `string_format` is `D<k>-<bytes>`,
+    // where `bytes` is the size of the struct, or of the class wrapper of a
+    // polymorphic item, that is passed for it, and an array of such items is
+    // `[D<k>-<bytes>]`, walked with that stride.
+    llvm::Value* SerializeExprTypes(ASR::expr_t** args, size_t n_args,
+            const ASR::StringFormat_t* string_format=nullptr){
         std::string serialization_res = "";
         for (size_t i=0; i<n_args; i++) {
-            serialization_res += SerializeType(args[i], ASRUtils::expr_type(args[i]), false);
+            int64_t dtio_index = string_format ?
+                dtio_binding_index(*string_format, args[i]) : -1;
+            if (dtio_index >= 0) {
+                ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(args[i])));
+                llvm::Type* llvm_type = string_format->m_dtio_bindings[dtio_index].m_polymorphic
+                    ? llvm_utils->getClassType(struct_t)
+                    : llvm_utils->getStructType(struct_t, module.get());
+                int64_t bytes = (llvm_type->isSized())
+                    ? (int64_t) module->getDataLayout().getTypeAllocSize(llvm_type) : 0;
+                std::string element = "D" + std::to_string(dtio_index) + "-" +
+                    std::to_string(bytes);
+                serialization_res += ASRUtils::is_array(ASRUtils::expr_type(args[i]))
+                    ? "[" + element + "]" : element;
+            } else {
+                serialization_res += SerializeType(args[i], ASRUtils::expr_type(args[i]), false);
+            }
             if(i != n_args-1){
                 serialization_res += ",";
             }
@@ -29664,7 +29732,7 @@ public:
                 args.push_back(fmt_len);
             }
             // Push Serialization;
-            llvm::Value* serialization_info = SerializeExprTypes(x.m_args, x.n_args);
+            llvm::Value* serialization_info = SerializeExprTypes(x.m_args, x.n_args, &x);
             args.push_back(serialization_info);
 
             // Create and Push a pointer to int64 to store the result size in
@@ -29799,9 +29867,12 @@ public:
                     ptr_loads = ptr_loads + LLVM::is_llvm_pointer(*expr_type(x.m_args[i]));
                     this->visit_expr_wrapper(x.m_args[i], true);
                 }
-                // Handling for polymorphic class variables in print statements with --new-classes
+                // Handling for polymorphic class variables in print statements with --new-classes.
+                // A polymorphic item written by a defined output procedure is
+                // passed as its class wrapper, which the callback takes.
                 if (ASR::is_a<ASR::Var_t>(*x.m_args[i]) &&
-                    ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i])))) {
+                    ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(x.m_args[i]))) &&
+                    dtio_binding_index(x, x.m_args[i]) < 0) {
 
                     // Try to get struct symbol for this expression (returns nullptr if not applicable)
                     ASR::symbol_t* maybe_struct =
@@ -29842,8 +29913,52 @@ public:
                 args.push_back(tmp);
                 ptr_loads = ptr_load_copy;
             }
+            // The defined output procedures: the unit passed to them
+            // (INT32_MIN for an internal file), and their callbacks.
+            llvm::Value* dtio_unit = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), llvm::APInt(32, 0));
+            llvm::Value* n_dtio = llvm::ConstantInt::get(
+                llvm::Type::getInt32Ty(context), llvm::APInt(32, x.n_dtio_bindings));
+            llvm::Value* dtio_procs = llvm::ConstantPointerNull::get(
+                llvm_utils->i8_ptr->getPointerTo());
+            if (x.n_dtio_bindings > 0) {
+                if (x.m_dtio_unit) {
+                    int64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = 1;
+                    this->visit_expr_wrapper(x.m_dtio_unit, true);
+                    ptr_loads = ptr_loads_copy;
+                    dtio_unit = tmp;
+                    if (dtio_unit->getType()->isPointerTy()) {
+                        dtio_unit = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(
+                            x.m_dtio_unit, ASRUtils::type_get_past_allocatable_pointer(
+                                ASRUtils::expr_type(x.m_dtio_unit)), module.get()), dtio_unit);
+                    }
+                    dtio_unit = llvm_utils->convert_kind(dtio_unit, llvm::Type::getInt32Ty(context));
+                } else {
+                    dtio_unit = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                        llvm::APInt(32, (uint64_t) INT32_MIN, true));
+                }
+                std::vector<llvm::Constant*> callbacks;
+                for (size_t k = 0; k < x.n_dtio_bindings; k++) {
+                    ASR::symbol_t* callback = x.m_dtio_bindings[k].m_callback;
+                    LCOMPILERS_ASSERT(callback != nullptr);
+                    uint64_t h = get_hash((ASR::asr_t*)
+                        ASRUtils::symbol_get_past_external(callback));
+                    LCOMPILERS_ASSERT(llvm_symtab_fn.find(h) != llvm_symtab_fn.end());
+                    callbacks.push_back(llvm::ConstantExpr::getBitCast(
+                        llvm_symtab_fn[h], llvm_utils->i8_ptr));
+                }
+                llvm::ArrayType* callbacks_type = llvm::ArrayType::get(
+                    llvm_utils->i8_ptr, callbacks.size());
+                llvm::GlobalVariable* callbacks_array = new llvm::GlobalVariable(
+                    *module, callbacks_type, true, llvm::GlobalValue::PrivateLinkage,
+                    llvm::ConstantArray::get(callbacks_type, callbacks), "dtio_procs");
+                dtio_procs = builder->CreateBitCast(callbacks_array,
+                    llvm_utils->i8_ptr->getPointerTo());
+            }
             tmp = llvm_utils->string_format_fortran(args, this->current_decimal_mode, this->current_sign_mode, this->current_round_mode,
-                x.m_kind == ASR::string_format_kindType::FormatFortranLeadingBlank);
+                x.m_kind == ASR::string_format_kindType::FormatFortranLeadingBlank,
+                dtio_unit, n_dtio, dtio_procs);
             // Free contiguous copies that were heap-allocated
             for (llvm::Value* copy_ptr : contiguous_copies_to_free) {
                 llvm_utils->lfortran_free(copy_ptr);

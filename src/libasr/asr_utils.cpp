@@ -3317,109 +3317,115 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     return found;
 }
 
-void process_overloaded_read_write_function(std::string &read_write, ASR::symbol_t* proc, Vec<ASR::expr_t*> &args,
-    ASR::ttype_t* arg_type, bool& found, Allocator& al, const Location& arg_loc,
+// The type-bound procedure `binding_name` of `s`: declared by `s` or, when
+// `s` does not override it, inherited from the nearest ancestor of `s`.
+static ASR::symbol_t* find_type_bound_procedure(ASR::Struct_t* s,
+        const std::string &binding_name) {
+    while (s != nullptr) {
+        ASR::symbol_t* sym = s->m_symtab->get_symbol(binding_name);
+        if (sym != nullptr) {
+            return sym;
+        }
+        s = s->m_parent ? ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(s->m_parent)) : nullptr;
+    }
+    return nullptr;
+}
+
+// If `proc`, a specific procedure of the defined input/output generic
+// `read_write`, accepts `item` as its dtv dummy, imports it into `curr_scope`
+// (recording the dependencies a call needs) and returns the symbol a call
+// names. `a_original_name` receives the call's original name. For a
+// type-bound procedure, `binding_name` is the name of its binding, and the
+// call names the binding of the item's type, which may override it.
+static ASR::symbol_t* import_defined_io_procedure(const std::string &read_write,
+    ASR::symbol_t* proc, ASR::expr_t* item, ASR::ttype_t* arg_type, Allocator& al,
     SymbolTable* curr_scope, SetChar& current_function_dependencies,
-    SetChar& current_module_dependencies, ASR::asr_t*& asr, ASR::symbol_t* sym, const Location& loc, ASR::expr_t* expr_dt,
-    const std::function<void (const std::string &, const Location &)> err, char* pass_arg=nullptr) {
+    SetChar& current_module_dependencies, ASR::symbol_t* sym, const Location& loc,
+    ASR::expr_t* expr_dt, const std::function<void (const std::string &, const Location &)> err,
+    char* pass_arg, const char* binding_name, ASR::symbol_t*& a_original_name) {
     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(proc);
     std::string matched_subrout_name = "";
     ASR::ttype_t* func_arg_type = ASRUtils::expr_type(subrout->m_args[0]);
-    if( ASRUtils::types_equal(func_arg_type, arg_type, subrout->m_args[0], args[0]) ) {
-        std::string arg0_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[0])->m_v);
-        if( pass_arg != nullptr ) {
-            std::string pass_arg_str = std::string(pass_arg);
-            if( (arg0_name == pass_arg_str && args[0] != expr_dt) ) {
-                err(std::string(subrout->m_name) + " is not a procedure of " +
-                    ASRUtils::type_to_str_fortran_expr(arg_type, args[0]),
-                    loc);
-            }
-        }
-        found = true;
-        Vec<ASR::call_arg_t> a_args;
-        a_args.reserve(al, 1);
-        for (size_t i = 0; i < args.size(); i++) {
-            if (i == 0 && (expr_dt != nullptr)) {
-                continue;
-            }
-            ASR::call_arg_t arg;
-            arg.loc = arg_loc;
-            arg.m_value = args[i];
-            a_args.push_back(al, arg);
-        }
-        std::string subrout_name = to_lower(subrout->m_name);
-        ASR::symbol_t* resolved = curr_scope->resolve_symbol(subrout_name);
-        if( resolved && ASRUtils::symbol_get_past_external(resolved) == proc ) {
-            matched_subrout_name = subrout_name;
-        } else {
-            std::string mangled_name = subrout_name + "@" + read_write;
-            matched_subrout_name = mangled_name;
-        }
-        ASR::symbol_t *a_name = curr_scope->resolve_symbol(matched_subrout_name);
-        if (expr_dt != nullptr) {
-            ASR::Struct_t* temp_struct = ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr_dt)));
-            a_name = ASRUtils::import_class_procedure(al, loc,
-                temp_struct->m_symtab->get_symbol(subrout_name), curr_scope);
-        }
-        if( a_name == nullptr ) {
-            a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
-                        al, loc, curr_scope, s2c(al, matched_subrout_name), proc,
-                        ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
-                        nullptr, 0, subrout->m_name, ASR::accessType::Public));
-            curr_scope->add_symbol(matched_subrout_name, a_name);
-        }
-        if (ASRUtils::symbol_parent_symtab(a_name)->get_counter() != curr_scope->get_counter()) {
-            ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, s2c(al, matched_subrout_name));
-        }
-        ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
-        ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al, expr_dt);
-        ASR::symbol_t* a_original_name = ASR::is_a<ASR::ExternalSymbol_t>(*a_name) ? a_name : sym;
-        ASR::call_arg_t* call_args = a_args.p;
-        size_t n_call_args = a_args.n;
-        ASRUtils::insert_self_arg(al, a_name, call_args, n_call_args, expr_dt);
-        asr = ASRUtils::make_SubroutineCall_t_util(al, loc, a_name, a_original_name,
-                                        call_args, n_call_args, expr_dt, nullptr, false);
+    if( !ASRUtils::types_equal(func_arg_type, arg_type, subrout->m_args[0], item) ) {
+        return nullptr;
     }
+    std::string arg0_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[0])->m_v);
+    if( pass_arg != nullptr ) {
+        std::string pass_arg_str = std::string(pass_arg);
+        if( (arg0_name == pass_arg_str && item != expr_dt) ) {
+            err(std::string(subrout->m_name) + " is not a procedure of " +
+                ASRUtils::type_to_str_fortran_expr(arg_type, item),
+                loc);
+        }
+    }
+    std::string subrout_name = to_lower(subrout->m_name);
+    ASR::symbol_t* resolved = curr_scope->resolve_symbol(subrout_name);
+    if( resolved && ASRUtils::symbol_get_past_external(resolved) == proc ) {
+        matched_subrout_name = subrout_name;
+    } else {
+        std::string mangled_name = subrout_name + "@" + read_write;
+        matched_subrout_name = mangled_name;
+    }
+    ASR::symbol_t *a_name = curr_scope->resolve_symbol(matched_subrout_name);
+    if (expr_dt != nullptr) {
+        ASR::Struct_t* temp_struct = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr_dt)));
+        a_name = ASRUtils::import_class_procedure(al, loc,
+            find_type_bound_procedure(temp_struct,
+                binding_name ? to_lower(binding_name) : subrout_name), curr_scope);
+    }
+    if( a_name == nullptr ) {
+        a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                    al, loc, curr_scope, s2c(al, matched_subrout_name), proc,
+                    ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
+                    nullptr, 0, subrout->m_name, ASR::accessType::Public));
+        curr_scope->add_symbol(matched_subrout_name, a_name);
+    }
+    if (ASRUtils::symbol_parent_symtab(a_name)->get_counter() != curr_scope->get_counter()) {
+        ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, s2c(al, matched_subrout_name));
+    }
+    ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
+    a_original_name = ASR::is_a<ASR::ExternalSymbol_t>(*a_name) ? a_name : sym;
+    return a_name;
 }
 
-bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> args,
-                               SymbolTable* curr_scope, ASR::asr_t*& asr,
-                               Allocator &al, const Location& loc,
+ASR::symbol_t* resolve_defined_io_procedure(std::string &read_write, ASR::expr_t* item,
+                               SymbolTable* curr_scope, Allocator &al, const Location& loc,
                                SetChar& current_function_dependencies,
                                SetChar& current_module_dependencies,
-                               const std::function<void (const std::string &, const Location &)> err) {
-    ASR::ttype_t *arg_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(args[0]));
-    bool found = false;
-    ASR::symbol_t* sym = curr_scope->resolve_symbol(read_write);
-    ASR::expr_t* expr_dt = nullptr;
-    if( sym == nullptr ) {
-        if( ASR::is_a<ASR::StructType_t>(*arg_type) ) {
-            ASR::Struct_t* arg_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(args[0])));
-            sym = arg_struct->m_symtab->resolve_symbol(read_write);
-            expr_dt = args[0];
-        }
+                               const std::function<void (const std::string &, const Location &)> err,
+                               ASR::symbol_t*& a_original_name, ASR::expr_t*& expr_dt,
+                               bool elementwise) {
+    ASR::ttype_t *arg_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(item));
+    if (elementwise) {
+        arg_type = ASRUtils::type_get_past_array(arg_type);
     }
-    if (sym) {
+    ASR::symbol_t* a_name = nullptr;
+    a_original_name = nullptr;
+    expr_dt = nullptr;
+    // The specific procedure of the generic `sym` that takes `item`.
+    auto resolve_generic = [&](ASR::symbol_t* sym) {
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         auto process_proc_list = [&](ASR::symbol_t** procs, size_t n_procs) {
-            for( size_t i = 0; i < n_procs && !found; i++ ) {
+            for( size_t i = 0; i < n_procs && a_name == nullptr; i++ ) {
                 ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(procs[i]);
                 switch( proc->type ) {
                     case ASR::symbolType::Function: {
-                        process_overloaded_read_write_function(read_write, proc, args, arg_type,
-                            found, al, args[0]->base.loc, curr_scope,
-                            current_function_dependencies, current_module_dependencies, asr, sym,
-                            loc, expr_dt, err);
+                        a_name = import_defined_io_procedure(read_write, proc, item, arg_type,
+                            al, curr_scope, current_function_dependencies,
+                            current_module_dependencies, sym, loc, expr_dt, err, nullptr,
+                            nullptr, a_original_name);
                         break;
                     }
                     case ASR::symbolType::StructMethodDeclaration: {
                         ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                        ASR::symbol_t* proc_func = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc)->m_proc;
-                        process_overloaded_read_write_function(read_write, proc_func, args, arg_type,
-                            found, al, args[0]->base.loc, curr_scope,
-                            current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
-                            expr_dt, err, class_proc->m_self_argument);
+                        ASR::symbol_t* proc_func = class_proc->m_proc;
+                        a_name = import_defined_io_procedure(read_write, proc_func, item, arg_type,
+                            al, curr_scope, current_function_dependencies,
+                            current_module_dependencies, proc_func, loc, expr_dt, err,
+                            class_proc->m_self_argument, class_proc->m_name,
+                            a_original_name);
                         break;
                     }
                     default: {
@@ -3437,8 +3443,73 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
         } else {
             err("Only generic procedures can be used for overloaded read/write statement, found " + std::to_string(orig_sym->type), loc);
         }
+    };
+    // The generic interface visible in the scope, then the type-bound generic
+    // of the item's type.
+    ASR::symbol_t* sym = curr_scope->resolve_symbol(read_write);
+    if (sym) {
+        resolve_generic(sym);
     }
-    return found;
+    if (a_name == nullptr && ASR::is_a<ASR::StructType_t>(*arg_type)) {
+        ASR::Struct_t* arg_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(item)));
+        // The type-bound generic of the item's type, or else the one it
+        // inherits from an ancestor, then the scopes around the type.
+        for (ASR::Struct_t* s = arg_struct; s != nullptr && a_name == nullptr;
+                s = s->m_parent ? ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(s->m_parent)) : nullptr) {
+            sym = s->m_symtab->get_symbol(read_write);
+            if (sym) {
+                expr_dt = item;
+                resolve_generic(sym);
+            }
+        }
+        if (a_name == nullptr) {
+            sym = arg_struct->m_symtab->parent->resolve_symbol(read_write);
+            if (sym) {
+                expr_dt = item;
+                resolve_generic(sym);
+            }
+        }
+        if (a_name == nullptr) {
+            expr_dt = nullptr;
+        }
+    }
+    return a_name;
+}
+
+bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> args,
+                               SymbolTable* curr_scope, ASR::asr_t*& asr,
+                               Allocator &al, const Location& loc,
+                               SetChar& current_function_dependencies,
+                               SetChar& current_module_dependencies,
+                               const std::function<void (const std::string &, const Location &)> err) {
+    ASR::symbol_t* a_original_name = nullptr;
+    ASR::expr_t* expr_dt = nullptr;
+    ASR::symbol_t* a_name = resolve_defined_io_procedure(read_write, args[0],
+        curr_scope, al, loc, current_function_dependencies,
+        current_module_dependencies, err, a_original_name, expr_dt);
+    if (a_name == nullptr) {
+        return false;
+    }
+    ASR::Function_t* subrout = ASRUtils::get_function(a_name);
+    Vec<ASR::call_arg_t> a_args;
+    a_args.reserve(al, 1);
+    for (size_t i = 0; i < args.size(); i++) {
+        if (i == 0 && (expr_dt != nullptr)) {
+            continue;
+        }
+        ASR::call_arg_t arg;
+        arg.loc = args[0]->base.loc;
+        arg.m_value = args[i];
+        a_args.push_back(al, arg);
+    }
+    ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al, expr_dt);
+    ASR::call_arg_t* call_args = a_args.p;
+    size_t n_call_args = a_args.n;
+    ASRUtils::insert_self_arg(al, a_name, call_args, n_call_args, expr_dt);
+    asr = ASRUtils::make_SubroutineCall_t_util(al, loc, a_name, a_original_name,
+                                    call_args, n_call_args, expr_dt, nullptr, false);
+    return true;
 }
 
 bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
@@ -6178,6 +6249,159 @@ std::string get_format_type_code(ASR::ttype_t* type) {
             return "";
         }
     }
+}
+
+namespace {
+
+// Replaces the variable `var` by the expression `value`.
+class ImpliedDoLoopVarSubstituter :
+        public ASR::BaseExprReplacer<ImpliedDoLoopVarSubstituter> {
+public:
+    ASR::symbol_t* var;
+    ASR::expr_t* value;
+
+    ImpliedDoLoopVarSubstituter(ASR::symbol_t* var, ASR::expr_t* value)
+        : var(var), value(value) {}
+
+    void replace_Var(ASR::Var_t* x) {
+        if (x->m_v == var) {
+            *current_expr = value;
+        }
+    }
+};
+
+}
+
+// Whether the bounds and steps of `idl` and of the loops nested in it are
+// all integer literals.
+static bool implied_do_loop_has_literal_bounds(ASR::ImpliedDoLoop_t* idl) {
+    if (!ASR::is_a<ASR::IntegerConstant_t>(*idl->m_start) ||
+        !ASR::is_a<ASR::IntegerConstant_t>(*idl->m_end) ||
+        (idl->m_increment &&
+         !ASR::is_a<ASR::IntegerConstant_t>(*idl->m_increment))) {
+        return false;
+    }
+    for (size_t i = 0; i < idl->n_values; i++) {
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[i]) &&
+            !implied_do_loop_has_literal_bounds(
+                ASR::down_cast<ASR::ImpliedDoLoop_t>(idl->m_values[i]))) {
+            return false;
+        }
+    }
+    return true;
+}
+
+// Collects in `types` the derived types of the values of `idl` and of the
+// loops nested in it.
+static void implied_do_loop_derived_types(ASR::ImpliedDoLoop_t* idl,
+        std::set<ASR::symbol_t*> &types) {
+    for (size_t i = 0; i < idl->n_values; i++) {
+        ASR::expr_t* value = idl->m_values[i];
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*value)) {
+            implied_do_loop_derived_types(
+                ASR::down_cast<ASR::ImpliedDoLoop_t>(value), types);
+        } else if (ASR::is_a<ASR::StructType_t>(*extract_type(expr_type(value)))) {
+            if (ASR::symbol_t* type = get_struct_sym_from_struct_expr(value)) {
+                types.insert(symbol_get_past_external(type));
+            }
+        }
+    }
+}
+
+// Appends the values of `idl` to `result`; `iterations` and `values` are the
+// numbers of iterations and of values that may still be expanded.
+static ImpliedDoExpansion append_implied_do_loop_values(Allocator &al,
+        ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*> &result,
+        uint64_t &iterations, uint64_t &values) {
+    // A nested loop that reuses an enclosing loop's variable had its own
+    // variable substituted by the enclosing loop's value.
+    if (!ASR::is_a<ASR::Var_t>(*idl->m_var)) {
+        return {ImpliedDoExpansionBlocker::ReusedVariable, &idl->base};
+    }
+    // The bounds only have to be integer compile-time constants,
+    // e.g. `size(a)` of a fixed size array or a named constant.
+    int64_t start_val = 0, end_val = 0, step_val = 1;
+    if (!is_value_constant(expr_value(idl->m_start), start_val)) {
+        return {ImpliedDoExpansionBlocker::RunTimeBounds, idl->m_start};
+    }
+    if (!is_value_constant(expr_value(idl->m_end), end_val)) {
+        return {ImpliedDoExpansionBlocker::RunTimeBounds, idl->m_end};
+    }
+    if (idl->m_increment &&
+        !is_value_constant(expr_value(idl->m_increment), step_val)) {
+        return {ImpliedDoExpansionBlocker::RunTimeBounds, idl->m_increment};
+    }
+
+    if (step_val == 0 || (step_val > 0 && start_val > end_val) ||
+        (step_val < 0 && start_val < end_val)) {
+        return {ImpliedDoExpansionBlocker::None, nullptr};
+    }
+
+    // The trip count is (end - start) / step + 1. It is computed in
+    // unsigned arithmetic, which cannot overflow here, and the loop
+    // runs on a counter, so bounds near huge() are safe.
+    uint64_t distance = step_val > 0
+        ? uint64_t(end_val) - uint64_t(start_val)
+        : uint64_t(start_val) - uint64_t(end_val);
+    uint64_t abs_step = step_val > 0
+        ? uint64_t(step_val) : uint64_t(0) - uint64_t(step_val);
+    uint64_t last_trip = distance / abs_step;
+    if (last_trip >= iterations) {
+        return {ImpliedDoExpansionBlocker::TooManyIterations, nullptr};
+    }
+    iterations -= last_trip + 1;
+
+    ASR::symbol_t* loop_var_symbol = ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v;
+
+    for (uint64_t trip = 0; trip <= last_trip; trip++) {
+        // start + trip * step, which lies between start and end.
+        int64_t i = int64_t(uint64_t(start_val) + trip * uint64_t(step_val));
+        ASR::expr_t* loop_var_val = EXPR(ASR::make_IntegerConstant_t(
+            al, idl->base.base.loc, i, expr_type(idl->m_var)));
+
+        for (size_t j = 0; j < idl->n_values; j++) {
+            // A nested loop is expanded with this loop's variable
+            // substituted, both in its values and in its bounds.
+            ExprStmtDuplicator duplicator(al);
+            ASR::expr_t* substituted = duplicator.duplicate_expr(idl->m_values[j]);
+            ImpliedDoLoopVarSubstituter substituter(loop_var_symbol, loop_var_val);
+            substituter.current_expr = &substituted;
+            substituter.replace_expr(substituted);
+
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*substituted)) {
+                ImpliedDoExpansion nested = append_implied_do_loop_values(al,
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(substituted),
+                    result, iterations, values);
+                if (nested.blocker != ImpliedDoExpansionBlocker::None) {
+                    return nested;
+                }
+            } else {
+                if (values == 0) {
+                    return {ImpliedDoExpansionBlocker::TooManyValues, nullptr};
+                }
+                values--;
+                result.push_back(al, substituted);
+            }
+        }
+    }
+    return {ImpliedDoExpansionBlocker::None, nullptr};
+}
+
+ImpliedDoExpansion expand_implied_do_loop(Allocator &al,
+        ASR::ImpliedDoLoop_t* idl, Vec<ASR::expr_t*> &result) {
+    // Loops whose bounds are all integer literals are expanded in full.
+    uint64_t iterations = implied_do_loop_has_literal_bounds(idl)
+        ? std::numeric_limits<uint64_t>::max()
+        : implied_do_loop_folded_bounds_expansion_limit;
+    // Only a loop with values of two or more different derived types is
+    // limited. A loop with values of one derived type and of intrinsic types
+    // keeps the expansion that it had before loops over different derived
+    // types were expanded.
+    std::set<ASR::symbol_t*> derived_types;
+    implied_do_loop_derived_types(idl, derived_types);
+    uint64_t values = derived_types.size() > 1
+        ? implied_do_loop_expansion_limit : std::numeric_limits<uint64_t>::max();
+    return append_implied_do_loop_values(al, idl, result, iterations, values);
 }
 
 //Initialize pointer to zero so that it can be initialized in first call to get_instance

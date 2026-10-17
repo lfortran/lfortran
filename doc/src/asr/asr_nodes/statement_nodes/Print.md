@@ -42,6 +42,8 @@ format, meaning list-directed output.
       )
     ]
     :kind :FormatFortran
+    :dtio_bindings []
+    :dtio_unit nil
     :type (String
       :kind 1
       :len nil

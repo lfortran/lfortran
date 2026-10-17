@@ -2110,6 +2110,12 @@ public:
         ASR::ASRPassBaseWalkVisitor<ReplaceMovedProgramStructs>::visit_alloc_arg(x);
     }
 
+    void visit_dtio_binding(const ASR::dtio_binding_t &x) {
+        ASR::dtio_binding_t &xx = const_cast<ASR::dtio_binding_t&>(x);
+        xx.m_type_declaration = replace_type(xx.m_type_declaration, current_scope);
+        ASR::ASRPassBaseWalkVisitor<ReplaceMovedProgramStructs>::visit_dtio_binding(x);
+    }
+
     void visit_TypeStmtName(const ASR::TypeStmtName_t &x) {
         ASR::TypeStmtName_t &xx = const_cast<ASR::TypeStmtName_t&>(x);
         xx.m_sym = replace_type(xx.m_sym, current_scope);

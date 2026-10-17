@@ -76,6 +76,8 @@
                             [(Var 2 random_sp)
                             (Var 2 random_dp)]
                             FormatFortran
+                            []
+                            ()
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)
                             )

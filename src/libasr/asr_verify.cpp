@@ -747,6 +747,73 @@ public:
         }
     }
 
+    // The derived type of a value or variable designated by `e`, or nullptr
+    // when it is not known from `e` alone.
+    static ASR::Struct_t* designator_struct(ASR::expr_t *e) {
+        while (e != nullptr) {
+            if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+            } else {
+                break;
+            }
+        }
+        if (e != nullptr && ASR::is_a<ASR::StructConstructor_t>(*e)) {
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructConstructor_t>(e)->m_dt_sym);
+            return (sym != nullptr && ASR::is_a<ASR::Struct_t>(*sym))
+                ? ASR::down_cast<ASR::Struct_t>(sym) : nullptr;
+        }
+        return declared_struct(e);
+    }
+
+    // Intrinsic assignment copies a value of a derived type only into a
+    // variable of the same type, unless the variable is polymorphic. A value
+    // stored into a variable of another type is read with that type's
+    // layout.
+    void verify_struct_assignment(const Assignment_t &x,
+            ASR::ttype_t *target_type, ASR::ttype_t *value_type) {
+        ASR::ttype_t *value_elem = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(value_type));
+        ASR::ttype_t *target_elem = ASRUtils::type_get_past_array(
+            ASRUtils::type_get_past_allocatable_pointer(target_type));
+        if (!ASR::is_a<ASR::StructType_t>(*value_elem)
+                || ASRUtils::is_class_type(value_elem)) {
+            return;
+        }
+        if (!ASR::is_a<ASR::StructType_t>(*target_elem)) {
+            require_with_loc_id(false,
+                "asr.verify.assignment.struct_value_matches_target",
+                "Assignment of a derived-type value to a target of type " +
+                    ASRUtils::get_type_code(target_type),
+                x.m_value->base.loc);
+            return;
+        }
+        if (ASRUtils::is_class_type(target_elem)) {
+            return;
+        }
+        ASR::Struct_t *target_struct = designator_struct(x.m_target);
+        ASR::Struct_t *value_struct = designator_struct(x.m_value);
+        if (target_struct == nullptr || value_struct == nullptr
+                || target_struct == value_struct) {
+            return;
+        }
+        // Two sequence or BIND(C) types of the same name and components are
+        // the same type.
+        bool same_type = std::string(target_struct->m_name) == value_struct->m_name
+            && ASRUtils::is_derived_type_similar(target_struct, value_struct);
+        require_with_loc_id(same_type,
+            "asr.verify.assignment.struct_value_matches_target",
+            "Assignment of a value of derived type '" +
+                std::string(value_struct->m_name) +
+                "' to a target of derived type '" +
+                std::string(target_struct->m_name) + "'",
+            x.m_value->base.loc);
+    }
+
     void visit_Assignment(const Assignment_t& x) {
         ASR::expr_t* target = x.m_target;
         if( ASR::is_a<ASR::Var_t>(*target) ) {
@@ -790,6 +857,12 @@ public:
                     " does not match target type " +
                     ASRUtils::get_type_code(assign_target_type),
                 x.m_value->base.loc);
+        }
+        // The types of a move assignment are checked with its operands below.
+        if (check_external && !diagnostics.has_error() && x.m_overloaded == nullptr
+                && !x.m_move_allocation
+                && assign_target_type && assign_value_type) {
+            verify_struct_assignment(x, assign_target_type, assign_value_type);
         }
         // it's possible that the target is an external symbol, and during
         // initial deserialization pass, so we don't do the below verification
@@ -3343,6 +3416,43 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_GpuLaneBroadcast(x);
     }
 
+    // Records the function and module dependencies that a call to
+    // `name` as a subroutine introduces in the current scope.
+    void record_subroutine_call_dependencies(ASR::symbol_t *name) {
+        ASR::symbol_t* asr_owner_sym = nullptr;
+        if(current_symtab->asr_owner &&  ASR::is_a<ASR::symbol_t>(*current_symtab->asr_owner) ) {
+            asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_symtab->asr_owner);
+        }
+
+        SymbolTable* temp_scope = current_symtab;
+
+        if (asr_owner_sym &&
+            !ASR::is_a<ASR::ExternalSymbol_t>(*name) &&
+            !ASR::is_a<ASR::Variable_t>(*name)) {
+            while (temp_scope->parent && temp_scope->asr_owner &&
+                   ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner)) {
+                ASR::symbol_t* temp_owner_sym =
+                    ASR::down_cast<ASR::symbol_t>(temp_scope->asr_owner);
+                if (!ASR::is_a<ASR::AssociateBlock_t>(*temp_owner_sym) &&
+                    !ASR::is_a<ASR::Block_t>(*temp_owner_sym)) {
+                    break;
+                }
+                temp_scope = temp_scope->parent;
+            }
+            if (!ASRUtils::is_scope_between(ASRUtils::symbol_parent_symtab(name),
+                    current_symtab, temp_scope)) {
+                function_dependencies.push_back(std::string(ASRUtils::symbol_name(name)));
+            }
+        }
+
+        if( ASR::is_a<ASR::ExternalSymbol_t>(*name) ) {
+            ASR::ExternalSymbol_t* ext_name = ASR::down_cast<ASR::ExternalSymbol_t>(name);
+            if( ext_name->m_external && ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(ext_name->m_external)) ) {
+                module_dependencies.push_back(std::string(ext_name->m_module_name));
+            }
+        }
+    }
+
     void visit_SubroutineCall(const SubroutineCall_t &x) {
         require(symtab_in_scope(current_symtab, x.m_name),
             "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' cannot point outside of its symbol table");
@@ -3381,41 +3491,19 @@ public:
             }
         }
 
-        ASR::symbol_t* asr_owner_sym = nullptr;
-        if(current_symtab->asr_owner &&  ASR::is_a<ASR::symbol_t>(*current_symtab->asr_owner) ) {
-            asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_symtab->asr_owner);
-        }
-
-        SymbolTable* temp_scope = current_symtab;
-
-        if (asr_owner_sym &&
-            !ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) &&
-            !ASR::is_a<ASR::Variable_t>(*x.m_name)) {
-            while (temp_scope->parent && temp_scope->asr_owner &&
-                   ASR::is_a<ASR::symbol_t>(*temp_scope->asr_owner)) {
-                ASR::symbol_t* temp_owner_sym =
-                    ASR::down_cast<ASR::symbol_t>(temp_scope->asr_owner);
-                if (!ASR::is_a<ASR::AssociateBlock_t>(*temp_owner_sym) &&
-                    !ASR::is_a<ASR::Block_t>(*temp_owner_sym)) {
-                    break;
-                }
-                temp_scope = temp_scope->parent;
-            }
-            if (!ASRUtils::is_scope_between(ASRUtils::symbol_parent_symtab(x.m_name),
-                    current_symtab, temp_scope)) {
-                function_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
-            }
-        }
-
-        if( ASR::is_a<ASR::ExternalSymbol_t>(*x.m_name) ) {
-            ASR::ExternalSymbol_t* x_m_name = ASR::down_cast<ASR::ExternalSymbol_t>(x.m_name);
-            if( x_m_name->m_external && ASR::is_a<ASR::Module_t>(*ASRUtils::get_asr_owner(x_m_name->m_external)) ) {
-                module_dependencies.push_back(std::string(x_m_name->m_module_name));
-            }
-        }
+        record_subroutine_call_dependencies(x.m_name);
 
         verify_args(x);
         if (check_string_length_arguments) verify_hidden_string_length_actuals(x);
+    }
+
+    void visit_FileWrite(const FileWrite_t &x) {
+        // Formatted output writes derived-type items with defined output
+        // through StringFormat::m_dtio_bindings; m_overloaded is only for
+        // unformatted output.
+        require(!x.m_is_formatted || x.m_overloaded == nullptr,
+            "FileWrite::m_overloaded must be nil for formatted output");
+        BaseWalkVisitor<VerifyVisitor>::visit_FileWrite(x);
     }
 
     void visit_AssociateBlockCall(const AssociateBlockCall_t &x) {
@@ -3700,10 +3788,127 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_ArrayConstructor(x);
     }
 
+    // The number of dummies of `fn`, without the hidden lengths that the
+    // string_length_arguments pass adds after them.
+    static size_t explicit_dummy_count(const Function_t &fn) {
+        size_t n_hidden = count_hidden_string_lengths(fn);
+        if (n_hidden == 0 || fn.n_args < n_hidden) {
+            return fn.n_args;
+        }
+        for (size_t i = fn.n_args - n_hidden; i < fn.n_args; i++) {
+            if (!ASR::is_a<ASR::Var_t>(*fn.m_args[i])) {
+                return fn.n_args;
+            }
+            ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(fn.m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*sym) ||
+                    !ASR::down_cast<ASR::Variable_t>(sym)->m_value_attr ||
+                    !is_hidden_string_length_type(
+                        ASR::down_cast<ASR::Variable_t>(sym)->m_type)) {
+                return fn.n_args;
+            }
+        }
+        return fn.n_args - n_hidden;
+    }
+
+    // The Function a defined output procedure or its callback resolves to:
+    // a type-bound procedure is reached through its declaration.
+    static ASR::Function_t *dtio_function(ASR::symbol_t *sym) {
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(sym);
+        if (s != nullptr && ASR::is_a<ASR::StructMethodDeclaration_t>(*s)) {
+            s = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(s)->m_proc);
+        }
+        if (s == nullptr || !ASR::is_a<ASR::Function_t>(*s)) return nullptr;
+        return ASR::down_cast<ASR::Function_t>(s);
+    }
+
     void visit_StringFormat(const StringFormat_t& x) {
         require(x.m_kind != ASR::string_format_kindType::FormatFortranLeadingBlank
                 || x.m_fmt == nullptr,
             "StringFormat::m_fmt must be nil for FormatFortranLeadingBlank");
+        require(x.n_dtio_bindings == 0
+                || x.m_kind == ASR::string_format_kindType::FormatFortran
+                || x.m_kind == ASR::string_format_kindType::FormatFortranLeadingBlank,
+            "StringFormat::m_dtio_bindings must be empty unless the format kind is FormatFortran or FormatFortranLeadingBlank");
+        if (x.m_dtio_unit) {
+            require(x.n_dtio_bindings > 0,
+                "StringFormat::m_dtio_unit must be nil when m_dtio_bindings is empty");
+            // A use-associated unit has no type until its module is
+            // resolved.
+            bool unit_type_known = check_external ||
+                !ASR::is_a<ASR::Var_t>(*x.m_dtio_unit) ||
+                !ASR::is_a<ASR::ExternalSymbol_t>(
+                    *ASR::down_cast<ASR::Var_t>(x.m_dtio_unit)->m_v);
+            if (unit_type_known) {
+                require(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_dtio_unit))
+                        && !ASRUtils::is_array(ASRUtils::expr_type(x.m_dtio_unit)),
+                    "StringFormat::m_dtio_unit must be an integer scalar");
+            }
+            require(ASR::is_a<ASR::Var_t>(*x.m_dtio_unit)
+                    || ASR::is_a<ASR::IntegerConstant_t>(*x.m_dtio_unit),
+                "StringFormat::m_dtio_unit must be a Var or an IntegerConstant");
+        }
+        for (size_t i = 0; i < x.n_dtio_bindings; i++) {
+            const ASR::dtio_binding_t &b = x.m_dtio_bindings[i];
+            require_with_loc(b.m_type_declaration != nullptr && b.m_procedure != nullptr,
+                "StringFormat::m_dtio_bindings entries must have a type declaration and a procedure",
+                b.loc);
+            if (b.m_type_declaration == nullptr || b.m_procedure == nullptr) continue;
+            require_with_loc(symtab_in_scope(current_symtab, b.m_procedure),
+                "StringFormat::m_dtio_bindings procedure '" +
+                    std::string(symbol_name(b.m_procedure)) +
+                    "' cannot point outside of its symbol table",
+                b.loc);
+            if (b.m_callback) {
+                require_with_loc(symtab_in_scope(current_symtab, b.m_callback),
+                    "StringFormat::m_dtio_bindings callback '" +
+                        std::string(symbol_name(b.m_callback)) +
+                        "' cannot point outside of its symbol table",
+                    b.loc);
+            }
+            if (check_external) {
+                ASR::symbol_t *type_decl = ASRUtils::symbol_get_past_external(
+                    b.m_type_declaration);
+                require_with_loc(type_decl != nullptr && ASR::is_a<ASR::Struct_t>(*type_decl),
+                    "StringFormat::m_dtio_bindings type declaration must be a Struct",
+                    b.loc);
+                ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(b.m_procedure);
+                require_with_loc(proc != nullptr && (ASR::is_a<ASR::Function_t>(*proc)
+                        || ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)),
+                    "StringFormat::m_dtio_bindings procedure '" +
+                        std::string(symbol_name(b.m_procedure)) +
+                        "' must be a Function or StructMethodDeclaration",
+                    b.loc);
+                ASR::Function_t *proc_fn = dtio_function(b.m_procedure);
+                require_with_loc(proc_fn != nullptr
+                        && explicit_dummy_count(*proc_fn) == 6
+                        && proc_fn->m_return_var == nullptr,
+                    "StringFormat::m_dtio_bindings procedure '" +
+                        std::string(symbol_name(b.m_procedure)) +
+                        "' must be a subroutine with six dummy arguments",
+                    b.loc);
+                if (b.m_callback) {
+                    ASR::symbol_t *cb = ASRUtils::symbol_get_past_external(b.m_callback);
+                    require_with_loc(cb != nullptr && ASR::is_a<ASR::Function_t>(*cb)
+                            && explicit_dummy_count(*ASR::down_cast<ASR::Function_t>(cb)) == 7
+                            && ASR::down_cast<ASR::Function_t>(cb)->m_return_var == nullptr,
+                        "StringFormat::m_dtio_bindings callback '" +
+                            std::string(symbol_name(b.m_callback)) +
+                            "' must be a subroutine with seven dummy arguments",
+                        b.loc);
+                }
+                for (size_t j = 0; j < i; j++) {
+                    const ASR::dtio_binding_t &prev = x.m_dtio_bindings[j];
+                    require_with_loc(prev.m_type_declaration == nullptr
+                            || ASRUtils::symbol_get_past_external(prev.m_type_declaration) != type_decl
+                            || prev.m_polymorphic != b.m_polymorphic,
+                        "StringFormat::m_dtio_bindings has two entries for the same type declaration and polymorphism",
+                        b.loc);
+                }
+            }
+            record_subroutine_call_dependencies(b.m_procedure);
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_StringFormat(x);
     }
 

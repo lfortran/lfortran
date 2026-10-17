@@ -4150,6 +4150,11 @@ RUN(NAME implied_do_loops46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME implied_do_loops47 LABELS gfortran llvm)
 RUN(NAME implied_do_loops48 LABELS gfortran llvm)
 RUN(NAME implied_do_loops49 LABELS gfortran llvm)
+RUN(NAME implied_do_loops50 LABELS gfortran llvm)
+RUN(NAME implied_do_loops51 LABELS llvm)
+RUN(NAME implied_do_loops52 LABELS gfortran llvm)
+RUN(NAME implied_do_loops53 LABELS gfortran llvm)
+RUN(NAME implied_do_loops54 LABELS gfortran llvm)
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90)
@@ -4504,6 +4509,26 @@ RUN(NAME write_52 LABELS gfortran llvm)
 
 RUN(NAME write_fortran_01 LABELS gfortran llvm fortran)
 RUN(NAME write_fortran_02 LABELS gfortran llvm fortran)
+
+RUN(NAME dtio_write_01 LABELS gfortran llvm)
+RUN(NAME dtio_write_01_sc LABELS gfortran llvm llvm_single_invocation EXTRAFILES dtio_write_01_sc_module.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME dtio_write_02 LABELS gfortran llvm)
+RUN(NAME dtio_write_03 LABELS gfortran llvm)
+RUN(NAME dtio_write_04 LABELS gfortran llvm)
+RUN(NAME dtio_write_04_fixed LABELS gfortran llvm EXTRA_ARGS --fixed-form GFORTRAN_ARGS -ffixed-form)
+RUN(NAME dtio_write_05 LABELS gfortran llvm)
+RUN(NAME dtio_write_05_sc LABELS gfortran llvm llvm_single_invocation EXTRAFILES dtio_write_05_sc_module.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME dtio_write_06 LABELS gfortran llvm EXTRA_ARGS --std=f23)
+RUN(NAME dtio_write_07 LABELS gfortran llvm)
+RUN(NAME dtio_write_08 LABELS gfortran llvm)
+RUN(NAME dtio_write_09 FAIL LABELS gfortran llvm)
+RUN(NAME dtio_write_10 LABELS gfortran llvm llvm_single_invocation
+    EXTRAFILES dtio_write_10_ma.f90 dtio_write_10_mb.f90 dtio_write_10_user.f90
+    EXTRA_ARGS --separate-compilation)
+RUN(NAME dtio_write_11 LABELS gfortran llvm)
+RUN(NAME dtio_write_12 LABELS gfortran llvm)
+RUN(NAME dtio_write_13 LABELS gfortran llvm)
+RUN(NAME dtio_write_14 LABELS gfortran llvm)
 
 RUN(NAME do_loop_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

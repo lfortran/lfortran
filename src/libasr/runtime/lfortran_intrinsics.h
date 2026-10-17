@@ -390,6 +390,7 @@ LFORTRAN_API void _lfortran_string_read_c64_array(char *str, int64_t len, char *
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_t no_values);
 LFORTRAN_API bool _lfortran_is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_len);
 LFORTRAN_API void _lfortran_set_read_iomsg(int32_t iostat, char* iomsg, int64_t iomsg_len);
+LFORTRAN_API void _lfortran_io_take_iomsg(char* iomsg, int64_t iomsg_len);
 LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat);
 LFORTRAN_API void _lfortran_connect_unit_for_read(int32_t unit_num, int32_t unformatted, int32_t* iostat);
 LFORTRAN_API void _lpython_close(int64_t fd);
@@ -519,7 +520,16 @@ LFORTRAN_API void _lcompilers_runtime_error_exit(const lfortran_runtime_error_in
 #define LFORTRAN_IOSTAT_NML_INVALID_COMPLEX         5017  // Invalid complex number format
 #define LFORTRAN_IOSTAT_NML_PARSE_ERROR             5018  // General parsing error
 
-LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, const char* serialization_string, int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int32_t decimal_mode, int32_t sign_mode, int32_t round_mode, int32_t leading_blank, ...);
+// A defined output procedure as the formatter calls it (a callback the
+// `dtio_callbacks` pass builds for each binding of a StringFormat): the
+// character arguments' lengths follow the other arguments.
+typedef void (*lfortran_dtio_write_fn)(void *dtv, int32_t *unit,
+    const char *iotype, int32_t *n_v, int32_t *v_list, int32_t *iostat,
+    char *iomsg, int64_t iotype_len, int64_t iomsg_len);
+
+// `dtio_unit` is the unit a defined output procedure is called with, or
+// INT32_MIN when the parent statement writes to an internal file.
+LFORTRAN_API char* _lcompilers_string_format_fortran(lfortran_allocator_t* al, const char* format, int64_t format_len, const char* serialization_string, int64_t *result_size, int32_t array_sizes_cnt, int32_t string_lengths_cnt, int32_t decimal_mode, int32_t sign_mode, int32_t round_mode, int32_t leading_blank, int32_t dtio_unit, int32_t n_dtio, lfortran_dtio_write_fn *dtio_procs, ...);
 LFORTRAN_API char* _lfortran_alloc_copy_free(lfortran_allocator_t* al, char* malloc_buf, int64_t size);
 void lfortran_error(const char *message);
 
