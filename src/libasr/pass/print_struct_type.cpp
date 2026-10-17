@@ -43,6 +43,10 @@ public:
             obj_v = ASR::down_cast<ASR::Var_t>(obj)->m_v;
         }
         for( size_t i = 0; i < struct_type_t->n_members; i++ ) {
+            // A LEN type parameter is not a component.
+            if( ASRUtils::is_len_type_param(struct_type_t, struct_type_t->m_members[i]) ) {
+                continue;
+            }
             ASR::symbol_t* member = struct_type_t->m_symtab->resolve_symbol(struct_type_t->m_members[i]);
             new_values.push_back(al, ASRUtils::EXPR(ASRUtils::getStructInstanceMember_t(
                     al, struct_type_t->base.base.loc,
