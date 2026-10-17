@@ -14,6 +14,7 @@
 #include <libasr/asr_verify.h>
 #include <libasr/utils.h>
 #include <libasr/pass/string_length_arguments.h>
+#include <libasr/pass/string_format_array_args.h>
 
 namespace LCompilers::LFortran {
 
@@ -373,6 +374,80 @@ end program
 
     // A call that does not pass the hidden length is caught.
     call_stmt->n_args = 2;
+    CHECK(!asr_verify(*asr, after_pass, diagnostics));
+}
+
+TEST_CASE("ASR Verify array arguments of StringFormat") {
+    Allocator al(64*1024);
+
+    std::string src = R"""(
+program p
+implicit none
+integer, allocatable :: x(:)
+integer, pointer :: y(:)
+allocate(x(3))
+print *, x, y
+end program
+)""";
+
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
+
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.out_start0 = {};
+        fl.in_filename = "input.f90";
+        lm.files.push_back(fl);
+    }
+
+    FortranEvaluator e(compiler_options);
+    AST::TranslationUnit_t* ast = TRY(e.get_ast2(src, lm, diagnostics));
+    ASR::TranslationUnit_t* asr = TRY(LFortran::ast_to_asr(al, *ast,
+        diagnostics, nullptr, false, compiler_options, lm));
+
+    ASRVerifyOptions after_pass;
+    after_pass.string_format_array_args = true;
+    CHECK(asr_verify(*asr, true, diagnostics));
+    // Before the pass, `x` and `y` are descriptors.
+    CHECK(!asr_verify(*asr, after_pass, diagnostics));
+    CHECK(diagnostics.diagnostics.back().code ==
+        "asr.verify.string_format.array_argument_not_pointer_array");
+    diagnostics.diagnostics.clear();
+
+    PassOptions pass_options;
+    pass_string_format_array_args(al, *asr, pass_options);
+    CHECK(asr_verify(*asr, after_pass, diagnostics));
+
+    ASR::Program_t *prog = ASR::down_cast<ASR::Program_t>(
+        asr->m_symtab->get_symbol("p"));
+    ASR::Print_t *print = nullptr;
+    for (size_t i = 0; i < prog->n_body; i++) {
+        if (ASR::is_a<ASR::Print_t>(*prog->m_body[i])) {
+            print = ASR::down_cast<ASR::Print_t>(prog->m_body[i]);
+        }
+    }
+    REQUIRE(print != nullptr);
+    ASR::StringFormat_t *fmt = ASR::down_cast<ASR::StringFormat_t>(print->m_text);
+    REQUIRE(fmt->n_args == 2);
+    for (size_t i = 0; i < fmt->n_args; i++) {
+        REQUIRE(ASR::is_a<ASR::ArrayPhysicalCast_t>(*fmt->m_args[i]));
+        ASR::ArrayPhysicalCast_t *cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+            fmt->m_args[i]);
+        CHECK(cast->m_old == ASR::array_physical_typeType::DescriptorArray);
+        CHECK(cast->m_new == ASR::array_physical_typeType::PointerArray);
+    }
+    // The allocatable `x` is cast as it is, the pointer `y` through a
+    // contiguous temporary.
+    CHECK(ASR::is_a<ASR::Var_t>(*ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+        fmt->m_args[0])->m_arg));
+    CHECK(ASR::down_cast<ASR::Var_t>(ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+        fmt->m_args[0])->m_arg)->m_v == prog->m_symtab->get_symbol("x"));
+    CHECK(ASR::down_cast<ASR::Var_t>(ASR::down_cast<ASR::ArrayPhysicalCast_t>(
+        fmt->m_args[1])->m_arg)->m_v != prog->m_symtab->get_symbol("y"));
+
+    // A descriptor argument is caught again.
+    fmt->m_args[0] = ASR::down_cast<ASR::ArrayPhysicalCast_t>(fmt->m_args[0])->m_arg;
     CHECK(!asr_verify(*asr, after_pass, diagnostics));
 }
 
