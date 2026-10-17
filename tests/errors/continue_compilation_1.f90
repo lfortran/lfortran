@@ -3532,7 +3532,8 @@ contains
     end function cc1_lenh_fgrow
     subroutine cc1_lenh_use()
         type(cc1_lenh_t(3)) :: v
-        integer :: k
+        integer :: k, sf, j
+        sf(j) = cc1_lenh_fset(v%n) + j  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
         call cc1_lenh_salt(v%n, *10)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
         k = cc1_lenh_ident(cc1_lenh_fset(v%n))  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
 10      print *, k
