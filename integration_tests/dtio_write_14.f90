@@ -4,7 +4,9 @@
 ! skipped since then, and the child's output after that position is kept
 ! otherwise (#14961). A trailing TL or T that no field follows does not
 ! move the child's end back before its last field. Records are compared
-! exactly, including trailing blanks.
+! exactly, including trailing blanks. Parent TR or X over positions that the
+! parent wrote before the child is not covered: libgfortran 14 keeps those
+! characters, libgfortran 16 blank-fills them.
 module dtio_write_14_m
 implicit none
 type :: t
@@ -102,13 +104,13 @@ write(u, '(dt)') x0
 write(u, '(dt,tr3)') x0
 write(u, '(dt,tl1,tr2,a)') x0, 'Z'
 write(u, '(dt,tr1,"lit")') x0
-write(u, '(a,tl4,dt,tr1,a)') 'abcdefgh', x0, 'Z'
+write(u, '(a,tl4,dt,a)') 'abcdefgh', x0, 'Z'
 write(u, '(dt,tr1,a,tr1,a)') x5, 'Z', 'W'
 write(u, '(dt,tr1,a,tl3,a)') x5, 'Z', 'W'
 write(u, '(dt,1x,a)') x5, 'Z'
 write(u, '(2(dt,tr1,a))') x5, 'Z', x5, 'W'
 write(u, '(dt,a)') xtr3, 'Z'
-write(u, '(a,tl3,dt,tr1,a)') 'abcdef', xnone, 'Z'
+write(u, '(a,tl3,dt,a)') 'abcdef', xnone, 'Z'
 write(u, '(dt,a)') xb2, 'Z'
 write(u, '(a,tl6,dt)') 'abcdef', xb2
 write(u, '(a,tl6,dt)') 'abcdef', xb5
@@ -131,13 +133,13 @@ call check(u, 'aXc', 4)
 call check(u, 'aXc', 5)
 call check(u, 'aX Z', 6)
 call check(u, 'aX lit', 7)
-call check(u, 'abcdaX Z', 8)
+call check(u, 'abcdaXZh', 8)
 call check(u, 'aX Z W', 9)
 call check(u, 'aW Zef', 10)
 call check(u, 'aX Zef', 11)
 call check(u, 'aX ZaX Wef', 12)
 call check(u, 'ab   Z', 13)
-call check(u, 'abc Zf', 14)
+call check(u, 'abcZef', 14)
 call check(u, '**Z', 15)
 call check(u, '**cdef', 16)
 call check(u, '   11f', 17)
@@ -159,8 +161,8 @@ close(u)
 ! Internal-file parents.
 write(s, '(dt,tr2,a)') x0, 'Z'
 if (s /= 'aX  Z') error stop 31
-write(s, '(a,tl4,dt,tr1,a)') 'abcdefgh', x0, 'Z'
-if (s /= 'abcdaX Z') error stop 32
+write(s, '(a,tl4,dt,a)') 'abcdefgh', x0, 'Z'
+if (s /= 'abcdaXZh') error stop 32
 write(s, '(dt,a)') xb2, 'Z'
 if (s /= '**Z') error stop 33
 write(s, '(a,tl6,dt)') 'abcdef', xb5
