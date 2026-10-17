@@ -1,7 +1,7 @@
 program string_trim_result_metadata_01
     implicit none
     integer :: calls = 0, wrappers = 0, n, i
-    integer :: values(3), matrix(3, 2)
+    integer :: values(3), matrix(3, 2), shape_source(2, 2), mixed(5)
     character(3) :: words(3)
     character(:), allocatable :: dynamic
 
@@ -40,6 +40,13 @@ program string_trim_result_metadata_01
     dynamic = counted_text(next_length()) // '!'
     if (calls /= 1 .or. wrappers /= 1) error stop 16
     if (dynamic /= 'xxx!' .or. len(dynamic) /= 4) error stop 17
+
+    calls = 0
+    wrappers = 0
+    shape_source = 1
+    mixed = mixed_codes(trim(next_text()), shape_source)
+    if (calls /= 1 .or. wrappers /= 1) error stop 18
+    if (size(mixed) /= 5 .or. any(mixed /= 5)) error stop 19
 
     do n = 0, 3
         calls = 0
@@ -132,5 +139,13 @@ contains
         do i = 1, len(joined)
             r(i) = iachar(joined(i:i))
         end do
+    end function
+
+    function mixed_codes(value, source) result(r)
+        character(*), intent(in) :: value
+        integer, intent(in) :: source(:, :)
+        integer :: r(len(value)+minval(shape(source)))
+        wrappers = wrappers + 1
+        r = size(r)
     end function
 end program

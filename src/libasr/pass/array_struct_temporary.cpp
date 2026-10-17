@@ -3123,6 +3123,11 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        size_t original_body_size = current_body->size();
+        std::vector<ASR::expr_t*> original_args;
+        for (size_t i = 0; i < x->n_args; i++) {
+            original_args.push_back(x->m_args[i].m_value);
+        }
         ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_FunctionCall(x);
         ASR::ttype_t* declared_type = ASRUtils::get_FunctionType(
             x->m_name)->m_return_var_type;
@@ -3158,30 +3163,56 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 }
                 current_expr = current_expr_copy;
             }
-            // Rebuild all call-local result metadata from the canonical
-            // formulas, after actuals have been saved. The instantiated old
-            // type may contain independent copies of those source expressions.
-            ASR::ttype_t* return_type = ASRUtils::duplicate_type(al, x->m_type,
-                nullptr, ASRUtils::is_array(x->m_type) ?
-                    ASRUtils::extract_physical_type(x->m_type) :
-                    ASR::array_physical_typeType::DescriptorArray, true);
-            Vec<ASR::call_arg_t> type_args;
-            type_args.reserve(al, x->n_args);
+            bool actuals_changed = current_body->size() != original_body_size;
             for (size_t i = 0; i < x->n_args; i++) {
-                ASR::call_arg_t arg = x->m_args[i];
-                if (arg.m_value) {
-                    // Metadata inquiries use the descriptor, not the
-                    // call-only physical conversion.
-                    arg.m_value = ASRUtils::get_past_array_physical_cast(arg.m_value);
-                }
-                type_args.push_back(al, arg);
+                actuals_changed |= original_args[i] != x->m_args[i].m_value;
             }
-            ASRUtils::ReplaceFunctionParamWithArg replacer(
-                al, type_args.p, type_args.size());
-            reinstantiate_result_type(return_type, declared_type, replacer);
-            ASRUtils::ProcedureTypeImporter(al, current_scope, true)
-                .replace_ttype(return_type);
-            x->m_type = return_type;
+            if (actuals_changed) {
+                // Rebuild all call-local result metadata from the canonical
+                // formulas, after actuals have been saved. The instantiated old
+                // type may contain independent copies of those source expressions.
+                ASR::ttype_t* return_type = ASRUtils::duplicate_type(al, x->m_type,
+                    nullptr, ASRUtils::is_array(x->m_type) ?
+                        ASRUtils::extract_physical_type(x->m_type) :
+                        ASR::array_physical_typeType::DescriptorArray, true);
+                Vec<ASR::call_arg_t> type_args;
+                type_args.reserve(al, x->n_args);
+                for (size_t i = 0; i < x->n_args; i++) {
+                    ASR::call_arg_t arg = x->m_args[i];
+                    if (arg.m_value) {
+                        // Metadata inquiries use the descriptor, not the
+                        // call-only physical conversion.
+                        arg.m_value = ASRUtils::get_past_array_physical_cast(arg.m_value);
+                    }
+                    type_args.push_back(al, arg);
+                }
+                ASRUtils::ReplaceFunctionParamWithArg replacer(
+                    al, type_args.p, type_args.size());
+                reinstantiate_result_type(return_type, declared_type, replacer);
+                class NormalizeMetadataCasts:
+                    public ASR::BaseExprReplacer<NormalizeMetadataCasts> {
+                    Allocator& al;
+                public:
+                    NormalizeMetadataCasts(Allocator& al): al(al) {}
+
+                    void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* cast) {
+                        ASR::BaseExprReplacer<NormalizeMetadataCasts>
+                            ::replace_ArrayPhysicalCast(cast);
+                        *current_expr = ASRUtils::EXPR(
+                            ASRUtils::make_ArrayPhysicalCast_t_util(al,
+                                cast->base.base.loc, cast->m_arg,
+                                ASRUtils::extract_physical_type(
+                                    ASRUtils::expr_type(cast->m_arg)),
+                                cast->m_new, cast->m_type, cast->m_value));
+                    }
+                } normalize_casts(al);
+                // A formal descriptor in a metadata inquiry may have been
+                // replaced by a fixed-size or pointer-array actual.
+                normalize_casts.replace_ttype(return_type);
+                ASRUtils::ProcedureTypeImporter(al, current_scope, true)
+                    .replace_ttype(return_type);
+                x->m_type = return_type;
+            }
         }
         if( ASRUtils::is_elemental(x->m_name) && !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
             // ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x->m_name);
@@ -3207,7 +3238,6 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         // Left to subroutine_from_function (see replace_expr).
         if( !in_array_context &&
                 ASRUtils::is_finalizable_function_reference(*current_expr) ) {
-            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_FunctionCall(x);
             return ;
         }
 
