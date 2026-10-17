@@ -7,6 +7,7 @@
 #include <fstream>
 
 #include <lfortran/fortran_evaluator.h>
+#include <lfortran/parser/source_offset.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/exception.h>
 #include <lfortran/ast.h>
@@ -2361,7 +2362,7 @@ end module
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = "mcellmod.f90";
         lm.files.push_back(fl);
-        lm.file_ends.push_back(std::strlen(modsrc));
+        lm.file_ends.push_back(LCompilers::LFortran::source_offset(std::strlen(modsrc)));
         LCompilers::LFortran::AST::TranslationUnit_t* ast = TRY(
             LCompilers::LFortran::parse(al, modsrc, diagnostics, co));
         LCompilers::ASR::TranslationUnit_t* asr = TRY(

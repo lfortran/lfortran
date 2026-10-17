@@ -459,7 +459,7 @@ namespace RandomNumber {
                 end do
             */
             ASR::dimension_t* array_dims = nullptr;
-            int array_rank = extract_dimensions_from_ttype(arg_types[0], array_dims);
+            int array_rank = checked_integer_cast<int>(extract_dimensions_from_ttype(arg_types[0], array_dims));
             std::vector<ASR::expr_t*> do_loop_variables;
             for (int i = 0; i < array_rank; i++) {
                 do_loop_variables.push_back(declare("i_" + std::to_string(i), int32, Local));

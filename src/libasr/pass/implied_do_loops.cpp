@@ -254,7 +254,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
                 builder.Sub(end, start), d),
                 make_ConstantWithKind(make_IntegerConstant_t, make_Integer_t, 1, kind, loc));
         }
-        int const_elements = 0;
+        int64_t const_elements = 0;
         ASR::expr_t* implied_doloop_size_ = nullptr;
         // Track whether size came from a runtime expression (e.g. FunctionCall
         // returning allocatable array) vs a nested ImpliedDoLoop/ArrayConstructor.

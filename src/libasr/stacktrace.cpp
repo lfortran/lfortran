@@ -5,6 +5,7 @@
 
 #include <fstream>
 #include <iostream>
+#include <limits>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -566,7 +567,7 @@ std::string stacktrace2str(const std::vector<StacktraceItem> &d, int skip, bool 
   std::string full_stacktrace_str("Traceback (most recent call last):\n");
 
   // Loop over the stack
-  for (int i=d.size()-1; i >= skip; i--) {
+  for (int64_t i = static_cast<int64_t>(d.size()) - 1; i >= skip; i--) {
     full_stacktrace_str += addr2str(d[i], colorize);
   }
 
@@ -636,11 +637,15 @@ void address_to_line_number(const std::vector<std::string> &filenames,
       return;
     }
     uintptr_t actual_address = address-16;
-    int n = addresses.size() / 3;
+    auto to_line_number = [](uint64_t line) {
+      return line <= static_cast<uint64_t>(std::numeric_limits<int>::max())
+        ? static_cast<int>(line) : -1;
+    };
+    int64_t n = static_cast<int64_t>(addresses.size() / 3);
     // Bisection-Search
-    int start_ind = 0, end_ind = n-1;
+    int64_t start_ind = 0, end_ind = n-1;
     if (addresses[3*start_ind] > actual_address) {
-      line_number = addresses[3*start_ind+1];
+      line_number = to_line_number(addresses[3*start_ind+1]);
       filename = filenames[addresses[3*start_ind+2]];
       return;
     }
@@ -650,14 +655,14 @@ void address_to_line_number(const std::vector<std::string> &filenames,
       return;
     }
     while (start_ind+1 < end_ind) {
-      int mid = (start_ind + end_ind)/2;
+      int64_t mid = (start_ind + end_ind)/2;
       if (addresses[3*mid] > actual_address) {
         end_ind = mid;
       } else {
         start_ind = mid;
       }
     }
-    line_number = addresses[3*end_ind+1];
+    line_number = to_line_number(addresses[3*end_ind+1]);
     filename = filenames[addresses[3*end_ind+2]];
 }
 

@@ -1089,7 +1089,7 @@ public:
         evaluate_postponed_calls_to_genericProcedure();
         try {
             add_assignment_procedures();
-        } catch (SemanticAbort &e) {
+        } catch (SemanticAbort &) {
             if (!compiler_options.continue_compilation) throw;
         }
 
@@ -1769,7 +1769,7 @@ public:
                 // Map alternate return to __lfortran_alt_ret
                 auto it = std::find(arg_names_unique.begin(), arg_names_unique.end(), std::string("__lfortran_alt_ret"));
                 if (it != arg_names_unique.end()) {
-                    int index = std::distance(arg_names_unique.begin(), it);
+                    int index = static_cast<int>(std::distance(arg_names_unique.begin(), it));
                     if (entry_function_arguments_mapping.find(sym_name) == entry_function_arguments_mapping.end()) {
                         entry_function_arguments_mapping[sym_name] = std::vector<int>();
                     }
@@ -1780,7 +1780,7 @@ public:
             // find index of arg in arg_names_unique
             auto it = std::find(arg_names_unique.begin(), arg_names_unique.end(), std::string(arg.m_arg));
             if (it != arg_names_unique.end()) {
-                int index = std::distance(arg_names_unique.begin(), it);
+                int index = static_cast<int>(std::distance(arg_names_unique.begin(), it));
                 if (entry_function_arguments_mapping.find(sym_name) == entry_function_arguments_mapping.end()) {
                     entry_function_arguments_mapping[sym_name] = std::vector<int>();
                 }
@@ -1793,7 +1793,7 @@ public:
                     // Map alternate return to __lfortran_alt_ret
                     auto it2 = std::find(arg_names_unique.begin(), arg_names_unique.end(), std::string("__lfortran_alt_ret"));
                     if (it2 != arg_names_unique.end()) {
-                        int index = std::distance(arg_names_unique.begin(), it2);
+                        int index = static_cast<int>(std::distance(arg_names_unique.begin(), it2));
                         if (entry_function_arguments_mapping.find(it.first) == entry_function_arguments_mapping.end()) {
                             entry_function_arguments_mapping[it.first] = std::vector<int>();
                         }
@@ -1804,7 +1804,7 @@ public:
                 // find index of arg in arg_names_unique
                 auto it2 = std::find(arg_names_unique.begin(), arg_names_unique.end(), std::string(arg.m_arg));
                 if (it2 != arg_names_unique.end()) {
-                    int index = std::distance(arg_names_unique.begin(), it2);
+                    int index = static_cast<int>(std::distance(arg_names_unique.begin(), it2));
                     if (entry_function_arguments_mapping.find(it.first) == entry_function_arguments_mapping.end()) {
                         entry_function_arguments_mapping[it.first] = std::vector<int>();
                     }
@@ -1814,8 +1814,8 @@ public:
         }
         // Every entry passes all the result variables to the master.
         for (auto &result: result_names) {
-            int index = std::distance(arg_names_unique.begin(),
-                std::find(arg_names_unique.begin(), arg_names_unique.end(), result));
+            int index = static_cast<int>(std::distance(arg_names_unique.begin(),
+                std::find(arg_names_unique.begin(), arg_names_unique.end(), result)));
             entry_function_arguments_mapping[sym_name].push_back(index);
             for (auto &it: entry_functions[sym_name]) {
                 entry_function_arguments_mapping[it.first].push_back(index);
@@ -2541,7 +2541,7 @@ public:
 
                 for( size_t igp = 0; igp < gp->n_procs; igp++ ) {
                     if( std::string(ASRUtils::symbol_name(gp->m_procs[igp])) == sym_name ) {
-                        gp_index_to_be_updated = igp;
+                        gp_index_to_be_updated = static_cast<int>(igp);
                         break;
                     }
                 }
@@ -2728,7 +2728,7 @@ public:
                 }
                 case ASR::ttypeType::Real: {
                     // check if it is a double precision
-                    int a_kind = ASR::down_cast<ASR::Real_t>(t)->m_kind;
+                    int64_t a_kind = ASR::down_cast<ASR::Real_t>(t)->m_kind;
                     if (a_kind == 8) {
                         ttype = AST::decl_typeType::TypeDoublePrecision;
                         break;
@@ -5769,7 +5769,7 @@ public:
             try {
                 add_class_procedures();
                 check_overrides_of_later_binding(clss, later.binding);
-            } catch (SemanticAbort &e) {
+            } catch (SemanticAbort &) {
                 class_procedures.clear();
                 class_deferred_procedures.clear();
                 if (!compiler_options.continue_compilation) {
@@ -6721,7 +6721,7 @@ public:
         add_generic_class_procedures();
         try {
             add_assignment_procedures();
-        } catch (SemanticAbort &e) {
+        } catch (SemanticAbort &) {
             if (!compiler_options.continue_compilation) throw;
         }
 
@@ -7420,7 +7420,7 @@ public:
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(s);
                 ASR::ttype_t* t = ASRUtils::duplicate_type(al, v->m_type);
                 ASR::dimension_t* tp_m_dims = nullptr;
-                int tp_n_dims = ASRUtils::extract_dimensions_from_ttype(t, tp_m_dims);
+                size_t tp_n_dims = ASRUtils::extract_dimensions_from_ttype(t, tp_m_dims);
                 t = ASRUtils::type_get_past_array(t);
                 if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
                     ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(t);
@@ -7457,7 +7457,7 @@ public:
                         (ASR::down_cast<ASR::Var_t>(f->m_args[i]))->m_v);
                     ASR::ttype_t* param_type = ASRUtils::expr_type(f->m_args[i]);
                     ASR::dimension_t* tp_m_dims = nullptr;
-                    int tp_n_dims = ASRUtils::extract_dimensions_from_ttype(param_type, tp_m_dims);
+                    size_t tp_n_dims = ASRUtils::extract_dimensions_from_ttype(param_type, tp_m_dims);
                     param_type = ASRUtils::type_get_past_array(param_type);
                     if (ASR::is_a<ASR::TypeParameter_t>(*param_type)) {
                         ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(param_type);
@@ -7511,7 +7511,7 @@ public:
                     std::string return_var_name = return_var->m_name;
                     ASR::ttype_t *return_type = ASRUtils::expr_type(f->m_return_var);
                     ASR::dimension_t* tp_m_dims = nullptr;
-                    int tp_n_dims = ASRUtils::extract_dimensions_from_ttype(return_type, tp_m_dims);
+                    size_t tp_n_dims = ASRUtils::extract_dimensions_from_ttype(return_type, tp_m_dims);
                     return_type = ASRUtils::type_get_past_array(return_type);
                     if (ASR::is_a<ASR::TypeParameter_t>(*return_type)) {
                         ASR::TypeParameter_t* tp = ASR::down_cast<ASR::TypeParameter_t>(return_type);

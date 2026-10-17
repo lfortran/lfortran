@@ -3,6 +3,7 @@
 #include <libasr/asr_text.h>
 #include <libasr/asr_verify.h>
 #include <lfortran/fortran_evaluator.h>
+#include <lfortran/parser/source_offset.h>
 
 using LCompilers::ASRTextForm;
 using LCompilers::ASRTextOptions;
@@ -26,7 +27,7 @@ end program
     LocationManager::FileLocations file;
     file.in_filename = "printer_test.f90";
     lm.files.push_back(file);
-    lm.file_ends.push_back(source.size());
+    lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
     Diagnostics diagnostics;
 
     Result<LCompilers::ASR::TranslationUnit_t *> result =
@@ -125,7 +126,7 @@ end subroutine
     LocationManager::FileLocations file;
     file.in_filename = "standalone_test.f90";
     lm.files.push_back(file);
-    lm.file_ends.push_back(source.size());
+    lm.file_ends.push_back(LCompilers::LFortran::source_offset(source.size()));
     Diagnostics diagnostics;
 
     Result<LCompilers::ASR::TranslationUnit_t *> result =

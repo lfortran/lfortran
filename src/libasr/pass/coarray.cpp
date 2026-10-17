@@ -3075,7 +3075,7 @@ class CoarrayPrifReplacer : public ASR::BaseExprReplacer<CoarrayPrifReplacer> {
         void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t *x) {
             if (x->m_arr_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Coshape)) {
                 ASR::expr_t *coarray = x->m_args[0];
-                int corank = ASRUtils::expr_corank(coarray);
+                int corank = checked_integer_cast<int>(ASRUtils::expr_corank(coarray));
                 *current_expr = prif.make_prif_coshape_call(x->base.base.loc, x->m_type, corank, coarray);
             } else {
                 ASR::BaseExprReplacer<CoarrayPrifReplacer>::replace_IntrinsicArrayFunction(x);
