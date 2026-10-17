@@ -43,7 +43,8 @@ There is one exception, the rank(0) view of an assumed-rank array. Inside a
 element type of the array. A scalar has no `physical_type`; the value is read
 through the data pointer of the assumed-rank descriptor. The verifier
 recognizes this case by `old = AssumedRankArray` and a `type` that is not an
-array, and only then does not compare `new` with `type`.
+array; only then, instead of comparing `new` with `type`, it requires
+`new = DescriptorArray`.
 
 ## Examples
 

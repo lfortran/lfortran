@@ -2817,12 +2817,17 @@ public:
             // the selector is a scalar, so the type is the scalar element
             // type, while new stays DescriptorArray: the scalar is read
             // through the data pointer of the assumed-rank descriptor. A
-            // scalar has no physical type, so new is not compared with the
-            // type in this case. It is recognized by old = AssumedRankArray
-            // and a type that is not an array (`ASRUtils::is_array`).
+            // scalar has no physical type, so instead of comparing new with
+            // the type, new is required to be DescriptorArray in this case.
+            // It is recognized by old = AssumedRankArray and a type that is
+            // not an array (`ASRUtils::is_array`).
             bool is_rank0_scalar = (x.m_old == ASR::array_physical_typeType::AssumedRankArray
                                     && !ASRUtils::is_array(x.m_type));
-            if (!is_rank0_scalar) {
+            if (is_rank0_scalar) {
+                require(x.m_new == ASR::array_physical_typeType::DescriptorArray,
+                    "the rank(0) cast of an assumed-rank array must have "
+                    "DescriptorArray as its new physical type");
+            } else {
                 require(x.m_new == ASRUtils::extract_physical_type(x.m_type),
                     "Destination physical type conflicts with the physical type of target");
             }
