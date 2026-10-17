@@ -17,3 +17,4 @@ dependencies:
   - ninja=1.11.1
   - zlib
   - cmake=3.29.1
+  - shell=0.2.0
