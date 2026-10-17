@@ -212,10 +212,6 @@ does not.
     - Pointer -> Descriptor
     - CompileTimeFixedSizeArray -> Pointer
     - CompileTimeFixedSizeArray -> Descriptor
-    - Descriptor -> NumPy
-    - NumPy -> Descriptor
-    - ISODescriptor -> Descriptor
-    - Descriptor -> ISODescriptor
 3. **StringPhysicalCast**: the same idea for strings, between a descriptor and
 a bare `char*`.
 
