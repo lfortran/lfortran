@@ -17,9 +17,12 @@ bounds that may only go down:
   if any count would rise or a file would be added. Raising a limit means
   editing the baseline by hand, where reviewers see it.
 
-Counted calls are ASR::make_<Name>_t(...) and ASRUtils::make_<Name>_util(...),
-which includes ASRUtils::make_<Name>_t_util(...), outside comments and string
-literals.
+Counted calls are ASR::make_<Name>_t(...) and ASRUtils::make_<Name>(...) (any
+ASRUtils maker, such as make_<Name>_t_util or make_Cast_t_value), outside
+comments and string and character literals. Known limitations: macros that
+construct nodes (such as make_ConstantWithType in asr_builder.h, unused in
+codegen) and indirect helpers (such as ASRUtils::duplicate_type or
+ASRBuilder) are not counted, and calls in #if 0 blocks are counted.
 """
 
 import argparse
@@ -33,7 +36,8 @@ BACKEND_DIR = Path("src/libasr/codegen")
 SOURCE_SUFFIXES = (".cpp", ".h")
 BASELINE = Path("ci/backend_asr_construction_baseline.txt")
 SCRIPT = "python3 ci/check_backend_asr_construction.py"
-CONSTRUCTION = re.compile(r"\b(?:ASR::make_\w+_t|ASRUtils::make_\w+_util)\s*\(")
+CONSTRUCTION = re.compile(
+    r"\b(?:ASR\s*::\s*make_\w+_t|ASRUtils\s*::\s*make_\w+)\s*\(")
 RAW_STRING = re.compile(r'(?:u8|[uUL])?R"([^()\\\s]{0,16})\(')
 
 BASELINE_HEADER = """\
@@ -55,6 +59,16 @@ def calls(count):
 
 def files(count):
     return f"{count} backend file{'' if count == 1 else 's'}"
+
+
+def is_digit_separator(text, i):
+    """True if the quote at text[i] separates digits, as in 1'000 or 0xFF'FF."""
+    if i == 0 or i + 1 == len(text) or not text[i + 1].isalnum():
+        return False
+    start = i
+    while start > 0 and (text[start - 1].isalnum() or text[start - 1] in "_.'"):
+        start -= 1
+    return start < i and text[start].isdigit()
 
 
 def strip_comments_and_strings(text):
@@ -85,6 +99,9 @@ def strip_comments_and_strings(text):
             end = n if end == -1 else end + len(close)
             blank(text[i:end])
             i = end
+        elif c == "'" and is_digit_separator(text, i):
+            out.append(c)
+            i += 1
         elif c in "\"'":
             j = i + 1
             while j < n and text[j] != c and text[j] != "\n":
@@ -101,7 +118,8 @@ def strip_comments_and_strings(text):
 def construction_sites(text):
     """Return (line, call) for every construction call in a source text."""
     code = strip_comments_and_strings(text)
-    return [(code.count("\n", 0, m.start()) + 1, m.group(0).rstrip("( \t"))
+    return [(code.count("\n", 0, m.start()) + 1,
+             re.sub(r"\s+", "", m.group(0)).rstrip("("))
             for m in CONSTRUCTION.finditer(code)]
 
 
