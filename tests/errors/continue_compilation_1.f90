@@ -3492,11 +3492,12 @@ contains
     subroutine cc1_lenp_use()
         type(cc1_lenp_t(3)) :: v
         procedure(cc1_lenp_grow_i), pointer :: pp
-        integer :: k
+        integer :: i, k
         pp => cc1_lenp_grow
         call v%cc1_lenp_tr(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
         k = v%cc1_lenp_tf(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
         k = cc1_lenp_gen(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
         call pp(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+        read(*, *) (v%n, i = 1, 1)  ! {Error} the LEN type parameter 'n' cannot be an input item
     end subroutine cc1_lenp_use
 end module cc1_len_call_paths
