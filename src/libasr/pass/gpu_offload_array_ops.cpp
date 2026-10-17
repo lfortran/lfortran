@@ -3713,6 +3713,22 @@ void GpuOffloadVisitor::inline_elemental_array_var_in_body(ASR::stmt_t** &body,
                     elementize(lc->m_left), lc->m_op,
                     elementize(lc->m_right), elem_type, nullptr));
             } else if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
+                ASR::FunctionCall_t *fc =
+                    ASR::down_cast<ASR::FunctionCall_t>(e);
+                if (!ASRUtils::is_elemental(fc->m_name)) return e;
+                Vec<ASR::call_arg_t> new_args;
+                new_args.reserve(al, fc->n_args);
+                for (size_t i = 0; i < fc->n_args; i++) {
+                    ASR::call_arg_t arg = fc->m_args[i];
+                    if (arg.m_value) arg.m_value = elementize(arg.m_value);
+                    new_args.push_back(al, arg);
+                }
+                ASR::ttype_t *elem_type = ASRUtils::extract_type(fc->m_type);
+                return ASRUtils::EXPR(
+                    ASR::make_FunctionCall_t(al, loc,
+                        fc->m_name, fc->m_original_name,
+                        new_args.p, new_args.n, elem_type,
+                        fc->m_value, fc->m_dt));
             } else if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
                 return ASR::down_cast<ASR::ArrayBroadcast_t>(e)->m_array;
             } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {

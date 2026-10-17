@@ -87,6 +87,11 @@ Allocation and assignment reallocation preserve the prepared result length
 even when it differs from every actual's length or a scalar actual is
 broadcast.
 
+Earlier elementwise lowering must scalarize both an elemental call's result
+and its array actuals inside the element loop. Leaving an array-valued call
+in a scalar assignment would instead materialize an unnecessary whole-array
+result, with no valid per-element storage contract.
+
 An allocatable result owns its allocation in the
 callee, but may still have an explicit, nondeferred character length. Before
 passing a deferred-length return slot to its converted `intent(out)` result
