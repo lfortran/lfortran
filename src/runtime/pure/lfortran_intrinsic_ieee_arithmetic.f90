@@ -46,7 +46,7 @@ module lfortran_intrinsic_ieee_arithmetic
     end type
 
     interface ieee_class
-        module procedure spieee_class, dpieee_class
+        module procedure spieee_class, dpieee_class, xpieee_class, qpieee_class
     end interface
 
     interface operator(==)
@@ -62,19 +62,19 @@ module lfortran_intrinsic_ieee_arithmetic
     end interface
 
     interface ieee_is_nan
-        module procedure spieee_is_nan, dpieee_is_nan
+        module procedure spieee_is_nan, dpieee_is_nan, xpieee_is_nan, qpieee_is_nan
     end interface
 
     interface ieee_is_finite
-        module procedure spieee_is_finite, dpieee_is_finite
+        module procedure spieee_is_finite, dpieee_is_finite, xpieee_is_finite, qpieee_is_finite
     end interface
 
     interface ieee_is_negative
-        module procedure spieee_is_negative, dpieee_is_negative
+        module procedure spieee_is_negative, dpieee_is_negative, xpieee_is_negative, qpieee_is_negative
     end interface
 
     interface ieee_copy_sign
-        module procedure spieee_copy_sign, dpieee_copy_sign
+        module procedure spieee_copy_sign, dpieee_copy_sign, xpieee_copy_sign, qpieee_copy_sign
     end interface
 
     interface ieee_support_datatype
@@ -82,7 +82,7 @@ module lfortran_intrinsic_ieee_arithmetic
     end interface
     
     interface ieee_is_normal
-        module procedure spieee_is_normal, dpieee_is_normal
+        module procedure spieee_is_normal, dpieee_is_normal, xpieee_is_normal, qpieee_is_normal
     end interface
 
     interface ieee_unordered
@@ -271,6 +271,99 @@ module lfortran_intrinsic_ieee_arithmetic
         end if
     end function
 
+    ! real(10) is the x87 80-bit format: bits(1) holds the significand with
+    ! its explicit integer bit, the low 16 bits of bits(2) hold the sign and
+    ! exponent, and the rest of bits(2) is padding.
+    elemental function xpieee_class(x) result(y)
+        real(10), intent(in) :: x
+        type(ieee_class_type) :: y
+        integer(8) :: bits(2), expo, frac
+        logical :: neg
+        bits = transfer(x, bits)
+        expo = iand(bits(2), int(z'7FFF', kind=8))
+        frac = iand(bits(1), huge(0_8))
+        neg = iand(bits(2), int(z'8000', kind=8)) /= 0_8
+        if (expo == int(z'7FFF', kind=8)) then
+            if (frac == 0_8) then
+                if (neg) then
+                    y = ieee_negative_inf
+                else
+                    y = ieee_positive_inf
+                end if
+            else if (iand(frac, int(z'4000000000000000', kind=8)) /= 0_8) then
+                y = ieee_quiet_nan
+            else
+                y = ieee_signaling_nan
+            end if
+        else if (expo == 0_8) then
+            if (bits(1) == 0_8) then
+                if (neg) then
+                    y = ieee_negative_zero
+                else
+                    y = ieee_positive_zero
+                end if
+            else
+                if (neg) then
+                    y = ieee_negative_denormal
+                else
+                    y = ieee_positive_denormal
+                end if
+            end if
+        else
+            if (neg) then
+                y = ieee_negative_normal
+            else
+                y = ieee_positive_normal
+            end if
+        end if
+    end function
+
+    ! real(16) is IEEE binary128: bits(2) holds the sign, the exponent and the
+    ! top 48 bits of the fraction, bits(1) the low 64 bits of the fraction.
+    elemental function qpieee_class(x) result(y)
+        real(16), intent(in) :: x
+        type(ieee_class_type) :: y
+        integer(8) :: bits(2), expo, frac_hi
+        logical :: neg
+        bits = transfer(x, bits)
+        expo = iand(ishft(bits(2), -48), int(z'7FFF', kind=8))
+        frac_hi = iand(bits(2), int(z'0000FFFFFFFFFFFF', kind=8))
+        neg = bits(2) < 0_8
+        if (expo == int(z'7FFF', kind=8)) then
+            if (frac_hi == 0_8 .and. bits(1) == 0_8) then
+                if (neg) then
+                    y = ieee_negative_inf
+                else
+                    y = ieee_positive_inf
+                end if
+            else if (iand(frac_hi, int(z'0000800000000000', kind=8)) /= 0_8) then
+                y = ieee_quiet_nan
+            else
+                y = ieee_signaling_nan
+            end if
+        else if (expo == 0_8) then
+            if (frac_hi == 0_8 .and. bits(1) == 0_8) then
+                if (neg) then
+                    y = ieee_negative_zero
+                else
+                    y = ieee_positive_zero
+                end if
+            else
+                if (neg) then
+                    y = ieee_negative_denormal
+                else
+                    y = ieee_positive_denormal
+                end if
+            end if
+        else
+            if (neg) then
+                y = ieee_negative_normal
+            else
+                y = ieee_positive_normal
+            end if
+        end if
+    end function
+
     elemental function spieee_value(x, cls) result(y)
         use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
@@ -365,6 +458,22 @@ module lfortran_intrinsic_ieee_arithmetic
         r = c_rdp_is_nan(x)
     end function
 
+    elemental function xpieee_is_nan(x) result(r)
+        real(10), intent(in) :: x
+        logical :: r
+        type(ieee_class_type) :: c
+        c = xpieee_class(x)
+        r = c%value == ieee_signaling_nan%value .or. c%value == ieee_quiet_nan%value
+    end function
+
+    elemental function qpieee_is_nan(x) result(r)
+        real(16), intent(in) :: x
+        logical :: r
+        type(ieee_class_type) :: c
+        c = qpieee_class(x)
+        r = c%value == ieee_signaling_nan%value .or. c%value == ieee_quiet_nan%value
+    end function
+
     elemental function spieee_is_finite(x) result(r)
         use iso_fortran_env, only: real32
         real(real32), intent(in) :: x
@@ -377,6 +486,22 @@ module lfortran_intrinsic_ieee_arithmetic
         real(real64), intent(in) :: x
         logical :: r
         r = x == x .and. .not. (x /= x .or. abs(x) > huge(x))
+    end function
+
+    elemental function xpieee_is_finite(x) result(r)
+        real(10), intent(in) :: x
+        logical :: r
+        type(ieee_class_type) :: c
+        c = xpieee_class(x)
+        r = c%value >= ieee_negative_normal%value .and. c%value <= ieee_positive_normal%value
+    end function
+
+    elemental function qpieee_is_finite(x) result(r)
+        real(16), intent(in) :: x
+        logical :: r
+        type(ieee_class_type) :: c
+        c = qpieee_class(x)
+        r = c%value >= ieee_negative_normal%value .and. c%value <= ieee_positive_normal%value
     end function
 
     elemental function spieee_is_negative(x) result(r)
@@ -397,6 +522,22 @@ module lfortran_intrinsic_ieee_arithmetic
         r = sign(1.0_real64, x) < 0.0_real64
     end function
 
+    elemental function xpieee_is_negative(x) result(r)
+        real(10), intent(in) :: x
+        logical :: r
+        type(ieee_class_type) :: c
+        c = xpieee_class(x)
+        r = c%value >= ieee_negative_inf%value .and. c%value <= ieee_negative_zero%value
+    end function
+
+    elemental function qpieee_is_negative(x) result(r)
+        real(16), intent(in) :: x
+        logical :: r
+        type(ieee_class_type) :: c
+        c = qpieee_class(x)
+        r = c%value >= ieee_negative_inf%value .and. c%value <= ieee_negative_zero%value
+    end function
+
     elemental function spieee_copy_sign(x, y) result(r)
         use iso_fortran_env, only: real32
         real(real32), intent(in) :: x, y
@@ -409,6 +550,26 @@ module lfortran_intrinsic_ieee_arithmetic
         real(real64), intent(in) :: x, y
         real(real64) :: r
         r = abs(x) * sign(1.0_real64, y)
+    end function
+
+    elemental function xpieee_copy_sign(x, y) result(r)
+        real(10), intent(in) :: x, y
+        real(10) :: r
+        integer(8) :: xbits(2), ybits(2)
+        xbits = transfer(x, xbits)
+        ybits = transfer(y, ybits)
+        xbits(2) = ior(iand(xbits(2), int(z'7FFF', kind=8)), iand(ybits(2), int(z'8000', kind=8)))
+        r = transfer(xbits, r)
+    end function
+
+    elemental function qpieee_copy_sign(x, y) result(r)
+        real(16), intent(in) :: x, y
+        real(16) :: r
+        integer(8) :: xbits(2), ybits(2)
+        xbits = transfer(x, xbits)
+        ybits = transfer(y, ybits)
+        xbits(2) = ior(iand(xbits(2), huge(0_8)), iand(ybits(2), -huge(0_8) - 1_8))
+        r = transfer(xbits, r)
     end function
 
     elemental function spieee_support_datatype(x) result(r)
@@ -437,6 +598,24 @@ module lfortran_intrinsic_ieee_arithmetic
         real(real64), intent(in) :: x
         logical :: r
         r = x == 0.0_real64 .or. (abs(x) >= tiny(x) .and. abs(x) <= huge(x))
+    end function
+
+    elemental function xpieee_is_normal(x) result(r)
+        real(10), intent(in) :: x
+        logical :: r
+        type(ieee_class_type) :: c
+        c = xpieee_class(x)
+        r = c%value == ieee_negative_normal%value .or. c%value == ieee_positive_normal%value &
+            .or. c%value == ieee_negative_zero%value .or. c%value == ieee_positive_zero%value
+    end function
+
+    elemental function qpieee_is_normal(x) result(r)
+        real(16), intent(in) :: x
+        logical :: r
+        type(ieee_class_type) :: c
+        c = qpieee_class(x)
+        r = c%value == ieee_negative_normal%value .or. c%value == ieee_positive_normal%value &
+            .or. c%value == ieee_negative_zero%value .or. c%value == ieee_positive_zero%value
     end function
 
     elemental function spieee_unordered(x, y) result(r)
