@@ -3354,6 +3354,7 @@ public:
     void visit_Associate(const AST::Associate_t& x) {
         this->visit_expr(*(x.m_target));
         ASR::expr_t* target = ASRUtils::EXPR(tmp);
+        check_intent_in_pointer_association(target, "pointer assignment");
         bool is_invalid = check_assignment_to_constant_variable(
             extract_assignment_base_symbol(target), x.base.base.loc);
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
@@ -4158,6 +4159,7 @@ public:
                 new_arg.m_dims = nullptr;
                 new_arg.n_dims = 0;
             }
+            check_intent_in_pointer_association(new_arg.m_a, "allocate object");
             alloc_args_vec.push_back(al, new_arg);
         }
 
@@ -4647,6 +4649,36 @@ public:
         return nullptr;
     }
 
+    // A pointer dummy with intent(in) keeps its association status for the
+    // whole call (F2018 8.5.10); only its target may be defined.
+    void check_intent_in_pointer_association(ASR::expr_t* expr,
+            const std::string& context) {
+        if (expr == nullptr) {
+            return;
+        }
+        if (ASR::is_a<ASR::ArraySection_t>(*expr)) {
+            expr = ASR::down_cast<ASR::ArraySection_t>(expr)->m_v;
+        }
+        if (!ASR::is_a<ASR::Var_t>(*expr)) {
+            return;
+        }
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(expr)->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+            return;
+        }
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(sym);
+        if (v->m_intent == ASR::intentType::In && ASRUtils::is_pointer(v->m_type)) {
+            diag.add(Diagnostic(
+                "pointer dummy argument `" + std::string(v->m_name)
+                + "` with intent(in) cannot appear in a pointer association context",
+                Level::Error, Stage::Semantic, {
+                    Label(context, {expr->base.loc})
+                }));
+            throw SemanticAbort();
+        }
+    }
+
     inline void check_for_deallocation(ASR::symbol_t* tmp_sym, const Location& loc) {
         tmp_sym = ASRUtils::symbol_get_past_external(tmp_sym);
         if( !ASR::is_a<ASR::Variable_t>(*tmp_sym) ) {
@@ -4684,6 +4716,7 @@ public:
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*(x.m_args[i].m_end));
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
+            check_intent_in_pointer_association(tmp_expr, "deallocate object");
             if( ASR::is_a<ASR::Var_t>(*tmp_expr) ) {
                 const ASR::Var_t* tmp_var = ASR::down_cast<ASR::Var_t>(tmp_expr);
                 ASR::symbol_t* tmp_sym = tmp_var->m_v;
@@ -10767,6 +10800,7 @@ public:
         for( size_t i = 0; i < x.n_args; i++ ) {
             this->visit_expr(*(x.m_args[i]));
             ASR::expr_t* tmp_expr = ASRUtils::EXPR(tmp);
+            check_intent_in_pointer_association(tmp_expr, "nullify object");
             check_assignment_to_constant_variable(
                 extract_assignment_base_symbol(tmp_expr), tmp_expr->base.loc);
             if (ASRUtils::is_pointer(ASRUtils::expr_type(tmp_expr)) || ASR::is_a<ASR::FunctionType_t>(*ASRUtils::expr_type(tmp_expr))) {
