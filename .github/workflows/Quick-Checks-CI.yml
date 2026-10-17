@@ -243,8 +243,9 @@ jobs:
           ./ci/grammar_conflicts.sh
 
       # Backends lower ASR, they do not create it; the count may only go down.
+      # Report a violation even if an earlier step failed.
       - name: Check for ASR Construction in Backends
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21')
+        if: ${{ !cancelled() && contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '21') }}
         shell: bash -e -l {0}
         run: python3 ci/check_backend_asr_construction.py
 
