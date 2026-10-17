@@ -11,6 +11,7 @@
 
 #include <vector>
 #include <utility>
+#include <set>
 
 namespace LCompilers {
 
@@ -126,6 +127,25 @@ enum targetType {
 };
 
 typedef std::map<ASR::expr_t*, std::pair<ASR::expr_t*, targetType>> ExprsWithTargetType;
+
+struct FunctionCallPreparation {
+    // Copies of a prepared reference must retain its entry-time metadata.
+    // This records value snapshots, not function references or cached results.
+    std::set<ASR::symbol_t*> metadata_values;
+
+    bool is_saved_metadata(ASR::expr_t* expr) const {
+        return ASR::is_a<ASR::Var_t>(*expr) &&
+            metadata_values.count(ASR::down_cast<ASR::Var_t>(expr)->m_v);
+    }
+};
+
+ASR::expr_t* rebuild_array_physical_cast(Allocator& al,
+        ASR::ArrayPhysicalCast_t* cast) {
+    return ASRUtils::EXPR(ASRUtils::make_ArrayPhysicalCast_t_util(al,
+        cast->base.base.loc, cast->m_arg,
+        ASRUtils::extract_physical_type(ASRUtils::expr_type(cast->m_arg)),
+        cast->m_new, cast->m_type, cast->m_value));
+}
 
 const std::vector<ASR::exprType>& exprs_with_no_type = {
 };
@@ -1687,9 +1707,10 @@ bool contains_function_reference(ASR::expr_t* value) {
     return check.found;
 }
 
-void stabilize_association_actuals(Allocator& al, ASR::FunctionCall_t* call,
+void prepare_function_actuals(Allocator& al, ASR::FunctionCall_t* call,
     Vec<ASR::stmt_t*>* current_body, SymbolTable* current_scope,
-    ExprsWithTargetType& exprs_with_target, bool realloc_lhs);
+    ExprsWithTargetType& exprs_with_target, bool realloc_lhs,
+    FunctionCallPreparation& call_preparation);
 
 // Returns true if `value` is the null pointer constant and its type is an
 // array of rank >= 1, i.e. a value which is represented by an array
@@ -1799,14 +1820,16 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     ASR::expr_t* lhs_var;
     bool realloc_lhs;
     bool inside_where;
+    FunctionCallPreparation& call_preparation;
 
     public:
 
-    ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
+    ArgSimplifier(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
+            FunctionCallPreparation& call_preparation_) :
         al(al_), current_body(nullptr), body_after_curr_stmt(nullptr),
             parent_body_for_where(nullptr),
             exprs_with_target(exprs_with_target_), lhs_var(nullptr), realloc_lhs(realloc_lhs_),
-            inside_where(false) {(void)realloc_lhs; /*Silence-Warning*/}
+            inside_where(false), call_preparation(call_preparation_) {}
 
 
     void transform_stmts(ASR::stmt_t**& m_body, size_t& n_body) {
@@ -2181,6 +2204,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_FunctionType(const ASR::FunctionType_t& /*x*/) {
         // Do nothing
+    }
+
+    void visit_ttype(const ASR::ttype_t& /*x*/) {
+        // Type annotations are not independent evaluations. Function-result
+        // metadata is instantiated and saved by prepare_function_actuals.
     }
 
     void visit_Assignment(const ASR::Assignment_t& x) {
@@ -2659,9 +2687,6 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         if (!ASRUtils::is_value_constant(x.m_value)) {   // Only simplify runtime function's args
             visit_IntrinsicCall(x, "_intrinsic_elemental_function_" +
                 ASRUtils::get_intrinsic_name(x.m_intrinsic_id));
-            if (x.m_type) {
-                visit_ttype(*x.m_type);
-            }
         }
     }
 
@@ -2740,8 +2765,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
         if (!inside_where) {
-            stabilize_association_actuals(al, const_cast<ASR::FunctionCall_t*>(&x),
-                current_body, current_scope, exprs_with_target, realloc_lhs);
+            prepare_function_actuals(al, const_cast<ASR::FunctionCall_t*>(&x),
+                current_body, current_scope, exprs_with_target, realloc_lhs,
+                call_preparation);
         }
         visit_Call(x, "_function_call_");
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_FunctionCall(x);
@@ -2916,6 +2942,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     Allocator& al;
     ExprsWithTargetType& exprs_with_target;
     bool realloc_lhs;
+    FunctionCallPreparation& call_preparation;
 
     public:
 
@@ -2927,8 +2954,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     ASR::expr_t* parent_expr;
     ASR::expr_t* lhs_var;
 
-    ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_) :
-        al(al_), exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_), current_scope(nullptr),
+    ReplaceExprWithTemporary(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
+            FunctionCallPreparation& call_preparation_) :
+        al(al_), exprs_with_target(exprs_with_target_), realloc_lhs(realloc_lhs_),
+        call_preparation(call_preparation_), current_scope(nullptr),
         is_assignment_target_array_section_item(false), is_simd_expression(false), simd_type(nullptr),
         parent_expr(nullptr), lhs_var(nullptr) {}
 
@@ -2999,12 +3028,14 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         }
         if (in_array_context && type != nullptr && !is_array_expr &&
                 is_evaluated_once(x)) {
-            if (ASRUtils::is_character(*type)) {
-                // Normalize nested string intrinsics before saving the whole
-                // scalar operand, whose assignment is not visited again.
-                in_array_context = false;
-                ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_expr(x);
-                in_array_context = true;
+            // The assignment that saves this value is not visited again.
+            // Prepare its children, including dependent function results,
+            // before allocating or capturing the whole scalar.
+            in_array_context = false;
+            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_expr(x);
+            in_array_context = true;
+            if (!is_evaluated_once(*current_expr)) {
+                return;
             }
             if (ASRUtils::is_struct(*type)) {
                 force_replace_current_expr_for_struct(current_expr,
@@ -3251,7 +3282,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 bool saved_context = in_array_context;
                 current_expr = &arg;
                 in_array_context = false;
-                normalize_function_actuals(ASR::down_cast<ASR::FunctionCall_t>(arg));
+                prepare_function_actuals(ASR::down_cast<ASR::FunctionCall_t>(arg));
                 ASR::expr_t* pointer = ASRUtils::is_array(ASRUtils::expr_type(arg)) ?
                     create_temporary_variable_for_array(al, arg, current_scope,
                         "_actual_pointer_") :
@@ -3269,7 +3300,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         }
     }
 
-    void normalize_function_actuals(ASR::FunctionCall_t* x) {
+    void prepare_function_actuals(ASR::FunctionCall_t* x) {
         size_t original_body_size = current_body->size();
         std::vector<ASR::expr_t*> original_args;
         for (size_t i = 0; i < x->n_args; i++) {
@@ -3324,7 +3355,21 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             for (size_t i = 0; i < x->n_args; i++) {
                 actuals_changed |= original_args[i] != x->m_args[i].m_value;
             }
-            if (actuals_changed) {
+            class PendingMetadata: public ASR::BaseExprReplacer<PendingMetadata> {
+                const FunctionCallPreparation& preparation;
+            public:
+                bool found = false;
+                PendingMetadata(const FunctionCallPreparation& preparation):
+                    preparation(preparation) {}
+                void replace_expr(ASR::expr_t* expr) {
+                    found |= expr && !ASRUtils::is_value_constant(
+                        ASRUtils::expr_value(expr)) &&
+                        !preparation.is_saved_metadata(expr);
+                }
+            } pending_metadata(call_preparation);
+            pending_metadata.replace_ttype(x->m_type);
+            if (actuals_changed || (evaluate_function_references_once &&
+                    pending_metadata.found)) {
                 // Rebuild all call-local result metadata from the canonical
                 // formulas, after actuals have been saved. The instantiated old
                 // type may contain independent copies of those source expressions.
@@ -3355,12 +3400,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                     void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* cast) {
                         ASR::BaseExprReplacer<NormalizeMetadataCasts>
                             ::replace_ArrayPhysicalCast(cast);
-                        *current_expr = ASRUtils::EXPR(
-                            ASRUtils::make_ArrayPhysicalCast_t_util(al,
-                                cast->base.base.loc, cast->m_arg,
-                                ASRUtils::extract_physical_type(
-                                    ASRUtils::expr_type(cast->m_arg)),
-                                cast->m_new, cast->m_type, cast->m_value));
+                        *current_expr = rebuild_array_physical_cast(al, cast);
                     }
                 } normalize_casts(al);
                 // A formal descriptor in a metadata inquiry may have been
@@ -3376,12 +3416,15 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                     SaveMetadata(ReplaceExprWithTemporary& owner): owner(owner) {}
                     void replace_expr(ASR::expr_t* expr) {
                         if (expr && !ASRUtils::is_value_constant(
-                                ASRUtils::expr_value(expr))) {
+                                ASRUtils::expr_value(expr)) &&
+                                !owner.call_preparation.is_saved_metadata(expr)) {
                             std::string name = PassUtils::temporary_name(
                                 owner.current_scope, "_result_metadata_");
                             ASR::stmt_t* assignment;
                             *current_expr = PassUtils::create_auxiliary_variable_for_expr(
                                 expr, name, owner.al, owner.current_scope, assignment);
+                            owner.call_preparation.metadata_values.insert(
+                                ASR::down_cast<ASR::Var_t>(*current_expr)->m_v);
                             owner.current_body->push_back(owner.al, assignment);
                         }
                     }
@@ -3393,7 +3436,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
-        normalize_function_actuals(x);
+        prepare_function_actuals(x);
         if( ASRUtils::is_elemental(x->m_name) && !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
             // ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x->m_name);
             // std::cout << f << "\n";
@@ -3450,7 +3493,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             ASRUtils::symbol_name(x->m_name));
     }
 
+    void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayPhysicalCast(x);
+        *current_expr = rebuild_array_physical_cast(al, x);
+    }
+
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_IntrinsicArrayFunction(x);
         std::string name_hint = std::string("_intrinsic_array_function_") + ASRUtils::get_array_intrinsic_name(x->m_arr_intrinsic_id);
         if (!(is_current_expr_linked_to_target(exprs_with_target, current_expr) || ASRUtils::is_array(x->m_type))) {
             force_replace_current_expr_for_scalar(current_expr, name_hint, al, current_body, current_scope, exprs_with_target);
@@ -3522,6 +3571,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayConstructor(x);
         replace_current_expr(x, "_array_constructor_");
     }
 
@@ -3597,14 +3647,17 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_ArrayTranspose(ASR::ArrayTranspose_t* x) {
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayTranspose(x);
         replace_current_expr(x, "_array_transpose_");
     }
 
     void replace_ArrayPack(ASR::ArrayPack_t* x) {
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayPack(x);
         replace_current_expr(x, "_array_pack_");
     }
 
     void replace_ArrayReshape(ASR::ArrayReshape_t* x) {
+        ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_ArrayReshape(x);
         replace_current_expr(x, "_array_reshape_");
     }
 
@@ -3655,6 +3708,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         if (x->m_type != nullptr && !ASRUtils::is_array(x->m_type) &&
                 ASRUtils::is_character(*x->m_type) &&
                 is_evaluated_once(&x->base)) {
+            auto target = exprs_with_target.find(*current_expr);
+            if (target != exprs_with_target.end() &&
+                    target->second.second == targetType::GeneratedTarget &&
+                    !ASRUtils::is_array(ASRUtils::expr_type(target->second.first))) {
+                // This scalar assignment is already the capture of this value.
+                return;
+            }
             ASR::String_t* string_type = ASRUtils::get_string_type(&x->base);
             if (string_type->m_len == nullptr ||
                     !ASRUtils::is_value_constant(
@@ -3781,25 +3841,21 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 };
 
-void stabilize_association_actuals(Allocator& al, ASR::FunctionCall_t* call,
+void prepare_function_actuals(Allocator& al, ASR::FunctionCall_t* call,
     Vec<ASR::stmt_t*>* current_body, SymbolTable* current_scope,
-    ExprsWithTargetType& exprs_with_target, bool realloc_lhs) {
-    ReplaceExprWithTemporary replacer(al, exprs_with_target, realloc_lhs);
+    ExprsWithTargetType& exprs_with_target, bool realloc_lhs,
+    FunctionCallPreparation& call_preparation) {
+    ReplaceExprWithTemporary replacer(al, exprs_with_target, realloc_lhs,
+        call_preparation);
+    replacer.call_replacer_on_value = false;
     replacer.current_body = current_body;
     replacer.current_scope = current_scope;
     ASR::expr_t* expr = &call->base;
     replacer.current_expr = &expr;
     // ArgSimplifier can allocate a function-result temporary before the
-    // general expression traversal. Its allocation must already use saved
-    // selectors and pre-call specification values, not copies of source calls.
-    for (size_t i = 0; i < call->n_args; i++) {
-        ASR::expr_t* arg = call->m_args[i].m_value;
-        if (replacer.is_association_actual(arg) &&
-                contains_function_reference(arg)) {
-            replacer.normalize_function_actuals(call);
-            return;
-        }
-    }
+    // general expression traversal. Prepare both value and association
+    // actuals here: allocation and data must use the same evaluation.
+    replacer.prepare_function_actuals(call);
 }
 
 class ReplaceExprWithTemporaryVisitor:
@@ -3816,8 +3872,10 @@ class ReplaceExprWithTemporaryVisitor:
 
     public:
 
-    ReplaceExprWithTemporaryVisitor(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_):
-        al(al_), exprs_with_target(exprs_with_target_), replacer(al, exprs_with_target, realloc_lhs_),
+    ReplaceExprWithTemporaryVisitor(Allocator& al_, ExprsWithTargetType& exprs_with_target_, bool realloc_lhs_,
+            FunctionCallPreparation& call_preparation):
+        al(al_), exprs_with_target(exprs_with_target_),
+        replacer(al, exprs_with_target, realloc_lhs_, call_preparation),
         parent_body_for_where(nullptr), inside_where(false) {
         replacer.call_replacer_on_value = false;
         call_replacer_on_value = false;
@@ -3828,6 +3886,10 @@ class ReplaceExprWithTemporaryVisitor:
         replacer.current_body = current_body;
         replacer.current_scope = current_scope;
         replacer.replace_expr(*current_expr);
+    }
+
+    void visit_ttype(const ASR::ttype_t& /*x*/) {
+        // Result metadata has its own explicit pre-call evaluation statements.
     }
 
     void visit_Variable(const ASR::Variable_t& /*x*/) {
@@ -4838,9 +4900,12 @@ void pass_array_struct_temporary(Allocator &al, ASR::TranslationUnit_t &unit,
     init_expr_with_target.visit_TranslationUnit(unit);
     TransformVariableInitialiser a(al, exprs_with_target);
     a.visit_TranslationUnit(unit);
-    ArgSimplifier b(al, exprs_with_target, pass_options.realloc_lhs_arrays);
+    FunctionCallPreparation call_preparation;
+    ArgSimplifier b(al, exprs_with_target, pass_options.realloc_lhs_arrays,
+        call_preparation);
     b.visit_TranslationUnit(unit);
-    ReplaceExprWithTemporaryVisitor c(al, exprs_with_target, pass_options.realloc_lhs_arrays);
+    ReplaceExprWithTemporaryVisitor c(al, exprs_with_target,
+        pass_options.realloc_lhs_arrays, call_preparation);
     c.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);
