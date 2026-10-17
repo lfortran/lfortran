@@ -14,7 +14,7 @@ program class_34
 contains
 
    subroutine sub(val)
-      type(val_type), allocatable, intent(out) :: val
+      class(val_type), allocatable, intent(out) :: val
       allocate(val)
       val%origin = 5
    end subroutine sub
