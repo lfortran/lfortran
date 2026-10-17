@@ -69,7 +69,7 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
         LCOMPILERS_ASSERT(workspace.m_buffer_index == slot);
         std::string type = gpu_type(ASRUtils::extract_type(
             ASRUtils::symbol_type(workspace.m_variable)));
-        std::string parameter = gpu_workspace_buffer_name(workspace.m_buffer_index);
+        std::string parameter = gpu_workspace_buffer_name(checked_integer_cast<int>(workspace.m_buffer_index));
         separator();
         src << "    " << global_prefix() << type << "* " << parameter
             << dialect.buffer_attr(slot++);

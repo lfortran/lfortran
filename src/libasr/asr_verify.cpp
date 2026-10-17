@@ -3136,7 +3136,7 @@ public:
                 ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v);
         }
         std::set<ASR::symbol_t*> workspaces, extent_parameters;
-        int slot = (layout.m_packed ? 1 : layout.n_buffers) +
+        int64_t slot = (layout.m_packed ? 1 : layout.n_buffers) +
             (layout.n_scalars > 0);
         for (size_t i = 0; i < layout.n_workspaces; i++) {
             const auto &workspace = layout.m_workspaces[i];
@@ -4361,6 +4361,13 @@ public:
         ASR::ttype_t* cast_type = ASRUtils::type_get_past_allocatable(x.m_type);
         require(ASR::is_a<ASR::String_t>(*cast_type), "StringPhysicalCast should be of string type");
         ASR::String_t* str = ASR::down_cast<ASR::String_t>(cast_type);
+        require(ASRUtils::is_string_only(ASRUtils::expr_type(x.m_arg)),
+            "StringPhysicalCast argument must be a string");
+        require(x.m_old == ASRUtils::get_string_type(
+                ASRUtils::expr_type(x.m_arg))->m_physical_type,
+            "StringPhysicalCast old physical type must match its argument");
+        require(x.m_new == str->m_physical_type,
+            "StringPhysicalCast new physical type must match its result");
         require(!str->m_len,
             "StringPhysicalCast return type shouldn't have length "
             "(Length should be implicit).")

@@ -57,7 +57,7 @@ int32_t decode_leb128_i32(Vec<uint8_t> &code, uint32_t &offset) {
 
     // Sign extend negative numbers if needed.
     if ((shift < 32U) && (byte & 0x40)) {
-        result |= (-1U << shift);
+        result |= (~0U << shift);
     }
 
     return result;
@@ -91,7 +91,7 @@ int64_t decode_leb128_i64(Vec<uint8_t> &code, uint32_t &offset) {
 
     // Sign extend negative numbers if needed.
     if ((shift < 64U) && (byte & 0x40)) {
-        result |= (-1ULL << shift);
+        result |= (~0ULL << shift);
     }
 
     return result;

@@ -120,10 +120,10 @@ public:
         // (kind is a sentinel, not a real size) or an array of zero-length
         // strings (`t = ''`, kind <= 0): take the count from the type
         // instead of dividing by a size that isn't a real byte size.
-        int size = (pointer_backed_constant || kind <= 0)
+        int64_t size = (pointer_backed_constant || kind <= 0)
             ? ASRUtils::get_fixed_size_of_array(x.m_type)
             : x.m_n_data / kind;
-        int curr = 0;
+        int64_t curr = 0;
         for (int i = 0; i < 3; i++) {
             if (curr < size) {
                 if (i > 0) s.append(", ");
@@ -156,7 +156,7 @@ public:
         s.append(")");
     }
 
-    std::string convert_intrinsic_id(int x) {
+    std::string convert_intrinsic_id(int64_t x) {
         std::string s;
         if (use_colors) {
             s.append(color(style::bold));
@@ -170,7 +170,7 @@ public:
         return s;
     }
 
-    std::string convert_sub_intrinsic_id(int x) {
+    std::string convert_sub_intrinsic_id(int64_t x) {
         std::string s;
         if (use_colors) {
             s.append(color(style::bold));
@@ -184,7 +184,7 @@ public:
         return s;
     }
 
-    std::string convert_impure_intrinsic_id(int x) {
+    std::string convert_impure_intrinsic_id(int64_t x) {
         std::string s;
         if (use_colors) {
             s.append(color(style::bold));
@@ -198,7 +198,7 @@ public:
         return s;
     }
 
-    std::string convert_array_intrinsic_id(int x) {
+    std::string convert_array_intrinsic_id(int64_t x) {
         std::string s;
         if (use_colors) {
             s.append(color(style::bold));

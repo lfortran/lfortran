@@ -6,6 +6,7 @@
 
 #include <libasr/asr_utils.h>
 #include <libasr/exception.h>
+#include <libasr/checked_cast.h>
 
 namespace LCompilers {
 
@@ -317,8 +318,8 @@ public:
 
     uint8_t read_int8() {
         uint64_t n = read_int64();
-        if (n < 255) {
-            return n;
+        if (integer_fits<uint8_t>(n)) {
+            return static_cast<uint8_t>(n);
         } else {
             throw LCompilersException("read_int8: Integer too large to fit 8 bits.");
         }
@@ -326,8 +327,8 @@ public:
 
     uint16_t read_int16() {
         uint64_t n = read_int64();
-        if (n < 65535) {
-            return n;
+        if (integer_fits<uint16_t>(n)) {
+            return static_cast<uint16_t>(n);
         } else {
             throw LCompilersException("read_int16: Integer too large to fit 16 bits.");
         }
@@ -335,8 +336,8 @@ public:
 
     uint32_t read_int32() {
         uint64_t n = read_int64();
-        if (n < 4294967295) {
-            return n;
+        if (integer_fits<uint32_t>(n)) {
+            return static_cast<uint32_t>(n);
         } else {
             throw LCompilersException("read_int32: Integer too large to fit 32 bits.");
         }

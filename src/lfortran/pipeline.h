@@ -24,8 +24,8 @@ struct ASRObjectResult {
     bool ok = false;
     ASRPipelinePhase phase = ASRPipelinePhase::None;
     int status = 0;
-    int optimization_time_us = 0;
-    int object_time_us = 0;
+    int64_t optimization_time_us = 0;
+    int64_t object_time_us = 0;
 };
 
 Result<ASR::TranslationUnit_t*> load_input_asr(

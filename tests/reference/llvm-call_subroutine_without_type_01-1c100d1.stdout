@@ -17,7 +17,7 @@ target datalayout = "..."
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @_Name_mytype = private unnamed_addr constant [7 x i8] c"mytype\00", align 1
 @_Type_Info_mytype = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_mytype, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
-@_VTable_mytype = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_mytype to i8*), i8* bitcast (void (i8*, i8*)* @_copy_module_call_subroutine_without_type_01_mytype to i8*), i8* bitcast (void (i8**)* @_allocate_struct_module_call_subroutine_without_type_01_mytype to i8*), i8* bitcast (void (i8*)* @finalize_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @finalize_StructType__mytype_3_of_module_call_subroutine_without_type_01_no_final_for_UPoly to i8*), i8* bitcast (void (%module_call_subroutine_without_type_01.mytype.3_class*)* @__module_module_call_subroutine_without_type_01_get_i to i8*)] }, align 8
+@_VTable_mytype = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_mytype to i8*), i8* bitcast (void (i8*, i8*, i1)* @_copy_module_call_subroutine_without_type_01_mytype to i8*), i8* bitcast (void (i8**)* @_allocate_struct_module_call_subroutine_without_type_01_mytype to i8*), i8* bitcast (void (i8*)* @finalize_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @finalize_StructType__mytype_3_of_module_call_subroutine_without_type_01_no_final_for_UPoly to i8*), i8* bitcast (void (%module_call_subroutine_without_type_01.mytype.3_class*)* @__module_module_call_subroutine_without_type_01_get_i to i8*)] }, align 8
 @4 = private unnamed_addr constant [4 x i8] c"obj\00", align 1
 @5 = private unnamed_addr constant [63 x i8] c"tests/../integration_tests/call_subroutine_without_type_01.f90\00", align 1
 @6 = private unnamed_addr constant [22 x i8] c"'%s' unallocated here\00", align 1
@@ -228,17 +228,17 @@ Finalize_Variable_obj:                            ; preds = %FINALIZE_SYMTABLE_c
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-define linkonce_odr void @_copy_module_call_subroutine_without_type_01_mytype(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_module_call_subroutine_without_type_01_mytype(i8* %0, i8* %1, i1 %2) {
 entry:
-  %2 = bitcast i8* %0 to %module_call_subroutine_without_type_01.mytype.3*
-  %3 = bitcast i8* %1 to %module_call_subroutine_without_type_01.mytype.3*
-  %4 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %2, i32 0, i32 0
-  %5 = load float, float* %4, align 1
-  %6 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %3, i32 0, i32 0
+  %3 = bitcast i8* %0 to %module_call_subroutine_without_type_01.mytype.3*
+  %4 = bitcast i8* %1 to %module_call_subroutine_without_type_01.mytype.3*
+  %5 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %3, i32 0, i32 0
+  %6 = load float, float* %5, align 1
+  %7 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %4, i32 0, i32 0
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %entry
-  store float %5, float* %6, align 1
+  store float %6, float* %7, align 1
   br label %ifcont
 
 else:                                             ; preds = %entry
