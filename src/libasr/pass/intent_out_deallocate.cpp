@@ -128,7 +128,7 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
         }
         if (!ASR::is_a<ASR::StructConstant_t>(*value)) {
             out_stmts.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-                al, loc, target, value, nullptr, false, false)));
+                al, loc, target, value, nullptr, false, false, false)));
             return true;
         }
         ASR::StructConstant_t* sc = ASR::down_cast<ASR::StructConstant_t>(

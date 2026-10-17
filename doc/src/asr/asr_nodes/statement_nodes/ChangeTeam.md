@@ -57,6 +57,7 @@ barrier at the end can fail.
       :overloaded nil
       :realloc_lhs false
       :move_allocation false
+      :new_target false
     )
   ]
   :end_stat nil

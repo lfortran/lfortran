@@ -113,6 +113,7 @@
                   :overloaded nil
                   :realloc_lhs false
                   :move_allocation false
+                  :new_target false
                 )
               ]
               :return_var (Var
@@ -206,6 +207,7 @@
             :overloaded nil
             :realloc_lhs false
             :move_allocation false
+            :new_target false
           )
         ]
         :global_init nil

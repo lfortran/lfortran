@@ -810,6 +810,11 @@ public:
                 "asr.verify.assignment.realloc_lhs_requires_allocatable",
                 "Reallocation of non allocatable variable is not allowed");
         }
+        require_id(!x.m_new_target || (!x.m_move_allocation &&
+                x.m_overloaded == nullptr),
+            "asr.verify.assignment.new_target_is_copied",
+            "An assignment that defines a new target copies the value: it "
+            "is neither a move assignment nor a defined assignment");
         if (x.m_move_allocation) {
             require_id(ASRUtils::is_move_allocation_pair(x.m_target, x.m_value),
                 "asr.verify.assignment.move_allocatable_operands",

@@ -1731,7 +1731,8 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
 
 ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_target, ASR::expr_t* a_value,
-    ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move) {
+    ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move,
+    bool a_new_target) {
     bool is_allocatable = ASRUtils::is_allocatable(a_target);
     if ( !is_allocatable && ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_target) ) {
         is_allocatable = ASRUtils::is_allocatable(
@@ -1743,7 +1744,7 @@ ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     }
     a_realloc_lhs = a_realloc_lhs && is_allocatable;
     return ASR::make_Assignment_t(al, a_loc, a_target, a_value,
-        a_overloaded, a_realloc_lhs, a_move);
+        a_overloaded, a_realloc_lhs, a_move, a_new_target);
 }
 
 void set_intrinsic(ASR::symbol_t* sym) {

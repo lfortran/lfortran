@@ -3036,7 +3036,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 pass_result.push_back(al, ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al, loc,
                     dealloc_vars.p, dealloc_vars.size())));
             } 
-            ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, x.m_target, x.m_value, x.m_overloaded, x.m_realloc_lhs, x.m_move_allocation));
+            ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, x.m_target, x.m_value, x.m_overloaded, x.m_realloc_lhs, x.m_move_allocation, x.m_new_target));
             pass_result.push_back(al, stmt);
             debug_inserted.insert(ASR::down_cast<ASR::Assignment_t>(stmt));
             return;
@@ -3056,7 +3056,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 ASR::stmt_t* stmt = ASRUtils::STMT(
                     ASRUtils::make_Assignment_t_util(al, loc,
                         x.m_target, x.m_value, x.m_overloaded,
-                        x.m_realloc_lhs, x.m_move_allocation));
+                        x.m_realloc_lhs, x.m_move_allocation, x.m_new_target));
                 pass_result.push_back(al, stmt);
                 return;
             }

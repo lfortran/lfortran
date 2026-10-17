@@ -189,6 +189,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     (Var 8 less)
                                     Public
@@ -714,6 +715,7 @@
                                             ()
                                             .false.
                                             .false.
+                                            .false.
                                         )
                                         (DoLoop
                                             ()
@@ -800,6 +802,7 @@
                                                     ()
                                                     .false.
                                                     .false.
+                                                    .false.
                                                 )
                                                 (SubroutineCall
                                                     2 swap
@@ -861,6 +864,7 @@
                                             (Var 6 pivot)
                                             (Var 6 last)
                                             ()
+                                            .false.
                                             .false.
                                             .false.
                                         )
@@ -1328,6 +1332,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 5 high)
@@ -1340,11 +1345,13 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 5 sorted)
                                         (Var 5 list)
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -1404,6 +1411,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -1492,6 +1500,7 @@
                                             ()
                                             .false.
                                             .false.
+                                            .false.
                                         )]
                                         []
                                     )
@@ -1508,6 +1517,7 @@
                                             (Var 5 idx)
                                             (Var 5 indexarray)
                                             ()
+                                            .false.
                                             .false.
                                             .false.
                                         )]
@@ -1626,6 +1636,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 7 lhs)
@@ -1633,11 +1644,13 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 7 rhs)
                                         (Var 7 tmp)
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )]

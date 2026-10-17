@@ -62,6 +62,7 @@ has the branch's rank and can be indexed and sectioned normally.
           :overloaded nil
           :realloc_lhs false
           :move_allocation false
+          :new_target false
         )
       ]
     )
@@ -81,6 +82,7 @@ has the branch's rank and can be indexed and sectioned normally.
       :overloaded nil
       :realloc_lhs false
       :move_allocation false
+      :new_target false
     )
   ]
 )

@@ -2165,7 +2165,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
 
     // __flat_idx = flat_idx (the raw thread index)
     kernel_body.push_back(al, ASRUtils::STMT(
-        ASR::make_Assignment_t(al, loc, remain_var, flat_idx, nullptr, false, false)));
+        ASR::make_Assignment_t(al, loc, remain_var, flat_idx, nullptr, false, false, false)));
 
     // The loop indices below are recovered by dividing __flat_idx down,
     // which destroys it, so the thread keeps its own number separately.
@@ -2176,7 +2176,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             ASR::make_Assignment_t(al, loc,
                 ASRUtils::EXPR(ASR::make_Var_t(al, loc,
                     kernel_scope->get_symbol("__gpu_slot"))),
-                remain_var, nullptr, false, false)));
+                remain_var, nullptr, false, false, false)));
         for (auto &r : pending_reductions) {
             if (!r.host_buf_sym) continue;
             ASR::symbol_t *param = kernel_scope->get_symbol(r.orig_name);
@@ -2186,7 +2186,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     gpu_reduction_slot(al, loc, param, slot_index,
                         r.scalar_type),
                     gpu_reduction_identity(al, loc, r.op, r.scalar_type),
-                    nullptr, false, false)));
+                    nullptr, false, false, false)));
         }
     }
 
@@ -2224,7 +2224,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     mod_val, ASR::binopType::Add,
                     kernel_starts[d], int_type, nullptr));
             kernel_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, kvar_expr, val, nullptr, false, false)));
+                ASR::make_Assignment_t(al, loc, kvar_expr, val, nullptr, false, false, false)));
 
             // __flat_idx = __flat_idx / dim_range
             ASR::expr_t *div_val = ASRUtils::EXPR(
@@ -2232,7 +2232,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     remain_var, ASR::binopType::Div,
                     dim_range, int_type, nullptr));
             kernel_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, remain_var, div_val, nullptr, false, false)));
+                ASR::make_Assignment_t(al, loc, remain_var, div_val, nullptr, false, false, false)));
         } else {
             // Last dim: loop_var = __flat_idx + start
             ASR::expr_t *val = ASRUtils::EXPR(
@@ -2240,7 +2240,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     remain_var, ASR::binopType::Add,
                     kernel_starts[d], int_type, nullptr));
             kernel_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, kvar_expr, val, nullptr, false, false)));
+                ASR::make_Assignment_t(al, loc, kvar_expr, val, nullptr, false, false, false)));
         }
     }
 

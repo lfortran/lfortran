@@ -56,6 +56,7 @@ indexed and sectioned.
       :overloaded nil
       :realloc_lhs false
       :move_allocation false
+      :new_target false
     )
   ]
 )
