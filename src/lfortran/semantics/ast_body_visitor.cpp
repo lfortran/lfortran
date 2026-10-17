@@ -5619,14 +5619,20 @@ public:
                 case AST::type_stmtType::ClassDefault: {
                     AST::ClassDefault_t* class_default = AST::down_cast<AST::ClassDefault_t>(x.m_body[i]);
                     if( assoc_variable ) {
-                        ASR::ttype_t* target_type = ASRUtils::type_get_past_allocatable(selector_variable_type);
+                        // A selector that is not a variable (e.g. an array
+                        // element `a(1)`) has no selector variable; take
+                        // the associate name's type from the expression.
+                        ASR::ttype_t* target_type = ASRUtils::type_get_past_allocatable(
+                            selector_variable ? selector_variable_type
+                                : ASRUtils::expr_type(m_selector));
                         if (!ASR::is_a<ASR::Pointer_t>(*target_type)) {
                             target_type = ASRUtils::make_Pointer_t_util(al, class_default->base.base.loc, target_type);
                         }
                         assoc_variable->m_type = target_type;
                         assoc_variable->m_type_declaration =
                             ASRUtils::import_type_declaration(al,
-                                select_variable_m_type_declaration,
+                                selector_variable ? select_variable_m_type_declaration
+                                    : ASRUtils::get_struct_sym_from_struct_expr(m_selector),
                                 current_scope);
                         assoc_variable->m_dependencies = selector_variable_dependencies;
                         assoc_variable->n_dependencies = selector_variable_n_dependencies;
