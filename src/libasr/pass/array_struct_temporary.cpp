@@ -188,52 +188,27 @@ class ArrayVarCollector: public ASR::BaseWalkVisitor<ArrayVarCollector> {
 
 };
 
-ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
-    ASR::expr_t* value, SymbolTable* scope, std::string name_hint, bool is_pointer_required) {
-    ASR::ttype_t* value_type = ASRUtils::expr_type(value);
-    if (is_pointer_required && !ASRUtils::is_pointer(value_type)) {
-        value_type = ASRUtils::TYPE(ASR::make_Pointer_t(
-            al, value->base.loc, value_type));
-    }
-    LCOMPILERS_ASSERT(!ASRUtils::is_array(value_type));
-
-    ASR::ttype_t* var_type = ASRUtils::duplicate_type(al, value_type);
-    // Local temporaries cannot have AssumedLength string type
-    // (only dummy arguments can). Convert to Allocatable + DeferredLength
-    // so the runtime properly reallocates when a value is assigned.
-    if (ASR::is_a<ASR::String_t>(*ASRUtils::type_get_past_allocatable_pointer(var_type))) {
-        ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
-            ASRUtils::type_get_past_allocatable_pointer(var_type));
-        if (str_type->m_len_kind == ASR::string_length_kindType::AssumedLength) {
-            str_type->m_len_kind = ASR::string_length_kindType::DeferredLength;
-            if (!ASRUtils::is_allocatable(var_type)) {
-                var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(
-                    al, value->base.loc, var_type));
-            }
-        }
-    }
-    std::string var_name = PassUtils::temporary_name(scope, name_hint);
-    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
-        al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
-        nullptr, nullptr, ASR::storage_typeType::Default, var_type, ASRUtils::get_struct_sym_from_struct_expr(value), ASR::abiType::Source,
-        ASR::accessType::Public, ASR::presenceType::Required, false));
-    scope->add_symbol(var_name, temporary_variable);
-
-    return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
-}
 /**
  * 1) AssumedLength strings cannot be used as temporaries, hence use to DeferredLength
  * 2) Any DeferredLength string must be allocatable. 
  */
 inline ASR::ttype_t* normalize_string_temporary_type(
-    Allocator& al, const Location& loc, ASR::ttype_t* var_type) {
+    Allocator& al, const Location& loc, ASR::ttype_t* var_type,
+    bool capture_length=false) {
     if (!ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(var_type))) {
         return var_type;
     }
     
     ASR::ttype_t* type_duplicated = ASRUtils::duplicate_type(al, var_type);
     ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(type_duplicated));
-    if (str_type->m_len_kind == ASR::string_length_kindType::AssumedLength) {
+    // A scalar value's runtime length belongs to this evaluation, not to the
+    // declaration of the temporary (e.g. when its length changes in a loop).
+    bool runtime_length = capture_length &&
+        !ASRUtils::is_pointer(type_duplicated) &&
+        str_type->m_len_kind == ASR::string_length_kindType::ExpressionLength &&
+        !ASRUtils::is_value_constant(ASRUtils::expr_value(str_type->m_len));
+    if (str_type->m_len_kind == ASR::string_length_kindType::AssumedLength ||
+            runtime_length) {
         str_type->m_len = nullptr;
         str_type->m_len_kind = ASR::string_length_kindType::DeferredLength;
     }
@@ -244,6 +219,27 @@ inline ASR::ttype_t* normalize_string_temporary_type(
             ASRUtils::make_Allocatable_t_util(al, loc, type_duplicated));
     }
     return type_duplicated;
+}
+
+ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
+    ASR::expr_t* value, SymbolTable* scope, std::string name_hint, bool is_pointer_required) {
+    ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+    if (is_pointer_required && !ASRUtils::is_pointer(value_type)) {
+        value_type = ASRUtils::TYPE(ASR::make_Pointer_t(
+            al, value->base.loc, value_type));
+    }
+    LCOMPILERS_ASSERT(!ASRUtils::is_array(value_type));
+
+    ASR::ttype_t* var_type = normalize_string_temporary_type(al,
+        value->base.loc, ASRUtils::duplicate_type(al, value_type), true);
+    std::string var_name = PassUtils::temporary_name(scope, name_hint);
+    ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+        al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
+        nullptr, nullptr, ASR::storage_typeType::Default, var_type, ASRUtils::get_struct_sym_from_struct_expr(value), ASR::abiType::Source,
+        ASR::accessType::Public, ASR::presenceType::Required, false));
+    scope->add_symbol(var_name, temporary_variable);
+
+    return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
 }
 
 ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
@@ -3332,9 +3328,27 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
+        ASR::expr_t** current_expr_copy = current_expr;
         for (size_t i=0; i<x->n_args; i++) {
             current_expr = &(x->m_args[i]);
             replace_expr(*current_expr);
+        }
+        current_expr = current_expr_copy;
+        // Statement-only intrinsics have no result to materialize.
+        if (x->m_type != nullptr && !ASRUtils::is_array(x->m_type) &&
+                ASRUtils::is_character(*x->m_type) &&
+                is_evaluated_once(&x->base)) {
+            ASR::String_t* string_type = ASRUtils::get_string_type(&x->base);
+            if (string_type->m_len == nullptr ||
+                    !ASRUtils::is_value_constant(
+                        ASRUtils::expr_value(string_type->m_len))) {
+                // Intrinsic lowering can use a string operand both as a
+                // value and to compute its length. Preserve this occurrence
+                // before those uses become separate expression trees.
+                force_replace_current_expr_for_scalar(current_expr,
+                    "_string_operand_", al, current_body, current_scope,
+                    exprs_with_target);
+            }
         }
     }
 
@@ -3496,73 +3510,48 @@ class ReplaceExprWithTemporaryVisitor:
     }
 
     void visit_WhileLoop(const ASR::WhileLoop_t &x) {
-        ASRUtils::ExprStmtDuplicator duplicator(al);
-        ASR::expr_t* test_copy_check = duplicator.duplicate_expr(x.m_test);
-        
         Vec<ASR::stmt_t*>* const parent_body = current_body;
         Vec<ASR::stmt_t*> check_stmts; check_stmts.reserve(al, 0);
         current_body = &check_stmts;
-        
-        ASR::expr_t** current_expr_copy_original = current_expr;
-        current_expr = &test_copy_check;
+
+        ASR::expr_t** current_expr_copy = current_expr;
+        current_expr = const_cast<ASR::expr_t**>(&x.m_test);
         call_replacer();
-        current_expr = current_expr_copy_original;
-        
+        current_expr = current_expr_copy;
+        current_body = parent_body;
+
+        ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_WhileLoop(x);
         if (check_stmts.empty()) {
-            current_body = parent_body;
-            ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_WhileLoop(x);
             return;
         }
-        
-        // Create condition variable 'c' with the condition's own logical type
-        ASR::ttype_t* logical_type = ASRUtils::type_get_past_allocatable_pointer(
-            ASRUtils::expr_type(x.m_test));
-        char* c_name = s2c(al, current_scope->get_unique_name("_while_cond"));
-        ASR::symbol_t* c_sym = (ASR::symbol_t*)ASR::make_Variable_t(al, x.base.base.loc, 
-                current_scope, c_name, 
-                nullptr, 0, ASR::intentType::Local, nullptr, nullptr, 
-                ASR::storage_typeType::Default, logical_type, nullptr, 
-                ASR::abiType::Source, ASR::accessType::Public, 
-                ASR::presenceType::Required, false, false, false, nullptr, false, false,
-                ASR::pass_attrType::NotMethod, nullptr, nullptr, 0);
-        current_scope->add_symbol(std::string(c_name), c_sym);
-        ASR::expr_t* c_var = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, ASRUtils::symbol_get_past_external(c_sym)));
 
-        current_body = parent_body;
-        for(size_t i=0; i<check_stmts.size(); i++) {
-            current_body->push_back(al, check_stmts[i]);
+        // Evaluate condition temporaries at the loop head, including after
+        // CYCLE, rather than only before the loop and at the end of its body.
+        ASRUtils::ASRBuilder builder(al, x.base.base.loc);
+        Vec<ASR::stmt_t*> exit_body;
+        exit_body.reserve(al, x.n_orelse + 1);
+        for (size_t i = 0; i < x.n_orelse; i++) {
+            exit_body.push_back(al, x.m_orelse[i]);
         }
-        current_body->push_back(al, ASRUtils::STMT(make_Assignment_t_util(al, x.base.base.loc, c_var, test_copy_check, nullptr, exprs_with_target)));
-        
-        ASR::expr_t* original_test_base = duplicator.duplicate_expr(x.m_test);
-        
-        const_cast<ASR::WhileLoop_t&>(x).m_test = c_var;
-        
-        ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_WhileLoop(x);
-        
-        Vec<ASR::stmt_t*> update_stmts; update_stmts.reserve(al, 0);
-        current_body = &update_stmts;
-        
-        ASR::expr_t* test_copy_inner = original_test_base;
-        current_expr = &test_copy_inner;
-        call_replacer();
-        current_expr = current_expr_copy_original;
-        
-        update_stmts.push_back(al, ASRUtils::STMT(make_Assignment_t_util(al, x.base.base.loc, c_var, test_copy_inner, nullptr, exprs_with_target)));
-        
-        Vec<ASR::stmt_t*> new_body_vec;
-        new_body_vec.reserve(al, x.n_body + update_stmts.size());
-        for(size_t i=0; i<x.n_body; i++) {
-            new_body_vec.push_back(al, x.m_body[i]);
+        exit_body.push_back(al, ASRUtils::STMT(ASR::make_Exit_t(
+            al, x.base.base.loc, x.m_name)));
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, check_stmts.size() + 1 + x.n_body);
+        for (size_t i = 0; i < check_stmts.size(); i++) {
+            body.push_back(al, check_stmts[i]);
         }
-        for(size_t i=0; i<update_stmts.size(); i++) {
-            new_body_vec.push_back(al, update_stmts[i]);
+        body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al,
+            x.base.base.loc, nullptr, builder.Not(x.m_test),
+            exit_body.p, exit_body.size(), nullptr, 0)));
+        for (size_t i = 0; i < x.n_body; i++) {
+            body.push_back(al, x.m_body[i]);
         }
-        
-        const_cast<ASR::WhileLoop_t&>(x).m_body = new_body_vec.p;
-        const_cast<ASR::WhileLoop_t&>(x).n_body = new_body_vec.size();
-
-        current_body = parent_body;
+        ASR::WhileLoop_t& xx = const_cast<ASR::WhileLoop_t&>(x);
+        xx.m_test = builder.logical_true();
+        xx.m_body = body.p;
+        xx.n_body = body.size();
+        xx.m_orelse = nullptr;
+        xx.n_orelse = 0;
     }
 
     void visit_Where(const ASR::Where_t &x) {
