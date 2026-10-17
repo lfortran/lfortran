@@ -48,7 +48,8 @@ print *, s%p                ! integer, pointer :: p(:)
 becomes
 
 ```fortran
-if (.not. is_contiguous(s%p)) then
+c = is_contiguous(s%p)
+if (.not. c) then
     allocate(t(lbound(s%p, 1):ubound(s%p, 1)))
     do i = lbound(t, 1), ubound(t, 1)
         t(i) = s%p(i)
@@ -58,7 +59,7 @@ else
 end if
 print *, ArrayPhysicalCast(t, DescriptorArray -> PointerArray,
                            integer :: (lbound(t, 1), size(t, 1)))
-if (is_contiguous(s%p)) then
+if (c) then
     nullify(t)
 else
     deallocate(t)
@@ -252,14 +253,19 @@ public:
         ASR::stmt_t *deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
             al, loc, vars.p, vars.size()));
         if (ASR::is_a<ASR::Var_t>(*e) || ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
-            auto is_contiguous = [&]() {
-                return ASRUtils::EXPR(ASR::make_ArrayIsContiguous_t(al, loc, e,
-                    ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
-            };
-            current_body->push_back(al, b.If(b.Not(is_contiguous()), copy, {
+            // The release is chosen by the same test as the acquisition,
+            // even if the statement re-associates `e`.
+            ASR::ttype_t *logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
+            ASR::expr_t *is_contiguous = b.Variable(current_scope,
+                PassUtils::temporary_name(current_scope, "string_format_arg_contiguous"),
+                logical_type, ASR::intentType::Local);
+            current_body->push_back(al, b.Assignment(is_contiguous,
+                ASRUtils::EXPR(ASR::make_ArrayIsContiguous_t(al, loc, e,
+                    logical_type, nullptr))));
+            current_body->push_back(al, b.If(b.Not(is_contiguous), copy, {
                 ASRUtils::STMT(ASR::make_Associate_t(al, loc, temporary, e))
             }));
-            body_after_curr_stmt->push_back(al, b.If(is_contiguous(), {
+            body_after_curr_stmt->push_back(al, b.If(is_contiguous, {
                 ASRUtils::STMT(ASR::make_Nullify_t(al, loc, vars.p, vars.size()))
             }, {deallocate}));
         } else {
