@@ -1315,18 +1315,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     std::string var_name = current_scope->get_unique_name(
                         "__libasr_created__subroutine_from_function_");
                     ASR::symbol_t* struct_sym = nullptr;
-                    if (type_to_class_mismatch) {
-                        struct_sym = ASRUtils::get_struct_sym_from_struct_expr(value);
-                        if (struct_sym == nullptr &&
-                            ASR::is_a<ASR::Function_t>(*func_sym)) {
-                            ASR::Function_t* func_local =
-                                ASR::down_cast<ASR::Function_t>(func_sym);
-                            if (func_local->n_args > 0) {
-                                struct_sym = ASRUtils::get_struct_sym_from_struct_expr(
-                                    func_local->m_args[func_local->n_args - 1]);
-                            }
-                        }
-                    } else if (finalizable_allocatable_result) {
+                    if (type_to_class_mismatch || finalizable_allocatable_result) {
                         struct_sym = result_struct_sym(value);
                     } else {
                         struct_sym = ASRUtils::get_struct_sym_from_struct_expr(target);

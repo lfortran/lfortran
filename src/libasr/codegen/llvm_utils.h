@@ -1089,6 +1089,21 @@ class ASRToLLVMVisitor;
         :   llvm_utils_(llvm_utils), builder_(builder), al_(al), asr_to_llvm_visitor_(asr_to_llvm_visitor),
             llvm_symtab_fn_(llvm_symtab_fn){}
 
+        /// The parent type of `struct_sym`, or nullptr if it has none.
+        static ASR::Struct_t* get_parent_struct(ASR::Struct_t* const struct_sym) {
+            if (struct_sym->m_parent == nullptr) return nullptr;
+            return ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(struct_sym->m_parent));
+        }
+
+        /// Whether `struct_sym` or one of its ancestors has a final subroutine.
+        static bool chain_has_final_procedure(ASR::Struct_t* struct_sym) {
+            for (; struct_sym != nullptr; struct_sym = get_parent_struct(struct_sym)) {
+                if (struct_sym->n_member_functions > 0) return true;
+            }
+            return false;
+        }
+
     private:
 
 
@@ -1273,21 +1288,6 @@ class ASRToLLVMVisitor;
             } else {
                 call_final_per_element(final_fn, ptr, type, struct_sym);
             }
-        }
-
-        /// The parent type of `struct_sym`, or nullptr if it has none.
-        static ASR::Struct_t* get_parent_struct(ASR::Struct_t* const struct_sym) {
-            if (struct_sym->m_parent == nullptr) return nullptr;
-            return ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::symbol_get_past_external(struct_sym->m_parent));
-        }
-
-        /// Whether `struct_sym` or one of its ancestors has a final subroutine.
-        static bool chain_has_final_procedure(ASR::Struct_t* struct_sym) {
-            for (; struct_sym != nullptr; struct_sym = get_parent_struct(struct_sym)) {
-                if (struct_sym->n_member_functions > 0) return true;
-            }
-            return false;
         }
 
         /**
@@ -3362,10 +3362,6 @@ class ASRToLLVMVisitor;
              * NOTICE : It doesn't handle arrays
             */
             void call_struct_finalize_fn(llvm::Value* ptr, ASR::ttype_t* ty, ASR::Struct_t* struct_sym);
-
-            // Whether `struct_sym`, or a type it extends, has a final
-            // subroutine, so that call_struct_finalize_fn calls one.
-            static bool has_final_subroutine(ASR::Struct_t* struct_sym);
     };
 
     class LLVMTuple {

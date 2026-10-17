@@ -10483,7 +10483,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         llvm::Value *dst = builder->CreateBitCast(argsVec[1], struct_type->getPointerTo());
         // A destination that has just been allocated is defined by the copy,
         // and not finalized (F2018 7.5.6.3 p1).
-        if (has_final_subroutine(ASR::down_cast<ASR::Struct_t>(struct_sym))) {
+        if (LLVMFinalize::chain_has_final_procedure(ASR::down_cast<ASR::Struct_t>(struct_sym))) {
             llvm_utils->create_if_else(argsVec[2], [&]() {
                 call_struct_finalize_fn(dst, ASRUtils::symbol_type(struct_sym),
                     ASR::down_cast<ASR::Struct_t>(struct_sym));
@@ -11438,26 +11438,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         }
 
     }
-    bool LLVMStruct::has_final_subroutine(ASR::Struct_t* struct_sym) {
-        for (ASR::Struct_t* st = struct_sym; st != nullptr;
-                st = st->m_parent == nullptr ? nullptr : ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(st->m_parent))) {
-            if (st->n_member_functions > 0) return true;
-        }
-        return false;
-    }
-
     void LLVMStruct::call_struct_finalize_fn(llvm::Value* ptr, ASR::ttype_t* ty, ASR::Struct_t* struct_sym) {
         if( ASRUtils::is_pointer(ty) ) return; // Final fn never invoked on pointers
-        auto chain_has_final = [](ASR::Struct_t* st) {
-            for (; st != nullptr; st = st->m_parent == nullptr ? nullptr
-                    : ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(st->m_parent))) {
-                if (st->n_member_functions > 0) return true;
-            }
-            return false;
-        };
-        if (!chain_has_final(struct_sym)) return;
+        if (!LLVMFinalize::chain_has_final_procedure(struct_sym)) return;
         llvm_utils->validate_llvm_SSA(
             llvm_utils->get_type_from_ttype_t_util(ty, &struct_sym->base, llvm_utils->module)->getPointerTo(),
             ptr);
@@ -11472,7 +11455,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         // F2018 7.5.6.2: the final subroutine of the type is called, and then
         // the parent component is finalized as an entity of the parent type,
         // which calls the final subroutine of that type, and so on up.
-        while (chain_has_final(struct_sym)) {
+        while (LLVMFinalize::chain_has_final_procedure(struct_sym)) {
             finalizer_instnace.call_scalar_final_procedure(struct_ptr, struct_sym);
             if (struct_sym->m_parent == nullptr) break;
             struct_ptr = llvm_utils->create_gep2(

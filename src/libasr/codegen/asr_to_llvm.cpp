@@ -14544,7 +14544,7 @@ public:
                     llvm::ConstantInt* is_new_constant =
                         llvm::dyn_cast<llvm::ConstantInt>(target_is_new);
                     if ((is_new_constant == nullptr || !is_new_constant->isOne()) &&
-                            LLVMStruct::has_final_subroutine(target_struct_sym)) {
+                            LLVMFinalize::chain_has_final_procedure(target_struct_sym)) {
                         llvm::Value* finalized_target = target_struct;
                         llvm_utils->create_if_else(builder->CreateNot(target_is_new), [&]() {
                             struct_api->call_struct_finalize_fn(finalized_target, deepcopy_type,
