@@ -9677,11 +9677,17 @@ public:
                 if (assgnd_target.count(sym)) {
                     target_attr = true;
                 }
+                // A procedure declaration statement without an interface,
+                // `procedure() :: f`, gives no type: a type declaration
+                // statement may give the type of `f`, before or after it.
+                bool declares_type = !(sym_type->m_type == AST::decl_typeType::TypeProcedure
+                    && sym_type->m_name == nullptr && sym_type->m_attr == nullptr);
                 if (current_scope->get_symbol(sym) !=
                         nullptr) {
                     if (current_scope->parent != nullptr && !is_external) {
-                        bool is_explicitly_typed = explicitly_typed_variables.find(
-                            current_scope->get_symbol(sym)) != explicitly_typed_variables.end();
+                        bool is_explicitly_typed = declares_type
+                            && explicitly_typed_variables.find(
+                                current_scope->get_symbol(sym)) != explicitly_typed_variables.end();
                         if ( !is_explicitly_typed && compiler_options.implicit_typing && implicit_dictionary[std::string(1, sym[0])]!=nullptr ) {
                             // sym is implicitly declared
                             is_implicitly_declared = true;
@@ -10505,7 +10511,9 @@ public:
                 }
 
                 if (variable_added_to_symtab) {
-                    explicitly_typed_variables.insert(&variable_added_to_symtab->base);
+                    if (declares_type) {
+                        explicitly_typed_variables.insert(&variable_added_to_symtab->base);
+                    }
                     if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(variable_added_to_symtab->m_type)) 
                         || ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(variable_added_to_symtab->m_type))) {
                         current_struct_type_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
