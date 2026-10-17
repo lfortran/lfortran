@@ -77,7 +77,7 @@ int mem_debugger_EQUAL(void *a, void *b){
 
 DEFINE_HASHTABLE_FOR_TYPES(void*, Alloc_info, mem_debugger)
 
-static mem_debugger mem_dbg_hashTable = {NULL, 0, 0};
+static mem_debugger mem_dbg_hashTable = {NULL, 0, 0, 0};
 
 // Create `Alloc_info` and map to the ptr
 static void register_ptr(void* const ptr, size_t size){
