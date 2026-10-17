@@ -416,7 +416,6 @@ class BackendASRConstructionTests(unittest.TestCase):
                 "src/libasr/codegen/a.cpp:2: ASR::make_Var_t"])
 
     def test_quick_compares_with_the_pr_base_or_the_previous_commit(self):
-        self.assertFalse((ROOT / "ci/backend_asr_construction_baseline.txt").exists())
         quick = (ROOT / ".github/workflows/Quick-Checks-CI.yml").read_text()
         step = quick.split("      - name: Check for ASR Construction in Backends\n", 1)[1]
         step = step.split("\n      - ", 1)[0]

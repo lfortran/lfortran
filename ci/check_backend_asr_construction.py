@@ -25,7 +25,10 @@ literals (including raw strings) are skipped; C++14 digit separators and //
 comments continued with a trailing backslash are handled. Known limitations:
 macros that construct nodes (such as make_ConstantWithType in asr_builder.h,
 unused in codegen) and indirect helpers (such as ASRUtils::duplicate_type or
-ASRBuilder) are not counted, and calls in #if 0 blocks are counted.
+ASRBuilder) are not counted, and calls in #if 0 blocks are counted. The
+count is per file, so replacing a removed site with a new one in the same
+file, using-declarations or namespace aliases for the makers, and files
+with other suffixes than .cpp and .h are not caught either.
 """
 
 import argparse

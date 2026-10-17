@@ -322,7 +322,10 @@ only once, redirect to a log file and then examine the log file.
   any other helper that builds nodes in `src/libasr/codegen/`.
   `ci/check_backend_asr_construction.py` (run by Quick checks) fails if any
   file there has more such calls than at the base commit (by default the
-  merge base with `origin/main`), so legacy sites can only be removed.
+  merge base with `origin/main`). It is a textual count per file, a guard
+  rather than a proof: swapping a removed site for a new one in the same
+  file, or building nodes through macros or indirect helpers, is not
+  caught, so reviewers still check new backend code.
 - libasr is frontend-independent. Never reference `_lfortran` or any
   frontend-specific names in libasr code. Use enums or structured types,
   not string comparisons.
