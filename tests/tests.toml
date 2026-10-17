@@ -5056,12 +5056,10 @@ asr_implicit_typing = true
 
 [[test]]
 filename = "errors/implicit_typing5.f90"
-asr = true
 asr_implicit_typing = true
 
 [[test]]
 filename = "errors/implicit_typing6.f90"
-asr = true
 asr_implicit_typing = true
 
 [[test]]
