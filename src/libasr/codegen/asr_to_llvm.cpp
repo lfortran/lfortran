@@ -173,6 +173,41 @@ static std::string compute_llvm_function_name(
     return fn_name;
 }
 
+// The name of an array physical type, for internal compiler error messages.
+static std::string array_physical_type_name(ASR::array_physical_typeType t) {
+    switch (t) {
+        case ASR::array_physical_typeType::DescriptorArray:
+            return "DescriptorArray";
+        case ASR::array_physical_typeType::PointerArray:
+            return "PointerArray";
+        case ASR::array_physical_typeType::UnboundedPointerArray:
+            return "UnboundedPointerArray";
+        case ASR::array_physical_typeType::FixedSizeArray:
+            return "FixedSizeArray";
+        case ASR::array_physical_typeType::StringArraySinglePointer:
+            return "StringArraySinglePointer";
+        case ASR::array_physical_typeType::NumPyArray:
+            return "NumPyArray";
+        case ASR::array_physical_typeType::ISODescriptorArray:
+            return "ISODescriptorArray";
+        case ASR::array_physical_typeType::SIMDArray:
+            return "SIMDArray";
+        case ASR::array_physical_typeType::AssumedRankArray:
+            return "AssumedRankArray";
+    }
+    return "unknown array physical type " + std::to_string(static_cast<int>(t));
+}
+
+// The internal error for an array physical cast that the LLVM backend cannot
+// lower.
+static std::string unsupported_array_physical_cast_message(
+        ASR::array_physical_typeType old_type,
+        ASR::array_physical_typeType new_type) {
+    return "internal error: the LLVM backend does not support the array "
+        "physical cast from " + array_physical_type_name(old_type) + " to "
+        + array_physical_type_name(new_type);
+}
+
 // The variables an expression references, in the order it references them.
 class ReferencedVariables : public ASR::BaseWalkVisitor<ReferencedVariables> {
 public:
@@ -13215,7 +13250,10 @@ public:
 
                     builder->CreateStore(target_desc, llvm_target);
                 } else {
-                    throw CodeGenError("Unsupported ArrayPhysicalCast in Associate with class value and non-class array target");
+                    throw CodeGenError(unsupported_array_physical_cast_message(
+                        apc->m_old, apc->m_new) + " in an associate of a "
+                        "polymorphic selector with a non-polymorphic array "
+                        "target", x.m_value->base.loc);
                 }
             } else if (!is_target_class && is_value_class) {
                 llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
@@ -16277,7 +16315,8 @@ public:
                 m_arg, m_type, module.get())->getPointerTo();
             tmp = builder->CreateBitCast(tmp, target_type);
         } else {
-            LCOMPILERS_ASSERT(false);
+            throw CodeGenError(unsupported_array_physical_cast_message(
+                m_old, m_new), m_arg->base.loc);
         }
     }
 
