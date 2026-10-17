@@ -14,6 +14,9 @@ namespace LCompilers {
 
     namespace PassUtils {
 
+    // Restore casts after replacements change the physical types of shared operands.
+    void normalize_string_physical_casts(Allocator &al, ASR::TranslationUnit_t &unit);
+
     // The name of a temporary a pass creates, `__libasr_created_` followed
     // by `hint`, made unique in `scope`. The hint is often the name of the
     // symbol a call is made through, which can be an alias that is not an

@@ -1,93 +1,154 @@
-! An absent optional dummy passed on to an optional dummy of a bind(c)
-! procedure is absent there too
 module bindc_73_mod
-    use iso_c_binding, only: c_int, c_double, c_ptr, c_loc, c_associated
+    use iso_c_binding, only: c_char, c_int
     implicit none
-    type, bind(c) :: pt
-        integer(c_int) :: x, y
-    end type
+    integer :: calls = 0
 contains
-    integer(c_int) function opt_int(p) bind(c)
-        integer(c_int), intent(in), optional :: p
-        opt_int = -1
-        if (present(p)) opt_int = p
+    function get_c() result(c) bind(c)
+        character(kind=c_char) :: c
+        calls = calls + 1
+        c = 'q'
     end function
 
-    subroutine opt_double(p, r) bind(c)
-        real(c_double), intent(inout), optional :: p
-        integer(c_int), intent(out) :: r
-        r = -1
-        if (present(p)) then
-            r = int(p)
-            p = 8
-        end if
+    integer function take_c(c) result(i)
+        character, intent(in) :: c
+        i = iachar(c)
+    end function
+
+    integer(c_int) function take_value(c) result(i) bind(c)
+        character(kind=c_char), value :: c
+        i = iachar(c)
+    end function
+
+    subroutine take_string(c, expected)
+        character(*), intent(in) :: c, expected
+        if (c /= expected) error stop 1
+        if (len(c) /= len(expected)) error stop 2
     end subroutine
 
-    integer(c_int) function opt_struct(t) bind(c)
-        type(pt), intent(in), optional :: t
-        opt_struct = -1
-        if (present(t)) opt_struct = t%y
+    subroutine callback(p)
+        procedure(get_c) :: p
+        character :: c
+        c = p()
+        if (c /= 'q') error stop 3
+    end subroutine
+
+    subroutine pointer_callback(p)
+        procedure(get_c), pointer :: p
+        character :: c
+        c = p()
+        if (c /= 'q') error stop 9
+    end subroutine
+
+    function source_c() result(c)
+        character(2) :: c
+        c = 'rs'
     end function
 
-    integer(c_int) function opt_cptr(p) bind(c)
-        type(c_ptr), optional :: p
-        opt_cptr = -1
-        if (present(p)) opt_cptr = merge(1, 0, c_associated(p))
+    pure function pure_c() result(c) bind(c)
+        character(kind=c_char) :: c
+        c = 'q'
     end function
 
-    integer function fwd_int(p)
-        integer(c_int), intent(in), optional :: p
-        fwd_int = opt_int(p) + 100 * opt_int(p)
+    subroutine source_callback(p)
+        procedure(source_c) :: p
+        character(2) :: c
+        c = p()
+        if (c /= 'rs') error stop 10
+    end subroutine
+
+    function outer_c() result(c) bind(c)
+        character(kind=c_char) :: c
+        c = inner_c()
+    contains
+        function inner_c() result(c)
+            character(3) :: c
+            c = 'qrs'
+        end function
     end function
 
-    integer function fwd_double(p)
-        real(c_double), intent(inout), optional :: p
-        integer(c_int) :: r
-        call opt_double(p, r)
-        fwd_double = r
-    end function
-
-    integer function fwd_struct(t)
-        type(pt), intent(in), optional :: t
-        fwd_struct = opt_struct(t)
-    end function
-
-    integer function fwd_cptr(p)
-        type(c_ptr), optional :: p
-        fwd_cptr = opt_cptr(p)
-    end function
-
-    integer function fwd_twice(p)
-        integer(c_int), intent(in), optional :: p
-        fwd_twice = fwd_int(p)
-    end function
+    subroutine write_value(c)
+        character(kind=c_char), value :: c
+        character(4) :: buffer
+        write(buffer, *) c
+        if (trim(adjustl(buffer)) /= 'q') error stop 28
+        write(buffer, '(a)') c
+        if (buffer /= 'q   ') error stop 29
+    end subroutine
 end module
 
 program bindc_73
     use bindc_73_mod
     implicit none
-    integer(c_int), target :: z
-    real(c_double) :: d
-    type(pt) :: s
-    type(c_ptr) :: q
+    procedure(get_c), pointer :: p
+    procedure(source_c), pointer :: source_p
+    character(3) :: buffer
+    character :: c
+    character(:), allocatable :: text
 
-    if (fwd_int(7) /= 707) error stop 1
-    if (fwd_int() /= -101) error stop 2
-
-    d = 3
-    if (fwd_double(d) /= 3) error stop 3
-    if (d /= 8) error stop 4
-    if (fwd_double() /= -1) error stop 5
-
-    s = pt(1, 9)
-    if (fwd_struct(s) /= 9) error stop 6
-    if (fwd_struct() /= -1) error stop 7
-
-    q = c_loc(z)
-    if (fwd_cptr(q) /= 1) error stop 8
-    if (fwd_cptr() /= -1) error stop 9
-
-    if (fwd_twice(7) /= 707) error stop 10
-    if (fwd_twice() /= -101) error stop 11
-    print *, "ok"
+    if (take_c(get_c()) /= iachar('q')) error stop 4
+    if (take_value(get_c()) /= iachar('q')) error stop 5
+    if (outer_c() /= 'q') error stop 15
+    calls = 0
+    call take_string(get_c(), 'q')
+    if (calls /= 1) error stop 11
+    calls = 0
+    call take_string(get_c() // 'ab', 'qab')
+    if (calls /= 1) error stop 12
+    calls = 0
+    call take_string(repeat(get_c(), 3), 'qqq')
+    p => get_c
+    c = p()
+    if (c /= 'q') error stop 6
+    call callback(get_c)
+    call callback(p)
+    call pointer_callback(p)
+    source_p => source_c
+    call take_string(source_p(), 'rs')
+    call source_callback(source_c)
+    call source_callback(source_p)
+    write(buffer, '(a)') get_c()
+    if (buffer /= 'q  ') error stop 7
+    write(buffer, '(a)') p()
+    if (buffer /= 'q  ') error stop 8
+    write(buffer, '(a)') source_p()
+    if (buffer /= 'rs ') error stop 14
+    calls = 0
+    if (trim(get_c()) /= 'q') error stop 16
+    if (calls /= 1) error stop 17
+    calls = 0
+    if (adjustl(get_c()) /= 'q') error stop 18
+    if (calls /= 1) error stop 19
+    calls = 0
+    if (adjustr(p()) /= 'q') error stop 20
+    if (calls /= 1) error stop 21
+    text = trim(p())
+    if (text /= 'q' .or. len(text) /= 1) error stop 22
+    if (len_trim(get_c()) /= 1) error stop 23
+    if (index('aqz', get_c()) /= 2) error stop 24
+    calls = 0
+    write(buffer, *) get_c()
+    if (trim(adjustl(buffer)) /= 'q') error stop 25
+    if (calls /= 1) error stop 30
+    write(buffer, *) p()
+    if (trim(adjustl(buffer)) /= 'q') error stop 26
+    if (calls /= 2) error stop 31
+    calls = 0
+    if (trim(adjustl(get_c())) /= 'q') error stop 32
+    if (calls /= 1) error stop 33
+    calls = 0
+    if (trim(adjustr(p())) /= 'q') error stop 34
+    if (calls /= 1) error stop 35
+    if (trim(adjustl(pure_c())) /= 'q') error stop 36
+    if (trim(adjustr(pure_c())) /= 'q') error stop 37
+    calls = 0
+    call take_string(trim(adjustl(get_c())), 'q')
+    if (calls /= 1) error stop 38
+    calls = 0
+    text = trim(adjustr(get_c()))
+    if (text /= 'q' .or. len(text) /= 1) error stop 39
+    if (calls /= 1) error stop 40
+    write(buffer, *) source_p()
+    if (trim(adjustl(buffer)) /= 'rs') error stop 27
+    call write_value('q')
+    print *, get_c(), p(), source_p()
 end program
