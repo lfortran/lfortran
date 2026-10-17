@@ -234,8 +234,25 @@ set(LFORTRAN_GPU_RUNTIME_SOURCES
 
 # The driver compiles these sources when linking GPU programs. Keep the
 # build-tree and installed layouts consistent with its runtime lookup path.
-file(COPY ${LFORTRAN_GPU_RUNTIME_SOURCES}
-    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/runtime)
+if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
+    set(LFORTRAN_GPU_RUNTIME_COPIES)
+    foreach(source IN LISTS LFORTRAN_GPU_RUNTIME_SOURCES)
+        get_filename_component(name "${source}" NAME)
+        set(destination "${CMAKE_CURRENT_BINARY_DIR}/runtime/${name}")
+        add_custom_command(
+            OUTPUT "${destination}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+                "${CMAKE_CURRENT_BINARY_DIR}/runtime"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${source}" "${destination}"
+            DEPENDS "${source}"
+            VERBATIM)
+        list(APPEND LFORTRAN_GPU_RUNTIME_COPIES "${destination}")
+    endforeach()
+    add_custom_target(asr_gpu_runtime_sources ALL
+        DEPENDS ${LFORTRAN_GPU_RUNTIME_COPIES})
+    add_dependencies(asr asr_gpu_runtime_sources)
+endif()
 
 get_filename_component(LFORTRAN_GPU_RUNTIME_INSTALL_PARENT
     "${CMAKE_INSTALL_LIBDIR}" DIRECTORY)
