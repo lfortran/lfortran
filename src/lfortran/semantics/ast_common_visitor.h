@@ -2271,9 +2271,10 @@ public:
     // Current procedure arguments. Only non-empty for SymbolTableVisitor,
     // empty for BodyVisitor.
     std::vector<std::string> current_procedure_args;
-    // The name of the result variable of the current function, like
-    // current_procedure_args
+    // The result name and its declaring function scope are available before
+    // the function's ASR owner and return variable have been constructed.
     std::string current_procedure_result;
+    SymbolTable *current_procedure_result_scope = nullptr;
     std::vector<std::string> excluded_from_symtab;
     int64_t current_symbol;
     ASR::abiType current_procedure_abi_type = ASR::abiType::Source;
@@ -3266,7 +3267,8 @@ public:
     }
 
     bool is_procedure_result(const char* name) {
-        return name != nullptr && !current_procedure_result.empty()
+        return current_scope == current_procedure_result_scope
+            && name != nullptr && !current_procedure_result.empty()
             && to_lower(name) == current_procedure_result;
     }
 
@@ -9732,20 +9734,8 @@ public:
                 } else {
                     s_intent = ASRUtils::intent_local;
                 }
-                ASR::abiType s_abi = is_argument ? current_procedure_abi_type : ASR::abiType::Source;
-                // Return variables of bind(C) functions should also
-                // use the function's ABI for proper type mapping
-                if (!is_argument && current_scope->asr_owner &&
-                    ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
-                    ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
-                        current_scope->asr_owner);
-                    if (ASR::is_a<ASR::Function_t>(*owner)) {
-                        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(owner);
-                        if (to_lower(s.m_name) == to_lower(fn->m_name)) {
-                            s_abi = current_procedure_abi_type;
-                        }
-                    }
-                }
+                ASR::abiType s_abi = (is_argument || is_procedure_result(s.m_name))
+                    ? current_procedure_abi_type : ASR::abiType::Source;
                 Vec<ASR::dimension_t> dims;
                 dims.reserve(al, 0);
                 // location for dimension(...) if present
@@ -13366,10 +13356,16 @@ public:
                                 }));
                             throw SemanticAbort();
                         }
-                        diag.add(Diagnostic(
-                            "Character dummy argument `" + sym +
-                            "` must be of constant length of one or assumed length, "
-                            "unless it has assumed shape or assumed rank in a BIND(C) procedure",
+                        std::string message;
+                        if (is_procedure_result(sym.c_str())) {
+                            message = "character function result `" + sym +
+                                "` must have constant length one in a BIND(C) procedure";
+                        } else {
+                            message = "Character dummy argument `" + sym +
+                                "` must be of constant length of one or assumed length, "
+                                "unless it has assumed shape or assumed rank in a BIND(C) procedure";
+                        }
+                        diag.add(Diagnostic(message,
                             Level::Error, Stage::Semantic, {
                                 Label("", {loc})
                             }));
@@ -18247,13 +18243,16 @@ public:
                     ASR::ttype_t* tmp_type = ret_type;
                     if (ASR::is_a<ASR::String_t>(*ret_type)) {
                         ASR::String_t* ret_str = ASR::down_cast<ASR::String_t>(ret_type);
+                        tmp_type = ASRUtils::duplicate_type(al, ret_type);
+                        ASR::down_cast<ASR::String_t>(tmp_type)->m_physical_type =
+                            ASR::string_physical_typeType::DescriptorString;
                         if (ret_str->m_len != nullptr &&
                                 !ASRUtils::is_value_constant(ret_str->m_len)) {
                             ASR::ttype_t* deferred_str_type = ASRUtils::TYPE(
                                 ASR::make_String_t(al, val->base.loc,
                                     ret_str->m_kind, nullptr,
                                     ASR::string_length_kindType::DeferredLength,
-                                    ret_str->m_physical_type));
+                                    ASR::string_physical_typeType::DescriptorString));
                             tmp_type = ASRUtils::TYPE(
                                 ASRUtils::make_Allocatable_t_util(al,
                                     val->base.loc, deferred_str_type));
@@ -27638,18 +27637,7 @@ public:
     AST::AttrType_t* type, AST::var_sym_t* var_sym, std::string& sym, ASR::String_t* str, bool is_argument, ASR::abiType abi, bool is_array) {
         // Handle kind: set CChar for bind(C) character(c_char) arguments
         // and return variables
-        bool is_return_var = false;
-        if (!is_argument && current_scope->asr_owner &&
-            ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
-            ASR::symbol_t* owner = ASR::down_cast<ASR::symbol_t>(
-                current_scope->asr_owner);
-            if (ASR::is_a<ASR::Function_t>(*owner)) {
-                ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(owner);
-                if (sym == to_lower(fn->m_name)) {
-                    is_return_var = true;
-                }
-            }
-        }
+        bool is_return_var = !is_argument && is_procedure_result(sym.c_str());
         if (kind_item && kind_item->m_value) {
             if (is_iso_c_binding_c_char(kind_item->m_value)) {
                 if ((is_argument || is_return_var) && abi == ASR::BindC) {
