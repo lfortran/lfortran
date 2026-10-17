@@ -860,7 +860,7 @@ public:
             ASR::make_Struct_t(al, loc, symtab, s2c(al, image_name), nullptr,
                 nullptr, 0, names.p, names.n, nullptr, 0,
                 ASR::abiType::Source, ASR::accessType::Public, false, false,
-                false, nullptr, 0, nullptr, nullptr, nullptr, 0));
+                false, nullptr, 0, nullptr, nullptr, nullptr, 0, nullptr, 0, nullptr, 0));
         ASR::down_cast<ASR::Struct_t>(sym)->m_struct_signature =
             ASRUtils::make_StructType_t_util(al, loc, sym, true);
         global->add_symbol(image_name, sym);

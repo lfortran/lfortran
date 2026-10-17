@@ -549,6 +549,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 ),
                             dependency_node_t:
                                 (Struct
@@ -700,6 +702,8 @@
                                     []
                                     ()
                                     7 dependency_config_t
+                                    []
+                                    []
                                     []
                                 ),
                             dependency_tree_t:
@@ -983,6 +987,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 ),
                             error_t:
                                 (Struct
@@ -1038,6 +1044,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 ),
                             package_config_t:
                                 (Struct
@@ -1092,6 +1100,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    []
                                     []
                                 ),
                             update_dependency:
@@ -1650,6 +1660,8 @@
                                     []
                                     ()
                                     ()
+                                    []
+                                    []
                                     []
                                 )
                         })

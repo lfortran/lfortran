@@ -6902,7 +6902,7 @@ static inline ASR::symbol_t* import_struct_type(Allocator& al, ASR::symbol_t* st
             upt_symtab, s2c(al, struct_name), nullptr, nullptr, 0,
             nullptr, 0, nullptr, 0, ASR::abiType::Source,
             ASR::accessType::Public, false, true, false, nullptr, 0,
-            nullptr, nullptr, nullptr, 0);
+            nullptr, nullptr, nullptr, 0, nullptr, 0, nullptr, 0);
         ASR::symbol_t* new_sym = ASR::down_cast<ASR::symbol_t>(dtype);
         ASR::ttype_t* sig = ASRUtils::make_StructType_t_util(
             al, struct_sym->base.loc, new_sym, false);
@@ -7916,7 +7916,9 @@ class SymbolDuplicator {
             struct_type_t->m_is_sequence,
             struct_type_t->m_initializers, struct_type_t->n_initializers, struct_type_t->m_alignment,
             struct_type_t->m_parent,
-            struct_type_t->m_kind_params, struct_type_t->n_kind_params));
+            struct_type_t->m_kind_params, struct_type_t->n_kind_params,
+            struct_type_t->m_type_params, struct_type_t->n_type_params,
+            struct_type_t->m_len_dependent_members, struct_type_t->n_len_dependent_members));
     }
     ASR::symbol_t* duplicate_GenericProcedure(ASR::GenericProcedure_t* genericProcedure, SymbolTable* destination_symtab){
         return ASR::down_cast<ASR::symbol_t>(ASR::make_GenericProcedure_t(
@@ -8837,6 +8839,81 @@ static inline bool is_allocatable(ASR::expr_t* expr) {
 
 static inline bool is_allocatable(ASR::ttype_t* type) {
     return ASR::is_a<ASR::Allocatable_t>(*type);
+}
+
+// A type parameter of a parameterized derived type is listed in
+// `Struct::m_type_params`. A KIND type parameter is a named constant of the
+// type, while a LEN type parameter is an integer component that every
+// object of the type stores.
+static inline bool is_len_type_param(const ASR::Struct_t* st,
+        const std::string& name) {
+    for (size_t i = 0; i < st->n_type_params; i++) {
+        if (name == st->m_type_params[i]) {
+            ASR::symbol_t* sym = st->m_symtab->get_symbol(name);
+            return sym != nullptr && ASR::is_a<ASR::Variable_t>(*sym)
+                && ASR::down_cast<ASR::Variable_t>(sym)->m_storage
+                    != ASR::storage_typeType::Parameter;
+        }
+    }
+    return false;
+}
+
+static inline bool struct_has_len_params(const ASR::Struct_t* st) {
+    for (size_t i = 0; i < st->n_type_params; i++) {
+        if (is_len_type_param(st, st->m_type_params[i])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// A component whose bounds or length depend on a LEN type parameter is
+// allocated when an object is created and stays allocated, with the same
+// bounds and length, until the object ceases to exist.
+static inline bool is_len_dependent_member(const ASR::Struct_t* st,
+        const std::string& name) {
+    for (size_t i = 0; i < st->n_len_dependent_members; i++) {
+        if (name == st->m_len_dependent_members[i]) {
+            return true;
+        }
+    }
+    return false;
+}
+
+// The derived type that declares the component that `expr` (`x%c`) refers
+// to, or nullptr if `expr` is not a component reference. `name` is set to
+// the name of the component.
+static inline ASR::Struct_t* get_component_struct(ASR::expr_t* expr,
+        std::string& name) {
+    if (!ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+        return nullptr;
+    }
+    ASR::symbol_t* member = symbol_get_past_external(
+        ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
+    ASR::symbol_t* owner = get_asr_owner(member);
+    if (owner == nullptr || !ASR::is_a<ASR::Struct_t>(*owner)) {
+        return nullptr;
+    }
+    name = symbol_name(member);
+    return ASR::down_cast<ASR::Struct_t>(owner);
+}
+
+// Whether `expr` is a component whose bounds or length depend on a LEN type
+// parameter. It is stored as allocatable, but it is not allocatable in the
+// program: it cannot be allocated, deallocated, inquired by ALLOCATED, moved
+// by MOVE_ALLOC or associated with an allocatable dummy argument.
+static inline bool is_len_dependent_component(ASR::expr_t* expr) {
+    std::string name;
+    ASR::Struct_t* st = get_component_struct(expr, name);
+    return st != nullptr && is_len_dependent_member(st, name);
+}
+
+// Whether `expr` is a type parameter inquiry `x%n` of a LEN type parameter.
+// It is not a variable (F2023 9.4.5), so it cannot be defined.
+static inline bool is_len_type_param_inquiry(ASR::expr_t* expr) {
+    std::string name;
+    ASR::Struct_t* st = get_component_struct(expr, name);
+    return st != nullptr && is_len_type_param(st, name);
 }
 
 static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {

@@ -75,6 +75,97 @@ static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
     }
 }
 
+// A component whose bounds or length depend on a LEN type parameter is not
+// allocatable, so it cannot be associated with an allocatable dummy argument.
+// A LEN type parameter inquiry is not a variable, so it cannot be associated
+// with a dummy argument that may be redefined. A call is checked once it is
+// built, whatever way it was resolved: its actual arguments, including a
+// passed object, then correspond one to one to the dummy arguments.
+class LenTypeParamActualsChecker
+        : public ASR::BaseWalkVisitor<LenTypeParamActualsChecker> {
+public:
+    diag::Diagnostics &diag;
+
+    LenTypeParamActualsChecker(diag::Diagnostics &diag) : diag{diag} {}
+
+    // The explicit interface of the procedure that a reference to `sym`
+    // invokes, or nullptr if it has an implicit interface.
+    static ASR::Function_t* callee_interface(ASR::symbol_t* sym) {
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+            sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(sym)->m_proc);
+        } else if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            ASR::symbol_t* decl =
+                ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
+            if (decl == nullptr) {
+                return nullptr;
+            }
+            sym = ASRUtils::symbol_get_past_external(decl);
+        }
+        if (!ASR::is_a<ASR::Function_t>(*sym)) {
+            return nullptr;
+        }
+        return ASR::down_cast<ASR::Function_t>(sym);
+    }
+
+    void check(ASR::symbol_t* callee, ASR::call_arg_t* args, size_t n_args) {
+        ASR::Function_t* func = callee_interface(callee);
+        if (func == nullptr) {
+            return;
+        }
+        for (size_t i = 0; i < n_args && i < func->n_args; i++) {
+            ASR::expr_t* actual = args[i].m_value;
+            if (actual == nullptr || !ASR::is_a<ASR::Var_t>(*func->m_args[i])) {
+                continue;
+            }
+            ASR::symbol_t* dummy_sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*dummy_sym)) {
+                continue;
+            }
+            ASR::Variable_t* dummy = ASR::down_cast<ASR::Variable_t>(dummy_sym);
+            std::string name;
+            if (ASRUtils::is_allocatable(dummy->m_type)
+                    && ASRUtils::is_len_dependent_component(actual)) {
+                ASRUtils::get_component_struct(actual, name);
+                diag.add(diag::Diagnostic(
+                    "the actual argument for the allocatable dummy argument '"
+                    + std::string(dummy->m_name) + "' must be allocatable",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("the component '" + name + "' is not "
+                            "allocatable: its bounds or length depend on a LEN "
+                            "type parameter", {actual->base.loc})}));
+                throw SemanticAbort();
+            }
+            if ((dummy->m_intent == ASR::intentType::Out
+                    || dummy->m_intent == ASR::intentType::InOut)
+                    && ASRUtils::is_len_type_param_inquiry(actual)) {
+                ASRUtils::get_component_struct(actual, name);
+                std::string intent = dummy->m_intent == ASR::intentType::Out
+                    ? "intent(out)" : "intent(inout)";
+                diag.add(diag::Diagnostic(
+                    "the LEN type parameter '" + name + "' cannot be passed to "
+                    "the " + intent + " dummy argument '"
+                    + std::string(dummy->m_name) + "'",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {actual->base.loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        check(x.m_name, x.m_args, x.n_args);
+        ASR::BaseWalkVisitor<LenTypeParamActualsChecker>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        check(x.m_name, x.m_args, x.n_args);
+        ASR::BaseWalkVisitor<LenTypeParamActualsChecker>::visit_SubroutineCall(x);
+    }
+};
+
 class BodyVisitor : public CommonVisitor<BodyVisitor> {
 private:
 
@@ -551,6 +642,11 @@ public:
                 ASRUtils::EXPR(ASR::make_Var_t(al, variable->base.loc, variable)))));
         }
         construct_variable_pointers.clear();
+        auto& scope_data_block = data_structure[current_scope->counter];
+        for (auto it: scope_data_block) {
+            body.push_back(al, it);
+        }
+        scope_data_block.clear();
         transform_stmts(body, x.n_items, x.m_items);
         block_t->m_body = body.p;
         block_t->n_body = body.size();
@@ -568,6 +664,35 @@ public:
     //   * ImplicitDeallocate
     //   * GoToTarget
     // The `body` Vec must already be reserved
+    // Checks the calls in the statements that the last statement was
+    // transformed to (see LenTypeParamActualsChecker): `tmp`, `tmp_vec` and
+    // the statements that its visit appended to `body` directly, those after
+    // the first `n_body`. A rejected statement is dropped, so the statements
+    // that it appended and the dependencies that it added, those after the
+    // first `n_function_dependencies`, are dropped too.
+    void check_len_type_param_actuals(Vec<ASR::stmt_t*> &body, size_t n_body,
+            size_t n_function_dependencies) {
+        LenTypeParamActualsChecker checker(diag);
+        try {
+            for (size_t i = n_body; i < body.size(); i++) {
+                checker.visit_stmt(*body[i]);
+            }
+            if (tmp && ASR::is_a<ASR::stmt_t>(*tmp)) {
+                checker.visit_stmt(*ASRUtils::STMT(tmp));
+            }
+            for (auto &x : tmp_vec) {
+                if (ASR::is_a<ASR::stmt_t>(*x)) {
+                    checker.visit_stmt(*ASRUtils::STMT(x));
+                }
+            }
+        } catch (const SemanticAbort &) {
+            body.n = std::min(body.n, n_body);
+            current_function_dependencies.n = std::min(
+                current_function_dependencies.n, n_function_dependencies);
+            throw;
+        }
+    }
+
     void transform_stmts(Vec<ASR::stmt_t*> &body, size_t n_body, AST::decl_stmt_t **m_body) {
         tmp = nullptr;
         CurrentBodyScope body_scope(*this, &body, current_scope);
@@ -584,8 +709,12 @@ public:
             }
             // Visit the statement
             LCOMPILERS_ASSERT(current_body != nullptr)
+            size_t n_body_stmts = body.size();
+            size_t n_function_dependencies = current_function_dependencies.size();
             try {
                 this->visit_decl_stmt(*m_body[i]);
+                check_len_type_param_actuals(body, n_body_stmts,
+                    n_function_dependencies);
             } catch (const SemanticAbort &a) {
                 if (!compiler_options.continue_compilation) {
                     throw a;
@@ -2648,6 +2777,9 @@ public:
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
             check_io_item_not_function(expr);
+            if (_type == AST::decl_stmtType::Read) {
+                check_input_item_not_len_type_param(expr);
+            }
             // For READ: expand implied-do loops to individual elements or array section
             if (_type == AST::decl_stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
                 expand_implied_do_for_read(
@@ -2846,6 +2978,10 @@ public:
                         }
                         for (size_t j = 0; j < struct_def->n_members; j++) {
                             char *member_name = struct_def->m_members[j];
+                            // A LEN type parameter is not a component.
+                            if (ASRUtils::is_len_type_param(struct_def, member_name)) {
+                                continue;
+                            }
                             ASR::symbol_t *member_sym =
                                 struct_def->m_symtab->resolve_symbol(std::string(member_name));
 
@@ -3837,6 +3973,63 @@ public:
             }
         }
 
+    // A type-spec that names a parameterized derived type, e.g.
+    // `allocate(t(k=8, n=4) :: x)`, selects an instantiation of the type.
+    // Its LEN type parameter values are left in `last_pdt_len_spec`.
+    bool lower_pdt_allocate_type_spec(const std::string& type_name,
+            AST::fnarg_t* args, size_t n_args, AST::keyword_t* keywords,
+            size_t n_keywords, ASR::alloc_arg_t& alloc_arg, const Location& loc) {
+        ASR::symbol_t* sym = current_scope->resolve_symbol(type_name);
+        if (sym == nullptr || !ASR::is_a<ASR::Struct_t>(
+                *ASRUtils::symbol_get_past_external(sym))) {
+            return false;
+        }
+        ASR::Struct_t* pdt = ASR::down_cast<ASR::Struct_t>(
+            ASRUtils::symbol_get_past_external(sym));
+        if (pdt->n_kind_params == 0 && !ASRUtils::struct_has_len_params(pdt)) {
+            return false;
+        }
+        Vec<AST::kind_item_t> items;
+        items.reserve(al, n_args + n_keywords);
+        for (size_t i = 0; i < n_args; i++) {
+            if (args[i].m_start || args[i].m_step || args[i].m_end == nullptr) {
+                diag.add(Diagnostic(
+                    "a type parameter value in the type-spec of an allocation "
+                    "must be an expression",
+                    Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+            AST::kind_item_t item;
+            item.loc = args[i].m_end->base.loc;
+            item.m_id = nullptr;
+            item.m_value = args[i].m_end;
+            item.m_type = AST::kind_item_typeType::Value;
+            items.push_back(al, item);
+        }
+        for (size_t i = 0; i < n_keywords; i++) {
+            AST::kind_item_t item;
+            item.loc = keywords[i].loc;
+            item.m_id = keywords[i].m_arg;
+            item.m_value = keywords[i].m_value;
+            item.m_type = AST::kind_item_typeType::Value;
+            items.push_back(al, item);
+        }
+        AST::AttrType_t* type_spec = AST::down_cast<AST::AttrType_t>(
+            AST::down_cast<AST::decl_attribute_t>(AST::make_AttrType_t(al, loc,
+                AST::decl_typeType::TypeType, items.p, items.size(), nullptr,
+                nullptr, AST::symbolType::None)));
+        Vec<ASR::dimension_t> dims;
+        dims.reserve(al, 0);
+        ASR::symbol_t* type_declaration = nullptr;
+        last_pdt_len_spec = PdtLenSpec();
+        instantiate_pdt(loc, type_name, type_spec, false, false, dims,
+            type_declaration, ASR::abiType::Source, false);
+        alloc_arg.m_type = ASRUtils::make_StructType_t_util(al, loc,
+            type_declaration, true);
+        alloc_arg.m_sym_subclass = type_declaration;
+        return true;
+    }
+
     // Lowers the type-spec of a typed allocation into the type fields of
     // `alloc_arg`.
     void lower_allocate_type_spec(AST::expr_t* type_spec, ASR::alloc_arg_t& alloc_arg,
@@ -3845,6 +4038,11 @@ public:
             AST::FuncCallOrArray_t* func_call_t =
                 AST::down_cast<AST::FuncCallOrArray_t>(type_spec);
             std::string type_name = to_lower(std::string(func_call_t->m_func));
+            if( lower_pdt_allocate_type_spec(type_name, func_call_t->m_args,
+                    func_call_t->n_args, func_call_t->m_keywords,
+                    func_call_t->n_keywords, alloc_arg, loc) ) {
+                return;
+            }
             if( type_name == "character" ) {
                 if (func_call_t->n_args > 0 && func_call_t->n_args <= 2
                     && func_call_t->m_args[0].m_end) {
@@ -3921,6 +4119,9 @@ public:
             } else if( name_lower == "logical" ) {
                 alloc_arg.m_type = ASRUtils::TYPE(ASR::make_Logical_t(al,
                     loc, 4));
+            } else if (lower_pdt_allocate_type_spec(name_lower, nullptr, 0,
+                    nullptr, 0, alloc_arg, loc)) {
+                return;
             } else {
                 ASR::symbol_t *v = current_scope->resolve_symbol(name_lower);
                 if (v) {
@@ -3956,8 +4157,15 @@ public:
         type_spec_arg.m_len_expr = nullptr;
         type_spec_arg.m_type = nullptr;
         type_spec_arg.m_sym_subclass = nullptr;
+        // LEN type parameter values of a type-spec that names a parameterized
+        // derived type, for each allocation object.
+        std::vector<PdtLenSpec> len_specs(x.n_args);
+        PdtLenSpec type_spec_len;
         if( has_type_spec ) {
+            last_pdt_len_spec = PdtLenSpec();
             lower_allocate_type_spec(x.m_args[0].m_start, type_spec_arg, x.base.base.loc);
+            type_spec_len = last_pdt_len_spec;
+            last_pdt_len_spec = PdtLenSpec();
             ASR::expr_t* len_expr = type_spec_arg.m_len_expr;
             if( x.n_args > 1 && len_expr && !ASRUtils::expr_value(len_expr) &&
                     !ASR::is_a<ASR::Var_t>(*len_expr) ) {
@@ -4092,6 +4300,7 @@ public:
                     }
                 }
                 new_arg.m_sym_subclass = type_spec_arg.m_sym_subclass;
+                len_specs[i] = type_spec_len;
             } else if( plain_object ) {
                 tmp_stmt = visit_ast_alloc_expr(x.m_args[i].m_end);
 
@@ -4105,7 +4314,10 @@ public:
                 }
             } else if( x.m_args[i].m_start && !x.m_args[i].m_end && x.m_args[i].m_step ) {
                 tmp_stmt = visit_ast_alloc_expr(x.m_args[i].m_step);
+                last_pdt_len_spec = PdtLenSpec();
                 lower_allocate_type_spec(x.m_args[i].m_start, new_arg, x.base.base.loc);
+                len_specs[i] = last_pdt_len_spec;
+                last_pdt_len_spec = PdtLenSpec();
             }
             ASR::expr_t *array_stmt = tmp_stmt;
             // Assume that tmp is an `ArraySection` or `ArrayItem`
@@ -4486,6 +4698,7 @@ public:
         for (size_t i = 0; i < alloc_args_vec.n; i++) {
             ASR::expr_t* alloc_expr = alloc_args_vec.p[i].m_a;
             ASR::ttype_t* alloc_type = ASRUtils::expr_type(alloc_expr);
+            check_not_len_dependent_component(alloc_expr, "allocated");
             
             if (!ASRUtils::is_allocatable(alloc_type) && !ASRUtils::is_pointer(alloc_type)) {
                 ASR::symbol_t* sym = get_allocate_expr_sym(alloc_expr);
@@ -4578,6 +4791,43 @@ public:
                                     alloc_args_vec.p, alloc_args_vec.size(),
                                     stat, errmsg, source);
 
+        // An object allocated with a type-spec that gives LEN type parameter
+        // values gets them, and its components that depend on them, right
+        // after its allocation.
+        Vec<ASR::stmt_t*> len_init;
+        len_init.reserve(al, 0);
+        for (size_t i = 0; i < alloc_args_vec.size() && i < len_specs.size(); i++) {
+            if (len_specs[i].template_struct == nullptr) {
+                continue;
+            }
+            for (const PdtLenActual& actual : len_specs[i].params) {
+                if (actual.kind != PdtLenActual::Kind::Value) {
+                    diag.add(Diagnostic(
+                        "a LEN type parameter in the type-spec of an allocation "
+                        "must be given a value",
+                        Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+            if (ASRUtils::is_array(ASRUtils::expr_type(alloc_args_vec[i].m_a))) {
+                diag.add(Diagnostic(
+                    "a typed allocation of an array of a derived type with LEN "
+                    "type parameters is not supported yet",
+                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+            build_pdt_len_initialization(alloc_args_vec[i].m_a, len_specs[i],
+                x.base.base.loc, len_init);
+        }
+        if (len_init.size() > 0) {
+            current_body->push_back(al, ASRUtils::STMT(tmp));
+            for (size_t i = 0; i + 1 < len_init.size(); i++) {
+                current_body->push_back(al, len_init[i]);
+            }
+            tmp = (ASR::asr_t*)len_init[len_init.size() - 1];
+            return;
+        }
+
         if (source) {
             current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, x.base.base.loc,
                                         alloc_args_vec.p, alloc_args_vec.size(),
@@ -4647,6 +4897,42 @@ public:
         return nullptr;
     }
 
+    // A LEN type parameter inquiry cannot be defined, so it cannot be an
+    // input item, also not of an implied-DO loop.
+    void check_input_item_not_len_type_param(ASR::expr_t* expr) {
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+            for (size_t i = 0; i < idl->n_values; i++) {
+                check_input_item_not_len_type_param(idl->m_values[i]);
+            }
+            return;
+        }
+        if (ASRUtils::is_len_type_param_inquiry(expr)) {
+            std::string name;
+            ASRUtils::get_component_struct(expr, name);
+            diag.add(Diagnostic(
+                "the LEN type parameter '" + name + "' cannot be an input item",
+                Level::Error, Stage::Semantic, {Label("", {expr->base.loc})}));
+            throw SemanticAbort();
+        }
+    }
+
+    // A component whose bounds or length depend on a LEN type parameter is
+    // not allocatable, although it is stored as allocatable.
+    void check_not_len_dependent_component(ASR::expr_t* expr, const std::string& action) {
+        if (ASRUtils::is_len_dependent_component(expr)) {
+            std::string name;
+            ASRUtils::get_component_struct(expr, name);
+            diag.add(Diagnostic(
+                "the component '" + name + "' is not allocatable and cannot be "
+                + action,
+                Level::Error, Stage::Semantic, {Label(
+                    "its bounds or length depend on a LEN type parameter",
+                    {expr->base.loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     inline void check_for_deallocation(ASR::symbol_t* tmp_sym, const Location& loc) {
         tmp_sym = ASRUtils::symbol_get_past_external(tmp_sym);
         if( !ASR::is_a<ASR::Variable_t>(*tmp_sym) ) {
@@ -4689,6 +4975,7 @@ public:
                 ASR::symbol_t* tmp_sym = tmp_var->m_v;
                 check_for_deallocation(tmp_sym, tmp_expr->base.loc);
             } else if( ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) ) {
+                check_not_len_dependent_component(tmp_expr, "deallocated");
                 const ASR::StructInstanceMember_t* tmp_struct_ref = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
                 ASR::symbol_t* tmp_member = tmp_struct_ref->m_m;
                 check_for_deallocation(tmp_member, tmp_expr->base.loc);
@@ -7050,6 +7337,12 @@ public:
         fn->n_dependencies = current_function_dependencies.n;
         current_function_dependencies.clear(al);
         current_scope = parent_scope;
+        // The statement function is not a statement of the host body, so
+        // `transform_stmts` does not check the calls in its body.
+        LenTypeParamActualsChecker checker(diag);
+        for (size_t i = 0; i < body.size(); i++) {
+            checker.visit_stmt(*body[i]);
+        }
     }
 
     /**
@@ -7757,8 +8050,72 @@ public:
 
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
 
+        if (overloaded_stmt == nullptr) {
+            check_len_type_param_not_assigned(target);
+            target = keep_len_dependent_string_length(target);
+        }
         tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, target, value,
                             overloaded_stmt, compiler_options.po.realloc_lhs_arrays, false);
+    }
+
+    // A type parameter inquiry such as `x%n` is not a variable (F2023 9.4.5).
+    void check_len_type_param_not_assigned(ASR::expr_t* target) {
+        if (!ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
+            return;
+        }
+        ASR::symbol_t* member = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::StructInstanceMember_t>(target)->m_m);
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(member);
+        if (owner != nullptr && ASR::is_a<ASR::Struct_t>(*owner)
+                && ASRUtils::is_len_type_param(ASR::down_cast<ASR::Struct_t>(owner),
+                    ASRUtils::symbol_name(member))) {
+            diag.add(Diagnostic(
+                "the LEN type parameter '" + std::string(ASRUtils::symbol_name(member))
+                + "' cannot be assigned",
+                Level::Error, Stage::Semantic, {Label("", {target->base.loc})}));
+            throw SemanticAbort();
+        }
+    }
+
+    // A character component whose length is a LEN type parameter keeps its
+    // length when it is assigned, although it is stored as allocatable
+    // storage: the assignment is to the substring that is the whole
+    // component, which pads or truncates the value.
+    ASR::expr_t* keep_len_dependent_string_length(ASR::expr_t* target) {
+        if (!ASR::is_a<ASR::StructInstanceMember_t>(*target)) {
+            return target;
+        }
+        ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+        if (ASRUtils::is_array(target_type) || !ASRUtils::is_character(*target_type)) {
+            return target;
+        }
+        ASR::symbol_t* member = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::StructInstanceMember_t>(target)->m_m);
+        ASR::symbol_t* owner = ASRUtils::get_asr_owner(member);
+        if (owner == nullptr || !ASR::is_a<ASR::Struct_t>(*owner)
+                || !ASRUtils::is_len_dependent_member(
+                    ASR::down_cast<ASR::Struct_t>(owner),
+                    ASRUtils::symbol_name(member))) {
+            return target;
+        }
+        const Location& loc = target->base.loc;
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+            compiler_options.po.default_integer_kind));
+        ASR::expr_t* start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+            loc, 1, int_type));
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        duplicator.allow_procedure_calls = true;
+        ASR::expr_t* end = ASRUtils::EXPR(ASR::make_StringLen_t(al, loc,
+            duplicator.duplicate_expr(target), int_type, nullptr));
+        ASR::ttype_t* section_type = ASRUtils::TYPE(ASR::make_String_t(al, loc,
+            ASRUtils::extract_kind_from_ttype_t(target_type),
+            duplicator.duplicate_expr(end),
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::DescriptorString));
+        ASR::expr_t* step = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+            loc, 1, int_type));
+        return ASRUtils::EXPR(ASR::make_StringSection_t(al, loc, target, start,
+            end, step, section_type, nullptr));
     }
 
     ASR::asr_t* create_CFPointer(const AST::SubroutineCall_t& x) {

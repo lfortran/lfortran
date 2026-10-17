@@ -12,7 +12,8 @@ Struct(symbol_table symtab, identifier name, ttype struct_signature,
     identifier* member_functions, abi abi, access access,
     bool is_packed, bool is_abstract, bool is_sequence,
     call_arg* initializers, expr? alignment, symbol? parent,
-    identifier* kind_params)
+    identifier* kind_params, identifier* type_params,
+    identifier* len_dependent_members)
 ```
 
 ### Arguments
@@ -34,6 +35,8 @@ Struct(symbol_table symtab, identifier name, ttype struct_signature,
 | `alignment` | an explicit alignment in bytes, or `nil`. |
 | `parent` | the type this one extends, or `nil`. |
 | `kind_params` | the names of the kind type parameters of the type. |
+| `type_params` | the names of all type parameters of a parameterized derived type, KIND and LEN, in the order of its type parameter list. A KIND parameter is a named constant of the symbol table; a LEN parameter is an integer component that every object stores. |
+| `len_dependent_members` | the names of the components whose bounds or length depend on a LEN type parameter. |
 
 ### Return values
 
@@ -49,6 +52,17 @@ holds the component types.
 `members` is authoritative for layout. The symbol table is a mapping and says
 nothing about order, so a backend that walks components must walk `members` and
 look each name up, never iterate the symbol table.
+
+A parameterized derived type is a template: every distinct set of KIND
+parameter values that a program uses is a separate Struct, its
+instantiation, which the objects of the type use. The template keeps the
+declared components, whose bounds and lengths may read the type parameters.
+An instantiation lists the same `type_params`. Each object stores the values
+of its LEN parameters as components, and a component listed in
+`len_dependent_members` is represented as allocatable storage: it is
+allocated with the bounds and length that its declaration in the template
+gives when the object is created, and it stays allocated, with them, until
+the object ceases to exist.
 
 A component is read with
 [StructInstanceMember](../expression_nodes/StructInstanceMember.md) and a whole

@@ -377,6 +377,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 ),
                             ~eq:
                                 (CustomOperator

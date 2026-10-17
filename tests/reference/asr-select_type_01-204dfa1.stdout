@@ -77,6 +77,8 @@
                                     ()
                                     ()
                                     []
+                                    []
+                                    []
                                 ),
                             base_target:
                                 (Variable
@@ -199,6 +201,8 @@
                                     []
                                     ()
                                     2 base
+                                    []
+                                    []
                                     []
                                 ),
                             child_target:

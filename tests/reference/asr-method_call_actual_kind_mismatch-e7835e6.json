@@ -2,12 +2,12 @@
     "basename": "asr-method_call_actual_kind_mismatch-e7835e6",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/method_call_actual_kind_mismatch.asr",
-    "infile_hash": "2a27957aaf8755d630f956e281fc2121e6572e07cc1294427e6e17d7",
+    "infile_hash": "c9998eca94b79ee15769b5781c891aafe43c94de702056cf689442ec",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
     "stderr": "asr-method_call_actual_kind_mismatch-e7835e6.stderr",
-    "stderr_hash": "a4a3db04acfe94c667bdba4d228c97869469780b37ecb97c19cd102c",
+    "stderr_hash": "6e3b203b9da41baa902cc05eeacf7549db31956ad7443bccc69730d3",
     "returncode": 2
 }

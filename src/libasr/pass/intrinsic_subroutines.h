@@ -1518,7 +1518,8 @@ namespace MoveAlloc {
         ASR::expr_t* move_args[2] = {from, to};
         const std::string arg_names[2] = {"from", "to"};
         for (size_t i = 0; i < 2; i++) {
-            if (!ASRUtils::is_allocatable(move_args[i])) {
+            if (!ASRUtils::is_allocatable(move_args[i]) ||
+                    ASRUtils::is_len_dependent_component(move_args[i])) {
                 diag.add(diag::Diagnostic(
                     "`" + arg_names[i] + "` argument of `move_alloc` must be allocatable",
                     diag::Level::Error, diag::Stage::Semantic,

@@ -687,6 +687,9 @@ class IntentOutDeallocateVisitor : public ASR::BaseWalkVisitor<IntentOutDealloca
                 ASR::Variable_t* m_var = ASR::down_cast<ASR::Variable_t>(
                     m.second);
                 ASR::ttype_t* m_type = m_var->m_type;
+                // The storage of a component that depends on a LEN type
+                // parameter lasts as long as the object.
+                if (ASRUtils::is_len_dependent_member(st, m.first)) continue;
 
                 ASR::expr_t* member_expr = ASRUtils::EXPR(
                     ASRUtils::getStructInstanceMember_t(al, loc,

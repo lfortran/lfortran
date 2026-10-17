@@ -301,7 +301,7 @@ program continue_compilation_1
     integer, parameter :: z(1) = 2
     integer, parameter :: qval(2) = reshape([7, 8], -[z])
     integer :: u
-    type matrix(n)
+    type len_matrix(n)
         integer, len :: n
         real :: data(n)
     end type
@@ -3379,3 +3379,169 @@ end function
 function cc1_bindc_explicit_result() result(c) bind(c)
     character(len=5) :: c  ! {Error} character function result `c` must have constant length one in a BIND(C) procedure
 end function
+
+! An assumed LEN type parameter needs a dummy argument, and a deferred one
+! the allocatable or pointer attribute.
+module cc1_len_type_parameters
+    implicit none
+    type :: cc1_len_t(n)
+        integer, len :: n
+        real :: x(n)
+    end type
+contains
+    subroutine cc1_len_use()
+        type(cc1_len_t(*)) :: a  ! {Error} an assumed LEN type parameter `*` is only allowed for a dummy argument
+        type(cc1_len_t(:)) :: b  ! {Error} a deferred LEN type parameter `:` requires the allocatable or pointer attribute
+        type(cc1_len_t(2)) :: c
+        c%n = 3  ! {Error} the LEN type parameter 'n' cannot be assigned
+    end subroutine cc1_len_use
+end module cc1_len_type_parameters
+
+! A component whose bounds or length depend on a LEN type parameter is not
+! allocatable, and a LEN type parameter inquiry cannot be defined.
+module cc1_len_dependent_components
+    implicit none
+    type :: cc1_lenc_t(n)
+        integer, len :: n
+        real :: x(n)
+    end type
+contains
+    subroutine cc1_lenc_grow(a)
+        real, allocatable, intent(inout) :: a(:)
+    end subroutine cc1_lenc_grow
+    subroutine cc1_lenc_set(k)
+        integer, intent(out) :: k
+        k = 1
+    end subroutine cc1_lenc_set
+    integer function cc1_lenc_bump(k)
+        integer, intent(inout) :: k
+        k = k + 1
+        cc1_lenc_bump = k
+    end function cc1_lenc_bump
+    subroutine cc1_lenc_use()
+        type(cc1_lenc_t(3)) :: v
+        real, allocatable :: tmp(:)
+        integer :: i
+        call cc1_lenc_grow(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+        call move_alloc(v%x, tmp)  ! {Error} `from` argument of `move_alloc` must be allocatable
+        print *, allocated(v%x)  ! {Error} Intrinsic `allocated` can be called only on allocatable argument
+        deallocate(v%x)  ! {Error} the component 'x' is not allocatable and cannot be deallocated
+        allocate(v%x(5))  ! {Error} the component 'x' is not allocatable and cannot be allocated
+        read(*, *) v%n  ! {Error} the LEN type parameter 'n' cannot be an input item
+        call cc1_lenc_set(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+        i = cc1_lenc_bump(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(inout) dummy argument 'k'
+    end subroutine cc1_lenc_use
+end module cc1_len_dependent_components
+
+module cc1_len_structure_constructor
+    implicit none
+    type :: cc1_label_t(size)
+        integer, len :: size
+        character(len=size) :: text
+    end type
+contains
+    subroutine cc1_label_use()
+        type(cc1_label_t(5)) :: e
+        e = cc1_label_t(5)("hello")  ! {Error} a structure constructor of the derived type 'cc1_label_t', which has LEN type parameters, is not supported yet
+        e = cc1_label_t(size=5)(text="hello")  ! {Error} a structure constructor of the derived type 'cc1_label_t', which has LEN type parameters, is not supported yet
+    end subroutine cc1_label_use
+end module cc1_len_structure_constructor
+
+! Every call is checked, whatever way it is resolved.
+module cc1_len_call_paths
+    implicit none
+    type :: cc1_lenp_t(n)
+        integer, len :: n
+        real :: x(n)
+    contains
+        procedure, pass(self) :: cc1_lenp_tr
+        procedure :: cc1_lenp_tf
+    end type
+    interface cc1_lenp_gen
+        module procedure cc1_lenp_fgrow
+    end interface
+    abstract interface
+        subroutine cc1_lenp_grow_i(a)
+            real, allocatable, intent(inout) :: a(:)
+        end subroutine
+    end interface
+contains
+    subroutine cc1_lenp_tr(k, self)
+        integer, intent(out) :: k
+        class(cc1_lenp_t(*)), intent(in) :: self
+        k = 1
+    end subroutine cc1_lenp_tr
+    integer function cc1_lenp_tf(self, k)
+        class(cc1_lenp_t(*)), intent(in) :: self
+        integer, intent(out) :: k
+        k = 1
+        cc1_lenp_tf = 1
+    end function cc1_lenp_tf
+    integer function cc1_lenp_fgrow(a)
+        real, allocatable, intent(inout) :: a(:)
+        cc1_lenp_fgrow = 1
+    end function cc1_lenp_fgrow
+    subroutine cc1_lenp_grow(a)
+        real, allocatable, intent(inout) :: a(:)
+    end subroutine cc1_lenp_grow
+    subroutine cc1_lenp_dummy(f, w)
+        procedure(cc1_lenp_grow_i) :: f
+        type(cc1_lenp_t(*)), intent(inout) :: w
+        call f(w%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+    end subroutine cc1_lenp_dummy
+    subroutine cc1_lenp_use()
+        type(cc1_lenp_t(3)) :: v
+        procedure(cc1_lenp_grow_i), pointer :: pp
+        integer :: i, k
+        pp => cc1_lenp_grow
+        call v%cc1_lenp_tr(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+        k = v%cc1_lenp_tf(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+        k = cc1_lenp_gen(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+        call pp(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+        read(*, *) (v%n, i = 1, 1)  ! {Error} the LEN type parameter 'n' cannot be an input item
+    end subroutine cc1_lenp_use
+end module cc1_len_call_paths
+
+! The statements that a call adds before itself, for an alternate return or
+! for an impure function hoisted into a temporary, are checked too, and are
+! dropped with a rejected statement.
+module cc1_len_hoisted_calls
+    implicit none
+    type :: cc1_lenh_t(n)
+        integer, len :: n
+        real :: x(n)
+    end type
+contains
+    subroutine cc1_lenh_salt(k, *)
+        integer, intent(out) :: k
+        k = 1
+        return 1
+    end subroutine cc1_lenh_salt
+    integer function cc1_lenh_fset(k)
+        integer, intent(out) :: k
+        k = 1
+        cc1_lenh_fset = 1
+    end function cc1_lenh_fset
+    integer function cc1_lenh_ident(j)
+        integer, intent(in) :: j
+        cc1_lenh_ident = j
+    end function cc1_lenh_ident
+    integer function cc1_lenh_fgrow(a)
+        real, allocatable, intent(inout) :: a(:)
+        cc1_lenh_fgrow = 1
+    end function cc1_lenh_fgrow
+    subroutine cc1_lenh_use()
+        type(cc1_lenh_t(3)) :: v
+        integer :: k, sf, j
+        sf(j) = cc1_lenh_fset(v%n) + j  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+        call cc1_lenh_salt(v%n, *10)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+        k = cc1_lenh_ident(cc1_lenh_fset(v%n))  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+10      print *, k
+    end subroutine cc1_lenh_use
+    subroutine cc1_lenh_drop()
+        type(cc1_lenh_t(3)) :: v
+        integer :: kk, ii
+        kk = cc1_lenh_ident(cc1_lenh_fset(ii)) + cc1_lenh_fgrow(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+        print *, kk
+    end subroutine cc1_lenh_drop
+end module cc1_len_hoisted_calls
