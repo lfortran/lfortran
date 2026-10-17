@@ -37,12 +37,25 @@ if (NOT WITH_XEUS AND NOT XEUS_LFORTRAN_WASM_BUILD)
         set(LFORTRAN_CXX_NO_RTTI_FLAG "-fno-rtti")
     elseif (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         set(LFORTRAN_CXX_NO_RTTI_FLAG "/GR-")
+        # CMake's MSVC default flags contain /GR, which /GR- would override
+        # with warning D9025. RTTI is the MSVC default anyway, so dropping /GR
+        # keeps it enabled for targets that do not use the no-RTTI flag.
+        string(REGEX REPLACE "(^| )[/-]GR( |$)" " " CMAKE_CXX_FLAGS
+            "${CMAKE_CXX_FLAGS}")
     endif ()
 endif()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /bigobj")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /bigobj")
+endif ()
+
+if (MSVC)
+    # The MSVC CRT deprecates portable standard C functions such as getenv
+    # and strcpy (C4996) in favor of non-portable *_s variants. Keep using the
+    # standard functions, as LLVM does. POSIX-name deprecations
+    # (_CRT_NONSTDC_NO_WARNINGS) remain enabled.
+    add_compile_definitions(_CRT_SECURE_NO_WARNINGS)
 endif ()
 
 # For CMAKE_INSTALL_BINDIR:
@@ -320,6 +333,13 @@ if (WITH_LLVM)
     set_property(TARGET p::llvm PROPERTY INTERFACE_LINK_LIBRARIES
         ${llvm_libs})
     if (MSVC)
+        # LLVM 11 headers derive iterators from std::iterator, which the MSVC
+        # STL deprecates in C++17 (STL4015). The warning is reported inside the
+        # STL headers, so marking LLVM's include directory as external does
+        # not suppress it.
+        set_property(TARGET p::llvm PROPERTY INTERFACE_COMPILE_DEFINITIONS
+            _SILENCE_CXX17_ITERATOR_BASE_CLASS_DEPRECATION_WARNING)
+
         # LLVM on Windows appends zlib shared library and we must provide
         # a path to find it:
         get_filename_component(mypath ${ZLIB_LIBRARY} DIRECTORY)
@@ -565,7 +585,9 @@ if (WITH_RUNTIME_LIBRARY)
 #    "-DCMAKE_VERBOSE_MAKEFILE:BOOL=${CMAKE_VERBOSE_MAKEFILE}"
     "-DCMAKE_Fortran_COMPILER=${LFORTRAN_PATH}"
     "-DLFORTRAN_NESTED_BUILD=yes"
-    "${CMAKE_SOURCE_DIR}/src/runtime/"
+    # Do not reuse a runtime cache from an existing in-source build.
+    "-S" "${CMAKE_SOURCE_DIR}/src/runtime"
+    "-B" "${CMAKE_BINARY_DIR}/src/runtime"
     WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/src/runtime")
 
   add_dependencies(configure_runtime lfortran)

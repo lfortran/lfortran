@@ -1,0 +1,5 @@
+semantic error: initialization of component `j` does not reduce to a compile time constant in this instantiation
+  --> tests/errors/template_component_default_02.f90:18:28
+   |
+18 |             integer :: j = n + g()
+   |                            ^^^^^^^ 

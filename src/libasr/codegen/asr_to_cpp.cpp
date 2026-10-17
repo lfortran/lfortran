@@ -146,7 +146,7 @@ public:
     void generate_array_decl(std::string& sub, std::string v_m_name,
                              std::string& type_name, std::string& dims,
                              std::string& encoded_type_name,
-                             ASR::dimension_t* m_dims, int n_dims, size_t size,
+                             ASR::dimension_t* m_dims, size_t n_dims, size_t size,
                              bool use_ref, bool dummy,
                              bool declare_value, bool /*is_fixed_size*/,
                              bool is_pointer=false) {
@@ -172,7 +172,7 @@ public:
             sub += indent + format_type("", type_name, v_m_name, use_ref, dummy, false);
             sub += " = &" + variable_name + ";\n";
             if( !is_pointer ) {
-                for (int i = 0; i < n_dims; i++) {
+                for (size_t i = 0; i < n_dims; i++) {
                     if( m_dims[i].m_start ) {
                         this->visit_expr(*m_dims[i].m_start);
                         sub += indent + std::string(v_m_name) +
@@ -338,6 +338,14 @@ public:
         // All loose statements must be converted to a function, so the items
         // must be empty:
         LCOMPILERS_ASSERT(x.n_items == 0);
+        // The storage of a common block is shared with the other objects that
+        // name it through a common symbol, which C++ cannot define.
+        std::vector<const ASR::CommonBlock_t*> common_blocks;
+        collect_common_blocks(x.m_symtab, common_blocks);
+        if (!common_blocks.empty()) {
+            throw CodeGenError("COMMON blocks are not supported by the C++ backend",
+                common_blocks.front()->base.base.loc);
+        }
         indentation_level = 0;
         indentation_spaces = 4;
 

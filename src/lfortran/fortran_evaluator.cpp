@@ -1,4 +1,3 @@
-#include <fstream>
 #include <set>
 
 #include <lfortran/fortran_evaluator.h>
@@ -127,7 +126,7 @@ uint32_t FortranEvaluator::open_cell(const std::string &code,
     // Provisional, so that a diagnostic raised before the cell is closed still
     // resolves to this cell. close_cell() corrects it once the text the parser
     // is given is known.
-    lm.file_ends.push_back(start + code.size());
+    lm.file_ends.push_back(LFortran::source_offset(start + code.size()));
     return start;
 }
 
@@ -146,7 +145,7 @@ void FortranEvaluator::close_cell(const std::string &code, LocationManager &lm)
             fl.out_start[i] += cell_start;
         }
     }
-    lm.file_ends.back() = cell_start + code.size();
+    lm.file_ends.back() = LFortran::source_offset(cell_start + code.size());
     cell_files.push_back(fl);
     cell_ends.push_back(lm.file_ends.back());
 }
@@ -158,8 +157,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate2(const std::stri
     if (!compiler_options.interactive) {
         LocationManager::FileLocations fl;
         fl.in_filename = "input";
-        std::ofstream out("input");
-        out << code;
+        fl.source = code;
         lm.files.push_back(fl);
     }
     diag::Diagnostics diagnostics;
@@ -455,7 +453,7 @@ Result<std::string> FortranEvaluator::get_asr(const std::string &code,
     }
 }
 
-LCompilers::ASR::asr_t* FortranEvaluator::handle_lookup_name(LCompilers::ASR::TranslationUnit_t* tu, uint64_t pos) {
+LCompilers::ASR::asr_t* FortranEvaluator::handle_lookup_name(LCompilers::ASR::TranslationUnit_t* tu, uint32_t pos) {
     LCompilers::LFortran::LookupNameVisitor lnv(pos);
     lnv.visit_TranslationUnit(*tu);
     if (lnv.node_to_return != nullptr) {
@@ -511,6 +509,20 @@ void FortranEvaluator::drop_redefinitions(LLVMModule &m)
 #endif
 
 namespace {
+
+// Whether `scope`, or a scope nested in it, has a view of a common block.
+static bool has_common_block(SymbolTable *scope) {
+    for (auto &item : scope->get_scope()) {
+        if (ASR::is_a<ASR::CommonBlock_t>(*item.second)) {
+            return true;
+        }
+        SymbolTable *nested = ASRUtils::symbol_symtab(item.second);
+        if (nested != nullptr && has_common_block(nested)) {
+            return true;
+        }
+    }
+    return false;
+}
 
 // A generic procedure and a custom operator name the specific procedures they
 // resolve to. A later cell that resolves one would otherwise call the original
@@ -592,6 +604,8 @@ static void relink_copied_symbols(Allocator &al, SymbolTable *scope,
                 if (copy != nullptr) v->m_type_declaration = copy;
             }
         } else if (ASR::is_a<ASR::Module_t>(*s)
+                || ASR::is_a<ASR::Program_t>(*s)
+                || ASR::is_a<ASR::BlockData_t>(*s)
                 || ASR::is_a<ASR::Function_t>(*s)
                 || ASR::is_a<ASR::Struct_t>(*s)
                 || ASR::is_a<ASR::Enum_t>(*s)
@@ -650,8 +664,40 @@ SymbolTable* FortranEvaluator::copy_cell_scope(SymbolTable *scope,
     ASRUtils::SymbolDuplicator duplicator(al);
     for (auto &item : scope->get_scope()) {
         // A program unit is executed by the cell that declares it and its name
-        // is not referenceable from Fortran, so later cells have no use for it.
-        if (ASR::is_a<ASR::Program_t>(*item.second)) continue;
+        // is not referenceable from Fortran, so later cells have no use for
+        // its statements. The same holds for a BLOCK DATA, whose initial
+        // values the storage of its common blocks already carries. What a
+        // later cell needs of either is its views of common blocks, which
+        // tell it that the storage of those blocks exists already, so one
+        // that has views is copied without its statements.
+        if (ASR::is_a<ASR::Program_t>(*item.second)) {
+            ASR::Program_t *program = ASR::down_cast<ASR::Program_t>(item.second);
+            if (has_common_block(program->m_symtab)) {
+                SymbolTable *symtab = al.make_new<SymbolTable>(copy);
+                duplicator.duplicate_SymbolTable(program->m_symtab, symtab);
+                ASR::asr_t *program_copy = ASR::make_Program_t(al,
+                    program->base.base.loc, symtab, program->m_name,
+                    program->m_dependencies, program->n_dependencies,
+                    nullptr, 0, nullptr, program->m_start_name,
+                    program->m_end_name);
+                symtab->asr_owner = program_copy;
+                copy->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(program_copy));
+            }
+            continue;
+        }
+        if (ASR::is_a<ASR::BlockData_t>(*item.second)) {
+            ASR::BlockData_t *block_data = ASR::down_cast<ASR::BlockData_t>(item.second);
+            SymbolTable *symtab = al.make_new<SymbolTable>(copy);
+            duplicator.duplicate_SymbolTable(block_data->m_symtab, symtab);
+            ASR::asr_t *block_data_copy = ASR::make_BlockData_t(al,
+                block_data->base.base.loc, symtab, block_data->m_name,
+                block_data->m_block_data_name, block_data->m_dependencies,
+                block_data->n_dependencies, block_data->m_start_name,
+                block_data->m_end_name);
+            symtab->asr_owner = block_data_copy;
+            copy->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(block_data_copy));
+            continue;
+        }
         duplicator.duplicate_symbol(item.second, copy);
     }
     relink_copied_symbols(al, copy, copy);
@@ -765,7 +811,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     diag::Diagnostics &/*diagnostics*/, LocationManager &/*lm*/
 #endif
 , [[maybe_unused]] const std::string &infile,
-  [[maybe_unused]] int* time_opt=nullptr)
+  [[maybe_unused]] int64_t* time_opt=nullptr)
 {
 #ifdef HAVE_LFORTRAN_LLVM
     eval_count++;

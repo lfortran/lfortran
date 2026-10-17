@@ -2,6 +2,7 @@
 #include <iomanip>
 
 #include <libasr/assert.h>
+#include <libasr/checked_cast.h>
 #include <libasr/codegen/wasm_decoder.h>
 #include <libasr/codegen/wasm_to_x86.h>
 #include <libasr/codegen/x86_assembler.h>
@@ -123,7 +124,7 @@ class X86Visitor : public WASMDecoder<X86Visitor>,
         // Pop the passed function arguments
         wasm::FuncType func_type =
             func_types[type_indices[func_index]];
-        m_a.asm_add_r32_imm32(X86Reg::esp, 4 * func_type.param_types.size()); // pop the passed arguments
+        m_a.asm_add_r32_imm32(X86Reg::esp, checked_integer_cast<uint32_t>(4 * func_type.param_types.size())); // pop the passed arguments
 
         // Adjust the return values of the called function
         X86Reg base = X86Reg::esp;
@@ -131,7 +132,7 @@ class X86Visitor : public WASMDecoder<X86Visitor>,
             // take value into eax
             m_a.asm_mov_r32_m32(
                 X86Reg::eax, &base, nullptr, 1,
-                -(4 * (func_type.param_types.size() + 2 +
+                -checked_integer_cast<int32_t>(4 * (func_type.param_types.size() + 2 +
                        codes[func_index].locals.size() + 1)));
 
             // push eax value onto stack
@@ -348,7 +349,8 @@ class X86Visitor : public WASMDecoder<X86Visitor>,
     void visit_I32Ne() { handle_I32Compare<&X86Assembler::asm_jne_label>(); }
 
     void visit_I64Const(int64_t value) {
-        m_a.asm_push_imm32(value);
+        // The 32-bit backend keeps the low 32 bits of the constant.
+        m_a.asm_push_imm32(static_cast<uint32_t>(value));
     }
 
     void visit_I64ExtendI32S() {
@@ -432,8 +434,8 @@ class X86Visitor : public WASMDecoder<X86Visitor>,
     }
 
     void visit_F64Const(double z) {
-        std::string label = "float_" + float_to_str(z);
-        float_consts[label] = z;
+        std::string label = "float_" + float_to_str(static_cast<float>(z));
+        float_consts[label] = static_cast<float>(z);
         m_a.asm_mov_r32_label(X86Reg::eax, label);
         X86Reg label_reg = X86Reg::eax;
         m_a.asm_fld_m32(&label_reg, nullptr, 1, 0); // loads into floating register stack
@@ -455,7 +457,7 @@ class X86Visitor : public WASMDecoder<X86Visitor>,
         }
         label_to_str["base_memory"] = base_memory;
 
-        NO_OF_IMPORTS = imports.size();
+        NO_OF_IMPORTS = checked_integer_cast<uint32_t>(imports.size());
         for (uint32_t i = 0; i < type_indices.size(); i++) {
             std::string func = exports[i + 1 /* offset by 1 becaz of mem export */].name;
             if (func == "print_f64") {
@@ -472,7 +474,7 @@ class X86Visitor : public WASMDecoder<X86Visitor>,
 
                  // Allocate space for local variables
                 // TODO: locals is an array where every element has a count (currently wasm emits count = 1 always)
-                m_a.asm_sub_r32_imm32(X86Reg::esp, 4 * codes[i].locals.size());
+                m_a.asm_sub_r32_imm32(X86Reg::esp, checked_integer_cast<uint32_t>(4 * codes[i].locals.size()));
 
                 offset = codes.p[i].insts_start_index;
                 cur_func_idx = i;
@@ -497,10 +499,10 @@ class X86Visitor : public WASMDecoder<X86Visitor>,
 Result<int> wasm_to_x86(Vec<uint8_t> &wasm_bytes, Allocator &al,
                         const std::string &filename, bool time_report,
                         diag::Diagnostics &diagnostics) {
-    int time_decode_wasm = 0;
-    int time_gen_x86_bytes = 0;
-    int time_save = 0;
-    int time_verify = 0;
+    int64_t time_decode_wasm = 0;
+    int64_t time_gen_x86_bytes = 0;
+    int64_t time_save = 0;
+    int64_t time_verify = 0;
 
     X86Assembler m_a(al, false /* bits 64 */);
 
@@ -540,7 +542,12 @@ Result<int> wasm_to_x86(Vec<uint8_t> &wasm_bytes, Allocator &al,
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        m_a.save_binary(filename);
+        if (!m_a.save_binary(filename)) {
+            diagnostics.add(diag::Diagnostic(
+                "cannot write the output file '" + filename + "'",
+                diag::Level::Error, diag::Stage::CodeGen));
+            return Error();
+        }
         auto t2 = std::chrono::high_resolution_clock::now();
         time_save =
             std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
@@ -559,7 +566,7 @@ Result<int> wasm_to_x86(Vec<uint8_t> &wasm_bytes, Allocator &al,
         std::cout << "Verify:       " << std::setw(5) << time_verify
                   << std::endl;
         std::cout << "Save:       " << std::setw(5) << time_save << std::endl;
-        int total =
+        int64_t total =
             time_decode_wasm + time_gen_x86_bytes + time_verify + time_save;
         std::cout << "Total:      " << std::setw(5) << total << std::endl;
     }

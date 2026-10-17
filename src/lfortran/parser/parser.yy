@@ -14,8 +14,8 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    197 // shift/reduce conflicts
-%expect-rr 185 // reduce/reduce conflicts
+%expect    202 // shift/reduce conflicts
+%expect-rr 189 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -322,6 +322,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_OUT
 %token <string> KW_PARAMETER
 %token <string> KW_PASS
+%token <string> KW_PAUSE
 %token <string> KW_POINTER
 %token <string> KW_POST
 %token <string> KW_PRECISION
@@ -539,6 +540,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> cycle_statement
 %type <ast> continue_statement
 %type <ast> stop_statement
+%type <ast> pause_statement
 %type <ast> entry_statement
 %type <ast> error_stop_statement
 %type <ast> event_post_statement
@@ -1708,6 +1710,10 @@ var_sym_decl
     | id "(" array_comp_decl_list ")" %dprec 1 { $$ = VAR_SYM_DIM($1, $3.p, $3.n, None, @$); }
     | id "(" array_comp_decl_list ")" "*" expr %dprec 1 {
             $$ = VAR_SYM_DIM_LEN($1, $3.p, $3.n, $6, Asterisk, @$); }
+    | id "(" array_comp_decl_list ")" "*" "(" "*" ")" {
+            $$ = VAR_SYM_DIM($1, $3.p, $3.n, DoubleAsterisk, @$); }
+    | id "(" array_comp_decl_list ")" "*" "(" "*" ")" "=" expr {
+            $$ = VAR_SYM_DIM_INIT($1, $3.p, $3.n, $10, DoubleAsterisk, @$); }
     | id "(" array_comp_decl_list ")" "=" expr {
             $$ = VAR_SYM_DIM_INIT($1, $3.p, $3.n, $6, Equal, @$); }
     | id "(" array_comp_decl_list ")" "*" expr "=" expr {
@@ -1851,6 +1857,7 @@ single_line_statement
     | inquire_statement
     | nullify_statement
     | open_statement
+    | pause_statement
     | pragma_statement
     | print_statement
     | read_statement
@@ -2372,6 +2379,11 @@ stop_statement
     | KW_STOP expr "," KW_QUIET "=" expr { $$ = STOP3($2, $6, @$); }
     ;
 
+pause_statement
+    : KW_PAUSE { $$ = make_Pause_t(p.m_a, @$, 0, nullptr, nullptr); }
+    | KW_PAUSE expr { $$ = make_Pause_t(p.m_a, @$, 0, EXPR($2), nullptr); }
+    ;
+
 error_stop_statement
     : KW_ERROR KW_STOP { $$ = ERROR_STOP(@$); }
     | KW_ERROR KW_STOP expr { $$ = ERROR_STOP1($3, @$); }
@@ -2816,6 +2828,7 @@ id
     | KW_OUT { $$ = SYMBOL($1, @$); }
     | KW_PARAMETER { $$ = SYMBOL($1, @$); }
     | KW_PASS { $$ = SYMBOL($1, @$); }
+    | KW_PAUSE { $$ = SYMBOL($1, @$); }
     | KW_POINTER { $$ = SYMBOL($1, @$); }
     | KW_POST { $$ = SYMBOL($1, @$); }
     | KW_PRECISION { $$ = SYMBOL($1, @$); }

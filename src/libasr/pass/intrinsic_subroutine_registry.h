@@ -17,13 +17,14 @@ namespace ASRUtils {
         return #X;                                                              \
     }
 
-inline std::string get_intrinsic_subroutine_name(int x) {
+inline std::string get_intrinsic_subroutine_name(int64_t x) {
     switch (x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomNumber)
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomInit)
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomSeed)
         INTRINSIC_SUBROUTINE_NAME_CASE(GetCommand)
         INTRINSIC_SUBROUTINE_NAME_CASE(GetCommandArgument)
+        INTRINSIC_SUBROUTINE_NAME_CASE(GetCwd)
         INTRINSIC_SUBROUTINE_NAME_CASE(GetEnvironmentVariable)
         INTRINSIC_SUBROUTINE_NAME_CASE(ExecuteCommandLine)
         INTRINSIC_SUBROUTINE_NAME_CASE(CpuTime)
@@ -40,6 +41,7 @@ inline std::string get_intrinsic_subroutine_name(int x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(CoMin)
         INTRINSIC_SUBROUTINE_NAME_CASE(CoBroadcast)
         INTRINSIC_SUBROUTINE_NAME_CASE(Exit)
+        INTRINSIC_SUBROUTINE_NAME_CASE(Pause)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -66,6 +68,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&Srand::instantiate_Srand, &Srand::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand),
             {&GetCommand::instantiate_GetCommand, &GetCommand::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCwd),
+            {&GetCwd::instantiate_GetCwdSubroutine, &GetCwd::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommandArgument),
             {&GetCommandArgument::instantiate_GetCommandArgument, &GetCommandArgument::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::SystemClock),
@@ -98,6 +102,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&CoBroadcast::instantiate_CoBroadcast, &CoBroadcast::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::Exit),
             {&Exit::instantiate_Exit, &Exit::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::Pause),
+            {&Pause::instantiate_Pause, &Pause::verify_args}},
         };
         return intrinsic_subroutine_by_id_db;
     }
@@ -114,6 +120,7 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"get_command_argument", &GetCommandArgument::create_GetCommandArgument},
                 // Legacy F77 alias for get_command_argument.
                 {"getarg", &GetCommandArgument::create_GetCommandArgument},
+                {"getcwd", &GetCwd::create_GetCwdSubroutine},
                 {"system_clock", &SystemClock::create_SystemClock},
                 {"get_environment_variable", &GetEnvironmentVariable::create_GetEnvironmentVariable},
                 {"execute_command_line", &ExecuteCommandLine::create_ExecuteCommandLine},
@@ -175,6 +182,7 @@ namespace IntrinsicImpureSubroutineRegistry {
             case IntrinsicImpureSubroutines::System:
             case IntrinsicImpureSubroutines::Sleep:
             case IntrinsicImpureSubroutines::Exit:
+            case IntrinsicImpureSubroutines::Pause:
                 return true;
             case IntrinsicImpureSubroutines::RandomSeed:
                 // size, put, get

@@ -75,6 +75,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             cpath:
                                                 (Variable
@@ -107,6 +108,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             path:
                                                 (Variable
@@ -133,6 +135,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             tmp:
                                                 (Variable
@@ -159,6 +162,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     get_current_directory
@@ -287,6 +291,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             bufsize:
                                                 (Variable
@@ -311,6 +316,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             path:
                                                 (Variable
@@ -325,7 +331,7 @@
                                                         CPointer
                                                     )
                                                     2 c_ptr
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.
@@ -337,6 +343,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     getcwd

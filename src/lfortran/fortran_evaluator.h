@@ -77,7 +77,7 @@ public:
         diag::Diagnostics &diagnostics);
     Result<std::string> get_asr(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
-    ASR::asr_t* handle_lookup_name(LCompilers::ASR::TranslationUnit_t* tu, uint64_t pos);
+    ASR::asr_t* handle_lookup_name(LCompilers::ASR::TranslationUnit_t* tu, uint32_t pos);
     Result<ASR::TranslationUnit_t*> get_asr2(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
     Result<ASR::TranslationUnit_t*> get_asr3(
@@ -102,7 +102,7 @@ public:
     Result<std::unique_ptr<LLVMModule>> get_llvm3(ASR::TranslationUnit_t &asr,
         LCompilers::PassManager& pass_manager,
         diag::Diagnostics &diagnostics, LocationManager &lm, const std::string &infile,
-        int* time_opt);
+        int64_t* time_opt);
     Result<std::string> get_asm(const std::string &code,
         LocationManager &lm,
         LCompilers::PassManager& pass_manager,

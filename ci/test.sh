@@ -35,6 +35,10 @@ src/bin/lfortran integration_tests/intrinsics_04s.f90 -o intrinsics_04s
 src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04
 ./intrinsics_04
 
+# Exercise the Windows clock runtime even when the integration runner is skipped.
+src/bin/lfortran integration_tests/system_clock_02.f90 -o system_clock_02
+./system_clock_02
+
 
 # Run all tests (does not work on Windows yet):
 cmake --version

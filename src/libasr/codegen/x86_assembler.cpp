@@ -10,38 +10,32 @@
 
 namespace LCompilers {
 
-void X86Assembler::save_binary64(const std::string &filename) {
+static bool make_executable(const std::string &filename) {
+#ifdef LFORTRAN_LINUX
+    return chmod(filename.c_str(), 0755) == 0;
+#else
+    (void)filename;
+    return true;
+#endif
+}
+
+bool X86Assembler::save_binary64(const std::string &filename) {
     Vec<uint8_t> header = create_elf64_x86_header(
         m_al, origin(), get_defined_symbol("_start").value,
         compute_seg_size("text_segment_start", "text_segment_end"),
         compute_seg_size("data_segment_start", "data_segment_end"));
-    {
-        std::ofstream out;
-        out.open(filename);
-        out.write((const char*) header.p, header.size());
-        out.write((const char*) m_code.p, m_code.size());
-    }
-#ifdef LFORTRAN_LINUX
-    int mod = 0755;
-    if (chmod(filename.c_str(),mod) < 0) {
-        throw AssemblerError("chmod failed");
-    }
-#endif
+    std::ofstream out(filename);
+    out.write((const char*) header.p, header.size());
+    out.write((const char*) m_code.p, m_code.size());
+    out.close();
+    return out && make_executable(filename);
 }
 
-void X86Assembler::save_binary(const std::string &filename) {
-    {
-        std::ofstream out;
-        out.open(filename);
-        out.write((const char*) m_code.p, m_code.size());
-    }
-#ifdef LFORTRAN_LINUX
-    std::string mode = "0755";
-    int mod = strtol(mode.c_str(), 0, 8);
-    if (chmod(filename.c_str(),mod) < 0) {
-        throw AssemblerError("chmod failed");
-    }
-#endif
+bool X86Assembler::save_binary(const std::string &filename) {
+    std::ofstream out(filename);
+    out.write((const char*) m_code.p, m_code.size());
+    out.close();
+    return out && make_executable(filename);
 }
 
 // ELF header structure for 32-bit
@@ -421,7 +415,7 @@ void append_header_bytes(Allocator &al, T src, Vec<uint8_t> &des) {
 
 void align_by_byte(Allocator &al, Vec<uint8_t> &code, uint64_t alignment) {
     uint64_t code_size = code.size() ;
-    uint64_t padding_size = (alignment * ceil(code_size / (double)alignment)) - code_size;
+    uint64_t padding_size = (alignment - code_size % alignment) % alignment;
     for (size_t i = 0; i < padding_size; i++) {
         code.push_back(al, 0);
     }

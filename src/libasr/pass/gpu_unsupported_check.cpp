@@ -169,18 +169,6 @@ public:
             case ASR::stmtType::Flush:
                 record(GpuUnsupportedKind::InputOutput, s.base.loc);
                 return;
-            case ASR::stmtType::ErrorStop:
-                if (!caps.device_abort) {
-                    record(GpuUnsupportedKind::ErrorStop, s.base.loc);
-                    return;
-                }
-                break;
-            case ASR::stmtType::Stop:
-                if (!caps.device_abort) {
-                    record(GpuUnsupportedKind::Stop, s.base.loc);
-                    return;
-                }
-                break;
             default:
                 break;
         }
@@ -271,7 +259,8 @@ public:
 } // namespace
 
 GpuUnsupportedConstruct gpu_find_unsupported_construct(
-        const ASR::OMPRegion_t &region, const GpuDeviceCapabilities &caps) {
+        const ASR::OMPRegion_t &region, const GpuDeviceCapabilities &caps,
+        GpuProcedureImplementations &implementations) {
     UnsupportedConstructFinder finder(caps);
     for (size_t i = 0; i < region.n_body; i++) {
         finder.visit_stmt(*region.m_body[i]);
@@ -279,13 +268,17 @@ GpuUnsupportedConstruct gpu_find_unsupported_construct(
     }
     // A procedure the loop calls, however deep, runs on the device too.
     for (ASR::Function_t *fn : reachable_routines(region.m_body,
-            region.n_body)) {
+            region.n_body, implementations)) {
         finder.routine = fn->m_name;
         finder.check_scope(fn->m_symtab);
         for (size_t i = 0; i < fn->n_body && !finder.found.found(); i++) {
             finder.visit_stmt(*fn->m_body[i]);
         }
-        if (finder.found.found()) return finder.found;
+        if (finder.found.found()) {
+            finder.found.routine_elsewhere =
+                implementations.read_from_module_file(fn);
+            return finder.found;
+        }
     }
     return finder.found;
 }
@@ -302,12 +295,6 @@ std::string gpu_unsupported_construct_message(
             break;
         case GpuUnsupportedKind::InputOutput:
             what = "input/output statements";
-            break;
-        case GpuUnsupportedKind::ErrorStop:
-            what = "error stop";
-            break;
-        case GpuUnsupportedKind::Stop:
-            what = "stop";
             break;
     }
     return "the " + caps.name + " GPU does not support " + what;
@@ -334,12 +321,6 @@ std::string gpu_unsupported_construct_label(
         }
         case GpuUnsupportedKind::InputOutput:
             label = "input/output statement";
-            break;
-        case GpuUnsupportedKind::ErrorStop:
-            label = "error stop statement";
-            break;
-        case GpuUnsupportedKind::Stop:
-            label = "stop statement";
             break;
     }
     if (!construct.routine.empty()) {

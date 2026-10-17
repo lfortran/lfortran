@@ -3075,7 +3075,7 @@ class CoarrayPrifReplacer : public ASR::BaseExprReplacer<CoarrayPrifReplacer> {
         void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t *x) {
             if (x->m_arr_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Coshape)) {
                 ASR::expr_t *coarray = x->m_args[0];
-                int corank = ASRUtils::expr_corank(coarray);
+                int corank = checked_integer_cast<int>(ASRUtils::expr_corank(coarray));
                 *current_expr = prif.make_prif_coshape_call(x->base.base.loc, x->m_type, corank, coarray);
             } else {
                 ASR::BaseExprReplacer<CoarrayPrifReplacer>::replace_IntrinsicArrayFunction(x);
@@ -3593,17 +3593,21 @@ void pass_replace_coarray(Allocator &al, ASR::TranslationUnit_t &unit,
         return;
     }
     PRIFInterface prif(al, unit, po.separate_compilation);
-    // Phase 1: Declare coarray companion variables
-    CoarrayCompanionVisitor comp_v(prif);
-    comp_v.visit_TranslationUnit(unit);
+    // The `lcompilers_prif_*` helpers are defined in every translation unit
+    // that needs them, so they must not be exported.
+    PassUtils::make_new_tu_functions_private(unit, [&]() {
+        // Phase 1: Declare coarray companion variables
+        CoarrayCompanionVisitor comp_v(prif);
+        comp_v.visit_TranslationUnit(unit);
 
-    // Phase 2: Create allocation calls for coarrays
-    CoarrayInitVisitor init_v(al, prif);
-    init_v.visit_TranslationUnit(unit);
+        // Phase 2: Create allocation calls for coarrays
+        CoarrayInitVisitor init_v(al, prif);
+        init_v.visit_TranslationUnit(unit);
 
-    // Phase 3: Replace coarray expressions
-    CoarrayPrifVisitor v(al, prif);
-    v.visit_TranslationUnit(unit);
+        // Phase 3: Replace coarray expressions
+        CoarrayPrifVisitor v(al, prif);
+        v.visit_TranslationUnit(unit);
+    });
 
     // Phase 4: Update dependencies
     PassUtils::UpdateDependenciesVisitor(al).visit_TranslationUnit(unit);

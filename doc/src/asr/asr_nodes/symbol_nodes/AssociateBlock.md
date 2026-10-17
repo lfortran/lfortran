@@ -65,6 +65,7 @@ body, which binds the name to the target expression rather than copying it.
         :pass_attr :NotMethod
         :self_argument nil
         :codims []
+        :common_block nil
       )
     }
   )

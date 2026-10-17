@@ -30,6 +30,7 @@
               :pass_attr :NotMethod
               :self_argument nil
               :codims []
+              :common_block nil
             )
           }
         )
@@ -116,6 +117,7 @@
               :pass_attr :NotMethod
               :self_argument nil
               :codims []
+              :common_block nil
             )
           }
         )
@@ -226,6 +228,7 @@
               :pass_attr :NotMethod
               :self_argument nil
               :codims []
+              :common_block nil
             )
           }
         )
@@ -234,7 +237,7 @@
         :body [
           (GpuKernelLaunch
             :kernel (SymbolRef 0 "__lfortran_gpu_kernel_0")
-            :grid_size (IntegerConstant
+            :thread_count (IntegerConstant
               :n 1
               :type (Integer
                 :kind 4
@@ -255,6 +258,10 @@
                 )
               )
             ]
+            :component_fit nil
+            :scratch []
+            :stop_status nil
+            :stop_replay []
           )
           (GpuSync)
         ]

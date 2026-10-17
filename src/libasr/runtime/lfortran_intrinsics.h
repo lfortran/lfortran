@@ -109,7 +109,6 @@ LFORTRAN_API double _lfortran_random();
 LFORTRAN_API int _lfortran_randrange(int lower, int upper);
 LFORTRAN_API int _lfortran_random_int(int lower, int upper);
 LFORTRAN_API void _lfortran_printf(const char* format, const fchar* str, uint32_t str_len, int32_t str_kind, const fchar* end, uint32_t end_len);
-LFORTRAN_API char* _lcompilers_snprintf_alloc(lfortran_allocator_t* al, const char* format, ...);
 LFORTRAN_API void _lcompilers_print_error(const char* format, ...);
 LFORTRAN_API void _lfortran_complex_add_32(struct _lfortran_complex_32* a,
         struct _lfortran_complex_32* b, struct _lfortran_complex_32 *result);
@@ -232,6 +231,7 @@ LFORTRAN_API void _lfortran_strrepeat_alloc(lfortran_allocator_t* al, char* s, i
 LFORTRAN_API char* _lfortran_strrepeat_c_alloc(lfortran_allocator_t* al, char* s, int32_t n);
 LFORTRAN_API char* _lfortran_strcat_alloc(lfortran_allocator_t* al, char* s1, int64_t s1_len, char* s2, int64_t s2_len);
 LFORTRAN_API void _lfortran_strcpy_alloc(lfortran_allocator_t* al, char** lhs, int64_t* lhs_len, bool is_lhs_allocatable, bool is_lhs_deferred, char* rhs, int64_t rhs_len, int32_t char_kind);
+LFORTRAN_API int32_t _lfortran_getcwd(char* buffer, int64_t length);
 LFORTRAN_API void _lfortran_copy_str_and_pad(char* lhs, int64_t lhs_len, char* rhs, int64_t rhs_len, int32_t char_kind);
 LFORTRAN_API int64_t _lfortran_str_len(char* s);
 LFORTRAN_API int _lfortran_str_ord(char** s);
@@ -300,6 +300,8 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num, int32_t *iostat, char *i
 LFORTRAN_API void _lfortran_abort();
 LFORTRAN_API void _lfortran_exit(int32_t status);
 LFORTRAN_API void _lfortran_sleep(int32_t seconds);
+LFORTRAN_API void _lfortran_pause_string(const char* code, int64_t code_len);
+LFORTRAN_API void _lfortran_pause_numeric(int64_t code);
 LFORTRAN_API int32_t _lfortran_get_decimal_mode(int32_t unit_num);
 LFORTRAN_API void _lfortran_set_transfer_decimal_mode(int32_t decimal_mode);
 LFORTRAN_API int32_t _lfortran_decimal_mode_from_str(const fchar* value, int64_t value_len);
@@ -389,6 +391,7 @@ LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat, int32_
 LFORTRAN_API bool _lfortran_is_streql_NCS(char* s1, int64_t s1_len, char* s2, int64_t s2_len);
 LFORTRAN_API void _lfortran_set_read_iomsg(int32_t iostat, char* iomsg, int64_t iomsg_len);
 LFORTRAN_API void _lfortran_file_seek(int32_t unit_num, int64_t pos, int32_t* iostat);
+LFORTRAN_API void _lfortran_connect_unit_for_read(int32_t unit_num, int32_t unformatted, int32_t* iostat);
 LFORTRAN_API void _lpython_close(int64_t fd);
 LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status_len, int32_t* iostat);
 LFORTRAN_API int32_t _lfortran_ichar(char *c);
@@ -407,6 +410,7 @@ LFORTRAN_API int32_t _lfortran_get_environment_variable_status_value(fchar *name
 LFORTRAN_API int _lfortran_exec_command(fchar *cmd, int64_t len);
 LFORTRAN_API void _lfortran_get_command_command(char* receiver);
 LFORTRAN_API int32_t _lfortran_get_command_length();
+LFORTRAN_API int32_t _lfortran_get_command_status(int32_t command_len, int32_t length);
 
 // Namelist I/O support
 typedef enum {
@@ -482,14 +486,24 @@ typedef struct Span {
     uint32_t last_l, last_c;
 } Span;
 
-typedef struct Label {
-    bool primary;
-    char *message;
-    Span *spans;
+typedef struct lfortran_runtime_error_label {
+    uint8_t primary; // 1 for the primary label
+    const char *message; // format string
+    const Span *spans;
     uint32_t n_spans;
-} Label;
+} lfortran_runtime_error_label;
 
-LFORTRAN_API void _lcompilers_runtime_error(lfortran_allocator_t* al, Label *labels, uint32_t n_labels, const char* format, ...);
+// Constant description of one runtime check, emitted by the compiler
+typedef struct lfortran_runtime_error_info {
+    const char *message; // format string
+    const lfortran_runtime_error_label *labels;
+    uint32_t n_labels;
+} lfortran_runtime_error_info;
+
+// Prints the runtime error described by `info` and exits with status 1.
+// The variadic arguments are those of `info->message` followed by those of
+// each label's message, in order.
+LFORTRAN_API void _lcompilers_runtime_error_exit(const lfortran_runtime_error_info *info, ...);
 
 // IOSTAT error codes for namelist operations
 #define LFORTRAN_IOSTAT_NML_FORMATTED_FILE_REQUIRED 5001  // Binary file (formatted required)

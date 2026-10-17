@@ -30,6 +30,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             prec2:
                                 (Variable
@@ -54,6 +55,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             u:
                                 (Variable
@@ -84,6 +86,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             v:
                                 (Variable
@@ -123,6 +126,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 ),
                             zero:
                                 (Variable
@@ -162,6 +166,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     real_dp_param

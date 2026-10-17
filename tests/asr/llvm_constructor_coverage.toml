@@ -15,6 +15,7 @@
 "stmt.DoConcurrentLoop" = "lowered:do_loops"
 "stmt.OMPRegion" = "lowered:openmp"
 "stmt.GpuKernelLaunch" = "lowered:device_launch_expand"
+"stmt.GpuDiscard" = "lowered:device_launch_expand"
 "stmt.ForAllSingle" = "lowered:for_all"
 "stmt.ForEach" = "helper:container iteration"
 "stmt.IfArithmetic" = "helper:branch lowering"
@@ -91,3 +92,4 @@
 "omp_clause.OMPThreadLimit" = "lowered:openmp"
 "omp_clause.OMPDevice" = "lowered:openmp"
 "omp_clause.OMPMap" = "lowered:openmp"
+"omp_clause.OMPCriticalName" = "lowered:openmp"

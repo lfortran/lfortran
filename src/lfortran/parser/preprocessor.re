@@ -174,7 +174,7 @@ std::string parse_argument(unsigned char *string_start, unsigned char *old_cur, 
     while (*cur != ')' && *cur != ',' && *cur != ' ') {
         if (*cur == '\0') {
             Location loc;
-            loc.first = old_cur - string_start;
+            loc.first = source_offset(old_cur - string_start);
             loc.last = loc.first;
             throw PreprocessorError("Argument list is not closed with ')'", loc);
         }
@@ -184,7 +184,7 @@ std::string parse_argument(unsigned char *string_start, unsigned char *old_cur, 
     while (*cur == ' ' && *cur != '\0') cur++;
     if (*cur == '\0') {
         Location loc;
-        loc.first = old_cur - string_start;
+        loc.first = source_offset(old_cur - string_start);
         loc.last = loc.first;
         throw PreprocessorError("Argument list is not closed with ')'", loc);
     }
@@ -220,7 +220,7 @@ std::string match_parentheses(unsigned char *string_start, unsigned char *&cur) 
     while (*cur != ')') {
         if (*cur == '\0') {
             Location loc;
-            loc.first = old_cur - string_start;
+            loc.first = source_offset(old_cur - string_start);
             loc.last = loc.first;
             throw PreprocessorError("unmatched parentheses", loc);
         }
@@ -245,7 +245,7 @@ std::string parse_argument2(unsigned char *string_start, unsigned char *old_cur,
     while (*cur != ')' && *cur != ',') {
         if (*cur == '\0') {
             Location loc;
-            loc.first = old_cur - string_start;
+            loc.first = source_offset(old_cur - string_start);
             loc.last = loc.first;
             throw PreprocessorError("Argument list is not closed with ')'", loc);
         }
@@ -281,9 +281,9 @@ std::vector<std::string> parse_arguments(unsigned char *string_start, unsigned c
 void interval_end(LocationManager &lm, size_t output_len,
                 size_t input_len, size_t input_interval_len,
                 uint32_t interval_type) {
-    lm.files.back().out_start0.push_back(output_len);
-    lm.files.back().in_start0.push_back(input_len);
-    lm.files.back().in_size0.push_back(input_interval_len);
+    lm.files.back().out_start0.push_back(source_offset(output_len));
+    lm.files.back().in_start0.push_back(source_offset(input_len));
+    lm.files.back().in_size0.push_back(source_offset(input_interval_len));
     lm.files.back().interval_type0.push_back(interval_type);
 }
 
@@ -333,8 +333,10 @@ int parse_bexpr(unsigned char *string_start, unsigned char *&cur, const cpp_symt
 }
 
 Result<std::string> CPreprocessor::run(const std::string &input, LocationManager &lm,
-        cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics) const {
+        cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics,
+        bool macro_expansion) const {
     LCOMPILERS_ASSERT(input[input.size()] == '\0');
+    bool fixed_form_comments = compiler_options.fixed_form && !macro_expansion;
     unsigned char *string_start=(unsigned char*)(&input[0]);
     unsigned char *cur = string_start;
     std::string output;
@@ -350,6 +352,16 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
         unsigned char *tok = cur;
         unsigned char *mar;
         unsigned char *t1, *t2, *t3, *t4;
+        if (fixed_form_comments && (cur == string_start || cur[-1] == '\n')
+                && (*cur == 'c' || *cur == 'C' || *cur == '*')) {
+            // Fixed-form comment line: copy it verbatim, so that quotes in
+            // it do not start a string literal
+            while (*cur != '\n' && *cur != '\0') cur++;
+            if (*cur == '\n') cur++;
+            if (!branch_enabled) continue;
+            output.append(token(tok, cur));
+            continue;
+        }
         /*!stags:re2c format = 'unsigned char *@@;\n'; */
         /*!re2c
             re2c:define:YYCURSOR = cur;
@@ -391,7 +403,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
             unterminated_multi_line_comment {
                 if (!branch_enabled) continue;
                 Location loc;
-                loc.first = tok - string_start;
+                loc.first = source_offset(tok - string_start);
                 loc.last = loc.first;
                 throw PreprocessorError("Unterminated comment", loc);
             }
@@ -479,7 +491,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 ifdef.active = branch_enabled;
                 ifdef.type = DirectiveType::Ifdef;
                 Location loc;
-                loc.first = tok - string_start;
+                loc.first = source_offset(tok - string_start);
                 loc.last = loc.first;
                 ifdef.loc = loc;
                 if (ifdef.active) {
@@ -505,7 +517,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 ifndef.active = branch_enabled;
                 ifndef.type = DirectiveType::Ifndef;
                 Location loc;
-                loc.first = tok - string_start;
+                loc.first = source_offset(tok - string_start);
                 loc.last = loc.first;
                 ifndef.loc = loc;
                 if (ifndef.active) {
@@ -531,7 +543,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 if_directive.active = branch_enabled;
                 if_directive.type = DirectiveType::If;
                 Location loc;
-                loc.first = tok - string_start;
+                loc.first = source_offset(tok - string_start);
                 loc.last = loc.first;
                 if_directive.loc = loc;
                 if (if_directive.active) {
@@ -556,7 +568,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
             "#" whitespace? "else" whitespace? comment? newline  {
                 if (ConditionalDirective_stack.size() == 0) {
                     Location loc;
-                    loc.first = cur - string_start;
+                    loc.first = source_offset(cur - string_start);
                     loc.last = loc.first;
                     throw PreprocessorError("#else encountered outside of #ifdef or #ifndef", loc);
                 }
@@ -580,7 +592,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
             "#" whitespace? "elif" whitespace? @t1 [^\n\x00]* @t2 newline  {
                 if (ConditionalDirective_stack.size() == 0) {
                     Location loc;
-                    loc.first = cur - string_start;
+                    loc.first = source_offset(cur - string_start);
                     loc.last = loc.first;
                     throw PreprocessorError("#elif encountered outside of #ifdef or #ifndef", loc);
                 }
@@ -610,7 +622,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
             "#" whitespace? "endif" whitespace? comment? newline  {
                 if (ConditionalDirective_stack.size() == 0) {
                     Location loc;
-                    loc.first = cur - string_start;
+                    loc.first = source_offset(cur - string_start);
                     loc.last = loc.first;
                     throw PreprocessorError("#endif encountered outside of #ifdef or #ifndef", loc);
                 }
@@ -629,8 +641,8 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 if (!branch_enabled) continue;
                 std::string msg = token(t1, t2);
                 Location loc;
-                loc.first = tok - string_start;
-                loc.last = (cur > string_start ? cur - 1 : cur) - string_start;
+                loc.first = source_offset(tok - string_start);
+                loc.last = source_offset((cur > string_start ? cur - 1 : cur) - string_start);
                 diagnostics.add(diag::Diagnostic(
                     "#warning " + msg, diag::Level::Warning,
                     diag::Stage::CPreprocessor,
@@ -642,8 +654,8 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                 if (!branch_enabled) continue;
                 std::string msg = token(t1, t2);
                 Location loc;
-                loc.first = tok - string_start;
-                loc.last = (cur > string_start ? cur - 1 : cur) - string_start;
+                loc.first = source_offset(tok - string_start);
+                loc.last = source_offset((cur > string_start ? cur - 1 : cur) - string_start);
                 throw PreprocessorError(diag::Diagnostic(
                     "#error " + msg, diag::Level::Error,
                     diag::Stage::CPreprocessor,
@@ -674,8 +686,8 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
 
                 if (!file_found) {
                     Location loc;
-                    loc.first = t1 - string_start;
-                    loc.last = t2-1 - string_start;
+                    loc.first = source_offset(t1 - string_start);
+                    loc.last = source_offset(t2-1 - string_start);
                     throw PreprocessorError("Include file '" + filename + "' not found. If an include path is available, please use the `-I` option to specify it.", loc);
                 }
 
@@ -728,7 +740,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                         args = parse_arguments(string_start, cur, false);
                         if (*cur != ')') {
                             Location loc;
-                            loc.first = cur - string_start;
+                            loc.first = source_offset(cur - string_start);
                             loc.last = loc.first;
                             throw PreprocessorError("expected ')'", loc);
                         }
@@ -736,12 +748,12 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                         std::vector<std::string> expanded_args = args;
                         for (size_t i = 0; i < args.size(); i++) {
                             LocationManager lm_tmp = lm;
-                            uint32_t pos = cur - string_start;
+                            uint32_t pos = source_offset(cur - string_start);
                             uint32_t line, col;
                             std::string filename;
                             lm.pos_to_linecol(pos, line, col, filename);
                             lm_tmp.files.back().current_line = line;
-                            Result<std::string> res = run(expanded_args[i], lm_tmp, macro_definitions, diagnostics);
+                            Result<std::string> res = run(expanded_args[i], lm_tmp, macro_definitions, diagnostics, true);
                             if (res.ok) {
                                 expanded_args[i] = res.result;
                             } else {
@@ -757,7 +769,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                         if (t == "__LINE__") {
                             uint32_t line;
                             if (lm.files.back().current_line == 0) {
-                                uint32_t pos = cur-string_start;
+                                uint32_t pos = source_offset(cur-string_start);
                                 uint32_t col;
                                 std::string filename;
                                 lm.pos_to_linecol(pos, line, col, filename);
@@ -777,13 +789,13 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                         expansion2 = expansion;
                         LocationManager lm_tmp = lm; // Make a copy
 
-                        uint32_t pos = cur-string_start;
+                        uint32_t pos = source_offset(cur-string_start);
                         uint32_t line, col;
                         std::string filename;
                         lm.pos_to_linecol(pos, line, col, filename);
                         lm_tmp.files.back().current_line = line;
 
-                        Result<std::string> res = run(expansion2, lm_tmp, macro_definitions, diagnostics);
+                        Result<std::string> res = run(expansion2, lm_tmp, macro_definitions, diagnostics, true);
                         if (res.ok) {
                             expansion = res.result;
                         } else {
@@ -792,7 +804,7 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
                         i++;
                         if (i == 40) {
                             Location loc;
-                            loc.first = cur - string_start;
+                            loc.first = source_offset(cur - string_start);
                             loc.last = loc.first;
                             throw PreprocessorError("maximum recursion limit reached", loc);
                         }
@@ -837,8 +849,8 @@ Result<std::string> CPreprocessor::run(const std::string &input, LocationManager
         lm.files.back().preprocessor = false;
         return Error();
     }
-    lm.files.back().out_start0.push_back(output.size());
-    lm.files.back().in_start0.push_back(input.size());
+    lm.files.back().out_start0.push_back(source_offset(output.size()));
+    lm.files.back().in_start0.push_back(source_offset(input.size()));
     // The just created interval ID:
     size_t N = lm.files.back().out_start0.size()-2;
     lm.files.back().in_size0.push_back(
@@ -1026,8 +1038,8 @@ void get_next_token(unsigned char *string_start, unsigned char *&cur, CPPTokenTy
             * {
                 std::string t = token(tok, cur);
                 Location loc;
-                loc.first = tok - string_start;
-                loc.last = cur-1 - string_start;
+                loc.first = source_offset(tok - string_start);
+                loc.last = source_offset(cur-1 - string_start);
                 throw PreprocessorError("Unknown token '" + t + "'", loc);
             }
             end { type = CPPTokenType::TK_EOF; return; }
@@ -1095,8 +1107,8 @@ void accept(unsigned char *string_start, unsigned char *&cur, CPPTokenType type_
     get_next_token(string_start, cur, type, str);
     if (type != type_expected) {
         Location loc;
-        loc.first = old_cur - string_start;
-        loc.last = cur - string_start;
+        loc.first = source_offset(old_cur - string_start);
+        loc.last = source_offset(cur - string_start);
         throw PreprocessorError("Unexpected token '" + token_type_to_string(type) + "', expected '" + token_type_to_string(type_expected) + "'", loc);
     }
 }
@@ -1108,8 +1120,8 @@ std::string accept_name(unsigned char *string_start, unsigned char *&cur) {
     get_next_token(string_start, cur, type, str);
     if (type != CPPTokenType::TK_NAME) {
         Location loc;
-        loc.first = old_cur - string_start;
-        loc.last = cur - string_start;
+        loc.first = source_offset(old_cur - string_start);
+        loc.last = source_offset(cur - string_start);
         throw PreprocessorError("Unexpected token '" + token_type_to_string(type) + "', expected '" + token_type_to_string(TK_NAME) + "'", loc);
     }
     return str;
@@ -1134,15 +1146,15 @@ int parse_bexpr(unsigned char *string_start, unsigned char *&cur, const cpp_symt
         || type == CPPTokenType::TK_BITAND || type == CPPTokenType::TK_BITXOR) {
         bool factor = parse_bfactor(string_start, cur, macro_definitions) > 0;
         if (type == CPPTokenType::TK_AND) {
-            tmp = (int)( (tmp > 0) && (factor > 0) );
+            tmp = (int)( (tmp > 0) && factor );
         } else if (type == CPPTokenType::TK_BITOR) {
-            tmp = (int)( (tmp > 0) | (factor > 0) );
+            tmp = (int)( (tmp > 0) | factor );
         } else if (type == CPPTokenType::TK_BITAND) {
-            tmp = (int)( (tmp > 0) & (factor > 0) );
+            tmp = (int)( (tmp > 0) & factor );
         } else if (type == CPPTokenType::TK_BITXOR) {
-            tmp = (int)( (tmp > 0) ^ (factor > 0) );
+            tmp = (int)( (tmp > 0) ^ factor );
         } else {
-            tmp = (int)( (tmp > 0) || (factor > 0) );
+            tmp = (int)( (tmp > 0) || factor );
         }
         old_cur = cur;
         get_next_token(string_start, cur, type, str);
@@ -1216,8 +1228,8 @@ int parse_term(unsigned char *string_start, unsigned char *&cur, const cpp_symta
             tmp = tmp ^ term;
         } else {
             Location loc;
-            loc.first = old_cur - string_start;
-            loc.last = cur - string_start;
+            loc.first = source_offset(old_cur - string_start);
+            loc.last = source_offset(cur - string_start);
             throw PreprocessorError("Unknown operator '" + token_type_to_string(type) + "'", loc);
         }
         old_cur = cur;
@@ -1253,7 +1265,7 @@ int parse_factor(unsigned char *string_start, unsigned char *&cur, const cpp_sym
                 args = parse_arguments(string_start, cur, false);
                 if (*cur != ')') {
                     Location loc;
-                    loc.first = cur - string_start;
+                    loc.first = source_offset(cur - string_start);
                     loc.last = loc.first;
                     throw PreprocessorError("expected ')'", loc);
                 }
@@ -1294,13 +1306,13 @@ int parse_factor(unsigned char *string_start, unsigned char *&cur, const cpp_sym
     } else if (type == CPPTokenType::TK_EOF) {
         // EOF means the expression is not complete
         Location loc;
-        loc.first = old_cur - string_start;
+        loc.first = source_offset(old_cur - string_start);
         loc.last = loc.first;
         throw PreprocessorError("factor(): The expression is not complete, expecting integer, name, +, - or (", loc);
     } else {
         Location loc;
-        loc.first = old_cur - string_start;
-        loc.last = cur - string_start;
+        loc.first = source_offset(old_cur - string_start);
+        loc.last = source_offset(cur - string_start);
         throw PreprocessorError("Unexpected token '" + token_type_to_string(type) + "' in factor()", loc);
     }
 }
@@ -1334,7 +1346,7 @@ int parse_relation(unsigned char *string_start, unsigned char *&cur, const cpp_s
             return lhs == rhs;
         } else {
             Location loc;
-            loc.first = cur - string_start;
+            loc.first = source_offset(cur - string_start);
             loc.last = loc.first;
             throw PreprocessorError("Unknown operator '" + token_type_to_string(type) + "' in if", loc);
         }
@@ -1366,7 +1378,7 @@ int parse_bfactor(unsigned char *string_start, unsigned char *&cur, const cpp_sy
             macro_name = str;
         } else {
             Location loc;
-            loc.first = old_cur - string_start;
+            loc.first = source_offset(old_cur - string_start);
             loc.last = loc.first;
             throw PreprocessorError("Unexpected token "
                 + token_type_to_string(type)

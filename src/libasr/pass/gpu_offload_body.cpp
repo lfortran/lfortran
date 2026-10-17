@@ -25,6 +25,10 @@ namespace LCompilers {
 // below can decline any more.
 void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
         const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map) {
+    // Every call of a function returning an array is made once, before
+    // the element loops below are built around its statement.
+    hoist_array_function_results(work);
+
     // Inline IntrinsicArrayFunction All before kernel extraction
     all_reduction_targets.clear();
     inline_intrinsic_all(work);
@@ -38,51 +42,6 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
 
     // Inline IntrinsicArrayFunction Sum before kernel extraction
     inline_intrinsic_sum(work);
-
-    // Also inline Sum in helper functions called from the
-    // loop body. This ensures that sum(f(x)) patterns
-    // inside helper functions are expanded into loops before
-    // kernel extraction, avoiding allocatable temporaries that
-    // cannot be represented as VLAs in Metal shaders.
-    {
-        GpuFunctionCollector sum_fc;
-        for (size_t i = 0; i < work.n_body; i++) {
-            sum_fc.visit_stmt(*work.body[i]);
-        }
-        bool sum_added = true;
-        while (sum_added) {
-            sum_added = false;
-            GpuFunctionCollector sum_tc;
-            for (auto &[fn_name, fn_sym] : sum_fc.functions) {
-                ASR::symbol_t *resolved =
-                    ASRUtils::symbol_get_past_external(fn_sym);
-                if (ASR::is_a<ASR::Function_t>(*resolved)) {
-                    ASR::Function_t *fn =
-                        ASR::down_cast<ASR::Function_t>(resolved);
-                    for (size_t i = 0; i < fn->n_body; i++) {
-                        sum_tc.visit_stmt(*fn->m_body[i]);
-                    }
-                }
-            }
-            for (auto &[name, sym] : sum_tc.functions) {
-                if (sum_fc.functions.find(name) ==
-                        sum_fc.functions.end()) {
-                    sum_fc.functions[name] = sym;
-                    sum_added = true;
-                }
-            }
-        }
-        for (auto &[fn_name, fn_sym] : sum_fc.functions) {
-            ASR::symbol_t *resolved =
-                ASRUtils::symbol_get_past_external(fn_sym);
-            if (ASR::is_a<ASR::Function_t>(*resolved)) {
-                ASR::Function_t *fn =
-                    ASR::down_cast<ASR::Function_t>(resolved);
-                inline_sum_in_stmts(fn->m_body, fn->n_body,
-                    fn->m_symtab);
-            }
-        }
-    }
 
     // Inline IntrinsicArrayFunction Transpose before kernel extraction
     inline_intrinsic_transpose(work);
@@ -129,7 +88,10 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
                         resolver.current_expr = &value;
                         resolver.replace_expr(value);
                     }
-                    assoc_map[sym] = value;
+                    GpuAssociateScopeWrites writes(ab->m_body, ab->n_body,
+                        ai + 1);
+                    assoc_map[sym] = gpu_fix_selector_subscripts(al, value,
+                        writes, ab->m_symtab, resolved_stmts);
                 }
             } else if (ASR::is_a<ASR::AssociateBlockCall_t>(
                            *ab->m_body[ai])) {
@@ -145,9 +107,9 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
                     inner_stmts.reserve(al, inner_ab->n_body);
                     inline_assoc_body(inner_ab, assoc_map,
                         inner_stmts);
-                    // Resolve the inner statements now: once they are
-                    // wrapped in a Block below the caller's resolver
-                    // no longer reaches them.
+                    // Resolve the inner statements now, so that the
+                    // inner associate names no longer count as uses of
+                    // the inner scope when it is wrapped below.
                     if (!assoc_map.empty()) {
                         AssociateVarResolverVisitor inner_resolver(
                             al, assoc_map);
@@ -180,6 +142,10 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
                 ASR::Assignment_t *asgn =
                     ASR::down_cast<ASR::Assignment_t>(
                         ab->m_body[ai]);
+                // A name bound to the array a function returns is the
+                // value of one call, made on entry: writing the call in
+                // place of the name would make it again wherever the name
+                // is read, for every element an array operation reads.
                 if (ASR::is_a<ASR::Var_t>(*asgn->m_target)) {
                     ASR::symbol_t *sym =
                         ASR::down_cast<ASR::Var_t>(
@@ -188,8 +154,11 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
                         ASR::down_cast<ASR::Variable_t>(sym)
                             ->m_parent_symtab == ab->m_symtab &&
                         assoc_map.find(sym) == assoc_map.end() &&
+                        !gpu_is_array_function_result(asgn->m_value) &&
                         is_single_assignment_binding(sym,
-                            ab->m_body, ab->n_body)) {
+                            ab->m_body, ab->n_body) &&
+                        !GpuAssociateScopeWrites(ab->m_body, ab->n_body,
+                            ai + 1).may_change(asgn->m_value)) {
                         assoc_map[sym] = asgn->m_value;
                     } else {
                         resolved_stmts.push_back(al,
@@ -204,17 +173,26 @@ void GpuOffloadVisitor::rewrite_loop_body_for_kernel(ParallelLoopNest &work,
         }
     };
 
-    // Resolve AssociateBlocks inside the loop body (e.g.,
-    // block { associate(nh => n) ... } within the loop). GPU kernels
-    // cannot use Pointer-based associate aliases, so we inline the
-    // associate targets and replace the AssociateBlockCall with the
-    // resolved statements.
-    for (size_t bi = 0; bi < work.n_body; bi++) {
-        if (!ASR::is_a<ASR::BlockCall_t>(*work.body[bi])) continue;
-        ASR::BlockCall_t *bc = ASR::down_cast<ASR::BlockCall_t>(
-            work.body[bi]);
-        if (!ASR::is_a<ASR::Block_t>(*bc->m_m)) continue;
-        ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(bc->m_m);
+    // Resolve AssociateBlocks inside the BLOCKs of the loop body (e.g.,
+    // block { associate(nh => n) ... } within the loop), and inside the
+    // BLOCKs those contain. GPU kernels cannot use Pointer-based associate
+    // aliases, so we inline the associate targets and replace the
+    // AssociateBlockCall with the resolved statements.
+    std::vector<ASR::Block_t*> body_blocks;
+    std::function<void(ASR::stmt_t**, size_t)> collect_blocks =
+            [&](ASR::stmt_t **stmts, size_t n_stmts) {
+        for (size_t i = 0; i < n_stmts; i++) {
+            if (!ASR::is_a<ASR::BlockCall_t>(*stmts[i])) continue;
+            ASR::symbol_t *m = ASR::down_cast<ASR::BlockCall_t>(
+                stmts[i])->m_m;
+            if (!ASR::is_a<ASR::Block_t>(*m)) continue;
+            ASR::Block_t *block = ASR::down_cast<ASR::Block_t>(m);
+            body_blocks.push_back(block);
+            collect_blocks(block->m_body, block->n_body);
+        }
+    };
+    collect_blocks(work.body, work.n_body);
+    for (ASR::Block_t *block : body_blocks) {
         Vec<ASR::stmt_t*> new_block_body;
         new_block_body.reserve(al, block->n_body);
         bool changed = false;

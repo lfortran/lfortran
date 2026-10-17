@@ -232,18 +232,15 @@ time_section "🧪 Testing Fiats" '
   export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
 
-  git checkout 0a2ff33cf8c06c6379d8e8883e846577a29f2f5e
+  git checkout d6f9d93f952acb4b5d5865e6b79369c477d3a291
   fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays
 
   if [[ "$(uname)" == "Darwin" ]]; then
     rm -rf build
-    git fetch https://github.com/certik/fiats lf1
-    git checkout 869584f56955fe591304587eb34068b814448c33
-    # Fiats computes in real(8), which is on the unsupported list for Metal
-    # (it has no 64-bit float), so --gpu-allow-cpu-fallback runs those
-    # `do concurrent` loops on the CPU with a warning; every other loop is
-    # offloaded. The lf1 branch turns the loops LFortran cannot offload yet
-    # into serial loops.
+    # Fiats computes some of its loops in real(8), which is on the
+    # unsupported list for Metal (it has no 64-bit float), so
+    # --gpu-allow-cpu-fallback runs those `do concurrent` loops on the CPU
+    # with a warning; every other loop is offloaded.
     fpm test --compiler=lfortran --flag --cpp --flag --separate-compilation --flag --realloc-lhs-arrays --flag "--gpu=metal --gpu-allow-cpu-fallback"
   fi
 

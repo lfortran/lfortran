@@ -17,15 +17,20 @@ target datalayout = "..."
 @3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @_Name_mytype = private unnamed_addr constant [7 x i8] c"mytype\00", align 1
 @_Type_Info_mytype = linkonce_odr unnamed_addr constant { i8*, i8*, i8* } { i8* getelementptr inbounds ([7 x i8], [7 x i8]* @_Name_mytype, i32 0, i32 0), i8* inttoptr (i64 4 to i8*), i8* null }, align 8
-@_VTable_mytype = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_mytype to i8*), i8* bitcast (void (i8*, i8*)* @_copy_module_call_subroutine_without_type_01_mytype to i8*), i8* bitcast (void (i8**)* @_allocate_struct_module_call_subroutine_without_type_01_mytype to i8*), i8* bitcast (void (i8*)* @finalize_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @finalize_StructType__mytype_3_of_module_call_subroutine_without_type_01_no_final_for_UPoly to i8*), i8* bitcast (void (%module_call_subroutine_without_type_01.mytype.3_class*)* @__module_module_call_subroutine_without_type_01_get_i to i8*)] }, align 8
+@_VTable_mytype = linkonce_odr unnamed_addr constant { [7 x i8*] } { [7 x i8*] [i8* null, i8* bitcast ({ i8*, i8*, i8* }* @_Type_Info_mytype to i8*), i8* bitcast (void (i8*, i8*, i1)* @_copy_module_call_subroutine_without_type_01_mytype to i8*), i8* bitcast (void (i8**)* @_allocate_struct_module_call_subroutine_without_type_01_mytype to i8*), i8* bitcast (void (i8*)* @finalize_StructType__mytype_3_of_module_call_subroutine_without_type_01_for_UPoly to i8*), i8* bitcast (void (i8*)* @finalize_StructType__mytype_3_of_module_call_subroutine_without_type_01_no_final_for_UPoly to i8*), i8* bitcast (void (%module_call_subroutine_without_type_01.mytype.3_class*)* @__module_module_call_subroutine_without_type_01_get_i to i8*)] }, align 8
 @4 = private unnamed_addr constant [4 x i8] c"obj\00", align 1
 @5 = private unnamed_addr constant [63 x i8] c"tests/../integration_tests/call_subroutine_without_type_01.f90\00", align 1
 @6 = private unnamed_addr constant [22 x i8] c"'%s' unallocated here\00", align 1
-@7 = private unnamed_addr constant [52 x i8] c"Tried to access member of unallocated variable '%s'\00", align 1
-@8 = private unnamed_addr constant [6 x i8] c"get_i\00", align 1
-@9 = private unnamed_addr constant [63 x i8] c"tests/../integration_tests/call_subroutine_without_type_01.f90\00", align 1
-@10 = private unnamed_addr constant [20 x i8] c"This is unallocated\00", align 1
-@11 = private unnamed_addr constant [45 x i8] c"Argument %d of subroutine %s is unallocated.\00", align 1
+@7 = private unnamed_addr constant [1 x { i8*, i32, i32, i32, i32 }] [{ i8*, i32, i32, i32, i32 } { i8* getelementptr inbounds ([63 x i8], [63 x i8]* @5, i32 0, i32 0), i32 27, i32 5, i32 27, i32 9 }]
+@8 = private unnamed_addr constant [52 x i8] c"Tried to access member of unallocated variable '%s'\00", align 1
+@9 = private unnamed_addr constant [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }] [{ i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 } { i8 1, i8* getelementptr inbounds ([22 x i8], [22 x i8]* @6, i32 0, i32 0), { i8*, i32, i32, i32, i32 }* getelementptr inbounds ([1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* @7, i32 0, i32 0), i32 1 }]
+@10 = private unnamed_addr constant { i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 } { i8* getelementptr inbounds ([52 x i8], [52 x i8]* @8, i32 0, i32 0), { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* getelementptr inbounds ([1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* @9, i32 0, i32 0), i32 1 }
+@11 = private unnamed_addr constant [6 x i8] c"get_i\00", align 1
+@12 = private unnamed_addr constant [20 x i8] c"This is unallocated\00", align 1
+@13 = private unnamed_addr constant [1 x { i8*, i32, i32, i32, i32 }] [{ i8*, i32, i32, i32, i32 } { i8* getelementptr inbounds ([63 x i8], [63 x i8]* @5, i32 0, i32 0), i32 28, i32 5, i32 28, i32 20 }]
+@14 = private unnamed_addr constant [45 x i8] c"Argument %d of subroutine %s is unallocated.\00", align 1
+@15 = private unnamed_addr constant [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }] [{ i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 } { i8 1, i8* getelementptr inbounds ([20 x i8], [20 x i8]* @12, i32 0, i32 0), { i8*, i32, i32, i32, i32 }* getelementptr inbounds ([1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* @13, i32 0, i32 0), i32 1 }]
+@16 = private unnamed_addr constant { i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 } { i8* getelementptr inbounds ([45 x i8], [45 x i8]* @14, i32 0, i32 0), { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* getelementptr inbounds ([1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* @15, i32 0, i32 0), i32 1 }
 
 define void @__module_module_call_subroutine_without_type_01_get_i(%module_call_subroutine_without_type_01.mytype.3_class* %self) {
 .entry:
@@ -81,9 +86,9 @@ define void @get_i.__module_module_call_subroutine_without_type_01_get_r() {
   %1 = alloca i64, align 8
   %2 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
   %3 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %2, i32 0, i32 1
-  %4 = load %module_call_subroutine_without_type_01.mytype.3*, %module_call_subroutine_without_type_01.mytype.3** %3, align 8
+  %4 = load %module_call_subroutine_without_type_01.mytype.3*, %module_call_subroutine_without_type_01.mytype.3** %3, align 1
   %5 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %4, i32 0, i32 0
-  %6 = load float, float* %5, align 4
+  %6 = load float, float* %5, align 1
   %7 = alloca float, align 4
   store float %6, float* %7, align 4
   %8 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %0, i8* null, i64 0, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @serialization_info, i32 0, i32 0), i64* %1, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, %string_descriptor* @string_const, float* %7)
@@ -108,9 +113,9 @@ free_nonnull:                                     ; preds = %.entry
 free_done:                                        ; preds = %free_nonnull, %.entry
   %18 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** @__module___lcompilers_created__nested_context__module_call_subroutine_without_type_01__get_i__self, align 8
   %19 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %18, i32 0, i32 1
-  %20 = load %module_call_subroutine_without_type_01.mytype.3*, %module_call_subroutine_without_type_01.mytype.3** %19, align 8
+  %20 = load %module_call_subroutine_without_type_01.mytype.3*, %module_call_subroutine_without_type_01.mytype.3** %19, align 1
   %21 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %20, i32 0, i32 0
-  %22 = load float, float* %21, align 4
+  %22 = load float, float* %21, align 1
   %23 = fcmp une float %22, 1.000000e+00
   br i1 %23, label %then, label %else
 
@@ -157,108 +162,55 @@ declare void @llvm.memcpy.p0i8.p0i8.i32(i8* noalias nocapture writeonly, i8* noa
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  %2 = call i8* @_lfortran_get_default_allocator()
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %obj = alloca %module_call_subroutine_without_type_01.mytype.3_class*, align 8
   store %module_call_subroutine_without_type_01.mytype.3_class* null, %module_call_subroutine_without_type_01.mytype.3_class** %obj, align 8
-  %3 = call i8* @_lfortran_get_default_allocator()
-  %4 = call i8* @_lfortran_malloc_alloc(i8* %3, i64 4)
-  call void @llvm.memset.p0i8.i32(i8* %4, i8 0, i32 4, i1 false)
-  %5 = call i8* @_lfortran_get_default_allocator()
-  %6 = call i8* @_lfortran_malloc_alloc(i8* %5, i64 16)
-  call void @llvm.memset.p0i8.i32(i8* %6, i8 0, i32 16, i1 false)
-  %7 = bitcast i8* %6 to %module_call_subroutine_without_type_01.mytype.3_class*
-  store %module_call_subroutine_without_type_01.mytype.3_class* %7, %module_call_subroutine_without_type_01.mytype.3_class** %obj, align 8
-  %8 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %obj, align 8
-  %9 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %8, i32 0, i32 1
-  %10 = bitcast i8* %4 to %module_call_subroutine_without_type_01.mytype.3*
-  store %module_call_subroutine_without_type_01.mytype.3* %10, %module_call_subroutine_without_type_01.mytype.3** %9, align 8
-  %11 = load %module_call_subroutine_without_type_01.mytype.3*, %module_call_subroutine_without_type_01.mytype.3** %9, align 8
-  %12 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %7 to i32 (...)***
-  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_mytype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %12, align 8
-  %13 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %11, i32 0, i32 0
-  %14 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %obj, align 8
-  %15 = ptrtoint %module_call_subroutine_without_type_01.mytype.3_class* %14 to i64
-  %16 = icmp eq i64 %15, 0
-  br i1 %16, label %then, label %ifcont
+  %2 = call i8* @_lfortran_get_default_allocator()
+  %3 = call i8* @_lfortran_malloc_alloc(i8* %2, i64 4)
+  call void @llvm.memset.p0i8.i32(i8* %3, i8 0, i32 4, i1 false)
+  %4 = call i8* @_lfortran_get_default_allocator()
+  %5 = call i8* @_lfortran_malloc_alloc(i8* %4, i64 16)
+  call void @llvm.memset.p0i8.i32(i8* %5, i8 0, i32 16, i1 false)
+  %6 = bitcast i8* %5 to %module_call_subroutine_without_type_01.mytype.3_class*
+  store %module_call_subroutine_without_type_01.mytype.3_class* %6, %module_call_subroutine_without_type_01.mytype.3_class** %obj, align 8
+  %7 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %obj, align 8
+  %8 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %7, i32 0, i32 1
+  %9 = bitcast i8* %3 to %module_call_subroutine_without_type_01.mytype.3*
+  store %module_call_subroutine_without_type_01.mytype.3* %9, %module_call_subroutine_without_type_01.mytype.3** %8, align 8
+  %10 = load %module_call_subroutine_without_type_01.mytype.3*, %module_call_subroutine_without_type_01.mytype.3** %8, align 1
+  %11 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %6 to i32 (...)***
+  store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_mytype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %11, align 8
+  %12 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %10, i32 0, i32 0
+  %13 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %obj, align 8
+  %14 = ptrtoint %module_call_subroutine_without_type_01.mytype.3_class* %13 to i64
+  %15 = icmp eq i64 %14, 0
+  br i1 %15, label %then, label %ifcont
 
 then:                                             ; preds = %.entry
-  %17 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
-  %18 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
-  %19 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %18, i32 0, i32 0
-  %20 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %19, i32 0, i32 0
-  store i8* getelementptr inbounds ([63 x i8], [63 x i8]* @5, i32 0, i32 0), i8** %20, align 8
-  %21 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %19, i32 0, i32 1
-  store i32 27, i32* %21, align 4
-  %22 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %19, i32 0, i32 2
-  store i32 5, i32* %22, align 4
-  %23 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %19, i32 0, i32 3
-  store i32 27, i32* %23, align 4
-  %24 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %19, i32 0, i32 4
-  store i32 9, i32* %24, align 4
-  %25 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %2, i8* getelementptr inbounds ([22 x i8], [22 x i8]* @6, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @4, i32 0, i32 0))
-  %26 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %17, i32 0, i32 0
-  %27 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %18, i32 0, i32 0
-  %28 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %26, i32 0, i32 2
-  %29 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %26, i32 0, i32 0
-  store i1 true, i1* %29, align 1
-  %30 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %26, i32 0, i32 1
-  store i8* %25, i8** %30, align 8
-  store { i8*, i32, i32, i32, i32 }* %27, { i8*, i32, i32, i32, i32 }** %28, align 8
-  %31 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %26, i32 0, i32 3
-  store i32 1, i32* %31, align 4
-  %32 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %17, i32 0, i32 0
-  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %2, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %32, i32 1, i8* getelementptr inbounds ([52 x i8], [52 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @4, i32 0, i32 0))
-  call void @exit(i32 1)
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @10 to i8*), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @4, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @4, i32 0, i32 0))
   unreachable
 
 ifcont:                                           ; preds = %.entry
-  %33 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %14, i32 0, i32 1
-  %34 = load %module_call_subroutine_without_type_01.mytype.3*, %module_call_subroutine_without_type_01.mytype.3** %33, align 8
-  %35 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %34, i32 0, i32 0
-  store float 1.000000e+00, float* %35, align 4
-  %36 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %obj, align 8
-  %37 = ptrtoint %module_call_subroutine_without_type_01.mytype.3_class* %36 to i64
-  %38 = icmp eq i64 %37, 0
-  br i1 %38, label %then1, label %ifcont2
+  %16 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %13, i32 0, i32 1
+  %17 = load %module_call_subroutine_without_type_01.mytype.3*, %module_call_subroutine_without_type_01.mytype.3** %16, align 1
+  %18 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %17, i32 0, i32 0
+  store float 1.000000e+00, float* %18, align 1
+  %19 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %obj, align 8
+  %20 = ptrtoint %module_call_subroutine_without_type_01.mytype.3_class* %19 to i64
+  %21 = icmp eq i64 %20, 0
+  br i1 %21, label %then1, label %ifcont2
 
 then1:                                            ; preds = %ifcont
-  %39 = alloca [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], align 8
-  %40 = alloca [1 x { i8*, i32, i32, i32, i32 }], align 8
-  %41 = getelementptr inbounds [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %40, i32 0, i32 0
-  %42 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %41, i32 0, i32 0
-  store i8* getelementptr inbounds ([63 x i8], [63 x i8]* @9, i32 0, i32 0), i8** %42, align 8
-  %43 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %41, i32 0, i32 1
-  store i32 28, i32* %43, align 4
-  %44 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %41, i32 0, i32 2
-  store i32 5, i32* %44, align 4
-  %45 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %41, i32 0, i32 3
-  store i32 28, i32* %45, align 4
-  %46 = getelementptr { i8*, i32, i32, i32, i32 }, { i8*, i32, i32, i32, i32 }* %41, i32 0, i32 4
-  store i32 20, i32* %46, align 4
-  %47 = call i8* (i8*, i8*, ...) @_lcompilers_snprintf_alloc(i8* %2, i8* getelementptr inbounds ([20 x i8], [20 x i8]* @10, i32 0, i32 0))
-  %48 = getelementptr inbounds [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %39, i32 0, i32 0
-  %49 = getelementptr [1 x { i8*, i32, i32, i32, i32 }], [1 x { i8*, i32, i32, i32, i32 }]* %40, i32 0, i32 0
-  %50 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %48, i32 0, i32 2
-  %51 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %48, i32 0, i32 0
-  store i1 true, i1* %51, align 1
-  %52 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %48, i32 0, i32 1
-  store i8* %47, i8** %52, align 8
-  store { i8*, i32, i32, i32, i32 }* %49, { i8*, i32, i32, i32, i32 }** %50, align 8
-  %53 = getelementptr { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %48, i32 0, i32 3
-  store i32 1, i32* %53, align 4
-  %54 = getelementptr [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }], [1 x { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }]* %39, i32 0, i32 0
-  call void (i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...) @_lcompilers_runtime_error(i8* %2, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }* %54, i32 1, i8* getelementptr inbounds ([45 x i8], [45 x i8]* @11, i32 0, i32 0), i32 1, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @8, i32 0, i32 0))
-  call void @exit(i32 1)
+  call void (i8*, ...) @_lcompilers_runtime_error_exit(i8* bitcast ({ i8*, { i8, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32 }* @16 to i8*), i32 1, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @11, i32 0, i32 0))
   unreachable
 
 ifcont2:                                          ; preds = %ifcont
-  %55 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %obj, align 8
-  %56 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %55 to void (%module_call_subroutine_without_type_01.mytype.3_class*)***
-  %57 = load void (%module_call_subroutine_without_type_01.mytype.3_class*)**, void (%module_call_subroutine_without_type_01.mytype.3_class*)*** %56, align 8
-  %58 = getelementptr inbounds void (%module_call_subroutine_without_type_01.mytype.3_class*)*, void (%module_call_subroutine_without_type_01.mytype.3_class*)** %57, i32 4
-  %59 = load void (%module_call_subroutine_without_type_01.mytype.3_class*)*, void (%module_call_subroutine_without_type_01.mytype.3_class*)** %58, align 8
-  call void %59(%module_call_subroutine_without_type_01.mytype.3_class* %55)
+  %22 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %obj, align 8
+  %23 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %22 to void (%module_call_subroutine_without_type_01.mytype.3_class*)***
+  %24 = load void (%module_call_subroutine_without_type_01.mytype.3_class*)**, void (%module_call_subroutine_without_type_01.mytype.3_class*)*** %23, align 1
+  %25 = getelementptr inbounds void (%module_call_subroutine_without_type_01.mytype.3_class*)*, void (%module_call_subroutine_without_type_01.mytype.3_class*)** %24, i32 4
+  %26 = load void (%module_call_subroutine_without_type_01.mytype.3_class*)*, void (%module_call_subroutine_without_type_01.mytype.3_class*)** %25, align 1
+  call void %26(%module_call_subroutine_without_type_01.mytype.3_class* %22)
   br label %return
 
 return:                                           ; preds = %ifcont2
@@ -268,25 +220,25 @@ FINALIZE_SYMTABLE_call_subroutine_without_type_01: ; preds = %return
   br label %Finalize_Variable_obj
 
 Finalize_Variable_obj:                            ; preds = %FINALIZE_SYMTABLE_call_subroutine_without_type_01
-  %60 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %obj, align 8
-  call void @finalize_allocatable__StructType_Class__mytype_3_of_module_call_subroutine_without_type_01_no_final(%module_call_subroutine_without_type_01.mytype.3_class* %60)
+  %27 = load %module_call_subroutine_without_type_01.mytype.3_class*, %module_call_subroutine_without_type_01.mytype.3_class** %obj, align 8
+  call void @finalize_allocatable__StructType_Class__mytype_3_of_module_call_subroutine_without_type_01_no_final(%module_call_subroutine_without_type_01.mytype.3_class* %27)
   call void @_lfortran_internal_alloc_finalize()
   ret i32 0
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-define linkonce_odr void @_copy_module_call_subroutine_without_type_01_mytype(i8* %0, i8* %1) {
+define linkonce_odr void @_copy_module_call_subroutine_without_type_01_mytype(i8* %0, i8* %1, i1 %2) {
 entry:
-  %2 = bitcast i8* %0 to %module_call_subroutine_without_type_01.mytype.3*
-  %3 = bitcast i8* %1 to %module_call_subroutine_without_type_01.mytype.3*
-  %4 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %2, i32 0, i32 0
-  %5 = load float, float* %4, align 4
-  %6 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %3, i32 0, i32 0
+  %3 = bitcast i8* %0 to %module_call_subroutine_without_type_01.mytype.3*
+  %4 = bitcast i8* %1 to %module_call_subroutine_without_type_01.mytype.3*
+  %5 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %3, i32 0, i32 0
+  %6 = load float, float* %5, align 1
+  %7 = getelementptr %module_call_subroutine_without_type_01.mytype.3, %module_call_subroutine_without_type_01.mytype.3* %4, i32 0, i32 0
   br i1 true, label %then, label %else
 
 then:                                             ; preds = %entry
-  store float %5, float* %6, align 4
+  store float %6, float* %7, align 1
   br label %ifcont
 
 else:                                             ; preds = %entry
@@ -302,7 +254,7 @@ entry:
   %2 = call i8* @_lfortran_malloc_alloc(i8* %1, i64 16)
   call void @llvm.memset.p0i8.i32(i8* %2, i8 0, i32 16, i1 false)
   store i8* %2, i8** %0, align 8
-  %3 = load i8*, i8** %0, align 8
+  %3 = load i8*, i8** %0, align 1
   %4 = bitcast i8* %3 to %module_call_subroutine_without_type_01.mytype.3_class*
   %5 = bitcast %module_call_subroutine_without_type_01.mytype.3_class* %4 to i32 (...)***
   store i32 (...)** bitcast (i8** getelementptr inbounds ({ [7 x i8*] }, { [7 x i8*] }* @_VTable_mytype, i32 0, i32 0, i32 2) to i32 (...)**), i32 (...)*** %5, align 8
@@ -328,9 +280,8 @@ entry:
   ret void
 }
 
-declare i8* @_lcompilers_snprintf_alloc(i8*, i8*, ...)
-
-declare void @_lcompilers_runtime_error(i8*, { i1, i8*, { i8*, i32, i32, i32, i32 }*, i32 }*, i32, i8*, ...)
+; Function Attrs: cold noreturn nounwind
+declare void @_lcompilers_runtime_error_exit(i8*, ...) #2
 
 define internal void @finalize_allocatable__StructType_Class__mytype_3_of_module_call_subroutine_without_type_01_no_final(%module_call_subroutine_without_type_01.mytype.3_class* %0) {
 entry:
@@ -341,7 +292,7 @@ entry:
 is_allocated.then:                                ; preds = %entry
   call void @finalize_StructType_Class__mytype_3_of_module_call_subroutine_without_type_01_no_final(%module_call_subroutine_without_type_01.mytype.3_class* %0)
   %3 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %0, i32 0, i32 1
-  %4 = load %module_call_subroutine_without_type_01.mytype.3*, %module_call_subroutine_without_type_01.mytype.3** %3, align 8
+  %4 = load %module_call_subroutine_without_type_01.mytype.3*, %module_call_subroutine_without_type_01.mytype.3** %3, align 1
   %5 = icmp ne %module_call_subroutine_without_type_01.mytype.3* %4, null
   br i1 %5, label %is_allocated.then1, label %is_allocated.else
 
@@ -368,16 +319,16 @@ is_allocated.ifcont3:                             ; preds = %is_allocated.else2,
 define internal void @finalize_StructType_Class__mytype_3_of_module_call_subroutine_without_type_01_no_final(%module_call_subroutine_without_type_01.mytype.3_class* %0) {
 entry:
   %1 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %0, i32 0, i32 0
-  %2 = load i32 (...)**, i32 (...)*** %1, align 8
+  %2 = load i32 (...)**, i32 (...)*** %1, align 1
   %3 = getelementptr %module_call_subroutine_without_type_01.mytype.3_class, %module_call_subroutine_without_type_01.mytype.3_class* %0, i32 0, i32 1
-  %4 = load %module_call_subroutine_without_type_01.mytype.3**, %module_call_subroutine_without_type_01.mytype.3** %3, align 8
+  %4 = load %module_call_subroutine_without_type_01.mytype.3**, %module_call_subroutine_without_type_01.mytype.3** %3, align 1
   %5 = bitcast %module_call_subroutine_without_type_01.mytype.3** %4 to i8*
   %6 = icmp ne i32 (...)** %2, null
   br i1 %6, label %is_allocated.then, label %is_allocated.else2
 
 is_allocated.then:                                ; preds = %entry
   %7 = getelementptr inbounds i32 (...)*, i32 (...)** %2, i32 3
-  %8 = load i8*, i32 (...)** %7, align 8
+  %8 = load i8*, i32 (...)** %7, align 1
   %9 = bitcast i8* %8 to void (i8*)*
   %10 = icmp ne i8* %5, null
   br i1 %10, label %is_allocated.then1, label %is_allocated.else
@@ -401,3 +352,4 @@ is_allocated.ifcont3:                             ; preds = %is_allocated.else2,
 
 attributes #0 = { argmemonly nounwind willreturn writeonly }
 attributes #1 = { argmemonly nounwind willreturn }
+attributes #2 = { cold noreturn nounwind }

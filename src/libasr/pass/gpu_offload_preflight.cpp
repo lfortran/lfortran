@@ -198,11 +198,23 @@ ASR::expr_t* gpu_scope_array_shape_source(const ASR::Variable_t *var,
     if (!src || !ASRUtils::is_array(ASRUtils::expr_type(src))) {
         return nullptr;
     }
+    // The shape of a function's result is the one the function gives it,
+    // which device code sees once the function is lowered (see
+    // gpu_scope_array_function_result), not the shape of a call the host
+    // would have to make.
+    if (gpu_is_array_function_result(src)) return nullptr;
     if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(src))
             != static_cast<int>(arr->n_dims)) {
         return nullptr;
     }
     return src;
+}
+
+bool gpu_scope_array_function_result(const ASR::Variable_t *var,
+        ASR::stmt_t **body, size_t n_body) {
+    if (!ASRUtils::is_allocatable(var->m_type)) return false;
+    return gpu_is_array_function_result(find_gpu_first_assigned_value(body,
+        n_body, std::string(var->m_name)));
 }
 
 // Pre-flight for the offload pass: would the backend be able to size every
@@ -530,7 +542,7 @@ ASR::ttype_t* gpu_device_narrowed_type(const GpuDeviceCapabilities &caps,
 }
 
 GpuDeclineReason unsupported_on_device(const ASR::stmt_t &s,
-        const GpuDeviceCapabilities &caps) {
+        const GpuDeviceCapabilities &/*caps*/) {
     switch (s.type) {
         case ASR::stmtType::Print:
         case ASR::stmtType::FileWrite:
@@ -543,14 +555,6 @@ GpuDeclineReason unsupported_on_device(const ASR::stmt_t &s,
         case ASR::stmtType::FileEndfile:
         case ASR::stmtType::Flush:
             return GpuDeclineReason::StatementIo;
-        case ASR::stmtType::Stop:
-        case ASR::stmtType::ErrorStop:
-            // A device that can raise a trap stops the launch where the
-            // program said to stop. The exit code goes nowhere -- a grid
-            // returns no status -- but stopping is what the statement is
-            // for, and a thread that traps runs nothing after it.
-            if (caps.device_abort) return GpuDeclineReason::None;
-            return GpuDeclineReason::StatementStop;
         default:
             return GpuDeclineReason::None;
     }

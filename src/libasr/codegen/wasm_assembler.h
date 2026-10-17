@@ -1,4 +1,5 @@
 #include <libasr/assert.h>
+#include <libasr/checked_cast.h>
 #include <libasr/codegen/wasm_utils.h>
 #include <libasr/wasm_visitor.h>
 #include <fstream>
@@ -15,13 +16,13 @@ void emit_expr_end(Vec<uint8_t> &code, Allocator &al) {
 void emit_str(Vec<uint8_t> &code, Allocator &al, std::string text) {
     std::vector<uint8_t> text_bytes(text.size());
     std::memcpy(text_bytes.data(), text.data(), text.size());
-    emit_u32(code, al, text_bytes.size());
+    emit_u32(code, al, checked_integer_cast<uint32_t>(text_bytes.size()));
     for (auto &byte : text_bytes) emit_b8(code, al, byte);
 }
 
 // function to emit length placeholder
 uint32_t emit_len_placeholder(Vec<uint8_t> &code, Allocator &al) {
-    uint32_t len_idx = code.size();
+    uint32_t len_idx = checked_integer_cast<uint32_t>(code.size());
     code.push_back(al, 0x00);
     code.push_back(al, 0x00);
     code.push_back(al, 0x00);
@@ -50,11 +51,11 @@ void emit_u32_b32_idx(Vec<uint8_t> &code, Allocator &al, uint32_t idx,
 
 // function to fixup length at the given length index
 void fixup_len(Vec<uint8_t> &code, Allocator &al, uint32_t len_idx) {
-    uint32_t section_len = code.size() - len_idx - 4u;
+    uint32_t section_len = checked_integer_cast<uint32_t>(code.size() - len_idx - 4u);
     emit_u32_b32_idx(code, al, len_idx, section_len);
 }
 
-void save_js_glue_wasi(std::string filename) {
+bool save_js_glue_wasi(std::string filename) {
     std::string js_glue =
 R"(async function main() {
     const fs = require("fs");
@@ -81,13 +82,15 @@ main();
     std::ofstream out(filename);
     out << js_glue;
     out.close();
+    return bool(out);
 }
 
-void save_bin(Vec<uint8_t> &code, std::string filename) {
+// Returns false if the module or its JavaScript glue could not be written.
+bool save_bin(Vec<uint8_t> &code, std::string filename) {
     std::ofstream out(filename);
     out.write((const char *)code.p, code.size());
     out.close();
-    save_js_glue_wasi(filename);
+    return out && save_js_glue_wasi(filename);
 }
 
 }  // namespace wasm
@@ -219,12 +222,12 @@ class WASMAssembler: public WASM_INSTS_VISITOR::WASMInstsAssembler<WASMAssembler
     uint32_t emit_func_type(std::vector<wasm::var_type> &params, std::vector<wasm::var_type> &results) {
         wasm::emit_b8(m_type_section, m_al, 0x60);
 
-        wasm::emit_u32(m_type_section, m_al, params.size());
+        wasm::emit_u32(m_type_section, m_al, checked_integer_cast<uint32_t>(params.size()));
         for (auto param:params) {
            wasm::emit_b8(m_type_section, m_al, param);
         }
 
-        wasm::emit_u32(m_type_section, m_al, results.size());
+        wasm::emit_u32(m_type_section, m_al, checked_integer_cast<uint32_t>(results.size()));
         for (auto result:results) {
            wasm::emit_b8(m_type_section, m_al, result);
         }
@@ -294,7 +297,7 @@ class WASMAssembler: public WASM_INSTS_VISITOR::WASMInstsAssembler<WASMAssembler
         // every section in WebAssembly is encoded by adding its section id,
         // followed by the content size and lastly the contents
         wasm::emit_u32(des, m_al, section_id);
-        wasm::emit_u32(des, m_al, 4U /* size of no_of_elements */ + section_content.size());
+        wasm::emit_u32(des, m_al, checked_integer_cast<uint32_t>(4U /* size of no_of_elements */ + section_content.size()));
         uint32_t len_idx = wasm::emit_len_placeholder(des, m_al);
         wasm::emit_u32_b32_idx(des, m_al, len_idx, no_of_elements);
         for (auto &byte : section_content) {
@@ -344,23 +347,24 @@ class WASMAssembler: public WASM_INSTS_VISITOR::WASMInstsAssembler<WASMAssembler
     uint32_t declare_global_var(wasm::var_type var_type, T init_val) {
         m_global_section.push_back(m_al, var_type);
         m_global_section.push_back(m_al, true /* mutable */);
+        // init_val is converted to the value type of the global.
         switch (var_type)
         {
             case wasm::i32:
                 wasm::emit_b8(m_global_section, m_al, 0x41); // emit instruction
-                wasm::emit_i32(m_global_section, m_al, init_val); // emit val
+                wasm::emit_i32(m_global_section, m_al, static_cast<int32_t>(init_val)); // emit val
                 break;
             case wasm::i64:
                 wasm::emit_b8(m_global_section, m_al, 0x42); // emit instruction
-                wasm::emit_i64(m_global_section, m_al, init_val); // emit val
+                wasm::emit_i64(m_global_section, m_al, static_cast<int64_t>(init_val)); // emit val
                 break;
             case wasm::f32:
                 wasm::emit_b8(m_global_section, m_al, 0x43); // emit instruction
-                wasm::emit_f32(m_global_section, m_al, init_val); // emit val
+                wasm::emit_f32(m_global_section, m_al, static_cast<float>(init_val)); // emit val
                 break;
             case wasm::f64:
                 wasm::emit_b8(m_global_section, m_al, 0x44); // emit instruction
-                wasm::emit_f64(m_global_section, m_al, init_val); // emit val
+                wasm::emit_f64(m_global_section, m_al, static_cast<double>(init_val)); // emit val
                 break;
             default:
                 std::cerr << "declare_global_var: Unsupported type" << std::endl;

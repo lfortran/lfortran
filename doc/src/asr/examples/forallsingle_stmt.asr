@@ -52,6 +52,7 @@
               :pass_attr :NotMethod
               :self_argument nil
               :codims []
+              :common_block nil
             )
             "i" (Variable
               :parent_symtab 1
@@ -77,6 +78,7 @@
               :pass_attr :NotMethod
               :self_argument nil
               :codims []
+              :common_block nil
             )
           }
         )
@@ -129,6 +131,7 @@
                 )
                 :storage_format :ColMajor
                 :value nil
+                :in_bounds false
               )
               :value (Var
                 :v (SymbolRef 1 "i")

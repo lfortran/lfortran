@@ -46,6 +46,7 @@
                                     NotMethod
                                     ()
                                     []
+                                    ()
                                 )
                         })
                     stdlib_quadrature
@@ -134,6 +135,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 ),
                                             x:
                                                 (Variable
@@ -164,6 +166,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     simps38_weights_dp
@@ -237,6 +240,7 @@
                                                     NotMethod
                                                     ()
                                                     []
+                                                    ()
                                                 )
                                         })
                                     simps38_weights_dp_use

@@ -1,0 +1,2875 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            array_item_in_bounds_01:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            1_t_u:
+                                (ExternalSymbol
+                                    5
+                                    1_t_u
+                                    3 u
+                                    array_item_in_bounds_01_m
+                                    [t]
+                                    u
+                                    Public
+                                ),
+                            a:
+                                (ExternalSymbol
+                                    5
+                                    a
+                                    2 a
+                                    array_item_in_bounds_01_m
+                                    []
+                                    a
+                                    Public
+                                ),
+                            b:
+                                (Variable
+                                    5
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            c:
+                                (Variable
+                                    5
+                                    c
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            d:
+                                (Variable
+                                    5
+                                    d
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            fill:
+                                (ExternalSymbol
+                                    5
+                                    fill
+                                    2 fill
+                                    array_item_in_bounds_01_m
+                                    []
+                                    fill
+                                    Public
+                                ),
+                            i:
+                                (Variable
+                                    5
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            lb:
+                                (Variable
+                                    5
+                                    lb
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerUnaryMinus
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -2 (Integer 4) Decimal)
+                                        )
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            names:
+                                (Variable
+                                    5
+                                    names
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        PointerArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            p:
+                                (Variable
+                                    5
+                                    p
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                            Global
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            q:
+                                (Variable
+                                    5
+                                    q
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .true.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            s:
+                                (Variable
+                                    5
+                                    s
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        [(Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 4 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                            Global
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    5 t
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            t:
+                                (ExternalSymbol
+                                    5
+                                    t
+                                    2 t
+                                    array_item_in_bounds_01_m
+                                    []
+                                    t
+                                    Public
+                                ),
+                            w:
+                                (Variable
+                                    5
+                                    w
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (StructType
+                                            [(Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                                Global
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    5 t
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            x:
+                                (Variable
+                                    5
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                            Global
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                )
+                        })
+                    array_item_in_bounds_01
+                    [array_item_in_bounds_01_m]
+                    [(Assignment
+                        (Var 5 a)
+                        (ArrayBroadcast
+                            (Cast
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (ArrayConstant
+                                8
+                                [8, 3]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 24 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            (ArrayConstant
+                                96
+                                [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, ...., 0.00000000e+00, 0.00000000e+00, 0.00000000e+00]
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 24 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 5 a)
+                            [(()
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            ())
+                            (()
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                            .true.
+                        )
+                        (Cast
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 5 a)
+                            [(()
+                            (IntegerConstant 8 (Integer 4) Decimal)
+                            ())
+                            (()
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                            .true.
+                        )
+                        (Cast
+                            (IntegerConstant 24 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                24.000000
+                                (Real 4)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 5 i)
+                        (IntegerConstant 2 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 5 a)
+                            [(()
+                            (Var 5 i)
+                            ())
+                            (()
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                            .false.
+                        )
+                        (Cast
+                            (IntegerConstant 10 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                10.000000
+                                (Real 4)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (IntrinsicArrayFunction
+                                        Sum
+                                        [(ArrayPhysicalCast
+                                            (Var 5 a)
+                                            FixedSizeArray
+                                            DescriptorArray
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 8 (Integer 4) Decimal))
+                                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                                DescriptorArray
+                                                Global
+                                            )
+                                            ()
+                                        )]
+                                        0
+                                        (Real 4)
+                                        ()
+                                    )
+                                    Sub
+                                    (Cast
+                                        (IntegerConstant 35 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            35.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 5 a)
+                                        [(()
+                                        (IntegerConstant 8 (Integer 4) Decimal)
+                                        ())
+                                        (()
+                                        (IntegerConstant 3 (Integer 4) Decimal)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .true.
+                                    )
+                                    Sub
+                                    (Cast
+                                        (IntegerConstant 24 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            24.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 5 a)
+                                        [(()
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        ())
+                                        (()
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .true.
+                                    )
+                                    Sub
+                                    (Cast
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            1.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 5 lb)
+                        (ArrayBroadcast
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (ArrayConstant
+                                4
+                                [5]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 5 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            (ArrayConstant
+                                20
+                                [0, 0, 0, 0, 0]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 5 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 5 lb)
+                            [(()
+                            (IntegerUnaryMinus
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant -2 (Integer 4) Decimal)
+                            )
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                            .true.
+                        )
+                        (IntegerConstant 5 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 5 lb)
+                            [(()
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                            .true.
+                        )
+                        (IntegerConstant 7 (Integer 4) Decimal)
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (IntegerCompare
+                                    (ArrayItem
+                                        (Var 5 lb)
+                                        [(()
+                                        (IntegerUnaryMinus
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -2 (Integer 4) Decimal)
+                                        )
+                                        ())]
+                                        (Integer 4)
+                                        ColMajor
+                                        ()
+                                        .true.
+                                    )
+                                    NotEq
+                                    (IntegerConstant 5 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                Or
+                                (IntegerCompare
+                                    (ArrayItem
+                                        (Var 5 lb)
+                                        [(()
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        ())]
+                                        (Integer 4)
+                                        ColMajor
+                                        ()
+                                        .true.
+                                    )
+                                    NotEq
+                                    (IntegerConstant 7 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (IntegerCompare
+                                (IntrinsicArrayFunction
+                                    Sum
+                                    [(ArrayPhysicalCast
+                                        (Var 5 lb)
+                                        FixedSizeArray
+                                        DescriptorArray
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerUnaryMinus
+                                                (IntegerConstant 2 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                (IntegerConstant -2 (Integer 4) Decimal)
+                                            )
+                                            (IntegerConstant 5 (Integer 4) Decimal))]
+                                            DescriptorArray
+                                            Global
+                                        )
+                                        ()
+                                    )]
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )
+                                NotEq
+                                (IntegerConstant 12 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (Var 5 s)
+                            5 1_t_u
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            ()
+                        )
+                        (ArrayBroadcast
+                            (Cast
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (ArrayConstant
+                                4
+                                [4]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            (ArrayConstant
+                                16
+                                [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00]
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 5 s)
+                                5 1_t_u
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                            .true.
+                        )
+                        (Cast
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                3.000000
+                                (Real 4)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (ArrayItem
+                                (Var 5 w)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (StructType
+                                    [(Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )]
+                                    []
+                                    .true.
+                                    .false.
+                                )
+                                ColMajor
+                                ()
+                                .true.
+                            )
+                            5 1_t_u
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            ()
+                        )
+                        (ArrayBroadcast
+                            (Cast
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (ArrayConstant
+                                4
+                                [4]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            (ArrayConstant
+                                16
+                                [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00]
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (ArrayItem
+                                (Var 5 w)
+                                [(()
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                ())]
+                                (StructType
+                                    [(Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )]
+                                    []
+                                    .true.
+                                    .false.
+                                )
+                                ColMajor
+                                ()
+                                .true.
+                            )
+                            5 1_t_u
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            ()
+                        )
+                        (ArrayBroadcast
+                            (Cast
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (ArrayConstant
+                                4
+                                [4]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            (ArrayConstant
+                                16
+                                [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00]
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 5 w)
+                                5 1_t_u
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ()
+                            )
+                            [(()
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            ())]
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            ColMajor
+                            ()
+                            .false.
+                        )
+                        (ArrayBroadcast
+                            (Cast
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    2.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (ArrayConstant
+                                4
+                                [2]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            (ArrayConstant
+                                8
+                                [2.00000000e+00, 2.00000000e+00]
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (RealCompare
+                                (IntrinsicElementalFunction
+                                    Abs
+                                    [(RealBinOp
+                                        (ArrayItem
+                                            (StructInstanceMember
+                                                (Var 5 s)
+                                                5 1_t_u
+                                                (Array
+                                                    (Real 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                                    FixedSizeArray
+                                                    Global
+                                                )
+                                                ()
+                                            )
+                                            [(()
+                                            (IntegerConstant 4 (Integer 4) Decimal)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                            .true.
+                                        )
+                                        Sub
+                                        (Cast
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            IntegerToReal
+                                            (Real 4)
+                                            (RealConstant
+                                                3.000000
+                                                (Real 4)
+                                            )
+                                            ()
+                                        )
+                                        (Real 4)
+                                        ()
+                                    )]
+                                    0
+                                    (Real 4)
+                                    ()
+                                )
+                                Gt
+                                (Cast
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    IntegerToReal
+                                    (Real 4)
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4)
+                                    )
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (RealCompare
+                                (IntrinsicElementalFunction
+                                    Abs
+                                    [(RealBinOp
+                                        (IntrinsicArrayFunction
+                                            Sum
+                                            [(ArrayPhysicalCast
+                                                (StructInstanceMember
+                                                    (Var 5 s)
+                                                    5 1_t_u
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                )
+                                                FixedSizeArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Real 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                                    DescriptorArray
+                                                    Global
+                                                )
+                                                ()
+                                            )]
+                                            0
+                                            (Real 4)
+                                            ()
+                                        )
+                                        Sub
+                                        (Cast
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            IntegerToReal
+                                            (Real 4)
+                                            (RealConstant
+                                                3.000000
+                                                (Real 4)
+                                            )
+                                            ()
+                                        )
+                                        (Real 4)
+                                        ()
+                                    )]
+                                    0
+                                    (Real 4)
+                                    ()
+                                )
+                                Gt
+                                (Cast
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    IntegerToReal
+                                    (Real 4)
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4)
+                                    )
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (RealBinOp
+                                        (IntrinsicArrayFunction
+                                            Sum
+                                            [(ArrayPhysicalCast
+                                                (StructInstanceMember
+                                                    (ArrayItem
+                                                        (Var 5 w)
+                                                        [(()
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        ())]
+                                                        (StructType
+                                                            [(Array
+                                                                (Real 4)
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                                                FixedSizeArray
+                                                                Global
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        ColMajor
+                                                        ()
+                                                        .true.
+                                                    )
+                                                    5 1_t_u
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                )
+                                                FixedSizeArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Real 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                                    DescriptorArray
+                                                    Global
+                                                )
+                                                ()
+                                            )]
+                                            0
+                                            (Real 4)
+                                            ()
+                                        )
+                                        Add
+                                        (IntrinsicArrayFunction
+                                            Sum
+                                            [(ArrayPhysicalCast
+                                                (StructInstanceMember
+                                                    (ArrayItem
+                                                        (Var 5 w)
+                                                        [(()
+                                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                                        ())]
+                                                        (StructType
+                                                            [(Array
+                                                                (Real 4)
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                                                FixedSizeArray
+                                                                Global
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        ColMajor
+                                                        ()
+                                                        .true.
+                                                    )
+                                                    5 1_t_u
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                )
+                                                FixedSizeArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Real 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                                    DescriptorArray
+                                                    Global
+                                                )
+                                                ()
+                                            )]
+                                            0
+                                            (Real 4)
+                                            ()
+                                        )
+                                        (Real 4)
+                                        ()
+                                    )
+                                    Sub
+                                    (Cast
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            4.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 5 names)
+                            [(()
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            ())]
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            ColMajor
+                            ()
+                            .true.
+                        )
+                        (StringConstant
+                            "abc"
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 5 names)
+                            [(()
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            ())]
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            ColMajor
+                            ()
+                            .true.
+                        )
+                        (StringConstant
+                            "xyz"
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (StringCompare
+                                (ArrayItem
+                                    (Var 5 names)
+                                    [(()
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    ())]
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                    ColMajor
+                                    ()
+                                    .true.
+                                )
+                                NotEq
+                                (StringConstant
+                                    "xyz"
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (StringCompare
+                                (StringSection
+                                    (ArrayItem
+                                        (Var 5 names)
+                                        [(()
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        ())]
+                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                        ColMajor
+                                        ()
+                                        .false.
+                                    )
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (String 1 (IntegerBinOp
+                                        (IntegerBinOp
+                                            (IntegerConstant 3 (Integer 4) Decimal)
+                                            Sub
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    ) ExpressionLength DescriptorString)
+                                    ()
+                                )
+                                NotEq
+                                (StringConstant
+                                    "bc"
+                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Allocate
+                        [((Var 5 x)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 3 (Integer 4) Decimal))]
+                        []
+                        ()
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (Assignment
+                        (Var 5 x)
+                        (ArrayBroadcast
+                            (Cast
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (IntrinsicArrayFunction
+                                Shape
+                                [(Var 5 x)]
+                                0
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ()
+                            )
+                            (Allocatable
+                                (Array
+                                    (Real 4)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                    Global
+                                )
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 5 x)
+                            [(()
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                            .false.
+                        )
+                        (Cast
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 5 x)
+                            [(()
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                            .false.
+                        )
+                        (Cast
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                3.000000
+                                (Real 4)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (IntrinsicArrayFunction
+                                        Sum
+                                        [(Var 5 x)]
+                                        0
+                                        (Real 4)
+                                        ()
+                                    )
+                                    Sub
+                                    (Cast
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            4.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 5 q)
+                        (ArrayBroadcast
+                            (Cast
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (ArrayConstant
+                                4
+                                [3]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            (ArrayConstant
+                                12
+                                [0.00000000e+00, 0.00000000e+00, 0.00000000e+00]
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Associate
+                        (Var 5 p)
+                        (ArrayPhysicalCast
+                            (Var 5 q)
+                            FixedSizeArray
+                            DescriptorArray
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                DescriptorArray
+                                Global
+                            )
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 5 p)
+                            [(()
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            ())]
+                            (Real 4)
+                            ColMajor
+                            ()
+                            .false.
+                        )
+                        (Cast
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                5.000000
+                                (Real 4)
+                            )
+                            ()
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (If
+                        ()
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 5 q)
+                                        [(()
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                        .true.
+                                    )
+                                    Sub
+                                    (Cast
+                                        (IntegerConstant 5 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            5.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 5 c)
+                        (ArrayBroadcast
+                            (Cast
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (ArrayConstant
+                                4
+                                [2]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            (ArrayConstant
+                                8
+                                [1.00000000e+00, 1.00000000e+00]
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (Assignment
+                        (Var 5 d)
+                        (ArrayBroadcast
+                            (Cast
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                IntegerToReal
+                                (Real 4)
+                                (RealConstant
+                                    2.000000
+                                    (Real 4)
+                                )
+                                ()
+                            )
+                            (ArrayConstant
+                                4
+                                [2]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                FixedSizeArray
+                                Global
+                            )
+                            (ArrayConstant
+                                8
+                                [2.00000000e+00, 2.00000000e+00]
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                    Global
+                                )
+                                ColMajor
+                            )
+                        )
+                        ()
+                        .false.
+                        .false.
+                    )
+                    (SubroutineCall
+                        5 fill
+                        ()
+                        [((ArrayPhysicalCast
+                            (Var 5 b)
+                            FixedSizeArray
+                            PointerArray
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 2 (Integer 4) Decimal)
+                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                PointerArray
+                                Global
+                            )
+                            ()
+                        ))
+                        ((ArrayPhysicalCast
+                            (Var 5 c)
+                            FixedSizeArray
+                            DescriptorArray
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                DescriptorArray
+                                Global
+                            )
+                            ()
+                        ))
+                        ((ArrayPhysicalCast
+                            (Var 5 d)
+                            FixedSizeArray
+                            UnboundedPointerArray
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                UnboundedPointerArray
+                                Global
+                            )
+                            ()
+                        ))]
+                        ()
+                        .false.
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (RealCompare
+                                    (IntrinsicElementalFunction
+                                        Abs
+                                        [(RealBinOp
+                                            (ArrayItem
+                                                (Var 5 b)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                (Real 4)
+                                                ColMajor
+                                                ()
+                                                .true.
+                                            )
+                                            Sub
+                                            (Cast
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    1.000000
+                                                    (Real 4)
+                                                )
+                                                ()
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )]
+                                        0
+                                        (Real 4)
+                                        ()
+                                    )
+                                    Gt
+                                    (Cast
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            0.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                Or
+                                (RealCompare
+                                    (IntrinsicElementalFunction
+                                        Abs
+                                        [(RealBinOp
+                                            (ArrayItem
+                                                (Var 5 b)
+                                                [(()
+                                                (IntegerConstant 4 (Integer 4) Decimal)
+                                                ())]
+                                                (Real 4)
+                                                ColMajor
+                                                ()
+                                                .true.
+                                            )
+                                            Sub
+                                            (Cast
+                                                (IntegerConstant 4 (Integer 4) Decimal)
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    4.000000
+                                                    (Real 4)
+                                                )
+                                                ()
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )]
+                                        0
+                                        (Real 4)
+                                        ()
+                                    )
+                                    Gt
+                                    (Cast
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            0.000000
+                                            (Real 4)
+                                        )
+                                        ()
+                                    )
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (RealCompare
+                                (IntrinsicElementalFunction
+                                    Abs
+                                    [(RealBinOp
+                                        (IntrinsicArrayFunction
+                                            Sum
+                                            [(ArrayPhysicalCast
+                                                (Var 5 b)
+                                                FixedSizeArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Real 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                                    DescriptorArray
+                                                    Global
+                                                )
+                                                ()
+                                            )]
+                                            0
+                                            (Real 4)
+                                            ()
+                                        )
+                                        Sub
+                                        (Cast
+                                            (IntegerConstant 5 (Integer 4) Decimal)
+                                            IntegerToReal
+                                            (Real 4)
+                                            (RealConstant
+                                                5.000000
+                                                (Real 4)
+                                            )
+                                            ()
+                                        )
+                                        (Real 4)
+                                        ()
+                                    )]
+                                    0
+                                    (Real 4)
+                                    ()
+                                )
+                                Gt
+                                (Cast
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    IntegerToReal
+                                    (Real 4)
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4)
+                                    )
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (RealCompare
+                                (IntrinsicElementalFunction
+                                    Abs
+                                    [(RealBinOp
+                                        (ArrayItem
+                                            (Var 5 c)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                            .true.
+                                        )
+                                        Sub
+                                        (Cast
+                                            (IntegerConstant 11 (Integer 4) Decimal)
+                                            IntegerToReal
+                                            (Real 4)
+                                            (RealConstant
+                                                11.000000
+                                                (Real 4)
+                                            )
+                                            ()
+                                        )
+                                        (Real 4)
+                                        ()
+                                    )]
+                                    0
+                                    (Real 4)
+                                    ()
+                                )
+                                Gt
+                                (Cast
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    IntegerToReal
+                                    (Real 4)
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4)
+                                    )
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (RealCompare
+                                (IntrinsicElementalFunction
+                                    Abs
+                                    [(RealBinOp
+                                        (ArrayItem
+                                            (Var 5 c)
+                                            [(()
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                            .true.
+                                        )
+                                        Sub
+                                        (Cast
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            IntegerToReal
+                                            (Real 4)
+                                            (RealConstant
+                                                1.000000
+                                                (Real 4)
+                                            )
+                                            ()
+                                        )
+                                        (Real 4)
+                                        ()
+                                    )]
+                                    0
+                                    (Real 4)
+                                    ()
+                                )
+                                Gt
+                                (Cast
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    IntegerToReal
+                                    (Real 4)
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4)
+                                    )
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        ()
+                        (LogicalBinOp
+                            (RealCompare
+                                (IntrinsicElementalFunction
+                                    Abs
+                                    [(RealBinOp
+                                        (ArrayItem
+                                            (Var 5 d)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                            .true.
+                                        )
+                                        Sub
+                                        (Cast
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            IntegerToReal
+                                            (Real 4)
+                                            (RealConstant
+                                                2.000000
+                                                (Real 4)
+                                            )
+                                            ()
+                                        )
+                                        (Real 4)
+                                        ()
+                                    )]
+                                    0
+                                    (Real 4)
+                                    ()
+                                )
+                                Gt
+                                (Cast
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    IntegerToReal
+                                    (Real 4)
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4)
+                                    )
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (RealCompare
+                                (IntrinsicElementalFunction
+                                    Abs
+                                    [(RealBinOp
+                                        (ArrayItem
+                                            (Var 5 d)
+                                            [(()
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                            .true.
+                                        )
+                                        Sub
+                                        (Cast
+                                            (IntegerConstant 22 (Integer 4) Decimal)
+                                            IntegerToReal
+                                            (Real 4)
+                                            (RealConstant
+                                                22.000000
+                                                (Real 4)
+                                            )
+                                            ()
+                                        )
+                                        (Real 4)
+                                        ()
+                                    )]
+                                    0
+                                    (Real 4)
+                                    ()
+                                )
+                                Gt
+                                (Cast
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    IntegerToReal
+                                    (Real 4)
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4)
+                                    )
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringConstant
+                            "ok"
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                    )]
+                    ()
+                ),
+            array_item_in_bounds_01_m:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 8 (Integer 4) Decimal))
+                                        ((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            fill:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            b:
+                                                (Variable
+                                                    4
+                                                    b
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 2 (Integer 4) Decimal)
+                                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                                        PointerArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            c:
+                                                (Variable
+                                                    4
+                                                    c
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            d:
+                                                (Variable
+                                                    4
+                                                    d
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        UnboundedPointerArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    fill
+                                    (FunctionType
+                                        [(Array
+                                            (Real 4)
+                                            [((IntegerConstant 2 (Integer 4) Decimal)
+                                            (IntegerConstant 4 (Integer 4) Decimal))]
+                                            PointerArray
+                                            Global
+                                        )
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                            Global
+                                        )
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            UnboundedPointerArray
+                                            Global
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 4 b)
+                                    (Var 4 c)
+                                    (Var 4 d)]
+                                    [(Assignment
+                                        (Var 4 b)
+                                        (ArrayPhysicalCast
+                                            (ArrayBroadcast
+                                                (Cast
+                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                    IntegerToReal
+                                                    (Real 4)
+                                                    (RealConstant
+                                                        0.000000
+                                                        (Real 4)
+                                                    )
+                                                    ()
+                                                )
+                                                (ArrayConstant
+                                                    4
+                                                    [4]
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                        Global
+                                                    )
+                                                    ColMajor
+                                                )
+                                                (Array
+                                                    (Real 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                                    FixedSizeArray
+                                                    Global
+                                                )
+                                                (ArrayConstant
+                                                    16
+                                                    [0.00000000e+00, 0.00000000e+00, 0.00000000e+00, 0.00000000e+00]
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                        Global
+                                                    )
+                                                    ColMajor
+                                                )
+                                            )
+                                            FixedSizeArray
+                                            PointerArray
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 2 (Integer 4) Decimal)
+                                                (IntegerConstant 4 (Integer 4) Decimal))]
+                                                PointerArray
+                                                Global
+                                            )
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (ArrayItem
+                                            (Var 4 b)
+                                            [(()
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                            .true.
+                                        )
+                                        (Cast
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            IntegerToReal
+                                            (Real 4)
+                                            (RealConstant
+                                                1.000000
+                                                (Real 4)
+                                            )
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (ArrayItem
+                                            (Var 4 b)
+                                            [(()
+                                            (IntegerConstant 5 (Integer 4) Decimal)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                            .true.
+                                        )
+                                        (Cast
+                                            (IntegerConstant 4 (Integer 4) Decimal)
+                                            IntegerToReal
+                                            (Real 4)
+                                            (RealConstant
+                                                4.000000
+                                                (Real 4)
+                                            )
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (ArrayItem
+                                            (Var 4 c)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                            .false.
+                                        )
+                                        (RealBinOp
+                                            (ArrayItem
+                                                (Var 4 c)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                (Real 4)
+                                                ColMajor
+                                                ()
+                                                .false.
+                                            )
+                                            Add
+                                            (Cast
+                                                (IntegerConstant 10 (Integer 4) Decimal)
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    10.000000
+                                                    (Real 4)
+                                                )
+                                                ()
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )
+                                    (Assignment
+                                        (ArrayItem
+                                            (Var 4 d)
+                                            [(()
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                            .false.
+                                        )
+                                        (RealBinOp
+                                            (ArrayItem
+                                                (Var 4 d)
+                                                [(()
+                                                (IntegerConstant 2 (Integer 4) Decimal)
+                                                ())]
+                                                (Real 4)
+                                                ColMajor
+                                                ()
+                                                .false.
+                                            )
+                                            Add
+                                            (Cast
+                                                (IntegerConstant 20 (Integer 4) Decimal)
+                                                IntegerToReal
+                                                (Real 4)
+                                                (RealConstant
+                                                    20.000000
+                                                    (Real 4)
+                                                )
+                                                ()
+                                            )
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            t:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            u:
+                                                (Variable
+                                                    3
+                                                    u
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    t
+                                    (StructType
+                                        [(Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 4 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                            Global
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [u]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                    []
+                                )
+                        })
+                    array_item_in_bounds_01_m
+                    ()
+                    []
+                    .false.
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+    ()
+)

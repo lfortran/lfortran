@@ -3,6 +3,7 @@
 #include <iomanip>
 
 #include <libasr/assert.h>
+#include <libasr/checked_cast.h>
 #include <libasr/codegen/wasm_decoder.h>
 #include <libasr/codegen/wasm_to_x64.h>
 #include <libasr/codegen/x86_assembler.h>
@@ -131,7 +132,7 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
 
         // Pop the passed function arguments
         wasm::FuncType func_type = func_types[type_indices[func_idx]];
-        m_a.asm_add_r64_imm32(X64Reg::rsp, 8 * func_type.param_types.size()); // pop the passed argument
+        m_a.asm_add_r64_imm32(X64Reg::rsp, checked_integer_cast<uint32_t>(8 * func_type.param_types.size())); // pop the passed argument
 
         // Adjust the return values of the called function
         X64Reg base = X64Reg::rsp;
@@ -589,7 +590,7 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
         }
         label_to_str["base_memory"] = base_memory;
 
-        NO_OF_IMPORTS = imports.size();
+        NO_OF_IMPORTS = checked_integer_cast<uint32_t>(imports.size());
 
         m_a.add_label("text_segment_start");
         for (uint32_t idx = 0; idx < type_indices.size(); idx++) {
@@ -601,7 +602,7 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
 
                 // Allocate space for local variables
                 // TODO: locals is an array where every element has a count (currently wasm emits count = 1 always)
-                m_a.asm_sub_r64_imm32(X64Reg::rsp, 8 * codes[idx].locals.size());
+                m_a.asm_sub_r64_imm32(X64Reg::rsp, checked_integer_cast<uint32_t>(8 * codes[idx].locals.size()));
 
                 offset = codes[idx].insts_start_index;
                 cur_func_idx = idx;
@@ -653,10 +654,10 @@ class X64Visitor : public WASMDecoder<X64Visitor>,
 Result<int> wasm_to_x64(Vec<uint8_t> &wasm_bytes, Allocator &al,
                         const std::string &filename, bool time_report,
                         diag::Diagnostics &diagnostics) {
-    int time_decode_wasm = 0;
-    int time_gen_x64_bytes = 0;
-    int time_save = 0;
-    int time_verify = 0;
+    int64_t time_decode_wasm = 0;
+    int64_t time_gen_x64_bytes = 0;
+    int64_t time_save = 0;
+    int64_t time_verify = 0;
 
     X86Assembler m_a(al, true /* bits 64 */);
 
@@ -696,7 +697,12 @@ Result<int> wasm_to_x64(Vec<uint8_t> &wasm_bytes, Allocator &al,
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        m_a.save_binary64(filename);
+        if (!m_a.save_binary64(filename)) {
+            diagnostics.add(diag::Diagnostic(
+                "cannot write the output file '" + filename + "'",
+                diag::Level::Error, diag::Stage::CodeGen));
+            return Error();
+        }
         auto t2 = std::chrono::high_resolution_clock::now();
         time_save =
             std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
@@ -715,7 +721,7 @@ Result<int> wasm_to_x64(Vec<uint8_t> &wasm_bytes, Allocator &al,
         std::cout << "Verify:       " << std::setw(5) << time_verify
                   << std::endl;
         std::cout << "Save:       " << std::setw(5) << time_save << std::endl;
-        int total =
+        int64_t total =
             time_decode_wasm + time_gen_x64_bytes + time_verify + time_save;
         std::cout << "Total:      " << std::setw(5) << total << std::endl;
     }

@@ -150,10 +150,17 @@ public:
                     cast->m_old == ASR::array_physical_typeType::DescriptorArray) ) {
                 return false;
             }
+            ASR::expr_t* inner = cast->m_arg;
+            // An allocatable array is always contiguous, so its data is
+            // passed as it is, without a copy-in temporary.
+            ASR::ttype_t* inner_type = ASRUtils::expr_type(inner);
+            if ( ASRUtils::is_allocatable(inner_type) &&
+                 !ASRUtils::is_class_type(ASRUtils::extract_type(inner_type)) ) {
+                return false;
+            }
             // Skip copy-in/copy-out when the inner expression is an ArraySection
             // whose source array is UnboundedPointerArray (assumed-size) and has
             // an undefined upper bound on the assumed-size dimension.
-            ASR::expr_t* inner = cast->m_arg;
             if ( ASR::is_a<ASR::ArraySection_t>(*inner) ) {
                 ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(inner);
                 ASR::ttype_t* source_type = ASRUtils::expr_type(section->m_v);
@@ -320,7 +327,7 @@ public:
             var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc, var_type));
         }
     
-        std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
+        std::string var_name = PassUtils::temporary_name(scope, name_hint);
         ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
             al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
             nullptr, nullptr, ASR::storage_typeType::Default, var_type, ASRUtils::get_struct_sym_from_struct_expr(value), ASR::abiType::Source,
@@ -904,7 +911,7 @@ public:
                     ASR::expr_t* not_is_contiguous = ASRUtils::EXPR(ASR::make_LogicalNot_t(al, loc, is_contiguous,
                         ASRUtils::expr_type(is_contiguous), nullptr));
                     ASR::dimension_t* array_dims = nullptr;
-                    int array_rank = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(array_var_temporary), array_dims);
+                    int array_rank = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(array_var_temporary), array_dims));
                     std::vector<ASR::expr_t*> do_loop_variables;
                     #define declare(var_name, type, intent)                                     \
                     b.Variable(fn_symtab, var_name, type, ASR::intentType::intent)

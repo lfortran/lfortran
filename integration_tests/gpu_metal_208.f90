@@ -1,9 +1,9 @@
 program gpu_metal_208
-! A do concurrent that both contains a block and captures a derived type the
-! device cannot lay out. The offload pass used to move the block into an
-! unattached kernel scope and then decline the launch, leaving the host loop
-! with a BlockCall whose symbol was gone. The loop must stay on the host and
-! still compute the right answer.
+! A do concurrent that both contains a block and captures a derived type with
+! an allocatable scalar component it does not read. The offload pass used to
+! move the block into an unattached kernel scope and then decline the launch,
+! leaving the host loop with a BlockCall whose symbol was gone. The loop must
+! compute the right answer.
 implicit none
 
 type :: label_t

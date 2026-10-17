@@ -1,0 +1,5 @@
+semantic error: a deferred interface block can only contain interface bodies
+ --> tests/errors/template_deferred_interface_procedure.f90:8:13
+  |
+8 |             procedure :: f
+  |             ^^^^^^^^^^^^^^^ 

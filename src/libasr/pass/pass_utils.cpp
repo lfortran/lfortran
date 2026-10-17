@@ -11,13 +11,58 @@ namespace LCompilers {
 
     namespace PassUtils {
 
+        class NormalizeStringPhysicalCasts:
+                public ASR::CallReplacerOnExpressionsVisitor<NormalizeStringPhysicalCasts> {
+        public:
+            Allocator &al;
+
+            NormalizeStringPhysicalCasts(Allocator &al_): al{al_} {
+                call_replacer_on_value = false;
+            }
+
+            void call_replacer() {
+                if (!ASR::is_a<ASR::StringPhysicalCast_t>(**current_expr)) return;
+                ASR::StringPhysicalCast_t *x =
+                    ASR::down_cast<ASR::StringPhysicalCast_t>(*current_expr);
+                ASR::string_physical_typeType physical =
+                    ASRUtils::get_string_type(ASRUtils::expr_type(x->m_arg))->m_physical_type;
+                if (physical == x->m_new) {
+                    *current_expr = x->m_arg;
+                } else if (physical != x->m_old) {
+                    *current_expr = ASRUtils::create_string_physical_cast(al,
+                        x->m_arg, x->m_new, ASRUtils::is_allocatable(x->m_type));
+                }
+            }
+        };
+
+        void normalize_string_physical_casts(Allocator &al, ASR::TranslationUnit_t &unit) {
+            NormalizeStringPhysicalCasts casts(al);
+            casts.visit_TranslationUnit(unit);
+        }
+
+        void make_new_tu_functions_private(ASR::TranslationUnit_t &unit,
+                const std::function<void()> &instantiate) {
+            std::set<std::string> existing_symbols;
+            for (auto &item: unit.m_symtab->get_scope()) {
+                existing_symbols.insert(item.first);
+            }
+            instantiate();
+            for (auto &item: unit.m_symtab->get_scope()) {
+                if (existing_symbols.find(item.first) == existing_symbols.end()
+                        && ASR::is_a<ASR::Function_t>(*item.second)) {
+                    ASR::down_cast<ASR::Function_t>(item.second)->m_access =
+                        ASR::accessType::Private;
+                }
+            }
+        }
+
         void get_dim_rank(ASR::ttype_t* x_type, ASR::dimension_t*& m_dims, int& n_dims) {
             ASR::ttype_t* t2 = ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(x_type));
             switch( t2->type ) {
                 case ASR::ttypeType::Array: {
                     ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t2);
-                    n_dims = array_t->n_dims;
+                    n_dims = checked_integer_cast<int>(array_t->n_dims);
                     m_dims = array_t->m_dims;
                     break ;
                 }
@@ -407,7 +452,7 @@ namespace LCompilers {
             }
             return false;
         }
-        ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
+        ASR::expr_t* create_var(int64_t counter, std::string suffix, const Location& loc,
                             ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope, ASR::expr_t* var) {
             ASR::dimension_t* m_dims = nullptr;
             int ndims = 0;
@@ -453,7 +498,7 @@ namespace LCompilers {
             return idx_var;
         }
 
-        ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
+        ASR::expr_t* create_var(int64_t counter, std::string suffix, const Location& loc,
                                 ASR::expr_t* sibling, Allocator& al, SymbolTable*& current_scope) {
             ASR::ttype_t* var_type = nullptr;
             var_type = get_matching_type(sibling, al);
@@ -595,7 +640,7 @@ namespace LCompilers {
                 }
                 idx_vars.push_back(al, var);
                 loop_vars.push_back(al, var);
-                loop_var_indices.push_back(i);
+                loop_var_indices.push_back(checked_integer_cast<int>(i));
             }
         }
 
@@ -1052,10 +1097,10 @@ namespace LCompilers {
             }
         }
 
-        ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim, std::string bound, Allocator& al, int integer_kind) {
+        ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int64_t dim, std::string bound, Allocator& al, int integer_kind) {
             ASR::ttype_t* x_mv_type = ASRUtils::expr_type(arr_expr);
             ASR::dimension_t* m_dims;
-            int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
+            int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims));
             bool is_data_only_array = ASRUtils::is_fixed_size_array(m_dims, n_dims) && ASRUtils::get_asr_owner(arr_expr) &&
                                     ASR::is_a<ASR::Struct_t>(*ASRUtils::get_asr_owner(arr_expr));
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, integer_kind));
@@ -1203,6 +1248,45 @@ namespace LCompilers {
                 throw LCompilersException("Symbol with " + name + " is already present in " + std::to_string(current_scope->counter));
             }
             return ASRUtils::EXPR(ASR::make_Var_t(al, loc, ASR::down_cast<ASR::symbol_t>(expr_sym)));
+        }
+
+        // A non-empty rank one constant, which can be named as a named
+        // constant (parameter); backends keep that as static data.
+        bool is_nameable_array_constant(ASR::ArrayConstant_t* x) {
+            return ASRUtils::extract_n_dims_from_ttype(x->m_type) == 1 &&
+                ASRUtils::get_fixed_size_of_array(x->m_type) > 0;
+        }
+
+        ASR::expr_t* create_named_array_constant(Allocator& al,
+                ASR::ArrayConstant_t* x, SymbolTable* current_scope) {
+            const Location& loc = x->base.base.loc;
+            std::string name = current_scope->get_unique_name("__libasr_array_constant_");
+            // The constant may be typed as a descriptor array without a
+            // lower bound (e.g. the value of an assignment to an
+            // allocatable target); a named constant is a fixed size array
+            // with lower bound 1, like one declared in the source.
+            ASR::ttype_t* index_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, 1);
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, index_type));
+            dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+                ASRUtils::get_fixed_size_of_array(x->m_type), index_type));
+            dims.push_back(al, dim);
+            ASR::ttype_t* type = ASRUtils::duplicate_type(al,
+                ASRUtils::type_get_past_allocatable(x->m_type), &dims,
+                ASR::array_physical_typeType::FixedSizeArray, true);
+            ASR::expr_t* value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, loc,
+                x->m_n_data, x->m_data, type, x->m_storage_format));
+            ASR::symbol_t* constant = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, name),
+                    nullptr, 0, ASR::intentType::Local, value, value,
+                    ASR::storage_typeType::Parameter, ASRUtils::duplicate_type(al, type),
+                    nullptr, ASR::abiType::Source, ASR::accessType::Public,
+                    ASR::presenceType::Required, false));
+            current_scope->add_symbol(name, constant);
+            return ASRUtils::EXPR(ASR::make_Var_t(al, loc, constant));
         }
 
         ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
@@ -1564,7 +1648,7 @@ namespace LCompilers {
                 ASR::cmpopType cmp_op;
 
                 if( comp == -1 ) {
-                    int increment;
+                    int64_t increment;
                     bool not_constant_inc = false;
                     if (!ASRUtils::is_integer(*ASRUtils::expr_type(c))) {
                         throw LCompilersException("Do loop increment type should be an integer");
@@ -1726,15 +1810,15 @@ namespace LCompilers {
             const Location& loc = arr_var->base.loc;
             ASRUtils::ASRBuilder b(al, loc);
             ASR::dimension_t* m_dims;
-            int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(arr_var), m_dims);
+            int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(arr_var), m_dims));
             // For pointer/equivalence variables the variable type may have empty
             // dimensions (e.g. [(() ())]).  In that case fall back to the
             // ArrayConstant's own type which carries concrete bounds.
             bool use_x_dims = (n_dims > 0 && (m_dims[0].m_length == nullptr));
             if( use_x_dims ) {
-                n_dims = ASRUtils::extract_dimensions_from_ttype(x->m_type, m_dims);
+                n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(x->m_type, m_dims));
             }
-            Vec<int> strides;
+            Vec<int64_t> strides;
             strides.resize(al, n_dims);
             // compute stride vars for each dimension in column major order
             strides.p[0] = 1;

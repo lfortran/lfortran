@@ -182,10 +182,10 @@ TEST_CASE("Test Big Int") {
     CHECK(is_int_ptr(i)); // this is a pointer
 
     // Smallest integer that is allowed is -2^63
-    i = -9223372036854775808ULL;
+    i = std::numeric_limits<int64_t>::min();
     CHECK(i == MIN_SMALL_INT);
     CHECK(!is_int_ptr(i)); // this is an integer
-    i = -9223372036854775809ULL; // This does not fit into a signed 64bit int
+    i = std::numeric_limits<int64_t>::max(); // Above MAX_SMALL_INT
     CHECK(is_int_ptr(i)); // this is a pointer
 
     /* Pointer tests */
@@ -707,9 +707,20 @@ TEST_CASE("Tokenizer") {
     };
     CHECK(tokens(al, s) == ref);
 
+    // An integer followed by a name at the start of a line is a statement
+    // label, both at the start of the input and after a newline.
     s = "2 x";
     ref = {
-        tt::TK_INTEGER,
+        tt::TK_LABEL,
+        tt::TK_NAME,
+        tt::END_OF_FILE,
+    };
+    CHECK(tokens(al, s) == ref);
+
+    s = "\n2 x";
+    ref = {
+        tt::TK_NEWLINE,
+        tt::TK_LABEL,
         tt::TK_NAME,
         tt::END_OF_FILE,
     };

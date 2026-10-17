@@ -1,10 +1,9 @@
 program gpu_metal_358
-! Expected to fail on the GPU backends with bounds checking on, built with
-! --realloc-lhs-arrays. The kernel gives t(i)%v the extent s(i), which the
-! loop writes first, so the host cannot size the component before the
-! launch, and the program did not allocate it. The launch has to report the
-! unallocated component rather than size it from the value s holds before
-! the loop, which would silently truncate the result.
+! The kernel gives t(i)%v the extent s(i), which the loop writes first, so
+! the host cannot size the component before the launch, and the program did
+! not allocate it. The value is made on the device heap and copied into
+! t(i) after the launch, with the size the loop gave it, never the one the
+! value s holds before the loop would give.
 implicit none
 type tt
     real, allocatable :: v(:)
@@ -21,6 +20,10 @@ do concurrent (i = 1:3)
     t(i) = f(c(1:s(i)))
 end do
 print *, size(t(1)%v), size(t(2)%v), size(t(3)%v)
+do i = 1, 3
+    if (size(t(i)%v) /= i + 1) error stop 1
+    if (any(t(i)%v /= c(1:i+1))) error stop 2
+end do
 
 contains
 

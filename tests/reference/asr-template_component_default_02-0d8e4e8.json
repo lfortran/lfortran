@@ -1,0 +1,13 @@
+{
+    "basename": "asr-template_component_default_02-0d8e4e8",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/template_component_default_02.f90",
+    "infile_hash": "8bd5ce6ce46886dcd946e9e010a2390e11ac4dff818e6f9da5f1dcf7",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-template_component_default_02-0d8e4e8.stderr",
+    "stderr_hash": "e424a4256cd51cf4059b9b6166bcabb32bfb63c4c9082c19e3990955",
+    "returncode": 2
+}

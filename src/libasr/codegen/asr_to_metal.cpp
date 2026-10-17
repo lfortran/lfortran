@@ -48,17 +48,48 @@ struct MetalDialect {
         src << "    uint __thread_id [[thread_position_in_grid]]";
     }
 
+    // A kernel whose iterations each run on several lanes (see
+    // gpu_vector_lanes.cpp) takes its grid position under another name,
+    // and its position within its SIMD-group too.
+    void emit_lane_thread_params(std::stringstream &src, bool has_prev) const {
+        if (has_prev) src << ",\n";
+        src << "    uint __gpu_grid_thread [[thread_position_in_grid]],\n";
+        src << "    uint __gpu_simd_lane [[thread_index_in_simdgroup]]";
+    }
+
+    // The lanes of an iteration are consecutive threads of one SIMD-group,
+    // as `lanes` divides the SIMD-group width (the lanes a device's
+    // capabilities give), and the threads of a threadgroup fill its
+    // SIMD-groups in order.
+    void emit_lane_prologue(std::stringstream &src, const std::string &indent,
+            const std::string &lanes) const {
+        src << indent << "uint __thread_id = __gpu_grid_thread / (uint)"
+            << lanes << ";\n";
+        src << indent << "int __gpu_lane = (int)(__gpu_grid_thread % (uint)"
+            << lanes << ");\n";
+    }
+
+    std::string lane_index() const { return "__gpu_lane"; }
+
+    // The value in the first lane of the iteration. With one lane per
+    // iteration, that is the thread's own.
+    std::string lane_broadcast(const std::string &value) const {
+        return "simd_shuffle(" + value
+            + ", (ushort)(__gpu_simd_lane - (uint)__gpu_lane))";
+    }
+
+    // With one lane per iteration, the threads of a SIMD-group run
+    // different iterations, which need not reach the same barriers.
+    void emit_lane_barrier(std::stringstream &src, const std::string &indent,
+            const std::string &lanes) const {
+        src << indent << "if (" << lanes << " > 1) simdgroup_barrier("
+            "mem_flags::mem_device | mem_flags::mem_threadgroup);\n";
+    }
+
     // Every real is single precision, so a literal needs no suffix to say
     // which precision it is.
     std::string real_literal(double value, int /*kind*/) const {
         return double_to_scientific(value);
-    }
-
-    // A Metal shader has no trap and no way to end the program, so there is
-    // nothing to spell here. The offload pass declines a loop holding a
-    // STOP for this device, so no such statement reaches the emitter.
-    std::string abort_stmt() const {
-        return "";
     }
 
     // The grid position already accounts for the block, so a kernel that
@@ -71,6 +102,13 @@ struct MetalDialect {
 
     std::string uint_type() const {
         return "uint";
+    }
+
+    // A relaxed atomic add to an `int` in device memory, giving the old value.
+    std::string atomic_fetch_add(const std::string &address,
+            const std::string &increment) const {
+        return "atomic_fetch_add_explicit((device atomic_int*)(" + address
+            + "), " + increment + ", memory_order_relaxed)";
     }
 
     // The scalars a kernel takes travel together in one read-only buffer.

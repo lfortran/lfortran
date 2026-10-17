@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <iterator>
+#include <limits>
 #include <vector>
 #include <map>
 
@@ -35,15 +36,20 @@ int uncompress_gzip(
     // except that it enables gzip support in inflateInit2().
     int zlib_status;
     z_stream strm;
+    // zlib buffer lengths are uInt (32-bit)
+    if (in_size > std::numeric_limits<uInt>::max()
+            || *out_size > std::numeric_limits<uInt>::max()) {
+        return Z_BUF_ERROR;
+    }
     strm.zalloc = Z_NULL;
     strm.zfree = Z_NULL;
     strm.opaque = Z_NULL;
     strm.next_in = in;
-    strm.avail_in = in_size;
+    strm.avail_in = static_cast<uInt>(in_size);
     zlib_status = inflateInit2(&strm, 15 | 32);
     if (zlib_status < 0) return zlib_status;
     strm.next_out = out;
-    strm.avail_out = *out_size;
+    strm.avail_out = static_cast<uInt>(*out_size);
     zlib_status = inflate(&strm, Z_NO_FLUSH);
     inflateEnd(&strm);
     *out_size = *out_size - strm.avail_out;
@@ -225,7 +231,7 @@ ASR::ttype_t* parse_type(Allocator &al, const std::vector<Item> &l)
     LCOMPILERS_ASSERT(l.size() == 7);
     std::string name = item_token(l[0]);
     if (name == "INTEGER") {
-        Location loc;
+        Location loc{};
         ASR::asr_t *t = ASR::make_Integer_t(al, loc, 4);
         return down_cast<ASR::ttype_t>(t);
     } else {
@@ -271,7 +277,7 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
                 Str a;
                 a.from_str_view(s.name);
                 char *name = a.c_str(al);
-                Location loc;
+                Location loc{};
                 ASR::asr_t *asr = ASRUtils::make_Variable_t_util(al, loc, nullptr,
                     name, nullptr, 0, ASR::intentType::In, nullptr, nullptr,
                     ASR::storage_typeType::Default, s.v.type, nullptr,
@@ -280,7 +286,7 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
                 s.v.var = down_cast<ASR::symbol_t>(asr);
             } else if (kind == "PROCEDURE") {
                 s.kind = GSymbol::procedure;
-                Location loc;
+                Location loc{};
                 SymbolTable *proc_symtab = al.make_new<SymbolTable>(parent_scope);
                 Str a;
                 a.from_str_view(s.name);
@@ -358,7 +364,7 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
 
 
     ASR::asr_t *asr;
-    Location loc;
+    Location loc{};
     asr = ASR::make_TranslationUnit_t(al, loc,
         parent_scope, nullptr, 0, nullptr);
     ASR::TranslationUnit_t *tu = down_cast2<ASR::TranslationUnit_t>(asr);

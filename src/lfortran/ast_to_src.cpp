@@ -432,23 +432,31 @@ public:
 
     void visit_Program(const Program_t &x) {
         std::string r;
-        r += syn(gr::UnitHeader);
-        r.append("program");
-        r += syn();
-        r += " ";
-        r.append(x.m_name);
-        if(x.m_trivia){
-            r += print_trivia_inside(*x.m_trivia);
-        } else {
-            r.append("\n");
+        // A main program written without a PROGRAM statement has only an
+        // internal name and no start name location: print it without a
+        // PROGRAM statement and end it with a nameless END PROGRAM.
+        bool has_program_stmt = x.m_start_name != nullptr;
+        if (has_program_stmt) {
+            r += syn(gr::UnitHeader);
+            r.append("program");
+            r += syn();
+            r += " ";
+            r.append(x.m_name);
+            if(x.m_trivia){
+                r += print_trivia_inside(*x.m_trivia);
+            } else {
+                r.append("\n");
+            }
         }
 
         r += format_unit_body(x);
         r += syn(gr::UnitHeader);
         r.append("end program");
         r += syn();
-        r += " ";
-        r.append(x.m_name);
+        if (has_program_stmt) {
+            r += " ";
+            r.append(x.m_name);
+        }
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);
         } else {
@@ -1475,9 +1483,6 @@ public:
             r += "/";
         } else if(x.m_name) {
             r.append(x.m_name);
-            if(x.m_sym == DoubleAsterisk) {
-                r += symbol2str(x.m_sym);
-            }
         }
         if (x.n_dim > 0) {
             r.append("(");
@@ -1497,9 +1502,17 @@ public:
             }
             r.append("]");
         }
+        if (x.m_sym == DoubleAsterisk) {
+            r += symbol2str(x.m_sym);
+        }
         if (x.m_length) {
+            // `name*len` or `name*(len)`; m_sym describes the initializer
             visit_expr(*x.m_length);
-            r += symbol2str(x.m_sym) + s;
+            if (is_a<Num_t>(*x.m_length)) {
+                r += "*" + s;
+            } else {
+                r += "*(" + s + ")";
+            }
         }
         if (x.m_initializer) {
             if (x.m_sym == SlashInit) {
@@ -1518,7 +1531,11 @@ public:
                 r += "/";
             } else {
                 visit_expr(*x.m_initializer);
-                r += symbol2str(x.m_sym) + s;
+                if (x.m_sym == DoubleAsterisk) {
+                    r += symbol2str(Equal) + s;
+                } else {
+                    r += symbol2str(x.m_sym) + s;
+                }
             }
         }
         if (x.m_spec) {
@@ -2402,6 +2419,24 @@ public:
         if (x.m_quiet) {
             this->visit_expr(*x.m_quiet);
             r += ", quiet = " + s;
+        }
+        if(x.m_trivia){
+            r += print_trivia_after(*x.m_trivia);
+        } else {
+            r.append("\n");
+        }
+        s = r;
+    }
+
+    void visit_Pause(const Pause_t &x) {
+        std::string r = indent;
+        r += print_label(x);
+        r += syn(gr::Keyword);
+        r.append("pause");
+        r += syn();
+        if (x.m_code) {
+            this->visit_expr(*x.m_code);
+            r += " " + s;
         }
         if(x.m_trivia){
             r += print_trivia_after(*x.m_trivia);

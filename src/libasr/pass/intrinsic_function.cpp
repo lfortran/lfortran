@@ -47,6 +47,21 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         index_kind(index_kind_) {}
 
 
+    void replace_IntrinsicImpureFunction(ASR::IntrinsicImpureFunction_t* x) {
+        ASRUtils::instantiate_impure_function instantiate_function =
+            ASRUtils::IntrinsicImpureFunctionRegistry::get_instantiate_function(
+                x->m_impure_intrinsic_id);
+        if (!instantiate_function) {
+            return;
+        }
+        Vec<ASR::call_arg_t> args; args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            args.push_back(al, {x->base.base.loc, x->m_args[i]});
+        }
+        *current_expr = instantiate_function(al, x->base.base.loc,
+            PassUtils::instantiation_scope(global_scope, caller_scope, args), args);
+    }
+
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
         if (x->m_value) {
             *current_expr = x->m_value;
@@ -121,7 +136,16 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         Vec<ASR::ttype_t*> arg_types;
         arg_types.reserve(al, x->n_args);
         for( size_t i = 0; i < x->n_args; i++ ) {
-            arg_types.push_back(al, ASRUtils::expr_type(x->m_args[i]));
+            ASR::ttype_t* arg_type = ASRUtils::expr_type(x->m_args[i]);
+            if( ASRUtils::is_array(arg_type) ) {
+                // An array intrinsic indexes its array arguments from 1 in
+                // every dimension, so the implementation takes them as
+                // assumed-shape dummies. An allocatable or pointer dummy would
+                // keep the lower bounds of the actual argument instead.
+                arg_type = ASRUtils::ArrIntrinsic::assumed_length_if_deferred(al,
+                    ASRUtils::type_get_past_allocatable_pointer(arg_type));
+            }
+            arg_types.push_back(al, arg_type);
         }
         ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
             PassUtils::instantiation_scope(global_scope, caller_scope,
@@ -434,9 +458,12 @@ void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit
     int index_kind = pass_options.descriptor_index_64 ? 8 : 4;
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions> func2intrinsicid;
     ReplaceIntrinsicFunctionsVisitor v(al, unit.m_symtab, func2intrinsicid, index_kind);
-    v.visit_TranslationUnit(unit);
+    PassUtils::make_new_tu_functions_private(unit, [&]() {
+        v.visit_TranslationUnit(unit);
+    });
     ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicid);
     u.visit_TranslationUnit(unit);
+    PassUtils::normalize_string_physical_casts(al, unit);
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);
 }

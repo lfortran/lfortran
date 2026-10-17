@@ -9,7 +9,7 @@ target datalayout = "..."
 @string_const_data.1 = private constant [2 x i8] c"ls"
 @string_const.2 = private global %string_descriptor { i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data.1, i32 0, i32 0), i64 2 }
 
-define void @_lcompilers_execute_command_line_(i8* %command, i32* %wait, i64 %__libasr_len_command) {
+define internal void @_lcompilers_execute_command_line_(i8* %command, i32* %wait, i64 %__libasr_len_command) {
 .entry:
   %command_desc = alloca %string_descriptor, align 8
   %__libasr_len_command_value = alloca i64, align 8
@@ -40,7 +40,7 @@ FINALIZE_SYMTABLE__lcompilers_execute_command_line_: ; preds = %return
 
 declare i32 @_lfortran_exec_command(i8*, i32)
 
-define void @_lcompilers_execute_command_line_1(i8* %command, i32* %wait, i64 %__libasr_len_command) {
+define internal void @_lcompilers_execute_command_line_1(i8* %command, i32* %wait, i64 %__libasr_len_command) {
 .entry:
   %command_desc = alloca %string_descriptor, align 8
   %__libasr_len_command_value = alloca i64, align 8

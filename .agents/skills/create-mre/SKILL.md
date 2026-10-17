@@ -21,12 +21,22 @@ the original third-party code.
 
 Before starting, confirm you have:
 
-- A built `lfortran` — `build/src/bin/lfortran` for a standard in-tree build
-  (see `AGENTS.md`). Put it first on `PATH`, or set `$LFORTRAN` to its path.
-- A **reference Fortran compiler** on `PATH`. `gfortran` is the project
-  default — it is what `integration_tests` uses via the `gfortran` label, so
-  prefer it. `flang` works too if that is what you have.
+- A built `lfortran` from the assigned worktree. **Use only Pixi**:
+  `pixi run -e llvm11 build` installs dependencies and builds
+  `build/llvm11/src/bin/lfortran` (see `AGENTS.md`). Save the build log.
+  Reuse the assigned Pixi environment and its build. Run every compiler and
+  test command through that environment, for example
+  `pixi run -e llvm11 bash run.sh`, and verify the compiler path/version.
+  Do not duplicate package lists or CMake setup flags here.
+- Pixi's **reference Fortran compiler**, `gfortran`, in the selected environment.
+  Additional reference compilers must also be provisioned through Pixi.
 - Access to the failing third-party code and the exact error message
+
+Here and below, "repository root" means the assigned worktree's root. Keep
+scratch inputs and outputs there, isolated from other workers.
+Follow [AGENTS.md](../../../AGENTS.md#required-agent-toolchain-pixi) for the
+required Pixi toolchain policy. Never install dependencies outside Pixi;
+reference tests and updates require the `llvm11` environment.
 
 ## Inputs to Gather
 
@@ -61,7 +71,7 @@ Fortran file.
 ### Phase 0: Read Project Guidelines
 
 Read `AGENTS.md` in the repository root for build commands and project
-conventions. Follow it, but this SKILL.md takes precedence where they conflict.
+conventions, including its required Pixi toolchain policy.
 
 ### Phase 1: Understand the Failure
 
@@ -130,11 +140,11 @@ Run the final verification:
 
 ```bash
 # Must succeed with the reference compiler
-gfortran -o test_ref <mre_file>.f90 && ./test_ref
+pixi run -e llvm11 gfortran -o test_ref <mre_file>.f90 && pixi run -e llvm11 ./test_ref
 echo "reference exit code: $?"
 
 # Must fail with lfortran with the SAME error as the original
-lfortran <mre_file>.f90
+pixi run -e llvm11 start <mre_file>.f90
 echo "lfortran exit code: $?"
 ```
 
@@ -143,14 +153,14 @@ lfortran-compiled binary must produce wrong output or crash:
 
 ```bash
 # Both compile
-gfortran -o test_ref <mre_file>.f90
-lfortran <mre_file>.f90 -o test_lfortran
+pixi run -e llvm11 gfortran -o test_ref <mre_file>.f90
+pixi run -e llvm11 start <mre_file>.f90 -o test_lfortran
 
 # reference binary works
-./test_ref
+pixi run -e llvm11 ./test_ref
 
 # lfortran binary fails
-./test_lfortran
+pixi run -e llvm11 ./test_lfortran
 ```
 
 Confirm:
@@ -188,6 +198,10 @@ Create an executable bash script **`./run.sh`** in the repository root
 directory (the same directory as `CMakeLists.txt`). Replace any previous
 `./run.sh` if it exists. Do NOT place it inside any subdirectory:
 
+Run this script with `pixi run -e llvm11 bash run.sh` (substitute the assigned
+Pixi environment when the original failure requires another configuration).
+Compiler commands inside the script use that activated environment.
+
 ```bash
 #!/usr/bin/env bash
 set -e
@@ -199,7 +213,7 @@ set -e
 # Expected: compiles and runs with the reference compiler
 # Actual:   fails with lfortran — <brief error description>
 
-LFORTRAN="${LFORTRAN:-lfortran}"
+LFORTRAN="${LFORTRAN:-${LFORTRAN_BUILD_DIR:?run this script through pixi run}/src/bin/lfortran}"
 REF="${REF:-gfortran}"
 
 echo "=== Verifying MRE ==="
@@ -213,7 +227,7 @@ echo "reference: OK"
 echo ""
 echo "--- lfortran (should fail) ---"
 echo "Expected error: <paste key part of the error message>"
-$LFORTRAN <file(s)> 2>&1 || true
+"$LFORTRAN" <file(s)> 2>&1 || true
 echo ""
 echo "Done. If lfortran showed the expected error above, the MRE is valid."
 
@@ -245,7 +259,7 @@ Error type: <compilation | runtime | wrong output>
 Original project: <name>
 
 To reproduce:
-  ./run.sh
+  pixi run -e llvm11 bash run.sh
 
 The MRE compiles with the reference compiler but fails with lfortran.
 

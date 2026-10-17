@@ -7,7 +7,7 @@ target datalayout = "..."
 
 @associate_02.t1 = internal global i32 2
 @associate_02.t2 = internal global double 2.000000e+00
-@associate_02.t3 = internal global %complex_4 zeroinitializer
+@associate_02.t3 = internal global %complex_4 <{ float 2.000000e+00, float 3.000000e+00 }>
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
 @1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
@@ -51,14 +51,13 @@ define i32 @main(i32 %0, i8** %1) {
   store double* null, double** %p2, align 8
   %p3 = alloca %complex_4*, align 8
   store %complex_4* null, %complex_4** %p3, align 8
-  store %complex_4 <{ float 2.000000e+00, float 3.000000e+00 }>, %complex_4* @associate_02.t3, align 1
   store i32* @associate_02.t1, i32** %p1, align 8
   store double* @associate_02.t2, double** %p2, align 8
   store %complex_4* @associate_02.t3, %complex_4** %p3, align 8
   %3 = load i32*, i32** %p1, align 8
-  store i32 1, i32* %3, align 4
+  store i32 1, i32* %3, align 1
   %4 = load double*, double** %p2, align 8
-  store double 4.000000e+00, double* %4, align 8
+  store double 4.000000e+00, double* %4, align 1
   %5 = alloca i64, align 8
   %6 = load i32*, i32** %p1, align 8
   %7 = call i8* (i8*, i8*, i64, i8*, i64*, i32, i32, i32, i32, i32, i32, ...) @_lcompilers_string_format_fortran(i8* %2, i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i64* %5, i32 0, i32 0, i32 0, i32 0, i32 0, i32 0, i32* %6)
@@ -103,9 +102,9 @@ free_nonnull2:                                    ; preds = %free_done
 
 free_done3:                                       ; preds = %free_nonnull2, %free_done
   %28 = load double*, double** %p2, align 8
-  %29 = load double, double* %28, align 8
+  %29 = load double, double* %28, align 1
   %30 = load i32*, i32** %p1, align 8
-  %31 = load i32, i32* %30, align 4
+  %31 = load i32, i32* %30, align 1
   %32 = sitofp i32 %31 to double
   %33 = fadd double %29, %32
   %34 = fptosi double %33 to i32
