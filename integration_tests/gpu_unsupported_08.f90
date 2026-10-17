@@ -1,8 +1,7 @@
 ! A do concurrent that calls a pure function with an `error stop` on a branch
-! the data never takes. A Metal shader cannot halt the program, so on Metal
-! the loop is on the unsupported list: a compile error, or with
-! --gpu-allow-cpu-fallback a loop that runs on the CPU. CUDA can halt, so
-! there the loop is offloaded.
+! the data never takes. `error stop` is not on the unsupported list: the
+! thread records it in the launch's status buffer and the host runs it after
+! the launch, so the loop is offloaded on every device, Metal included.
 program gpu_unsupported_08
 implicit none
 integer :: i

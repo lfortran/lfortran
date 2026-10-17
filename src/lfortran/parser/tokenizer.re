@@ -574,6 +574,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'out' { KW(OUT) }
             'parameter' { KW(PARAMETER) }
             'pass' { KW(PASS) }
+            'pause' { KW(PAUSE) }
             'pointer' { KW(POINTER) }
             'post' { KW(POST) }
             'precision' { KW(PRECISION) }

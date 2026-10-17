@@ -67,6 +67,7 @@ static inline DeclStmtKind decl_stmt_kind(const decl_stmt_t &x) {
         case decl_stmtType::Inquire:
         case decl_stmtType::Nullify:
         case decl_stmtType::Open:
+        case decl_stmtType::Pause:
         case decl_stmtType::Return:
         case decl_stmtType::Pragma:
         case decl_stmtType::Print:

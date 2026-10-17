@@ -131,6 +131,7 @@
                 )
                 :storage_format :ColMajor
                 :value nil
+                :in_bounds false
               )
               :value (Var
                 :v (SymbolRef 1 "i")

@@ -212,6 +212,7 @@
                     )
                     :storage_format :ColMajor
                     :value nil
+                    :in_bounds false
                   )
                   :value (RealConstant
                     :r 0.0

@@ -188,6 +188,10 @@ filename = "../integration_tests/template_interface_01.f90"
 asr = true
 
 [[test]]
+filename = "../integration_tests/template_intrinsic_func_01.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/template_commutative.f90"
 asr = true
 
@@ -414,6 +418,10 @@ asr_implicit_interface = true
 
 [[test]]
 filename = "errors/generic_typed_external_subroutine_01.f90"
+asr_implicit_interface = true
+
+[[test]]
+filename = "errors/generic_function_no_match_01.f90"
 asr_implicit_interface = true
 
 [[test]]
@@ -756,6 +764,10 @@ llvm = true
 filename = "stop1.f90"
 ast = true
 ast_f90 = true
+
+[[test]]
+filename = "pause1.f90"
+asr = true
 
 [[test]]
 filename = "../integration_tests/stop_03.f90"
@@ -1159,6 +1171,26 @@ filename = "array15.f90"
 pass = "array_op"
 
 [[test]]
+filename = "array_op_in_bounds.f90"
+pass = "array_op"
+
+[[test]]
+filename = "../integration_tests/array_item_in_bounds_01.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/array_item_in_bounds_02.f90"
+asr = true
+
+[[test]]
+filename = "array_op_section_in_bounds.f90"
+pass = "array_struct_temporary,array_op"
+
+[[test]]
+filename = "array_op_section_parameter.f90"
+pass = "array_struct_temporary,array_op"
+
+[[test]]
 filename = "array16.f90"
 run = true
 
@@ -1506,6 +1538,11 @@ ast = true
 ast_f90 = true
 
 [[test]]
+filename = "forall2.f90"
+asr = true
+pass = "forall"
+
+[[test]]
 filename = "subroutine8.f90"
 ast = true
 
@@ -1842,6 +1879,12 @@ julia = true
 c = true
 cpp = true
 
+# A whole-array assignment assigned again before anything reads it is
+# removed; one that is read is kept.
+[[test]]
+filename = "../integration_tests/dead_array_store_01.f90"
+pass = "dead_array_store"
+
 [[test]]
 filename = "../integration_tests/case_07.f90"
 pass = "select_case"
@@ -1885,6 +1928,10 @@ asr = true
 [[test]]
 filename = "../integration_tests/parameter_22.f90"
 semantics_only_cc = true
+
+[[test]]
+filename = "../integration_tests/parameter_25.f90"
+llvm = true
 
 # IntegerToReal
 [[test]]
@@ -3487,6 +3534,14 @@ filename = "errors/continue_compilation_simd.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/continue_compilation_initial_proc_target.f90"
+semantics_only_cc = true
+
+[[test]]
+filename = "errors/continue_compilation_proc_component_constant.f90"
+continue_compilation = true
+
+[[test]]
 filename = "errors/namelist_implicit_type_01.f90"
 semantics_only_cc = true
 options = "--implicit-typing"
@@ -3715,6 +3770,10 @@ ast = true
 
 [[test]]
 filename = "errors/fixed_form_13.f"
+ast = true
+
+[[test]]
+filename = "errors/fixed_form_14.f"
 ast = true
 
 [[test]]
@@ -4314,6 +4373,10 @@ filename = "../integration_tests/gpu_kernel_source_07.f90"
 gpu_cuda_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_kernel_source_08.f90"
+gpu_cuda_kernel = true
+
+[[test]]
 filename = "../integration_tests/gpu_metal_213.f90"
 gpu_cuda_kernel = true
 
@@ -4329,7 +4392,6 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_289.f90"
 gpu_cuda_kernel = true
-gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_290.f90"
@@ -4344,7 +4406,6 @@ gpu_offload_cuda = true
 [[test]]
 filename = "../integration_tests/gpu_metal_292.f90"
 gpu_cuda_kernel = true
-gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_297.f90"
@@ -4387,9 +4448,6 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_303.f90"
 gpu_cuda_kernel = true
-# This loop needs a lowering the offload pass does not have yet, so the
-# compilation fails.
-gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_304.f90"
@@ -4398,7 +4456,6 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_305.f90"
 gpu_cuda_kernel = true
-gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_306.f90"
@@ -4419,7 +4476,6 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_310.f90"
 gpu_cuda_kernel = true
-gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_315.f90"
@@ -4436,7 +4492,6 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_320.f90"
 gpu_cuda_kernel = true
-gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_327.f90"
@@ -4455,22 +4510,20 @@ gpu_cuda_kernel = true
 [[test]]
 filename = "../integration_tests/gpu_metal_331.f90"
 gpu_cuda_kernel = true
-gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_332.f90"
 gpu_cuda_kernel = true
 options = "--realloc-lhs-arrays"
 
-# A `stop` in the concurrent body is a trap in the emitted kernel, which is
-# what lets the loop offload to CUDA at all.
+# An `error stop` in the concurrent body is a write to the launch's status
+# buffer and a return in the emitted kernel.
 [[test]]
 filename = "../integration_tests/gpu_metal_334.f90"
 gpu_cuda_kernel = true
 
-# The same trap, on a branch every thread takes. Registered here for the
-# warning the offload pass emits on the statement: the launch halts, but the
-# stop code the program named is not delivered.
+# The same, on a branch every thread takes, with a stop code the kernel
+# records for the host.
 [[test]]
 filename = "../integration_tests/gpu_metal_337.f90"
 gpu_cuda_kernel = true
@@ -4478,10 +4531,6 @@ gpu_cuda_kernel = true
 # One regression test per GPU decline reason: each program is valid Fortran
 # that runs correctly on the CPU, and the reference captures the reason the
 # offload pass gives for not offloading it.
-
-[[test]]
-filename = "../integration_tests/gpu_decline_01.f90"
-gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_decline_03.f90"
@@ -4536,14 +4585,11 @@ filename = "../integration_tests/gpu_decline_15.f90"
 gpu_offload_cuda = true
 
 [[test]]
-filename = "gpu_decline_impure_condition.f90"
+filename = "../integration_tests/gpu_decline_16.f90"
 gpu_offload_cuda = true
 
-# Indexing an ASSOCIATE bound to a strided section inside a kernel. The
-# extent honours the step, so the count was right; the device pointer holds
-# only an address, so the elements were not. Refused rather than answered.
 [[test]]
-filename = "../integration_tests/gpu_metal_338.f90"
+filename = "gpu_decline_impure_condition.f90"
 gpu_offload_cuda = true
 
 # A program whose loops need a lowering the offload pass does not have yet.
@@ -4564,19 +4610,19 @@ gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_167.f90"
-gpu_offload_cuda = true
+gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_175.f90"
-gpu_offload_cuda = true
+gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_176.f90"
-gpu_offload_cuda = true
+gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_177.f90"
-gpu_offload_cuda = true
+gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_204.f90"
@@ -4584,7 +4630,7 @@ gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_206.f90"
-gpu_offload_cuda = true
+gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_207.f90"
@@ -4592,11 +4638,11 @@ gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_208.f90"
-gpu_offload_cuda = true
+gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_209.f90"
-gpu_offload_cuda = true
+gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_220.f90"
@@ -4604,7 +4650,7 @@ gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_265.f90"
-gpu_offload_cuda = true
+gpu_cuda_kernel = true
 options = "--realloc-lhs-arrays"
 
 [[test]]
@@ -4621,7 +4667,7 @@ gpu_offload_cuda = true
 
 [[test]]
 filename = "../integration_tests/gpu_metal_277.f90"
-gpu_offload_cuda = true
+gpu_cuda_kernel = true
 options = "--realloc-lhs-arrays"
 
 [[test]]
@@ -4631,7 +4677,7 @@ options = "--realloc-lhs-arrays"
 
 [[test]]
 filename = "../integration_tests/gpu_metal_296.f90"
-gpu_offload_cuda = true
+gpu_cuda_kernel = true
 
 # real(8) is on the unsupported list of Metal, which has no 64-bit floating
 # point type: an error that suggests --gpu-allow-cpu-fallback.
@@ -4689,11 +4735,83 @@ filename = "../integration_tests/gpu_unsupported_07.f90"
 gpu_offload_cuda = true
 gpu_offload_metal = true
 
-# error stop in a pure function the loop calls: an error on Metal. On CUDA it
-# is offloaded, which the integration test checks.
+# A temporary of the compiler the host cannot size, allocated on the device
+# heap.
 [[test]]
-filename = "../integration_tests/gpu_unsupported_08.f90"
+filename = "../integration_tests/gpu_metal_391.f90"
+gpu_cuda_kernel = true
+
+# A run-time sized array of device code whose extent reads a dummy argument
+# the routine changes before the call the array is passed to: the host cannot
+# size it before the launch, an error on every device.
+[[test]]
+filename = "../integration_tests/gpu_metal_406.f90"
+gpu_offload_cuda = true
 gpu_offload_metal = true
+
+# A local of a device routine whose extent calls a function of a module:
+# the kernel's copy of the routine calls the kernel's copy of the function,
+# which the host cannot call to size the array before the launch.
+[[test]]
+filename = "../integration_tests/gpu_metal_407.f90"
+gpu_offload_cuda = true
+gpu_offload_metal = true
+
+# An allocatable of a device routine allocated twice with a shape that reads
+# a local the routine changes in between, through an associate name: the
+# shape is not known on entry, so it is allocated on the device heap.
+[[test]]
+filename = "../integration_tests/gpu_metal_408.f90"
+gpu_cuda_kernel = true
+
+# Every matmul an offloaded loop lowers inline accumulates each element in a
+# scalar local and stores it into the target once.
+[[test]]
+filename = "../integration_tests/gpu_metal_455.f90"
+gpu_cuda_kernel = true
+
+# An associate name bound to the result of a function is that result, made
+# once on entry: one call, not one for every element read through the name.
+[[test]]
+filename = "../integration_tests/gpu_metal_452.f90"
+gpu_cuda_kernel = true
+options = "--realloc-lhs-arrays"
+
+# A call of a function returning an array, in an array expression, is made
+# once before the statement, not once for every element it computes.
+[[test]]
+filename = "../integration_tests/gpu_metal_453.f90"
+gpu_cuda_kernel = true
+options = "--realloc-lhs-arrays"
+
+# A fixed-size array each iteration defines whole before it references it
+# is a local of the kernel, not a kernel argument every thread shares; one
+# read after the loop stays an argument.
+[[test]]
+filename = "../integration_tests/gpu_metal_474.f90"
+gpu_cuda_kernel = true
+
+# Large and runtime-sized arrays stay private in workspace slices.
+[[test]]
+filename = "../integration_tests/gpu_metal_476.f90"
+gpu_cuda_kernel = true
+
+# Automatic callee locals are measured after inlining.
+[[test]]
+filename = "../integration_tests/gpu_metal_477.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_478.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_479.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_09.f90"
+gpu_cuda_kernel = true
 
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
@@ -4762,6 +4880,26 @@ run = true
 
 [[test]]
 filename = "errors/array_bounds_check_17.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_18.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_19.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_20.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_21.f90"
+run = true
+
+[[test]]
+filename = "errors/array_bounds_check_22.f90"
 run = true
 
 [[test]]
@@ -5575,6 +5713,19 @@ filename = "errors/duplicate_module_procedures.f90"
 asr = true
 
 [[test]]
+filename = "errors/proc_ptr_undefined_interface.f90"
+asr = true
+
+[[test]]
+filename = "errors/cyclic_dummy_procedure_interface.f90"
+asr = true
+semantics_only_cc = true
+
+[[test]]
+filename = "errors/template_deferred_interface_procedure.f90"
+asr = true
+
+[[test]]
 filename = "errors/string_negative_start_index.f90"
 asr = true
 
@@ -5914,7 +6065,15 @@ filename = "../integration_tests/shadow_same_symbol.f90"
 run = true
 
 [[test]]
+filename = "errors/template_intrinsic_op_01.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "errors/continue_compilation_templates_01.f90"
+semantics_only_cc = true
+
+[[test]]
+filename = "errors/continue_compilation_templates_02.f90"
 semantics_only_cc = true
 
 [[test]]
@@ -6033,6 +6192,10 @@ filename = "asr/verify/assignment_value_type_mismatch.asr"
 asr = true
 
 [[test]]
+filename = "asr/verify/assignment_move_type_mismatch.asr"
+asr = true
+
+[[test]]
 filename = "asr/verify/function_signature_argument_mismatch.asr"
 asr = true
 
@@ -6054,6 +6217,10 @@ asr = true
 
 [[test]]
 filename = "asr/verify/array_item_element_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/array_item_in_bounds_array.asr"
 asr = true
 
 [[test]]
@@ -6238,6 +6405,26 @@ asr = true
 
 [[test]]
 filename = "asr/verify/gpu_kernel_launch_argument_kind_mismatch.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/gpu_kernel_launch_component_fit_not_block.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/gpu_kernel_launch_scratch_not_allocatable.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/gpu_atomic_fetch_add_host_code.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/gpu_atomic_fetch_add_target_scalar.asr"
+asr = true
+
+[[test]]
+filename = "asr/verify/gpu_atomic_fetch_add_target_kind.asr"
 asr = true
 
 [[test]]
@@ -6436,3 +6623,22 @@ asr = true
 [[test]]
 filename = "../integration_tests/character_35.f90"
 ast_f90 = true
+
+[[test]]
+filename = "errors/template_component_default_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/template_component_default_02.f90"
+asr = true
+
+[[test]]
+filename = "errors/system_clock_f23_01.f90"
+semantics_only_cc = true
+options = "--std=f23"
+
+# The rank-mismatch warning for an array passed to a scalar dummy.
+[[test]]
+filename = "../integration_tests/legacy_array_sections_26.f90"
+semantics_only_cc = true
+options = "--legacy-array-sections"

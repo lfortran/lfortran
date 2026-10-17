@@ -983,6 +983,16 @@ static inline ASR::ttype_t* assumed_length_if_deferred(Allocator& al, ASR::ttype
         array_type->m_physical_type, true);
 }
 
+// The `result` dummy of a generated array intrinsic is declared with an assumed
+// length unless it is allocatable or a pointer; the caller passes a temporary
+// that already has the length.
+static inline ASR::ttype_t* result_dummy_type(Allocator& al, ASR::ttype_t* type) {
+    if (ASRUtils::is_allocatable_or_pointer(type)) {
+        return type;
+    }
+    return assumed_length_if_deferred(al, type);
+}
+
 // Seeds a character reduction with its identity value: a string as long as the
 // elements of `array` with every character equal to `fill`. Every element of
 // `array` compares greater than a string of char(0) and smaller than a string
@@ -2657,6 +2667,7 @@ namespace Cshift {
                 return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
             }
         }
+        return_type_ = ArrIntrinsic::result_dummy_type(al, return_type_);
         ASR::expr_t *result = declare("result", return_type_, Out);
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", b.int_type(index_kind), Local);
@@ -2724,7 +2735,7 @@ namespace Spread {
     }
 
     static ASR::expr_t *eval_Spread(Allocator &al, const Location &loc,
-            ASR::ttype_t *type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+            ASR::ttype_t *type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         ASRBuilder b(al, loc);
         int dim_val = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(args[1])) -> m_n;
         if (all_args_evaluated(args) &&
@@ -2875,10 +2886,10 @@ namespace Spread {
                 }
             }
             return b.ArrayConstant(m_eles, extract_type(type), false, type);
-        } else {
-            append_error(diag, "`dim` argument of `spread` intrinsic is not a valid dimension index", loc);
-            return nullptr;
         }
+        // `create_Spread` has already validated `dim`; other sources are
+        // simply not folded at compile time.
+        return nullptr;
     }
 
     static inline ASR::expr_t* get_result_dimension(Allocator& al, const Location& loc,
@@ -3097,7 +3108,7 @@ namespace Spread {
         if( n_dims_return_type == 1 ) {
             result_section = EXPR(ASR::make_ArrayItem_t(al, loc, result,
                     result_indices.p, result_indices.size(), ASRUtils::extract_type(return_type),
-                    ASR::arraystorageType::ColMajor, nullptr));
+                    ASR::arraystorageType::ColMajor, nullptr, false));
             source = b.ArrayItem_01(source, {b.i32(1)});
         } else {
             ASR::ttype_t* result_section_type = ASRUtils::create_array_type_with_empty_dims(
@@ -3179,7 +3190,8 @@ namespace Spread {
         if (is_struct_type_arg) {
             result = declare_struct_type("result", return_type, Out, m_args[0].m_value);
         } else {
-            result = declare("result", return_type, Out);
+            result = declare("result",
+                ArrIntrinsic::result_dummy_type(al, return_type), Out);
         }
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", b.int_type(index_kind), Local);
@@ -3444,6 +3456,7 @@ namespace Eoshift {
                 return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
             }
         }
+        return_type_ = ArrIntrinsic::result_dummy_type(al, return_type_);
         ASR::expr_t *result = declare("result", return_type_, Out);
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", b.int_type(index_kind), Local);
@@ -5491,14 +5504,18 @@ namespace MatMul {
         } else {
             mul_value = b.Mul(a_ref, b_ref);
         }
+        // Each element is accumulated in a scalar local and stored once,
+        // rather than loading and storing the result for every term.
+        ASR::expr_t *acc = declare("acc",
+            ASRUtils::duplicate_type(al, expr_type(res_ref)), Local);
         ASR::stmt_t *init_stmt = nullptr;
         ASR::stmt_t *update_stmt = nullptr;
         if (is_logical(*expr_type(res_ref))) {
-            init_stmt = b.Assignment(res_ref, b.bool_t(false, expr_type(res_ref)));
-            update_stmt = b.Assignment(res_ref, b.Or(res_ref, mul_value));
+            init_stmt = b.Assignment(acc, b.bool_t(false, expr_type(res_ref)));
+            update_stmt = b.Assignment(acc, b.Or(acc, mul_value));
         } else {
-            init_stmt = b.Assign_Constant(res_ref, 0);
-            update_stmt = b.Assignment(res_ref, b.Add(res_ref, mul_value));
+            init_stmt = b.Assign_Constant(acc, 0);
+            update_stmt = b.Assignment(acc, b.Add(acc, mul_value));
         }
         body.push_back(al, b.DoLoop(i, a_lbound, a_ubound, {
             b.DoLoop(j, b_lbound, b_ubound, {
@@ -5506,6 +5523,7 @@ namespace MatMul {
                 b.DoLoop(k, b.GetLBound(args[1], 1), b.GetUBound(args[1], 1), {
                     update_stmt
                 }),
+                b.Assignment(res_ref, acc),
             })
         }));
         body.push_back(al, b.Return());
@@ -6314,7 +6332,7 @@ namespace Pack {
     }
 
     static inline ASR::expr_t *eval_Pack(Allocator & al,
-        const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         ASRBuilder builder(al, loc);
         ASR::expr_t *array = args[0], *mask = args[1], *vector = nullptr;
         if (args.size() > 2) {
@@ -6362,9 +6380,6 @@ namespace Pack {
                     values.push_back(EXPR(ASR::make_RealConstant_t(al, loc, it, real64)));
                 }
                 return builder.ArrayConstant(values, extract_type(return_type), false);
-            } else {
-                append_error(diag, "The `pack` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
         } else if (ASRUtils::is_integer(*type_a)) {
             if (kind == 1) {
@@ -6415,9 +6430,6 @@ namespace Pack {
                     values.push_back(EXPR(ASR::make_IntegerConstant_t(al, loc, it, int64)));
                 }
                 return builder.ArrayConstant(values, extract_type(return_type), false);
-            } else {
-                append_error(diag, "The `pack` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
         } else if (ASRUtils::is_logical(*type_a)) {
             std::vector<bool> a(dim_array), c(dim_vector), res;
@@ -6456,14 +6468,9 @@ namespace Pack {
                     values.push_back(EXPR(ASR::make_ComplexConstant_t(al, loc, it.first, it.second, type_get_past_array(return_type))));
                 }
                 return builder.ArrayConstant(values, extract_type(return_type), false);
-            } else {
-                append_error(diag, "The `pack` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
-        } else {
-            append_error(diag, "The `pack` intrinsic doesn't handle type " + ASRUtils::get_type_code(type_a) + " yet", loc);
-            return nullptr;
         }
+        // Other types and kinds are not folded at compile time.
         return nullptr;
     }
 
@@ -6610,6 +6617,7 @@ namespace Pack {
                         ASRUtils::type_get_past_allocatable(return_type)),
                 ASR::array_physical_typeType::DescriptorArray, true);
         }
+        ret_type = ArrIntrinsic::result_dummy_type(al, ret_type);
         ASR::expr_t *result;
         if (is_struct_type_arg) {
             result = declare_struct_type("result", ret_type, Out, m_args[0].m_value);
@@ -6735,7 +6743,7 @@ namespace Unpack {
     }
 
     static inline ASR::expr_t *eval_Unpack(Allocator & al,
-        const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         ASR::expr_t * vector= args[0], *mask = args[1], *field = args[2];
         ASR::ttype_t *type_vector = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(vector)));
         ASR::ttype_t *type_mask = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(mask)));
@@ -6778,9 +6786,6 @@ namespace Unpack {
                     }
                 }
                 return EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, values.p, values.n, return_type, ASR::arraystorageType::ColMajor));
-            } else {
-                append_error(diag, "The `unpack` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
         } else if (ASRUtils::is_integer(*type_a)) {
             if (kind == 4) {
@@ -6811,9 +6816,6 @@ namespace Unpack {
                     }
                 }
                 return EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, values.p, values.n, return_type, ASR::arraystorageType::ColMajor));
-            } else {
-                append_error(diag, "The `unpack` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
         } else if (ASRUtils::is_logical(*type_a)) {
             std::vector<bool> a(dim_vector), c(dim_mask);
@@ -6862,13 +6864,9 @@ namespace Unpack {
                     }
                 }
                 return EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc, values.p, values.n, return_type, ASR::arraystorageType::ColMajor));
-            } else {
-                append_error(diag, "The `unpack` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
-        } else {
-            append_error(diag, "The `unpack` intrinsic doesn't handle type " + ASRUtils::get_type_code(type_a) + " yet", loc);
         }
+        // Other types and kinds are not folded at compile time.
         return nullptr;
     }
 
@@ -7088,7 +7086,7 @@ namespace DotProduct {
     }
 
     static inline ASR::expr_t *eval_DotProduct(Allocator & al,
-        const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
+        const Location & loc, ASR::ttype_t *return_type, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         ASR::expr_t *vector_a = args[0], *vector_b = args[1];
         ASR::ttype_t *type_vector_a = ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(expr_type(vector_a)));
         ASR::ttype_t* type_a = ASRUtils::type_get_past_array(type_vector_a);
@@ -7119,9 +7117,6 @@ namespace DotProduct {
                 populate_vector(al, a, b, vector_a, vector_b, dim);
                 double result = std::inner_product(a.begin(), a.end(), b.begin(), 0.0);
                 return ASRUtils::make_RealConstant_util(al, loc, result, return_type);
-            } else {
-                append_error(diag, "The `dot_product` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
         } else if (ASRUtils::is_integer(*type_a)) {
             if (kind == 4) {
@@ -7134,9 +7129,6 @@ namespace DotProduct {
                 populate_vector(al, a, b, vector_a, vector_b, dim);
                 int64_t result = std::inner_product(a.begin(), a.end(), b.begin(), 0);
                 return make_ConstantWithType(make_IntegerConstant_t, result, return_type, loc);
-            } else {
-                append_error(diag, "The `dot_product` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
         } else if (ASRUtils::is_logical(*type_a)) {
             std::vector<bool> a(dim), b(dim);
@@ -7165,14 +7157,9 @@ namespace DotProduct {
                     result.second += a[i].first * b[i].second + ((-a[i].second)* b[i].first);
                 }
                 return EXPR(make_ComplexConstant_t(al, loc, result.first, result.second, return_type));
-            } else {
-                append_error(diag, "The `dot_product` intrinsic doesn't handle kind " + std::to_string(kind) + " yet", loc);
-                return nullptr;
             }
-        } else {
-            append_error(diag, "The `dot_product` intrinsic doesn't handle type " + ASRUtils::get_type_code(type_a) + " yet", loc);
-            return nullptr;
         }
+        // Other types and kinds are not folded at compile time.
         return nullptr;
     }
 
@@ -7440,6 +7427,7 @@ namespace Transpose {
                 return_type_ = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, return_type_));
             }
         }
+        return_type_ = ArrIntrinsic::result_dummy_type(al, return_type_);
         ASR::expr_t *result = declare("result", return_type_, Out);
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", int32, Local);

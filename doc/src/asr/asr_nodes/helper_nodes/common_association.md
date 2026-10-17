@@ -65,6 +65,7 @@ block before its first storage unit.
     )
     :storage_format :ColMajor
     :value nil
+    :in_bounds false
   )
   :anchor (Var
     :v (SymbolRef 1 "n")

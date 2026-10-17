@@ -676,7 +676,7 @@ class QuickScriptTests(unittest.TestCase):
                         CI_CALLS=str(self.calls))
         for name in (
             "build0.sh", "src/bin/lfortran", "run_tests.py", "integration_tests/run_tests.py",
-            "expr2", "expr2-debug", "modules_15", "intrinsics_04", "intrinsics_04s",
+            "expr2", "expr2-debug", "modules_15", "intrinsics_04", "intrinsics_04s", "system_clock_02",
             "bin/gcc", "bin/clang", "bin/cl", "bin/nproc", "bin/cmake",
             "bin/make", "bin/ctest", "bin/pip", "bin/llvm-dwarfdump", "bin/dsymutil",
         ):
@@ -725,7 +725,7 @@ class QuickScriptTests(unittest.TestCase):
                 work.mkdir()
                 # ci/test.sh uses fixed relative paths and creates one build dir.
                 for entry in ("src", "integration_tests", "run_tests.py", "expr2",
-                              "modules_15", "intrinsics_04", "intrinsics_04s"):
+                              "modules_15", "intrinsics_04", "intrinsics_04s", "system_clock_02"):
                     if entry == "integration_tests":
                         (work / entry).mkdir()
                         (work / entry / "run_tests.py").symlink_to(
@@ -744,6 +744,16 @@ class QuickScriptTests(unittest.TestCase):
                 )
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 calls = [json.loads(line) for line in self.calls.read_text().splitlines()]
+                # Windows skips the integration runner but must compile and run the clock check.
+                compiler = str(self.directory / "src/bin/lfortran")
+                clock = str(self.directory / "system_clock_02")
+                clock_calls = [(path, args) for path, args in calls
+                               if path == clock or (path == compiler and
+                                   "integration_tests/system_clock_02.f90" in args)]
+                self.assertEqual(clock_calls, [
+                    (compiler, ["integration_tests/system_clock_02.f90", "-o", "system_clock_02"]),
+                    (clock, []),
+                ])
                 reference_calls = [args for path, args in calls
                                    if path == str(self.directory / "run_tests.py")]
                 integration_calls = [args for path, args in calls

@@ -1,0 +1,68 @@
+#include <stdint.h>
+
+struct pair_t {
+    long a_;
+    long b_;
+};
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int nn;
+    int __dim_out_0;
+    int __lb_out_0;
+    int __dim_out_1;
+    int __lb_out_1;
+    int __dim_s_0;
+    int __lb_s_0;
+    int __loop_end_0;
+    int __workspace_extent;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    float* out,
+    pair_t* s,
+    float* __data_s_a_,
+    int* __offsets_s_a_,
+    int* __sizes_s_a_,
+    float* __data_s_b_,
+    int* __offsets_s_b_,
+    int* __sizes_s_b_,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    float* __workspace_9)
+{
+    int nn = __scalar_args.nn;
+    int __dim_out_0 = __scalar_args.__dim_out_0;
+    int __lb_out_0 = __scalar_args.__lb_out_0;
+    int __dim_out_1 = __scalar_args.__dim_out_1;
+    int __lb_out_1 = __scalar_args.__lb_out_1;
+    int __dim_s_0 = __scalar_args.__dim_s_0;
+    int __lb_s_0 = __scalar_args.__lb_s_0;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __workspace_extent = __scalar_args.__workspace_extent;
+    int __flat_idx;
+    int __gpu_sec_i;
+    int jj;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    jj = (__flat_idx + 1);
+    {
+        int __do_loop_end;
+        int __do_loop_end1;
+        int k;
+        float* res = __workspace_9 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
+        __do_loop_end = __sizes_s_b_[(((int)(jj) - (__lb_s_0))) * 2 + 0];
+        k = (1 - 1);
+        while (((k + 1) <= __do_loop_end)) {
+            k = (k + 1);
+            res[((int)(k) - (1))] = (  2.00000000000000000e+00f * __data_s_b_[__offsets_s_b_[((int)(jj) - (__lb_s_0))] + ((int)(k) - (__sizes_s_b_[(((int)(jj) - (__lb_s_0))) * 2 + 1]))]);
+        }
+        __do_loop_end1 = ((((((int)__dim_out_0) + ((int)__lb_out_0)) - 1) - ((int)__lb_out_0)) + 1);
+        __gpu_sec_i = (1 - 1);
+        while (((__gpu_sec_i + 1) <= __do_loop_end1)) {
+            __gpu_sec_i = (__gpu_sec_i + 1);
+            out[((int)((((int)__lb_out_0) + (__gpu_sec_i - 1))) - (__lb_out_0)) + (__dim_out_0 * ((int)(jj) - (__lb_out_1)))] = res[((int)(__gpu_sec_i) - (1))];
+        }
+    }
+}
+

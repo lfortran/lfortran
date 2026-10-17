@@ -540,6 +540,7 @@
                                                 (Real 8)
                                                 ColMajor
                                                 ()
+                                                .false.
                                             )
                                             (Cast
                                                 (RealBinOp
@@ -584,6 +585,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (IntegerConstant 16 (Integer 4) Decimal)
                                         ()
@@ -599,6 +601,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (IntegerConstant 16 (Integer 4) Decimal)
                                         ()
@@ -670,6 +673,7 @@
                                                                         (Real 8)
                                                                         ColMajor
                                                                         ()
+                                                                        .false.
                                                                     )
                                                                     Sub
                                                                     (Cast
@@ -749,6 +753,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (IntegerConstant 16 (Integer 4) Decimal)
                                         ()
@@ -764,6 +769,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (IntegerConstant 16 (Integer 4) Decimal)
                                         ()
@@ -779,6 +785,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (IntegerConstant 16 (Integer 4) Decimal)
                                         ()
@@ -862,6 +869,7 @@
                                                                                 (Real 8)
                                                                                 ColMajor
                                                                                 ()
+                                                                                .false.
                                                                             )
                                                                             Sub
                                                                             (Cast
@@ -1334,6 +1342,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (IntegerConstant 256 (Integer 4) Decimal)
                                         ()
@@ -1438,6 +1447,7 @@
                                                                     (Real 8)
                                                                     ColMajor
                                                                     ()
+                                                                    .false.
                                                                 )
                                                                 Sub
                                                                 (Cast
@@ -1527,6 +1537,7 @@
                                                         (Real 8)
                                                         ColMajor
                                                         ()
+                                                        .false.
                                                     )
                                                     (Cast
                                                         (RealBinOp
@@ -1599,6 +1610,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (IntegerConstant 4096 (Integer 4) Decimal)
                                         ()
@@ -1747,6 +1759,7 @@
                                                                         (Real 8)
                                                                         ColMajor
                                                                         ()
+                                                                        .false.
                                                                     )
                                                                     Sub
                                                                     (Cast
@@ -2033,6 +2046,7 @@
                                                     (Real 8)
                                                     ColMajor
                                                     ()
+                                                    .false.
                                                 )
                                                 (Cast
                                                     (RealBinOp
@@ -2205,6 +2219,7 @@
                                                 (Real 8)
                                                 ColMajor
                                                 ()
+                                                .false.
                                             )
                                             (Cast
                                                 (RealBinOp

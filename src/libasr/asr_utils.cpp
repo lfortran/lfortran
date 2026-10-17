@@ -1,4 +1,5 @@
 #include "libasr/asr.h"
+#include <algorithm>
 #include <limits>
 #include <set>
 #include <unordered_set>
@@ -2006,6 +2007,65 @@ bool struct_constant_names_procedure(ASR::expr_t* value) {
     return false;
 }
 
+bool constant_names_procedure_outside(ASR::expr_t* value,
+        SymbolTable* scope) {
+    if (value == nullptr) {
+        return false;
+    }
+    switch (value->type) {
+        case ASR::exprType::Var: {
+            ASR::symbol_t* v = ASR::down_cast<ASR::Var_t>(value)->m_v;
+            return ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v))
+                && !ASRUtils::is_visible_from(v, scope);
+        }
+        case ASR::exprType::StructConstant: {
+            ASR::StructConstant_t* sc = ASR::down_cast<ASR::StructConstant_t>(value);
+            for (size_t i = 0; i < sc->n_args; i++) {
+                if (constant_names_procedure_outside(sc->m_args[i].m_value, scope)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        case ASR::exprType::ArrayConstructor: {
+            ASR::ArrayConstructor_t* ac = ASR::down_cast<ASR::ArrayConstructor_t>(value);
+            for (size_t i = 0; i < ac->n_args; i++) {
+                if (constant_names_procedure_outside(ac->m_args[i], scope)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        case ASR::exprType::ArrayConstant: {
+            ASR::ArrayConstant_t* ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
+            if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(ac->m_type))) {
+                return false;
+            }
+            ASR::expr_t** elements = static_cast<ASR::expr_t**>(ac->m_data);
+            int64_t n = ASRUtils::get_fixed_size_of_array(ac->m_type);
+            for (int64_t i = 0; i < n; i++) {
+                if (constant_names_procedure_outside(elements[i], scope)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        case ASR::exprType::ArrayBroadcast:
+            return constant_names_procedure_outside(
+                ASR::down_cast<ASR::ArrayBroadcast_t>(value)->m_array, scope);
+        default:
+            return false;
+    }
+}
+
+ASR::expr_t* import_folded_constant_value(Allocator& al,
+        ASR::expr_t* value, SymbolTable* scope) {
+    if (constant_names_procedure_outside(value, scope)) {
+        return nullptr;
+    }
+    return externalize_struct_refs_in_init(al, value, scope);
+}
+
 ASR::expr_t* get_struct_member_value_from_constant(ASR::expr_t* value,
                             ASR::symbol_t* member) {
     if (value == nullptr) {
@@ -2131,6 +2191,29 @@ ASR::expr_t* get_struct_member_value_from_constant_array(Allocator &al,
         ASR::arraystorageType::ColMajor));
 }
 
+ASR::expr_t* designator_constant_value(Allocator& al, ASR::expr_t* expr) {
+    ASR::expr_t* value = ASRUtils::expr_value(expr);
+    if (value != nullptr) {
+        return value;
+    }
+    if (ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+        ASR::ArrayItem_t* item = ASR::down_cast<ASR::ArrayItem_t>(expr);
+        return fold_ArrayItem_value(al, item->m_v, item->m_args, item->n_args);
+    }
+    if (ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+        ASR::StructInstanceMember_t* member =
+            ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+        if (!ASR::is_a<ASR::Variable_t>(
+                *ASRUtils::symbol_get_past_external(member->m_m))) {
+            return nullptr;
+        }
+        return get_struct_member_value_from_constant_array(al, expr->base.loc,
+            designator_constant_value(al, member->m_v), member->m_m,
+            member->m_type);
+    }
+    return nullptr;
+}
+
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                             ASR::asr_t* v_var, ASR::symbol_t *v,
                             ASR::symbol_t* member, SymbolTable* current_scope) {
@@ -2197,7 +2280,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         ASR::symbol_t* member_ext = ASRUtils::import_struct_instance_member(al, member, current_scope);
         ASR::expr_t* value = nullptr;
         ASR::expr_t* base_value = base_is_parameter ?
-            ASRUtils::expr_value(ASRUtils::EXPR(v_var)) : nullptr;
+            designator_constant_value(al, ASRUtils::EXPR(v_var)) : nullptr;
         if (base_is_parameter && base_value != nullptr) {
             value = get_struct_member_value_from_constant_array(
                 al, loc, base_value, member, member_type);
@@ -2222,7 +2305,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                 value = nullptr;
             }
         }
-        value = ASRUtils::externalize_struct_refs_in_init(al, value, current_scope);
+        value = import_folded_constant_value(al, value, current_scope);
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
             member_ext, member_type, value);
     }
@@ -2509,16 +2592,29 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     return found;
 }
 
-void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* operand,
-    ASR::ttype_t* operand_type, bool& found, Allocator& al, SymbolTable* curr_scope,
+void process_overloaded_unary_function(ASR::symbol_t* proc, ASR::expr_t* operand,
+    ASR::ttype_t* operand_type, const std::string& op_name, bool& found, Allocator& al, SymbolTable* curr_scope,
     const Location& loc, SetChar& current_function_dependencies,
     SetChar& current_module_dependencies, ASR::asr_t*& asr,
+    bool elemental_pass,
     const std::function<void (const std::string &, const Location &)> /*err*/) {
     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
     std::string matched_func_name = "";
     if( func->n_args == 1 ) {
         ASR::ttype_t* operand_arg_type = ASRUtils::expr_type(func->m_args[0]);
-        if (ASRUtils::check_equal_type(operand_arg_type, operand_type, func->m_args[0], operand)) {
+        // An elemental specific applies to each element of an array operand;
+        // any other specific needs a dummy of the operand's rank.
+        bool is_elemental_call = ASRUtils::get_FunctionType(func)->m_elemental &&
+            ASRUtils::is_array(operand_type);
+        if (is_elemental_call != elemental_pass) {
+            return;
+        }
+        bool rank_matches = is_elemental_call ||
+            ASRUtils::is_assumed_rank_array(operand_arg_type) ||
+            ASRUtils::extract_n_dims_from_ttype(operand_arg_type) ==
+                ASRUtils::extract_n_dims_from_ttype(operand_type);
+        if (rank_matches && ASRUtils::check_equal_type(operand_arg_type,
+                operand_type, func->m_args[0], operand)) {
             found = true;
             Vec<ASR::call_arg_t> a_args;
             a_args.reserve(al, 1);
@@ -2530,7 +2626,7 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
             if( curr_scope->resolve_symbol(func_name) ) {
                 matched_func_name = func_name;
             } else {
-                std::string mangled_name = func_name + "@~sub";
+                std::string mangled_name = func_name + "@" + op_name;
                 matched_func_name = mangled_name;
             }
             ASR::symbol_t* a_name = curr_scope->resolve_symbol(matched_func_name);
@@ -2542,12 +2638,12 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
                 curr_scope->add_symbol(matched_func_name, a_name);
             }
             ASR::ttype_t *return_type = nullptr;
-            if( ASRUtils::get_FunctionType(func)->m_elemental &&
-                func->n_args >= 1 &&
-                ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value)) ) {
+            ASR::expr_t* first_array_arg =
+                ASRUtils::find_first_array_arg_if_elemental(func, a_args);
+            if( first_array_arg != nullptr ) {
                 ASR::dimension_t* array_dims;
                 size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                ASRUtils::expr_type(a_args[0].m_value), array_dims);
+                    ASRUtils::expr_type(first_array_arg), array_dims);
                 Vec<ASR::dimension_t> new_dims;
                 new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
                 return_type = ASRUtils::duplicate_type(al,
@@ -2574,7 +2670,9 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
             ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
             {
                 ASR::FunctionType_t* ftype = ASRUtils::get_FunctionType(func);
-                if (ftype->m_return_var_type) {
+                // An elemental reference with an array argument
+                // has the shape of the argument, set above.
+                if (ftype->m_return_var_type && first_array_arg == nullptr) {
                     return_type = ASRUtils::duplicate_type(al, ftype->m_return_var_type);
                     ASR::dimension_t* ret_dims = nullptr;
                     size_t n_ret_dims = ASRUtils::extract_dimensions_from_ttype(return_type, ret_dims);
@@ -2613,26 +2711,27 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
     }
 }
 
-bool use_overloaded_unary_minus(ASR::expr_t* operand,
+bool use_overloaded_unary_op(ASR::expr_t* operand, const std::string& op_name,
     SymbolTable* curr_scope, ASR::asr_t*& asr,
     Allocator &al, const Location& loc, SetChar& current_function_dependencies,
     SetChar& current_module_dependencies,
     const std::function<void (const std::string &, const Location &)> err) {
     ASR::ttype_t *operand_type = ASRUtils::type_get_past_allocatable_pointer(
         ASRUtils::expr_type(operand));
-    ASR::symbol_t* sym = curr_scope->resolve_symbol("~sub");
+    ASR::ttype_t *element_type = ASRUtils::type_get_past_array(operand_type);
+    ASR::symbol_t* sym = curr_scope->resolve_symbol(op_name);
 
     if (!sym) {
-        if (ASR::is_a<ASR::StructType_t>(*operand_type)) {
+        if (ASR::is_a<ASR::StructType_t>(*element_type)) {
             ASR::symbol_t* struct_t_sym = ASRUtils::symbol_get_past_external(
                 ASRUtils::get_struct_sym_from_struct_expr(operand));
             if (ASR::is_a<ASR::Struct_t>(*struct_t_sym)) {
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_t_sym);
-                sym = struct_type_t->m_symtab->resolve_symbol("~sub");
+                sym = struct_type_t->m_symtab->resolve_symbol(op_name);
                 while (sym == nullptr && struct_type_t->m_parent != nullptr) {
                     struct_type_t = ASR::down_cast<ASR::Struct_t>(
                         ASRUtils::symbol_get_past_external(struct_type_t->m_parent));
-                    sym = struct_type_t->m_symtab->resolve_symbol("~sub");
+                    sym = struct_type_t->m_symtab->resolve_symbol(op_name);
                 }
                 if (sym == nullptr) {
                     return false;
@@ -2641,14 +2740,14 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
                     ASR::make_ExternalSymbol_t(al,
                                                loc,
                                                curr_scope,
-                                               s2c(al, "~sub"),
+                                               s2c(al, op_name),
                                                sym,
                                                struct_type_t->m_name,
                                                nullptr,
                                                0,
-                                               s2c(al, "~sub"),
+                                               s2c(al, op_name),
                                                ASR::accessType::Public));
-                curr_scope->add_symbol("~sub", sym);
+                curr_scope->add_symbol(op_name, sym);
             } else {
                 LCOMPILERS_ASSERT(false);
             }
@@ -2657,70 +2756,83 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
         }
     }
 
-    bool found = false;
     ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
     ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
-    for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
-        ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
-        switch(proc->type) {
-            case ASR::symbolType::Function: {
-                process_overloaded_unary_minus_function(proc, operand, operand_type,
-                    found, al, curr_scope, loc, current_function_dependencies,
-                    current_module_dependencies, asr, err);
-                break;
-            }
-            case ASR::symbolType::StructMethodDeclaration: {
-                ASR::StructMethodDeclaration_t* class_procedure_t = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                process_overloaded_unary_minus_function(class_procedure_t->m_proc,
-                    operand, operand_type, found, al, curr_scope, loc,
-                    current_function_dependencies, current_module_dependencies, asr, err);
-                break;
-            }
-            default: {
-                err("While overloading binary operators only functions can be used",
-                                    proc->base.loc);
-            }
-        }
-    }
-    if (!found && ASR::is_a<ASR::StructType_t>(*operand_type) &&
-            !ASRUtils::is_class_type(operand_type)) {
+    ASR::CustomOperator_t* struct_gen = nullptr;
+    if (ASR::is_a<ASR::StructType_t>(*element_type) &&
+            !ASRUtils::is_class_type(element_type)) {
         ASR::symbol_t* struct_t_sym = ASRUtils::symbol_get_past_external(
             ASRUtils::get_struct_sym_from_struct_expr(operand));
         if (ASR::is_a<ASR::Struct_t>(*struct_t_sym)) {
             ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_t_sym);
-            ASR::symbol_t* struct_sub = struct_type_t->m_symtab->resolve_symbol("~sub");
+            ASR::symbol_t* struct_sub = struct_type_t->m_symtab->resolve_symbol(op_name);
             while (struct_sub == nullptr && struct_type_t->m_parent != nullptr) {
                 struct_type_t = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(struct_type_t->m_parent));
-                struct_sub = struct_type_t->m_symtab->resolve_symbol("~sub");
+                struct_sub = struct_type_t->m_symtab->resolve_symbol(op_name);
             }
             if (struct_sub != nullptr) {
                 ASR::symbol_t* struct_orig = ASRUtils::symbol_get_past_external(struct_sub);
                 if (ASR::is_a<ASR::CustomOperator_t>(*struct_orig)) {
-                    ASR::CustomOperator_t* struct_gen = ASR::down_cast<ASR::CustomOperator_t>(struct_orig);
-                    for (size_t i = 0; i < struct_gen->n_procs && !found; i++) {
-                        ASR::symbol_t* proc = struct_gen->m_procs[i];
-                        switch(proc->type) {
-                            case ASR::symbolType::Function: {
-                                process_overloaded_unary_minus_function(proc, operand, operand_type,
-                                    found, al, curr_scope, loc, current_function_dependencies,
-                                    current_module_dependencies, asr, err);
-                                break;
-                            }
-                            case ASR::symbolType::StructMethodDeclaration: {
-                                ASR::StructMethodDeclaration_t* class_procedure_t =
-                                    ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
-                                process_overloaded_unary_minus_function(class_procedure_t->m_proc,
-                                    operand, operand_type, found, al, curr_scope, loc,
-                                    current_function_dependencies, current_module_dependencies, asr, err);
-                                break;
-                            }
-                            default:
-                                break;
-                        }
+                    struct_gen = ASR::down_cast<ASR::CustomOperator_t>(struct_orig);
+                }
+            }
+        }
+    }
+
+    bool found = false;
+    // A matching nonelemental specific takes priority over an elemental one
+    // (F2018 15.5.5.2), so the elemental specifics are only tried afterwards.
+    for (bool elemental_pass : {false, true}) {
+        for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
+            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
+            switch(proc->type) {
+                case ASR::symbolType::Function: {
+                    process_overloaded_unary_function(proc, operand, operand_type, op_name,
+                        found, al, curr_scope, loc, current_function_dependencies,
+                        current_module_dependencies, asr, elemental_pass, err);
+                    break;
+                }
+                case ASR::symbolType::StructMethodDeclaration: {
+                    ASR::StructMethodDeclaration_t* class_procedure_t = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
+                    process_overloaded_unary_function(class_procedure_t->m_proc,
+                        operand, operand_type, op_name, found, al, curr_scope, loc,
+                        current_function_dependencies, current_module_dependencies, asr,
+                        elemental_pass, err);
+                    break;
+                }
+                default: {
+                    if (!elemental_pass) {
+                        err("While overloading binary operators only functions can be used",
+                                            proc->base.loc);
                     }
                 }
             }
+        }
+        for (size_t i = 0; struct_gen && i < struct_gen->n_procs && !found; i++) {
+            ASR::symbol_t* proc = struct_gen->m_procs[i];
+            switch(proc->type) {
+                case ASR::symbolType::Function: {
+                    process_overloaded_unary_function(proc, operand, operand_type, op_name,
+                        found, al, curr_scope, loc, current_function_dependencies,
+                        current_module_dependencies, asr, elemental_pass, err);
+                    break;
+                }
+                case ASR::symbolType::StructMethodDeclaration: {
+                    ASR::StructMethodDeclaration_t* class_procedure_t =
+                        ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
+                    process_overloaded_unary_function(class_procedure_t->m_proc,
+                        operand, operand_type, op_name, found, al, curr_scope, loc,
+                        current_function_dependencies, current_module_dependencies, asr,
+                        elemental_pass, err);
+                    break;
+                }
+                default:
+                    break;
+            }
+        }
+        if (found) {
+            break;
         }
     }
     return found;
@@ -3140,8 +3252,12 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     if (sym) {
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
-        for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
-            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
+        // Non-elemental specifics take precedence over elemental ones.
+        std::vector<ASR::symbol_t*> procs(gen_proc->m_procs, gen_proc->m_procs + gen_proc->n_procs);
+        std::stable_partition(procs.begin(), procs.end(),
+            [](ASR::symbol_t* p) { return !ASRUtils::is_elemental(p); });
+        for( size_t i = 0; i < procs.size() && !found; i++ ) {
+            ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(procs[i]);
             switch( proc->type ) {
                 case ASR::symbolType::Function: {
                     process_overloaded_assignment_function(proc, target, value, target_type,
@@ -4453,6 +4569,79 @@ bool reads_valueless_parameter(ASR::expr_t* e) {
     return finder.found;
 }
 
+bool reads_variable_value(ASR::expr_t* e) {
+    class Finder : public ASR::BaseWalkVisitor<Finder> {
+        public:
+            bool found = false;
+            void visit_expr(const ASR::expr_t &x) {
+                if (!ASRUtils::is_value_constant(
+                        ASRUtils::expr_value(const_cast<ASR::expr_t*>(&x)))) {
+                    ASR::BaseWalkVisitor<Finder>::visit_expr(x);
+                }
+            }
+            // An inquiry about a variable, e.g. `size(a)`, `kind(x)` or
+            // `len(s)`, does not read its value.
+            void visit_inquired(ASR::expr_t *arg) {
+                if (!ASR::is_a<ASR::Var_t>(*arg)) {
+                    visit_expr(*arg);
+                }
+            }
+            void visit_ArraySize(const ASR::ArraySize_t &x) {
+                visit_inquired(x.m_v);
+                if (x.m_dim) visit_expr(*x.m_dim);
+            }
+            void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+                visit_inquired(x.m_v);
+                if (x.m_dim) visit_expr(*x.m_dim);
+            }
+            void visit_StringLen(const ASR::StringLen_t &x) {
+                visit_inquired(x.m_arg);
+            }
+            void visit_ArrayRank(const ASR::ArrayRank_t &/*x*/) {
+            }
+            void visit_TypeInquiry(const ASR::TypeInquiry_t &/*x*/) {
+            }
+            void visit_Var(const ASR::Var_t &x) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
+                if (ASR::is_a<ASR::Variable_t>(*sym)
+                        && ASR::down_cast<ASR::Variable_t>(sym)->m_storage
+                            != ASR::storage_typeType::Parameter) {
+                    found = true;
+                }
+            }
+    };
+    if (e == nullptr) {
+        return false;
+    }
+    Finder finder;
+    finder.visit_expr(*e);
+    return finder.found;
+}
+
+bool depends_on_deferred_constant(const ASR::Variable_t* v) {
+    if (v->m_storage != ASR::storage_typeType::Parameter
+            || v->m_value != nullptr || v->m_symbolic_value == nullptr) {
+        return false;
+    }
+    class Finder : public ASR::BaseWalkVisitor<Finder> {
+        public:
+            bool found = false;
+            void visit_Var(const ASR::Var_t &x) {
+                ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(x.m_v);
+                if (ASR::is_a<ASR::Variable_t>(*sym)) {
+                    ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                    if (is_deferred_constant(var)
+                            || depends_on_deferred_constant(var)) {
+                        found = true;
+                    }
+                }
+            }
+    };
+    Finder finder;
+    finder.visit_expr(*v->m_symbolic_value);
+    return finder.found;
+}
+
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope) {
     if (original_sym && ASR::is_a<ASR::ExternalSymbol_t>(*original_sym)) {
@@ -5325,19 +5514,28 @@ ASR::asr_t* make_ArraySize_t_util(
             LCOMPILERS_ASSERT(!ASRUtils::is_allocatable(array_item_t->m_type) &&
                               !ASRUtils::is_pointer(array_item_t->m_type));
         }
+        // Only the vector subscripts are dimensions of the result; a
+        // scalar subscript selects a single position.
+        std::vector<ASR::expr_t*> vector_subscripts;
+        for( size_t i = 0; i < array_item_t->n_args; i++ ) {
+            ASR::expr_t* subscript = array_item_t->m_args[i].m_right;
+            if( subscript && ASRUtils::is_array(ASRUtils::expr_type(subscript)) ) {
+                vector_subscripts.push_back(subscript);
+            }
+        }
         if( a_dim == nullptr ) {
             ASR::asr_t* const1 = ASR::make_IntegerConstant_t(al, a_loc, 1, a_type);
             ASR::asr_t* size = const1;
-            for( size_t i = 0; i < array_item_t->n_args; i++ ) {
+            for( ASR::expr_t* subscript: vector_subscripts ) {
                 ASR::expr_t* end = ASRUtils::EXPR(make_ArraySize_t_util(al, a_loc,
-                    array_item_t->m_args[i].m_right, a_dim, a_type, nullptr, for_type));
+                    subscript, a_dim, a_type, nullptr, for_type));
                 size = ASR::make_IntegerBinOp_t(al, a_loc, ASRUtils::EXPR(size),
                     ASR::binopType::Mul, end, a_type, nullptr);
             }
             return size;
-        } else if( is_dimension_constant ) {
-            return make_ArraySize_t_util(al, a_loc,
-                array_item_t->m_args[dim].m_right,
+        } else if( is_dimension_constant && dim >= 1
+                && (size_t) dim <= vector_subscripts.size() ) {
+            return make_ArraySize_t_util(al, a_loc, vector_subscripts[dim - 1],
                 nullptr, a_type, nullptr, for_type);
         }
     }

@@ -1,0 +1,65 @@
+semantic error: integer arguments of system_clock must have the same kind in Fortran 2023: count is integer(8), count_max is integer(4)
+  --> tests/errors/system_clock_f23_01.f90:21:43
+   |
+21 |     call system_clock(count=c8, count_max=m4)
+   |                                           ^^ 
+
+semantic error: integer arguments of system_clock must have the same kind in Fortran 2023: count is integer(4), count_rate is integer(8)
+  --> tests/errors/system_clock_f23_01.f90:22:27
+   |
+22 |     call system_clock(c4, r8)
+   |                           ^^ 
+
+semantic error: integer arguments of system_clock must have the same kind in Fortran 2023: count_rate is integer(4), count_max is integer(8)
+  --> tests/errors/system_clock_f23_01.f90:23:48
+   |
+23 |     call system_clock(count_rate=r4, count_max=m8)
+   |                                                ^^ 
+
+semantic error: integer arguments of system_clock must have the same kind in Fortran 2023: count is integer(8), count_max is integer(4)
+  --> tests/errors/system_clock_f23_01.f90:24:32
+   |
+24 |     call system_clock(c8, rr4, m4)
+   |                                ^^ 
+
+semantic error: integer argument count of system_clock must have a decimal exponent range of at least that of default integer in Fortran 2023: integer(2)
+  --> tests/errors/system_clock_f23_01.f90:27:29
+   |
+27 |     call system_clock(count=c2)
+   |                             ^^ 
+
+semantic error: integer argument count of system_clock must have a decimal exponent range of at least that of default integer in Fortran 2023: integer(1)
+  --> tests/errors/system_clock_f23_01.f90:28:29
+   |
+28 |     call system_clock(count=c1)
+   |                             ^^ 
+
+semantic error: integer argument count_rate of system_clock must have a decimal exponent range of at least that of default integer in Fortran 2023: integer(2)
+  --> tests/errors/system_clock_f23_01.f90:29:34
+   |
+29 |     call system_clock(count_rate=r2)
+   |                                  ^^ 
+
+semantic error: integer argument count_max of system_clock must have a decimal exponent range of at least that of default integer in Fortran 2023: integer(2)
+  --> tests/errors/system_clock_f23_01.f90:30:33
+   |
+30 |     call system_clock(count_max=m2)
+   |                                 ^^ 
+
+semantic error: integer argument count of system_clock must have a decimal exponent range of at least that of default integer in Fortran 2023: integer(2)
+  --> tests/errors/system_clock_f23_01.f90:31:23
+   |
+31 |     call system_clock(c2, r2, m2)
+   |                       ^^ 
+
+semantic error: integer argument count_rate of system_clock must have a decimal exponent range of at least that of default integer in Fortran 2023: integer(2)
+  --> tests/errors/system_clock_f23_01.f90:31:27
+   |
+31 |     call system_clock(c2, r2, m2)
+   |                           ^^ 
+
+semantic error: integer argument count_max of system_clock must have a decimal exponent range of at least that of default integer in Fortran 2023: integer(2)
+  --> tests/errors/system_clock_f23_01.f90:31:31
+   |
+31 |     call system_clock(c2, r2, m2)
+   |                               ^^ 

@@ -45,6 +45,28 @@ public:
             x->m_v = array;
         }
     }
+
+    // A cast of a name converts from the representation the name has. The
+    // expression substituted for it may have another one -- an inlined
+    // explicit-shape dummy becomes a pointer to a descriptor -- so the cast
+    // converts from that, or is dropped when the expression already has the
+    // representation the cast gives.
+    void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t *x) {
+        bool substituted = ASR::is_a<ASR::Var_t>(*x->m_arg)
+            && assoc_map.count(ASR::down_cast<ASR::Var_t>(x->m_arg)->m_v);
+        ASR::BaseExprReplacer<AssociateVarResolver>::replace_ArrayPhysicalCast(x);
+        if (!substituted || !ASRUtils::is_array(ASRUtils::expr_type(x->m_arg))) {
+            return;
+        }
+        ASR::array_physical_typeType from =
+            ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
+        if (from == x->m_old) return;
+        if (from == x->m_new) {
+            *current_expr = x->m_arg;
+            return;
+        }
+        x->m_old = from;
+    }
 };
 
 class AssociateVarResolverVisitor :
@@ -58,6 +80,12 @@ public:
     void call_replacer() {
         replacer.current_expr = current_expr;
         replacer.replace_expr(*current_expr);
+    }
+
+    // A BLOCK of the statements is part of them: its body, and the
+    // declarations of its locals (`real :: w(m)`), name the same symbols.
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        visit_symbol(*x.m_m);
     }
 };
 

@@ -209,6 +209,7 @@
                                                             )
                                                             ColMajor
                                                             ()
+                                                            .false.
                                                         )
                                                         (Var 5 i)
                                                         ()
@@ -229,6 +230,7 @@
                                                             )
                                                             ColMajor
                                                             ()
+                                                            .false.
                                                         )
                                                         ()
                                                         .false.
@@ -421,6 +423,7 @@
                                                             )
                                                             ColMajor
                                                             ()
+                                                            .false.
                                                         )
                                                         (Var 6 i)
                                                         ()
@@ -441,6 +444,7 @@
                                                             )
                                                             ColMajor
                                                             ()
+                                                            .false.
                                                         )
                                                         ()
                                                         .false.
@@ -711,6 +715,7 @@
                                                             (Integer 4)
                                                             ColMajor
                                                             ()
+                                                            .false.
                                                         )
                                                         (Var 8 i)
                                                         ()
@@ -727,6 +732,7 @@
                                                             (Integer 4)
                                                             ColMajor
                                                             ()
+                                                            .false.
                                                         )
                                                         ()
                                                         .false.
@@ -891,6 +897,7 @@
                                                             (Integer 4)
                                                             ColMajor
                                                             ()
+                                                            .false.
                                                         )
                                                         (Var 9 i)
                                                         ()
@@ -907,6 +914,7 @@
                                                             (Integer 4)
                                                             ColMajor
                                                             ()
+                                                            .false.
                                                         )
                                                         ()
                                                         .false.
@@ -971,6 +979,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
@@ -995,6 +1004,7 @@
                                                 (Integer 4)
                                                 ColMajor
                                                 ()
+                                                .true.
                                             )]
                                             FormatFortran
                                             (Allocatable
@@ -1041,6 +1051,7 @@
                                                 (Integer 4)
                                                 ColMajor
                                                 ()
+                                                .true.
                                             )]
                                             FormatFortran
                                             (Allocatable
@@ -1058,6 +1069,7 @@
                                             (Integer 4)
                                             ColMajor
                                             ()
+                                            .true.
                                         )
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
@@ -1075,6 +1087,7 @@
                                                 (Integer 4)
                                                 ColMajor
                                                 ()
+                                                .true.
                                             )]
                                             FormatFortran
                                             (Allocatable
@@ -1101,13 +1114,7 @@
                                                 (Array
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
-                                                    (IntegerBinOp
-                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                        Mul
-                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                        (Integer 4)
-                                                        ()
-                                                    ))]
+                                                    (IntegerConstant 1 (Integer 4) Decimal))]
                                                     PointerArray
                                                     Global
                                                 )
@@ -1133,6 +1140,7 @@
                                                 (Integer 4)
                                                 ColMajor
                                                 ()
+                                                .true.
                                             )]
                                             FormatFortran
                                             (Allocatable

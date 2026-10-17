@@ -161,7 +161,7 @@ compilation options, output options, link options and so on.
 
 ### Compiler feature selections
 
-* `--fast`, Optimize for best performance on the host CPU (disable strict standard compliance). This implies native CPU selection unless `--march`, `--mcpu`, `--mtune`, or `--target` is specified.
+* `--fast`, Optimize for best performance on the host CPU (disable strict standard compliance). This implies native CPU selection unless `--march`, `--mcpu`, `--mtune`, or `--target` is specified. Without `--fast`, the LLVM backend runs no optimizations, like `-O0` in Clang and Flang (WebAssembly targets keep LLVM's default code generation level, which keeps the number of locals per function within engine limits); `-O<level>` is currently accepted and ignored.
 * `--implicit-argument-casting`, Allow implicit argument casting
 * `--implicit-interface`, Allow implicit interface
 * `--implicit-typing`, Allow implicit typing

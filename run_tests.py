@@ -119,12 +119,12 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "class_constructor", "implied_do_loops",
                         "pass_array_by_data", "init_expr", "global_init",
                         "global_init_wire",
-                        "where",
+                        "where", "forall",
                         "nested_vars", "intent_out_deallocate", "openmp",
                         "array_struct_temporary", "coarray",
                         "parallel_canonicalize", "parallel_dispatch",
                         "function_call_in_declaration",
-                        "string_length_arguments"] and
+                        "string_length_arguments", "dead_array_store"] and
                 _pass not in optimization_passes):
                 raise Exception(f"Unknown pass: {_pass}")
     if update_reference:

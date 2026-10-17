@@ -44,10 +44,10 @@ syntax error: Invalid syntax for variable initialization (try inserting '::' aft
 137 |     integer init_x = 1
     |     ^^^^^^^^^^^^^^^^^^ 
 
-syntax error: kind 16 is not supported yet.
+syntax error: kind 12 is not supported yet.
    --> tests/errors/continue_compilation_2.f90:227:5
     |
-227 |     real*16 :: unsupported_kind
+227 |     real*12 :: unsupported_kind
     |     ^^^^^^^ 
 
 tokenizer error: Token '`' is not recognized
@@ -252,6 +252,12 @@ semantic error: Parameter attribute cannot be used with Target attribute
 224 |     integer, parameter, target :: foo=4
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Kind 12 is not supported for Real
+   --> tests/errors/continue_compilation_2.f90:227:5
+    |
+227 |     real*12 :: unsupported_kind
+    |     ^^^^^^^ 
+
 semantic error: Argument was not specified
    --> tests/errors/continue_compilation_2.f90:229:33
     |
@@ -352,12 +358,6 @@ semantic error: No custom operator exists for this expression
     |
 298 |     str_t_2 = prefix // 10
     |               ^^^^^^^^^^^^ 
-
-semantic error: Type mismatch in assignment, the types must be compatible
-   --> tests/errors/continue_compilation_2.f90:298:5
-    |
-298 |     str_t_2 = prefix // 10
-    |     ^^^^^^^             ^^ type mismatch (string_t and integer)
 
 semantic error: No custom operator exists for this expression
    --> tests/errors/continue_compilation_2.f90:299:15
@@ -830,12 +830,6 @@ semantic error: Type mismatch in binary operator, the types must be compatible
 490 |     tm2_x = 5 + "x"
     |             ^   ^^^ type mismatch (integer and string)
 
-semantic error: Type mismatch in assignment, the types must be compatible
-   --> tests/errors/continue_compilation_2.f90:490:5
-    |
-490 |     tm2_x = 5 + "x"
-    |     ^^^^^       ^^^ type mismatch (integer and string)
-
 semantic error: Variable 'mycircle' doesn't have any member named, 'mymember'.
    --> tests/errors/continue_compilation_2.f90:497:14
     |
@@ -1039,3 +1033,15 @@ semantic error: Procedure 'p' requires an argument list
     |
 600 |         print *, p
     |                  ^ 
+
+semantic error: No matching `operator(-)` found for this operand type
+   --> tests/errors/continue_compilation_2.f90:622:13
+    |
+622 |         y = -x  ! {Error} No matching `operator(-)` found for this operand type
+    |             ^^ 
+
+semantic error: No matching `operator(+)` found for this operand type
+   --> tests/errors/continue_compilation_2.f90:636:13
+    |
+636 |         y = +x  ! {Error} No matching `operator(+)` found for this operand type
+    |             ^^ 
