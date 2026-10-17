@@ -1,0 +1,13 @@
+{
+    "basename": "asr-legacy_array_sections_assumed_shape_01-84fb860",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/legacy_array_sections_assumed_shape_01.f90",
+    "infile_hash": "aca643162a622a89c889d7f44fd5db081745038a5dd1a9fc15e90aa9",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-legacy_array_sections_assumed_shape_01-84fb860.stderr",
+    "stderr_hash": "e437b3a640f2904d26e32b28c4724c7e22df4760bab5c810e9332851",
+    "returncode": 1
+}
