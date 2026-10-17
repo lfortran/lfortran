@@ -110,8 +110,8 @@ std::string join(const std::string j, const std::vector<std::string> &l)
 
 std::vector<std::string> slice(const std::vector<std::string>& v, int start, int end)
 {
-    int oldlen = v.size();
-    int newlen;
+    int64_t oldlen = static_cast<int64_t>(v.size());
+    int64_t newlen;
 
     if ((end == -1) || (end >= oldlen)) {
         newlen = oldlen-start;
@@ -121,7 +121,7 @@ std::vector<std::string> slice(const std::vector<std::string>& v, int start, int
 
     std::vector<std::string> nv(newlen);
 
-    for (int i=0; i<newlen; i++) {
+    for (int64_t i=0; i<newlen; i++) {
         nv[i] = v[start+i];
     }
     return nv;
@@ -169,9 +169,8 @@ std::string read_file_ok(const std::string &filename) {
 
 
 std::string parent_path(const std::string &path) {
-    int pos = path.size()-1;
-    while (pos >= 0 && path[pos] != '/') pos--;
-    if (pos == -1) {
+    size_t pos = path.rfind('/');
+    if (pos == std::string::npos) {
         return "";
     } else {
         return path.substr(0, pos);

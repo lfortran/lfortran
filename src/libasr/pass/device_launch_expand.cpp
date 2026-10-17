@@ -708,7 +708,7 @@ class DeviceLaunchExpandVisitor :
                 return copy_plain_parts(loc, to, from, decl, out, back);
             }
             ASR::dimension_t *dims = nullptr;
-            int rank = ASRUtils::extract_dimensions_from_ttype(type, dims);
+            int rank = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(type, dims));
             if (rank <= 0) return false;
             std::vector<ASR::expr_t*> idx;
             for (int d = 0; d < rank; d++) {
@@ -788,8 +788,8 @@ class DeviceLaunchExpandVisitor :
             if (!gpu_argument_may_be_strided(arg)) return arg;
             ASRUtils::ASRBuilder b(al, loc);
             ASR::dimension_t *dims = nullptr;
-            int rank = ASRUtils::extract_dimensions_from_ttype(
-                ASRUtils::type_get_past_allocatable_pointer(arg_type), dims);
+            int rank = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(
+                ASRUtils::type_get_past_allocatable_pointer(arg_type), dims));
             if (rank <= 0) return arg;
             std::vector<int64_t> deferred((size_t)rank, -1);
             ASR::expr_t *tmp = declare_local(loc, "gpu_contiguous_arg",

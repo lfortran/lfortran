@@ -122,8 +122,8 @@ inline std::vector<GpuVlaWorkspace> gpu_kernel_workspaces(
         GpuVlaWorkspace ws;
         ws.var = source.m_variable;
         ws.var_name = ASRUtils::symbol_name(source.m_variable);
-        ws.elem_size = source.m_element_size;
-        ws.buffer_index = source.m_buffer_index;
+        ws.elem_size = checked_integer_cast<int>(source.m_element_size);
+        ws.buffer_index = checked_integer_cast<int>(source.m_buffer_index);
         for (size_t d = 0; d < source.n_dims; d++) {
             GpuVlaDim dim;
             dim.source_extent = source.m_dims[d].m_extent;

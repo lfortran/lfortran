@@ -182,7 +182,7 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
                 new_args.push_back(al, s->m_args[i]);
                 new_arg_types.push_back(al, ASRUtils::get_FunctionType(*s)->m_arg_types[i]);
                 if( is_presence_optional(arg_sym, true) ) {
-                    sym2optionalargidx[&(s->base)].push_back(new_args.size() - 1);
+                    sym2optionalargidx[&(s->base)].push_back(checked_integer_cast<int32_t>(new_args.size() - 1));
                     std::string presence_bit_arg_name = "__libasr_is_present_" + std::string(ASRUtils::symbol_name(arg_sym));
                     presence_bit_arg_name = s->m_symtab->get_unique_name(presence_bit_arg_name, false);
                     ASR::expr_t* presence_bit_arg = PassUtils::create_auxiliary_variable(

@@ -17,7 +17,7 @@ namespace ASRUtils {
         return #X;                                                              \
     }
 
-inline std::string get_intrinsic_subroutine_name(int x) {
+inline std::string get_intrinsic_subroutine_name(int64_t x) {
     switch (x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomNumber)
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomInit)

@@ -1019,7 +1019,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     ASR::down_cast<ASR::Variable_t>(item.second);
                 reject_common_block_variable(*v);
                 if (isLocalVar(v)) {
-                    m_var_idx_map[get_hash((ASR::asr_t *)v)] = cur_sym_info.no_of_params + local_vars.size();
+                    m_var_idx_map[get_hash((ASR::asr_t *)v)] = checked_integer_cast<uint32_t>(cur_sym_info.no_of_params + local_vars.size());
                     get_var_type(v, local_vars);
                 }
             }
@@ -1930,7 +1930,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         this->visit_expr(*x.m_left);
         this->visit_expr(*x.m_right);
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::extract_type(x.m_type)));
-        int a_kind = ASR::down_cast<ASR::Complex_t>(ASRUtils::extract_type(x.m_type))->m_kind;
+        int a_kind = checked_integer_cast<int>(ASR::down_cast<ASR::Complex_t>(ASRUtils::extract_type(x.m_type))->m_kind);
         switch (x.m_op) {
             case ASR::binopType::Add: {
                 if (a_kind == 4) {
@@ -2397,7 +2397,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     void get_array_dims(const ASR::Variable_t &x, Vec<uint32_t> &dims) {
         ASR::dimension_t *m_dims;
         uint32_t n_dims =
-            ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);
+            checked_integer_cast<uint32_t>(ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims));
         dims.reserve(m_al, n_dims);
         for (uint32_t i = 0; i < n_dims; i++) {
             ASR::expr_t *length_value =
@@ -2463,8 +2463,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             return;
         }
         ASR::dimension_t *m_dims;
-        int n_dims = ASRUtils::extract_dimensions_from_ttype(
-            ASRUtils::expr_type(x.m_v), m_dims);
+        int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(x.m_v), m_dims));
         if (x.m_dim) {
             int dim_idx = -1;
             ASRUtils::extract_value(ASRUtils::expr_value(x.m_dim), dim_idx);
@@ -2512,7 +2512,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         switch (a_kind) {
             case 4: {
-                m_wa.emit_i32_const(val);
+                m_wa.emit_i32_const(static_cast<int32_t>(val));
                 break;
             }
             case 8: {
@@ -2531,7 +2531,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         switch (a_kind) {
             case 4: {
-                m_wa.emit_f32_const(val);
+                m_wa.emit_f32_const(static_cast<float>(val));
                 break;
             }
             case 8: {
@@ -2572,8 +2572,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         switch( a_kind ) {
             case 4: {
-                m_wa.emit_f32_const(x.m_re);
-                m_wa.emit_f32_const(x.m_im);
+                m_wa.emit_f32_const(static_cast<float>(x.m_re));
+                m_wa.emit_f32_const(static_cast<float>(x.m_im));
                 break;
             }
             case 8: {
@@ -2587,7 +2587,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         }
     }
 
-    std::string convert_int_to_bytes_string(int n) {
+    std::string convert_int_to_bytes_string(uint32_t n) {
         uint8_t bytes[sizeof(n)];
         std::memcpy(&bytes, &n, sizeof(n));
         std::string result = "";
@@ -2598,9 +2598,9 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
     }
 
     void align_str_by_4_bytes(std::string &s) {
-        int n = s.length();
+        size_t n = s.length();
         if (n % 4 == 0) return;
-        for (int i = 0; i < 4 - (n % 4); i++) {
+        for (size_t i = 0; i < 4 - (n % 4); i++) {
             s += " ";
         }
     }
@@ -2616,13 +2616,13 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_string_to_iov_loc_map[str] = avail_mem_loc;
 
         uint32_t string_loc = avail_mem_loc + 8U /* IOV_SIZE */;
-        std::string iov = convert_int_to_bytes_string(string_loc) + convert_int_to_bytes_string(str.length());
+        std::string iov = convert_int_to_bytes_string(string_loc) + convert_int_to_bytes_string(checked_integer_cast<uint32_t>(str.length()));
         m_wa.emit_data_str(avail_mem_loc, iov);
-        avail_mem_loc += iov.length();
+        avail_mem_loc += checked_integer_cast<uint32_t>(iov.length());
 
         align_str_by_4_bytes(str);
         m_wa.emit_data_str(avail_mem_loc, str);
-        avail_mem_loc += str.length();
+        avail_mem_loc += checked_integer_cast<uint32_t>(str.length());
     }
 
     void visit_StringConstant(const ASR::StringConstant_t &x) {
@@ -2630,7 +2630,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
         m_wa.emit_i32_const(m_string_to_iov_loc_map[x.m_s]);
     }
 
-    void process_ArrayConstant_value(void* data, ASR::ttype_t* type, int i) {
+    void process_ArrayConstant_value(void* data, ASR::ttype_t* type, size_t i) {
         type = ASRUtils::type_get_past_array(type);
         int kind = ASRUtils::extract_kind_from_ttype_t(type);
 
@@ -2651,7 +2651,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     }
                     case 8: {
                         int64_t val = ((int64_t*)data)[i];
-                        m_wa.emit_i32_const(val); break;
+                        // Preserves the existing low-32-bit emission.
+                        m_wa.emit_i32_const(static_cast<int32_t>(val)); break;
                     }
                     default:
                         throw CodeGenError("process_ArrayConstant_value: Integer kind not supported");
@@ -2666,7 +2667,8 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
                     }
                     case 8: {
                         double val = ((double*)data)[i];
-                        m_wa.emit_f32_const(val); break;
+                        // Preserves the existing single-precision emission.
+                        m_wa.emit_f32_const(static_cast<float>(val)); break;
                     }
                     default:
                         throw CodeGenError("process_ArrayConstant_value: Real kind not supported");
@@ -3565,7 +3567,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
 
     void visit_ArrayBound(const ASR::ArrayBound_t& x) {
         ASR::dimension_t *m_dims;
-        int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x.m_v), m_dims);
+        int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(x.m_v), m_dims));
         if (ASRUtils::extract_kind_from_ttype_t(x.m_type) != 4) {
             throw CodeGenError("ArrayBound: Kind 4 only supported currently");
         }
@@ -3706,8 +3708,8 @@ Result<Vec<uint8_t>> asr_to_wasm_bytes_stream(ASR::TranslationUnit_t &asr,
 Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al,
                         const std::string &filename, bool time_report,
                         diag::Diagnostics &diagnostics, CompilerOptions &co) {
-    int time_visit_asr = 0;
-    int time_save = 0;
+    int64_t time_visit_asr = 0;
+    int64_t time_save = 0;
 
     auto t1 = std::chrono::high_resolution_clock::now();
     Result<Vec<uint8_t>> wasm = asr_to_wasm_bytes_stream(asr, al, diagnostics, co);
@@ -3737,7 +3739,7 @@ Result<int> asr_to_wasm(ASR::TranslationUnit_t &asr, Allocator &al,
         std::cout << "ASR -> wasm: " << std::setw(5) << time_visit_asr
                   << std::endl;
         std::cout << "Save:       " << std::setw(5) << time_save << std::endl;
-        int total = time_visit_asr + time_save;
+        int64_t total = time_visit_asr + time_save;
         std::cout << "Total:      " << std::setw(5) << total << std::endl;
     }
     return 0;

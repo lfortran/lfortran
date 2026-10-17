@@ -9,6 +9,7 @@
 
 #include <lfortran/ast_to_src.h>
 #include <lfortran/fortran_evaluator.h>
+#include <lfortran/parser/source_offset.h>
 
 #include <bin/lfortran_accessor.h>
 
@@ -27,7 +28,7 @@ namespace LCompilers::LLanguageServer {
                 LCompilers::LocationManager::FileLocations fl;
                 fl.in_filename = filename;
                 lm.files.push_back(fl);
-                lm.file_ends.push_back(text.size());
+                lm.file_ends.push_back(LCompilers::LFortran::source_offset(text.size()));
         }
 
         LCompilers::diag::Diagnostics diagnostics;
@@ -83,7 +84,7 @@ namespace LCompilers::LLanguageServer {
             LCompilers::LocationManager::FileLocations fl;
             fl.in_filename = filename;
             lm.files.push_back(fl);
-            lm.file_ends.push_back(text.size());
+            lm.file_ends.push_back(LCompilers::LFortran::source_offset(text.size()));
         }
         {
             LCompilers::diag::Diagnostics diagnostics;
@@ -93,13 +94,13 @@ namespace LCompilers::LLanguageServer {
                 // populate_symbol_lists(x.result, lm, symbol_lists);
                 uint16_t l = std::stoi(compiler_options.line);
                 uint16_t c = std::stoi(compiler_options.column);
-                uint64_t input_pos = lm.linecol_to_pos(l, c);
+                uint32_t input_pos = LCompilers::LFortran::source_offset(lm.linecol_to_pos(l, c));
                 if (c > 0 && input_pos > 0 && !is_id_chr(text[input_pos]) &&
                     is_id_chr(text[input_pos - 1])) {
                     // input_pos is to the right of the word boundary
                     --input_pos;
                 }
-                uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
+                uint32_t output_pos = lm.input_to_output_pos(input_pos, false);
                 LCompilers::ASR::asr_t* asr =
                     fe.handle_lookup_name(x.result, output_pos);
                 if (ASR::is_a<ASR::symbol_t>(*asr) && !LCompilers::LFortran::is_generated_symbol_name(
@@ -142,7 +143,7 @@ namespace LCompilers::LLanguageServer {
             LCompilers::LocationManager::FileLocations fl;
             fl.in_filename = filename;
             lm.files.push_back(fl);
-            lm.file_ends.push_back(text.size());
+            lm.file_ends.push_back(LCompilers::LFortran::source_offset(text.size()));
         }
         {
             LCompilers::diag::Diagnostics diagnostics;
@@ -152,13 +153,13 @@ namespace LCompilers::LLanguageServer {
                 // populate_symbol_lists(x.result, lm, symbol_lists);
                 uint16_t l = std::stoi(compiler_options.line);
                 uint16_t c = std::stoi(compiler_options.column);
-                uint64_t input_pos = lm.linecol_to_pos(l, c);
+                uint32_t input_pos = LCompilers::LFortran::source_offset(lm.linecol_to_pos(l, c));
                 if (c > 0 && input_pos > 0 && !is_id_chr(text[input_pos]) &&
                     is_id_chr(text[input_pos - 1])) {
                     // input_pos is to the right of the word boundary
                     --input_pos;
                 }
-                uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
+                uint32_t output_pos = lm.input_to_output_pos(input_pos, false);
                 LCompilers::ASR::asr_t* asr =
                     fe.handle_lookup_name(x.result, output_pos);
                 if (ASR::is_a<ASR::symbol_t>(*asr) && !LCompilers::LFortran::is_generated_symbol_name(
@@ -206,7 +207,7 @@ namespace LCompilers::LLanguageServer {
             LCompilers::LocationManager::FileLocations fl;
             fl.in_filename = filename;
             lm.files.push_back(fl);
-            lm.file_ends.push_back(text.size());
+            lm.file_ends.push_back(LCompilers::LFortran::source_offset(text.size()));
         }
         {
             LCompilers::diag::Diagnostics diagnostics;
@@ -216,8 +217,8 @@ namespace LCompilers::LLanguageServer {
                 // populate_symbol_lists(x.result, lm, symbol_lists);
                 uint16_t l = std::stoi(compiler_options.line);
                 uint16_t c = std::stoi(compiler_options.column);
-                uint64_t input_pos = lm.linecol_to_pos(l, c);
-                uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
+                uint32_t input_pos = LCompilers::LFortran::source_offset(lm.linecol_to_pos(l, c));
+                uint32_t output_pos = lm.input_to_output_pos(input_pos, false);
                 LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(x.result, output_pos);
                 LCompilers::document_symbols loc;
                 if (ASR::is_a<ASR::symbol_t>(*asr) && !LCompilers::LFortran::is_generated_symbol_name(
@@ -249,7 +250,7 @@ namespace LCompilers::LLanguageServer {
             LCompilers::LocationManager::FileLocations fl;
             fl.in_filename = filename;
             lm.files.push_back(fl);
-            lm.file_ends.push_back(text.size());
+            lm.file_ends.push_back(LCompilers::LFortran::source_offset(text.size()));
         }
         LCompilers::Result<LCompilers::LFortran::AST::TranslationUnit_t*>
             r = fe.get_ast2(text, lm, diagnostics);
@@ -281,7 +282,7 @@ namespace LCompilers::LLanguageServer {
             LCompilers::LocationManager::FileLocations fl;
             fl.in_filename = filename;
             lm.files.push_back(fl);
-            lm.file_ends.push_back(text.size());
+            lm.file_ends.push_back(LCompilers::LFortran::source_offset(text.size()));
         }
         {
             LCompilers::diag::Diagnostics diagnostics;

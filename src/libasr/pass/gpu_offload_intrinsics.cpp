@@ -616,8 +616,8 @@ void GpuOffloadVisitor::inline_matmul_stmts(
         ASR::ttype_t *type_a = ASRUtils::expr_type(arg_a);
         ASR::ttype_t *type_b = ASRUtils::expr_type(arg_b);
         ASR::dimension_t *dims_a = nullptr, *dims_b = nullptr;
-        int rank_a = ASRUtils::extract_dimensions_from_ttype(type_a, dims_a);
-        int rank_b = ASRUtils::extract_dimensions_from_ttype(type_b, dims_b);
+        int rank_a = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(type_a, dims_a));
+        int rank_b = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(type_b, dims_b));
 
         ASR::ttype_t *elem_type = ASRUtils::extract_type(
             ASRUtils::expr_type(asgn->m_target));
@@ -1271,12 +1271,12 @@ bool GpuOffloadVisitor::intrinsic_array_result_dims(ASR::expr_t *e,
         b = ASR::down_cast<ASR::ArrayPhysicalCast_t>(b)->m_arg;
     if (!a || !b) return false;
     ASR::dimension_t *da = nullptr, *db = nullptr;
-    int ra = ASRUtils::extract_dimensions_from_ttype(
+    int ra = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(
         ASRUtils::type_get_past_allocatable_pointer(
-            ASRUtils::expr_type(a)), da);
-    int rb = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(a)), da));
+    int rb = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(
         ASRUtils::type_get_past_allocatable_pointer(
-            ASRUtils::expr_type(b)), db);
+            ASRUtils::expr_type(b)), db));
     dims.reserve(al, 2);
     if (ra == 2 && rb == 1) {
         dims.push_back(al, dim_or_runtime_extent(a, da, 0));
@@ -1866,8 +1866,8 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
                     ASRUtils::expr_type(arr_arg);
                 ASR::dimension_t *dims = nullptr;
                 int rank =
-                    ASRUtils::extract_dimensions_from_ttype(
-                        arr_type, dims);
+                    checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(
+                        arr_type, dims));
                 if (rank < 1) {
                     new_body.push_back(al, stmt);
                     continue;
@@ -1994,9 +1994,9 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
                                                 arr_arg));
                                 dims = nullptr;
                                 rank =
-                                    ASRUtils::
+                                    checked_integer_cast<int>(ASRUtils::
                                         extract_dimensions_from_ttype(
-                                            arr_type, dims);
+                                            arr_type, dims));
                                 break;
                             }
                         }
@@ -2126,8 +2126,8 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
                                             actual));
                                 ASR::dimension_t *adims = nullptr;
                                 int arank =
-                                    ASRUtils::extract_dimensions_from_ttype(
-                                        atype, adims);
+                                    checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(
+                                        atype, adims));
                                 if (arank < 1 ||
                                         (size_t)d >= (size_t)arank)
                                     continue;
@@ -2310,7 +2310,7 @@ void GpuOffloadVisitor::inline_intrinsic_transpose(ParallelLoopNest &nest) {
 
         ASR::ttype_t *arr_type = ASRUtils::expr_type(arr_arg);
         ASR::dimension_t *dims = nullptr;
-        int rank = ASRUtils::extract_dimensions_from_ttype(arr_type, dims);
+        int rank = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(arr_type, dims));
         if (rank != 2) {
             new_body.push_back(al, stmt);
             continue;

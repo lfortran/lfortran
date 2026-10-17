@@ -13,8 +13,6 @@ array_physical_type
     | UnboundedPointerArray
     | FixedSizeArray
     | StringArraySinglePointer
-    | NumPyArray
-    | ISODescriptorArray
     | SIMDArray
     | AssumedRankArray
 ```
@@ -28,8 +26,6 @@ array_physical_type
 | `UnboundedPointerArray` | a bare pointer with no extent at all, as for an assumed size dummy argument. |
 | `FixedSizeArray` | storage whose extents are compile time constants, held inline rather than behind a pointer. |
 | `StringArraySinglePointer` | an array of strings held as one allocation. |
-| `NumPyArray` | the layout NumPy uses, for LPython interoperation. |
-| `ISODescriptorArray` | the descriptor the C interoperability part of the standard defines, `CFI_cdesc_t`. |
 | `SIMDArray` | a short fixed length array held in a vector register. |
 | `AssumedRankArray` | `dimension(..)`: the rank itself is not known until the call. Such a type has no dimensions. |
 
