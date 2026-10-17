@@ -4813,6 +4813,18 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
     for( size_t i = 0; i < n_dims; i++ ) {
         if( m_dims[i].m_length && ASR::is_a<ASR::ArraySize_t>(*m_dims[i].m_length) ) {
             ASR::ArraySize_t* as = ASR::down_cast<ASR::ArraySize_t>(m_dims[i].m_length);
+            // An extent that is already a compile-time constant, such as
+            // `size` of a parameter array, keeps its value: the rewrite
+            // below passes no value, so the dimension would become an
+            // expression of unknown size and a constant array carrying that
+            // type would fail verification, as the ArrayConstant result of
+            // `spread` did. Replace the length with the folded value itself;
+            // consumers such as array_op read extents with `extract_value`,
+            // which does not look through an `ArraySize` node.
+            if( ASRUtils::is_value_constant(as->m_value) ) {
+                m_dims[i].m_length = as->m_value;
+                continue;
+            }
             m_dims[i].m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
                 al, as->base.base.loc, as->m_v, as->m_dim, as->m_type, nullptr, for_type));
         }
