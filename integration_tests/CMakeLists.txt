@@ -6349,6 +6349,7 @@ RUN(NAME gpu_kernel_source_07 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_08 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_09 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_10 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_kernel_source_11 LABELS gfortran llvm metal cuda_cpu)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)
