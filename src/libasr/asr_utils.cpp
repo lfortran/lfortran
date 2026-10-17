@@ -4792,9 +4792,10 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
         1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
     dims.push_back(al, dim);
-    ASR::ttype_t* dest_shape_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
-        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size(),
-        is_value_character_array && !is_value_constant(expr2) ? ASR::array_physical_typeType::StringArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+    // The shape is a constant-size array of integers, whatever the type of
+    // the broadcast value is.
+    ASR::ttype_t* dest_shape_type = ASRUtils::make_Array_t_util(al, loc,
+        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size());
 
     ASR::expr_t* dest_shape = nullptr;
     ASR::expr_t* value = nullptr;

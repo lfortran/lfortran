@@ -86,7 +86,7 @@ int mem_debugger_EQUAL(void *a, void *b){
 
 DEFINE_HASHTABLE_FOR_TYPES(void*, Alloc_info, mem_debugger)
 
-static mem_debugger mem_dbg_hashTable = {NULL, 0, 0};
+static mem_debugger mem_dbg_hashTable = {NULL, 0, 0, 0};
 
 // Create `Alloc_info` and map to the ptr
 static void register_ptr(void* const ptr, size_t size){
@@ -7098,12 +7098,13 @@ _lfortran_open(int32_t unit_num,
     trim_trailing_spaces(&blank, &blank_len, ini_blank);
     trim_trailing_spaces(&decimal, &decimal_len, ini_decimal);
     trim_trailing_spaces(&pad, &pad_len, ini_pad);
-    // Prepare null-terminated names for C APIs
+    // Prepare null-terminated names for C APIs. f_name_c is the copy used
+    // below, including the internal INQUIRE. When FILE= is omitted, f_name
+    // is the generated name owned by this function; release it now.
     char* f_name_c = to_c_string((const fchar*)f_name, f_name_len);
     if (!ini_file) {
-        // f_name was allocated by us (generated temp name), free it now
-        // since f_name_c is the copy we'll use going forward
         internal_free(f_name);
+        f_name = NULL;
     }
 
     if (already_open) {
@@ -7124,7 +7125,7 @@ _lfortran_open(int32_t unit_num,
     char* pad_c = to_c_string((const fchar*)pad, pad_len);
 
     _lfortran_inquire(
-        (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL,
+        (const fchar*)f_name_c, f_name_len, file_exists, -1, NULL, NULL, NULL,
         NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL,
         NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, NULL, 0, NULL, 0,
         NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, 0, NULL, 0, NULL, 0, NULL, 0);

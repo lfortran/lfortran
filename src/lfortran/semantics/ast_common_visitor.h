@@ -2419,6 +2419,10 @@ public:
     // Namelist group objects that were typed by the implicit typing rules at
     // the NAMELIST statement; a later type declaration must confirm that type.
     std::set<ASR::symbol_t*> namelist_implicitly_typed_objects;
+    // Variables whose type was given by a type declaration statement. Such a
+    // variable may not appear in another type declaration statement of the
+    // same scoping unit, even when implicit typing is enabled.
+    std::set<ASR::symbol_t*> explicitly_typed_variables;
     // Whether an IMPLICIT NONE statement is in effect in the scoping unit
     // whose specification part is being visited.
     bool implicit_none_in_effect = false;
@@ -9687,13 +9691,21 @@ public:
                 if (assgnd_target.count(sym)) {
                     target_attr = true;
                 }
+                // A procedure declaration statement without an interface,
+                // `procedure() :: f`, gives no type: a type declaration
+                // statement may give the type of `f`, before or after it.
+                bool declares_type = !(sym_type->m_type == AST::decl_typeType::TypeProcedure
+                    && sym_type->m_name == nullptr && sym_type->m_attr == nullptr);
                 if (current_scope->get_symbol(sym) !=
                         nullptr) {
                     if (current_scope->parent != nullptr && !is_external) {
-                        if ( compiler_options.implicit_typing && implicit_dictionary[std::string(1, sym[0])]!=nullptr ) {
+                        bool is_explicitly_typed = declares_type
+                            && explicitly_typed_variables.find(
+                                current_scope->get_symbol(sym)) != explicitly_typed_variables.end();
+                        if ( !is_explicitly_typed && compiler_options.implicit_typing && implicit_dictionary[std::string(1, sym[0])]!=nullptr ) {
                             // sym is implicitly declared
                             is_implicitly_declared = true;
-                        } else if (pre_declared_array_dims.find(sym) != pre_declared_array_dims.end()) {
+                        } else if (!is_explicitly_typed && pre_declared_array_dims.find(sym) != pre_declared_array_dims.end()) {
                             // sym is implicitly declared
                             is_implicitly_declared = true;
                             pre_declared_array_dims[sym] = 2;
@@ -10503,6 +10515,9 @@ public:
                 }
 
                 if (variable_added_to_symtab) {
+                    if (declares_type) {
+                        explicitly_typed_variables.insert(&variable_added_to_symtab->base);
+                    }
                     if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(variable_added_to_symtab->m_type)) 
                         || ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(variable_added_to_symtab->m_type))) {
                         current_struct_type_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
