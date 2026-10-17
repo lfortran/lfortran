@@ -899,6 +899,7 @@ namespace LCompilers {
                 }
             }
             if( x->n_args == 0 ) {
+                replacer->result_var = nullptr;
                 return;
             }
 
