@@ -8880,6 +8880,42 @@ static inline bool is_len_dependent_member(const ASR::Struct_t* st,
     return false;
 }
 
+// The derived type that declares the component that `expr` (`x%c`) refers
+// to, or nullptr if `expr` is not a component reference. `name` is set to
+// the name of the component.
+static inline ASR::Struct_t* get_component_struct(ASR::expr_t* expr,
+        std::string& name) {
+    if (!ASR::is_a<ASR::StructInstanceMember_t>(*expr)) {
+        return nullptr;
+    }
+    ASR::symbol_t* member = symbol_get_past_external(
+        ASR::down_cast<ASR::StructInstanceMember_t>(expr)->m_m);
+    ASR::symbol_t* owner = get_asr_owner(member);
+    if (owner == nullptr || !ASR::is_a<ASR::Struct_t>(*owner)) {
+        return nullptr;
+    }
+    name = symbol_name(member);
+    return ASR::down_cast<ASR::Struct_t>(owner);
+}
+
+// Whether `expr` is a component whose bounds or length depend on a LEN type
+// parameter. It is stored as allocatable, but it is not allocatable in the
+// program: it cannot be allocated, deallocated, inquired by ALLOCATED, moved
+// by MOVE_ALLOC or associated with an allocatable dummy argument.
+static inline bool is_len_dependent_component(ASR::expr_t* expr) {
+    std::string name;
+    ASR::Struct_t* st = get_component_struct(expr, name);
+    return st != nullptr && is_len_dependent_member(st, name);
+}
+
+// Whether `expr` is a type parameter inquiry `x%n` of a LEN type parameter.
+// It is not a variable (F2023 9.4.5), so it cannot be defined.
+static inline bool is_len_type_param_inquiry(ASR::expr_t* expr) {
+    std::string name;
+    ASR::Struct_t* st = get_component_struct(expr, name);
+    return st != nullptr && is_len_type_param(st, name);
+}
+
 static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
     return is_allocatable(type) || is_pointer(type);
 }

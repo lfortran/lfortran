@@ -3396,3 +3396,39 @@ contains
         c%n = 3  ! {Error} the LEN type parameter 'n' cannot be assigned
     end subroutine cc1_len_use
 end module cc1_len_type_parameters
+
+! A component whose bounds or length depend on a LEN type parameter is not
+! allocatable, and a LEN type parameter inquiry cannot be defined.
+module cc1_len_dependent_components
+    implicit none
+    type :: cc1_lenc_t(n)
+        integer, len :: n
+        real :: x(n)
+    end type
+contains
+    subroutine cc1_lenc_grow(a)
+        real, allocatable, intent(inout) :: a(:)
+    end subroutine cc1_lenc_grow
+    subroutine cc1_lenc_set(k)
+        integer, intent(out) :: k
+        k = 1
+    end subroutine cc1_lenc_set
+    integer function cc1_lenc_bump(k)
+        integer, intent(inout) :: k
+        k = k + 1
+        cc1_lenc_bump = k
+    end function cc1_lenc_bump
+    subroutine cc1_lenc_use()
+        type(cc1_lenc_t(3)) :: v
+        real, allocatable :: tmp(:)
+        integer :: i
+        call cc1_lenc_grow(v%x)  ! {Error} the actual argument for the allocatable dummy argument 'a' must be allocatable
+        call move_alloc(v%x, tmp)  ! {Error} `from` argument of `move_alloc` must be allocatable
+        print *, allocated(v%x)  ! {Error} Intrinsic `allocated` can be called only on allocatable argument
+        deallocate(v%x)  ! {Error} the component 'x' is not allocatable and cannot be deallocated
+        allocate(v%x(5))  ! {Error} the component 'x' is not allocatable and cannot be allocated
+        read(*, *) v%n  ! {Error} the LEN type parameter 'n' cannot be an input item
+        call cc1_lenc_set(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(out) dummy argument 'k'
+        i = cc1_lenc_bump(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(inout) dummy argument 'k'
+    end subroutine cc1_lenc_use
+end module cc1_len_dependent_components

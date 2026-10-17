@@ -2653,6 +2653,15 @@ public:
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
             check_io_item_not_function(expr);
+            if (_type == AST::decl_stmtType::Read
+                    && ASRUtils::is_len_type_param_inquiry(expr)) {
+                std::string name;
+                ASRUtils::get_component_struct(expr, name);
+                diag.add(Diagnostic(
+                    "the LEN type parameter '" + name + "' cannot be an input item",
+                    Level::Error, Stage::Semantic, {Label("", {expr->base.loc})}));
+                throw SemanticAbort();
+            }
             // For READ: expand implied-do loops to individual elements or array section
             if (_type == AST::decl_stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
                 expand_implied_do_for_read(
@@ -4571,6 +4580,7 @@ public:
         for (size_t i = 0; i < alloc_args_vec.n; i++) {
             ASR::expr_t* alloc_expr = alloc_args_vec.p[i].m_a;
             ASR::ttype_t* alloc_type = ASRUtils::expr_type(alloc_expr);
+            check_not_len_dependent_component(alloc_expr, "allocated");
             
             if (!ASRUtils::is_allocatable(alloc_type) && !ASRUtils::is_pointer(alloc_type)) {
                 ASR::symbol_t* sym = get_allocate_expr_sym(alloc_expr);
@@ -4769,6 +4779,22 @@ public:
         return nullptr;
     }
 
+    // A component whose bounds or length depend on a LEN type parameter is
+    // not allocatable, although it is stored as allocatable.
+    void check_not_len_dependent_component(ASR::expr_t* expr, const std::string& action) {
+        if (ASRUtils::is_len_dependent_component(expr)) {
+            std::string name;
+            ASRUtils::get_component_struct(expr, name);
+            diag.add(Diagnostic(
+                "the component '" + name + "' is not allocatable and cannot be "
+                + action,
+                Level::Error, Stage::Semantic, {Label(
+                    "its bounds or length depend on a LEN type parameter",
+                    {expr->base.loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     inline void check_for_deallocation(ASR::symbol_t* tmp_sym, const Location& loc) {
         tmp_sym = ASRUtils::symbol_get_past_external(tmp_sym);
         if( !ASR::is_a<ASR::Variable_t>(*tmp_sym) ) {
@@ -4811,6 +4837,7 @@ public:
                 ASR::symbol_t* tmp_sym = tmp_var->m_v;
                 check_for_deallocation(tmp_sym, tmp_expr->base.loc);
             } else if( ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr) ) {
+                check_not_len_dependent_component(tmp_expr, "deallocated");
                 const ASR::StructInstanceMember_t* tmp_struct_ref = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
                 ASR::symbol_t* tmp_member = tmp_struct_ref->m_m;
                 check_for_deallocation(tmp_member, tmp_expr->base.loc);
@@ -9267,6 +9294,12 @@ public:
                     }));
                 throw SemanticAbort();
             }
+        }
+        if (f) {
+            // Before the callee becomes a dependency, so that a rejected
+            // call leaves none behind.
+            check_len_type_param_actuals(args, f,
+                (v_expr == nullptr || nopass) ? 0 : 1);
         }
         if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()
             && !ASR::is_a<ASR::Variable_t>(*final_sym)) {
