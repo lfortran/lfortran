@@ -4271,3 +4271,15 @@ semantic error: the LEN type parameter 'n' cannot be passed to the intent(inout)
      |
 3432 |         i = cc1_lenc_bump(v%n)  ! {Error} the LEN type parameter 'n' cannot be passed to the intent(inout) dummy argument 'k'
      |                           ^^^ 
+
+semantic error: a structure constructor of the derived type 'cc1_label_t', which has LEN type parameters, is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3445:13
+     |
+3445 |         e = cc1_label_t(5)("hello")  ! {Error} a structure constructor of the derived type 'cc1_label_t', which has LEN type parameters, is not supported yet
+     |             ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a structure constructor of the derived type 'cc1_label_t', which has LEN type parameters, is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3446:13
+     |
+3446 |         e = cc1_label_t(size=5)(text="hello")  ! {Error} a structure constructor of the derived type 'cc1_label_t', which has LEN type parameters, is not supported yet
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
