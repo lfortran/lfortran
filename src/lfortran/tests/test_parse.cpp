@@ -182,10 +182,10 @@ TEST_CASE("Test Big Int") {
     CHECK(is_int_ptr(i)); // this is a pointer
 
     // Smallest integer that is allowed is -2^63
-    i = -9223372036854775808ULL;
+    i = std::numeric_limits<int64_t>::min();
     CHECK(i == MIN_SMALL_INT);
     CHECK(!is_int_ptr(i)); // this is an integer
-    i = -9223372036854775809ULL; // This does not fit into a signed 64bit int
+    i = std::numeric_limits<int64_t>::max(); // Above MAX_SMALL_INT
     CHECK(is_int_ptr(i)); // this is a pointer
 
     /* Pointer tests */

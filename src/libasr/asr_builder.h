@@ -187,7 +187,7 @@ class ASRBuilder {
     ASR::ttype_t* String(ASR::expr_t* len,
         ASR::string_length_kindType len_kind,
         ASR::string_physical_typeType physical_type = ASR::DescriptorString,
-        int character_kind = 1) {
+        int64_t character_kind = 1) {
         if(!(
                 (len_kind == ASR::AssumedLength && !len) || 
                 (len_kind == ASR::DeferredLength && !len) ||
@@ -213,7 +213,7 @@ class ASRBuilder {
             ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(type)));
             ASR::dimension_t* dims = array_type->m_dims;
             ASRUtils::extract_dimensions_from_ttype(type, dims);
-            int new_dim = dim - 1;
+            int64_t new_dim = dim - 1;
             if( dims[new_dim].m_start && dims[new_dim].m_length ) {
                 ASR::expr_t* start = ASRUtils::expr_value(dims[new_dim].m_start);
                 ASR::expr_t* length = ASRUtils::expr_value(dims[new_dim].m_length);
@@ -241,7 +241,7 @@ class ASRBuilder {
             ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(type)));
             ASR::dimension_t* dims = array_type->m_dims;
             ASRUtils::extract_dimensions_from_ttype(type, dims);
-            int new_dim = dim - 1;
+            int64_t new_dim = dim - 1;
             if( dims[new_dim].m_start ) {
                 ASR::expr_t* start = ASRUtils::expr_value(dims[new_dim].m_start);
                 if( ASRUtils::is_value_constant(start) ) {
@@ -334,7 +334,7 @@ class ASRBuilder {
 
     inline ASR::expr_t* constant_t(double x, ASR::ttype_t* t, double y = 0.0) {
         if (ASRUtils::is_integer(*t)) {
-            return i_t(x, t);
+            return i_t(static_cast<int64_t>(x), t);
         } else if (ASRUtils::is_real(*t)) {
             return f_t(x, t);
         } else if (ASRUtils::is_complex(*t)) {
@@ -425,7 +425,7 @@ class ASRBuilder {
         ASR::expr_t* value = ASRUtils::expr_value(x);
         if ( value != nullptr  && ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x)) != 16) {
             double val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
-            value = i_t(val, t);
+            value = i_t(static_cast<int64_t>(val), t);
         } else {
             value = nullptr;
         }
@@ -445,7 +445,7 @@ class ASRBuilder {
         ASR::expr_t* value = ASRUtils::expr_value(x);
         if ( value != nullptr ) {
             int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
-            value = f_t(val, t);
+            value = f_t(static_cast<double>(val), t);
         }
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToReal, t, value, nullptr));
     }
@@ -1307,10 +1307,10 @@ class ASRBuilder {
         return STMT(ASRUtils::make_print_t_util(al, loc, x_exprs.p, x_exprs.n));
     }
 
-    ASR::symbol_t* create_c_func(std::string c_func_name, SymbolTable* fn_symtab, ASR::ttype_t* return_type, int n_args, Vec<ASR::ttype_t*>& arg_types) {
+    ASR::symbol_t* create_c_func(std::string c_func_name, SymbolTable* fn_symtab, ASR::ttype_t* return_type, size_t n_args, Vec<ASR::ttype_t*>& arg_types) {
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, n_args);
-        for (int i = 0; i < n_args; i++) {
+        for (size_t i = 0; i < n_args; i++) {
             args_1.push_back(al, this->Variable(fn_symtab_1, "x_"+std::to_string(i), arg_types[i],
                 ASR::intentType::In, nullptr, ASR::abiType::BindC, true));
         }

@@ -243,7 +243,7 @@ public:
             LCOMPILERS_ASSERT(current_scope)
             ASR::Function_t* func = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
             ArgInfo info = {static_cast<int>(x.m_param_number), x.m_type, func->m_args[x.m_param_number], &const_cast<ASR::expr_t&>((x.base))};
-            if (!exists_in_arginfo(x.m_param_number, indices)) {
+            if (!exists_in_arginfo(checked_integer_cast<int>(x.m_param_number), indices)) {
                 indices.push_back(info);
             }
         }

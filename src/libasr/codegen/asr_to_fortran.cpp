@@ -1452,7 +1452,8 @@ public:
         std::string r;
         r += "assign";
         r += " ";
-        r += x.m_label;
+        // Preserves the existing character append of the label value.
+        r += static_cast<char>(x.m_label);
         r += " ";
         r += "to";
         r += " ";

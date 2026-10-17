@@ -51,7 +51,7 @@ public:
     ASR::symbol_t* rename_Variable(ASR::Variable_t *x) {
         ASR::ttype_t *t = x->m_type;
         ASR::dimension_t* tp_m_dims = nullptr;
-        int tp_n_dims = ASRUtils::extract_dimensions_from_ttype(t, tp_m_dims);
+        int tp_n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(t, tp_m_dims));
 
         if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
             ASR::TypeParameter_t *tp = ASR::down_cast<ASR::TypeParameter_t>(t);
@@ -883,7 +883,7 @@ public:
     ASR::symbol_t* rename_Variable(ASR::Variable_t *x) {
         ASR::ttype_t *t = x->m_type;
         ASR::dimension_t* tp_m_dims = nullptr;
-        int tp_n_dims = ASRUtils::extract_dimensions_from_ttype(t, tp_m_dims);
+        int tp_n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(t, tp_m_dims));
 
         if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
             ASR::TypeParameter_t *tp = ASR::down_cast<ASR::TypeParameter_t>(t);

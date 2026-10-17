@@ -245,7 +245,7 @@ namespace LCompilers {
                 }
                 auto t2 = std::chrono::high_resolution_clock::now();
                 if (pass_options.time_report) {
-                    int time_taken_by_current_pass = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+                    auto time_taken_by_current_pass = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
                     double time_in_milliseconds = (double) time_taken_by_current_pass / 1000.0;
                     std::string message = "";
                     if ( time_in_milliseconds >= 1.0 ) {
@@ -456,8 +456,9 @@ namespace LCompilers {
             }
             auto t2 = std::chrono::high_resolution_clock::now();
             if (pass_options.time_report) {
-                int overall_time_in_passes = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
-                overall_time_in_passes = overall_time_in_passes - cummulative_time_taken_by_passes_in_microseconds;
+                // The cumulative pass time is a sum of whole microsecond counts.
+                auto overall_time_in_passes = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count()
+                    - static_cast<std::chrono::microseconds::rep>(cummulative_time_taken_by_passes_in_microseconds);
                 double time_in_milliseconds = (double) overall_time_in_passes / 1000.0;
                 std::string message = "";
                 if ( time_in_milliseconds >= 1.0 ) {
