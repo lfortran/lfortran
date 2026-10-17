@@ -616,12 +616,12 @@ public:
                         int const_value = 0;
                         if (ASR::is_a<ASR::IntegerConstant_t>(*cast_arg)){
                             ASR::IntegerConstant_t* const_int = ASR::down_cast<ASR::IntegerConstant_t>(cast_arg);
-                            const_value = const_int->m_n;
+                            const_value = static_cast<int>(const_int->m_n);
                         }
                         if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*cast_arg)){
                             ASR::IntegerUnaryMinus_t *const_int_minus = ASR::down_cast<ASR::IntegerUnaryMinus_t>(cast_arg);
                             ASR::IntegerConstant_t* const_int = ASR::down_cast<ASR::IntegerConstant_t>(const_int_minus->m_value);
-                            const_value = const_int->m_n;
+                            const_value = static_cast<int>(const_int->m_n);
                         }
 
                         ASR::ttype_t* cast_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8));
@@ -1092,12 +1092,12 @@ public:
                 int const_value = 0;
                 if (ASR::is_a<ASR::IntegerConstant_t>(*cast_arg)){
                     ASR::IntegerConstant_t* const_int = ASR::down_cast<ASR::IntegerConstant_t>(cast_arg);
-                    const_value = const_int->m_n;
+                    const_value = static_cast<int>(const_int->m_n);
                 }
                 if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*cast_arg)){
                     ASR::IntegerUnaryMinus_t *const_int_minus = ASR::down_cast<ASR::IntegerUnaryMinus_t>(cast_arg);
                     ASR::IntegerConstant_t* const_int = ASR::down_cast<ASR::IntegerConstant_t>(const_int_minus->m_value);
-                    const_value = const_int->m_n;
+                    const_value = static_cast<int>(const_int->m_n);
                 }
 
                 ASR::ttype_t* cast_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8));

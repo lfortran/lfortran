@@ -326,6 +326,12 @@ public:
                 // A variable in a common block lives in the block's static
                 // storage, which every procedure reaches directly.
                 if(is_module_or_global_variable(v) || v->m_common_block != nullptr) return;
+                // A component of a derived type, e.g. the `=> null()`
+                // initialization of `next` in `type(node), pointer :: next`
+                // reached through the type's default initialization, is
+                // not host storage.
+                ASR::symbol_t* owner = ASRUtils::get_asr_owner(sym);
+                if (owner && ASR::is_a<ASR::Struct_t>(*owner)) return;
                 visit_ttype(*v->m_type);
                 // If the variable is not defined in the current scope
                 // (or a child scope such as an associate block), it is a

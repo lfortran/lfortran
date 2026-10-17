@@ -647,7 +647,7 @@ public:
     }
 
     template <typename T>
-    void process_format_statement(ASR::asr_t *old_tmp, int &label, Allocator &al, std::map<int64_t, std::string> &format_statements) {
+    void process_format_statement(ASR::asr_t *old_tmp, int64_t &label, Allocator &al, std::map<int64_t, std::string> &format_statements) {
         T *old_stmt = ASR::down_cast<T>(ASRUtils::STMT(old_tmp));  
         ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_String_t(
             al, old_stmt->base.base.loc, 1,
@@ -676,7 +676,7 @@ public:
         for(auto it = print_statements.begin(); it != print_statements.end(); it++) {
             ASR::asr_t* old_tmp = it->first;
             const AST::decl_stmt_t* x = it->second.first;
-            int label = it->second.second;
+            int64_t label = it->second.second;
             if (format_statements.find(label) == format_statements.end()) {
                 diag.semantic_error_label("The label " + std::to_string(label) + " does not point to any format statement",
                  {x->base.loc},"Invalid label in this statement");
@@ -3865,7 +3865,7 @@ public:
                     ASR::string_physical_typeType::DescriptorString));
             } else if( type_name == "integer" || type_name == "real"
                     || type_name == "complex" || type_name == "logical" ) {
-                int kind = 4;
+                int64_t kind = 4;
                 if( type_name == "integer" ) {
                     kind = compiler_options.po.default_integer_kind;
                 }
@@ -4557,8 +4557,8 @@ public:
                 // Check individual dimension shapes
                 if (source_m_dims && var_m_dims) {
                     for (size_t j = 0; j < var_n_dims; j++) {
-                        int source_dim_shape = ASRUtils::extract_dim_value_int(source_m_dims[j].m_length);
-                        int var_dim_shape = ASRUtils::extract_dim_value_int(var_m_dims[j].m_length);
+                        int64_t source_dim_shape = ASRUtils::extract_dim_value_int(source_m_dims[j].m_length);
+                        int64_t var_dim_shape = ASRUtils::extract_dim_value_int(var_m_dims[j].m_length);
 
                         if (source_dim_shape != -1 && var_dim_shape != -1 && source_dim_shape != var_dim_shape) {
                             diag.add(Diagnostic(
@@ -4913,7 +4913,7 @@ public:
                             }));
                         throw SemanticAbort();
                     }
-                    int rank = ASR::down_cast<ASR::IntegerConstant_t>(rank_expr_value)->m_n;
+                    int rank = static_cast<int>(ASR::down_cast<ASR::IntegerConstant_t>(rank_expr_value)->m_n);
                     assumed_rank_arrays[array_var_name] = rank;
                     Vec<ASR::stmt_t*> rank_body; rank_body.reserve(al, rank_expr->n_body);
                     if (x.m_assoc_name) {
@@ -6332,8 +6332,8 @@ public:
         left = ASRUtils::EXPR(ASR::make_Var_t(al, loc, left_sym));
         ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
         ASR::ttype_t* logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, compiler_options.po.default_integer_kind));
-        int num_entry_functions = entry_functions[original_function_name].size();
-        for(int i = 0; i < num_entry_functions + 1; i++) {
+        size_t num_entry_functions = entry_functions[original_function_name].size();
+        for(size_t i = 0; i < num_entry_functions + 1; i++) {
             ASR::stmt_t* if_stmt = nullptr;
             ASR::expr_t* right = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, int_type));
             ASR::expr_t* cmp = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, left, ASR::cmpopType::Eq, right,
@@ -6744,16 +6744,16 @@ public:
     ASR::ttype_t* infer_scalar_type(const Location& loc, ASR::ttype_t* inferred_type,
             AST::expr_t* value) {
         if (ASR::is_a<ASR::Integer_t>(*inferred_type)) {
-            int kind = ASR::down_cast<ASR::Integer_t>(inferred_type)->m_kind;
+            int64_t kind = ASR::down_cast<ASR::Integer_t>(inferred_type)->m_kind;
             return ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
         } else if (ASR::is_a<ASR::Real_t>(*inferred_type)) {
-            int kind = ASR::down_cast<ASR::Real_t>(inferred_type)->m_kind;
+            int64_t kind = ASR::down_cast<ASR::Real_t>(inferred_type)->m_kind;
             return ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind));
         } else if (ASR::is_a<ASR::Complex_t>(*inferred_type)) {
-            int kind = ASR::down_cast<ASR::Complex_t>(inferred_type)->m_kind;
+            int64_t kind = ASR::down_cast<ASR::Complex_t>(inferred_type)->m_kind;
             return ASRUtils::TYPE(ASR::make_Complex_t(al, loc, kind));
         } else if (ASR::is_a<ASR::Logical_t>(*inferred_type)) {
-            int kind = ASR::down_cast<ASR::Logical_t>(inferred_type)->m_kind;
+            int64_t kind = ASR::down_cast<ASR::Logical_t>(inferred_type)->m_kind;
             return ASRUtils::TYPE(ASR::make_Logical_t(al, loc, kind));
         } else if (ASR::is_a<ASR::String_t>(*inferred_type)) {
             ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(inferred_type);
@@ -7089,7 +7089,7 @@ public:
                 // if in any of the dimension, arrays have different size
                 // raise an error
                 bool is_array_concat = false;
-                int flat_size = 0;
+                int64_t flat_size = 0;
                 if( AST::is_a<AST::ArrayInitializer_t>(*x.m_value) &&
                     ASR::is_a<ASR::ArrayConstructor_t>(*value) ){
                     // The shape of the value is measured from the expression
@@ -7137,8 +7137,8 @@ public:
                     for (size_t i = 0; i < target_rank; i++) {
                         ASR::dimension_t dim_a = target_dims[i];
                         ASR::dimension_t dim_b = value_dims[i];
-                        int dim_a_int {-1};
-                        int dim_b_int {-1};
+                        int64_t dim_a_int {-1};
+                        int64_t dim_b_int {-1};
                         if (!dim_a.m_length) {
                             continue;
                         }
@@ -7191,7 +7191,7 @@ public:
                 } else {
                     //Case : C = [B, A] where B or A is Array
                     ASR::dimension_t dim_a = target_dims[0];
-                    int dim_a_int {-1};
+                    int64_t dim_a_int {-1};
                     ASRUtils::extract_value(ASRUtils::expr_value(dim_a.m_length), dim_a_int);
                     if (dim_a_int > 0 && flat_size > 0 && dim_a_int != flat_size) {
                         diag.add(Diagnostic(
@@ -7526,7 +7526,7 @@ public:
                 !ASRUtils::check_equal_type(target_type, value_type, target, value)) {
                 if (value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
-                    int size = ASRUtils::get_fixed_size_of_array(ac->m_type);
+                    int64_t size = ASRUtils::get_fixed_size_of_array(ac->m_type);
                     Vec<ASR::expr_t*> args; args.reserve(al, size);
                     for (size_t i = 0; i < (size_t) size; i++) {
                         ASR::expr_t* arg = ASRUtils::fetch_ArrayConstant_value(al, ac, i);
@@ -7799,7 +7799,7 @@ public:
         ASR::dimension_t* shape_dims;
         ASR::expr_t* lower_bounds = nullptr;
         if( shape ) {
-            int shape_rank = ASRUtils::extract_dimensions_from_ttype(
+            size_t shape_rank = ASRUtils::extract_dimensions_from_ttype(
                                 ASRUtils::expr_type(shape),
                                 shape_dims);
             if( shape_rank != 1 ) {
@@ -7813,12 +7813,12 @@ public:
             }
 
             ASR::dimension_t* target_dims;
-            int target_n_dims = ASRUtils::extract_dimensions_from_ttype(fptr_type, target_dims);
+            size_t target_n_dims = ASRUtils::extract_dimensions_from_ttype(fptr_type, target_dims);
             if( target_n_dims > 0 ) {
                 Vec<ASR::expr_t*> lbs;
                 lbs.reserve(al, target_n_dims);
                 bool success = true;
-                for( int i = 0; i < target_n_dims; i++ ) {
+                for( size_t i = 0; i < target_n_dims; i++ ) {
                     if( target_dims->m_length == nullptr ) {
                         success = false;
                         break;
@@ -10168,7 +10168,7 @@ public:
         }
 
         // Nest ForAllSingle nodes from innermost to outermost
-        for (int i = x.n_control - 1; i >= 0; i--) {
+        for (size_t i = x.n_control; i-- > 0;) {
             AST::ConcurrentControl_t &h = *(AST::ConcurrentControl_t*) x.m_control[i];
             ASR::expr_t *var = ASRUtils::EXPR(
                 resolve_variable(x.base.base.loc, to_lower(h.m_var))
@@ -10257,7 +10257,7 @@ public:
             if (x.m_mask) {
                 stmt = mask_to_if(*x.m_mask, stmt);
             }
-            for (int i = heads.size() - 1; i >= 0; i--) {
+            for (size_t i = heads.size(); i-- > 0;) {
                 tmp = ASR::make_ForAllSingle_t(al, x.base.base.loc, heads.p[i], stmt);
                 stmt = ASRUtils::STMT(tmp);
             }
@@ -10322,7 +10322,7 @@ public:
     void visit_GoTo(const AST::GoTo_t &x) {
         if (x.m_goto_label) {
             if (AST::is_a<AST::Num_t>(*x.m_goto_label)) {
-                int goto_label = AST::down_cast<AST::Num_t>(x.m_goto_label)->m_n;
+                int64_t goto_label = AST::down_cast<AST::Num_t>(x.m_goto_label)->m_n;
                 if (labels.find(std::to_string(goto_label)) == labels.end()) {
                     diag.add(Diagnostic(
                         "Label " + std::to_string(goto_label) + " is not defined",
@@ -10474,6 +10474,44 @@ public:
             code = nullptr;
         }
         tmp = ASR::make_ErrorStop_t(al, x.base.base.loc, code);
+    }
+
+    void visit_Pause(const AST::Pause_t &x) {
+        diag.add(Diagnostic(
+            "the `pause` statement is a deleted feature (deleted in Fortran 95)",
+            Level::Warning, Stage::Semantic, {
+                Label("", {x.base.base.loc})
+            }));
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, 1);
+        if (x.m_code) {
+            visit_expr(*x.m_code);
+            ASR::expr_t *code = ASRUtils::EXPR(tmp);
+            ASR::ttype_t *code_type = ASRUtils::expr_type(code);
+            if (ASRUtils::is_array(code_type) ||
+                    !(ASRUtils::is_integer(*code_type) ||
+                      (ASRUtils::is_character(*code_type) &&
+                       ASRUtils::extract_kind_from_ttype_t(code_type) == 1))) {
+                ASR::ttype_t *element_type = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable_pointer(code_type));
+                std::string found = ASRUtils::type_to_str_with_kind(
+                    element_type, code);
+                if (ASRUtils::is_array(code_type)) {
+                    found += " array";
+                }
+                diag.add(Diagnostic(
+                    "`pause` code must be a scalar integer or default character "
+                    "expression, found " + found,
+                    Level::Error, Stage::Semantic, {
+                        Label("", {code->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            args.push_back(al, code);
+        }
+        tmp = ASR::make_IntrinsicImpureSubroutine_t(al, x.base.base.loc,
+            static_cast<int64_t>(ASRUtils::IntrinsicImpureSubroutines::Pause),
+            args.p, args.n, 0);
     }
 
     void check_stat(AST::event_attribute_t *attr, const Location &loc, const std::string &stmt_name, ASR::expr_t *&stat) {

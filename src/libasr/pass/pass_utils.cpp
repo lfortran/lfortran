@@ -33,7 +33,7 @@ namespace LCompilers {
             switch( t2->type ) {
                 case ASR::ttypeType::Array: {
                     ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t2);
-                    n_dims = array_t->n_dims;
+                    n_dims = checked_integer_cast<int>(array_t->n_dims);
                     m_dims = array_t->m_dims;
                     break ;
                 }
@@ -423,7 +423,7 @@ namespace LCompilers {
             }
             return false;
         }
-        ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
+        ASR::expr_t* create_var(int64_t counter, std::string suffix, const Location& loc,
                             ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope, ASR::expr_t* var) {
             ASR::dimension_t* m_dims = nullptr;
             int ndims = 0;
@@ -469,7 +469,7 @@ namespace LCompilers {
             return idx_var;
         }
 
-        ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
+        ASR::expr_t* create_var(int64_t counter, std::string suffix, const Location& loc,
                                 ASR::expr_t* sibling, Allocator& al, SymbolTable*& current_scope) {
             ASR::ttype_t* var_type = nullptr;
             var_type = get_matching_type(sibling, al);
@@ -611,7 +611,7 @@ namespace LCompilers {
                 }
                 idx_vars.push_back(al, var);
                 loop_vars.push_back(al, var);
-                loop_var_indices.push_back(i);
+                loop_var_indices.push_back(checked_integer_cast<int>(i));
             }
         }
 
@@ -1068,10 +1068,10 @@ namespace LCompilers {
             }
         }
 
-        ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim, std::string bound, Allocator& al, int integer_kind) {
+        ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int64_t dim, std::string bound, Allocator& al, int integer_kind) {
             ASR::ttype_t* x_mv_type = ASRUtils::expr_type(arr_expr);
             ASR::dimension_t* m_dims;
-            int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
+            int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims));
             bool is_data_only_array = ASRUtils::is_fixed_size_array(m_dims, n_dims) && ASRUtils::get_asr_owner(arr_expr) &&
                                     ASR::is_a<ASR::Struct_t>(*ASRUtils::get_asr_owner(arr_expr));
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, integer_kind));
@@ -1619,7 +1619,7 @@ namespace LCompilers {
                 ASR::cmpopType cmp_op;
 
                 if( comp == -1 ) {
-                    int increment;
+                    int64_t increment;
                     bool not_constant_inc = false;
                     if (!ASRUtils::is_integer(*ASRUtils::expr_type(c))) {
                         throw LCompilersException("Do loop increment type should be an integer");
@@ -1781,15 +1781,15 @@ namespace LCompilers {
             const Location& loc = arr_var->base.loc;
             ASRUtils::ASRBuilder b(al, loc);
             ASR::dimension_t* m_dims;
-            int n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(arr_var), m_dims);
+            int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(arr_var), m_dims));
             // For pointer/equivalence variables the variable type may have empty
             // dimensions (e.g. [(() ())]).  In that case fall back to the
             // ArrayConstant's own type which carries concrete bounds.
             bool use_x_dims = (n_dims > 0 && (m_dims[0].m_length == nullptr));
             if( use_x_dims ) {
-                n_dims = ASRUtils::extract_dimensions_from_ttype(x->m_type, m_dims);
+                n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(x->m_type, m_dims));
             }
-            Vec<int> strides;
+            Vec<int64_t> strides;
             strides.resize(al, n_dims);
             // compute stride vars for each dimension in column major order
             strides.p[0] = 1;

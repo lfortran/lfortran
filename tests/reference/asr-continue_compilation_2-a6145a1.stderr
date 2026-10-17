@@ -44,10 +44,10 @@ syntax error: Invalid syntax for variable initialization (try inserting '::' aft
 137 |     integer init_x = 1
     |     ^^^^^^^^^^^^^^^^^^ 
 
-syntax error: kind 16 is not supported yet.
+syntax error: kind 12 is not supported yet.
    --> tests/errors/continue_compilation_2.f90:227:5
     |
-227 |     real*16 :: unsupported_kind
+227 |     real*12 :: unsupported_kind
     |     ^^^^^^^ 
 
 tokenizer error: Token '`' is not recognized
@@ -251,6 +251,12 @@ semantic error: Parameter attribute cannot be used with Target attribute
     |
 224 |     integer, parameter, target :: foo=4
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Kind 12 is not supported for Real
+   --> tests/errors/continue_compilation_2.f90:227:5
+    |
+227 |     real*12 :: unsupported_kind
+    |     ^^^^^^^ 
 
 semantic error: Argument was not specified
    --> tests/errors/continue_compilation_2.f90:229:33

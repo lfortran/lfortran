@@ -367,7 +367,7 @@ class ASRToLLVMVisitor;
             std::vector<std::string>& struct_type_stack;
             std::map<std::string, std::string>& dertype2parent;
             std::map<std::string, std::map<std::string, int>>& name2memidx;
-            std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache;
+            std::unordered_map<std::uint64_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache;
             std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type;
 
             LLVMDictInterface* dict_api_lp;
@@ -410,7 +410,7 @@ class ASRToLLVMVisitor;
                 std::map<std::string, std::string>& dertype2parent_,
                 std::map<std::string, std::map<std::string, int>>& name2memidx_,
                 CompilerOptions &compiler_options_,
-                std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache_,
+                std::unordered_map<std::uint64_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache_,
                 std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type_,
                 std::map<uint64_t, llvm::Value*> &llvm_symtab_);
                 
@@ -732,7 +732,9 @@ class ASRToLLVMVisitor;
                     is the same representation as the string PhysicalType  
             */
             llvm::Value* handle_global_nonallocatable_stringArray(Allocator& al, ASR::Array_t* array_t,
-                ASR::ArrayConstant_t* arrayConst_t, std::string name);
+                ASR::ArrayConstant_t* arrayConst_t, std::string name,
+                std::string data_name="_data",
+                llvm::GlobalValue::LinkageTypes data_linkage=llvm::GlobalValue::PrivateLinkage);
 
             llvm::Value* is_equal_pointer_string(llvm::Value* left, llvm::Value* right);
 
@@ -1191,7 +1193,7 @@ class ASRToLLVMVisitor;
                 // a scalar dummy argument, elemental or not (7.5.6.2).
                 ASR::Function_t* const final_fn = select_final_procedure(struct_sym, 0);
                 if (final_fn == nullptr) { return; }
-                uint32_t const fh = get_hash((ASR::asr_t*)final_fn);
+                uint64_t const fh = get_hash((ASR::asr_t*)final_fn);
                 LCOMPILERS_ASSERT(llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end());
                 builder_->CreateCall(llvm_symtab_fn_[fh], {llvm_var});
             });
@@ -1258,7 +1260,7 @@ class ASRToLLVMVisitor;
                 ASR::ttype_t* const type, ASR::Struct_t* const struct_sym,
                 ASR::Struct_t* const final_struct = nullptr) {
             if (final_proc == nullptr || !call_final_subroutines_) return;
-            uint32_t fh = get_hash((ASR::asr_t*)final_proc);
+            uint64_t fh = get_hash((ASR::asr_t*)final_proc);
             if (llvm_symtab_fn_.find(fh) == llvm_symtab_fn_.end()) return;
             llvm::Function* final_fn = llvm_symtab_fn_[fh];
             int rank = ASRUtils::extract_n_dims_from_ttype(type);
@@ -2084,7 +2086,7 @@ class ASRToLLVMVisitor;
                 ASR::ttype_t* elem_type = tuple_t->m_type[i];
                 if (is_finalizable_type(elem_type, nullptr, false)) {
                     llvm::Value* elem_ptr = llvm_utils_->create_gep2(
-                        tuple_llvm_type, ptr, i);
+                        tuple_llvm_type, ptr, checked_integer_cast<int>(i));
                     finalize(elem_ptr, elem_type, nullptr, false);
                 }
             }
@@ -2437,8 +2439,8 @@ class ASRToLLVMVisitor;
             std::vector<llvm::Value*> fixed_args = call_args;
             llvm::FunctionType* fnty = fn->getFunctionType();
             for (size_t i = 0; i < fixed_args.size() && i < fnty->getNumParams(); i++) {
-                if (fixed_args[i]->getType() != fnty->getParamType(i)) {
-                    fixed_args[i] = builder_->CreateBitCast(fixed_args[i], fnty->getParamType(i));
+                if (fixed_args[i]->getType() != fnty->getParamType(checked_integer_cast<unsigned>(i))) {
+                    fixed_args[i] = builder_->CreateBitCast(fixed_args[i], fnty->getParamType(checked_integer_cast<unsigned>(i)));
                 }
             }
             return builder_->CreateCall(fn, fixed_args);
@@ -2645,7 +2647,7 @@ class ASRToLLVMVisitor;
             LCOMPILERS_ASSERT(!non_deallocatable_construct(v->m_parent_symtab->asr_owner) 
                               && !is_struct_symtab(v->m_parent_symtab))
             llvm::Value* llvm_var {}; {
-                const uint32_t v_h = get_hash((ASR::asr_t*)v);
+                const uint64_t v_h = get_hash((ASR::asr_t*)v);
                 LCOMPILERS_ASSERT(llvm_utils_->llvm_symtab.find(v_h) != llvm_utils_->llvm_symtab.end());
                 llvm_var = llvm_utils_->llvm_symtab[v_h];
             }
@@ -2895,7 +2897,7 @@ class ASRToLLVMVisitor;
         void call_scalar_final_procedure(llvm::Value* const ptr, ASR::Struct_t* const struct_sym) {
             ASR::Function_t* const final_proc = select_final_procedure(struct_sym, 0);
             if (final_proc == nullptr || !call_final_subroutines_) return;
-            uint32_t fh = get_hash((ASR::asr_t*)final_proc);
+            uint64_t fh = get_hash((ASR::asr_t*)final_proc);
             if (llvm_symtab_fn_.find(fh) != llvm_symtab_fn_.end()) {
                 llvm::Function* const fn = llvm_symtab_fn_[fh];
                 builder_->CreateCall(fn, {builder_->CreateBitCast(ptr,

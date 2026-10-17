@@ -402,10 +402,55 @@ end program
     FortranEvaluator e(compiler_options);
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         r = e.get_asr2(src, lm, diagnostics);
-    uint64_t input_pos = lm.linecol_to_pos(2, 12);
-    uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
+    uint32_t input_pos = LCompilers::LFortran::source_offset(
+        lm.linecol_to_pos(2, 12));
+    uint32_t output_pos = lm.input_to_output_pos(input_pos, false);
     CHECK(lm.output_to_input_pos(output_pos, false) == input_pos);
     ASR::asr_t* asr2 = e.handle_lookup_name(r.result, output_pos);
+    std::vector<diag::Span> spans2 = diag::Label("", {asr2->loc}).spans;
+    for( auto it: spans2 ) {
+        populate_span(it, lm);
+        CHECK(it.first_line == 2);
+        CHECK(it.first_column == 1);
+        CHECK(it.last_line == 7);
+        CHECK(it.last_column == 11);
+    }
+}
+
+TEST_CASE("Variable Location beyond 65535") {
+    Allocator al(4*1024);
+
+    // A long first comment line puts the program past position 65535
+    std::string src = "!" + std::string(70000, 'x') + R"""(
+program expr2
+implicit none
+integer :: x
+x = (2+3)*5
+print *, x
+end program
+)""";
+
+    LCompilers::diag::Diagnostics diagnostics;
+    CompilerOptions compiler_options;
+    compiler_options.lookup_name = true;
+
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.out_start0 = {};
+        fl.in_filename = "input.f90";
+        lm.files.push_back(fl);
+    }
+    FortranEvaluator e(compiler_options);
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+        r = e.get_asr2(src, lm, diagnostics);
+    REQUIRE(r.ok);
+    uint32_t input_pos = LCompilers::LFortran::source_offset(
+        lm.linecol_to_pos(2, 12));
+    uint32_t output_pos = lm.input_to_output_pos(input_pos, false);
+    CHECK(output_pos > 65535);
+    ASR::asr_t* asr2 = e.handle_lookup_name(r.result, output_pos);
+    REQUIRE(asr2 != nullptr);
     std::vector<diag::Span> spans2 = diag::Label("", {asr2->loc}).spans;
     for( auto it: spans2 ) {
         populate_span(it, lm);

@@ -1438,6 +1438,18 @@ semantic error: Dummy argument 'x' not defined
 3364 |    end subroutine cc1_duplicate_dimension_attr
      | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: bind(c) variable `s` must have character length one
+    --> tests/errors/continue_compilation_1.f90:3380:34
+     |
+3380 |     character(len=5), bind(c) :: s  ! {Error} bind(c) variable `s` must have character length one
+     |                                  ^ 
+
+semantic error: bind(c) variable `a` must have character length one
+    --> tests/errors/continue_compilation_1.f90:3381:34
+     |
+3381 |     character(len=5), bind(c) :: a(3)  ! {Error} bind(c) variable `a` must have character length one
+     |                                  ^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -4165,3 +4177,27 @@ semantic error: interface mismatch for procedure pointer component 'p' in struct
      |
 3353 |         x = cc1_pcd_t(cc1_pcd_b_arg)  ! {Error} interface mismatch for procedure pointer component 'p' in structure constructor
      |                       ^^^^^^^^^^^^^ incompatible interfaces (procedure(cc1_pcd_iface) and procedure(cc1_pcd_b_arg))
+
+warning: the `pause` statement is a deleted feature (deleted in Fortran 95)
+    --> tests/errors/continue_compilation_1.f90:3373:9
+     |
+3373 |         pause 3.0  ! {Error} `pause` code must be a scalar integer or default character expression, found real(4)
+     |         ^^^^^^^^^ 
+
+semantic error: `pause` code must be a scalar integer or default character expression, found real(4)
+    --> tests/errors/continue_compilation_1.f90:3373:15
+     |
+3373 |         pause 3.0  ! {Error} `pause` code must be a scalar integer or default character expression, found real(4)
+     |               ^^^ 
+
+warning: the `pause` statement is a deleted feature (deleted in Fortran 95)
+    --> tests/errors/continue_compilation_1.f90:3374:9
+     |
+3374 |         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
+     |         ^^^^^^^^^^^ 
+
+semantic error: `pause` code must be a scalar integer or default character expression, found integer(4) array
+    --> tests/errors/continue_compilation_1.f90:3374:15
+     |
+3374 |         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
+     |               ^^^^^ 

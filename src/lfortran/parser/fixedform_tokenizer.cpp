@@ -219,6 +219,7 @@ static const std::unordered_map<std::string, yytokentype> &identifier_token_map(
     {"out", KW_OUT},
     {"parameter", KW_PARAMETER},
     {"pass", KW_PASS},
+    {"pause", KW_PAUSE},
     {"pointer", KW_POINTER},
     {"post", KW_POST},
     {"precision", KW_PRECISION},
@@ -355,7 +356,7 @@ struct FixedFormRecursiveDescent {
     // Auxiliary functions:
 
     void error(unsigned char *cur, const std::string &text) {
-        uint32_t loc_first = cur-string_start;
+        uint32_t loc_first = source_offset(cur-string_start);
         Location loc;
         loc.first = loc_first;
         loc.last = loc_first;
@@ -419,8 +420,8 @@ struct FixedFormRecursiveDescent {
             tokens.push_back(yytokentype::TK_LABEL);
             stypes.push_back(y);
             Location loc;
-            loc.first = cur - string_start;
-            loc.last = cur - string_start + label.size();
+            loc.first = source_offset(cur - string_start);
+            loc.last = source_offset(cur - string_start + label.size());
             locations.push_back(loc);
             cur+=reserved_cols;
             return y.int_suffix.int_n.n;
@@ -454,8 +455,8 @@ struct FixedFormRecursiveDescent {
             tokens.push_back(yytokentype::TK_INTEGER);
             stypes.push_back(yy);
             Location loc;
-            loc.first = cur - string_start;
-            loc.last = cur - string_start + label.size();
+            loc.first = source_offset(cur - string_start);
+            loc.last = source_offset(cur - string_start + label.size());
             locations.push_back(loc);
             cur+=count+1; // TODO revisit
             return yy.int_suffix.int_n.n;
@@ -483,8 +484,8 @@ struct FixedFormRecursiveDescent {
         stypes.push_back(yy);
         tokens.push_back(token_type);
         Location loc;
-        loc.first = cur - string_start;
-        loc.last = cur - string_start + token_str.size();
+        loc.first = source_offset(cur - string_start);
+        loc.last = source_offset(cur - string_start + token_str.size());
         locations.push_back(loc);
     }
 
@@ -503,8 +504,8 @@ struct FixedFormRecursiveDescent {
         stypes.push_back(yy);
         tokens.push_back(TK_INTEGER);
         Location loc;
-        loc.first = cur - string_start;
-        loc.last = cur - string_start;
+        loc.first = source_offset(cur - string_start);
+        loc.last = source_offset(cur - string_start);
         locations.push_back(loc);
     }
 
@@ -535,8 +536,8 @@ struct FixedFormRecursiveDescent {
     // Return the current token's location
     void token_loc(unsigned char *tok, unsigned char *cur, Location &loc) const
     {
-        loc.first = tok-string_start;
-        loc.last = cur-string_start-1;
+        loc.first = source_offset(tok-string_start);
+        loc.last = source_offset(cur-string_start-1);
     }
 
     /*
@@ -830,8 +831,8 @@ struct FixedFormRecursiveDescent {
                 // stray `)`) is a tokenization error.
                 if (!is_char(*end) && !is_digit(*end)) {
                     Location loc;
-                    loc.first = end - string_start;
-                    loc.last = end - string_start;
+                    loc.first = source_offset(end - string_start);
+                    loc.last = source_offset(end - string_start);
                     diag.add(diag::Diagnostic(
                         "Unexpected token after the condition of the if statement",
                         diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -853,8 +854,8 @@ struct FixedFormRecursiveDescent {
                 }
             } else {
                 Location loc;
-                loc.first = end - string_start;
-                loc.last = end - string_start;
+                loc.first = source_offset(end - string_start);
+                loc.last = source_offset(end - string_start);
                 diag.add(diag::Diagnostic(
                     "Expected `)` here to end the condition expression of the if statement ",
                     diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -862,8 +863,8 @@ struct FixedFormRecursiveDescent {
             }
         } else {
             Location loc;
-            loc.first = cur - string_start;
-            loc.last = cur - string_start;
+            loc.first = source_offset(cur - string_start);
+            loc.last = source_offset(cur - string_start);
             diag.add(diag::Diagnostic(
                 "Expected expression after `if`",
                 diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -1016,8 +1017,8 @@ struct FixedFormRecursiveDescent {
                     Location fmt_content_loc;
                     lex_format(cur, fmt_content_loc, start, diag, false, this->string_start);
                     Location loc;
-                    loc.first = format_start - string_start;
-                    loc.last = cur - string_start - 1;
+                    loc.first = source_offset(format_start - string_start);
+                    loc.last = source_offset(cur - string_start - 1);
                     locations.push_back(loc);
                     YYSTYPE yylval;
                     yylval.string.p = (char*) start;
@@ -1404,6 +1405,12 @@ struct FixedFormRecursiveDescent {
             return true;
         }
 
+        if (next_is(cur, "pause")) {
+            push_token_advance(cur, "pause");
+            tokenize_line(cur);
+            return true;
+        }
+
         if (next_is(cur, "errorstop")) {
             push_token_advance(cur, "error");
             push_token_advance(cur, "stop");
@@ -1445,8 +1452,8 @@ struct FixedFormRecursiveDescent {
                 tokenize_line(cur);
             } else {
                 Location loc;
-                loc.first = cur-string_start;
-                loc.last = cur-string_start;
+                loc.first = source_offset(cur-string_start);
+                loc.last = source_offset(cur-string_start);
                 diag.add(diag::Diagnostic(
                     "Expected 'to' here",
                     diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -1454,8 +1461,8 @@ struct FixedFormRecursiveDescent {
             }
         } else {
             Location loc;
-            loc.first = cur-string_start;
-            loc.last = cur-string_start;
+            loc.first = source_offset(cur-string_start);
+            loc.last = source_offset(cur-string_start);
             diag.add(diag::Diagnostic(
                 "Expected integer after `assign`",
                 diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -1665,8 +1672,8 @@ struct FixedFormRecursiveDescent {
                 break;
             } else if (!lex_body_statement(cur)) {
                 Location loc;
-                loc.first = cur - string_start;
-                loc.last = cur - string_start;
+                loc.first = source_offset(cur - string_start);
+                loc.last = source_offset(cur - string_start);
                 diag.add(diag::Diagnostic(
                     "Expected an executable statement inside do concurrent loop",
                     diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -1738,8 +1745,8 @@ struct FixedFormRecursiveDescent {
             }
             if (!lex_body_statement(cur)) {
                 Location loc;
-                loc.first = cur-string_start;
-                loc.last = cur-string_start;
+                loc.first = source_offset(cur-string_start);
+                loc.last = source_offset(cur-string_start);
                 diag.add(diag::Diagnostic(
                     "Expected an executable statement inside a do loop",
                     diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -1756,8 +1763,8 @@ struct FixedFormRecursiveDescent {
         while (!lex_do_terminal(cur, do_label)) {
             if (!lex_body_statement(cur)) {
                 Location loc;
-                loc.first = cur-string_start;
-                loc.last = cur-string_start;
+                loc.first = source_offset(cur-string_start);
+                loc.last = source_offset(cur-string_start);
                 diag.add(diag::Diagnostic(
                     "Expected an executable statement inside a labeled do loop",
                     diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -1785,8 +1792,8 @@ struct FixedFormRecursiveDescent {
             // stray `end`/`contains`/`subroutine`/`function`.
             if (!lex_body_statement(cur, continue_compilation)) {
                 Location loc;
-                loc.first = cur-string_start;
-                loc.last = cur-string_start;
+                loc.first = source_offset(cur-string_start);
+                loc.last = source_offset(cur-string_start);
                 diag.add(diag::Diagnostic(
                     "Expected an executable statement inside a do while loop",
                     diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));
@@ -1872,8 +1879,8 @@ struct FixedFormRecursiveDescent {
             }
             if (!lex_body_statement(cur)) {
                 Location loc;
-                loc.first = cur - string_start;
-                loc.last = cur - string_start;
+                loc.first = source_offset(cur - string_start);
+                loc.last = source_offset(cur - string_start);
                 diag.add(diag::Diagnostic(
                     "Expected an executable statement inside where block",
                     diag::Level::Error, diag::Stage::Tokenizer, {diag::Label("", {loc})}));

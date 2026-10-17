@@ -189,7 +189,7 @@ namespace LCompilers {
         std::map<std::string, std::string>& dertype2parent_,
         std::map<std::string, std::map<std::string, int>>& name2memidx_,
         CompilerOptions &compiler_options_,
-        std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache_,
+        std::unordered_map<std::uint64_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache_,
         std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type_,
         std::map<uint64_t, llvm::Value*> &llvm_symtab_):
         context(context), builder(std::move(_builder)), str_cmp_itr(nullptr), der_type_name(der_type_name_),
@@ -499,12 +499,12 @@ namespace LCompilers {
         llvm::Type* llvm_mem_type = nullptr;
         switch( mem_type->type ) {
             case ASR::ttypeType::Integer: {
-                int a_kind = ASR::down_cast<ASR::Integer_t>(mem_type)->m_kind;
+                int a_kind = checked_integer_cast<int>(ASR::down_cast<ASR::Integer_t>(mem_type)->m_kind);
                 llvm_mem_type = getIntType(a_kind);
                 break;
             }
             case ASR::ttypeType::Real: {
-                int a_kind = ASR::down_cast<ASR::Real_t>(mem_type)->m_kind;
+                int a_kind = checked_integer_cast<int>(ASR::down_cast<ASR::Real_t>(mem_type)->m_kind);
                 llvm_mem_type = getFPType(a_kind);
                 break;
             }
@@ -531,7 +531,7 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::Complex: {
-                int a_kind = ASR::down_cast<ASR::Complex_t>(mem_type)->m_kind;
+                int a_kind = checked_integer_cast<int>(ASR::down_cast<ASR::Complex_t>(mem_type)->m_kind);
                 llvm_mem_type = getComplexType(a_kind);
                 break;
             }
@@ -875,7 +875,7 @@ namespace LCompilers {
             ASRUtils::is_allocatable_descriptor_string(asr_type) ||
             ASR::is_a<ASR::Complex_t>(*asr_type) ) {
             llvm::DataLayout data_layout(module->getDataLayout());
-            return data_layout.getTypeAllocSize(llvm_type);
+            return static_cast<int32_t>(data_layout.getTypeAllocSize(llvm_type));
         }
         return a_kind;
     }
@@ -963,7 +963,7 @@ namespace LCompilers {
                         type = nullptr;
                         if( ASR::is_a<ASR::Complex_t>(*v_type->m_type) ) {
                             ASR::Complex_t* complex_t = ASR::down_cast<ASR::Complex_t>(v_type->m_type);
-                            type = getComplexType(complex_t->m_kind, true);
+                            type = getComplexType(checked_integer_cast<int>(complex_t->m_kind), true);
                         }
 
 
@@ -978,7 +978,7 @@ namespace LCompilers {
                         type = nullptr;
                         if( ASR::is_a<ASR::Complex_t>(*v_type->m_type) ) {
                             ASR::Complex_t* complex_t = ASR::down_cast<ASR::Complex_t>(v_type->m_type);
-                            type = getComplexType(complex_t->m_kind, true);
+                            type = getComplexType(checked_integer_cast<int>(complex_t->m_kind), true);
                         }
 
 
@@ -1036,7 +1036,7 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Integer) : {
                 ASR::Integer_t* v_type = ASR::down_cast<ASR::Integer_t>(asr_type);
-                a_kind = v_type->m_kind;
+                a_kind = checked_integer_cast<int>(v_type->m_kind);
                 if (arg_m_abi == ASR::abiType::BindC
                     && arg_m_value_attr) {
                     type = getIntType(a_kind, false);
@@ -1047,7 +1047,7 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::UnsignedInteger) : {
                 ASR::UnsignedInteger_t* v_type = ASR::down_cast<ASR::UnsignedInteger_t>(asr_type);
-                a_kind = v_type->m_kind;
+                a_kind = checked_integer_cast<int>(v_type->m_kind);
                 if (arg_m_abi == ASR::abiType::BindC
                     && arg_m_value_attr) {
                     type = getIntType(a_kind, false);
@@ -1076,7 +1076,7 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Real) : {
                 ASR::Real_t* v_type = ASR::down_cast<ASR::Real_t>(asr_type);
-                a_kind = v_type->m_kind;
+                a_kind = checked_integer_cast<int>(v_type->m_kind);
                 if (arg_m_abi == ASR::abiType::BindC
                     && arg_m_value_attr) {
                     type = getFPType(a_kind, false);
@@ -1087,7 +1087,7 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Complex) : {
                 ASR::Complex_t* v_type = ASR::down_cast<ASR::Complex_t>(asr_type);
-                a_kind = v_type->m_kind;
+                a_kind = checked_integer_cast<int>(v_type->m_kind);
                 if (m_abi != ASR::abiType::BindC
                     || startswith(compiler_options.target, "wasm")) {
                     type = getComplexType(a_kind, true);
@@ -1125,7 +1125,7 @@ namespace LCompilers {
                 break;
             }
             case (ASR::ttypeType::String) : {
-                a_kind = ASR::down_cast<ASR::String_t>(asr_type)->m_kind;
+                a_kind = checked_integer_cast<int>(ASR::down_cast<ASR::String_t>(asr_type)->m_kind);
                 if (arg_m_abi == ASR::abiType::BindC
                     && arg_m_value_attr) {
                     type = get_StringType(asr_type);
@@ -1136,7 +1136,7 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Logical) : {
                 ASR::Logical_t* v_type = ASR::down_cast<ASR::Logical_t>(asr_type);
-                a_kind = v_type->m_kind;
+                a_kind = checked_integer_cast<int>(v_type->m_kind);
                 if (arg_m_abi == ASR::abiType::BindC
                     && arg_m_value_attr) {
                     type = getIntType(a_kind);
@@ -1194,7 +1194,7 @@ namespace LCompilers {
                     ASRUtils::is_allocatable_descriptor_string(asr_list->m_type) ||
                     ASR::is_a<ASR::Complex_t>(*asr_list->m_type) ) {
                     llvm::DataLayout data_layout(module->getDataLayout());
-                    type_size = data_layout.getTypeAllocSize(el_llvm_type);
+                    type_size = static_cast<int32_t>(data_layout.getTypeAllocSize(el_llvm_type));
                 } else {
                     type_size = a_kind;
                 }
@@ -1371,7 +1371,7 @@ namespace LCompilers {
                 if( LLVM::is_cptr_dummy_passed_by_reference(*arg) ) {
                     type = type->getPointerTo();
                 }
-                std::uint32_t m_h;
+                std::uint64_t m_h;
                 std::string m_name = std::string(x.m_name);
                 if( x.class_type == ASR::symbolType::Function ) {
                     ASR::Function_t* _func = (ASR::Function_t*)(&(x.base));
@@ -1421,22 +1421,22 @@ namespace LCompilers {
             ASR::ttypeType return_var_type = return_var_type0->type;
             switch (return_var_type) {
                 case (ASR::ttypeType::Integer) : {
-                    int a_kind = ASR::down_cast<ASR::Integer_t>(return_var_type0)->m_kind;
+                    int a_kind = checked_integer_cast<int>(ASR::down_cast<ASR::Integer_t>(return_var_type0)->m_kind);
                     return_type = getIntType(a_kind);
                     break;
                 }
                 case (ASR::ttypeType::UnsignedInteger) : {
-                    int a_kind = ASR::down_cast<ASR::UnsignedInteger_t>(return_var_type0)->m_kind;
+                    int a_kind = checked_integer_cast<int>(ASR::down_cast<ASR::UnsignedInteger_t>(return_var_type0)->m_kind);
                     return_type = getIntType(a_kind);
                     break;
                 }
                 case (ASR::ttypeType::Real) : {
-                    int a_kind = ASR::down_cast<ASR::Real_t>(return_var_type0)->m_kind;
+                    int a_kind = checked_integer_cast<int>(ASR::down_cast<ASR::Real_t>(return_var_type0)->m_kind);
                     return_type = getFPType(a_kind);
                     break;
                 }
                 case (ASR::ttypeType::Complex) : {
-                    int a_kind = ASR::down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
+                    int a_kind = checked_integer_cast<int>(ASR::down_cast<ASR::Complex_t>(return_var_type0)->m_kind);
                     // Use platform-specific return type for both BindC and Source ABI
                     // to ensure ABI compatibility when calling via implicit interfaces
                     if (a_kind == 4) {
@@ -1470,7 +1470,7 @@ namespace LCompilers {
                     return_type = get_StringType(return_var_type0);
                     break;
                 case (ASR::ttypeType::Logical) : {
-                    int a_kind = ASR::down_cast<ASR::Logical_t>(return_var_type0)->m_kind;
+                    int a_kind = checked_integer_cast<int>(ASR::down_cast<ASR::Logical_t>(return_var_type0)->m_kind);
                     return_type = getIntType(a_kind);
                     break;
                 }
@@ -1528,7 +1528,7 @@ namespace LCompilers {
                         ASRUtils::is_allocatable_descriptor_string(asr_list->m_type) ||
                         ASR::is_a<ASR::Complex_t>(*asr_list->m_type) ) {
                         llvm::DataLayout data_layout(module->getDataLayout());
-                        type_size = data_layout.getTypeAllocSize(el_llvm_type);
+                        type_size = static_cast<int32_t>(data_layout.getTypeAllocSize(el_llvm_type));
                     } else {
                         type_size = a_kind;
                     }
@@ -1596,7 +1596,7 @@ namespace LCompilers {
     llvm::Value* LLVMUtils::complex_function_return_abi_to_internal(llvm::Value* tmp,
             ASR::ttype_t* return_var_type0) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*return_var_type0));
-        int a_kind = ASR::down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
+        int a_kind = checked_integer_cast<int>(ASR::down_cast<ASR::Complex_t>(return_var_type0)->m_kind);
         if (a_kind != 4) {
             return tmp;
         }
@@ -1667,7 +1667,7 @@ namespace LCompilers {
             case ASR::ttypeType::Array: {
                 ASR::Array_t* v_type = ASR::down_cast<ASR::Array_t>(asr_type);
                 m_dims = v_type->m_dims;
-                n_dims = v_type->n_dims;
+                n_dims = checked_integer_cast<int>(v_type->n_dims);
                 a_kind = ASRUtils::extract_kind_from_ttype_t(v_type->m_type);
                                 switch( v_type->m_physical_type ) {
                     case ASR::array_physical_typeType::DescriptorArray: {
@@ -1698,7 +1698,7 @@ namespace LCompilers {
                             llvm_type = llvm::ArrayType::get(el_ty, 0);
                         } else {
 #if LLVM_VERSION_MAJOR >= 11
-                            llvm_type = llvm::VectorType::get(el_ty, simd_len, false);
+                            llvm_type = llvm::VectorType::get(el_ty, checked_integer_cast<unsigned>(simd_len), false);
 #else
                             llvm_type = llvm::VectorType::get(el_ty, simd_len);
 #endif
@@ -1723,13 +1723,13 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Integer) : {
                 ASR::Integer_t* v_type = ASR::down_cast<ASR::Integer_t>(asr_type);
-                a_kind = v_type->m_kind;
+                a_kind = checked_integer_cast<int>(v_type->m_kind);
                 llvm_type = getIntType(a_kind);
                 break;
             }
             case (ASR::ttypeType::UnsignedInteger) : {
                 ASR::UnsignedInteger_t* v_type = ASR::down_cast<ASR::UnsignedInteger_t>(asr_type);
-                a_kind = v_type->m_kind;
+                a_kind = checked_integer_cast<int>(v_type->m_kind);
                 // LLVM does not distinguish signed and unsigned integer types
                 // Only integer operations can be signed/unsigned
                 llvm_type = getIntType(a_kind);
@@ -1737,25 +1737,25 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::Real) : {
                 ASR::Real_t* v_type = ASR::down_cast<ASR::Real_t>(asr_type);
-                a_kind = v_type->m_kind;
+                a_kind = checked_integer_cast<int>(v_type->m_kind);
                 llvm_type = getFPType(a_kind);
                 break;
             }
             case (ASR::ttypeType::Complex) : {
                 ASR::Complex_t* v_type = ASR::down_cast<ASR::Complex_t>(asr_type);
-                a_kind = v_type->m_kind;
+                a_kind = checked_integer_cast<int>(v_type->m_kind);
                 llvm_type = getComplexType(a_kind);
                 break;
             }
             case (ASR::ttypeType::String) : {
                 ASR::String_t* v_type = ASR::down_cast<ASR::String_t>(asr_type);
-                a_kind = v_type->m_kind;
+                a_kind = checked_integer_cast<int>(v_type->m_kind);
                 llvm_type = get_StringType(asr_type);
                 break;
             }
             case (ASR::ttypeType::Logical) : {
                 ASR::Logical_t* v_type = ASR::down_cast<ASR::Logical_t>(asr_type);
-                a_kind = v_type->m_kind;
+                a_kind = checked_integer_cast<int>(v_type->m_kind);
                 llvm_type = getIntType(a_kind);
                 break;
             }
@@ -1845,7 +1845,7 @@ namespace LCompilers {
                     ASRUtils::is_allocatable_descriptor_string(asr_list->m_type) ||
                     ASR::is_a<ASR::Complex_t>(*asr_list->m_type) ) {
                     llvm::DataLayout data_layout(module->getDataLayout());
-                    type_size = data_layout.getTypeAllocSize(el_llvm_type);
+                    type_size = static_cast<int32_t>(data_layout.getTypeAllocSize(el_llvm_type));
                 } else {
                     type_size = a_kind;
                 }
@@ -2624,7 +2624,7 @@ namespace LCompilers {
         llvm::Value* string_len = get_string_length(str_type, data);
         llvm::Value* string_data = get_string_data(str_type, data);
         llvm::Value* actual_idx = builder->CreateMul(convert_kind(arr_idx, llvm::Type::getInt64Ty(context)), string_len);
-        int kind = str_type->m_kind;
+        int kind = checked_integer_cast<int>(str_type->m_kind);
         if (kind > 1) {
             llvm::Value* kind_val = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), kind);
             actual_idx = builder->CreateMul(actual_idx, kind_val);
@@ -2773,7 +2773,7 @@ namespace LCompilers {
             convert_kind(array_size_to_allocate, llvm::Type::getInt64Ty(context)),
             convert_kind(string_len_to_allocate, llvm::Type::getInt64Ty(context)));
 
-        int char_kind = str_type->m_kind;
+        int char_kind = checked_integer_cast<int>(str_type->m_kind);
         if (char_kind > 1) {
             whole_memory_needed = builder->CreateMul(whole_memory_needed,
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), char_kind));
@@ -2793,7 +2793,7 @@ namespace LCompilers {
             convert_kind(array_size, llvm::Type::getInt64Ty(context)),
             convert_kind(str_len   , llvm::Type::getInt64Ty(context)));
 
-        int char_kind = str_type->m_kind;
+        int char_kind = checked_integer_cast<int>(str_type->m_kind);
         if (char_kind > 1) {
             whole_memory_needed = builder->CreateMul(whole_memory_needed,
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), char_kind));
@@ -2946,7 +2946,7 @@ namespace LCompilers {
             }
         }
 
-        int kind = dest_str_type->m_kind;
+        int kind = checked_integer_cast<int>(dest_str_type->m_kind);
         llvm::Value* char_kind = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), kind);
 
         return lfortran_str_copy_with_data(lhs_data, lhs_len, rhs_data, rhs_len,
@@ -3032,7 +3032,7 @@ namespace LCompilers {
         int64_t str_len = -1;
         ASRUtils::extract_value(ASRUtils::get_string_type(str_const->m_type)->m_len, str_len);
 
-        int kind = ASRUtils::get_string_type(str_const->m_type)->m_kind;
+        int kind = checked_integer_cast<int>(ASRUtils::get_string_type(str_const->m_type)->m_kind);
         std::string initial_string;
         if (kind > 1) {
             initial_string = std::string(str_const->m_s);
@@ -3149,7 +3149,7 @@ namespace LCompilers {
                         "Global variable should have constant-compile-time known length"
                     );
                 }
-                int kind = str->m_kind;
+                int kind = checked_integer_cast<int>(str->m_kind);
                 // Type -> [len * kind x i8]
                 llvm::ArrayType *char_array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context), len * kind);
                 // [len * kind x i8] c "DATA HERE"
@@ -3219,7 +3219,8 @@ namespace LCompilers {
 
 llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     Allocator& /*al*/, ASR::Array_t* array_t, 
-    ASR::ArrayConstant_t* arrayConst_t, std::string name) 
+    ASR::ArrayConstant_t* arrayConst_t, std::string name,
+    std::string data_name, llvm::GlobalValue::LinkageTypes data_linkage)
 {
     LCOMPILERS_ASSERT(array_t->m_physical_type == ASR::PointerArray)
 
@@ -3262,12 +3263,15 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             sequence.resize(total_len, ' '); 
 
             llvm::ArrayType *char_array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context), total_len);
-            llvm::Constant *const_data_as_array = llvm::ConstantDataArray::getString(context, sequence, false);
-            
-            // Keep the exact original linkage, mutability, and literal "_data" naming convention
+            // A common symbol must be zero initialized
+            llvm::Constant *const_data_as_array =
+                data_linkage == llvm::GlobalValue::CommonLinkage
+                    ? llvm::ConstantAggregateZero::get(char_array_type)
+                    : llvm::ConstantDataArray::getString(context, sequence, false);
+
             llvm::GlobalVariable *global_string_as_array = new llvm::GlobalVariable(
                 *module, char_array_type, false, 
-                llvm::GlobalValue::PrivateLinkage, const_data_as_array, "_data"
+                data_linkage, const_data_as_array, data_name
             );
 
             llvm::Value *zero_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
@@ -4617,9 +4621,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         llvm::Value* key_list = get_key_list(dict_type_, dict);
         llvm::Value* value_list = get_value_list(dict_type_, dict);
         llvm_utils->list_api->list_init(key_type_code, key_list, module,
-                                        initial_capacity, initial_capacity);
+                                        checked_integer_cast<int32_t>(initial_capacity), checked_integer_cast<int32_t>(initial_capacity));
         llvm_utils->list_api->list_init(value_type_code, value_list, module,
-                                        initial_capacity, initial_capacity);
+                                        checked_integer_cast<int32_t>(initial_capacity), checked_integer_cast<int32_t>(initial_capacity));
         llvm::DataLayout data_layout(module->getDataLayout());
         size_t mask_size = data_layout.getTypeAllocSize(llvm::Type::getInt8Ty(context));
         llvm::Value* llvm_capacity = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
@@ -8416,7 +8420,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                                                            llvm::APInt(32, 0)), n_ptr);
         llvm::Value* el_list = get_el_list(set_type, set);
         llvm_utils->list_api->list_init(type_code, el_list, module,
-                                        initial_capacity, initial_capacity);
+                                        checked_integer_cast<int32_t>(initial_capacity), checked_integer_cast<int32_t>(initial_capacity));
         llvm::DataLayout data_layout(module->getDataLayout());
         size_t mask_size = data_layout.getTypeAllocSize(llvm::Type::getInt8Ty(context));
         llvm::Value* llvm_capacity = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
@@ -10114,7 +10118,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     struct_vtab_function_offset[struct_sym][method_decl->m_name] = impls.size() - 2;
                     impls.push_back(llvm::ConstantPointerNull::get(llvm::PointerType::getUnqual(func_type)));
                 } else {
-                    uint32_t h = get_hash((ASR::asr_t*)impl_sym);
+                    uint64_t h = get_hash((ASR::asr_t*)impl_sym);
                     if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
                         // Eg. `call_subroutine_without_type_01.f90`
                         llvm::FunctionType* fntype = llvm_utils->get_function_type(

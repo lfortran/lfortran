@@ -174,6 +174,13 @@ public:
             GpuDecline &decline,
             bool spliceable = true);
 
+    // The section `actual` that splicing `fn` copies into a contiguous
+    // array for its dummy `dummy` (gather_section_actual), with the
+    // dimensions it spans; nullptr when splicing passes it on as it is.
+    ASR::ArraySection_t* spliced_section_copy(ASR::Function_t *fn,
+            ASR::symbol_t *dummy, ASR::expr_t *actual,
+            std::vector<int> &range_dims);
+
     ASR::expr_t* gather_section_actual(const Location &loc,
             SymbolTable *block_scope, ASR::Function_t *fn,
             ASR::symbol_t *dummy, ASR::expr_t *actual, bool writable,
@@ -194,6 +201,11 @@ public:
             ASR::binopType &binop_op, bool &matmul_is_left);
 
     void inline_matmul_stmts(ASR::stmt_t** &body, size_t &n_body);
+
+    void hoist_array_function_results(ParallelLoopNest &nest);
+
+    void hoist_array_function_results_in_body(ASR::stmt_t** &body,
+            size_t &n_body, SymbolTable *scope, SymbolTable *&block_scope);
 
     void hoist_nested_matmuls(ParallelLoopNest &nest);
 
@@ -306,7 +318,7 @@ public:
     void materialize_aliased_assignments(ParallelLoopNest &nest);
 
     void materialize_aliased_in_body(ASR::stmt_t** &body, size_t &n_body,
-            bool &changed);
+            SymbolTable *scope, bool &changed);
 
     void inline_array_section_assignment(ParallelLoopNest &nest);
 
@@ -516,6 +528,7 @@ public:
         ASR::ttype_t *int_type = nullptr;
         size_t n_dims = 0;
         Vec<ASR::call_arg_t> call_args;
+        Vec<ASR::stmt_t*> private_shapes;
         Vec<ASR::stmt_t*> gather_stmts;
         Vec<ASR::stmt_t*> scatter_stmts;
         std::vector<LiveoutScalarInfo> liveout_scalars;
@@ -535,6 +548,20 @@ public:
 
     void resolve_enclosing_associates(ParallelLoopNest &work, size_t n_dims,
             std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
+
+    // Gives each iteration its own copy of an array of unspecified
+    // locality that the iteration defines whole before it references it,
+    // by making it a local of a BLOCK around the body (see
+    // gpu_offload_privatize.cpp).
+    void privatize_iteration_arrays(const ASR::OMPRegion_t &region,
+            ParallelLoopNest &work,
+            const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map,
+            Vec<ASR::stmt_t*> &private_shapes);
+
+    // The arrays privatize_iteration_arrays may make local.
+    std::vector<ASR::symbol_t*> iteration_array_candidates(
+            const ASR::OMPRegion_t &region, ParallelLoopNest &work,
+            const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
 
     bool offloadable_before_rewrites(const ParallelLoopNest &work,
             const std::set<SymbolTable*> &enclosing_block_scopes,
