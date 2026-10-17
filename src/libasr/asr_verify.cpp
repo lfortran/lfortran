@@ -2691,6 +2691,18 @@ public:
                                 " is not allocatable, but the dummy is " +
                                 ASRUtils::get_type_code(formal_type),
                             passed_arg_expr->base.loc);
+                        // A component whose bounds or length depend on a
+                        // LEN type parameter is stored as allocatable, but
+                        // it is not allocatable.
+                        require_with_loc_id(
+                            !ASRUtils::is_len_dependent_component(
+                                passed_arg_expr),
+                            "asr.verify.call.actual_allocatable_matches_formal",
+                            "Actual argument is a component whose bounds or "
+                                "length depend on a LEN type parameter, so it "
+                                "is not allocatable, but the dummy is " +
+                                ASRUtils::get_type_code(formal_type),
+                            passed_arg_expr->base.loc);
                     }
                     // A pointer dummy takes a pointer actual, except when it
                     // is INTENT(IN): that one may also take any valid target
