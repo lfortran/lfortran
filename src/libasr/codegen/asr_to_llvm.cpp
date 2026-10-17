@@ -5133,38 +5133,6 @@ public:
                     llvm_diminfo.push_back(al, dim_size);
                 }
                 ptr_loads = ptr_loads_copy;
-            } else if( array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerArray ) {
-                int64_t ptr_loads_copy = ptr_loads;
-                for( size_t idim = 0; idim < x.n_args; idim++ ) {
-                    llvm::Value* dim_start = nullptr;
-                    if (m_dims[idim].m_start) {
-                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_start));
-                        this->visit_expr_wrapper(m_dims[idim].m_start, true);
-                        dim_start = tmp;
-                    } else {
-                        llvm::Type* idx_type = arr_descr->get_index_type();
-                        unsigned idx_bits = idx_type->getIntegerBitWidth();
-                        dim_start = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 1));
-                    }
-                    llvm::Value* dim_size = nullptr;
-                    if (m_dims[idim].m_length) {
-                        ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_length));
-                        if (is_intent_in) {
-                            this->visit_expr_wrapper(m_dims[idim].m_length, true);
-                        } else {
-                            load_array_size_deep_copy(m_dims[idim].m_length);
-                        }
-                        dim_size = tmp;
-                    } else {
-                        // Last dimension of assumed-size array has no length
-                        llvm::Type* idx_type = arr_descr->get_index_type();
-                        unsigned idx_bits = idx_type->getIntegerBitWidth();
-                        dim_size = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0));
-                    }
-                    llvm_diminfo.push_back(al, dim_start);
-                    llvm_diminfo.push_back(al, dim_size);
-                }
-                ptr_loads = ptr_loads_copy;
             }
             LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0 || (array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray));
             bool is_polymorphic = ASRUtils::is_unlimited_polymorphic_type(
