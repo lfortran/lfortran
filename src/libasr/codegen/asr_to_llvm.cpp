@@ -1984,9 +1984,10 @@ public:
 
     llvm::Value* lfortran_str_cmp(
         llvm::Value* left_arg, llvm::Value* left_arg_len,
-        llvm::Value* right_arg, llvm::Value* right_arg_len)
+        llvm::Value* right_arg, llvm::Value* right_arg_len,
+        int64_t char_kind = 1)
     {
-        std::string runtime_func_name = "str_compare";
+        std::string runtime_func_name = (char_kind == 4) ? "str_compare_ucs4" : "str_compare";
         llvm::Function *fn = LLVM::get_or_declare_function(*module, runtime_func_name,
                 llvm_utils->i32, {
                     character_type, llvm_utils->i64,
@@ -17141,7 +17142,8 @@ public:
             int64_t l_str_len, r_str_len;
             if( ASRUtils::is_value_constant(left_str->m_len, l_str_len) &&
                 ASRUtils::is_value_constant(right_str->m_len, r_str_len)){// Check + Fetch len
-                is_single_char = (l_str_len == 1) && (r_str_len == 1);
+                is_single_char = (l_str_len == 1) && (r_str_len == 1)
+                    && (left_str->m_kind == 1) && (right_str->m_kind == 1);
             } else {
                 is_single_char = false;
             }
@@ -17150,7 +17152,8 @@ public:
             left = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), left);
             right = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), right);
         } else {
-            tmp = lfortran_str_cmp(left, left_len, right, right_len);
+            int64_t char_kind = ASRUtils::get_string_type(x.m_left)->m_kind;
+            tmp = lfortran_str_cmp(left, left_len, right, right_len, char_kind);
         }
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
