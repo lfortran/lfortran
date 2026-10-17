@@ -2749,6 +2749,7 @@ RUN(NAME pdt_28 LABELS llvm)
 # GFortran 15 transfers the LEN type parameter of a whole object in
 # formatted output, so this test is not labelled `gfortran`
 RUN(NAME pdt_29 LABELS llvm)
+RUN(NAME pdt_30 LABELS gfortran llvm)
 
 RUN(NAME derived_types_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_02 LABELS gfortran llvm)

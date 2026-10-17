@@ -75,6 +75,97 @@ static void check_pure_function(ASR::Function_t *v, ASR::stmt_t **stmts,
     }
 }
 
+// A component whose bounds or length depend on a LEN type parameter is not
+// allocatable, so it cannot be associated with an allocatable dummy argument.
+// A LEN type parameter inquiry is not a variable, so it cannot be associated
+// with a dummy argument that may be redefined. A call is checked once it is
+// built, whatever way it was resolved: its actual arguments, including a
+// passed object, then correspond one to one to the dummy arguments.
+class LenTypeParamActualsChecker
+        : public ASR::BaseWalkVisitor<LenTypeParamActualsChecker> {
+public:
+    diag::Diagnostics &diag;
+
+    LenTypeParamActualsChecker(diag::Diagnostics &diag) : diag{diag} {}
+
+    // The explicit interface of the procedure that a reference to `sym`
+    // invokes, or nullptr if it has an implicit interface.
+    static ASR::Function_t* callee_interface(ASR::symbol_t* sym) {
+        sym = ASRUtils::symbol_get_past_external(sym);
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym)) {
+            sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(sym)->m_proc);
+        } else if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            ASR::symbol_t* decl =
+                ASR::down_cast<ASR::Variable_t>(sym)->m_type_declaration;
+            if (decl == nullptr) {
+                return nullptr;
+            }
+            sym = ASRUtils::symbol_get_past_external(decl);
+        }
+        if (!ASR::is_a<ASR::Function_t>(*sym)) {
+            return nullptr;
+        }
+        return ASR::down_cast<ASR::Function_t>(sym);
+    }
+
+    void check(ASR::symbol_t* callee, ASR::call_arg_t* args, size_t n_args) {
+        ASR::Function_t* func = callee_interface(callee);
+        if (func == nullptr) {
+            return;
+        }
+        for (size_t i = 0; i < n_args && i < func->n_args; i++) {
+            ASR::expr_t* actual = args[i].m_value;
+            if (actual == nullptr || !ASR::is_a<ASR::Var_t>(*func->m_args[i])) {
+                continue;
+            }
+            ASR::symbol_t* dummy_sym = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*dummy_sym)) {
+                continue;
+            }
+            ASR::Variable_t* dummy = ASR::down_cast<ASR::Variable_t>(dummy_sym);
+            std::string name;
+            if (ASRUtils::is_allocatable(dummy->m_type)
+                    && ASRUtils::is_len_dependent_component(actual)) {
+                ASRUtils::get_component_struct(actual, name);
+                diag.add(diag::Diagnostic(
+                    "the actual argument for the allocatable dummy argument '"
+                    + std::string(dummy->m_name) + "' must be allocatable",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("the component '" + name + "' is not "
+                            "allocatable: its bounds or length depend on a LEN "
+                            "type parameter", {actual->base.loc})}));
+                throw SemanticAbort();
+            }
+            if ((dummy->m_intent == ASR::intentType::Out
+                    || dummy->m_intent == ASR::intentType::InOut)
+                    && ASRUtils::is_len_type_param_inquiry(actual)) {
+                ASRUtils::get_component_struct(actual, name);
+                std::string intent = dummy->m_intent == ASR::intentType::Out
+                    ? "intent(out)" : "intent(inout)";
+                diag.add(diag::Diagnostic(
+                    "the LEN type parameter '" + name + "' cannot be passed to "
+                    "the " + intent + " dummy argument '"
+                    + std::string(dummy->m_name) + "'",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {actual->base.loc})}));
+                throw SemanticAbort();
+            }
+        }
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        check(x.m_name, x.m_args, x.n_args);
+        ASR::BaseWalkVisitor<LenTypeParamActualsChecker>::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        check(x.m_name, x.m_args, x.n_args);
+        ASR::BaseWalkVisitor<LenTypeParamActualsChecker>::visit_SubroutineCall(x);
+    }
+};
+
 class BodyVisitor : public CommonVisitor<BodyVisitor> {
 private:
 
@@ -573,6 +664,27 @@ public:
     //   * ImplicitDeallocate
     //   * GoToTarget
     // The `body` Vec must already be reserved
+    // Checks the calls in the statements that the last statement was
+    // transformed to (see LenTypeParamActualsChecker). A rejected statement
+    // is dropped, so the dependencies that it added, the first
+    // `n_function_dependencies` being older, are dropped too.
+    void check_len_type_param_actuals(size_t n_function_dependencies) {
+        LenTypeParamActualsChecker checker(diag);
+        try {
+            if (tmp && ASR::is_a<ASR::stmt_t>(*tmp)) {
+                checker.visit_stmt(*ASRUtils::STMT(tmp));
+            }
+            for (auto &x : tmp_vec) {
+                if (ASR::is_a<ASR::stmt_t>(*x)) {
+                    checker.visit_stmt(*ASRUtils::STMT(x));
+                }
+            }
+        } catch (const SemanticAbort &) {
+            current_function_dependencies.n = n_function_dependencies;
+            throw;
+        }
+    }
+
     void transform_stmts(Vec<ASR::stmt_t*> &body, size_t n_body, AST::decl_stmt_t **m_body) {
         tmp = nullptr;
         CurrentBodyScope body_scope(*this, &body, current_scope);
@@ -589,8 +701,10 @@ public:
             }
             // Visit the statement
             LCOMPILERS_ASSERT(current_body != nullptr)
+            size_t n_function_dependencies = current_function_dependencies.size();
             try {
                 this->visit_decl_stmt(*m_body[i]);
+                check_len_type_param_actuals(n_function_dependencies);
             } catch (const SemanticAbort &a) {
                 if (!compiler_options.continue_compilation) {
                     throw a;
@@ -9294,12 +9408,6 @@ public:
                     }));
                 throw SemanticAbort();
             }
-        }
-        if (f) {
-            // Before the callee becomes a dependency, so that a rejected
-            // call leaves none behind.
-            check_len_type_param_actuals(args, f,
-                (v_expr == nullptr || nopass) ? 0 : 1);
         }
         if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()
             && !ASR::is_a<ASR::Variable_t>(*final_sym)) {
