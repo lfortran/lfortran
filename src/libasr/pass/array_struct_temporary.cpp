@@ -3131,6 +3131,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     // evaluates.
     bool evaluate_function_references_once = true;
 
+    // A WHERE assignment never reallocates its variable (F2018 10.2.3.1)
+    bool inside_where = false;
+
     // Whether the scalar operand `x` of an array expression is evaluated
     // once into a variable. One of a derived type is not if it is
     // polymorphic or finalized, since the variable would be one more entity
@@ -3215,6 +3218,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     bool is_current_expr_linked_to_target_then_return(ASR::expr_t** &current_expr, ExprsWithTargetType& exprs_with_target,
         Vec<ASR::stmt_t*>* &current_body, bool &realloc_lhs, Allocator& al) {
         if( is_current_expr_linked_to_target(exprs_with_target, current_expr) ) {
+            if( inside_where ) {
+                return true;
+            }
             std::pair<ASR::expr_t*, targetType>& target_info = exprs_with_target[*current_expr];
             ASR::expr_t* target = target_info.first; targetType target_Type = target_info.second;
             ASR::expr_t* underlying_target = ASRUtils::get_past_array_physical_cast(target);
@@ -4195,6 +4201,7 @@ class ReplaceExprWithTemporaryVisitor:
             inside_where = true;
             parent_body_for_where = current_body;
         }
+        replacer.inside_where = true;
         // Only the first mask expression of the construct is evaluated
         // before it, where the temporaries of the construct are.
         bool evaluate_once_copy = replacer.evaluate_function_references_once;
@@ -4219,6 +4226,7 @@ class ReplaceExprWithTemporaryVisitor:
         if( !inside_where_copy ) {
             inside_where = false;
             parent_body_for_where = nullptr;
+            replacer.inside_where = false;
         }
     }
 
