@@ -345,32 +345,7 @@ namespace LCompilers {
                                             int output_kind, int dim_kind=4) = 0;
 
                 /*
-                * Creates a contiguous copy of data from a DescriptorArray.
-                * Helpful when having strided access to an array.
-                * Returns a pointer to the newly allocated contiguous buffer.
-                * Allocation is done on heap using lfortran_malloc,
-                * So, please make sure to free the memory after use.
-                *
-                * Note: Similar logic exists in ASR passes (pass/print_arr.cpp & pass/array_op.cpp).
-                * But, the ASR pass for print statements was disabled in #6351.
-                * Enabling it opened other issues, hence this separate LLVM implementation
-                * to handle strided arrays for writing array into strings (used in print statements), 
-                * by storing in a contiguous buffer first.
-                */
-                virtual
-                llvm::Value* create_contiguous_copy_from_descriptor(
-                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    llvm::Type* elem_type, int rank, llvm::Module* module) = 0;
-
-                virtual
-                llvm::Value* create_contiguous_copy_from_descriptor(
-                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    llvm::Type* elem_type, llvm::Value* rank,
-                    llvm::Value* num_elements, llvm::Module* module) = 0;
-
-                /*
                 * Copies contiguous data into a potentially-strided descriptor array.
-                * The inverse of create_contiguous_copy_from_descriptor.
                 * Uses element-wise copy respecting the target descriptor's strides.
                 */
                 virtual
@@ -413,12 +388,6 @@ namespace LCompilers {
                     ASR::ttype_t* val_type, ASR::expr_t* val_expr,
                     llvm::Value* data_ptr, llvm::Value* n_elems,
                     llvm::Value* stride, std::vector<llvm::Value*>& args) = 0;
-
-                virtual
-                void push_descriptor_array_args(
-                    ASR::expr_t* val_expr, ASR::ttype_t* expr_type_full,
-                    ASR::ttype_t* val_type, llvm::Value* var_ptr,
-                    llvm::Module* module, std::vector<llvm::Value*>& args) = 0;
 
         };
 
@@ -661,17 +630,6 @@ namespace LCompilers {
                                             int output_kind, int dim_kind=4);
 
                 virtual
-                llvm::Value* create_contiguous_copy_from_descriptor(
-                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    llvm::Type* elem_type, int rank, llvm::Module* module);
-
-                virtual
-                llvm::Value* create_contiguous_copy_from_descriptor(
-                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    llvm::Type* elem_type, llvm::Value* rank,
-                    llvm::Value* num_elements, llvm::Module* module);
-
-                virtual
                 void copy_contiguous_data_to_descriptor(
                     llvm::Value* source_data,
                     llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
@@ -718,15 +676,6 @@ namespace LCompilers {
                     ASR::ttype_t* val_type, ASR::expr_t* val_expr,
                     llvm::Value* data_ptr, llvm::Value* n_elems,
                     llvm::Value* stride, std::vector<llvm::Value*>& args);
-
-                /*
-                 * Extracts descriptor fields from a DescriptorArray and appends
-                 * the descriptor-array formatted-read protocol to `args`.
-                 */
-                void push_descriptor_array_args(
-                    ASR::expr_t* val_expr, ASR::ttype_t* expr_type_full,
-                    ASR::ttype_t* val_type, llvm::Value* var_ptr,
-                    llvm::Module* module, std::vector<llvm::Value*>& args);
 
         };
 
