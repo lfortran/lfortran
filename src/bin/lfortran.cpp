@@ -1267,14 +1267,13 @@ int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
     }
 }
 
-int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
+int emit_asm(const std::string &infile, LCompilers::PassManager& pass_manager,
+             CompilerOptions &compiler_options)
 {
     std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
-    // TODO: Remove this and accept pass manager in emit_asm
-    LCompilers::PassManager lpm;
     LCompilers::diag::Diagnostics diagnostics;
     {
         LCompilers::LocationManager::FileLocations fl;
@@ -1282,7 +1281,8 @@ int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
         lm.files.push_back(fl);
         lm.file_ends.push_back(LCompilers::LFortran::source_offset(input.size()));
     }
-    LCompilers::Result<std::string> r = fe.get_asm(input, lm, lpm, diagnostics);
+    LCompilers::Result<std::string> r = fe.get_asm(input, lm, pass_manager,
+        diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (r.ok) {
         std::cout << r.result;
@@ -3015,7 +3015,8 @@ int main_app(int argc, char *argv[]) {
     }
     if (opts.show_asm) {
 #ifdef HAVE_LFORTRAN_LLVM
-        return emit_asm(opts.arg_file, compiler_options);
+        return emit_asm(opts.arg_file, lfortran_pass_manager,
+                        compiler_options);
 #else
         std::cerr << "The --show-asm option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;
