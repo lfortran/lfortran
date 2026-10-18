@@ -59,7 +59,7 @@ elseif (NOT LFORTRAN_BACKEND AND APPLE)
     endif()
 endif()
 
-macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
+macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS RUN_SHARED_LIBRARY_FILES)
     set(fail ${${RUN_FAIL}})
     set(name ${${RUN_NAME}})
     set(file_name ${${RUN_FILE_NAME}})
@@ -68,6 +68,7 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
     set(extra_args ${${RUN_EXTRA_ARGS}})
     set(copy_to_bin ${${RUN_COPY_TO_BIN}})
     set(gfortran_args ${${RUN_GFORTRAN_ARGS}})
+    set(shared_library_files ${${RUN_SHARED_LIBRARY_FILES}})
 
     if (NOT name)
         message(FATAL_ERROR "Must specify the NAME argument")
@@ -94,6 +95,11 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
 
     if (LFORTRAN_SMOKE AND NOT RUN_SMOKE_NAME IN_LIST LFORTRAN_SMOKE_TESTS)
         set(ADD_TEST OFF)
+    endif()
+
+    if (ADD_TEST AND shared_library_files AND LFORTRAN_BACKEND
+            AND NOT LFORTRAN_BACKEND STREQUAL "llvm")
+        message(FATAL_ERROR "SHARED_LIBRARY_FILES is only supported with the gfortran and llvm labels")
     endif()
 
     if (ADD_TEST)
@@ -195,6 +201,16 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             if (ISO_FORTRAN_BINDING_INCLUDE_DIR)
                 target_include_directories(${name} PRIVATE ${ISO_FORTRAN_BINDING_INCLUDE_DIR})
             endif()
+            if (shared_library_files)
+                # CMake does not know LFortran and links shared libraries with
+                # the GCC spelling `-shared`; LFortran spells it `--shared`.
+                # This variable applies to every shared library in this
+                # directory, and with the llvm label all of them use LFortran.
+                set(CMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS "--shared")
+                add_library(${name}_lib SHARED ${shared_library_files})
+                target_compile_options(${name}_lib PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${extra_args}>)
+                target_link_libraries(${name} PRIVATE ${name}_lib)
+            endif()
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_omp")
             add_executable(${name} ${file_name}.f90 ${extra_files})
@@ -257,6 +273,11 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             if (ISO_FORTRAN_BINDING_INCLUDE_DIR)
                 target_include_directories(${name} PRIVATE ${ISO_FORTRAN_BINDING_INCLUDE_DIR})
             endif()
+            if (shared_library_files)
+                add_library(${name}_lib SHARED ${shared_library_files})
+                target_compile_options(${name}_lib PRIVATE $<$<COMPILE_LANGUAGE:Fortran>:${gfortran_args}>)
+                target_link_libraries(${name} PRIVATE ${name}_lib)
+            endif()
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         endif()
 
@@ -277,7 +298,7 @@ endmacro(RUN_UTIL)
 macro(RUN)
     set(options FAIL NO_FAST NO_FAST_MATH NO_DETECT_LEAKS NO_STD_F23 NO_LLVM_GOC)
     set(oneValueArgs NAME FILE INCLUDE_PATH COPY_TO_BIN NUM_IMAGES)
-    set(multiValueArgs LABELS EXTRAFILES EXTRA_ARGS GFORTRAN_ARGS)
+    set(multiValueArgs LABELS EXTRAFILES EXTRA_ARGS GFORTRAN_ARGS SHARED_LIBRARY_FILES)
     cmake_parse_arguments(RUN "${options}" "${oneValueArgs}"
                         "${multiValueArgs}" ${ARGN} )
     set(RUN_SMOKE_NAME "${RUN_NAME}")
@@ -324,9 +345,9 @@ macro(RUN)
         endif()
         set(RUN_NAME "${RUN_NAME}_FAST")
         list(REMOVE_ITEM RUN_LABELS gfortran) # remove gfortran from --fast test
-        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
+        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS RUN_SHARED_LIBRARY_FILES)
     else ()
-        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS)
+        RUN_UTIL(RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXTRA_ARGS RUN_COPY_TO_BIN RUN_GFORTRAN_ARGS RUN_SHARED_LIBRARY_FILES)
     endif()
 
 endmacro(RUN)
@@ -408,6 +429,12 @@ RUN(NAME ilp64_logical_read_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer
 RUN(NAME ilp64_complex_literal_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME ilp64_logical_compare_01 LABELS gfortran llvm EXTRA_ARGS -fdefault-integer-8 GFORTRAN_ARGS -fdefault-integer-8)
 RUN(NAME fpie_flag_01 LABELS gfortran llvm EXTRA_ARGS -fPIE GFORTRAN_ARGS -fPIE)
+# CMake links the shared library through the compiler driver with `--shared`
+# for LFortran and `-shared` for GFortran (see SHARED_LIBRARY_FILES above).
+# On macOS CMake uses `-dynamiclib` instead, and Windows needs an import library.
+if (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    RUN(NAME shared_library_01 LABELS gfortran llvm SHARED_LIBRARY_FILES shared_library_01_lib.f90)
+endif()
 
 RUN(NAME procedure_pointer_array_01 LABELS gfortran llvm)
 
@@ -485,6 +512,8 @@ RUN(NAME value_attribute_03 LABELS llvm)
 RUN(NAME value_attribute_04 LABELS gfortran llvm)
 RUN(NAME value_attribute_05 LABELS gfortran llvm EXTRAFILES value_attribute_05c.c EXTRA_ARGS --mangle-underscore-external)
 RUN(NAME value_attribute_06 LABELS gfortran llvm)
+RUN(NAME value_attribute_07 LABELS llvm)
+RUN(NAME value_attribute_08 LABELS llvm)
 RUN(NAME volatile_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME volatile_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME volatile_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
@@ -2004,6 +2033,7 @@ RUN(NAME intrinsics_497 LABELS gfortran llvm) # spread with ncopies from size() 
 RUN(NAME intrinsics_498 LABELS gfortran llvm) # compile-time dot_product/merge_bits/max/min/ibset/btest of integer(8)
 RUN(NAME intrinsics_len_trim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_len_01 LABELS gfortran llvm)
+RUN(NAME intrinsics_len_02 LABELS gfortran llvm)
 RUN(NAME storage_size_01 LABELS gfortran llvm) # storage_size of allocatable character
 
 RUN(NAME extends_type_of_01 LABELS gfortran llvm)
@@ -2013,6 +2043,7 @@ RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK co
 RUN(NAME integer_boz_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME integer_star_01 LABELS gfortran llvm)
 RUN(NAME real_star_01 LABELS gfortran llvm)
+RUN(NAME logical_star_01 LABELS gfortran llvm)
 
 RUN(NAME test_dshiftr LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -2188,8 +2219,9 @@ RUN(NAME bindc_71 LABELS gfortran llvm EXTRAFILES bindc_71.c)
 RUN(NAME bindc_72 LABELS gfortran llvm)
 RUN(NAME bindc_73 LABELS gfortran llvm)
 RUN(NAME bindc_74 LABELS gfortran llvm)
-RUN(NAME bindc_75 LABELS gfortran llvm)
+RUN(NAME bindc_75 LABELS gfortran llvm EXTRAFILES bindc_75.c)
 RUN(NAME bindc_76 LABELS gfortran llvm)
+RUN(NAME bindc_77 LABELS gfortran llvm)
 RUN(NAME bindc_09 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME bindc_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME bindc_11 LABELS gfortran llvm fortran)
@@ -2299,8 +2331,10 @@ RUN(NAME select_type_58 LABELS gfortran llvm)
 RUN(NAME select_type_59 LABELS gfortran llvm)
 RUN(NAME select_type_60 LABELS gfortran llvm)
 RUN(NAME select_type_61 LABELS gfortran llvm)
+RUN(NAME select_type_62 LABELS gfortran llvm)
 RUN(NAME select_type_63 LABELS llvm)
 RUN(NAME select_type_64 LABELS gfortran llvm)
+RUN(NAME select_type_65 LABELS gfortran llvm)
 
 
 RUN(NAME where_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -2520,6 +2554,8 @@ RUN(NAME implicit_typing_10 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_11 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_12 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_13 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
+RUN(NAME implicit_typing_14 LABELS gfortran llvm EXTRA_ARGS --implicit-typing)
+RUN(NAME implicit_typing_15 LABELS gfortran llvm EXTRA_ARGS --implicit-typing --implicit-interface)
 
 RUN(NAME generic_name_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME generic_name_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -3557,6 +3593,7 @@ RUN(NAME file_open_08 LABELS gfortran llvm)
 RUN(NAME file_open_09 LABELS gfortran llvm)
 RUN(NAME file_open_10 LABELS gfortran llvm)
 RUN(NAME file_open_11 LABELS gfortran llvm)
+RUN(NAME file_open_12 LABELS gfortran llvm)
 
 RUN(NAME file_overwrite LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
@@ -4151,6 +4188,7 @@ RUN(NAME implied_do_loops46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME implied_do_loops47 LABELS gfortran llvm)
 RUN(NAME implied_do_loops48 LABELS gfortran llvm)
 RUN(NAME implied_do_loops49 LABELS gfortran llvm)
+RUN(NAME internal_write_trim_idl_01 LABELS gfortran llvm)
 
 RUN(NAME minpack_01 LABELS gfortran llvm_rtlib EXTRAFILES
         minpack_01_module.f90 minpack_01_func.f90)
@@ -4346,6 +4384,7 @@ RUN(NAME finalization_39 LABELS gfortran llvm)
 RUN(NAME finalization_41 LABELS gfortran llvm)
 RUN(NAME finalization_42 LABELS gfortran llvm)
 RUN(NAME finalization_43 LABELS gfortran llvm)
+RUN(NAME finalization_44 LABELS gfortran llvm)
 RUN(NAME finalization_16 LABELS gfortran llvm)
 RUN(NAME finalization_17 LABELS gfortran llvm)
 RUN(NAME finalization_18 LABELS gfortran llvm)
@@ -4513,6 +4552,7 @@ RUN(NAME iso_c_binding_02 LABELS gfortran llvm)
 RUN(NAME iso_c_binding_05 LABELS gfortran llvm)
 
 RUN(NAME iso_c_binding_07 LABELS gfortran llvm)
+RUN(NAME iso_c_binding_08 LABELS gfortran llvm)
 
 RUN(NAME array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME array_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
@@ -4818,10 +4858,12 @@ RUN(NAME character_32 LABELS gfortran llvm)
 RUN(NAME character_33 LABELS gfortran llvm)
 RUN(NAME character_34 LABELS gfortran llvm)
 RUN(NAME character_35 LABELS gfortran llvm)
+RUN(NAME character_36 LABELS gfortran llvm)
 RUN(NAME character_module_array_15364 LABELS gfortran llvm EXTRAFILES character_module_array_15364_m.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME character_assignment_01 LABELS gfortran llvm)
 RUN(NAME char_array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME char_array_broadcast_01 LABELS gfortran llvm)
 RUN(NAME char_array_indexing LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME char_array_indexing_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME character_parameter_padding_trimming LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -6298,6 +6340,7 @@ RUN(NAME gpu_metal_476 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_477 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_478 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_479 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_480 LABELS gfortran llvm metal cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
@@ -6370,6 +6413,8 @@ RUN(NAME gpu_kernel_source_06 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_07 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_08 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_09 LABELS gfortran llvm)
+RUN(NAME gpu_kernel_source_10 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_kernel_source_11 LABELS gfortran llvm metal cuda_cpu)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)
@@ -6386,6 +6431,7 @@ RUN(NAME real128_int_to_real_01 LABELS gfortran llvm)
 RUN(NAME real128_intrinsic_inquiry_01 LABELS gfortran llvm)
 RUN(NAME real128_intrinsic_real_01 LABELS gfortran llvm)
 RUN(NAME real128_literal_01 LABELS gfortran llvm)
+RUN(NAME real128_literal_02 LABELS gfortran llvm)
 RUN(NAME real128_module_01 LABELS gfortran llvm EXTRAFILES real128_module_01_mod.f90)
 # real(10) constants are built from the compiler's C long double, which is the
 # x87 80-bit type the generated code uses only on x86-64 Linux:
@@ -6415,6 +6461,7 @@ RUN(NAME decl_order_02 LABELS gfortran llvm)
 
 RUN(NAME preprocessor_define_equals LABELS gfortran llvm EXTRA_ARGS --cpp GFORTRAN_ARGS -cpp)
 RUN(NAME runtime_checks_01 LABELS gfortran llvm)
+RUN(NAME detect_leaks_01 LABELS gfortran llvm EXTRA_ARGS --detect-leaks)
 
 if (LFORTRAN_SMOKE)
     get_property(smoke_tests DIRECTORY PROPERTY TESTS)

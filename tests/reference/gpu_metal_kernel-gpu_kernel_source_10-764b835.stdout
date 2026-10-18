@@ -1,0 +1,36 @@
+#include <metal_stdlib>
+using namespace metal;
+
+inline float multiply_add_gpu_7(float a, float b) {
+    float multiply_add;
+    multiply_add = ((a * b) +   1.00000000000000000e+00);
+    return multiply_add;
+}
+
+kernel void __lfortran_gpu_kernel_0(
+    device float* x [[buffer(0)]],
+    device float* y [[buffer(1)]],
+    device float* z [[buffer(2)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __flat_idx;
+    int i;
+    float multiply_add_result;
+    if ((((0 * 0) + __thread_id) >= 4)) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i = (__flat_idx + 1);
+    y[((int)(i) - (1))] = ((x[((int)(i) - (1))] *   2.00000000000000000e+00) +   1.00000000000000000e+00);
+    {
+        float a;
+        float b;
+        float multiply_add_1;
+        a = x[((int)(i) - (1))];
+        b =   2.00000000000000000e+00;
+        multiply_add_1 = ((a * b) +   1.00000000000000000e+00);
+        multiply_add_result = multiply_add_1;
+    }
+    z[((int)(i) - (1))] = multiply_add_result;
+}
+

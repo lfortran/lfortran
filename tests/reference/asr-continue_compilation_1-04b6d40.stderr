@@ -1460,6 +1460,30 @@ semantic error: Return type not specified
 3381 |    end function
      | ...^^^^^^^^^^^^ 
 
+semantic error: Kind 16 is not supported for Complex
+    --> tests/errors/continue_compilation_1.f90:3387:5
+     |
+3387 |     complex*32 :: cc1_cs_z32  ! {Error} Kind 16 is not supported for Complex
+     |     ^^^^^^^^^^ 
+
+semantic error: Kind 10 is not supported for Complex
+    --> tests/errors/continue_compilation_1.f90:3388:5
+     |
+3388 |     complex*20 :: cc1_cs_z20  ! {Error} Kind 10 is not supported for Complex
+     |     ^^^^^^^^^^ 
+
+semantic error: Kind 3 is not supported for Complex
+    --> tests/errors/continue_compilation_1.f90:3389:5
+     |
+3389 |     complex*7 :: cc1_cs_z7  ! {Error} Kind 3 is not supported for Complex
+     |     ^^^^^^^^^ 
+
+semantic error: Kind 3 is not supported for Logical
+    --> tests/errors/continue_compilation_1.f90:3390:5
+     |
+3390 |     logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
+     |     ^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -4211,3 +4235,27 @@ semantic error: `pause` code must be a scalar integer or default character expre
      |
 3365 |         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
      |               ^^^^^ 
+
+semantic error: open with status 'new' requires a file specifier
+    --> tests/errors/continue_compilation_1.f90:3397:5
+     |
+3397 |     open(1, status='new')  ! {Error} open with status 'new' requires a file specifier
+     |     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: open with status 'replace' requires a file specifier
+    --> tests/errors/continue_compilation_1.f90:3398:5
+     |
+3398 |     open(2, status='replace')  ! {Error} open with status 'replace' requires a file specifier
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: open with status 'NEW' requires a file specifier
+    --> tests/errors/continue_compilation_1.f90:3399:5
+     |
+3399 |     open(3, status='NEW')  ! {Error} open with status 'NEW' requires a file specifier
+     |     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: open with status 'REPLACE' requires a file specifier
+    --> tests/errors/continue_compilation_1.f90:3400:5
+     |
+3400 |     open(4, status='REPLACE')  ! {Error} open with status 'REPLACE' requires a file specifier
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
