@@ -5294,6 +5294,7 @@ RUN(NAME allocatable_polymorphic_assign_04 LABELS gfortran llvm EXTRA_ARGS --rea
 RUN(NAME allocatable_polymorphic_assign_05 LABELS llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME allocatable_polymorphic_assign_06 LABELS gfortran llvm EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME allocatable_polymorphic_source_01 LABELS gfortran llvm)
+RUN(NAME allocatable_polymorphic_source_02 LABELS gfortran llvm)
 RUN(NAME allocatable_dummy_descriptor_01 LABELS gfortran llvm)
 
 RUN(NAME polymorphic_class_compare LABELS gfortran)
