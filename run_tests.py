@@ -89,6 +89,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     is_cumulative_pass = is_included("cumulative")
     julia = is_included("julia")
     gpu_cuda_kernel = is_included("gpu_cuda_kernel")
+    gpu_metal_kernel = is_included("gpu_metal_kernel")
     gpu_offload_cuda = is_included("gpu_offload_cuda")
     gpu_offload_metal = is_included("gpu_offload_metal")
     wat = is_included("wat")
@@ -743,13 +744,16 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 verify_hash,
                 extra_args)
 
-    if gpu_cuda_kernel:
-        run_test(filename, "gpu_cuda_kernel",
-                "lfortran --no-color --gpu=cuda --show-gpu-kernel-source {infile}",
-                filename,
-                update_reference,
-                verify_hash,
-                extra_args)
+    for kernel_source, device in ((gpu_cuda_kernel, "cuda"),
+                                  (gpu_metal_kernel, "metal")):
+        if kernel_source:
+            run_test(filename, "gpu_" + device + "_kernel",
+                    "lfortran --no-color --gpu=" + device +
+                    " --show-gpu-kernel-source {infile}",
+                    filename,
+                    update_reference,
+                    verify_hash,
+                    extra_args)
 
     for gpu_offload, device in ((gpu_offload_cuda, "cuda"),
                                 (gpu_offload_metal, "metal")):

@@ -1493,70 +1493,21 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             return true;
         }
 
-        ASR::stmt_t* create_do_loop_concat_idl(ASR::ImpliedDoLoop_t* x) {
-            const Location& loc = x->base.base.loc;
-
-            // The accumulator holds the loop's own values, so it takes their
-            // character kind rather than assuming the default.
-            int64_t char_kind = ASRUtils::extract_kind_from_ttype_t(
-                ASRUtils::extract_type(ASRUtils::expr_type(x->m_values[0])));
-            ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
-                ASRUtils::TYPE(ASR::make_String_t(al, loc, char_kind, nullptr,
-                    ASR::string_length_kindType::DeferredLength,
-                    ASR::string_physical_typeType::DescriptorString))));
-
-            std::string accum_name = current_scope->get_unique_name("__lf_idl_accum");
-            ASR::asr_t* accum_var_asr = ASR::make_Variable_t(al, loc,
-                current_scope, s2c(al, accum_name), nullptr, 0,
-                ASR::intentType::Local, nullptr, nullptr,
-                ASR::storage_typeType::Default, str_type, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
-                ASR::presenceType::Required, false, false, false,
-                nullptr, false, false,
-                ASR::pass_attrType::NotMethod, nullptr, nullptr, 0);
-            current_scope->add_symbol(accum_name,
-                ASR::down_cast<ASR::symbol_t>(accum_var_asr));
-            ASR::expr_t* accum_ref = ASRUtils::EXPR(ASR::make_Var_t(
-                al, loc, ASR::down_cast<ASR::symbol_t>(accum_var_asr)));
-
-            // __lf_accum = ""
-            ASR::expr_t* empty_str = ASRUtils::EXPR(ASR::make_StringConstant_t(
-                al, loc, s2c(al, ""),
-                ASRUtils::TYPE(ASR::make_String_t(al, loc, char_kind,
-                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
-                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-                    ASR::string_length_kindType::ExpressionLength,
-                    ASR::string_physical_typeType::DescriptorString))));
-            pass_result.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-                al, loc, accum_ref, empty_str, nullptr, false, false)));
-
-            ASR::do_loop_head_t head;
-            head.loc = loc;
-            head.m_v = x->m_var;
-            head.m_start = x->m_start;
-            head.m_end = x->m_end;
-            head.m_increment = x->m_increment;
-
-            Vec<ASR::stmt_t*> body;
-            body.reserve(al, x->n_values);
-
-            for (size_t i = 0; i < x->n_values; i++) {
-                // __lf_accum // value_i  (allocatable strings have no trailing spaces)
-                ASR::expr_t* concat = ASRUtils::EXPR(ASR::make_StringConcat_t(
-                    al, loc, accum_ref, x->m_values[i], str_type, nullptr));
-
-                body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-                    al, loc, accum_ref, concat, nullptr, false, false)));
-            }
-
-            // Build the do-loop
-            ASR::stmt_t* do_loop = ASRUtils::STMT(ASR::make_DoLoop_t(
-                al, loc, nullptr, head, body.p, body.size(), nullptr, 0));
-            pass_result.push_back(al, do_loop);
-
-            // m_unit = __lf_accum (final assignment to the internal file buffer)
-            return ASRUtils::STMT(ASR::make_Assignment_t(
-                al, loc, m_unit, accum_ref, nullptr, false, false));
+        // Replace the implied-do argument `i` of a StringFormat whose values
+        // are all character (see character_io_items) by an array of
+        // descriptor items, so every value is written at its own length.
+        void replace_with_character_io_items(ASR::StringFormat_t* string_format,
+                size_t i, ASR::expr_t* value) {
+            value = wrap_character_io_items(value);
+            ASR::asr_t* items = create_array_constant(*string_format, value);
+            string_format->m_args[i] = ASRUtils::EXPR(items);
+            replacer.result_var = value;
+            resultvar2value[value] = ASRUtils::EXPR(items);
+            ASR::expr_t** saved_expr = current_expr;
+            current_expr = &string_format->m_args[i];
+            this->call_replacer();
+            current_expr = saved_expr;
+            this->visit_expr(*string_format->m_args[i]);
         }
 
         ASR::stmt_t* create_do_loop_form_idl(ASR::ImpliedDoLoop_t* x, ASR::expr_t* format_string) {
@@ -1764,16 +1715,15 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                             i = i + expanded_values.size() - 1;
                             continue;
                         }
-                        if (x.n_args == 1) {
-                            // For internal file writes with string_trim, use concatenation
-                            // instead of individual writes (which would overwrite the buffer).
-                            remove_original_statement = true;
-                            pass_result.push_back(al, create_do_loop_concat_idl(implied_do_loop));
+                        // Each trimmed value is a separate output item with
+                        // its own length, so the whole loop and its siblings
+                        // are written by this one StringFormat. Writing the
+                        // loop one iteration at a time would start a new
+                        // record of the internal file at every iteration.
+                        if (character_io_items(implied_do_loop)) {
+                            replace_with_character_io_items(string_format_stmt, i, value);
                             continue;
                         }
-                        // When there are sibling args, fall through to the
-                        // default ArrayConstructor path so that siblings are
-                        // preserved in the same StringFormat / write statement.
                     }
                     if ( (x.m_fmt != nullptr) && !is_internal_file &&
                          (ASR::is_a<ASR::Tuple_t>(*implied_do_loop->m_type) ||
@@ -1799,16 +1749,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                             continue;
                         }
                         if (character_io_items(implied_do_loop)) {
-                            value = wrap_character_io_items(value);
-                            ASR::asr_t* items = create_array_constant(x, value);
-                            string_format_stmt->m_args[i] = ASRUtils::EXPR(items);
-                            replacer.result_var = value;
-                            resultvar2value[value] = ASRUtils::EXPR(items);
-                            ASR::expr_t** saved_expr = current_expr;
-                            current_expr = &string_format_stmt->m_args[i];
-                            this->call_replacer();
-                            current_expr = saved_expr;
-                            this->visit_expr(*string_format_stmt->m_args[i]);
+                            replace_with_character_io_items(string_format_stmt, i, value);
                             continue;
                         }
                         {
