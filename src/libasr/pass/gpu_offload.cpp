@@ -16,6 +16,7 @@
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_collect.h>
+#include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/gpu_offload_host_association.h>
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/symbol_expr_substitution.h>
@@ -30,6 +31,101 @@ using ASR::down_cast;
 using ASR::is_a;
 
 static int gpu_kernel_counter = 0;
+
+class GpuContiguousStoreFinder : public ASR::BaseWalkVisitor<GpuContiguousStoreFinder> {
+    const std::set<ASR::symbol_t*> &loop_variables;
+    std::set<ASR::symbol_t*> visited_blocks;
+
+public:
+    std::set<ASR::symbol_t*> candidates;
+    bool has_unrecognized_store = false;
+
+    GpuContiguousStoreFinder(const std::set<ASR::symbol_t*> &variables)
+        : loop_variables(variables) {}
+
+    void note_store(ASR::expr_t *target) {
+        ASR::ttype_t *type = ASRUtils::expr_type(target);
+        if (ASR::is_a<ASR::Var_t>(*target) && !ASRUtils::is_array(type)
+                && !ASRUtils::is_pointer(type)
+                && !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+            return;
+        }
+        if (!ASR::is_a<ASR::ArrayItem_t>(*target)) {
+            has_unrecognized_store = true;
+            return;
+        }
+        const auto &item = *ASR::down_cast<ASR::ArrayItem_t>(target);
+        if (item.n_args == 0) {
+            has_unrecognized_store = true;
+            return;
+        }
+        size_t dimension = item.m_storage_format == ASR::arraystorageType::ColMajor
+            ? 0 : item.n_args - 1;
+        ASR::expr_t *index = item.m_args[dimension].m_right;
+        if (index && ASR::is_a<ASR::Var_t>(*index)) {
+            ASR::symbol_t *variable = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(index)->m_v);
+            if (loop_variables.count(variable)) {
+                candidates.insert(variable);
+                return;
+            }
+        }
+        has_unrecognized_store = true;
+    }
+
+    void note_call_args(ASR::symbol_t *name, ASR::call_arg_t *args,
+            size_t n_args) {
+        for (size_t i = 0; i < n_args; i++) {
+            if (!args[i].m_value) continue;
+            ASR::Variable_t *dummy = GpuWrittenRootCollector::dummy_of(name, i);
+            if (dummy && dummy->m_intent == ASR::intentType::In) continue;
+            note_store(args[i].m_value);
+        }
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        note_store(x.m_target);
+        ASR::BaseWalkVisitor<GpuContiguousStoreFinder>::visit_Assignment(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        note_call_args(x.m_name, x.m_args, x.n_args);
+        ASR::BaseWalkVisitor<GpuContiguousStoreFinder>::visit_SubroutineCall(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        note_call_args(x.m_name, x.m_args, x.n_args);
+        ASR::BaseWalkVisitor<GpuContiguousStoreFinder>::visit_FunctionCall(x);
+    }
+
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *symbol = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!visited_blocks.insert(symbol).second) return;
+        const auto &block = *ASR::down_cast<ASR::Block_t>(symbol);
+        for (size_t i = 0; i < block.n_body; i++) visit_stmt(*block.m_body[i]);
+    }
+};
+
+static size_t contiguous_store_dimension(const ParallelLoopNest &nest) {
+    if (nest.n_heads() < 2) return 0;
+    std::vector<ASR::symbol_t*> variables;
+    std::set<ASR::symbol_t*> variable_set;
+    for (size_t d = 0; d < nest.n_heads(); d++) {
+        ASR::symbol_t *variable = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(nest.head(d).m_v)->m_v);
+        variables.push_back(variable);
+        variable_set.insert(variable);
+    }
+    GpuContiguousStoreFinder finder(variable_set);
+    for (size_t i = 0; i < nest.n_body; i++) finder.visit_stmt(*nest.body[i]);
+    // Conflicting or unrecognized store layouts retain the original mapping.
+    if (!finder.has_unrecognized_store && finder.candidates.size() == 1) {
+        for (size_t d = 0; d < variables.size(); d++) {
+            if (finder.candidates.count(variables[d])) return d;
+        }
+    }
+    return 0;
+}
 
 // The loop was assigned to the device by the unsupported-construct check,
 // so a decline here is a lowering this pass is missing and is reported as
@@ -227,6 +323,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
 
     rewrite_loop_body_for_kernel(work, enclosing_assoc_map);
+    size_t fastest_dimension = contiguous_store_dimension(work);
 
     // 1. Collect all symbols from body AND head expressions
     std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_syms;
@@ -2093,7 +2190,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
     }
 
-    for (size_t d = 0; d < n_dims; d++) {
+    for (size_t position = 0; position < n_dims; position++) {
+        size_t d = position == 0 ? fastest_dimension
+            : (position <= fastest_dimension ? position - 1 : position);
         ASR::expr_t *dim_range = ASRUtils::EXPR(
             ASR::make_IntegerBinOp_t(al, loc,
                 ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
@@ -2105,7 +2204,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         ASR::expr_t *kvar_expr = ASRUtils::EXPR(
             ASR::make_Var_t(al, loc, kvar));
 
-        if (d < n_dims - 1) {
+        if (position < n_dims - 1) {
             // loop_var = __flat_idx % dim_range + start
             // Since ASR has no Mod binop, compute as: a - (a/b)*b
             ASR::expr_t *div_part = ASRUtils::EXPR(
