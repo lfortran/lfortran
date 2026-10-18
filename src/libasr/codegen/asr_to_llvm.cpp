@@ -17316,8 +17316,16 @@ public:
         // Fortran 2023 requires that only the chosen arm is evaluated
         // (10.1.4 NOTE 3), so this must stay a real branch and must never be
         // turned into a select over both arms.
-        this->visit_expr_wrapper(x.m_test, true);
+        //
+        // The test is always needed as a logical value, whatever the context
+        // the conditional expression appears in: a character result is
+        // evaluated with `ptr_loads` 0 (to get its string descriptor), which
+        // would otherwise yield the address of a logical variable.
+        this->visit_expr_load_wrapper(x.m_test,
+            LLVM::is_llvm_pointer(*expr_type(x.m_test)) ? 2 : 1, true);
         llvm::Value *cond = tmp;
+        load_non_array_non_character_pointers(x.m_test,
+            ASRUtils::expr_type(x.m_test), cond);
         if (ASRUtils::is_character(*x.m_type)) {
             visit_IfExp_string(x, cond);
             return;
@@ -17347,7 +17355,9 @@ public:
             // where values created inside this block do not dominate. The
             // copy into `res` happens first, so the data survives the free.
             size_t strings_n_before_arm = strings_to_be_deallocated.n;
-            this->visit_expr_wrapper(arm, true);
+            // The copy needs the arm's string descriptor, also when the
+            // conditional expression is an operand evaluated for its value.
+            this->visit_expr_load_wrapper(arm, 0, true);
             llvm_utils->lfortran_str_copy(res, tmp, res_str,
                 ASRUtils::get_string_type(ASRUtils::expr_type(arm)), true);
             free_strings_to_be_deallocated(strings_n_before_arm);
