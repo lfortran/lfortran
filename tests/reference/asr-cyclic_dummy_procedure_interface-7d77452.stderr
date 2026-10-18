@@ -1,0 +1,5 @@
+semantic error: interface 'cpi_f' of dummy procedure 'k' depends on the characteristics of 'k'
+  --> tests/errors/cyclic_dummy_procedure_interface.f90:17:29
+   |
+17 |         procedure(cpi_f) :: k
+   |                             ^ 'cpi_f' has dummy procedure 'g' with interface 'cpi_h', which has dummy procedure 'k'

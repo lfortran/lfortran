@@ -7,20 +7,19 @@
 !   `t` cannot be determined from the kernel arguments
 !
 ! -- a hard build failure, raised long after the pass had committed to
-! offloading the loop.  The offload pass now runs the same resolution
-! up front and declines the loop instead, reporting
-! `status=host reason=workspace-extent-unresolvable`.
+! offloading the loop.  The offload pass then ran the same resolution up
+! front and declined the loop instead.
 !
-! `drive_unresolvable` and `drive_spliced` therefore emit no kernel of
-! their own and run on the host; `drive_fence` still offloads.  This
-! program emits exactly 1 kernel.
+! The extents here call `mod`, which shared lowering turns into a function
+! without side effects that the host calls as well before the launch, so
+! `drive_unresolvable` and `drive_spliced` are offloaded too, and so is
+! `drive_fence`, which always was.
 module gpu_metal_265_mod
 implicit none
 contains
 
-    ! The extent of `t` is `mod(n, 3) + 2`.  `mod` is not something the
-    ! host-side extent resolver can reproduce, and no kernel argument
-    ! carries the value either, so the extent is unresolvable.
+    ! The extent of `t` is `mod(n, 3) + 2`, which no kernel argument
+    ! carries: the host calls the function `mod` is lowered to.
     subroutine drive_unresolvable(a, b, n)
         real, intent(in) :: a(:)
         real, intent(out) :: b(:)
@@ -40,9 +39,7 @@ contains
 
     ! The same, one step further out: `mv` builds run-time sized locals,
     ! so it has to be spliced into the loop body before the workspaces
-    ! even exist.  The offload is declined after that splice, which must
-    ! therefore be undone -- statements and spliced-in BLOCK alike -- or
-    ! the loop would run on the host in a shape it was never checked in.
+    ! even exist.
     pure function mv(mat, vec, n) result(r)
         real, intent(in) :: mat(:,:)
         real, intent(in) :: vec(:)

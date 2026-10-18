@@ -7,6 +7,7 @@
 #include <fstream>
 
 #include <lfortran/fortran_evaluator.h>
+#include <lfortran/parser/source_offset.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/exception.h>
 #include <lfortran/ast.h>
@@ -185,6 +186,19 @@ TEST_CASE("LLVM code generation optimization level") {
     LCompilers::LLVMEvaluator wasm_evaluator("wasm32-unknown-wasi");
     CHECK(wasm_evaluator.get_target_machine().getOptLevel()
         == CodeGenOptLevel::Default);
+#endif
+
+#ifdef HAVE_TARGET_AARCH64
+    // At -O0 LLVM selects GlobalISel on AArch64, whose compile time is
+    // quadratic in the size of a basic block; the default mode uses FastISel
+    // as on x86-64.
+    for (const std::string triple: {"aarch64-unknown-linux-gnu",
+            "arm64-apple-macosx11.0.0"}) {
+        LCompilers::LLVMEvaluator aarch64_evaluator(triple);
+        const llvm::TargetMachine &tm = aarch64_evaluator.get_target_machine();
+        CHECK(tm.getOptLevel() == CodeGenOptLevel::None);
+        CHECK(!tm.Options.EnableGlobalISel);
+    }
 #endif
 }
 
@@ -2348,7 +2362,7 @@ end module
         LCompilers::LocationManager::FileLocations fl;
         fl.in_filename = "mcellmod.f90";
         lm.files.push_back(fl);
-        lm.file_ends.push_back(std::strlen(modsrc));
+        lm.file_ends.push_back(LCompilers::LFortran::source_offset(std::strlen(modsrc)));
         LCompilers::LFortran::AST::TranslationUnit_t* ast = TRY(
             LCompilers::LFortran::parse(al, modsrc, diagnostics, co));
         LCompilers::ASR::TranslationUnit_t* asr = TRY(

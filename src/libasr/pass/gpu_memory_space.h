@@ -6,6 +6,9 @@
 
 namespace LCompilers {
 
+    void gpu_materialize_struct_arguments(Allocator &al,
+        ASR::TranslationUnit_t &unit);
+
     void pass_gpu_memory_space(Allocator &al, ASR::TranslationUnit_t &unit,
                                const PassOptions &pass_options);
 

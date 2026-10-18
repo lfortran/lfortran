@@ -11,7 +11,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import call, patch
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -128,6 +128,105 @@ class SmokeSelectionTests(unittest.TestCase):
                 self.assertTrue(names)
 
 
+class MacOSEnvironmentTests(unittest.TestCase):
+    def test_platform_environment_uses_copy_mode(self):
+        source = (ROOT / ".github/actions/build-platform/action.yml").read_text()
+        setup = source.split("uses: mamba-org/setup-micromamba@v2.0.2", 1)[1]
+        setup = setup.split("\n    - name:", 1)[0]
+        self.assertIn("condarc: |", setup)
+        self.assertIn("channels:\n            - conda-forge", setup)
+        self.assertIn("always_copy: ${{ contains(inputs.os, 'macos') }}", setup)
+
+    def test_compatibility_macos_environment_uses_copy_mode(self):
+        source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
+        setup = source.split("if: contains(matrix.os, 'macos')\n", 1)[1]
+        setup = setup.split("\n      - uses:", 1)[0]
+        self.assertIn("condarc: |", setup)
+        self.assertIn("always_copy: true", setup)
+
+    def checker(self):
+        spec = importlib.util.spec_from_file_location(
+            "check_macos_environment", ROOT / "ci/check_macos_environment.py"
+        )
+        checker = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(checker)
+        return checker
+
+    def tools(self, directory):
+        prefix = directory.resolve() / "env"
+        (prefix / "bin").mkdir(parents=True)
+        for name in ("cmake", "ctest", "cpack"):
+            (prefix / "bin" / name).write_text("fixture executable\n")
+        return prefix
+
+    def test_private_copies_are_accepted(self):
+        with tempfile.TemporaryDirectory() as workspace:
+            prefix = self.tools(Path(workspace))
+            paths = self.checker().private_tools(prefix)
+            self.assertEqual(paths, [prefix / "bin" / name
+                                    for name in ("cmake", "ctest", "cpack")])
+
+    def test_cache_hardlink_is_rejected(self):
+        with tempfile.TemporaryDirectory() as workspace:
+            directory = Path(workspace)
+            prefix = self.tools(directory)
+            cache = directory / "package-cache"
+            cache.mkdir()
+            tool = prefix / "bin/ctest"
+            os.link(tool, cache / "ctest")
+            self.assertEqual(tool.stat().st_nlink, 2)
+            with self.assertRaisesRegex(RuntimeError, "hard-linked"):
+                self.checker().private_tools(prefix)
+            tool.unlink()
+            shutil.copy2(cache / "ctest", tool)
+            self.assertEqual(tool.stat().st_nlink, 1)
+            self.assertEqual(len(self.checker().private_tools(prefix)), 3)
+
+    @unittest.skipIf(os.name == "nt", "symlink creation requires Windows privileges")
+    def test_symlink_outside_environment_is_rejected(self):
+        with tempfile.TemporaryDirectory() as workspace:
+            directory = Path(workspace)
+            prefix = self.tools(directory)
+            cached = directory / "cached-ctest"
+            tool = prefix / "bin/ctest"
+            tool.rename(cached)
+            tool.symlink_to(cached)
+            with self.assertRaisesRegex(RuntimeError, "outside"):
+                self.checker().private_tools(prefix)
+
+    def test_missing_tool_is_rejected(self):
+        with tempfile.TemporaryDirectory() as workspace:
+            prefix = self.tools(Path(workspace))
+            (prefix / "bin/ctest").unlink()
+            with self.assertRaisesRegex(RuntimeError, "missing"):
+                self.checker().private_tools(prefix)
+
+    def test_all_versions_are_probed_and_failures_propagate(self):
+        checker = self.checker()
+        with tempfile.TemporaryDirectory() as workspace:
+            prefix = self.tools(Path(workspace))
+            with patch.object(checker.subprocess, "run") as run:
+                checker.check_environment(prefix)
+            self.assertEqual(run.call_args_list, [
+                call([str(prefix / "bin" / name), "--version"], check=True)
+                for name in ("cmake", "ctest", "cpack")
+            ])
+            with patch.object(checker.subprocess, "run",
+                              side_effect=subprocess.CalledProcessError(7, "ctest")):
+                with self.assertRaises(subprocess.CalledProcessError):
+                    checker.check_environment(prefix)
+
+    def test_verification_runs_after_installation_and_before_build(self):
+        source = (ROOT / ".github/actions/build-platform/action.yml").read_text()
+        check = source.index("python ci/check_macos_environment.py")
+        self.assertGreater(check, source.rindex("micromamba install"))
+        self.assertLess(check, source.index("- name: Build (Linux / macOS)"))
+        source = (ROOT / ".github/workflows/Compiler-Compatibility-CI.yml").read_text()
+        check = source.index("python ci/check_macos_environment.py")
+        self.assertGreater(check, source.index("always_copy: true"))
+        self.assertLess(check, source.index("      - name: Build\n"))
+
+
 class RunnerTests(unittest.TestCase):
     def test_quick_has_no_status_aggregate(self):
         # Branch protection requires every Quick job directly. Repository
@@ -211,6 +310,70 @@ class RunnerTests(unittest.TestCase):
                         else:
                             with self.assertRaises(SystemExit):
                                 tester.check_llvm_version("lfortran", 11)
+
+    def test_reference_update_removes_only_unwritten_references(self):
+        sys.path.insert(0, str(ROOT / "src/libasr"))
+        try:
+            from compiler_tester import tester
+        finally:
+            sys.path.pop(0)
+        backends = ("asr", "tokens")
+        written = {f"{b}-{t}.{ext}" for b in backends for t in ("a", "b")
+                   for ext in ("json", "stdout")}
+        fail = []
+
+        def single_test(test, update_reference, specific_backends,
+                        excluded_backends, **kwargs):
+            self.assertTrue(update_reference)
+            if fail:
+                raise tester.RunException("failed")
+            for b in backends:
+                if (specific_backends and b not in specific_backends) or \
+                        (excluded_backends and b in excluded_backends):
+                    continue
+                name = f"{b}-{test['filename']}"
+                jo = output / f"{name}.json"
+                jo.write_text("{}")
+                (output / f"{name}.stdout").write_text("")
+                tester.do_update_reference(
+                    str(jo), str(reference / jo.name),
+                    {"outfile": None, "stdout": f"{name}.stdout",
+                     "stderr": None})
+
+        cases = (([], written, False),
+                 (["-s"], written, False),
+                 ([], written | {"orphan.json"}, True),
+                 (["-t", "a"], written | {"orphan.json"}, False),
+                 (["-b", "tokens"], written | {"orphan.json"}, False),
+                 (["--exclude-test", "b"], written | {"orphan.json"}, False),
+                 (["--exclude-backend", "asr"], written | {"orphan.json"},
+                  False),
+                 (["--no-llvm"], written | {"orphan.json"}, False),
+                 (["--skip-run-with-dbg"], written | {"orphan.json"}, False))
+        for args, expected, failing in cases:
+            with self.subTest(args=args, failing=failing), \
+                    tempfile.TemporaryDirectory() as root:
+                root = Path(root)
+                reference = root / "tests/reference"
+                output = root / "output"
+                reference.mkdir(parents=True)
+                output.mkdir()
+                (root / "tests/tests.toml").write_text(
+                    '[[test]]\nfilename = "a"\nasr = true\ntokens = true\n\n'
+                    '[[test]]\nfilename = "b"\nasr = true\ntokens = true\n')
+                for name in written | {"orphan.json"}:
+                    (reference / name).write_text("old")
+                fail[:] = [True] if failing else []
+                with patch.object(tester, "ROOT_DIR", str(root)), \
+                        patch.object(tester, "REFERENCE_DIR", str(reference)), \
+                        patch.object(sys, "argv", ["run_tests.py", "-u"] + args):
+                    if failing:
+                        with self.assertRaises(tester.RunException):
+                            tester.tester_main("LFortran", single_test, True)
+                    else:
+                        tester.tester_main("LFortran", single_test, True)
+                self.assertEqual({p.name for p in reference.iterdir()},
+                                 expected)
 
     def test_application_catalog_has_no_quick_subset(self):
         source = (ROOT / "ci/test_third_party_codes.sh").read_text()
@@ -676,7 +839,7 @@ class QuickScriptTests(unittest.TestCase):
                         CI_CALLS=str(self.calls))
         for name in (
             "build0.sh", "src/bin/lfortran", "run_tests.py", "integration_tests/run_tests.py",
-            "expr2", "expr2-debug", "modules_15", "intrinsics_04", "intrinsics_04s",
+            "expr2", "expr2-debug", "modules_15", "intrinsics_04", "intrinsics_04s", "system_clock_02",
             "bin/gcc", "bin/clang", "bin/cl", "bin/nproc", "bin/cmake",
             "bin/make", "bin/ctest", "bin/pip", "bin/llvm-dwarfdump", "bin/dsymutil",
         ):
@@ -725,7 +888,7 @@ class QuickScriptTests(unittest.TestCase):
                 work.mkdir()
                 # ci/test.sh uses fixed relative paths and creates one build dir.
                 for entry in ("src", "integration_tests", "run_tests.py", "expr2",
-                              "modules_15", "intrinsics_04", "intrinsics_04s"):
+                              "modules_15", "intrinsics_04", "intrinsics_04s", "system_clock_02"):
                     if entry == "integration_tests":
                         (work / entry).mkdir()
                         (work / entry / "run_tests.py").symlink_to(
@@ -744,6 +907,16 @@ class QuickScriptTests(unittest.TestCase):
                 )
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 calls = [json.loads(line) for line in self.calls.read_text().splitlines()]
+                # Windows skips the integration runner but must compile and run the clock check.
+                compiler = str(self.directory / "src/bin/lfortran")
+                clock = str(self.directory / "system_clock_02")
+                clock_calls = [(path, args) for path, args in calls
+                               if path == clock or (path == compiler and
+                                   "integration_tests/system_clock_02.f90" in args)]
+                self.assertEqual(clock_calls, [
+                    (compiler, ["integration_tests/system_clock_02.f90", "-o", "system_clock_02"]),
+                    (clock, []),
+                ])
                 reference_calls = [args for path, args in calls
                                    if path == str(self.directory / "run_tests.py")]
                 integration_calls = [args for path, args in calls

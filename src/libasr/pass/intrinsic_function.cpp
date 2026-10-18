@@ -47,6 +47,21 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         index_kind(index_kind_) {}
 
 
+    void replace_IntrinsicImpureFunction(ASR::IntrinsicImpureFunction_t* x) {
+        ASRUtils::instantiate_impure_function instantiate_function =
+            ASRUtils::IntrinsicImpureFunctionRegistry::get_instantiate_function(
+                x->m_impure_intrinsic_id);
+        if (!instantiate_function) {
+            return;
+        }
+        Vec<ASR::call_arg_t> args; args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            args.push_back(al, {x->base.base.loc, x->m_args[i]});
+        }
+        *current_expr = instantiate_function(al, x->base.base.loc,
+            PassUtils::instantiation_scope(global_scope, caller_scope, args), args);
+    }
+
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
         if (x->m_value) {
             *current_expr = x->m_value;
@@ -448,6 +463,7 @@ void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit
     });
     ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicid);
     u.visit_TranslationUnit(unit);
+    PassUtils::normalize_string_physical_casts(al, unit);
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);
 }

@@ -1,8 +1,9 @@
 program gpu_metal_209
-! Nested BLOCK inside a do concurrent that captures a derived type the device
-! cannot lay out. The inner block reads an outer-block local. A declined
-! launch used to restore a snapshot whose inner Vars still pointed at the
-! original Block, which had been moved into an unattached kernel scope.
+! Nested BLOCK inside a do concurrent that captures a derived type with an
+! allocatable scalar component it does not read. The inner block reads an
+! outer-block local. A declined launch used to restore a snapshot whose inner
+! Vars still pointed at the original Block, which had been moved into an
+! unattached kernel scope.
 implicit none
 
 type :: label_t

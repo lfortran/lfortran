@@ -1,9 +1,7 @@
-! An allocatable component reached through another component. The device
-! lays a placeholder out in such a component's field and reads its data from
-! a flat buffer named after the argument the component hangs off, and only a
-! component of an argument itself has one, so a kernel reading `self%op_%a`
-! would read the placeholder. Both loops stay on the host -- the polymorphic
-! dummy and the plain one alike -- and compute the right answer there.
+! An allocatable component reached through another component, `self%op_%a`.
+! The component `self%op_` is handed to the kernel as an argument of its
+! own, whose allocatable components get device buffers of their own, so both
+! loops run on the device -- the polymorphic dummy and the plain one alike.
 module gpu_metal_320_mod
 implicit none
 type :: inner_t

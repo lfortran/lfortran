@@ -1606,7 +1606,11 @@ public:
                 is_struct = true;
             }
         }
-        if( symtab->parent != nullptr &&
+        // Classifying an initializer looks through ExternalSymbol, which is
+        // possible only once external symbols are resolved (a module file
+        // is verified with check_external=false before that), so the check
+        // runs then.
+        if( check_external && symtab->parent != nullptr &&
             !is_module && !is_struct) {
             // For now restrict this check only to variables which are present
             // inside symbols which have a body.
@@ -2206,7 +2210,18 @@ public:
                         ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_components[i]) ||
                         ASR::is_a<ASR::StructInstanceMember_t>(*x.m_components[i]) ||
                         ASR::is_a<ASR::BitCast_t>(*x.m_components[i]) ||
-                        ASR::is_a<ASR::ArrayConstant_t>(*x.m_components[i]), "DebugCheckArrayBounds::m_components element must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant");
+                        ASR::is_a<ASR::ArrayConstant_t>(*x.m_components[i]) ||
+                        ASR::is_a<ASR::ArrayConstructor_t>(*x.m_components[i]), "DebugCheckArrayBounds::m_components element must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, ArrayConstant, or ArrayConstructor");
+                if (ASR::is_a<ASR::ArrayConstructor_t>(*x.m_components[i])) {
+                    ASR::dimension_t* m_dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::expr_type(x.m_components[i]), m_dims);
+                    require(n_dims == 1 && m_dims[0].m_length != nullptr &&
+                        ASRUtils::is_integer(*ASRUtils::expr_type(m_dims[0].m_length)) &&
+                        ASRUtils::extract_kind_from_ttype_t(
+                            ASRUtils::expr_type(m_dims[0].m_length)) == 4,
+                        "DebugCheckArrayBounds::m_components ArrayConstructor must have its integer(4) size in its type");
+                }
 
                 require(ASRUtils::is_array(ASRUtils::expr_type(x.m_components[i])), "DebugCheckArrayBounds::m_components element must have an Array type");
             }
@@ -2568,8 +2583,9 @@ public:
 
         // Verify self argument is explicit for method calls with PASS
         if (is_method && !nopass && func) {
-            require(x.n_args > 0 && x.m_args[0].m_value != nullptr,
-                "Method call with PASS must have self as args[0].");
+            size_t pass_idx = ASRUtils::get_pass_arg_index(x.m_name);
+            require(x.n_args > pass_idx && x.m_args[pass_idx].m_value != nullptr,
+                "Method call with PASS must supply its passed-object argument.");
         }
 
         if (func) {
@@ -2795,10 +2811,24 @@ public:
                 "the old physical type and new physical type must be different.");
         }
         if(check_external){
-            // For rank(0): AssumedRankArray → scalar, m_type is scalar so skip physical type check
+            // Corner case, the rank(0) view of an assumed-rank array. Inside
+            // a `rank (n)` block of `select rank`, uses of the selector are
+            // wrapped in a cast with old = AssumedRankArray and new =
+            // DescriptorArray, whose type is a rank n array. For `rank (0)`
+            // the selector is a scalar, so the type is the scalar element
+            // type, while new stays DescriptorArray: the scalar is read
+            // through the data pointer of the assumed-rank descriptor. A
+            // scalar has no physical type, so instead of comparing new with
+            // the type, new is required to be DescriptorArray in this case.
+            // It is recognized by old = AssumedRankArray and a type that is
+            // not an array (`ASRUtils::is_array`).
             bool is_rank0_scalar = (x.m_old == ASR::array_physical_typeType::AssumedRankArray
                                     && !ASRUtils::is_array(x.m_type));
-            if (!is_rank0_scalar) {
+            if (is_rank0_scalar) {
+                require(x.m_new == ASR::array_physical_typeType::DescriptorArray,
+                    "the rank(0) cast of an assumed-rank array must have "
+                    "DescriptorArray as its new physical type");
+            } else {
                 require(x.m_new == ASRUtils::extract_physical_type(x.m_type),
                     "Destination physical type conflicts with the physical type of target");
             }
@@ -3061,6 +3091,7 @@ public:
 
         struct ExtentVariables : ASR::BaseWalkVisitor<ExtentVariables> {
             std::set<ASR::symbol_t*> variables;
+            std::vector<std::string> calls;
             bool host_evaluable = true;
             void visit_expr(const ASR::expr_t &expression) {
                 switch (expression.type) {
@@ -3077,8 +3108,35 @@ public:
                     case ASR::exprType::ArrayItem:
                     case ASR::exprType::ArrayPhysicalCast:
                     case ASR::exprType::StructInstanceMember:
+                    // An extent that changes from thread to thread is
+                    // written over the thread index; the host evaluates it
+                    // for every thread of the launch.
+                    case ASR::exprType::GpuThreadIndex:
+                    case ASR::exprType::GpuBlockIndex:
+                    case ASR::exprType::GpuBlockSize:
                         ASR::BaseWalkVisitor<ExtentVariables>::visit_expr(expression);
                         break;
+                    // A function without side effects, which the host
+                    // calls before the launch.
+                    case ASR::exprType::FunctionCall: {
+                        const ASR::FunctionCall_t &call =
+                            (const ASR::FunctionCall_t &)expression;
+                        ASR::symbol_t *callee =
+                            ASRUtils::symbol_get_past_external(call.m_name);
+                        if (callee == nullptr ||
+                                !ASR::is_a<ASR::Function_t>(*callee)) {
+                            host_evaluable = false;
+                            break;
+                        }
+                        if (!ASRUtils::is_side_effect_free_function(
+                                *ASR::down_cast<ASR::Function_t>(callee))) {
+                            host_evaluable = false;
+                            break;
+                        }
+                        calls.push_back(ASRUtils::symbol_name(call.m_name));
+                        ASR::BaseWalkVisitor<ExtentVariables>::visit_expr(expression);
+                        break;
+                    }
                     default: host_evaluable = false;
                 }
             }
@@ -3093,7 +3151,7 @@ public:
                 ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v);
         }
         std::set<ASR::symbol_t*> workspaces, extent_parameters;
-        int slot = (layout.m_packed ? 1 : layout.n_buffers) +
+        int64_t slot = (layout.m_packed ? 1 : layout.n_buffers) +
             (layout.n_scalars > 0);
         for (size_t i = 0; i < layout.n_workspaces; i++) {
             const auto &workspace = layout.m_workspaces[i];
@@ -3124,6 +3182,9 @@ public:
                     "a GPU workspace extent must be an integer scalar expression");
                 ExtentVariables refs;
                 refs.visit_expr(*dim.m_extent);
+                // The kernel depends on what its layout calls.
+                function_dependencies.insert(function_dependencies.end(),
+                    refs.calls.begin(), refs.calls.end());
                 require_id(refs.host_evaluable,
                     "asr.verify.gpu_layout.host_evaluable_expression",
                     "a GPU workspace extent must contain only host-evaluable operations");
@@ -3150,8 +3211,22 @@ public:
                 }
             }
         }
-        require_id(extent_parameters.size() + layout.m_source_argument_count ==
-                kernel.n_args,
+        // The parameter giving the lanes of an iteration, when there is
+        // one, follows the extent parameters: it is the last one.
+        if (layout.m_lanes) {
+            require_id(kernel.n_args > 0 && ASR::is_a<ASR::Var_t>(
+                    *kernel.m_args[kernel.n_args - 1]) &&
+                    ASR::down_cast<ASR::Var_t>(kernel.m_args[kernel.n_args - 1])
+                        ->m_v == layout.m_lanes &&
+                    bound.count(layout.m_lanes) &&
+                    ASRUtils::is_integer(*ASRUtils::symbol_type(
+                        layout.m_lanes)),
+                "asr.verify.gpu_layout.lanes",
+                "the lanes of a GPU kernel must be its last parameter, an "
+                "integer scalar");
+        }
+        require_id(extent_parameters.size() + layout.m_source_argument_count
+                + (layout.m_lanes ? 1 : 0) == kernel.n_args,
             "asr.verify.gpu_layout.complete_extent_parameters",
             "every generated GPU parameter must belong to a workspace dimension");
     }
@@ -3164,7 +3239,123 @@ public:
                 "' must be a function that runs on the device");
         verify_gpu_kernel_launch_signature(x,
             *ASR::down_cast<ASR::Function_t>(x.m_kernel));
+        require_id(x.m_component_fit == nullptr ||
+                ASR::is_a<ASR::Block_t>(*x.m_component_fit),
+            "asr.verify.gpu_kernel_launch.component_fit_is_block",
+            "GpuKernelLaunch::m_component_fit must be a Block");
+        for (size_t i = 0; i < x.n_scratch; i++) {
+            const ASR::gpu_scratch_buffer_t &scratch = x.m_scratch[i];
+            bool in_range = scratch.m_argument_index >= 0 &&
+                (size_t)scratch.m_argument_index < x.n_args;
+            require_id(in_range,
+                "asr.verify.gpu_kernel_launch.scratch_argument",
+                "a GpuKernelLaunch scratch buffer must name an argument of "
+                "the launch");
+            if (!in_range) continue;
+            ASR::expr_t *actual =
+                x.m_args[scratch.m_argument_index].m_value;
+            require_id(actual != nullptr &&
+                    ASR::is_a<ASR::Var_t>(*actual) &&
+                    ASRUtils::is_allocatable(ASRUtils::expr_type(actual)) &&
+                    ASRUtils::is_array(ASRUtils::expr_type(actual)),
+                "asr.verify.gpu_kernel_launch.scratch_actual",
+                "the actual argument of a GpuKernelLaunch scratch buffer "
+                "must be an allocatable array variable");
+            require_id(ASRUtils::is_integer(*ASRUtils::expr_type(
+                    scratch.m_size)) && (scratch.m_read_back == nullptr ||
+                    ASRUtils::is_integer(*ASRUtils::expr_type(
+                        scratch.m_read_back))),
+                "asr.verify.gpu_kernel_launch.scratch_size",
+                "the size and read-back count of a GpuKernelLaunch scratch "
+                "buffer must be integers");
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_GpuKernelLaunch(x);
+    }
+
+    // The procedure whose code `scope` belongs to, past the BLOCK and
+    // ASSOCIATE constructs in it, or nullptr.
+    static const ASR::Function_t* enclosing_function(SymbolTable *scope) {
+        while (scope != nullptr && scope->asr_owner != nullptr &&
+                scope->asr_owner->type == ASR::asrType::symbol) {
+            ASR::symbol_t *owner = ASR::down_cast<ASR::symbol_t>(
+                scope->asr_owner);
+            if (ASR::is_a<ASR::Function_t>(*owner)) {
+                return ASR::down_cast<ASR::Function_t>(owner);
+            }
+            if (!ASR::is_a<ASR::Block_t>(*owner) &&
+                    !ASR::is_a<ASR::AssociateBlock_t>(*owner)) {
+                return nullptr;
+            }
+            scope = scope->parent;
+        }
+        return nullptr;
+    }
+
+    // A device heap allocation takes its elements with an atomic add to
+    // the next free element of an arena, an element of the integer(4)
+    // heap state, and gets the old value back. Only device code has one.
+    void visit_GpuAtomicFetchAdd(const GpuAtomicFetchAdd_t &x) {
+        const ASR::Function_t *fn = enclosing_function(current_symtab);
+        require_id(fn != nullptr && ASRUtils::is_device_only_function(*fn),
+            "asr.verify.gpu_atomic_fetch_add.device_code",
+            "GpuAtomicFetchAdd is only allowed in device code");
+        ASR::expr_t *target = ASRUtils::get_past_array_physical_cast(
+            x.m_target);
+        require_id(ASR::is_a<ASR::ArrayItem_t>(*target),
+            "asr.verify.gpu_atomic_fetch_add.target_array_element",
+            "GpuAtomicFetchAdd::m_target must be an element of an array");
+        auto is_int4 = [](ASR::ttype_t *t) {
+            return t != nullptr && ASR::is_a<ASR::Integer_t>(*t) &&
+                ASR::down_cast<ASR::Integer_t>(t)->m_kind == 4;
+        };
+        require_id(is_int4(ASRUtils::expr_type(x.m_target)),
+            "asr.verify.gpu_atomic_fetch_add.target_type",
+            "GpuAtomicFetchAdd::m_target must be an integer(4) scalar");
+        require_id(is_int4(ASRUtils::expr_type(x.m_increment)),
+            "asr.verify.gpu_atomic_fetch_add.increment_type",
+            "GpuAtomicFetchAdd::m_increment must be an integer(4) scalar");
+        require_id(is_int4(x.m_type),
+            "asr.verify.gpu_atomic_fetch_add.result_type",
+            "GpuAtomicFetchAdd::m_type must be integer(4), the type of "
+            "its target");
+        require_id(x.m_value == nullptr,
+            "asr.verify.gpu_atomic_fetch_add.value",
+            "GpuAtomicFetchAdd has no compile-time value");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuAtomicFetchAdd(x);
+    }
+
+    // The lanes of an iteration exist only in a kernel laid out to run
+    // each iteration on several of them (gpu_vector_lanes.cpp).
+    bool in_kernel_with_lanes() {
+        const ASR::Function_t *fn = enclosing_function(current_symtab);
+        return fn != nullptr && fn->m_gpu != nullptr
+            && fn->m_gpu->m_lanes != nullptr;
+    }
+    void visit_GpuLaneBarrier(const GpuLaneBarrier_t &x) {
+        require_id(in_kernel_with_lanes(), "asr.verify.gpu_lanes.kernel",
+            "GpuLaneBarrier is only allowed in a GPU kernel with lanes");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuLaneBarrier(x);
+    }
+    void visit_GpuLaneIndex(const GpuLaneIndex_t &x) {
+        require_id(in_kernel_with_lanes(), "asr.verify.gpu_lanes.kernel",
+            "GpuLaneIndex is only allowed in a GPU kernel with lanes");
+        require_id(ASRUtils::is_integer(*x.m_type) && x.m_value == nullptr,
+            "asr.verify.gpu_lanes.index",
+            "GpuLaneIndex must be an integer without a compile-time value");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuLaneIndex(x);
+    }
+    void visit_GpuLaneBroadcast(const GpuLaneBroadcast_t &x) {
+        require_id(in_kernel_with_lanes(), "asr.verify.gpu_lanes.kernel",
+            "GpuLaneBroadcast is only allowed in a GPU kernel with lanes");
+        ASR::ttype_t *t = ASRUtils::expr_type(x.m_arg);
+        require_id(!ASRUtils::is_array(t) && (ASRUtils::is_integer(*t)
+                || ASRUtils::is_real(*t) || ASRUtils::is_logical(*t))
+                && ASRUtils::check_equal_type(t, x.m_type, nullptr, nullptr)
+                && x.m_value == nullptr,
+            "asr.verify.gpu_lanes.broadcast",
+            "GpuLaneBroadcast must broadcast an integer, real or logical "
+            "scalar of its own type");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuLaneBroadcast(x);
     }
 
     void visit_SubroutineCall(const SubroutineCall_t &x) {
@@ -3271,6 +3462,7 @@ public:
 
     void visit_PointerNullConstant(const PointerNullConstant_t& x) {
         require(x.m_type != nullptr, "null() must have a type");
+        visit_ttype(*x.m_type);
         if ( x.m_var_expr != nullptr ) {
             visit_expr(*x.m_var_expr);
         }
@@ -3362,6 +3554,17 @@ public:
         _inside_call = true;
         BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicElementalFunction(x);
         _inside_call = _inside_call_copy;
+    }
+
+    void visit_IntrinsicImpureFunction(const ASR::IntrinsicImpureFunction_t& x) {
+        if (check_external) {
+            ASRUtils::verify_impure_function verify_ = ASRUtils::IntrinsicImpureFunctionRegistry
+                ::get_verify_function(x.m_impure_intrinsic_id);
+            if (verify_) {
+                verify_(x, diagnostics);
+            }
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicImpureFunction(x);
     }
 
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
@@ -3995,13 +4198,20 @@ public:
     }
 
     void visit_StructConstant(const StructConstant_t &x) {
-        for (size_t i = 0; i < x.n_args; i++) {
-            if (x.m_args[i].m_value == nullptr) continue;
-            require_with_loc_id(is_struct_constant_argument(x.m_args[i].m_value),
-                "asr.verify.struct_constant.argument_is_constant",
-                "StructConstant argument " + std::to_string(i + 1)
-                    + " is not a constant",
-                x.m_args[i].m_value->base.loc);
+        // Classifying an argument looks through ExternalSymbol, which is
+        // possible only once external symbols are resolved (a module file
+        // is verified with check_external=false before that), so the check
+        // runs then.
+        if (check_external) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i].m_value == nullptr) continue;
+                require_with_loc_id(
+                    is_struct_constant_argument(x.m_args[i].m_value),
+                    "asr.verify.struct_constant.argument_is_constant",
+                    "StructConstant argument " + std::to_string(i + 1)
+                        + " is not a constant",
+                    x.m_args[i].m_value->base.loc);
+            }
         }
         verify_struct_constructor_arguments("StructConstant",
             "asr.verify.struct_constant", x.m_dt_sym, x.m_args, x.n_args,
@@ -4058,6 +4268,12 @@ public:
         }
         require(x.n_dims != 0, "Array type cannot have 0 dimensions.")
         require(!ASR::is_a<ASR::Array_t>(*x.m_type), "Array type cannot be nested.")
+        // A "StringArraySinglePointer" array is a flat buffer of C characters,
+        // so it can only hold strings.
+        require(x.m_physical_type != ASR::StringArraySinglePointer ||
+            ASRUtils::is_character(*x.m_type),
+            "Array with physical type \"StringArraySinglePointer\" must have"
+            " a string element type")
         if(ASRUtils::is_character(*x.m_type)){
             require(x.m_physical_type != ASR::FixedSizeArray,
                 "Array of strings' physical type shouldn't be \"FixedSizeArray\"")
@@ -4166,6 +4382,13 @@ public:
         ASR::ttype_t* cast_type = ASRUtils::type_get_past_allocatable(x.m_type);
         require(ASR::is_a<ASR::String_t>(*cast_type), "StringPhysicalCast should be of string type");
         ASR::String_t* str = ASR::down_cast<ASR::String_t>(cast_type);
+        require(ASRUtils::is_string_only(ASRUtils::expr_type(x.m_arg)),
+            "StringPhysicalCast argument must be a string");
+        require(x.m_old == ASRUtils::get_string_type(
+                ASRUtils::expr_type(x.m_arg))->m_physical_type,
+            "StringPhysicalCast old physical type must match its argument");
+        require(x.m_new == str->m_physical_type,
+            "StringPhysicalCast new physical type must match its result");
         require(!str->m_len,
             "StringPhysicalCast return type shouldn't have length "
             "(Length should be implicit).")

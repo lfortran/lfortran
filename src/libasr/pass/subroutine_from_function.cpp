@@ -352,10 +352,13 @@ private :
      *  EXAMPLE ::: return_var_type ==> ` (String 1 (foo()) ExpressionLength DescriptorString) `
      *    
      *  An ExternalSymbol should be already in the current scope, but we might not be able 
-     *  to get it due to name mangling -- So just create a one.
+     *  to get it by name due to name mangling -- So import the symbol's definition,
+     *  reusing an existing import of it. A symbol use associated in an internal
+     *  procedure is not in a module itself, but its definition is.
      */
     ASR::symbol_t* get_resolved_symbol(ASR::symbol_t* sym){
-        ASR::Module_t *sym_mod = ASRUtils::get_sym_module(sym);
+        ASR::Module_t *sym_mod = ASRUtils::get_sym_module(
+            ASRUtils::symbol_get_past_external(sym));
         if(ASR::symbol_t* func = current_scope_->resolve_symbol(ASRUtils::symbol_name(sym))){
             auto const sym_deep  =  ASRUtils::symbol_get_past_external(sym);
             auto const func_deep =  ASRUtils::symbol_get_past_external(func);
@@ -368,15 +371,8 @@ private :
             return sym;
         }
 
-        /* Not Found In Current Scope -- Create An External Symbol */
-        char* const unique_name = s2c(al_, current_scope_->get_unique_name(ASRUtils::symbol_name(sym)));
-        auto ext_sym = ASR::down_cast<ASR::symbol_t>(
-                ASR::make_ExternalSymbol_t(al_, sym->base.loc, 
-                                    current_scope_, unique_name, sym,
-                                    sym_mod->m_name, nullptr, 0,
-                                    ASRUtils::symbol_name(sym), ASR::Private));
-        current_scope_->add_symbol(unique_name, ext_sym);
-        return ext_sym;
+        /* Not Found In Current Scope -- Import Its Definition */
+        return ASRUtils::import_symbol(al_, sym, current_scope_);
     }
 
 public : 
@@ -506,6 +502,39 @@ static void finalize_result_argument(Allocator &al, ASR::expr_t* result,
         is_allocated, finalization.p, finalization.n, nullptr, 0)));
 }
 
+static void prepare_allocatable_character_result(Allocator& al,
+        ASR::expr_t* result, ASR::expr_t* value, Vec<ASR::stmt_t*>& body) {
+    ASR::ttype_t* type = ASRUtils::expr_type(value);
+    ASR::ttype_t* result_type = ASRUtils::expr_type(result);
+    if (!ASRUtils::is_allocatable(type) || !ASRUtils::is_character(*type) ||
+            !ASRUtils::is_allocatable(result_type) ||
+            ASRUtils::get_string_type(result_type)->m_len_kind != ASR::DeferredLength) {
+        return;
+    }
+    ASR::String_t* string = ASRUtils::get_string_type(type);
+    if (string->m_len_kind != ASR::ExpressionLength || !string->m_len) {
+        return;
+    }
+    // The explicit result length is an entry-time value; an array result's
+    // shape is owned by the callee. Establish the length here, not in a declaration
+    // evaluated before the call's metadata assignments. INTENT(OUT) releases
+    // the allocation before the original function body executes.
+    const Location& loc = value->base.loc;
+    ASRUtils::ASRBuilder b(al, loc);
+    Vec<ASR::dimension_t> dims;
+    size_t rank = ASRUtils::extract_n_dims_from_ttype(type);
+    dims.reserve(al, rank);
+    for (size_t i = 0; i < rank; i++) {
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = b.i32(1);
+        dim.m_length = b.i32(0);
+        dims.push_back(al, dim);
+    }
+    body.push_back(al, b.Deallocate(result));
+    body.push_back(al, b.Allocate(result, dims.p, dims.size(), string->m_len));
+}
+
 class ReplaceFunctionCallWithSubroutineCall : public ASR::BaseExprReplacer<ReplaceFunctionCallWithSubroutineCall> {
 
 
@@ -582,51 +611,8 @@ private :
     /// This function is creating the proper type for return slot variable
     /// WHY? Some return slot variables can't be of the exact type as their function return type.
     ASR::ttype_t* create_type_for_return_slot_var(ASR::ttype_t* function_return_t){
-        /* Initially Create Exactly The Same Type */
-        ASR::ttype_t* new_type = ASRUtils::duplicate_type(al, function_return_t);
-
-        /* Now Start To Modify Type If Needed */
-
-        /* ================ STRING TYPE ================ */
-
-        /* Handle The Case Of DeferredLength + Non Allocatable (some functions have that return type) */
-        {
-            const bool allocatable_needed = ASRUtils::is_deferredLength_string(new_type)
-                                            && !ASRUtils::is_allocatable(new_type)
-                                            && !ASRUtils::is_pointer(new_type);
-
-            if(allocatable_needed) new_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, new_type->base.loc, new_type));
-        }
-        /* Handle Case `character(n) :: str` --  Create `character(:), alloactable :: str` */
-        {
-            const bool allocatable_needed = ASRUtils::is_string_only(new_type)
-                                            && !ASRUtils::is_value_constant(ASRUtils::get_string_type(new_type)->m_len)
-                                            && ASRUtils::get_string_type(new_type)->m_len_kind == ASR::ExpressionLength
-                                            && !ASRUtils::is_allocatable(new_type)
-                                            && !ASRUtils::is_pointer(new_type);
-            if(allocatable_needed){ 
-                ASR::String_t* const str = ASRUtils::get_string_type(new_type);
-                str->m_len = nullptr;
-                str->m_len_kind = ASR::DeferredLength;
-                str->m_physical_type = ASR::DescriptorString;
-                new_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, new_type->base.loc, new_type));
-            }
-        }
-        /* Handle Case `character(*) :: str` (AssumedLength) -- Create `character(:), allocatable :: str` */
-        {
-            const bool allocatable_needed = ASRUtils::is_string_only(new_type)
-                                            && ASRUtils::get_string_type(new_type)->m_len_kind == ASR::AssumedLength
-                                            && !ASRUtils::is_allocatable(new_type)
-                                            && !ASRUtils::is_pointer(new_type);
-            if(allocatable_needed){
-                ASR::String_t* const str = ASRUtils::get_string_type(new_type);
-                str->m_len = nullptr;
-                str->m_len_kind = ASR::DeferredLength;
-                str->m_physical_type = ASR::DescriptorString;
-                new_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, new_type->base.loc, new_type));
-            }
-        }
-        return new_type;
+        return normalize_string_temporary_type(al, function_return_t->base.loc,
+            ASRUtils::duplicate_type(al, function_return_t), true);
     }
 
 public :
@@ -753,6 +739,8 @@ public :
                 AllocateVarBasedOnFuncCall::Allocate(
                     al, x, ASR::down_cast<ASR::Var_t>(result_var),current_scope, pass_result, alloc_type);
             }
+            prepare_allocatable_character_result(al, result_var,
+                ASRUtils::EXPR((ASR::asr_t*)x), pass_result);
             // Create new call args with `result_var` as last argument capturing return + Create a `subroutineCall`.
             Vec<ASR::call_arg_t> new_call_args;
             new_call_args.reserve(al,1);
@@ -1130,12 +1118,51 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 !ASRUtils::is_array(target_type);
         }
 
+        // Whether `value` is an allocatable scalar structure result that may
+        // be finalized, assigned to an allocatable scalar `target`. A
+        // polymorphic result may have a dynamic type with a final
+        // subroutine that its declared type does not have.
+        static bool is_finalizable_allocatable_scalar_result_to_allocatable(
+                ASR::expr_t* value, ASR::expr_t* target) {
+            ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+            ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+            if (!ASRUtils::is_allocatable(value_type) ||
+                    ASRUtils::is_array(value_type) ||
+                    !ASRUtils::is_allocatable(target_type) ||
+                    ASRUtils::is_array(target_type)) {
+                return false;
+            }
+            ASR::ttype_t* value_elem = ASRUtils::extract_type(value_type);
+            if (!ASR::is_a<ASR::StructType_t>(*value_elem)) {
+                return false;
+            }
+            return ASRUtils::is_class_type(value_elem) ||
+                ASRUtils::struct_needs_finalization(result_struct_sym(value));
+        }
+
+        // The derived type of the result of the call `value`. The result
+        // variable of a function made a subroutine is its last argument.
+        static ASR::symbol_t* result_struct_sym(ASR::expr_t* value) {
+            ASR::symbol_t* struct_sym =
+                ASRUtils::get_struct_sym_from_struct_expr(value);
+            if (struct_sym == nullptr && ASR::is_a<ASR::FunctionCall_t>(*value)) {
+                ASR::Function_t* func = ASRUtils::get_function(
+                    ASR::down_cast<ASR::FunctionCall_t>(value)->m_name);
+                if (func != nullptr && func->n_args > 0) {
+                    struct_sym = ASRUtils::get_struct_sym_from_struct_expr(
+                        func->m_args[func->n_args - 1]);
+                }
+            }
+            return struct_sym;
+        }
+
         bool subroutine_call_from_function(const Location &loc, ASR::stmt_t &xx) {
             ASR::expr_t* value = nullptr;
             ASR::expr_t* target = nullptr;
             bool is_pointer_return = false;
             bool use_temp_var_for_return = false;
             bool allocatable_result_to_non_allocatable = false;
+            bool finalizable_allocatable_result = false;
             if (ASR::is_a<ASR::Assignment_t>(xx)) {
                 ASR::Assignment_t* assignment = ASR::down_cast<ASR::Assignment_t>(&xx);
                 value = assignment->m_value;
@@ -1154,13 +1181,24 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     is_allocatable_scalar_result_to_non_allocatable(value, target);
                 use_temp_var_for_return = use_temp_var_for_return ||
                     allocatable_result_to_non_allocatable;
+                // The result of a nonpointer function is finalized after the
+                // statement (F2018 7.5.6.3 p5): it is an object of its own,
+                // and not the variable. Return it into a temporary, assign
+                // that to the variable and deallocate it, which finalizes it.
+                finalizable_allocatable_result =
+                    is_finalizable_allocatable_scalar_result_to_allocatable(
+                        value, target);
+                use_temp_var_for_return = use_temp_var_for_return ||
+                    finalizable_allocatable_result;
                 {
                     ASR::ttype_t* target_type_ = ASRUtils::extract_type(
                         ASRUtils::expr_type(target));
                     ASR::ttype_t* value_type_ = ASRUtils::extract_type(
                         ASRUtils::expr_type(value));
-                    if (ASRUtils::is_class_type(target_type_) &&
-                        !ASRUtils::is_class_type(value_type_)) {
+                    // A polymorphic result cannot be returned through a
+                    // nonpolymorphic variable either.
+                    if (ASRUtils::is_class_type(target_type_) !=
+                            ASRUtils::is_class_type(value_type_)) {
                         use_temp_var_for_return = true;
                     }
                 }
@@ -1263,22 +1301,16 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                      ASRUtils::is_allocatable(target_type) != ASRUtils::is_allocatable(value_type));
 
                 if (class_to_type_mismatch || type_to_class_mismatch ||
-                        allocatable_result_to_non_allocatable || attribute_mismatch) {
-                    ASR::ttype_t* var_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(value));
+                        allocatable_result_to_non_allocatable || attribute_mismatch ||
+                        finalizable_allocatable_result) {
+                    ASR::ttype_t* var_type = normalize_string_temporary_type(al,
+                        value->base.loc, ASRUtils::duplicate_type(al,
+                            ASRUtils::expr_type(value)), true);
                     std::string var_name = current_scope->get_unique_name(
                         "__libasr_created__subroutine_from_function_");
                     ASR::symbol_t* struct_sym = nullptr;
-                    if (type_to_class_mismatch) {
-                        struct_sym = ASRUtils::get_struct_sym_from_struct_expr(value);
-                        if (struct_sym == nullptr &&
-                            ASR::is_a<ASR::Function_t>(*func_sym)) {
-                            ASR::Function_t* func_local =
-                                ASR::down_cast<ASR::Function_t>(func_sym);
-                            if (func_local->n_args > 0) {
-                                struct_sym = ASRUtils::get_struct_sym_from_struct_expr(
-                                    func_local->m_args[func_local->n_args - 1]);
-                            }
-                        }
+                    if (type_to_class_mismatch || finalizable_allocatable_result) {
+                        struct_sym = result_struct_sym(value);
                     } else {
                         struct_sym = ASRUtils::get_struct_sym_from_struct_expr(target);
                     }
@@ -1324,6 +1356,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     to_be_deallocated.p, to_be_deallocated.size())));
             }
             ASR::call_arg_t result_arg;
+            prepare_allocatable_character_result(al, target, value, pass_result);
             result_arg.loc = target->base.loc;
             result_arg.m_value = target;
             s_args.push_back(al, result_arg);
@@ -1354,8 +1387,43 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 }
 
                 remove_original_statement = false;
-                if (allocatable_result_to_non_allocatable) {
-                    pass_result.push_back(al, &xx);
+                // An allocatable scalar structure temporary holds the result
+                // only for the assignment: it is deallocated after it, which
+                // finalizes the result (F2018 7.5.6.3 p5).
+                ASR::ttype_t* temp_type = ASRUtils::expr_type(target);
+                bool deallocate_result_temporary =
+                    allocatable_result_to_non_allocatable ||
+                    (ASR::is_a<ASR::Assignment_t>(xx) &&
+                     ASRUtils::is_allocatable(temp_type) &&
+                     !ASRUtils::is_array(temp_type) &&
+                     ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(temp_type)));
+                if (deallocate_result_temporary) {
+                    ASR::expr_t* variable = ASR::is_a<ASR::Assignment_t>(xx)
+                        ? ASR::down_cast<ASR::Assignment_t>(&xx)->m_target : nullptr;
+                    if (!allocatable_result_to_non_allocatable && variable != nullptr &&
+                            ASRUtils::is_allocatable(ASRUtils::expr_type(variable))) {
+                        // A result that the function left unallocated leaves
+                        // the variable unallocated, as it does when it is
+                        // returned into the variable itself.
+                        Vec<ASR::expr_t*> allocated_args;
+                        allocated_args.reserve(al, 1);
+                        allocated_args.push_back(al, target);
+                        ASR::expr_t* is_allocated = ASRUtils::EXPR(
+                            ASR::make_IntrinsicImpureFunction_t(al, target->base.loc,
+                            static_cast<int64_t>(ASRUtils::IntrinsicImpureFunctions::Allocated),
+                            allocated_args.p, allocated_args.n, 0,
+                            ASRUtils::TYPE(ASR::make_Logical_t(al, target->base.loc, 4)),
+                            nullptr));
+                        Vec<ASR::expr_t*> variable_args;
+                        variable_args.reserve(al, 1);
+                        variable_args.push_back(al, variable);
+                        ASRUtils::ASRBuilder b(al, loc);
+                        pass_result.push_back(al, b.If(is_allocated, {&xx},
+                            {ASRUtils::STMT(ASR::make_ImplicitDeallocate_t(al,
+                                variable->base.loc, variable_args.p, variable_args.n))}));
+                    } else {
+                        pass_result.push_back(al, &xx);
+                    }
                     Vec<ASR::expr_t*> to_be_deallocated;
                     to_be_deallocated.reserve(al, 1);
                     to_be_deallocated.push_back(al, target);

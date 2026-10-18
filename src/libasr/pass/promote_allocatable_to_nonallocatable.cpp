@@ -1,7 +1,10 @@
 #include <libasr/asr.h>
+#include <libasr/asr_builder.h>
 #include <libasr/asr_utils.h>
 #include <libasr/utils.h>
 #include <libasr/pass/pass_utils.h>
+#include <libasr/pass/gpu_device_struct_storage.h>
+#include <libasr/codegen/gpu_utils.h>
 #include <libasr/containers.h>
 #include <map>
 #include <set>
@@ -10,26 +13,233 @@
 
 namespace LCompilers {
 
+// The dimensions of an allocation of device code, with every inquiry about
+// the shape of a local array of an explicit shape replaced by that shape.
+// A device routine knows the shape of such an array when it is entered, so
+// an allocation sized from it -- the temporary a shared pass sizes from
+// another temporary it created -- has a shape known on entry too.
+class ExplicitShapeInquiryResolver:
+    public ASR::BaseExprReplacer<ExplicitShapeInquiryResolver> {
+    private:
+
+        Allocator& al;
+
+        static ASR::Array_t* explicit_local_shape(ASR::expr_t* e) {
+            e = ASRUtils::get_past_array_physical_cast(e);
+            if( !ASR::is_a<ASR::Var_t>(*e) ) {
+                return nullptr;
+            }
+            ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(e)->m_v;
+            if( !ASR::is_a<ASR::Variable_t>(*sym) ) {
+                return nullptr;
+            }
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            if( var->m_intent != ASR::intentType::Local ||
+                !ASR::is_a<ASR::Array_t>(*var->m_type) ) {
+                return nullptr;
+            }
+            ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(var->m_type);
+            for( size_t i = 0; i < arr->n_dims; i++ ) {
+                if( arr->m_dims[i].m_length == nullptr ) {
+                    return nullptr;
+                }
+            }
+            return arr;
+        }
+
+        ASR::expr_t* copy(ASR::expr_t* e, ASR::ttype_t* type) {
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            duplicator.allow_procedure_calls = true;
+            duplicator.success = true;
+            ASR::expr_t* c = duplicator.duplicate_expr(e);
+            if( !duplicator.success ) {
+                return nullptr;
+            }
+            ASRUtils::ASRBuilder b(al, e->base.loc);
+            return b.i2i_t(c, type);
+        }
+
+        ASR::expr_t* lower_bound(ASR::Array_t* arr, size_t d,
+            ASR::ttype_t* type) {
+            if( arr->m_dims[d].m_start ) {
+                return copy(arr->m_dims[d].m_start, type);
+            }
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+                arr->m_dims[d].loc, 1, type, ASR::integerbozType::Decimal));
+        }
+
+        bool dimension(ASR::expr_t* dim, size_t rank, size_t& d) {
+            int64_t value = 0;
+            if( dim == nullptr || !ASRUtils::extract_value(
+                    ASRUtils::expr_value(dim), value) ||
+                value < 1 || (size_t) value > rank ) {
+                return false;
+            }
+            d = (size_t) value - 1;
+            return true;
+        }
+
+    public:
+
+        bool resolved = true;
+
+        ExplicitShapeInquiryResolver(Allocator& al_): al(al_) {}
+
+        void replace_ArraySize(ASR::ArraySize_t* x) {
+            ASR::Array_t* arr = explicit_local_shape(x->m_v);
+            if( arr == nullptr ) {
+                ASR::BaseExprReplacer<
+                    ExplicitShapeInquiryResolver>::replace_ArraySize(x);
+                return;
+            }
+            ASRUtils::ASRBuilder b(al, x->base.base.loc);
+            ASR::expr_t* size = nullptr;
+            size_t first = 0, last = arr->n_dims;
+            if( x->m_dim ) {
+                if( !dimension(x->m_dim, arr->n_dims, first) ) {
+                    resolved = false;
+                    return;
+                }
+                last = first + 1;
+            }
+            for( size_t d = first; d < last; d++ ) {
+                ASR::expr_t* length = copy(arr->m_dims[d].m_length,
+                    x->m_type);
+                if( length == nullptr ) {
+                    resolved = false;
+                    return;
+                }
+                size = size ? b.Mul(size, length) : length;
+            }
+            *current_expr = size;
+        }
+
+        void replace_ArrayBound(ASR::ArrayBound_t* x) {
+            ASR::Array_t* arr = explicit_local_shape(x->m_v);
+            size_t d = 0;
+            if( arr == nullptr || !dimension(x->m_dim, arr->n_dims, d) ) {
+                ASR::BaseExprReplacer<
+                    ExplicitShapeInquiryResolver>::replace_ArrayBound(x);
+                return;
+            }
+            ASRUtils::ASRBuilder b(al, x->base.base.loc);
+            ASR::expr_t* lower = lower_bound(arr, d, x->m_type);
+            if( x->m_bound == ASR::arrayboundType::LBound ) {
+                *current_expr = lower;
+                return;
+            }
+            ASR::expr_t* length = copy(arr->m_dims[d].m_length, x->m_type);
+            if( lower == nullptr || length == nullptr ) {
+                resolved = false;
+                return;
+            }
+            *current_expr = b.Sub(b.Add(lower, length),
+                b.i_t(1, x->m_type));
+        }
+
+        // The dimensions `dims` with every such inquiry resolved, or
+        // nullptr when one cannot be.
+        ASR::dimension_t* resolve(ASR::dimension_t* dims, size_t n_dims) {
+            Vec<ASR::dimension_t> out;
+            out.reserve(al, n_dims);
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            duplicator.allow_procedure_calls = true;
+            resolved = true;
+            for( size_t i = 0; i < n_dims; i++ ) {
+                ASR::dimension_t dim = dims[i];
+                ASR::expr_t** parts[2] = {&dim.m_start, &dim.m_length};
+                for( ASR::expr_t** part: parts ) {
+                    if( *part == nullptr ) {
+                        continue;
+                    }
+                    duplicator.success = true;
+                    *part = duplicator.duplicate_expr(*part);
+                    if( !duplicator.success ) {
+                        return nullptr;
+                    }
+                    current_expr = part;
+                    replace_expr(*part);
+                }
+                out.push_back(al, dim);
+            }
+            return resolved ? out.p : nullptr;
+        }
+};
+
+
+// The shape an allocation of device code gives, as the routine `fn` has it
+// on entry: every inquiry about the shape of a local array of an explicit
+// shape resolved, then written over what does not change during the call
+// (see gpu_write_extents_at_entry): `intent(in)` dummy arguments that are
+// not pointers, named constants, and locals the routine binds once, with
+// no other name through which they could be defined. `on_entry` tells
+// whether that could be done; the dimensions are left as they are when it
+// could not. A shape written that way has one value for the whole call,
+// whichever allocation states it, so it is the shape the array is given
+// on entry.
+static ASR::dimension_t* device_allocation_dims(Allocator& al,
+        ASR::Function_t* fn, const ASR::alloc_arg_t& alloc_arg,
+        bool& on_entry) {
+    ExplicitShapeInquiryResolver resolver(al);
+    ASR::dimension_t* dims = resolver.resolve(alloc_arg.m_dims,
+        alloc_arg.n_dims);
+    if( dims == nullptr ) {
+        dims = alloc_arg.m_dims;
+    }
+    on_entry = false;
+    if( fn == nullptr ) {
+        return dims;
+    }
+    Vec<ASR::dimension_t> written;
+    written.reserve(al, alloc_arg.n_dims);
+    ASRUtils::ExprStmtDuplicator duplicator(al);
+    duplicator.allow_procedure_calls = true;
+    for( size_t i = 0; i < alloc_arg.n_dims; i++ ) {
+        ASR::dimension_t dim = dims[i];
+        duplicator.success = true;
+        if( dim.m_start ) dim.m_start = duplicator.duplicate_expr(dim.m_start);
+        if( dim.m_length ) dim.m_length = duplicator.duplicate_expr(dim.m_length);
+        if( !duplicator.success ) {
+            return dims;
+        }
+        written.push_back(al, dim);
+    }
+    if( gpu_write_extents_at_entry(al, *fn, written.p, written.size()) ) {
+        on_entry = true;
+        return written.p;
+    }
+    return dims;
+}
+
 class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocatedCalled> {
     public:
 
         std::map<SymbolTable*, std::vector<ASR::symbol_t*>>& scope2var;
         std::map<ASR::symbol_t*, int> alloc_count;
+        std::map<ASR::symbol_t*, std::vector<ASR::dimension_t>> alloc_shape;
+        // Whether the first allocation's shape was written on entry.
+        std::map<ASR::symbol_t*, bool> alloc_on_entry;
         bool device_only;
         bool in_device;
+        Allocator* al;
+        ASR::Function_t* current_function = nullptr;
 
         IsAllocatedCalled(std::map<SymbolTable*, std::vector<ASR::symbol_t*>>& scope2var_,
-            bool device_only_=false):
-            scope2var(scope2var_), device_only(device_only_), in_device(false) {}
+            bool device_only_=false, Allocator* al_=nullptr):
+            scope2var(scope2var_), device_only(device_only_), in_device(false),
+            al(al_) {}
 
         void visit_Function(const ASR::Function_t& x) {
             bool in_device_copy = in_device;
+            ASR::Function_t* function_copy = current_function;
             if( device_only && ASRUtils::runs_on_device(x) ) {
                 in_device = true;
             }
+            current_function = const_cast<ASR::Function_t*>(&x);
             ASR::CallReplacerOnExpressionsVisitor<
                 IsAllocatedCalled>::visit_Function(x);
             in_device = in_device_copy;
+            current_function = function_copy;
         }
 
         // Push symbol to all scopes from current_scope up to and including the
@@ -60,6 +270,9 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
         }
 
         void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+            // An argument can itself ask whether an array is allocated,
+            // as in `call s(allocated(a))`.
+            ASR::CallReplacerOnExpressionsVisitor<IsAllocatedCalled>::visit_FunctionCall(x);
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(x.m_name);
             size_t n = std::min(x.n_args, func_type->n_arg_types);
             for( size_t i = 0; i < n; i++ ) {
@@ -75,6 +288,9 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
         }
 
         void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
+            // An argument can itself ask whether an array is allocated,
+            // as in `call s(allocated(a))`.
+            ASR::CallReplacerOnExpressionsVisitor<IsAllocatedCalled>::visit_SubroutineCall(x);
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(x.m_name);
             size_t n = std::min(x.n_args, func_type->n_arg_types);
             for( size_t i = 0; i < n; i++ ) {
@@ -90,6 +306,14 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
         }
 
         void visit_ReAlloc(const ASR::ReAlloc_t& x) {
+            // A device has no heap: a reallocation there gives the array
+            // the one shape it can have, as an allocation does.
+            if( in_device ) {
+                for( size_t i = 0; i < x.n_args; i++ ) {
+                    check_allocation(x.m_args[i]);
+                }
+                return;
+            }
             for( size_t i = 0; i < x.n_args; i++ ) {
                 if( ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x.m_args[i].m_a)) ||
                     ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_args[i].m_a)) ) {
@@ -118,24 +342,69 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
             return false;
         }
 
-        void visit_Allocate(const ASR::Allocate_t& x) {
-            for( size_t i = 0; i < x.n_args; i++ ) {
-                ASR::alloc_arg_t alloc_arg = x.m_args[i];
+        void check_allocation(const ASR::alloc_arg_t& alloc_arg) {
+            ASR::dimension_t* dims = alloc_arg.m_dims;
+            bool on_entry = false;
+            if( in_device && al != nullptr ) {
+                dims = device_allocation_dims(*al, current_function,
+                    alloc_arg, on_entry);
+            }
+            if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) ) {
+                ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v;
+                alloc_count[sym] += 1;
+                // A device has no heap: an array of device code allocated
+                // more than once with the one shape, as shared lowering
+                // allocates a temporary and then reallocates it to the
+                // shape it already has, has that shape on entry. Only shapes
+                // written as their values on entry are compared, so that the
+                // same expression is the same shape at every allocation: an
+                // extent reading a value the routine changes between them,
+                // `n = n + 4` or through an associate name, is never one.
+                bool same_shape = false;
+                if( alloc_count[sym] == 1 ) {
+                    alloc_shape[sym] = std::vector<ASR::dimension_t>(
+                        dims, dims + alloc_arg.n_dims);
+                    alloc_on_entry[sym] = on_entry;
+                } else if( in_device && on_entry && alloc_on_entry[sym] ) {
+                    const std::vector<ASR::dimension_t>& first = alloc_shape[sym];
+                    same_shape = first.size() == alloc_arg.n_dims;
+                    // An allocation that states no lower bound starts at 1.
+                    auto same_start = [](ASR::expr_t* a, ASR::expr_t* b) {
+                        int64_t value = 0;
+                        if( a == nullptr || b == nullptr ) {
+                            ASR::expr_t* given = a ? a : b;
+                            return given == nullptr || (ASRUtils::extract_value(
+                                ASRUtils::expr_value(given), value) &&
+                                value == 1);
+                        }
+                        return PassUtils::same_expression(a, b);
+                    };
+                    for( size_t i = 0; same_shape && i < first.size(); i++ ) {
+                        same_shape = same_start(first[i].m_start,
+                                dims[i].m_start) &&
+                            PassUtils::same_expression(
+                                first[i].m_length, dims[i].m_length);
+                    }
+                }
+                if( alloc_count[sym] > 1 && !same_shape ) {
+                    push_to_scopes_until_symbol_scope(sym);
+                }
+            }
+            bool sized = in_device ? on_entry :
+                ASRUtils::is_dimension_dependent_only_on_arguments(
+                    dims, alloc_arg.n_dims, true, false);
+            if( !sized ||
+                is_array_size_called_on_pointer(dims, alloc_arg.n_dims) ) {
                 if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) ) {
                     ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v;
-                    alloc_count[sym] += 1;
-                    if( alloc_count[sym] > 1 ) {
-                        push_to_scopes_until_symbol_scope(sym);
-                    }
+                    push_to_scopes_until_symbol_scope(sym);
                 }
-                if( !ASRUtils::is_dimension_dependent_only_on_arguments(
-                        alloc_arg.m_dims, alloc_arg.n_dims, true, in_device) ||
-                    is_array_size_called_on_pointer(alloc_arg.m_dims, alloc_arg.n_dims) ) {
-                    if( ASR::is_a<ASR::Var_t>(*alloc_arg.m_a) ) {
-                        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v;
-                        push_to_scopes_until_symbol_scope(sym);
-                    }
-                }
+            }
+        }
+
+        void visit_Allocate(const ASR::Allocate_t& x) {
+            for( size_t i = 0; i < x.n_args; i++ ) {
+                check_allocation(x.m_args[i]);
             }
         }
 
@@ -164,7 +433,9 @@ class IsAllocatedCalled: public ASR::CallReplacerOnExpressionsVisitor<IsAllocate
 
         void visit_Assignment(const ASR::Assignment_t& x) {
             ASR::CallReplacerOnExpressionsVisitor<IsAllocatedCalled>::visit_Assignment(x);
-            if (x.m_move_allocation) {
+            // A device has no heap, so moving an allocation there is a copy
+            // between two arrays of the same shape.
+            if (x.m_move_allocation && !in_device) {
                 if( ASR::is_a<ASR::Var_t>(*x.m_target) ) {
                     ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(x.m_target)->m_v;
                     push_to_scopes_until_symbol_scope(sym);
@@ -200,6 +471,7 @@ class PromoteAllocatableToNonAllocatable:
         // whose shape is known when the routine is entered.
         bool device_only;
         bool in_device;
+        ASR::Function_t* current_function = nullptr;
 
     public:
 
@@ -218,11 +490,14 @@ class PromoteAllocatableToNonAllocatable:
 
         void visit_Function(const ASR::Function_t& x) {
             bool in_device_copy = in_device;
+            ASR::Function_t* function_copy = current_function;
             if( device_only && ASRUtils::runs_on_device(x) ) {
                 in_device = true;
             }
+            current_function = const_cast<ASR::Function_t*>(&x);
             ASR::CallReplacerOnExpressionsVisitor<
                 PromoteAllocatableToNonAllocatable>::visit_Function(x);
+            current_function = function_copy;
             if( in_device && x.m_return_var &&
                 ASR::is_a<ASR::Var_t>(*x.m_return_var) &&
                 promoted_symbols.count(
@@ -233,11 +508,29 @@ class PromoteAllocatableToNonAllocatable:
         }
 
         void visit_Allocate(const ASR::Allocate_t& x) {
-            ASR::Allocate_t& xx = const_cast<ASR::Allocate_t&>(x);
+            promote_allocation(const_cast<ASR::Allocate_t&>(x));
+        }
+
+        // A device has no heap: a reallocation there gives the array the
+        // one shape it can have, as an allocation does.
+        void visit_ReAlloc(const ASR::ReAlloc_t& x) {
+            if( in_device ) {
+                promote_allocation(const_cast<ASR::ReAlloc_t&>(x));
+            }
+        }
+
+        template <typename T>
+        void promote_allocation(T& xx) {
+            const T& x = xx;
             Vec<ASR::alloc_arg_t> x_args;
             x_args.reserve(al, x.n_args);
             for( size_t i = 0; i < x.n_args; i++ ) {
                 ASR::alloc_arg_t alloc_arg = x.m_args[i];
+                bool on_entry = false;
+                if( in_device ) {
+                    alloc_arg.m_dims = device_allocation_dims(al,
+                        current_function, x.m_args[i], on_entry);
+                }
                 bool is_allocatable_array = ASR::is_a<ASR::Allocatable_t>(
                     *ASRUtils::expr_type(alloc_arg.m_a)) &&
                     ASRUtils::is_array(ASRUtils::expr_type(alloc_arg.m_a));
@@ -266,8 +559,10 @@ class PromoteAllocatableToNonAllocatable:
                     (ASRUtils::expr_intent(alloc_arg.m_a) == ASRUtils::intent_local ||
                      (in_device && ASRUtils::expr_intent(alloc_arg.m_a) ==
                         ASRUtils::intent_return_var)) &&
-                    ASRUtils::is_dimension_dependent_only_on_arguments(
-                        alloc_arg.m_dims, alloc_arg.n_dims, false, in_device) &&
+                    (in_device ? on_entry :
+                        ASRUtils::is_dimension_dependent_only_on_arguments(
+                            alloc_arg.m_dims, alloc_arg.n_dims, false,
+                            false)) &&
                     std::find(scope2var[current_scope].begin(),
                         scope2var[current_scope].end(),
                         ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v) ==
@@ -515,9 +810,9 @@ class FixMoveAssignment: public ASR::CallReplacerOnExpressionsVisitor<FixMoveAss
         }
 };
 
-// Collects the variables that an explicit Allocate statement gives a shape to.
+// Collect explicit allocations, including those in BLOCK/ASSOCIATE bodies.
 class AllocatedSymbolCollector:
-    public ASR::BaseWalkVisitor<AllocatedSymbolCollector> {
+    public ASRUtils::BlockBodyWalkVisitor<AllocatedSymbolCollector> {
     public:
 
         std::set<ASR::symbol_t*>& syms;
@@ -578,14 +873,16 @@ class DeviceImplicitAllocInserter:
 
         // The shape an assignment gives its target has to be readable where
         // the target is declared, so only a value whose extents come from a
-        // variable can be used.
+        // variable can be used: the variable itself, or the one an
+        // elementwise expression (`2*c`) takes its shape from.
         ASR::expr_t* shape_source(ASR::expr_t* value) {
             ASR::expr_t* v = ASRUtils::get_past_array_physical_cast(value);
-            if( ASR::is_a<ASR::Var_t>(*v) ||
-                ASR::is_a<ASR::StructInstanceMember_t>(*v) ) {
-                return v;
+            while( v && !ASR::is_a<ASR::Var_t>(*v) &&
+                    !ASR::is_a<ASR::StructInstanceMember_t>(*v) &&
+                    !ASR::is_a<ASR::ArraySection_t>(*v) ) {
+                v = gpu_elementwise_shape_source(v);
             }
-            return nullptr;
+            return v;
         }
 
         // The variable an argument passes, past a physical cast, when it is a
@@ -708,8 +1005,79 @@ class DeviceImplicitAllocInserter:
             retain_original_stmt = true;
         }
 
+        // A function whose result has an explicit shape gives that shape,
+        // with the call's actual arguments written over its dummies, to the
+        // variable its result is assigned to, as a routine does to the
+        // variable it writes its result into (see visit_SubroutineCall).
+        bool call_result_shape(const ASR::Assignment_t& x, size_t n_dims) {
+            ASR::expr_t* value = ASRUtils::get_past_array_physical_cast(
+                x.m_value);
+            if( !ASR::is_a<ASR::FunctionCall_t>(*value) ) {
+                return false;
+            }
+            ASR::FunctionCall_t* call = ASR::down_cast<ASR::FunctionCall_t>(
+                value);
+            ASR::symbol_t* fn = ASRUtils::symbol_get_past_StructMethodDeclaration(
+                ASRUtils::symbol_get_past_external(call->m_name));
+            if( !ASR::is_a<ASR::Function_t>(*fn) ) {
+                return false;
+            }
+            ASR::ttype_t* type = ASRUtils::get_FunctionType(fn)->m_return_var_type;
+            if( type == nullptr || ASRUtils::is_allocatable(type) ||
+                ASRUtils::is_pointer(type) ) {
+                return false;
+            }
+            ASR::dimension_t* result_dims = nullptr;
+            if( (size_t) ASRUtils::extract_dimensions_from_ttype(type,
+                    result_dims) != n_dims ) {
+                return false;
+            }
+            // The extents are read from the actual arguments themselves,
+            // past the physical cast a call gives them.
+            Vec<ASR::call_arg_t> shape_args;
+            shape_args.reserve(al, call->n_args);
+            for( size_t i = 0; i < call->n_args; i++ ) {
+                ASR::call_arg_t shape_arg = call->m_args[i];
+                if( shape_arg.m_value ) {
+                    shape_arg.m_value = ASRUtils::get_past_array_physical_cast(
+                        shape_arg.m_value);
+                }
+                shape_args.push_back(al, shape_arg);
+            }
+            ASRUtils::ReplaceFunctionParamWithArg replacer(
+                al, shape_args.p, shape_args.size());
+            ASRUtils::ExprStmtDuplicator duplicator(al);
+            duplicator.allow_procedure_calls = true;
+            Vec<ASR::dimension_t> dims;
+            dims.reserve(al, n_dims);
+            for( size_t i = 0; i < n_dims; i++ ) {
+                if( result_dims[i].m_length == nullptr ) {
+                    return false;
+                }
+                duplicator.success = true;
+                ASR::dimension_t dim;
+                dim.loc = result_dims[i].loc;
+                dim.m_length = duplicator.duplicate_expr(
+                    replacer.replace_FunctionParam_with_arg(
+                        result_dims[i].m_length));
+                dim.m_start = result_dims[i].m_start
+                    ? duplicator.duplicate_expr(
+                        replacer.replace_FunctionParam_with_arg(
+                            result_dims[i].m_start))
+                    : nullptr;
+                if( !duplicator.success ) {
+                    return false;
+                }
+                dims.push_back(al, dim);
+            }
+            insert_allocate(x.base.base.loc, x.m_target, dims.p, dims.size());
+            explicitly_allocated.insert(
+                ASR::down_cast<ASR::Var_t>(x.m_target)->m_v);
+            return true;
+        }
+
         void visit_Assignment(const ASR::Assignment_t& x) {
-            if( !in_device || x.m_move_allocation ) {
+            if( !in_device ) {
                 return;
             }
             if( !ASR::is_a<ASR::Var_t>(*x.m_target) ) {
@@ -726,11 +1094,14 @@ class DeviceImplicitAllocInserter:
                 ASRUtils::is_character(*ASRUtils::extract_type(target_type)) ) {
                 return;
             }
+            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(target_type);
+            if( n_dims > 0 && call_result_shape(x, n_dims) ) {
+                return;
+            }
             ASR::expr_t* source = shape_source(x.m_value);
             if( source == nullptr ) {
                 return;
             }
-            size_t n_dims = ASRUtils::extract_n_dims_from_ttype(target_type);
             if( n_dims == 0 ||
                 (size_t) ASRUtils::extract_n_dims_from_ttype(
                     ASRUtils::expr_type(source)) != n_dims ) {
@@ -758,8 +1129,11 @@ class DeviceImplicitAllocInserter:
                     int_type, nullptr));
                 dims.push_back(al, dim);
             }
-            if( !ASRUtils::is_dimension_dependent_only_on_arguments(
-                    dims.p, dims.size(), false, true) ) {
+            ExplicitShapeInquiryResolver resolver(al);
+            ASR::dimension_t* resolved = resolver.resolve(dims.p, dims.size());
+            if( resolved == nullptr ||
+                !ASRUtils::is_dimension_dependent_only_on_arguments(
+                    resolved, dims.size(), false, true) ) {
                 return;
             }
             insert_allocate(loc, x.m_target, dims.p, dims.size());
@@ -845,24 +1219,38 @@ inline void rebuild_promoted_signatures(Allocator& al,
 void pass_promote_device_allocatable(
     Allocator &al, ASR::TranslationUnit_t &unit,
     const PassOptions &/*pass_options*/) {
-    DeviceImplicitAllocInserter implicit_alloc(al);
-    implicit_alloc.visit_TranslationUnit(unit);
-    std::map<SymbolTable*, std::vector<ASR::symbol_t*>> scope2var;
-    IsAllocatedCalled is_allocated_called(scope2var, true);
-    is_allocated_called.visit_TranslationUnit(unit);
-    PromoteAllocatableToNonAllocatable promoter(al, scope2var, true);
-    promoter.visit_TranslationUnit(unit);
-    if( promoter.promoted_symbols.empty() ) {
-        return;
+    // An allocation can be sized from another allocatable of the routine,
+    // or from a component of a derived-type local, which only has a shape
+    // on entry once it is promoted or stored itself, so the promotion is
+    // repeated until it promotes and stores nothing more.
+    while( true ) {
+        bool stored = gpu_give_struct_component_storage(al, unit);
+        DeviceImplicitAllocInserter implicit_alloc(al);
+        implicit_alloc.visit_TranslationUnit(unit);
+        std::map<SymbolTable*, std::vector<ASR::symbol_t*>> scope2var;
+        IsAllocatedCalled is_allocated_called(scope2var, true, &al);
+        is_allocated_called.visit_TranslationUnit(unit);
+        PromoteAllocatableToNonAllocatable promoter(al, scope2var, true);
+        promoter.visit_TranslationUnit(unit);
+        // What cannot be promoted because its shape is only known where
+        // it is allocated -- inside a loop -- is given a buffer sized by an
+        // upper bound known on entry instead.
+        bool buffered = promoter.promoted_symbols.empty() &&
+            gpu_bind_allocations_to_buffers(al, unit);
+        if( promoter.promoted_symbols.empty() && !stored && !buffered ) {
+            return;
+        }
+        rebuild_promoted_signatures(al, promoter.promoted_result_functions);
+        FixPromotedResultCalls fix_calls(al, promoter.promoted_result_functions);
+        fix_calls.visit_TranslationUnit(unit);
+        FixArrayPhysicalCastVisitor fix_array_physical_cast(
+            al, promoter.promoted_symbols);
+        fix_array_physical_cast.visit_TranslationUnit(unit);
+        FixMoveAssignment fix_move_assignment(al);
+        fix_move_assignment.visit_TranslationUnit(unit);
+        PassUtils::UpdateDependenciesVisitor u(al);
+        u.visit_TranslationUnit(unit);
     }
-    rebuild_promoted_signatures(al, promoter.promoted_result_functions);
-    FixPromotedResultCalls fix_calls(al, promoter.promoted_result_functions);
-    fix_calls.visit_TranslationUnit(unit);
-    FixArrayPhysicalCastVisitor fix_array_physical_cast(
-        al, promoter.promoted_symbols);
-    fix_array_physical_cast.visit_TranslationUnit(unit);
-    PassUtils::UpdateDependenciesVisitor u(al);
-    u.visit_TranslationUnit(unit);
 }
 
 void pass_promote_allocatable_to_nonallocatable(

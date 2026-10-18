@@ -3,6 +3,7 @@
 
 #include <libasr/exception.h>
 #include <lfortran/parser/parser_stype.h>
+#include <lfortran/parser/source_offset.h>
 
 namespace LCompilers::LFortran {
 
@@ -74,8 +75,8 @@ public:
     // Return the current token's location
     void token_loc(Location &loc) const
     {
-        loc.first = tok-string_start;
-        loc.last = cur-string_start-1;
+        loc.first = source_offset(tok-string_start);
+        loc.last = source_offset(cur-string_start-1);
     }
     void add_rel_warning(diag::Diagnostics &diagnostics, int rel_token) const;
 };

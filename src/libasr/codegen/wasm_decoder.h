@@ -49,7 +49,7 @@ class WASMDecoder {
     Allocator &al;
     diag::Diagnostics &diag;
     Vec<uint8_t> wasm_bytes;
-    size_t PREAMBLE_SIZE;
+    uint32_t PREAMBLE_SIZE;
 
     Vec<wasm::FuncType> func_types;
     Vec<wasm::Import> imports;

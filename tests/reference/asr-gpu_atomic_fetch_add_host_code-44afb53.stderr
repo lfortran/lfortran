@@ -1,0 +1,5 @@
+ASR verify pass error [asr.verify.gpu_atomic_fetch_add.device_code]: GpuAtomicFetchAdd is only allowed in device code
+   --> tests/asr/verify/gpu_atomic_fetch_add_host_code.asr:164:73
+    |
+164 |         :body [(Assignment :target (Var :v (SymbolRef 2 "old")) :value (GpuAtomicFetchAdd :target (ArrayItem :v (Var :v (SymbolRef 2 "a")) :args [(array_index :left nil :right (IntegerConstant :n 1 :type (Integer :kind 4) :intboz_type :Decimal) :step nil)] :type (Integer :kind 4) :storage_format :ColMajor :value nil :in_bounds false) :increment (IntegerConstant :n 1 :type (Integer :kind 4) :intboz_type :Decimal) :type (Integer :kind 4) :value nil) :overloaded nil :realloc_lhs false :move_allocation false)]
+    |                                                                         ^^^^^^^^^^^^^^^^^ failed here

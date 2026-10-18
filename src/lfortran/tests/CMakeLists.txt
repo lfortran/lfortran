@@ -16,6 +16,14 @@ endmacro(ADDTESTC)
 
 if (NOT XEUS_LFORTRAN_WASM_BUILD)
     ADDTESTC(test_cwrapper lfortran_c)
+    ADDTESTC(test_hashtable)
+    if (NOT WIN32 AND NOT EMSCRIPTEN)
+        ADDTESTC(test_system_clock lfortran_runtime_static)
+    endif()
+    # Needs a 64-bit file offset type; seeks past 2**31 without writing data.
+    if (NOT EMSCRIPTEN AND (WIN32 OR CMAKE_SIZEOF_VOID_P EQUAL 8))
+        ADDTESTC(test_file_seek lfortran_runtime_static)
+    endif()
     ADDTEST(test_stacktrace)
 endif()
 
@@ -216,6 +224,21 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
             NAME test_asr_reducer_unit
             COMMAND ${LFORTRAN_TEST_PYTHON}
                 ${CMAKE_SOURCE_DIR}/tests/asr/test_edn.py
+        )
+        # Invalid code compiled with `-c --continue-compilation` (or wrapped
+        # with `pywrap`) must fail without writing an object, .mod or wrapper
+        # file.
+        set(CONTINUE_COMPILATION_OUTPUT_ARGS)
+        if (HAVE_LFORTRAN_MLIR)
+            set(CONTINUE_COMPILATION_OUTPUT_ARGS --mlir)
+        endif()
+        add_test(
+            NAME test_continue_compilation_output
+            COMMAND ${LFORTRAN_TEST_PYTHON}
+                ${CMAKE_CURRENT_SOURCE_DIR}/test_continue_compilation_output.py
+                --lfortran $<TARGET_FILE:lfortran>
+                --workdir ${PROJECT_BINARY_DIR}/continue-compilation-output
+                ${CONTINUE_COMPILATION_OUTPUT_ARGS}
         )
         add_test(
             NAME test_asr_llvm_constructor_coverage

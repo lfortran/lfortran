@@ -340,7 +340,7 @@ TEST_CASE("elf32 binary") {
     a.asm_mov_r32_imm32(LCompilers::X86Reg::eax, 4); // sys_write
     a.asm_mov_r32_imm32(LCompilers::X86Reg::ebx, 1); // fd (stdout)
     a.asm_mov_r32_imm32(LCompilers::X86Reg::ecx, a.get_defined_symbol("msg").value); // buf
-    a.asm_mov_r32_imm32(LCompilers::X86Reg::edx, msg.size()); // count
+    a.asm_mov_r32_imm32(LCompilers::X86Reg::edx, static_cast<uint32_t>(msg.size())); // count
     a.asm_int_imm8(0x80);
     a.asm_call_label("exit");
 
@@ -472,7 +472,7 @@ TEST_CASE("print") {
 
     LCompilers::emit_elf32_header(a);
     a.add_label("_start");
-    LCompilers::emit_print(a, "msg", msg.size());
+    LCompilers::emit_print(a, "msg", static_cast<uint32_t>(msg.size()));
     a.asm_call_label("exit");
     LCompilers::emit_exit(a, "exit", 0);
     LCompilers::emit_data_string(a, "msg", msg);
@@ -497,10 +497,10 @@ TEST_CASE("cmp") {
     a.asm_jge_label(".then");
     a.asm_jmp_label(".else");
     a.add_label(".then");
-    LCompilers::emit_print(a, "msg1", msg1.size());
+    LCompilers::emit_print(a, "msg1", static_cast<uint32_t>(msg1.size()));
     a.asm_jmp_label(".endif");
     a.add_label(".else");
-    LCompilers::emit_print(a, "msg2", msg2.size());
+    LCompilers::emit_print(a, "msg2", static_cast<uint32_t>(msg2.size()));
     a.add_label(".endif");
     a.asm_call_label("exit");
     LCompilers::emit_exit(a, "exit", 0);
@@ -523,13 +523,13 @@ TEST_CASE("subroutines") {
     LCompilers::emit_elf32_header(a, 7);
 
     a.add_label("sub1");
-    LCompilers::emit_print(a, "msg1", msg1.size());
+    LCompilers::emit_print(a, "msg1", static_cast<uint32_t>(msg1.size()));
     a.asm_call_label("sub2");
-    LCompilers::emit_print(a, "msg1b", msg1b.size());
+    LCompilers::emit_print(a, "msg1b", static_cast<uint32_t>(msg1b.size()));
     a.asm_ret();
 
     a.add_label("sub2");
-    LCompilers::emit_print(a, "msg2", msg2.size());
+    LCompilers::emit_print(a, "msg2", static_cast<uint32_t>(msg2.size()));
     a.asm_mov_r32_imm32(LCompilers::X86Reg::eax, 0x42414443);
     a.asm_mov_r32_label(LCompilers::X86Reg::ebx, "msg1b");
     LCompilers::X86Reg base = LCompilers::X86Reg::ebx;
@@ -567,7 +567,7 @@ TEST_CASE("subroutine args") {
     a.asm_mov_r32_r32(X86Reg::ebp, X86Reg::esp);
     a.asm_sub_r32_imm8(X86Reg::esp, 4); // one local variable
 
-    LCompilers::emit_print(a, "msg1", msg1.size());
+    LCompilers::emit_print(a, "msg1", static_cast<uint32_t>(msg1.size()));
 
     X86Reg base = X86Reg::ebp;
     // mov eax, [ebp+8] // first argument
@@ -600,10 +600,10 @@ TEST_CASE("subroutine args") {
     a.asm_je_label(".then");
     a.asm_jmp_label(".else");
     a.add_label(".then");
-    LCompilers::emit_print(a, "msg2", msg2.size());
+    LCompilers::emit_print(a, "msg2", static_cast<uint32_t>(msg2.size()));
     a.asm_jmp_label(".endif");
     a.add_label(".else");
-    LCompilers::emit_print(a, "msg3", msg3.size());
+    LCompilers::emit_print(a, "msg3", static_cast<uint32_t>(msg3.size()));
     a.add_label(".endif");
 
     a.asm_call_label("exit");

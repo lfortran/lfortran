@@ -331,7 +331,7 @@
                                                         CPointer
                                                     )
                                                     2 c_ptr
-                                                    Source
+                                                    BindC
                                                     Public
                                                     Required
                                                     .false.

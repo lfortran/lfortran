@@ -1,0 +1,13 @@
+{
+    "basename": "asr-include_location_01-66a602a",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/include_location_01.f90",
+    "infile_hash": "00e444e9f723979265717374db445e3b1da267679f144b140174c7bb",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-include_location_01-66a602a.stderr",
+    "stderr_hash": "8b730a967b4c961bd7c48b692aeabfabedbee2e2f0c5acfe9993160b",
+    "returncode": 2
+}

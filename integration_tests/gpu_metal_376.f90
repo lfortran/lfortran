@@ -1,9 +1,8 @@
 program gpu_metal_376
 ! Two writes of a component in one iteration that give it different sizes,
-! with the component not allocated before the loop. A kernel cannot
-! reallocate between the two writes, so even with --realloc-lhs-arrays the
-! host does not pick one of the sizes: with bounds checking on, the launch
-! stops and asks to allocate the component before the loop.
+! with the component not allocated before the loop. The host cannot pick
+! one of the sizes before the launch, so each value is made on the device
+! heap and the last one written is copied into t(i) after the launch.
 implicit none
 type tt
     real, allocatable :: v(:)
