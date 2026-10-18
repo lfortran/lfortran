@@ -166,6 +166,79 @@ bool append_cuda_sidecar(
     return true;
 }
 
+bool append_cuda_source_from_input(
+    const std::string &input,
+    std::set<std::string> &seen_sidecars,
+    std::vector<std::string> &cuda_sources);
+
+bool resolve_linker_library(
+    const std::string &library_name,
+    const std::vector<std::string> &lib_dirs,
+    LCompilers::Platform platform,
+    std::filesystem::path &resolved_path,
+    bool &is_static_archive)
+{
+    std::vector<std::string> shared_suffixes;
+    if (platform == LCompilers::Platform::macOS_Intel ||
+            platform == LCompilers::Platform::macOS_ARM ||
+            platform == LCompilers::Platform::macOS_PowerPC) {
+        shared_suffixes = {".dylib", ".so", ".tbd"};
+    } else if (platform == LCompilers::Platform::Windows) {
+        shared_suffixes = {".dll"};
+    } else {
+        shared_suffixes = {".so"};
+    }
+    const std::vector<std::string> static_suffixes =
+        (platform == LCompilers::Platform::Windows) ?
+            std::vector<std::string>{".lib"} :
+            std::vector<std::string>{".a"};
+    const std::string library_prefix =
+        (platform == LCompilers::Platform::Windows) ? "" : "lib";
+
+    for (const auto &dir : lib_dirs) {
+        const std::filesystem::path base_dir(dir);
+        for (const auto &suffix : shared_suffixes) {
+            const std::filesystem::path candidate =
+                base_dir / (library_prefix + library_name + suffix);
+            std::error_code ec;
+            if (std::filesystem::is_regular_file(candidate, ec) && !ec) {
+                resolved_path = candidate;
+                is_static_archive = false;
+                return true;
+            }
+        }
+        for (const auto &suffix : static_suffixes) {
+            const std::filesystem::path candidate =
+                base_dir / (library_prefix + library_name + suffix);
+            std::error_code ec;
+            if (std::filesystem::is_regular_file(candidate, ec) && !ec) {
+                resolved_path = candidate;
+                is_static_archive = true;
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool append_cuda_source_from_library(
+    const std::string &library_name,
+    const std::vector<std::string> &lib_dirs,
+    LCompilers::Platform platform,
+    std::set<std::string> &seen_sidecars,
+    std::vector<std::string> &cuda_sources)
+{
+    std::filesystem::path resolved_library;
+    bool is_static_archive = false;
+    if (!resolve_linker_library(library_name, lib_dirs, platform,
+            resolved_library, is_static_archive)) {
+        return true;
+    }
+    if (!is_static_archive) return true;
+    return append_cuda_source_from_input(resolved_library.string(),
+        seen_sidecars, cuda_sources);
+}
+
 #ifdef HAVE_LFORTRAN_LLVM
 const char *cuda_source_section_name()
 {
@@ -269,23 +342,6 @@ bool append_cuda_source_from_input(
                 if (!append_cuda_section_from_object(*child_object,
                         cuda_sources, child_found_cuda_section)) {
                     return false;
-                }
-                if (!child_found_cuda_section) {
-                    auto child_name_or_err = child.getFullName();
-                    if (!child_name_or_err) {
-                        std::cerr << "Failed to read archive member name in '"
-                                  << input << "': "
-                                  << llvm::toString(
-                                         child_name_or_err.takeError())
-                                  << std::endl;
-                        return false;
-                    }
-                    if (!append_cuda_sidecar(
-                            std::filesystem::path(input).parent_path()
-                                / (*child_name_or_err + ".cuda.cu"),
-                            seen_sidecars, cuda_sources)) {
-                        return false;
-                    }
                 }
                 found_cuda_section = found_cuda_section || child_found_cuda_section;
             }
@@ -2442,6 +2498,13 @@ int link_executable(const std::vector<std::string> &infiles,
                 for (auto &s : infiles) {
                     if (!append_cuda_source_from_input(
                             s, seen_cuda_sidecars, cuda_sources)) {
+                        return 10;
+                    }
+                }
+                for (auto &library_name : libraries) {
+                    if (!append_cuda_source_from_library(library_name, lib_dirs,
+                            compiler_options.platform, seen_cuda_sidecars,
+                            cuda_sources)) {
                         return 10;
                     }
                 }
