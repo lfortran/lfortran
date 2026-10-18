@@ -87,6 +87,7 @@ set(SRC
     pass/dead_code_removal.cpp
     pass/instantiate_template.cpp
     pass/update_array_dim_intrinsic_calls.cpp
+    pass/explicit_shape_extent.cpp
     pass/pass_array_by_data.cpp
     pass/pass_list_expr.cpp
     pass/pass_compare.cpp

@@ -1,0 +1,199 @@
+! Explicit-shape extents are zero when the upper bound precedes the lower.
+program automatic_array_03
+    implicit none
+    integer :: n, lo, hi, i, k, input(2, 3)
+    if (size(seq(-2)) /= 0) error stop 1
+    if (size(seq(0)) /= 0) error stop 2
+    if (any(seq(3) /= [1, 2, 3])) error stop 3
+    call check_bounds(-3, -5)
+    call check_bounds(-3, -1)
+    call check_local_sized(-3, -1)
+    input = 1
+    do n = -2, 3
+        if (size(trimmed(input, n)) /= max(0, 2-n)) error stop 16
+        if (any(trimmed(input, n) /= 7)) error stop 17
+        call check_local(n)
+        call check_wide(int(n, 8))
+        k = n
+        call check_entry_extent(k, input(1, :))
+        if (k /= n + 5) error stop 35
+        if (size(seq(n)) /= max(0, n)) error stop 13
+        call check_assumed(seq(n), max(0, n))
+        lo = 4
+        hi = lo + n - 1
+        call check_bounds(lo, hi)
+        call check_local_sized(lo, hi)
+        if (size(sized_by_result(n)) /= max(0, n)) error stop 49
+        if (any(sized_by_result(n) /= max(0, n) + 1)) error stop 50
+        if (size(bounded(lo, hi)) /= max(0, n)) error stop 4
+        if (n > 0) then
+            if (any(bounded(lo, hi) /= [(i, i=lo,lo+n-1)])) error stop 5
+        end if
+    end do
+contains
+    pure function trimmed(a, k) result(r)
+        integer, intent(in) :: a(:,:), k
+        integer :: r(minval(shape(a)) - k)
+        r = 7
+    end function
+    function seq(n) result(a)
+        integer, intent(in) :: n
+        integer :: a(n), i
+        a = [(i, i=1,n)]
+    end function
+    function bounded(lo, hi) result(a)
+        integer, intent(in) :: lo, hi
+        integer :: a(lo:hi), i
+        a = [(i, i=lo,hi)]
+    end function
+    subroutine check_local(n)
+        integer, intent(in) :: n
+        integer :: a(n), i
+        a = [(i, i=1,n)]
+        if (size(a) /= max(0, n)) error stop 6
+        if (any(shape(a) /= [max(0, n)])) error stop 18
+        block
+            integer :: b(n)
+            if (size(b) /= max(0, n) .or. ubound(b, 1) /= max(0, n)) error stop 19
+        end block
+        if (n > 0) then
+            if (any(a /= [(i, i=1,n)])) error stop 7
+        end if
+        call check_dummy(n, a)
+        call check_assumed(a, max(0, n))
+        call check_assumed(a + 1, max(0, n))
+        call check_char(n)
+    end subroutine
+    subroutine check_dummy(n, a)
+        integer, intent(in) :: n, a(n)
+        if (size(a) /= max(0, n)) error stop 8
+        if (any(shape(a) /= [max(0, n)])) error stop 20
+        call check_assumed(a, max(0, n))
+        if (sized(n, a) /= 10*max(0, n) + min(1, max(0, n))) error stop 37
+    end subroutine
+    ! Small enough to be inlined with --fast.
+    integer function sized(n, x)
+        integer, intent(in) :: n, x(n)
+        sized = 10*size(x)
+        if (n > 0) sized = sized + x(1)
+    end function
+    ! The extent is that on entry, even if the bound changes later.
+    subroutine check_entry_extent(k, a)
+        integer, intent(inout) :: k
+        integer, intent(in) :: a(k)
+        integer :: e
+        e = max(0, k)
+        k = k + 5
+        if (size(a) /= e .or. ubound(a, 1) /= e) error stop 34
+    end subroutine
+    subroutine check_char(n)
+        integer, intent(in) :: n
+        character(len=2) :: c(n)
+        c = "ab"
+        call check_assumed_char(c, max(0, n))
+    end subroutine
+    subroutine check_assumed(b, ext)
+        integer, intent(in) :: b(:), ext
+        if (size(b) /= ext) error stop 21
+        if (lbound(b, 1) /= 1 .or. ubound(b, 1) /= ext) error stop 22
+        if (any(lbound(b) /= [1]) .or. any(ubound(b) /= [ext])) error stop 23
+    end subroutine
+    subroutine check_assumed_char(c, ext)
+        character(len=*), intent(in) :: c(:)
+        integer, intent(in) :: ext
+        if (size(c) /= ext .or. ubound(c, 1) /= ext) error stop 24
+        if (ext > 0) then
+            if (any(c /= "ab")) error stop 25
+        end if
+    end subroutine
+    ! Bounds of a dimension of zero extent are 1 and 0.
+    integer function lb(lo, hi)
+        integer, intent(in) :: lo, hi
+        lb = merge(lo, 1, hi >= lo)
+    end function
+    integer function ub(lo, hi)
+        integer, intent(in) :: lo, hi
+        ub = merge(hi, 0, hi >= lo)
+    end function
+    subroutine check_bounds(lo, hi)
+        integer, intent(in) :: lo, hi
+        integer :: a(lo:hi), m(2, lo:hi), i, l2, h2
+        a = [(i, i=lo,hi)]
+        m = 0
+        if (size(a) /= max(0, hi-lo+1)) error stop 9
+        if (lbound(a, 1) /= lb(lo, hi) .or. ubound(a, 1) /= ub(lo, hi)) error stop 10
+        if (any(lbound(m) /= [1, lb(lo, hi)])) error stop 26
+        if (any(ubound(m) /= [2, ub(lo, hi)])) error stop 27
+        do i = lo, hi
+            if (a(i) /= i) error stop 11
+        end do
+        call check_bound_dummy(lo, hi, a, m)
+        call check_assumed(a, max(0, hi-lo+1))
+        l2 = lo
+        h2 = hi
+        call check_redefined(l2, h2, a)
+        if (l2 /= lo + 1 .or. h2 /= hi + 2) error stop 42
+    end subroutine
+    ! Redefining a variable of a bound in the body changes neither the
+    ! bounds, nor the extent, nor the element addressing.
+    subroutine check_redefined(lo, hi, a)
+        integer, intent(inout) :: lo, hi
+        integer, intent(in) :: a(lo:hi)
+        integer :: w(lo:hi), l0, h0, i
+        l0 = lo
+        h0 = hi
+        w = 9
+        lo = lo + 1
+        hi = hi + 2
+        if (lbound(a, 1) /= lb(l0, h0) .or. ubound(a, 1) /= ub(l0, h0)) error stop 38
+        if (size(a) /= max(0, h0-l0+1) .or. size(w) /= size(a)) error stop 39
+        if (lbound(w, 1) /= lb(l0, h0) .or. ubound(w, 1) /= ub(l0, h0)) error stop 40
+        do i = l0, h0
+            if (a(i) /= i .or. w(i) /= 9) error stop 41
+        end do
+    end subroutine
+    ! Automatic objects sized by inquiries of other automatic objects.
+    subroutine check_local_sized(lo, hi)
+        integer, intent(in) :: lo, hi
+        integer :: v(lo:hi)
+        integer :: work(2*size(v)), u(ubound(v, 1)), l(lbound(v, 1))
+        integer :: w(size(work)+1)
+        character(len=size(v)) :: c
+        integer :: e
+        e = max(0, hi-lo+1)
+        if (size(work) /= 2*e) error stop 43
+        if (size(u) /= max(0, ub(lo, hi))) error stop 44
+        if (size(l) /= max(0, lb(lo, hi))) error stop 45
+        if (size(w) /= 2*e + 1) error stop 46
+        if (len(c) /= e) error stop 47
+        work = 3
+        if (sum(work) /= 6*e) error stop 48
+    end subroutine
+    function sized_by_result(n) result(r)
+        integer, intent(in) :: n
+        integer :: r(n)
+        integer :: w(size(r) + 1)
+        w = 1
+        r = sum(w)
+    end function
+    subroutine check_wide(n)
+        integer(8), intent(in) :: n
+        integer :: a(2_8:n+1_8)
+        a = 42
+        if (size(a, kind=8) /= max(0_8, n)) error stop 14
+        if (n > 0) then
+            if (a(2) /= 42 .or. a(n+1) /= 42) error stop 15
+        end if
+    end subroutine
+    subroutine check_bound_dummy(lo, hi, a, m)
+        integer, intent(in) :: lo, hi, a(lo:hi), m(2, lo:hi)
+        if (size(a) /= max(0, hi-lo+1)) error stop 12
+        if (lbound(a, 1) /= lb(lo, hi) .or. ubound(a, 1) /= ub(lo, hi)) error stop 28
+        if (any(lbound(a) /= [lb(lo, hi)])) error stop 29
+        if (any(ubound(a) /= [ub(lo, hi)])) error stop 30
+        if (any(lbound(m) /= [1, lb(lo, hi)])) error stop 31
+        if (any(ubound(m) /= [2, ub(lo, hi)])) error stop 32
+        if (lbound(m, 2) /= lb(lo, hi) .or. ubound(m, 2) /= ub(lo, hi)) error stop 33
+        call check_assumed(a, max(0, hi-lo+1))
+    end subroutine
+end program

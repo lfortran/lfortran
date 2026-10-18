@@ -540,7 +540,7 @@ static bool is_invariant_variable(ASR::symbol_t* sym) {
     return v->m_intent == ASR::intentType::In && !ASRUtils::is_pointer(v->m_type);
 }
 
-static bool bound_may_change(ASR::expr_t* e);
+bool bound_may_change(ASR::expr_t* e);
 
 // Whether the shape and the length type parameters of the variable `sym`
 // stay the same: those of a nonallocatable, nonpointer variable, and those
@@ -586,7 +586,7 @@ static bool has_invariant_shape(ASR::expr_t* e) {
     Anything else (a variable of the procedure, of a host or of a module, a
     dummy argument that can be defined, a function reference) is captured.
 */
-static bool bound_may_change(ASR::expr_t* e) {
+bool bound_may_change(ASR::expr_t* e) {
     if (e == nullptr || ASRUtils::is_value_constant(e) ||
             ASRUtils::is_value_constant(ASRUtils::expr_value(e))) {
         return false;
