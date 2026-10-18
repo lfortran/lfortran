@@ -343,7 +343,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             defop = "."[a-zA-Z]+".";
             kind = digit+ | name;
             significand = (digit+"."digit*) | ("."digit+);
-            exp = [edqEDQ][-+]? digit+;
+            exp = [edED][-+]? digit+;
             integer = digit+ ("_" kind)?;
             real = ((significand exp?) | (digit+ exp)) ("_" kind)?;
             string1 = (kind "_")? '"' ('""'|[^"\x00])* '"';
