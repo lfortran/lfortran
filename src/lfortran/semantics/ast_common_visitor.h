@@ -26329,7 +26329,7 @@ public:
 
     void visit_Real(const AST::Real_t &x) {
         // First determine the kind into r_kind (e.g., 4 or 8)
-        char* s_kind;
+        char* s_kind = nullptr;
         int64_t r_kind = ASRUtils::extract_kind_str(x.m_n, s_kind);
         std::string digits = x.m_n;
         digits = digits.substr(0, digits.find('_'));
