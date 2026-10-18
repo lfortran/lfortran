@@ -25713,24 +25713,6 @@ public:
                 tmp = inline_char_member_as_string_descriptor(
                     x.m_args[i].m_value, tmp, "inline_call_arg");
                 llvm::Value *value = tmp;
-                /*
-                
-                Handle cases where a compile-time value (register value) shouldn't
-                be used, but rather a reference-memory value.
-                As all Fortran functions are lowered to ones accepting reference-value arguments.
-                For example, refer integration_tests/intent_03.f90
-                TODO: Introduce a solid fix to handle all cases.
-                */
-            if(ASRUtils::expr_value(x.m_args[i].m_value) != nullptr){
-                LCOMPILERS_ASSERT(orig_arg_intent != ASR::intentType::Out &&
-                                  orig_arg_intent != ASR::intentType::InOut);
-                if ( ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {
-                    ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(x.m_args[i].m_value);
-                    arr_item->m_value = nullptr;
-                    this->visit_expr_wrapper((ASR::expr_t*)arr_item);
-                    value = tmp;
-                }
-            }
             // Force revisit to handle the register/reference issue, plus,
             // [TODO] We don't properly visit those even if no compile-time value exist -- Example complex_38.90
             if ( ASR::is_a<ASR::ComplexRe_t>(*x.m_args[i].m_value) ||
@@ -25886,7 +25868,12 @@ public:
                         && orig_arg->m_value_attr) {
                         use_value = true;
                     }
-                    if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {
+                    // An array element is passed by reference to its
+                    // storage. An element with a compile-time value (one of
+                    // a named constant) is lowered as that value instead and
+                    // is passed in a temporary, like any other constant.
+                    if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) &&
+                            ASRUtils::expr_value(x.m_args[i].m_value) == nullptr) {
                         if (ASRUtils::is_class_type(
                                 ASRUtils::extract_type(arg_type))
                             && !ASRUtils::is_class_type(
