@@ -30123,8 +30123,11 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         co.gpu_metal_source = metal_res.result;
     }
 
-    // GPU CUDA: generate CUDA kernel source after passes have created the kernel functions
-    if (co.gpu_backend == "cuda" && co.gpu_cuda_source.empty()) {
+    // GPU CUDA: generate CUDA kernel source after passes have created the kernel functions.
+    // Every translation unit needs its own device source; separate compilation reuses
+    // CompilerOptions across files, so leaving an earlier TU's source in place would
+    // suppress later kernels and leave their registry empty.
+    if (co.gpu_backend == "cuda") {
         diag::Diagnostics cuda_diag;
         Result<std::string> cuda_res = asr_to_cuda(al, asr, cuda_diag, co);
         if (!cuda_res.ok) {
