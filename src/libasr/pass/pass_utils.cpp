@@ -7,6 +7,8 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/casting_utils.h>
 
+#include <iostream>
+
 namespace LCompilers {
 
     namespace PassUtils {
@@ -38,6 +40,25 @@ namespace LCompilers {
         void normalize_string_physical_casts(Allocator &al, ASR::TranslationUnit_t &unit) {
             NormalizeStringPhysicalCasts casts(al);
             casts.visit_TranslationUnit(unit);
+        }
+
+        void verify_pass_invariant(const ASR::TranslationUnit_t &unit,
+                const PassOptions &pass_options,
+                const ASRVerifyOptions &verify_options,
+                const std::string &pass_name) {
+            bool verify = pass_options.verify_all_passes;
+#if defined(WITH_LFORTRAN_ASSERT)
+            verify = true;
+#endif
+            if (!verify) return;
+            diag::Diagnostics local_diagnostics;
+            diag::Diagnostics &diagnostics = pass_options.diagnostics != nullptr
+                ? *pass_options.diagnostics : local_diagnostics;
+            if (!asr_verify(unit, verify_options, diagnostics)) {
+                std::cerr << diagnostics.render2();
+                throw LCompilersException("pass=" + pass_name,
+                    LFORTRAN_ASR_PASS_VERIFY_FAILED);
+            }
         }
 
         void make_new_tu_functions_private(ASR::TranslationUnit_t &unit,

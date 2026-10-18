@@ -115,6 +115,8 @@ private:
 public:
     // See ASRVerifyOptions::string_length_arguments.
     bool check_string_length_arguments = false;
+    // See ASRVerifyOptions::string_format_array_args.
+    bool check_string_format_array_args = false;
 
     VerifyVisitor(bool check_external,
         diag::Diagnostics &diagnostics) : check_external{check_external},
@@ -3719,7 +3721,34 @@ public:
         require(x.m_kind != ASR::string_format_kindType::FormatFortranLeadingBlank
                 || x.m_fmt == nullptr,
             "StringFormat::m_fmt must be nil for FormatFortranLeadingBlank");
+        if (check_string_format_array_args) {
+            if (x.m_fmt) verify_string_format_array_arg(x.m_fmt);
+            for (size_t i = 0; i < x.n_args; i++) {
+                verify_string_format_array_arg(x.m_args[i]);
+            }
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_StringFormat(x);
+    }
+
+    // After the string_format_array_args pass, an array that a StringFormat
+    // formats is its contiguous data, with all its dimensions.
+    void verify_string_format_array_arg(ASR::expr_t* arg) {
+        ASR::ttype_t* type = ASRUtils::expr_type(arg);
+        if (!ASRUtils::is_array(type)) return;
+        require_with_loc_id(ASRUtils::extract_physical_type(type) ==
+                ASR::array_physical_typeType::PointerArray,
+            "asr.verify.string_format.array_argument_not_pointer_array",
+            "an array argument of StringFormat must be a PointerArray "
+            "after the string_format_array_args pass", arg->base.loc);
+        ASR::dimension_t* dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
+        for (size_t i = 0; i < n_dims; i++) {
+            require_with_loc_id(dims[i].m_start != nullptr && dims[i].m_length != nullptr,
+                "asr.verify.string_format.array_argument_dimension_missing",
+                "an array argument of StringFormat must have all its "
+                "dimensions after the string_format_array_args pass",
+                arg->base.loc);
+        }
     }
 
     void visit_ArrayConstant(const ArrayConstant_t& x) {
@@ -4627,6 +4656,7 @@ bool asr_verify(const ASR::TranslationUnit_t &unit,
             diag::Diagnostics &diagnostics) {
     ASR::VerifyVisitor v(options.check_external, diagnostics);
     v.check_string_length_arguments = options.string_length_arguments;
+    v.check_string_format_array_args = options.string_format_array_args;
     try {
         v.visit_TranslationUnit(unit);
     } catch (const ASRUtils::VerifyAbort &) {

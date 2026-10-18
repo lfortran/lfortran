@@ -16046,6 +16046,11 @@ public:
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::SIMDArray) {
             tmp = llvm_utils->CreateLoad2(m_arg_llvm_type, arg);
+        } else if (
+            m_new == ASR::array_physical_typeType::PointerArray &&
+            m_old == ASR::array_physical_typeType::SIMDArray) {
+            // The elements of a SIMD vector are stored contiguously.
+            tmp = builder->CreateBitCast(arg, data_type->getPointerTo());
         } else if(
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
@@ -16166,18 +16171,9 @@ public:
         } else if (
             m_new == ASR::array_physical_typeType::PointerArray &&
             m_old == ASR::array_physical_typeType::StringArraySinglePointer) {
-        //
-            if (ASRUtils::is_fixed_size_array(m_type)) {
-                if( ((m_arg_value &&
-                    !ASR::is_a<ASR::ArrayConstant_t>(*m_arg_value) &&
-                    !is_array_constructor_value) ||
-                    m_arg_value == nullptr) &&
-                    !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
-                    tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
-                }
-            } else {
-                tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(),arr_descr->get_pointer_to_data(arr_type, tmp));
-            }
+            // A StringArraySinglePointer is the `char*` of one flat buffer of
+            // C characters, which is also how a PointerArray of C characters
+            // is represented.
         } else if (
             m_new == ASR::array_physical_typeType::StringArraySinglePointer &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
@@ -29628,6 +29624,35 @@ public:
         }
     }
 
+    // The element count of `arg`, an array that a StringFormat formats. The
+    // string_format_array_args pass makes it a PointerArray whose type has
+    // all its dimensions.
+    llvm::Value* string_format_array_size(ASR::expr_t* arg) {
+        ASR::ttype_t* type = ASRUtils::expr_type(arg);
+        if (ASRUtils::extract_physical_type(type) !=
+                ASR::array_physical_typeType::PointerArray) {
+            throw CodeGenError("internal error: an array argument of a "
+                "string format must be a PointerArray, made by the "
+                "string_format_array_args pass", arg->base.loc);
+        }
+        ASR::dimension_t* dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
+        llvm::Type* i64 = llvm::Type::getInt64Ty(context);
+        llvm::Value* size = llvm::ConstantInt::get(i64, 1);
+        for (size_t i = 0; i < n_dims; i++) {
+            if (dims[i].m_length == nullptr) {
+                throw CodeGenError("internal error: an array argument of a "
+                    "string format must have all its dimensions", arg->base.loc);
+            }
+            int64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 2;
+            visit_expr_wrapper(dims[i].m_length, true);
+            ptr_loads = ptr_loads_copy;
+            size = builder->CreateMul(size, builder->CreateSExtOrTrunc(tmp, i64));
+        }
+        return size;
+    }
+
     void visit_StringFormat(const ASR::StringFormat_t& x) {
         // TODO: Handle some things at compile time if possible:
         //ASR::expr_t* fmt_value = ASRUtils::expr_value(x.m_fmt);
@@ -29649,14 +29674,8 @@ public:
                 // string is all elements concatenated (contiguous in memory).
                 // Multiply element length by total array size.
                 if (ASRUtils::is_array(ASRUtils::expr_type(x.m_fmt))) {
-                    ASR::expr_t* array_size_expr = ASRUtils::EXPR(
-                        ASR::make_ArraySize_t(al, x.m_fmt->base.loc, x.m_fmt,
-                        nullptr, ASRUtils::TYPE(ASR::make_Integer_t(
-                            al, x.m_fmt->base.loc, 8)),
-                        ASRUtils::get_compile_time_array_size(al,
-                            ASRUtils::expr_type(x.m_fmt))));
-                    visit_expr(*array_size_expr);
-                    fmt_len = builder->CreateMul(fmt_len, tmp);
+                    fmt_len = builder->CreateMul(fmt_len,
+                        string_format_array_size(x.m_fmt));
                 }
                 args.push_back(fmt_data);
                 args.push_back(fmt_len);
@@ -29672,13 +29691,16 @@ public:
             // Check unallocated arguments
             if (compiler_options.po.bounds_checking) {
                 for (size_t i = 0; i < x.n_args; i++) {
-                    ASR::ttype_t* arg_expr_type = ASRUtils::expr_type(x.m_args[i]);
+                    // An allocatable array is formatted through its cast to
+                    // PointerArray.
+                    ASR::expr_t* arg = ASRUtils::get_past_array_physical_cast(x.m_args[i]);
+                    ASR::ttype_t* arg_expr_type = ASRUtils::expr_type(arg);
                     bool is_alloc_string = ASRUtils::is_allocatable(arg_expr_type) &&
                         ASRUtils::is_character(*ASRUtils::type_get_past_allocatable_pointer(arg_expr_type));
                     if (ASRUtils::is_allocatable(arg_expr_type) && !is_alloc_string) {
-                        llvm_utils->generate_runtime_error(expr_is_unallocated(x.m_args[i]),
+                        llvm_utils->generate_runtime_error(expr_is_unallocated(arg),
                                 "Argument %d is unallocated.",
-                                {LLVMUtils::RuntimeLabel("This is unallocated", {x.m_args[i]->base.loc})},
+                                {LLVMUtils::RuntimeLabel("This is unallocated", {arg->base.loc})},
                                 infile,
                                 location_manager,
                                 llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)));
@@ -29690,13 +29712,7 @@ public:
             size_t ArraySizesCnt = 0;
             for (size_t i=0; i<x.n_args; i++) {
                 if(ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i]))){
-                    ASR::expr_t* ArraySizeExpr = ASRUtils::EXPR
-                        (ASR::make_ArraySize_t(al, x.m_args[i]->base.loc, x.m_args[i],
-                        nullptr, ASRUtils::TYPE(ASR::make_Integer_t(al, x.m_args[i]->base.loc, 8)),
-                        ASRUtils::get_compile_time_array_size(al,
-                            ASRUtils::expr_type(x.m_args[i])))) ;
-                    visit_expr(*ArraySizeExpr);
-                    args.push_back(tmp);
+                    args.push_back(string_format_array_size(x.m_args[i]));
                     ArraySizesCnt++;
                 }
             }
@@ -29728,64 +29744,22 @@ public:
                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                     string_lengths_cnt));
 
-            // This vector is used to keep track of all contiguous buffer copies created for arrays
-            // which are allocated on heap, and need to be freed after the function call.
-            std::vector<llvm::Value*> contiguous_copies_to_free;
             // Push the args.
             for (size_t i=0; i<x.n_args; i++) {
                 // Push the args as raw pointers
                 int64_t ptr_load_copy = ptr_loads;
                 ptr_loads = (ASR::is_a<ASR::Var_t>(*x.m_args[i]) && !ASRUtils::is_character(*expr_type(x.m_args[i]))) ? 0 : 1;
-                // Special Hanlding to pass appropriate pointer to the backend.
-                if(ASRUtils::is_array(expr_type(x.m_args[i]))){ // Arrays need a cast to pointerToDataArray physicalType.
-                    ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(
-                        ASRUtils::type_get_past_allocatable_pointer(
-                            ASRUtils::expr_type(x.m_args[i])));
-                    //Copy only when we have DescriptorArray Type, where not referencing through pointer
-                    //TODO: Check for non-unit strides, and create a copy only when having non-unit strides.
-                    bool copy_needed = (arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray) &&
-                                        ASR::is_a<ASR::Var_t>(*x.m_args[i]);
-                    if(copy_needed){
-                        // For DescriptorArray, we need to create a contiguous copy
-                        // because the descriptor may have non-unit strides (e.g., from array sections)
-                        // and the string format runtime function expects contiguous arrays for inputs
-                        ASR::ttype_t* source_array_type = ASRUtils::expr_type(x.m_args[i]);
-                        // Visit the expression to get the descriptor
-                        int64_t ptr_loads_copy2 = ptr_loads;
-                        ptr_loads = 1 - !LLVM::is_llvm_pointer(*source_array_type);
-                        visit_expr_wrapper(x.m_args[i]);
-                        llvm::Value* source_desc = tmp;
-                        llvm::Type* source_llvm_type = llvm_utils->get_type_from_ttype_t_util(
-                            x.m_args[i], ASRUtils::type_get_past_allocatable_pointer(source_array_type), module.get());
-                        ptr_loads = ptr_loads_copy2;
-                        llvm::Type* elem_type = llvm_utils->get_type_from_ttype_t_util(
-                            x.m_args[i], ASRUtils::extract_type(source_array_type), module.get());
-                        int rank = ASRUtils::extract_n_dims_from_ttype(source_array_type);
-                        if (ASRUtils::is_descriptorString(source_array_type)) {
-                            ASR::String_t* string_type = ASRUtils::get_string_type(source_array_type);
-                            tmp = arr_descr->create_contiguous_string_copy_from_descriptor(
-                                source_llvm_type, source_desc, string_type, rank, module.get());
-                            contiguous_copies_to_free.push_back(
-                                llvm_utils->get_string_data(string_type, tmp));
-                        } else {
-                            // Create contiguous copy using the array descriptor utility
-                            tmp = arr_descr->create_contiguous_copy_from_descriptor(
-                                source_llvm_type, source_desc, elem_type, rank, module.get());
-                            // Track this heap allocation to free after function call
-                            contiguous_copies_to_free.push_back(tmp);
-                        }
-                    } else if(arr->m_physical_type != ASR::array_physical_typeType::PointerArray){
-                        ASR::ttype_t* array_type = ASRUtils::TYPE(
-                                                    ASR::make_Array_t(al, arr->base.base.loc,arr->m_type,
-                                                    arr->m_dims, arr->n_dims,ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
-                        ASR::expr_t* array_casted_to_pointer = ASRUtils::EXPR(
-                                                                ASR::make_ArrayPhysicalCast_t(al, arr->base.base.loc,
-                                                                x.m_args[i],arr->m_physical_type,
-                                                                ASR::array_physical_typeType::PointerArray,
-                                                                array_type, nullptr));
-                        this->visit_expr(*array_casted_to_pointer);
-                    } else {
-                        this->visit_expr(*x.m_args[i]);
+                if(ASRUtils::is_array(expr_type(x.m_args[i]))){
+                    // A PointerArray is its data pointer.
+                    this->visit_expr(*x.m_args[i]);
+                    if (ASRUtils::is_character(*expr_type(x.m_args[i])) &&
+                            ASRUtils::get_string_type(expr_type(x.m_args[i]))->m_physical_type
+                                == ASR::CChar) {
+                        // The runtime reads the `char*` of a C character
+                        // array through a pointer, like that of a scalar.
+                        llvm::Value* tmp_ptr = llvm_utils->CreateAlloca(llvm_utils->i8_ptr);
+                        builder->CreateStore(tmp, tmp_ptr);
+                        tmp = tmp_ptr;
                     }
                 } else if (ASRUtils::is_character(*expr_type(x.m_args[i])) &&
                     ASRUtils::get_string_type(expr_type(x.m_args[i]))->m_physical_type == ASR::CChar) {
@@ -29842,11 +29816,6 @@ public:
             }
             tmp = llvm_utils->string_format_fortran(args, this->current_decimal_mode, this->current_sign_mode, this->current_round_mode,
                 x.m_kind == ASR::string_format_kindType::FormatFortranLeadingBlank);
-            // Free contiguous copies that were heap-allocated
-            for (llvm::Value* copy_ptr : contiguous_copies_to_free) {
-                llvm_utils->lfortran_free(copy_ptr);
-            }
-
             // Load result size
             llvm::Value *result_size = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), result_size_ptr);
 
