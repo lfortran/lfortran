@@ -75,7 +75,11 @@ Procedure variables, casts and null constants must use the lowered interface
 as well. A null constant's type is refreshed from its procedure-variable
 expression after lowering: module-file serialization can give the constant a
 separate copy of the original signature, so changing the variable alone is not
-sufficient.
+sufficient. Import that signature into the null constant's current scope:
+specification expressions in the procedure variable's type can reference
+symbols visible only in its declaration scope (for example a module function
+used as an array bound). Reusing the type directly would leave those references
+out of scope in a derived-type constructor.
 
 ### Runtime character result metadata
 
