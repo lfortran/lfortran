@@ -7087,6 +7087,10 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
                     ASRUtils::insert_module_dependency(x->m_original_name,
                         al, current_module_dependencies);
                 }
+            } else {
+                // A function of a program or procedure: nothing to import
+                ASR::BaseExprReplacer<ReplaceArgVisitor>::replace_FunctionCall(x);
+                ADD_ASR_DEPENDENCIES(current_scope, x->m_name, current_function_dependencies);
             }
             return;
         }
