@@ -11,6 +11,14 @@ module gpu_cuda_cpu_01_m
       real :: y
     end function
   end interface
+contains
+  subroutine shift_up(x)
+    real, intent(inout) :: x(4)
+    integer :: i
+    do concurrent (i = 1:4)
+      x(i) = x(i) + 1.0
+    end do
+  end subroutine
 end module
 
 submodule (gpu_cuda_cpu_01_m) gpu_cuda_cpu_01_s
