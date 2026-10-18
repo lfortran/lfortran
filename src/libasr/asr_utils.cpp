@@ -5593,11 +5593,13 @@ ASR::asr_t* make_ArraySize_t_util(
     if( is_binop_expr(a_v) && for_type ) {
         ASR::expr_t* lhs = extract_member_from_binop(a_v, 0);
         ASR::expr_t* rhs = extract_member_from_binop(a_v, 1);
-        // ArrayBroadcast wraps a scalar broadcast to the shape of the other
-        // operand; take the size from the non-broadcast side.
-        if( ASR::is_a<ASR::ArrayBroadcast_t>(*rhs) ) {
+        // A scalar operand, either bare (e.g. `x > t`) or wrapped in an
+        // ArrayBroadcast, has no shape; take the size from the other side.
+        if( ASR::is_a<ASR::ArrayBroadcast_t>(*rhs) ||
+                !ASRUtils::is_array(ASRUtils::expr_type(rhs)) ) {
             return make_ArraySize_t_util(al, a_loc, lhs, a_dim, a_type, a_value, for_type);
-        } else if( ASR::is_a<ASR::ArrayBroadcast_t>(*lhs) ) {
+        } else if( ASR::is_a<ASR::ArrayBroadcast_t>(*lhs) ||
+                !ASRUtils::is_array(ASRUtils::expr_type(lhs)) ) {
             return make_ArraySize_t_util(al, a_loc, rhs, a_dim, a_type, a_value, for_type);
         } else if( ASR::is_a<ASR::Var_t>(*rhs) ||
                    ASR::is_a<ASR::ArraySection_t>(*rhs) ) {
