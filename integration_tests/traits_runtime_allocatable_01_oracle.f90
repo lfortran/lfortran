@@ -93,6 +93,11 @@ contains
         real(8), optional, allocatable, intent(out) :: data(:,:)
         call object%orbit(data)
     end subroutine
+    integer function forward_scaled(object, factor) result(value)
+        class(ISetup), intent(in) :: object
+        integer, optional, intent(in) :: factor
+        value = object%scaled(factor)
+    end function
 end module
 
 program traits_runtime_allocatable_01_oracle
@@ -100,6 +105,7 @@ program traits_runtime_allocatable_01_oracle
     implicit none
     class(ISetup), allocatable :: object
     real(8), allocatable :: data(:,:)
+    integer, allocatable :: factor
 
     allocate(object, source=Setup())
     allocate(data(1,1))
@@ -118,6 +124,13 @@ program traits_runtime_allocatable_01_oracle
     if (any(data /= 13._8)) error stop 8
     if (object%scaled() /= 7) error stop 9
     if (object%scaled(factor=3) /= 21) error stop 10
+    if (forward_scaled(object) /= 7) error stop 14
+    if (forward_scaled(object, 4) /= 28) error stop 15
+    if (object%scaled(object%scaled()) /= 49) error stop 16
+    if (object%scaled(factor) /= 7) error stop 17
+    allocate(factor, source=3)
+    if (object%scaled(factor) /= 21) error stop 18
+    deallocate(factor)
     deallocate(data)
     if (object%count(data) /= 0) error stop 13
     call object%amend(data)
