@@ -4259,6 +4259,7 @@ RUN(NAME string_arg_hidden_length_05 LABELS gfortran llvm)
 RUN(NAME interface_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME private1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME use_only_private_03 LABELS gfortran llvm)
 
 RUN(NAME modules_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME spec_expr_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

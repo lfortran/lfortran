@@ -28307,7 +28307,7 @@ public:
     void import_symbols_util(ASR::Module_t *m, std::string& msym,
                              std::string& remote_sym, std::string& local_sym,
                              std::queue<std::pair<std::string, std::string>>& to_be_imported_later,
-                             const Location& loc) {
+                             const Location& loc, bool explicit_only = false) {
         remote_sym = to_lower(remote_sym);
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
         if (!t) {
@@ -28316,6 +28316,23 @@ public:
                 diag::Level::Error, diag::Stage::Semantic, {
                     diag::Label("", {loc})}));
             throw SemanticAbort();
+        }
+        if (explicit_only) {
+            bool is_private = false;
+            if (ASR::is_a<ASR::Function_t>(*t)) {
+                is_private = ASR::down_cast<ASR::Function_t>(t)->m_access == ASR::accessType::Private;
+            } else if (ASR::is_a<ASR::GenericProcedure_t>(*t)) {
+                is_private = ASR::down_cast<ASR::GenericProcedure_t>(t)->m_access == ASR::accessType::Private;
+            } else if (ASR::is_a<ASR::CustomOperator_t>(*t)) {
+                is_private = ASR::down_cast<ASR::CustomOperator_t>(t)->m_access == ASR::accessType::Private;
+            }
+            if (is_private) {
+                diag.add(diag::Diagnostic(
+                    "The symbol '" + remote_sym + "' not found in the module '" + msym + "'",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {loc})}));
+                throw SemanticAbort();
+            }
         }
         if (ASR::is_a<ASR::Function_t>(*t) &&
             ASR::down_cast<ASR::Function_t>(t)->m_return_var == nullptr) {
@@ -28624,7 +28641,8 @@ public:
                     local_sym = remote_sym;
                 }
                 import_symbols_util(m, msym, remote_sym, local_sym,
-                                    to_be_imported_with_renaming, x.m_symbols[i]->base.loc);
+                                    to_be_imported_with_renaming, x.m_symbols[i]->base.loc,
+                                    true);
                 symbols_already_imported_with_renaming.push_back(remote_sym);
             }
             // Importing procedures defined for overloaded operators like assignment
@@ -28735,7 +28753,8 @@ public:
                     local_sym = remote_sym;
                 }
                 import_symbols_util(m, msym, remote_sym, local_sym,
-                                    to_be_imported_later, x.m_symbols[i]->base.loc);
+                                    to_be_imported_later, x.m_symbols[i]->base.loc,
+                                    true);
             }
 
             // Importing procedures defined for overloaded operators like assignment

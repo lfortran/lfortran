@@ -475,3 +475,29 @@ end function
 subroutine ts_13216()
     print *, undefined_toplevel_subroutine_13216
 end subroutine
+
+module cc_use_only_private_m
+    implicit none
+    private
+    public :: g
+    interface g
+        module procedure s_spec
+    end interface
+contains
+    subroutine s(x)
+        integer, intent(out) :: x
+        x = 3
+    end subroutine
+    subroutine s_spec(x)
+        integer, intent(out) :: x
+        x = 7
+    end subroutine
+end module
+
+subroutine cc_use_only_private_a()
+    use cc_use_only_private_m, only: s
+end subroutine
+
+subroutine cc_use_only_private_b()
+    use cc_use_only_private_m, only: s_spec
+end subroutine

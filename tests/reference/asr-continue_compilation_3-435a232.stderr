@@ -134,6 +134,18 @@ semantic error: Dummy argument 'a' not defined
 469 |    end function
     | ...^^^^^^^^^^^^ 
 
+semantic error: The symbol 's' not found in the module 'cc_use_only_private_m'
+   --> tests/errors/continue_compilation_3.f90:498:38
+    |
+498 |     use cc_use_only_private_m, only: s
+    |                                      ^ 
+
+semantic error: The symbol 's_spec' not found in the module 'cc_use_only_private_m'
+   --> tests/errors/continue_compilation_3.f90:502:38
+    |
+502 |     use cc_use_only_private_m, only: s_spec
+    |                                      ^^^^^^ 
+
 semantic error: Assumed-rank arrays are not supported in print statements
   --> tests/errors/continue_compilation_3.f90:33:18
    |
