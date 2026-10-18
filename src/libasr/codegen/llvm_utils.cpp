@@ -999,31 +999,10 @@ namespace LCompilers {
                         break;
                     }
                     case ASR::array_physical_typeType::StringArraySinglePointer: {
-                        // type = character_type->getPointerTo();
-                        // is_array_type = true;
-                        // llvm::Type* el_type = get_el_type(v_type->m_type, module);
-                        // type = arr_api->get_array_type(asr_type, el_type, get_pointer);
-                        // break;
-                        if (ASRUtils::is_fixed_size_array(v_type->m_dims, v_type->n_dims)) {
-                            // llvm_type = character_type; -- @character_01.c = internal global i8* null
-                            // llvm_type = character_type->getPointerTo(); -- @character_01.c = internal global i8** null
-                            // llvm_type = llvm::ArrayType::get(character_type,
-                            //     ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims))->getPointerTo();
-                            // -- @character_01 = internal global [2 x i8*]* zeroinitializer
-
-                            type = llvm::ArrayType::get(character_type,
-                                ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims));
-                            break;
-                        } else if (ASRUtils::is_dimension_empty(v_type->m_dims, v_type->n_dims)) {
-                            // Treat it as a DescriptorArray
-                            is_array_type = true;
-                            llvm::Type* el_type = character_type;
-                            type = arr_api->get_array_type(arg_expr, asr_type, el_type);
-                            break;
-                        } else {
-                            LCOMPILERS_ASSERT(false);
-                            break;
-                        }
+                        // The ASR physical type specifies a flat C character
+                        // buffer, independent of its rank or extents.
+                        type = character_type;
+                        break;
                     }
                     case ASR::array_physical_typeType::AssumedRankArray: {
                         is_array_type = true;
@@ -4053,7 +4032,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         ensure_dest_array_descriptor();
                         deepcopy(src_expr, src, dest,
                                 alloc_type->m_type, ASRUtils::type_get_past_allocatable(asr_dest_type),
-                                module);
+                                module, false, finalize_dest);
                     }
                 } else if(ASRUtils::is_string_only(alloc_type->m_type)){ //non-primitive type (vector)
                     lfortran_str_copy(dest, src,
@@ -4067,7 +4046,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     }
                     deepcopy(src_expr, src, dest,
                         ASRUtils::type_get_past_allocatable(asr_dest_type), alloc_type->m_type,
-                        module);
+                        module, false, finalize_dest);
                 } else if (ASRUtils::is_unlimited_polymorphic_type(src_expr)) {
                     src = CreateLoad2(llvm_type->getPointerTo(), src);
                     if (ASRUtils::is_allocatable(asr_dest_type)) {
@@ -4075,7 +4054,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                     }
                     deepcopy(src_expr, src, dest,
                         ASRUtils::type_get_past_allocatable(asr_dest_type), alloc_type->m_type,
-                        module);
+                        module, false, finalize_dest);
                 } else {
                     LLVM::CreateStore(*builder, src, dest);
                 }
@@ -11343,7 +11322,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                             }
                             llvm_utils->deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)), src_member, dest_member,
                             member_type, member_type,
-                            module);
+                            module, false, finalize_dest);
                         }, [&]() {
                             if (is_alloc_scalar_intrinsic) {
                                 // The source component is unallocated, so the

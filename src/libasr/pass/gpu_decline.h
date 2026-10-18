@@ -72,6 +72,9 @@ struct GpuDeviceCapabilities {
     // iteration runs on one thread (see gpu_vector_lanes.cpp).
     int lanes_per_iteration = 1;
 
+    int threads_per_block = 256;
+    int sequential_loop_unroll_factor = 1;
+
     // How many bytes of stack a thread of a kernel has. Late kernel storage
     // placement spills private arrays that do not fit to per-thread slices
     // of global workspace buffers; it never changes their locality.

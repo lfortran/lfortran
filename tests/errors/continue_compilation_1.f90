@@ -3397,3 +3397,31 @@ end function
 function cc1_bindc_explicit_result() result(c) bind(c)
     character(len=5) :: c  ! {Error} character function result `c` must have constant length one in a BIND(C) procedure
 end function
+
+! Unsupported complex*N and logical*N kinds get no style suggestion,
+! only the semantic error.
+module cc1_complex_star
+implicit none
+    complex*32 :: cc1_cs_z32  ! {Error} Kind 16 is not supported for Complex
+    complex*20 :: cc1_cs_z20  ! {Error} Kind 10 is not supported for Complex
+    complex*7 :: cc1_cs_z7  ! {Error} Kind 3 is not supported for Complex
+    logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
+end module cc1_complex_star
+
+! FILE= is required when STATUS is NEW or REPLACE. Omitted STATUS, OLD,
+! UNKNOWN, and SCRATCH do not require it; SCRATCH forbids FILE=.
+subroutine cc1_open_status_new_replace_no_file()
+    character(len=7) :: cc1_open_status
+    open(1, status='new')  ! {Error} open with status 'new' requires a file specifier
+    open(2, status='replace')  ! {Error} open with status 'replace' requires a file specifier
+    open(3, status='NEW')  ! {Error} open with status 'NEW' requires a file specifier
+    open(4, status='REPLACE')  ! {Error} open with status 'REPLACE' requires a file specifier
+    open(5, file='cc1_open_new.dat', status='new')
+    open(6, file='cc1_open_replace.dat', status='replace')
+    open(7, status='scratch')
+    open(8, status='old')
+    open(9, status='unknown')
+    open(10)
+    cc1_open_status = 'new'
+    open(11, status=cc1_open_status)
+end subroutine cc1_open_status_new_replace_no_file

@@ -103,6 +103,8 @@ public :
         }
     }
     void visit_Function(const ASR::Function_t& x){ // Avoid visiting RealBinOp in the fma` function itself
+        // Leave contraction to the device compiler after loop scheduling.
+        if (ASRUtils::runs_on_device(x)) return;
         if(std::string(x.m_name) == "_lcompilers_optimization_fma_f32" || 
             std::string(x.m_name) == "_lcompilers_optimization_fma_f64"){
             return;

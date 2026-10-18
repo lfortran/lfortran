@@ -111,6 +111,30 @@ $FC -c $f1
 [ -f "unordered_linking.o" ]
 [ ! -x "unordered_linking.o" ]
 
+cd $(mktemp -d)
+if [[ $FC == "gfortran" ]]; then
+    SHARED_FLAG=-shared
+else
+    SHARED_FLAG=--shared
+fi
+echo "Testing linking a shared library with $SHARED_FLAG"
+cat > add_one.f90 <<'EOF'
+subroutine add_one(x) bind(c, name="add_one")
+use iso_c_binding, only: c_int
+implicit none
+integer(c_int), intent(inout) :: x
+x = x + 1
+end subroutine
+EOF
+$FC -c add_one.f90 -o add_one.o
+$FC $SHARED_FLAG add_one.o -o libadd_one.so
+[ -f "libadd_one.so" ]
+if [[ "$(uname)" == "Linux" ]]; then
+    nm -D --defined-only libadd_one.so | grep -E " T add_one$"
+else
+    nm -gU libadd_one.so | grep -E " T _add_one$"
+fi
+
 if [[ $FC == "lfortran" ]]; then
     cd $(mktemp -d)
     echo "Testing an output file that cannot be written"

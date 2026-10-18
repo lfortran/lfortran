@@ -1308,6 +1308,21 @@ public:
                 x.base.base.loc, iostat_name, ASRUtils::intent_local, int_type);
             a_iostat = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, iostat_sym));
         }
+        // FILE= is required for a constant STATUS of NEW or REPLACE. A
+        // non-constant STATUS is not decided here; SCRATCH forbids FILE=.
+        if (a_filename == nullptr && a_status != nullptr
+                && ASR::is_a<ASR::StringConstant_t>(*a_status)) {
+            std::string status = ASR::down_cast<ASR::StringConstant_t>(a_status)->m_s;
+            std::string status_lower = to_lower(status);
+            if (status_lower == "new" || status_lower == "replace") {
+                diag.add(Diagnostic(
+                    "open with status '" + status + "' requires a file specifier",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
         tmp = ASR::make_FileOpen_t(
             al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank, a_encoding, a_sign, a_decimal, a_round, a_pad, a_asynchronous);
         tmp_vec.push_back(tmp);
@@ -5652,14 +5667,20 @@ public:
                 case AST::type_stmtType::ClassDefault: {
                     AST::ClassDefault_t* class_default = AST::down_cast<AST::ClassDefault_t>(x.m_body[i]);
                     if( assoc_variable ) {
-                        ASR::ttype_t* target_type = ASRUtils::type_get_past_allocatable(selector_variable_type);
+                        // A selector that is not a variable (e.g. an array
+                        // element `a(1)`) has no selector variable; take
+                        // the associate name's type from the expression.
+                        ASR::ttype_t* target_type = ASRUtils::type_get_past_allocatable(
+                            selector_variable ? selector_variable_type
+                                : ASRUtils::expr_type(m_selector));
                         if (!ASR::is_a<ASR::Pointer_t>(*target_type)) {
                             target_type = ASRUtils::make_Pointer_t_util(al, class_default->base.base.loc, target_type);
                         }
                         assoc_variable->m_type = target_type;
                         assoc_variable->m_type_declaration =
                             ASRUtils::import_type_declaration(al,
-                                select_variable_m_type_declaration,
+                                selector_variable ? select_variable_m_type_declaration
+                                    : ASRUtils::get_struct_sym_from_struct_expr(m_selector),
                                 current_scope);
                         assoc_variable->m_dependencies = selector_variable_dependencies;
                         assoc_variable->n_dependencies = selector_variable_n_dependencies;

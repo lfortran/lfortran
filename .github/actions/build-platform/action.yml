@@ -20,6 +20,12 @@ runs:
       with:
         micromamba-version: '2.0.4-0'
         environment-file: ci/environment.yml
+        # Hardlinked Mach-O files can resolve @loader_path from the package cache.
+        # setup-micromamba exports this condarc for later installs as well.
+        condarc: |
+          channels:
+            - conda-forge
+          always_copy: ${{ contains(inputs.os, 'macos') }}
         create-args: >-
           llvmdev=${{ inputs.llvm-version }}
 
@@ -50,6 +56,11 @@ runs:
         if [[ "${{ inputs.os }}" == *ubuntu* && "${{ inputs.llvm-version }}" == "11" ]]; then
           micromamba install pandoc=3.1.13
         fi
+
+    - name: Verify macOS environment tools
+      if: contains(inputs.os, 'macos')
+      shell: bash -e -l {0}
+      run: python ci/check_macos_environment.py "$CONDA_PREFIX"
 
     # The Linux LLVM 21 compiler runs Quick's full separate-compilation and
     # leak-detection suites, so it is compiled with -O2 like Quick's LLVM 11
