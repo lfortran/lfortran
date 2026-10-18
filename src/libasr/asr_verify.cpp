@@ -3735,24 +3735,61 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_StringFormat(x);
     }
 
+    // After the string_format_array_args pass, the array items of a data
+    // transfer statement, and an internal file that is an array, are
+    // contiguous data too. An implied DO loop transfers its items one
+    // element at a time.
+    void verify_transfer_arrays(ASR::expr_t* unit, ASR::expr_t** values,
+            size_t n_values) {
+        if (unit) {
+            verify_contiguous_array_data(unit, "data_transfer.internal_file",
+                "an internal file that is an array");
+        }
+        for (size_t i = 0; i < n_values; i++) {
+            if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
+                verify_contiguous_array_data(values[i], "data_transfer.array_item",
+                    "an array item of a data transfer statement");
+            }
+        }
+    }
+
+    void visit_FileWrite(const FileWrite_t& x) {
+        if (check_string_format_array_args && !x.m_overloaded && !x.m_nml) {
+            verify_transfer_arrays(x.m_unit, x.m_values, x.n_values);
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_FileWrite(x);
+    }
+
+    void visit_FileRead(const FileRead_t& x) {
+        if (check_string_format_array_args && !x.m_overloaded && !x.m_nml) {
+            verify_transfer_arrays(x.m_unit, x.m_values, x.n_values);
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_FileRead(x);
+    }
+
     // After the string_format_array_args pass, an array that a StringFormat
     // formats is its contiguous data, with all its dimensions.
     void verify_string_format_array_arg(ASR::expr_t* arg) {
+        verify_contiguous_array_data(arg, "string_format.array_argument",
+            "an array argument of StringFormat");
+    }
+
+    void verify_contiguous_array_data(ASR::expr_t* arg, const std::string& id,
+            const std::string& what) {
         ASR::ttype_t* type = ASRUtils::expr_type(arg);
         if (!ASRUtils::is_array(type)) return;
         require_with_loc_id(ASRUtils::extract_physical_type(type) ==
                 ASR::array_physical_typeType::PointerArray,
-            "asr.verify.string_format.array_argument_not_pointer_array",
-            "an array argument of StringFormat must be a PointerArray "
-            "after the string_format_array_args pass", arg->base.loc);
+            "asr.verify." + id + "_not_pointer_array",
+            what + " must be a PointerArray after the "
+            "string_format_array_args pass", arg->base.loc);
         ASR::dimension_t* dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
         for (size_t i = 0; i < n_dims; i++) {
             require_with_loc_id(dims[i].m_start != nullptr && dims[i].m_length != nullptr,
-                "asr.verify.string_format.array_argument_dimension_missing",
-                "an array argument of StringFormat must have all its "
-                "dimensions after the string_format_array_args pass",
-                arg->base.loc);
+                "asr.verify." + id + "_dimension_missing",
+                what + " must have all its dimensions after the "
+                "string_format_array_args pass", arg->base.loc);
         }
     }
 

@@ -15,8 +15,10 @@ namespace LCompilers {
         // must then have its hidden length dummy, and every call must pass it.
         bool string_length_arguments = false;
         // Set once the string_format_array_args pass has run: every array
-        // argument (and an array format) of a StringFormat must then be of
-        // PointerArray physical type, with all its dimensions present.
+        // argument (and an array format) of a StringFormat, every array item
+        // of a READ or WRITE statement and an internal file that is an array
+        // must then be of PointerArray physical type, with all its
+        // dimensions present.
         bool string_format_array_args = false;
     };
 
