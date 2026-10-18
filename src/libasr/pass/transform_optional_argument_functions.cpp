@@ -158,18 +158,17 @@ class ReplacePresentCallsVisitor : public ASR::CallReplacerOnExpressionsVisitor<
 
 };
 
-class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<TransformFunctionsWithOptionalArguments> {
+class TransformFunctionsWithOptionalArguments:
+    public ASR::BaseWalkVisitor<TransformFunctionsWithOptionalArguments> {
 
     public:
 
+        Allocator& al;
         std::map<ASR::symbol_t*, std::vector<int32_t>>& sym2optionalargidx;
 
         TransformFunctionsWithOptionalArguments(Allocator &al_,
             std::map<ASR::symbol_t*, std::vector<int32_t>>& sym2optionalargidx_) :
-        PassVisitor(al_, nullptr), sym2optionalargidx(sym2optionalargidx_)
-        {
-            pass_result.reserve(al, 1);
-        }
+        al(al_), sym2optionalargidx(sym2optionalargidx_) {}
 
         void transform_functions_with_optional_arguments(ASR::Function_t* s) {
             Vec<ASR::expr_t*> new_args;
@@ -241,118 +240,20 @@ class TransformFunctionsWithOptionalArguments: public PassUtils::PassVisitor<Tra
             for (SymbolTable *s = x.m_symtab->parent; s != nullptr; s = s->parent) {
                 if( !ASRUtils::is_tu_scope(s) ) continue;
                 for (auto &item : s->get_scope()) {
-                    if (is_a<ASR::Function_t>(*item.second)) {
-                        ASR::Function_t *f = down_cast<ASR::Function_t>(item.second);
-                        if (is_optional_argument_present(f)) {
-                            transform_functions_with_optional_arguments(f);
-                        }
-                    }
-                }
-                for (auto &item : s->get_scope()) {
                     this->visit_symbol(*item.second);
                 }
             }
-
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);
-                    if (is_optional_argument_present(s)) {
-                        transform_functions_with_optional_arguments(s);
-                    }
-                }
-            }
-
-            // Now visit everything else
-            for (auto &item : x.m_symtab->get_scope()) {
-                this->visit_symbol(*item.second);
-            }
-        }
-
-        void visit_Program(const ASR::Program_t &x) {
-            // FIXME: this is a hack, we need to pass in a non-const `x`,
-            // which requires to generate a TransformVisitor.
-            ASR::Program_t &xx = const_cast<ASR::Program_t&>(x);
-            current_scope = xx.m_symtab;
-
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);
-                    if (is_optional_argument_present(s)) {
-                        transform_functions_with_optional_arguments(s);
-                    }
-                }
-            }
-
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::AssociateBlock_t>(*item.second)) {
-                    ASR::AssociateBlock_t *s = ASR::down_cast<ASR::AssociateBlock_t>(item.second);
-                    visit_AssociateBlock(*s);
-                }
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
-                    visit_Function(*s);
-                }
-            }
-
-            current_scope = xx.m_symtab;
-            transform_stmts(xx.m_body, xx.n_body);
-
-        }
-
-        void visit_Module(const ASR::Module_t &x) {
-            // FIXME: this is a hack, we need to pass in a non-const `x`,
-            // which requires to generate a TransformVisitor.
-            ASR::Module_t &xx = const_cast<ASR::Module_t&>(x);
-            current_scope = xx.m_symtab;
-
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);
-                    if (is_optional_argument_present(s)) {
-                        transform_functions_with_optional_arguments(s);
-                    }
-                }
-            }
-
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::AssociateBlock_t>(*item.second)) {
-                    ASR::AssociateBlock_t *s = ASR::down_cast<ASR::AssociateBlock_t>(item.second);
-                    visit_AssociateBlock(*s);
-                }
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
-                    visit_Function(*s);
-                }
-            }
-
+            ASR::BaseWalkVisitor<TransformFunctionsWithOptionalArguments>
+                ::visit_TranslationUnit(x);
         }
 
         void visit_Function(const ASR::Function_t &x) {
-            // FIXME: this is a hack, we need to pass in a non-const `x`,
-            // which requires to generate a TransformVisitor.
-            ASR::Function_t &xx = const_cast<ASR::Function_t&>(x);
-            current_scope = xx.m_symtab;
-
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t *s = down_cast<ASR::Function_t>(item.second);
-                    if (is_optional_argument_present(s)) {
-                        transform_functions_with_optional_arguments(s);
-                    }
-                }
+            auto *function = const_cast<ASR::Function_t*>(&x);
+            if (is_optional_argument_present(function)) {
+                transform_functions_with_optional_arguments(function);
             }
-
-            for (auto &item : x.m_symtab->get_scope()) {
-                if (is_a<ASR::AssociateBlock_t>(*item.second)) {
-                    ASR::AssociateBlock_t *s = ASR::down_cast<ASR::AssociateBlock_t>(item.second);
-                    visit_AssociateBlock(*s);
-                }
-                if (is_a<ASR::Function_t>(*item.second)) {
-                    ASR::Function_t *s = ASR::down_cast<ASR::Function_t>(item.second);
-                    visit_Function(*s);
-                }
-            }
-
+            ASR::BaseWalkVisitor<TransformFunctionsWithOptionalArguments>
+                ::visit_Function(x);
         }
 
 };
