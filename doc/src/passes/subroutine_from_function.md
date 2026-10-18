@@ -71,6 +71,12 @@ WITH THIS CLASS :
     4. If transformation is needed, We transform function's member `return_var` into intentOUT argument and we nullify the member.
     5. We also store the original return type in a map for later use.
 
+Procedure variables, casts and null constants must use the lowered interface
+as well. A null constant's type is refreshed from its procedure-variable
+expression after lowering: module-file serialization can give the constant a
+separate copy of the original signature, so changing the variable alone is not
+sufficient.
+
 ### Runtime character result metadata
 
 Call preparation in `array_struct_temporary` saves result specification values
