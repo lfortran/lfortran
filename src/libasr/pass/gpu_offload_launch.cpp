@@ -254,7 +254,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     }
 
     ASR::expr_t *block_size_const = ASRUtils::EXPR(
-        ASR::make_IntegerConstant_t(al, loc, 256, plan.int_type,
+        ASR::make_IntegerConstant_t(al, loc, device_caps.threads_per_block, plan.int_type,
             ASR::integerbozType::Decimal));
 
     // The number of iterations, the product of the extents

@@ -1460,6 +1460,30 @@ semantic error: Return type not specified
 3444 |    end function
      | ...^^^^^^^^^^^^ 
 
+semantic error: Kind 16 is not supported for Complex
+    --> tests/errors/continue_compilation_1.f90:3450:5
+     |
+3450 |     complex*32 :: cc1_cs_z32  ! {Error} Kind 16 is not supported for Complex
+     |     ^^^^^^^^^^ 
+
+semantic error: Kind 10 is not supported for Complex
+    --> tests/errors/continue_compilation_1.f90:3451:5
+     |
+3451 |     complex*20 :: cc1_cs_z20  ! {Error} Kind 10 is not supported for Complex
+     |     ^^^^^^^^^^ 
+
+semantic error: Kind 3 is not supported for Complex
+    --> tests/errors/continue_compilation_1.f90:3452:5
+     |
+3452 |     complex*7 :: cc1_cs_z7  ! {Error} Kind 3 is not supported for Complex
+     |     ^^^^^^^^^ 
+
+semantic error: Kind 3 is not supported for Logical
+    --> tests/errors/continue_compilation_1.f90:3453:5
+     |
+3453 |     logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
+     |     ^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

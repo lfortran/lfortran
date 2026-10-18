@@ -2916,10 +2916,16 @@ namespace Spread {
     // where `ncopies` is the extent of the new dimension and `array_size(j)`
     // gives the extent of dimension `j` of `array`, with the type of
     // `ncopies`. `j` is always an integer constant.
+    //
+    // `ArraySize` is a template rather than `std::function`. GCC 11 at -O3
+    // puts the `std::_Function_handler` of the lambda in `get_result_dimension`
+    // into the COMDAT group of `get_function_by_name_db`, and the release
+    // link then discards that group while a relocation in the same object
+    // still names it (Exhaustive `build-and-push-image`).
+    template <typename ArraySize>
     static inline ASR::expr_t* result_extent(Allocator& al, const Location& loc,
         ASR::expr_t* array, ASR::expr_t* ncopies, int64_t i_, ASR::expr_t* dim,
-        bool is_dim_const,
-        const std::function<ASR::expr_t*(ASR::expr_t*)>& array_size,
+        bool is_dim_const, const ArraySize& array_size,
         diag::Diagnostics& diag) {
         int64_t i = i_ + 1;
         ASRUtils::ASRBuilder b(al, loc);
