@@ -2534,6 +2534,29 @@ public:
         llvm::appendToGlobalCtors(*module, ctor_fn, 65535);
     }
 
+    void emit_gpu_cuda_source_section() {
+        if (compiler_options.gpu_cuda_source.empty()) return;
+        const char *cuda_source_section_name =
+#ifdef HAVE_LFORTRAN_MACHO
+            "__DATA,__lcgpu";
+#else
+            ".lcompilers.gpu.cuda.source";
+#endif
+        std::string framed_source = compiler_options.gpu_cuda_source;
+        framed_source.push_back('\0');
+        llvm::ArrayType *source_type = llvm::ArrayType::get(
+            llvm::Type::getInt8Ty(context),
+            framed_source.size());
+        auto *source = new llvm::GlobalVariable(
+            *module, source_type, true, llvm::GlobalValue::PrivateLinkage,
+            llvm::ConstantDataArray::getString(context, framed_source, false),
+            "__lcompilers_gpu_cuda_source");
+        source->setSection(cuda_source_section_name);
+        source->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+        source->setAlignment(llvm::Align(1));
+        llvm::appendToCompilerUsed(*module, {source});
+    }
+
     template <typename T>
     void visit_AllocateUtil(const T& x, ASR::expr_t* m_stat, bool realloc, ASR::expr_t* m_source = nullptr) {
         llvm::Value* stat_target = nullptr;
@@ -30151,6 +30174,9 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
         LCOMPILERS_ASSERT(diagnostics.has_error())
         Error error;
         return error;
+    }
+    if (co.gpu_backend == "cuda") {
+        v.emit_gpu_cuda_source_section();
     }
     target_config.apply_target_attributes(*v.module);
     std::string msg;

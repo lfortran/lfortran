@@ -4,7 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <filesystem>
+#include <set>
 #include <random>
+#include <vector>
 #ifndef CLI11_HAS_FILESYSTEM
 #define CLI11_HAS_FILESYSTEM 0
 #endif // CLI11_HAS_FILESYSTEM
@@ -53,6 +55,13 @@
 #include <libasr/config.h>
 #include <lfortran/fortran_kernel.h>
 #include <libasr/string_utils.h>
+#ifdef HAVE_LFORTRAN_LLVM
+#include <llvm/Object/Archive.h>
+#include <llvm/Object/Binary.h>
+#include <llvm/Object/ObjectFile.h>
+#include <llvm/Support/Casting.h>
+#include <llvm/Support/Error.h>
+#endif
 #include <lfortran/utils.h>
 #include <lfortran/parser/parser.tab.hh>
 #include <string>
@@ -91,6 +100,7 @@ namespace {
 
 using LCompilers::endswith;
 using LCompilers::CompilerOptions;
+using LCompilers::read_file;
 using LCompilers::read_file_ok;
 
 namespace lcli = LCompilers::CommandLineInterface;
@@ -118,7 +128,192 @@ std::string get_system_temp_dir()
 
 std::string LFORTRAN_TEMP_DIR = get_system_temp_dir();
 
+bool append_cuda_sidecar(
+    const std::filesystem::path &sidecar_path,
+    std::set<std::string> &seen_sidecars,
+    std::vector<std::string> &cuda_sources)
+{
+    const std::string sidecar = sidecar_path.string();
+    if (!seen_sidecars.insert(sidecar).second) return true;
 
+    std::error_code ec;
+    if (!std::filesystem::exists(sidecar_path, ec)) {
+        if (ec) {
+            std::cerr << "Failed to inspect CUDA sidecar '" << sidecar
+                      << "': " << ec.message() << std::endl;
+            return false;
+        }
+        return true;
+    }
+    if (!std::filesystem::is_regular_file(sidecar_path, ec)) {
+        if (ec) {
+            std::cerr << "Failed to inspect CUDA sidecar '" << sidecar
+                      << "': " << ec.message() << std::endl;
+        } else {
+            std::cerr << "CUDA sidecar '" << sidecar
+                      << "' is not a regular file" << std::endl;
+        }
+        return false;
+    }
+
+    std::string sidecar_source;
+    if (!read_file(sidecar, sidecar_source)) {
+        std::cerr << "Failed to read CUDA sidecar '" << sidecar << "'"
+                  << std::endl;
+        return false;
+    }
+    cuda_sources.push_back(std::move(sidecar_source));
+    return true;
+}
+
+#ifdef HAVE_LFORTRAN_LLVM
+const char *cuda_source_section_name()
+{
+#ifdef HAVE_LFORTRAN_MACHO
+    return "__lcgpu";
+#else
+    return ".lcompilers.gpu.cuda.source";
+#endif
+}
+
+bool append_cuda_payload(
+    const char *data,
+    size_t size,
+    std::vector<std::string> &cuda_sources)
+{
+    size_t pos = 0;
+    while (pos < size) {
+        size_t end = pos;
+        while (end < size && data[end] != '\0') {
+            end++;
+        }
+        if (end == size) {
+            std::cerr << "Malformed CUDA metadata: missing NUL terminator"
+                      << std::endl;
+            return false;
+        }
+        if (end > pos) {
+            cuda_sources.emplace_back(data + pos, end - pos);
+        }
+        pos = end + 1;
+        while (pos < size && data[pos] == '\0') {
+            pos++;
+        }
+    }
+    return true;
+}
+
+bool append_cuda_section_from_object(
+    llvm::object::ObjectFile &object,
+    std::vector<std::string> &cuda_sources,
+    bool &found_cuda_section)
+{
+    for (const auto &section : object.sections()) {
+        auto section_name_or_err = section.getName();
+        if (!section_name_or_err) {
+            std::cerr << "Failed to read CUDA section name: "
+                      << llvm::toString(section_name_or_err.takeError())
+                      << std::endl;
+            return false;
+        }
+        if (*section_name_or_err != cuda_source_section_name()) {
+            continue;
+        }
+        found_cuda_section = true;
+        auto contents_or_err = section.getContents();
+        if (!contents_or_err) {
+            std::cerr << "Failed to read CUDA section contents: "
+                      << llvm::toString(contents_or_err.takeError())
+                      << std::endl;
+            return false;
+        }
+        if (!append_cuda_payload(contents_or_err->data(),
+                contents_or_err->size(), cuda_sources)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool append_cuda_source_from_input(
+    const std::string &input,
+    std::set<std::string> &seen_sidecars,
+    std::vector<std::string> &cuda_sources)
+{
+    auto binary_or_err = llvm::object::createBinary(input);
+    if (!binary_or_err) {
+        std::cerr << "Failed to open linker input '" << input << "': "
+                  << llvm::toString(binary_or_err.takeError()) << std::endl;
+        return false;
+    }
+    bool found_cuda_section = false;
+    llvm::object::Binary *binary = binary_or_err->getBinary();
+    if (auto *object = llvm::dyn_cast<llvm::object::ObjectFile>(binary)) {
+        if (!append_cuda_section_from_object(*object, cuda_sources,
+                found_cuda_section)) {
+            return false;
+        }
+    } else if (auto *archive = llvm::dyn_cast<llvm::object::Archive>(binary)) {
+        llvm::Error err = llvm::Error::success();
+        for (auto child : archive->children(err)) {
+            auto child_binary_or_err = child.getAsBinary();
+            if (!child_binary_or_err) {
+                std::cerr << "Failed to open archive member binary: "
+                          << llvm::toString(child_binary_or_err.takeError())
+                          << std::endl;
+                return false;
+            }
+            if (auto *child_object = llvm::dyn_cast<llvm::object::ObjectFile>(
+                    child_binary_or_err->get())) {
+                bool child_found_cuda_section = false;
+                if (!append_cuda_section_from_object(*child_object,
+                        cuda_sources, child_found_cuda_section)) {
+                    return false;
+                }
+                if (!child_found_cuda_section) {
+                    auto child_name_or_err = child.getFullName();
+                    if (!child_name_or_err) {
+                        std::cerr << "Failed to read archive member name in '"
+                                  << input << "': "
+                                  << llvm::toString(
+                                         child_name_or_err.takeError())
+                                  << std::endl;
+                        return false;
+                    }
+                    if (!append_cuda_sidecar(
+                            std::filesystem::path(input).parent_path()
+                                / (*child_name_or_err + ".cuda.cu"),
+                            seen_sidecars, cuda_sources)) {
+                        return false;
+                    }
+                }
+                found_cuda_section = found_cuda_section || child_found_cuda_section;
+            }
+        }
+        if (err) {
+            std::cerr << "Failed to read archive member list: "
+                      << llvm::toString(std::move(err)) << std::endl;
+            return false;
+        }
+    }
+    if (!found_cuda_section) {
+        return append_cuda_sidecar(
+            std::filesystem::path(input + ".cuda.cu"),
+            seen_sidecars, cuda_sources);
+    }
+    return true;
+}
+#else
+bool append_cuda_source_from_input(
+    const std::string &input,
+    std::set<std::string> &seen_sidecars,
+    std::vector<std::string> &cuda_sources)
+{
+    return append_cuda_sidecar(
+        std::filesystem::path(input + ".cuda.cu"),
+        seen_sidecars, cuda_sources);
+}
+#endif
 
 // The unique compilation ID for this invocation of the compiler.
 // Used in naming unique intermediate object files during both compilation modes.
@@ -2239,57 +2434,66 @@ int link_executable(const std::vector<std::string> &infiles,
                     + " -framework Metal -framework Foundation";
             }
             if (compiler_options.gpu_backend == "cuda") {
-                // Collect CUDA kernel source. Every object file carries the
-                // device source of its own translation unit in a sidecar, so
-                // reading all of them is what picks up a kernel that lives in
-                // a module compiled separately. Only a link that finds no
-                // sidecar at all falls back to the source this invocation
-                // generated.
-                std::string cuda_source;
+                // Collect CUDA kernel source from embedded object metadata.
+                // Each object contributes its own translation unit, and
+                // legacy sidecars remain as a fallback for older builds.
+                std::vector<std::string> cuda_sources;
+                std::set<std::string> seen_cuda_sidecars;
                 for (auto &s : infiles) {
-                    std::string sidecar = s + ".cuda.cu";
-                    std::ifstream f(sidecar);
-                    if (f.good()) {
-                        std::string content(
-                            (std::istreambuf_iterator<char>(f)),
-                            std::istreambuf_iterator<char>());
-                        cuda_source += content;
+                    if (!append_cuda_source_from_input(
+                            s, seen_cuda_sidecars, cuda_sources)) {
+                        return 10;
                     }
                 }
-                if (cuda_source.empty()) {
-                    cuda_source = compiler_options.gpu_cuda_source;
+                if (cuda_sources.empty()) {
+                    cuda_sources.push_back(compiler_options.gpu_cuda_source);
                 }
 
-                // Write CUDA kernel source to a temp .cu file
-                std::string cuda_kernel_src = LFORTRAN_TEMP_DIR
-                    + "/lfortran_gpu_kernel_" + LCOMPILERS_UNIQUE_ID + ".cu";
-                std::string cuda_kernel_obj = LFORTRAN_TEMP_DIR
-                    + "/lfortran_gpu_kernel_" + LCOMPILERS_UNIQUE_ID + ".o";
-                {
-                    std::ofstream cu_out(cuda_kernel_src);
-                    cu_out << cuda_source;
-                    cu_out.close();
-                }
-                // Compile the kernel .cu with the device compiler. When
-                // emulating, the device code is ordinary host C++, and the
-                // language has to be named explicitly because no host
-                // compiler knows the .cu suffix. The emulation is built
-                // without OpenMP, so the threads of a block run one after
-                // another and a __syncthreads() reports that it cannot be
-                // honoured; the device code and the runtime below have to
-                // agree on that, so neither is given -fopenmp.
+                // Write every unique CUDA fragment to a temp .cu file. Each
+                // translation unit compiles separately so its local
+                // declarations stay local and identical definitions do not
+                // collide when archive members are aggregated at link time.
                 bool emulate_cpu = compiler_options.gpu_cpu_emulation;
                 std::string runtime_include = " -I" + runtime_library_dir
                     + "/../libasr/runtime";
                 std::string device_cc = compiler_options.device_compiler;
-                std::string cuda_kernel_cmd = device_cc + " -c -O2"
-                    + (emulate_cpu ? runtime_include + " -x c++" : "")
-                    + " -o " + cuda_kernel_obj + " " + cuda_kernel_src;
-                int cuda_err = system(cuda_kernel_cmd.c_str());
-                if (cuda_err) {
-                    std::cerr << "Failed to compile CUDA kernel: "
-                        << cuda_kernel_cmd << std::endl;
-                    return 10;
+                std::vector<std::string> cuda_kernel_objs;
+                std::set<std::string> seen_cuda_fragments;
+                size_t cuda_kernel_index = 0;
+                for (const auto &cuda_source : cuda_sources) {
+                    if (!seen_cuda_fragments.insert(cuda_source).second) {
+                        continue;
+                    }
+                    std::string cuda_kernel_src = LFORTRAN_TEMP_DIR
+                        + "/lfortran_gpu_kernel_" + LCOMPILERS_UNIQUE_ID
+                        + "_" + std::to_string(cuda_kernel_index) + ".cu";
+                    std::string cuda_kernel_obj = LFORTRAN_TEMP_DIR
+                        + "/lfortran_gpu_kernel_" + LCOMPILERS_UNIQUE_ID
+                        + "_" + std::to_string(cuda_kernel_index) + ".o";
+                    {
+                        std::ofstream cu_out(cuda_kernel_src);
+                        cu_out << cuda_source;
+                        cu_out.close();
+                    }
+                    // Compile the kernel .cu with the device compiler. When
+                    // emulating, the device code is ordinary host C++, and
+                    // the language has to be named explicitly because no host
+                    // compiler knows the .cu suffix. The emulation is built
+                    // without OpenMP, so the threads of a block run one after
+                    // another and a __syncthreads() reports that it cannot be
+                    // honoured; the device code and the runtime below have to
+                    // agree on that, so neither is given -fopenmp.
+                    std::string cuda_kernel_cmd = device_cc + " -c -O2"
+                        + (emulate_cpu ? runtime_include + " -x c++" : "")
+                        + " -o " + cuda_kernel_obj + " " + cuda_kernel_src;
+                    int cuda_err = system(cuda_kernel_cmd.c_str());
+                    if (cuda_err) {
+                        std::cerr << "Failed to compile CUDA kernel: "
+                            << cuda_kernel_cmd << std::endl;
+                        return 10;
+                    }
+                    cuda_kernel_objs.push_back(std::move(cuda_kernel_obj));
+                    cuda_kernel_index++;
                 }
 
                 // Compile the GPU runtime. The CPU emulation uses its own
@@ -2307,7 +2511,7 @@ int link_executable(const std::vector<std::string> &infiles,
                     + (emulate_cpu ? " -x c" : "")
                     + " -o " + cuda_runtime_obj
                     + " " + cuda_runtime_src;
-                cuda_err = system(cuda_rt_cmd.c_str());
+                int cuda_err = system(cuda_rt_cmd.c_str());
                 if (cuda_err) {
                     std::cerr << "Failed to compile CUDA runtime: "
                         << cuda_rt_cmd << std::endl;
@@ -2328,8 +2532,10 @@ int link_executable(const std::vector<std::string> &infiles,
                             == LCompilers::Platform::macOS_ARM
                         || compiler_options.platform
                             == LCompilers::Platform::macOS_PowerPC;
-                    compile_cmd += " " + cuda_kernel_obj
-                        + " " + cuda_runtime_obj
+                    for (auto &cuda_kernel_obj : cuda_kernel_objs) {
+                        compile_cmd += " " + cuda_kernel_obj;
+                    }
+                    compile_cmd += " " + cuda_runtime_obj
                         + (is_macos ? " -lc++" : " -lstdc++") + " -lm";
                 } else {
                     // The device compiler also drives the link, since it knows
@@ -2338,7 +2544,10 @@ int link_executable(const std::vector<std::string> &infiles,
                     for (auto &s : infiles) {
                         compile_cmd += s + " ";
                     }
-                    compile_cmd += cuda_kernel_obj + " " + cuda_runtime_obj;
+                    for (auto &cuda_kernel_obj : cuda_kernel_objs) {
+                        compile_cmd += cuda_kernel_obj + " ";
+                    }
+                    compile_cmd += cuda_runtime_obj;
                     compile_cmd += " -L" + base_path
                         + " -Xlinker -rpath -Xlinker " + base_path
                         + " -l" + runtime_lib + " -lm";
