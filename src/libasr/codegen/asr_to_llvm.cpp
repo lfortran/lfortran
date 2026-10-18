@@ -5018,6 +5018,15 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
+        visit_ArrayItem_storage(x);
+    }
+
+    // Lowers the element `x` in the storage of its array, ignoring the
+    // compile-time value of `x` (`m_value` only caches the folded value of an
+    // element of a named constant). An actual argument needs this: the
+    // element may be associated with an array dummy by sequence association,
+    // in which case the callee reads the elements that follow it.
+    void visit_ArrayItem_storage(const ASR::ArrayItem_t& x) {
         ASR::ttype_t* x_mv_type = ASRUtils::expr_type(x.m_v);
         llvm::Value* array = nullptr;
         ASR::Variable_t *v = nullptr;
@@ -25650,7 +25659,14 @@ public:
                 tmp = convert_cptr_call_arg(tmp, actual_is_reference, *orig_arg);
             } else {
                 ASR::ttype_t* arg_type = expr_type(x.m_args[i].m_value);
-                this->visit_expr_wrapper(x.m_args[i].m_value);
+                if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {
+                    // An array element is passed by reference to its
+                    // storage, also an element of a named constant.
+                    visit_ArrayItem_storage(*ASR::down_cast<ASR::ArrayItem_t>(
+                        x.m_args[i].m_value));
+                } else {
+                    this->visit_expr_wrapper(x.m_args[i].m_value);
+                }
                 if( x_abi == ASR::abiType::BindC ) {
                     if( (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) &&
                          orig_arg_intent ==  ASR::intentType::In) ||
@@ -25868,12 +25884,7 @@ public:
                         && orig_arg->m_value_attr) {
                         use_value = true;
                     }
-                    // An array element is passed by reference to its
-                    // storage. An element with a compile-time value (one of
-                    // a named constant) is lowered as that value instead and
-                    // is passed in a temporary, like any other constant.
-                    if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value) &&
-                            ASRUtils::expr_value(x.m_args[i].m_value) == nullptr) {
+                    if (ASR::is_a<ASR::ArrayItem_t>(*x.m_args[i].m_value)) {
                         if (ASRUtils::is_class_type(
                                 ASRUtils::extract_type(arg_type))
                             && !ASRUtils::is_class_type(
