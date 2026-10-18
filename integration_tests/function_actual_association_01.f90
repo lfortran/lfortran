@@ -49,10 +49,18 @@ program function_actual_association_01
     allocate(objects(1)%data(1))
     objects(1)%data = -1
     calls = 0
-    values = replace_allocatable(objects(index_of())%data)
+    values = replace_allocatable_inout(objects(index_of())%data)
     if (calls /= 1 .or. any(values /= [8, 9])) error stop 13
     if (size(objects(1)%data) /= 2) error stop 14
     if (any(objects(1)%data /= [8, 9])) error stop 15
+
+    ! GNU repeats effectful selectors when deallocating an allocatable OUT actual.
+    calls = 0
+    i = index_of()
+    values = replace_allocatable(objects(i)%data)
+    if (calls /= 1 .or. any(values /= [8, 9])) error stop 26
+    if (size(objects(1)%data) /= 2) error stop 27
+    if (any(objects(1)%data /= [8, 9])) error stop 28
 
     objects(1)%p => lengths(1)
     calls = 0
@@ -76,12 +84,17 @@ program function_actual_association_01
 
     calls = 0
     do i = 1, 3
-        lengths(1) = i - 1
+        lengths(1) = i
         text = grow_text(lengths(index_of()))
-        if (calls /= i .or. lengths(1) /= i) error stop 23
-        if (len(text) /= i - 1) error stop 24
-        if (text /= repeat('x', i - 1)) error stop 25
+        if (calls /= i .or. lengths(1) /= i + 1) error stop 23
+        if (len(text) /= i) error stop 24
+        if (text /= repeat('x', i)) error stop 25
     end do
+
+    ! A zero-length result need not execute the function body.
+    lengths(1) = 0
+    text = grow_text(lengths(index_of()))
+    if (len(text) /= 0) error stop 32
 
 contains
     integer function index_of()
@@ -132,6 +145,16 @@ contains
         allocate(n(2))
         n = [8, 9]
         r = n
+    end function
+
+    function replace_allocatable_inout(n) result(r)
+        integer, allocatable, intent(inout) :: n(:)
+        integer :: r(2)
+        if (.not. allocated(n)) error stop 29
+        if (size(n) /= 1) error stop 30
+        if (any(n /= -1)) error stop 31
+        deallocate(n)
+        r = replace_allocatable(n)
     end function
 
     function redirect(n) result(r)
