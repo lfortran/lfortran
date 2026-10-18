@@ -14,15 +14,18 @@ program file_open_14
     if (ios /= 0) error stop 1
     if (u >= 0) error stop 2
     scratch_unit = u
+    ! Other tests in this directory may already have left fort.<unit>.
+    ! Judge the connection, not that leftover. GFortran may report a blank
+    ! name or a temporary path; neither is fort.<unit>.
+    name = ''
+    inquire(unit=u, name=name, iostat=ios)
+    if (ios /= 0) error stop 5
+    write(fort_name, '(a,i0)') 'fort.', scratch_unit
+    if (index(name, trim(fort_name)) /= 0) error stop 6
     write(u, '(a)', iostat=ios) 'secret'
     if (ios /= 0) error stop 3
     close(u, iostat=ios)
     if (ios /= 0) error stop 4
-
-    write(fort_name, '(a,i0)') 'fort.', scratch_unit
-    inquire(file=trim(fort_name), exist=exist, iostat=ios)
-    if (ios /= 0) error stop 5
-    if (exist) error stop 6
 
     open(newunit=u, status='scratch', iostat=ios)
     if (ios /= 0) error stop 7
@@ -55,9 +58,6 @@ program file_open_14
     inquire(file=filename, exist=exist, iostat=ios)
     if (ios /= 0) error stop 19
     if (.not. exist) error stop 20
-    inquire(file=trim(fort_name), exist=exist, iostat=ios)
-    if (ios /= 0) error stop 21
-    if (exist) error stop 22
 
     open(newunit=u, file=filename, status='old', iostat=ios)
     if (ios /= 0) error stop 23
