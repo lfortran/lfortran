@@ -852,7 +852,7 @@ The prescan phase includes:
 - Conversion to lowercase (fixed-form only)
 - Handling of fixed-form column rules (columns 1–6 for labels/comments)
 */
-Result<std::string> prescan(const std::string &s, LocationManager &lm,
+bool prescan_impl(std::string &out, const std::string &s, LocationManager &lm,
         bool fixed_form, std::vector<std::filesystem::path> &include_dirs,
         diag::Diagnostics &diagnostics)
 {
@@ -862,7 +862,6 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
         lm.get_newlines(s, lm.files.back().in_newlines);
         lm.files.back().out_start.push_back(0);
         lm.files.back().in_start.push_back(0);
-        std::string out;
         size_t pos = 0;
         /* Note:
          * This is a fixed-form prescanner, which:
@@ -948,9 +947,7 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
                     if ((s[pos] == '"') || (s[pos] == '\'')) {
                         if (!process_include(out, s, lm, pos, fixed_form,
                                 include_dirs, col, diagnostics)) {
-                            cover_output(lm, out);
-                            Error error;
-                            return error;
+                            return false;
                         }
                     }
                     break;
@@ -960,22 +957,18 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
                 }
             };
             if (!ok) {
-                cover_output(lm, out);
-                Error error;
-                return error;
+                return false;
             }
             if (lt == LineType::EndOfFile) break;
         }
         lm.files.back().in_start.push_back(source_offset(pos));
         lm.files.back().out_start.push_back(source_offset(out.size()));
-        cover_output(lm, out);
-        return out;
+        return true;
     } else {
          // `pos` is the position in the original code `s`
         // `out` is the final code (outcome)
         lm.files.back().out_start.push_back(0);
         lm.files.back().in_start.push_back(0);
-        std::string out;
         size_t pos = 0;
         bool in_comment = false, newline = true;
         // keeps track of whether we're in a string or not
@@ -994,9 +987,7 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
                 while (pos < s.size() && s[pos] == ' ') pos++;
                 LCOMPILERS_ASSERT(pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')));
                 if (!process_include(out, s, lm, pos, fixed_form, include_dirs, col, diagnostics)) {
-                    cover_output(lm, out);
-                    Error error;
-                    return error;
+                    return false;
                 }
             }
             newline = false;
@@ -1046,9 +1037,19 @@ Result<std::string> prescan(const std::string &s, LocationManager &lm,
         // file has it
         lm.files.back().in_start.push_back(source_offset(pos));
         lm.files.back().out_start.push_back(source_offset(out.size()));
-        cover_output(lm, out);
-        return out;
+        return true;
     }
+}
+
+Result<std::string> prescan(const std::string &s, LocationManager &lm,
+        bool fixed_form, std::vector<std::filesystem::path> &include_dirs,
+        diag::Diagnostics &diagnostics)
+{
+    std::string out;
+    bool ok = prescan_impl(out, s, lm, fixed_form, include_dirs, diagnostics);
+    cover_output(lm, out);
+    if (!ok) return Error();
+    return out;
 }
 
 
