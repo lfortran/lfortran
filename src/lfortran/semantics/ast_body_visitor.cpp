@@ -2666,6 +2666,7 @@ public:
             if (_type == AST::decl_stmtType::Write) {
                 expr = cast_assumed_rank_io_item(expr, loc, "write");
             } else if (_type == AST::decl_stmtType::Read) {
+                check_read_item_not_complex_part(expr);
                 expr = cast_assumed_rank_io_item(expr, loc, "read");
             }
             // For READ: expand implied-do loops to individual elements or array section
@@ -9421,6 +9422,27 @@ public:
                 ASR::down_cast<ASR::Var_t>(expr)->m_v)) + "'";
         }
         diag.add(Diagnostic("Procedure" + name + " requires an argument list",
+            Level::Error, Stage::Semantic, {
+            Label("", {expr->base.loc})
+        }));
+        throw SemanticAbort();
+    }
+
+    // An input item that is the real or imaginary part of a complex
+    // variable cannot be read yet.
+    void check_read_item_not_complex_part(ASR::expr_t *expr) {
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+            ASR::ImpliedDoLoop_t *idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+            for (size_t i = 0; i < idl->n_values; i++) {
+                check_read_item_not_complex_part(idl->m_values[i]);
+            }
+            return;
+        }
+        if (!ASR::is_a<ASR::ComplexRe_t>(*expr) && !ASR::is_a<ASR::ComplexIm_t>(*expr)) {
+            return;
+        }
+        diag.add(Diagnostic("reading into the real or imaginary part of a "
+            "complex variable is not supported yet",
             Level::Error, Stage::Semantic, {
             Label("", {expr->base.loc})
         }));
