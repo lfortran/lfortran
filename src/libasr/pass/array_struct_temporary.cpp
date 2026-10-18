@@ -3291,7 +3291,12 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 ASR::Array_t* declared_array = ASR::down_cast<ASR::Array_t>(declared_type);
                 LCOMPILERS_ASSERT(array->n_dims == declared_array->n_dims);
                 for (size_t i = 0; i < array->n_dims; i++) {
-                    if (array->m_dims[i].m_start && declared_array->m_dims[i].m_start) {
+                    // Only a bound that depends on the actuals needs
+                    // rebinding. A constant one, such as the lower bound of
+                    // one of a function reference, is kept as is.
+                    if (array->m_dims[i].m_start && declared_array->m_dims[i].m_start &&
+                            !ASRUtils::is_value_constant(
+                                ASRUtils::expr_value(array->m_dims[i].m_start))) {
                         array->m_dims[i].m_start = replacer.replace_FunctionParam_with_arg(
                             declared_array->m_dims[i].m_start);
                     }
