@@ -1,7 +1,7 @@
 ! Elements of named constant arrays passed as actual arguments to dummies
-! without the VALUE attribute.
+! without the VALUE attribute, and to bind(c) VALUE dummies.
 module parameter_27_m
-use iso_c_binding, only: c_int
+use iso_c_binding, only: c_int, c_double
 implicit none
 type :: t
     integer :: a(3)
@@ -14,6 +14,7 @@ end type
 integer, parameter :: ip(4) = [10, 20, 30, 40]
 integer, parameter :: ip2(2,2) = reshape([1, 2, 3, 4], [2, 2])
 integer(c_int), parameter :: icp(3) = [1, 2, 3]
+real(c_double), parameter :: dcp(2) = [0.5_c_double, 1.25_c_double]
 real, parameter :: rp(2) = [1.5, 2.5]
 complex, parameter :: cp(2) = [(1.0, 2.0), (3.0, 4.0)]
 logical, parameter :: lp(2) = [.true., .false.]
@@ -74,6 +75,14 @@ integer(c_int) function fbc(n) bind(c)
     integer(c_int), intent(in) :: n
     fbc = n
 end function
+integer(c_int) function fvi(n) bind(c)
+    integer(c_int), value, intent(in) :: n
+    fvi = n
+end function
+real(c_double) function fvd(x) bind(c)
+    real(c_double), value, intent(in) :: x
+    fvd = x
+end function
 integer function get(self, n)
     class(obj), intent(in) :: self
     integer, intent(in) :: n
@@ -108,6 +117,8 @@ if (ft(tp(2)) /= 15) error stop 11
 if (fi(tp(2)%a(3)) /= 6) error stop 12
 if (fany(ip(1)) /= 10) error stop 13
 if (fbc(icp(3)) /= 3) error stop 14
+if (fvi(icp(2)) /= 2) error stop 18
+if (fvd(dcp(2)) /= 1.25_c_double) error stop 19
 if (o%get(ip(1)) /= 11) error stop 15
 if (fp(ip(3)) /= 30) error stop 16
 call implicit_ext(ip(4))

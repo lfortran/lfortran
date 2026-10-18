@@ -2117,7 +2117,7 @@ RUN(NAME parameter_27 LABELS gfortran llvm)
 # dummy of a separately compiled external procedure. Not gfortran: it passes the
 # element in a one-element temporary, so the callee reads past it. NO_FAST: the
 # --fast-only replace_with_compile_time_values pass replaces the element by its
-# value (pre-existing).
+# value (pre-existing, #15522).
 RUN(NAME parameter_28 LABELS llvm EXTRAFILES parameter_28_ext.f90 EXTRA_ARGS --implicit-interface NO_FAST)
 
 RUN(NAME fortuno_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
