@@ -934,7 +934,8 @@ public:
 
     void visit_Function(const ASR::Function_t &x) {
         ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(&x);
-        if (func_type->m_abi == ASR::abiType::ExternalUndefined) {
+        if (func_type->m_abi == ASR::abiType::ExternalUndefined ||
+                func_type->m_deftype == ASR::deftypeType::Interface) {
             return;
         }
         // The procedure of an IntentOutReset record is the reset itself.
