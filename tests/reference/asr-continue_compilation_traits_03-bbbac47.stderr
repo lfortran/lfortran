@@ -57,22 +57,6 @@ semantic error: Dummy argument 'method' not defined
     | ...^^^^^^^^^^^^^^^^^^ 
 
 semantic error: runtime dispatch for this trait method signature is not implemented yet
-   --> tests/errors/continue_compilation_traits_03.f90:146:9
-    |
-146 |         class(IAllocatableArray), intent(in) :: method
-    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
-
-semantic error: Dummy argument 'method' not defined
-   --> tests/errors/continue_compilation_traits_03.f90:145:5 - 147:18
-    |
-145 |        subroutine use_allocatable(method)
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
-...
-    |
-147 |        end subroutine
-    | ...^^^^^^^^^^^^^^^^^^ 
-
-semantic error: runtime dispatch for this trait method signature is not implemented yet
    --> tests/errors/continue_compilation_traits_03.f90:149:9
     |
 149 |         class(ICharacterResult), intent(in) :: method

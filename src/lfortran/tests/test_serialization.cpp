@@ -5878,7 +5878,7 @@ TEST_CASE("Inherited trait contracts retain nominal obligations") {
 TEST_CASE("Trait array shape contracts distinguish assumed-size") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;
-    // The optional dummy of static_only keeps both traits without runtime
+    // The pointer dummy of static_only keeps both traits without runtime
     // contracts, whose slots the representation changes below would not
     // follow: only the static contracts are compared.
     const std::string source = R"(
@@ -5894,7 +5894,7 @@ abstract interface :: ILeft
         integer :: r
     end function
     function static_only(k) result(r)
-        integer, intent(in), optional :: k
+        integer, pointer, intent(in), optional :: k
         integer :: r
     end function
 end interface
@@ -5908,7 +5908,7 @@ abstract interface :: IRight
         integer :: r
     end function
     function static_only(k) result(r)
-        integer, intent(in), optional :: k
+        integer, pointer, intent(in), optional :: k
         integer :: r
     end function
 end interface
@@ -6203,13 +6203,13 @@ end module
 TEST_CASE("Trait array-element bounds preserve positional correspondence") {
     namespace ASR = LCompilers::ASR;
     namespace ASRUtils = LCompilers::ASRUtils;
-    // An optional `a` keeps the traits without runtime contracts, whose slots
+    // TARGET on `a` keeps the traits without runtime contracts, whose slots
     // the bound changes below would not follow: only the static contracts
     // are compared.
     const std::string method = R"(
 function count(n, other, k, a) result(r)
     integer, intent(in) :: n(2, 2), other(2, 2), k(2)
-    integer, intent(in), optional :: a(n(k(1), 2), other(1, 1))
+    integer, intent(in), optional, target :: a(n(k(1), 2), other(1, 1))
     integer :: r
 end function
 )";

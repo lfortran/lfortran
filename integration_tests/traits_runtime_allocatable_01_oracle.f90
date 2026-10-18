@@ -8,6 +8,7 @@ module traits_runtime_allocatable_01_oracle_m
         procedure(amend_interface), deferred :: amend
         procedure(reference_interface), deferred, nopass :: reference
         procedure(scaled_interface), deferred :: scaled
+        procedure(count_interface), deferred :: count
     end type
     abstract interface
         subroutine fill_interface(self, data)
@@ -33,6 +34,11 @@ module traits_runtime_allocatable_01_oracle_m
             class(ISetup), intent(in) :: self
             integer, optional, intent(in) :: factor
         end function
+        integer function count_interface(self, data)
+            import ISetup
+            class(ISetup), intent(in) :: self
+            real(8), allocatable, intent(in) :: data(:,:)
+        end function
     end interface
     type, extends(ISetup) :: Setup
         integer :: n = 7
@@ -42,6 +48,7 @@ module traits_runtime_allocatable_01_oracle_m
         procedure :: amend
         procedure, nopass :: reference
         procedure :: scaled
+        procedure :: count
     end type
 contains
     subroutine fill(self, data)
@@ -75,6 +82,12 @@ contains
         scaled = self%n
         if (present(factor)) scaled = scaled * factor
     end function
+    integer function count(self, data)
+        class(Setup), intent(in) :: self
+        real(8), allocatable, intent(in) :: data(:,:)
+        count = 0
+        if (allocated(data)) count = size(data)
+    end function
     subroutine forward(object, data)
         class(ISetup), intent(in) :: object
         real(8), optional, allocatable, intent(out) :: data(:,:)
@@ -93,6 +106,7 @@ program traits_runtime_allocatable_01_oracle
     call object%fill(data)
     if (any(shape(data) /= [2,3]) .or. any(data /= 7._8)) error stop 3
     if (any(lbound(data) /= [-1,3])) error stop 4
+    if (object%count(data) /= 6) error stop 12
     call object%orbit()
     call forward(object)
     if (orbits /= 2 .or. any(data /= 7._8)) error stop 5
@@ -105,6 +119,7 @@ program traits_runtime_allocatable_01_oracle
     if (object%scaled() /= 7) error stop 9
     if (object%scaled(factor=3) /= 21) error stop 10
     deallocate(data)
+    if (object%count(data) /= 0) error stop 13
     call object%amend(data)
     if (any(shape(data) /= [1,1]) .or. any(data /= 7._8)) error stop 11
     deallocate(data, object)
