@@ -245,7 +245,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         int __libasr_index_0_;
         int __libasr_index_0_1;
         __libasr_created__result_metadata_ = ((int)((1 * (((1 * ((int)__dim_c_0)) - (1 * ((int)2))) + 1)) + 2));
-        face_values_gpu_45(w, 2, c, n, __libasr_created__function_call_face_values, __libasr__created__var__3__array_constructor_);
+        face_values_gpu_45(w, 2, c, __dim_c_0, __libasr_created__function_call_face_values, __libasr__created__var__3__array_constructor_);
         __libasr_index_0_1 = 1;
         __do_loop_end = (1 + ((int)((1 * (((1 * ((int)__dim_c_0)) - (1 * ((int)2))) + 1)) + 2)) - 1);
         __libasr_index_0_ = (1 - 1);
