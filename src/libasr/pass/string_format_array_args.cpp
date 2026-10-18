@@ -7,6 +7,7 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/string_format_array_args.h>
 
+#include <set>
 #include <vector>
 
 /*
@@ -72,7 +73,13 @@ An expression that cannot be associated with a pointer (`z%re`, a
 
 A READ statement can define some elements of an input item and leave the
 others as they are, so a copy of the item is also copied back to it after the
-statement, before it is released:
+statement, before it is released. The statement defines its items in the
+order of the list, so every item after the first one that may be copied, if
+it can share storage with another item, is read into a temporary that is
+copied back after the statement, in the order of the list: an array into a
+copy (it is never associated), a scalar into a scalar copy. A variable that
+is neither a pointer nor a target shares storage with no other item and is
+read directly, as is every item before the first one that may be copied:
 
 ```fortran
 read(u) p                   ! integer, pointer :: p(:)
@@ -100,6 +107,20 @@ else
     end do
     deallocate(t)
 end if
+```
+
+```fortran
+read(u) p, a(2)             ! integer, target :: a(3)
+```
+
+becomes
+
+```fortran
+...                         ! p as above
+s = a(2)
+read(u) ArrayPhysicalCast(t, ...), s
+...                         ! t is copied back to p, as above
+a(2) = s
 ```
 
 The same holds for an internal file that a WRITE statement writes, while the
@@ -268,10 +289,11 @@ public:
     }
 
     // A pointer array that is `e` when `e` is contiguous, and a contiguous
-    // copy of it otherwise, with the statements that make and release it.
-    // When the statement can define elements of `e`, the copy is copied back
-    // to `e` before it is released.
-    ASR::expr_t *contiguous_temporary(ASR::expr_t *e, Access access) {
+    // copy of it otherwise (or always, with `always_copy`), with the
+    // statements that make and release it. When the statement can define
+    // elements of `e`, the copy is copied back to `e` before it is released.
+    ASR::expr_t *contiguous_temporary(ASR::expr_t *e, Access access,
+            bool always_copy = false) {
         const Location &loc = e->base.loc;
         ASRUtils::ASRBuilder b(al, loc);
         ASR::ttype_t *type = ASRUtils::expr_type(e);
@@ -316,7 +338,8 @@ public:
         }
         release.push_back(ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
             al, loc, vars.p, vars.size())));
-        if (ASR::is_a<ASR::Var_t>(*e) || ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+        if (!always_copy && (ASR::is_a<ASR::Var_t>(*e) ||
+                ASR::is_a<ASR::StructInstanceMember_t>(*e))) {
             // The release is chosen by the same test as the acquisition,
             // even if the statement re-associates `e`.
             ASR::ttype_t *logical_type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4));
@@ -343,17 +366,176 @@ public:
         return temporary;
     }
 
+    // Whether the array `e` is copied to a contiguous temporary (or
+    // associated with one) to be transferred.
+    static bool is_copied(ASR::expr_t *e) {
+        ASR::ttype_t *type = ASRUtils::expr_type(e);
+        return ASRUtils::extract_physical_type(type) !=
+                ASR::array_physical_typeType::PointerArray &&
+            !is_contiguous_by_construction(type);
+    }
+
     ASR::expr_t *pointer_array(ASR::expr_t *e, Access access) {
         ASR::ttype_t *type = ASRUtils::expr_type(e);
         if (ASRUtils::extract_physical_type(type) ==
                 ASR::array_physical_typeType::PointerArray) {
             return e;
         }
-        if (!is_contiguous_by_construction(type)) {
+        if (is_copied(e)) {
             LCOMPILERS_ASSERT(current_body != nullptr);
             e = contiguous_temporary(e, access);
         }
         return cast_to_pointer_array(e);
+    }
+
+    // A temporary for the scalar input item `e`: it is a copy of `e`
+    // before the statement and is copied back to `e` after it.
+    ASR::expr_t *scalar_temporary(ASR::expr_t *e) {
+        const Location &loc = e->base.loc;
+        ASRUtils::ASRBuilder b(al, loc);
+        ASRUtils::ExprStmtDuplicator dup(al);
+        ASR::ttype_t *type = ASRUtils::type_get_past_allocatable_pointer(
+            ASRUtils::expr_type(e));
+        ASR::expr_t *len_expr = nullptr;
+        if (ASR::is_a<ASR::String_t>(*type) && !ASRUtils::is_value_constant(
+                ASR::down_cast<ASR::String_t>(type)->m_len)) {
+            type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,
+                ASRUtils::TYPE(ASR::make_String_t(al, loc,
+                    ASR::down_cast<ASR::String_t>(type)->m_kind, nullptr,
+                    ASR::string_length_kindType::DeferredLength,
+                    ASR::string_physical_typeType::DescriptorString))));
+            len_expr = b.StringLen(dup.duplicate_expr(e));
+        }
+        ASR::expr_t *temporary = b.Variable(current_scope,
+            PassUtils::temporary_name(current_scope, "read_item"),
+            type, ASR::intentType::Local);
+        if (len_expr) {
+            current_body->push_back(al, b.Allocate(temporary, nullptr, 0, len_expr));
+        }
+        current_body->push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+            al, loc, temporary, dup.duplicate_expr(e), nullptr, false, false)));
+        body_after_curr_stmt->push_back(al, ASRUtils::STMT(
+            ASRUtils::make_Assignment_t_util(al, loc, dup.duplicate_expr(e),
+                temporary, nullptr, false, false)));
+        if (len_expr) {
+            Vec<ASR::expr_t*> vars; vars.reserve(al, 1);
+            vars.push_back(al, temporary);
+            body_after_curr_stmt->push_back(al, ASRUtils::STMT(
+                ASR::make_ExplicitDeallocate_t(al, loc, vars.p, vars.size())));
+        }
+        return temporary;
+    }
+
+    // Whether another item of a statement can designate storage of the
+    // scalar `e`, an item of intrinsic type: a variable that is neither a
+    // pointer nor a target cannot be.
+    static bool may_share_storage(ASR::expr_t *e) {
+        switch (ASRUtils::extract_type(ASRUtils::expr_type(e))->type) {
+            case ASR::ttypeType::Integer:
+            case ASR::ttypeType::UnsignedInteger:
+            case ASR::ttypeType::Real:
+            case ASR::ttypeType::Complex:
+            case ASR::ttypeType::Logical:
+            case ASR::ttypeType::String:
+                break;
+            default:
+                return false;
+        }
+        if (!ASR::is_a<ASR::Var_t>(*e)) {
+            return true;
+        }
+        ASR::symbol_t *sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(e)->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+            return true;
+        }
+        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+        return v->m_target_attr || ASRUtils::is_pointer(v->m_type);
+    }
+
+    // Whether `e` refers to a variable of `syms`.
+    static bool references_any(ASR::expr_t *e,
+            const std::set<ASR::symbol_t*> &syms) {
+        if (e == nullptr) return false;
+        for (ASR::symbol_t *sym : syms) {
+            if (ASRUtils::expr_references_symbol(e, sym)) return true;
+        }
+        return false;
+    }
+
+    // Whether a subscript or a substring bound of the designator `e` refers
+    // to a variable of `syms`.
+    static bool subscripts_reference(ASR::expr_t *e,
+            const std::set<ASR::symbol_t*> &syms) {
+        switch (e->type) {
+            case ASR::exprType::Var:
+                return false;
+            case ASR::exprType::ArrayItem: {
+                ASR::ArrayItem_t *x = ASR::down_cast<ASR::ArrayItem_t>(e);
+                for (size_t i = 0; i < x->n_args; i++) {
+                    if (references_any(x->m_args[i].m_left, syms) ||
+                            references_any(x->m_args[i].m_right, syms) ||
+                            references_any(x->m_args[i].m_step, syms)) {
+                        return true;
+                    }
+                }
+                return subscripts_reference(x->m_v, syms);
+            }
+            case ASR::exprType::StructInstanceMember:
+                return subscripts_reference(
+                    ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v, syms);
+            case ASR::exprType::StringItem: {
+                ASR::StringItem_t *x = ASR::down_cast<ASR::StringItem_t>(e);
+                return references_any(x->m_idx, syms) ||
+                    subscripts_reference(x->m_arg, syms);
+            }
+            case ASR::exprType::StringSection: {
+                ASR::StringSection_t *x = ASR::down_cast<ASR::StringSection_t>(e);
+                return references_any(x->m_start, syms) ||
+                    references_any(x->m_end, syms) ||
+                    references_any(x->m_step, syms) ||
+                    subscripts_reference(x->m_arg, syms);
+            }
+            default:
+                return references_any(e, syms);
+        }
+    }
+
+    // Adds the variables whose storage the input item `e` designates.
+    static void add_defined(ASR::expr_t *e, std::set<ASR::symbol_t*> &syms) {
+        switch (e->type) {
+            case ASR::exprType::Var:
+                syms.insert(ASR::down_cast<ASR::Var_t>(e)->m_v);
+                break;
+            case ASR::exprType::ArrayItem:
+                add_defined(ASR::down_cast<ASR::ArrayItem_t>(e)->m_v, syms);
+                break;
+            case ASR::exprType::ArraySection:
+                add_defined(ASR::down_cast<ASR::ArraySection_t>(e)->m_v, syms);
+                break;
+            case ASR::exprType::ArrayPhysicalCast:
+                add_defined(ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg, syms);
+                break;
+            case ASR::exprType::StructInstanceMember:
+                add_defined(ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v, syms);
+                break;
+            case ASR::exprType::StringItem:
+                add_defined(ASR::down_cast<ASR::StringItem_t>(e)->m_arg, syms);
+                break;
+            case ASR::exprType::StringSection:
+                add_defined(ASR::down_cast<ASR::StringSection_t>(e)->m_arg, syms);
+                break;
+            case ASR::exprType::ImpliedDoLoop: {
+                ASR::ImpliedDoLoop_t *x = ASR::down_cast<ASR::ImpliedDoLoop_t>(e);
+                add_defined(x->m_var, syms);
+                for (size_t i = 0; i < x->n_values; i++) {
+                    add_defined(x->m_values[i], syms);
+                }
+                break;
+            }
+            default:
+                break;
+        }
     }
 
     void visit_StringFormat(const ASR::StringFormat_t &x) {
@@ -384,6 +566,65 @@ public:
         }
     }
 
+    // The items of a data transfer statement, past the StringFormat of
+    // a format label.
+    static void collect_items(ASR::expr_t **values, size_t n_values,
+            std::vector<ASR::expr_t**> &items) {
+        for (size_t i = 0; i < n_values; i++) {
+            if (ASR::is_a<ASR::StringFormat_t>(*values[i])) {
+                ASR::StringFormat_t *sf = ASR::down_cast<ASR::StringFormat_t>(values[i]);
+                collect_items(sf->m_args, sf->n_args, items);
+            } else {
+                items.push_back(&values[i]);
+            }
+        }
+    }
+
+    // The items of an input statement. A copied item is copied back after
+    // the statement, so every later item that can share storage with it is
+    // read into a temporary too, which is copied back after it: the items
+    // are then defined in the order of the list. Such an array is always
+    // copied; a scalar is read into a scalar temporary. A temporary is a
+    // copy of its item before the statement, so an element that the
+    // statement leaves as it is (a null value, or end of file) keeps its
+    // value. An implied DO loop, a scalar of derived type and an item with
+    // a subscript that uses a variable an earlier item reads are still
+    // transferred directly; they are only wrong if they share storage with
+    // an earlier copied item.
+    void input_items(ASR::expr_t **values, size_t n_values) {
+        std::vector<ASR::expr_t**> items;
+        collect_items(values, n_values, items);
+        size_t first_copied = items.size();
+        for (size_t i = 0; i < items.size(); i++) {
+            ASR::expr_t *e = *items[i];
+            if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*e) &&
+                    ASRUtils::is_array(ASRUtils::expr_type(e)) && is_copied(e)) {
+                first_copied = i;
+                break;
+            }
+        }
+        std::set<ASR::symbol_t*> defined;
+        for (size_t i = 0; i < items.size(); i++) {
+            ASR::expr_t *e = *items[i];
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*e)) {
+                add_defined(e, defined);
+                continue;
+            }
+            if (ASRUtils::is_array(ASRUtils::expr_type(e))) {
+                if (i <= first_copied) {
+                    *items[i] = pointer_array(e, Access::Update);
+                } else {
+                    *items[i] = cast_to_pointer_array(
+                        contiguous_temporary(e, Access::Update, true));
+                }
+            } else if (i > first_copied && may_share_storage(e) &&
+                    !subscripts_reference(e, defined)) {
+                *items[i] = scalar_temporary(e);
+            }
+            add_defined(e, defined);
+        }
+    }
+
     // An internal file that is an array.
     void internal_file(ASR::expr_t *&unit, Access access) {
         if (unit && ASRUtils::is_array(ASRUtils::expr_type(unit))) {
@@ -404,7 +645,7 @@ public:
         ASR::FileRead_t &xx = const_cast<ASR::FileRead_t&>(x);
         if (!xx.m_overloaded && !xx.m_nml) {
             internal_file(xx.m_unit, Access::Read);
-            transfer_items(xx.m_values, xx.n_values, Access::Update);
+            input_items(xx.m_values, xx.n_values);
         }
         ASR::CallReplacerOnExpressionsVisitor<StringFormatArrayArgs>::visit_FileRead(x);
     }
