@@ -1711,6 +1711,8 @@ arrays of a message that is not generic have any INTENT (see "Array arguments"
 below); those of a generic message are read-only, a temporary limit of this
 implementation. A message that is not generic may also take such arrays of
 explicit shape (see "Explicit-shape array arguments" below).
+A non-generic message can also take optional ordinary scalar/array arguments
+and allocatable intrinsic arrays (see "Optional and allocatable arguments").
 A message that is not generic may also take bare views of runtime traits as
 arguments other than its receiver (see "Trait-object arguments" below).
 It may also take ordinary scalar `class(DerivedType)` arguments with
@@ -1964,6 +1966,32 @@ in a function message, and checks contiguity, every defined element and the
 elements outside each section. `continue_compilation_traits_array_inout`
 checks the diagnostics, also of associate names, through views, and for
 comparison through ordinary calls and static bindings.
+
+### Optional and allocatable arguments
+
+Non-generic messages preserve ordinary optional-argument presence and
+allocatable intrinsic array descriptors. An unallocated allocatable actual is
+still present when passed to an optional allocatable dummy. Optional dummies
+can be omitted, supplied by keyword, or forwarded from another optional dummy.
+The required-argument restrictions on borrowed trait views and ordinary
+polymorphic derived-type arguments remain unchanged, as do the generic-message
+restrictions.
+
+The shared optional-argument pass lowers the trait declarations, normalized
+slot interfaces, witness adapters and implementations to matching explicit
+presence flags. It also supplies those flags at both function and subroutine
+trait calls; no backend-specific optional dispatch is needed. Abstract
+interfaces remain bodyless, while the implementation performs ordinary
+allocatable INTENT(OUT) entry cleanup. Adapters only forward their descriptors,
+so allocations, reallocation and bounds are visible to the caller.
+
+`traits_allocatable_interface_01` and `traits_optional_01` check retained
+interface consistency with per-pass verification. `traits_runtime_allocatable_01`
+checks rank-two allocation, lower bounds, allocated and unallocated INOUT
+actuals, absent/present optional forwarding, receiverless calls and a
+function with a nonfirst receiver. Each has a standard inheritance oracle.
+These paths support the complete DeAdamsSolver migration, including
+`IProblemSetup` and `IOrbitIntegrator` optional allocatable outputs.
 
 ### Explicit-shape array arguments
 
