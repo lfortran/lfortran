@@ -295,7 +295,10 @@ class UpdateFunctionPointerCastTypes: public ASR::ASRPassBaseWalkVisitor<UpdateF
             if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(type))) {
                 // A modfile stores the null constant's signature separately
                 // from its procedure variable, whose interface was lowered.
-                const_cast<ASR::PointerNullConstant_t&>(x).m_type = type;
+                // Its specification expressions must be visible here, not
+                // just in the procedure variable's declaration scope.
+                const_cast<ASR::PointerNullConstant_t&>(x).m_type =
+                    ASRUtils::import_procedure_type(al, type, current_scope);
             }
         }
 
