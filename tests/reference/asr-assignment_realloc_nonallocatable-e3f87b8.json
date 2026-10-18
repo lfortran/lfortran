@@ -2,7 +2,7 @@
     "basename": "asr-assignment_realloc_nonallocatable-e3f87b8",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/assignment_realloc_nonallocatable.asr",
-    "infile_hash": "f0258756d51388ac32e3ba815deb518c01d08cd8a637c3a385db70ca",
+    "infile_hash": "6ab0df716f56eebc44bbc3c5e53acd5d1ad5083281b182d473dfdd74",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

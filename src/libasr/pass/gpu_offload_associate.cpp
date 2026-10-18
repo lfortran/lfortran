@@ -170,7 +170,7 @@ ASR::expr_t* gpu_fix_selector_subscripts(Allocator &al,
             ASRUtils::duplicate_type(al, ASRUtils::expr_type(sub)));
         ASR::expr_t *var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, v));
         inits.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc,
-            var, sub, nullptr, false, false)));
+            var, sub, nullptr, false, false, false)));
         sub = var;
     };
     ASR::expr_t *e = selector;

@@ -14541,10 +14541,12 @@ public:
                 fn = llvm_utils->CreateLoad2(fnPtrTy, fn);
                 value_struct = builder->CreateBitCast(value_struct, llvm_utils->i8_ptr);
                 target_struct = builder->CreateBitCast(target_struct, llvm_utils->i8_ptr);
-                // An allocatable variable has been reallocated above.
+                // An allocatable variable has been reallocated above, and
+                // a new target is defined by the copy.
                 builder->CreateCall(fnTy, fn, {value_struct, target_struct,
                     llvm::ConstantInt::get(llvm::Type::getInt1Ty(context),
-                        !ASRUtils::is_allocatable(asr_target_type))});
+                        !ASRUtils::is_allocatable(asr_target_type) &&
+                        !x.m_new_target)});
             } else {
                 ASR::symbol_t* vptr_sym;
                 ASR::expr_t* deepcopy_var;
@@ -14569,12 +14571,15 @@ public:
                 }
 
                 llvm::Value* finalize_target = nullptr;
-                if (target_is_new != nullptr && ASRUtils::struct_needs_finalization(
+                if (x.m_new_target) {
+                    finalize_target = llvm::ConstantInt::getFalse(context);
+                } else if (target_is_new != nullptr && ASRUtils::struct_needs_finalization(
                         ASRUtils::get_struct_sym_from_struct_expr(deepcopy_var))) {
                     finalize_target = builder->CreateNot(target_is_new);
                 }
                 llvm_utils->deepcopy(deepcopy_var, value_struct, target_struct,
-                    deepcopy_type, deepcopy_type, module.get(), true, finalize_target);
+                    deepcopy_type, deepcopy_type, module.get(), !x.m_new_target,
+                    finalize_target);
             }
             if (is_target_unlimited_polymorphic || is_target_class) {
                 // Store Vptr from original struct

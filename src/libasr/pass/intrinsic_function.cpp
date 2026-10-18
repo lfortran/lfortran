@@ -376,7 +376,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
 
         if (is_param) {
             ASR::stmt_t* param_assign = ASRUtils::STMT(ASR::make_Assignment_t(
-                al, x->base.base.loc, this->result_var_, target_var, nullptr, false, false));
+                al, x->base.base.loc, this->result_var_, target_var, nullptr, false, false, false));
             pass_result.push_back(al, param_assign);
         }
     }

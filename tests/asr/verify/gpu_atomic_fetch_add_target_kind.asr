@@ -98,7 +98,7 @@
         )
         :dependencies []
         :args [(Var :v (SymbolRef 1 "a"))]
-        :body [(Assignment :target (Var :v (SymbolRef 1 "old")) :value (GpuAtomicFetchAdd :target (ArrayItem :v (Var :v (SymbolRef 1 "a")) :args [(array_index :left nil :right (IntegerConstant :n 1 :type (Integer :kind 4) :intboz_type :Decimal) :step nil)] :type (Integer :kind 8) :storage_format :ColMajor :value nil :in_bounds false) :increment (IntegerConstant :n 1 :type (Integer :kind 4) :intboz_type :Decimal) :type (Integer :kind 4) :value nil) :overloaded nil :realloc_lhs false :move_allocation false)]
+        :body [(Assignment :target (Var :v (SymbolRef 1 "old")) :value (GpuAtomicFetchAdd :target (ArrayItem :v (Var :v (SymbolRef 1 "a")) :args [(array_index :left nil :right (IntegerConstant :n 1 :type (Integer :kind 4) :intboz_type :Decimal) :step nil)] :type (Integer :kind 8) :storage_format :ColMajor :value nil :in_bounds false) :increment (IntegerConstant :n 1 :type (Integer :kind 4) :intboz_type :Decimal) :type (Integer :kind 4) :value nil) :overloaded nil :realloc_lhs false :move_allocation false :new_target false)]
         :return_var nil
         :access :Public
         :deterministic false

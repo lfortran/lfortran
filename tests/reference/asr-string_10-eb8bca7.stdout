@@ -151,6 +151,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -170,6 +171,7 @@
                             (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -231,6 +233,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -254,6 +257,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 is_alpha)
@@ -313,6 +317,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -341,6 +346,7 @@
                             (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )

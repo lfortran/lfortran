@@ -56,7 +56,12 @@ stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)
     | ReAlloc(alloc_arg* args)
     | Assign(int label, identifier variable)
-    | Assignment(expr target, expr value, stmt? overloaded, bool realloc_lhs, bool move_allocation)
+    -- new_target is true when the target is a new object that the assignment
+    -- only defines, such as an element of an array allocated with SOURCE=
+    -- (F2018 9.7.1.2). The value is copied into it: unlike the variable of
+    -- an intrinsic assignment, it is not finalized first (F2018 7.5.6.3)
+    -- and its components are not assigned by defined assignment (10.2.1.3).
+    | Assignment(expr target, expr value, stmt? overloaded, bool realloc_lhs, bool move_allocation, bool new_target)
     | DebugCheckArrayBounds(expr target, expr* components, bool move_allocation)
     | Associate(expr target, expr value)
     | Cycle(identifier? stmt_name)
