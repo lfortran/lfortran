@@ -1308,6 +1308,21 @@ public:
                 x.base.base.loc, iostat_name, ASRUtils::intent_local, int_type);
             a_iostat = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, iostat_sym));
         }
+        // FILE= is required for a constant STATUS of NEW or REPLACE. A
+        // non-constant STATUS is not decided here; SCRATCH forbids FILE=.
+        if (a_filename == nullptr && a_status != nullptr
+                && ASR::is_a<ASR::StringConstant_t>(*a_status)) {
+            std::string status = ASR::down_cast<ASR::StringConstant_t>(a_status)->m_s;
+            std::string status_lower = to_lower(status);
+            if (status_lower == "new" || status_lower == "replace") {
+                diag.add(Diagnostic(
+                    "open with status '" + status + "' requires a file specifier",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+        }
         tmp = ASR::make_FileOpen_t(
             al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action, a_delim, a_recl, a_position, a_blank, a_encoding, a_sign, a_decimal, a_round, a_pad, a_asynchronous);
         tmp_vec.push_back(tmp);

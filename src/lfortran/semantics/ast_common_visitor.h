@@ -16820,6 +16820,16 @@ public:
         }
     }
 
+    // A function reference is not a whole array, so its lower bounds are 1.
+    void set_function_result_lbounds_to_one(Vec<ASR::dimension_t>& dims) {
+        for (size_t i = 0; i < dims.size(); i++) {
+            if (dims[i].m_start && dims[i].m_length) {
+                dims.p[i].m_start = ASRUtils::get_constant_one_with_given_type(
+                    al, ASRUtils::expr_type(dims[i].m_start));
+            }
+        }
+    }
+
     ASR::ttype_t* handle_return_type(ASR::ttype_t *return_type, const Location &loc,
                                      Vec<ASR::call_arg_t>& args,
                                      ASR::Function_t* f=nullptr) {
@@ -16847,6 +16857,7 @@ public:
                 fix_exprs_ttype_t(func_calls, args, f);
                 Vec<ASR::dimension_t> new_dims;
                 fill_new_dims(t, func_calls, new_dims);
+                set_function_result_lbounds_to_one(new_dims);
                 bool for_type = true;
                 for( size_t k = 0; k < new_dims.size(); k++ ) {
                     if( new_dims[k].m_length &&
@@ -17014,33 +17025,48 @@ public:
     ASR::asr_t* create_StructMethodDeclaration(const Location &loc,
                 AST::fnarg_t* m_args, size_t n_args,
                 AST::keyword_t* m_kwargs, size_t n_kwargs,
-                 size_t n_member, ASR::symbol_t *v,
-                    ASR::expr_t *v_expr) {
+                ASR::symbol_t *v, ASR::expr_t *v_expr) {
         Vec<ASR::call_arg_t> args;
         visit_expr_list(m_args, n_args, args);
         ASR::StructMethodDeclaration_t *v_class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t *type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
 
-        if (!v_class_proc->m_is_nopass) {
-            size_t pass_idx = ASRUtils::get_pass_arg_index(v);
-            ASR::call_arg_t self_arg;
-            self_arg.loc = v_expr->base.loc;
-            self_arg.m_value = v_expr;
-            Vec<ASR::call_arg_t> full_args;
-            full_args.reserve(al, n_args + 1);
-            size_t explicit_i = 0;
-            for (size_t i = 0; i < n_args + 1; i++) {
-                if (i == pass_idx) {
-                    full_args.push_back(al, self_arg);
-                } else {
-                    full_args.push_back(al, args[explicit_i]);
-                    explicit_i++;
-                }
+        // Associate written actuals without the receiver before inserting it
+        // and instantiating a result type that can depend on any dummy.
+        Vec<ASR::expr_t*> explicit_dummies;
+        explicit_dummies.reserve(al, func->n_args);
+        size_t pass_idx = v_class_proc->m_is_nopass
+            ? func->n_args : ASRUtils::get_pass_arg_index(v);
+        for (size_t i = 0; i < func->n_args; i++) {
+            if (i != pass_idx) {
+                explicit_dummies.push_back(al, func->m_args[i]);
             }
-            args = full_args;
         }
-        ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
+        ASR::Function_t explicit_interface = *func;
+        explicit_interface.m_args = explicit_dummies.p;
+        explicit_interface.n_args = explicit_dummies.size();
+        if (n_kwargs > 0) {
+            diag::Diagnostics diags;
+            visit_kwargs(args, m_kwargs, n_kwargs,
+                explicit_interface.m_args, explicit_interface.n_args, loc,
+                &explicit_interface, diags);
+            if (diags.has_error()) {
+                diag.diagnostics.insert(diag.diagnostics.end(),
+                    diags.diagnostics.begin(), diags.diagnostics.end());
+                throw SemanticAbort();
+            }
+        }
+        validate_function_call_argument_count(loc, args, &explicit_interface);
+        ASRUtils::set_absent_optional_arguments_to_null(
+            args, &explicit_interface, al);
+        ASR::call_arg_t* call_args = args.p;
+        size_t n_call_args = args.size();
+        ASRUtils::insert_self_arg(al, v, call_args, n_call_args, v_expr);
+        Vec<ASR::call_arg_t> full_args;
+        full_args.from_pointer_n_copy(al, call_args, n_call_args);
+
+        ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, full_args);
         if (first_array_arg) {
             ASR::dimension_t* array_dims;
             size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
@@ -17053,56 +17079,15 @@ public:
                             &new_dims);
         } else {
             type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
-            if (!v_class_proc->m_is_nopass) {
-                size_t pass_idx = ASRUtils::get_pass_arg_index(v);
-                ASR::call_arg_t self_arg;
-                self_arg.loc = v_expr->base.loc;
-                self_arg.m_value = v_expr;
-                Vec<ASR::call_arg_t> explicit_args;
-                explicit_args.reserve(al, n_args);
-                visit_expr_list(m_args, n_args, explicit_args);
-                args = {};
-                args.reserve(al, func->n_args);
-                size_t explicit_i = 0;
-                for (size_t i = 0; i < n_args + 1; i++) {
-                    if (i == pass_idx) {
-                        args.push_back(al, self_arg);
-                    } else {
-                        args.push_back(al, explicit_args[explicit_i]);
-                        explicit_i++;
-                    }
-                }
-            }
             // Set the correct return type.
-            type = handle_return_type(type, func->m_return_var->base.loc, args, func);
+            type = handle_return_type(type, func->m_return_var->base.loc, full_args, func);
         }
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
         }
-        if (!v_class_proc->m_is_nopass) {
-            args = {};
-            visit_expr_list(m_args, n_args, args);
-        }
-        if (n_kwargs > 0) {
-            diag::Diagnostics diags;
-            visit_kwargs(args, m_kwargs, n_kwargs,
-                            func->m_args, func->n_args, loc, func,
-                            diags, n_member, v_class_proc->m_is_nopass);
-            if( diags.has_error() ) {
-                diag.diagnostics.insert(diag.diagnostics.end(),
-                    diags.diagnostics.begin(), diags.diagnostics.end());
-                throw SemanticAbort();
-            }
-        }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
-        validate_missing_required_arguments(loc, args, func, v_expr,
-            v_class_proc->m_is_nopass);
-        ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr, v_class_proc->m_is_nopass);
-        ASR::call_arg_t* call_args = args.p;
-        size_t n_call_args = args.size();
-        ASRUtils::insert_self_arg(al, v, call_args, n_call_args, v_expr);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
-                v, nullptr, call_args, n_call_args, type, nullptr,
+                v, nullptr, full_args.p, full_args.size(), type, nullptr,
                 v_expr, current_scope, current_function_dependencies,
                 compiler_options.implicit_argument_casting);
     }
@@ -18272,6 +18257,7 @@ public:
                 dim.m_length = m_dims[i].m_length ? r.replace_FunctionParam_with_arg(m_dims[i].m_length) : nullptr;
                 new_dims.push_back(al, dim);
             }
+            set_function_result_lbounds_to_one(new_dims);
             return_type = ASRUtils::duplicate_type(al, return_type, &new_dims);
         }
         // TODO: Uncomment later
@@ -23778,7 +23764,7 @@ public:
             }
             case(ASR::symbolType::StructMethodDeclaration):
                 tmp = create_StructMethodDeclaration(x.base.base.loc, x.m_args, x.n_args,
-                                x.m_keywords, x.n_keywords, x.n_member, v, v_expr);
+                                x.m_keywords, x.n_keywords, v, v_expr);
                 break;
             default: {
                 diag.add(Diagnostic("Symbol '" + var_name
@@ -26444,8 +26430,16 @@ public:
 
     void visit_Real(const AST::Real_t &x) {
         // First determine the kind into r_kind (e.g., 4 or 8)
-        char* s_kind;
+        char* s_kind = nullptr;
         int64_t r_kind = ASRUtils::extract_kind_str(x.m_n, s_kind);
+        std::string digits = x.m_n;
+        digits = digits.substr(0, digits.find('_'));
+        if (digits.find_first_of("qQ") != std::string::npos) {
+            diag.semantic_warning_label(
+                "the exponent letter 'q' is not standard Fortran (LFortran extension)",
+                {x.base.base.loc},
+                "help: write this as '" + ASRUtils::extract_real(digits.c_str()) + "_16'");
+        }
         if (r_kind == 0) {
             std::string var_name = to_lower(s_kind);
             ASR::symbol_t *v = nullptr;

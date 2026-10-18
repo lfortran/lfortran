@@ -1,0 +1,5 @@
+semantic error: Variable 'y' is not declared
+ --> tests/errors/include_location_01.f90:4:5
+  |
+4 | x = y
+  |     ^ 'y' is undeclared
