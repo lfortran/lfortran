@@ -4539,6 +4539,7 @@ RUN(NAME read_99 LABELS gfortran llvm COPY_TO_BIN read_99_data.txt)
 RUN(NAME read_100 LABELS gfortran llvm)
 RUN(NAME read_101 LABELS gfortran llvm)
 RUN(NAME read_102 LABELS gfortran llvm)
+RUN(NAME read_105 LABELS gfortran llvm)
 RUN(NAME read_crlf_01 LABELS gfortran llvm)
 RUN(NAME read_unconnected_unit_01 LABELS gfortran llvm)
 

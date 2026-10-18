@@ -22610,15 +22610,10 @@ public:
         builder->CreateCall(fn, single_args);
     }
 
-    void emit_formatted_read_with_idl(const ASR::FileRead_t &x, llvm::Value *unit_val,
-            llvm::Value *iostat, llvm::Value *read_size, llvm::Value *advance,
-            llvm::Value *advance_length, llvm::Value *pad_data, llvm::Value *pad_len,
-            bool is_string, ASR::expr_t* fmt_expr) {
-        (void)iostat;
-        (void)advance;
-        (void)advance_length;
-        ASR::expr_t** values = x.m_values;
-        size_t n_values = x.n_values;
+    void emit_formatted_read_with_idl(const ASR::FileRead_t &x, ASR::expr_t** values,
+            size_t n_values, llvm::Value *unit_val, llvm::Value *read_size,
+            llvm::Value *pad_data, llvm::Value *pad_len, bool is_string,
+            ASR::expr_t* fmt_expr) {
 
         llvm::Value* fmt_data;
         llvm::Value* fmt_len;
@@ -22823,76 +22818,11 @@ public:
         }
 
         if (has_implied_do) {
-            if (is_string) {
-                // For internal string reads, we cannot use the per-iteration IDL
-                // approach because each call to _lfortran_string_formatted_read
-                // creates a new InputSource that resets the read position to 0.
-                // Instead, extract the underlying arrays from IDL patterns like
-                // (array(i), i=1,N) and pass them directly through the non-IDL
-                // path, which makes a single runtime call.
-                Vec<ASR::expr_t*> expanded_values;
-                expanded_values.reserve(al, n_values);
-                bool can_expand = true;
-                for (size_t i = 0; i < n_values; i++) {
-                    if (ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
-                        ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]);
-                        // Check for simple pattern: (array(i), i=start, end)
-                        // where array is a 1D fixed-size array and loop covers
-                        // the entire array.
-                        if (idl->n_values == 1 && ASR::is_a<ASR::ArrayItem_t>(*idl->m_values[0])) {
-                            ASR::ArrayItem_t* arr_item = ASR::down_cast<ASR::ArrayItem_t>(idl->m_values[0]);
-                            if (arr_item->n_args == 1) {
-                                // Replace with the array variable itself
-                                expanded_values.push_back(al, arr_item->m_v);
-                                continue;
-                            }
-                        }
-                        can_expand = false;
-                        break;
-                    } else {
-                        expanded_values.push_back(al, values[i]);
-                    }
-                }
-                if (can_expand) {
-                    // Emit final loop variable assignments: i = end + step
-                    // to match Fortran semantics for implied-do loops.
-                    for (size_t i = 0; i < n_values; i++) {
-                        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
-                            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]);
-                            // Get pointer to loop variable
-                            int64_t ptr_copy = ptr_loads;
-                            ptr_loads = 0;
-                            this->visit_expr_wrapper(idl->m_var, false);
-                            llvm::Value* loop_var_ptr = tmp;
-                            ptr_loads = ptr_copy;
-                            // Compute end + step
-                            this->visit_expr_wrapper(idl->m_end, true);
-                            llvm::Value* end_val = tmp;
-                            llvm::Value* step_val;
-                            if (idl->m_increment) {
-                                this->visit_expr_wrapper(idl->m_increment, true);
-                                step_val = tmp;
-                            } else {
-                                step_val = llvm::ConstantInt::get(
-                                    end_val->getType(), 1);
-                            }
-                            llvm::Value* final_val = builder->CreateAdd(end_val, step_val);
-                            builder->CreateStore(final_val, loop_var_ptr);
-                        }
-                    }
-                    values = expanded_values.p;
-                    n_values = expanded_values.size();
-                    has_implied_do = false;
-                    // Fall through to the non-IDL path below
-                }
-            }
-            if (has_implied_do) {
-                ASR::FileRead_t x2 = x;
-                x2.m_values = values;
-                x2.n_values = n_values;
-                emit_formatted_read_with_idl(x2, unit_val, iostat, read_size, advance, advance_length, pad_data, pad_len, is_string, fmt_expr);
-                return;
-            }
+            // The implied_do_loops pass reads the implied DO loops of an
+            // internal file as array sections where it can.
+            emit_formatted_read_with_idl(x, values, n_values, unit_val,
+                read_size, pad_data, pad_len, is_string, fmt_expr);
+            return;
         }
 
         size_t total_scalar_values = 0;
