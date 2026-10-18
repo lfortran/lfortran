@@ -673,6 +673,17 @@ class ReplaceFunctionCallsWithOptionalArguments: public ASR::BaseExprReplacer<Re
         new_func_calls.insert(*current_expr);
     }
 
+    void replace_TraitFunctionCall(ASR::TraitFunctionCall_t* x) {
+        if (new_func_calls.count(*current_expr)) return;
+        Vec<ASR::call_arg_t> new_args;
+        if (!fill_new_args(new_args, al, *x, current_scope,
+                sym2optionalargidx, pass_result)) return;
+        *current_expr = ASRUtils::EXPR(ASR::make_TraitFunctionCall_t(
+            al, x->base.base.loc, x->m_name, x->m_slot,
+            new_args.p, new_args.size(), x->m_type));
+        new_func_calls.insert(*current_expr);
+    }
+
 };
 
 
@@ -772,6 +783,15 @@ class ReplaceSubroutineCallsWithOptionalArgumentsVisitor : public PassUtils::Pas
                                     x.base.base.loc, x.m_name, x.m_original_name,
                                     new_args.p, new_args.size(), x.m_dt,
                                     nullptr, false)));
+        }
+
+        void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t& x) {
+            Vec<ASR::call_arg_t> new_args;
+            if (!fill_new_args(new_args, al, x, current_scope,
+                    sym2optionalargidx, pass_result)) return;
+            pass_result.push_back(al, ASRUtils::STMT(
+                ASR::make_TraitSubroutineCall_t(al, x.base.base.loc,
+                    x.m_name, x.m_slot, new_args.p, new_args.size())));
         }
 };
 

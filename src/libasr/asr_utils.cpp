@@ -6977,7 +6977,7 @@ static bool runtime_trait_character(ASR::ttype_t *type)
 }
 
 // The runtime slot surface of a concrete signature, or of a closed generic
-// signature with each binder replaced by its member: scalar arguments, required
+// signature with each binder replaced by its member: scalar arguments,
 // assumed-shape numeric, logical or constant-length character arrays, and scalar
 // numeric, logical or constant-length character results. An array argument of a
 // message that is not generic has any INTENT, as in an ordinary call; one of a
@@ -6990,6 +6990,8 @@ static bool runtime_trait_character(ASR::ttype_t *type)
 // arguments with intent(in) or intent(inout), passed by reference like the bare
 // view dummies of ordinary procedures. Scalar polymorphic derived-type dummies
 // with the same attributes keep their ordinary class calling convention.
+// Non-generic messages also retain ordinary optional-argument presence and
+// allocatable array descriptors.
 static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
         const std::map<std::string, ASR::ttype_t*> &members)
 {
@@ -7026,8 +7028,9 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
                     arg->n_codims) return false;
             continue;
         }
-        if (ASR::is_a<ASR::Array_t>(*arg->m_type)) {
-            auto *array = ASR::down_cast<ASR::Array_t>(arg->m_type);
+        auto *array_type = type_get_past_allocatable(arg->m_type);
+        if (ASR::is_a<ASR::Array_t>(*array_type)) {
+            auto *array = ASR::down_cast<ASR::Array_t>(array_type);
             auto *element = member(array->m_type);
             bool assumed_shape = array->m_physical_type ==
                 ASR::array_physical_typeType::DescriptorArray;
@@ -7041,8 +7044,10 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
                     !element || !(ASR::is_a<ASR::Integer_t>(*element) ||
                         ASR::is_a<ASR::Real_t>(*element) || ASR::is_a<ASR::Complex_t>(*element) ||
                         ASR::is_a<ASR::Logical_t>(*element) || runtime_trait_character(element)) ||
-                    (arg->m_intent != ASR::intentType::In && trait_method_template(method)) ||
-                    arg->m_presence != ASR::presenceType::Required ||
+                    (trait_method_template(method) &&
+                        (arg->m_intent != ASR::intentType::In ||
+                         is_allocatable(arg->m_type) ||
+                         arg->m_presence != ASR::presenceType::Required)) ||
                     arg->m_value_attr || arg->m_target_attr || arg->m_is_volatile ||
                     arg->m_contiguous_attr || arg->n_codims) return false;
             continue;
@@ -7055,7 +7060,8 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
                 || ASR::is_a<ASR::Complex_t>(*type) || ASR::is_a<ASR::Logical_t>(*type)
                 || ASR::is_a<ASR::String_t>(*type)
                 || (ASR::is_a<ASR::StructType_t>(*type) && !is_class_type(type)))
-                || arg->m_presence != ASR::presenceType::Required) return false;
+                || (arg->m_presence != ASR::presenceType::Required &&
+                    trait_method_template(method))) return false;
     }
     return true;
 }
