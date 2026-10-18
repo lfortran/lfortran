@@ -68,9 +68,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     i = (__flat_idx + 1);
     {
-        int __libasr_created__result_metadata_;
         float* y = __workspace_5 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
-        __libasr_created__result_metadata_ = __dim_a_0;
         get_vals_gpu_19(a, __dim_a_0, __dim_a_1, i, y);
         d[((int)(i) - (__lb_d_0))] = (y[((int)(1) - (1))] * f_gpu_18(self.act, z[((int)(1) - (1))]));
     }

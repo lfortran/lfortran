@@ -61,7 +61,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
         __gpu_sec_i = (1 - 1);
         while (((__gpu_sec_i + 1) <= __do_loop_end1)) {
             __gpu_sec_i = (__gpu_sec_i + 1);
-            out[((int)((((int)__lb_out_0) + (__gpu_sec_i - 1))) - (__lb_out_0)) + (__dim_out_0 * ((int)(jj) - (__lb_out_1)))] = res[((int)((1 + (__gpu_sec_i - 1))) - (1))];
+            out[((int)((((int)__lb_out_0) + (__gpu_sec_i - 1))) - (__lb_out_0)) + (__dim_out_0 * ((int)(jj) - (__lb_out_1)))] = res[((int)(__gpu_sec_i) - (1))];
         }
     }
 }

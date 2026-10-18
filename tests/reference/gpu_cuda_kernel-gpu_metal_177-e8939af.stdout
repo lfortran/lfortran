@@ -57,9 +57,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     i = (__flat_idx + 1);
     {
         int __do_loop_end;
-        int __libasr_created__result_metadata_;
         float* y = __workspace_7 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
-        __libasr_created__result_metadata_ = __sizes_arr_v[(((int)(i) - (__lb_arr_0))) * 2 + 0];
         get_v_gpu_17(arr[((int)(i) - (__lb_arr_0))], __data_arr_v + __offsets_arr_v[((int)(i) - (__lb_arr_0))], __sizes_arr_v[(((int)(i) - (__lb_arr_0))) * 2 + 0], __sizes_arr_v[(((int)(i) - (__lb_arr_0))) * 2 + 1], y);
         __do_loop_end = n;
         __gpu_sec_i = (1 - 1);

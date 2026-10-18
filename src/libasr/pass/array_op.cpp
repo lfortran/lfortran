@@ -1870,7 +1870,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             realloc_dims.push_back(al, realloc_dim);
         }
         ASR::expr_t* realloc_str_len {};
-        if(ASRUtils::is_character(*ASRUtils::expr_type(value))){
+        if(ASRUtils::is_character(*ASRUtils::expr_type(realloc_var))){
             bool use_target_len = false;
             if (ASRUtils::is_character(*target_type)) {
                 ASR::String_t* target_str = ASR::down_cast<ASR::String_t>(
@@ -1891,11 +1891,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 }
             }
             if (!use_target_len) {
-                ASR::String_t* value_str = ASRUtils::get_string_type(
-                    ASRUtils::expr_type(value));
-                if (value_str->m_len != nullptr) {
-                    realloc_str_len = d.duplicate_expr(value_str->m_len);
-                } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) &&
+                if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*value) &&
                     ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value)->m_intrinsic_id ==
                         static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringConcat)) {
                     realloc_str_len = ASRUtils::StringConcat::get_safe_string_len(

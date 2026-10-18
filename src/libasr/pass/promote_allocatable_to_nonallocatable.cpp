@@ -810,9 +810,9 @@ class FixMoveAssignment: public ASR::CallReplacerOnExpressionsVisitor<FixMoveAss
         }
 };
 
-// Collect explicit allocations, including those in BLOCK/ASSOCIATE bodies.
+// Collects the variables that an explicit Allocate statement gives a shape to.
 class AllocatedSymbolCollector:
-    public ASRUtils::BlockBodyWalkVisitor<AllocatedSymbolCollector> {
+    public ASR::BaseWalkVisitor<AllocatedSymbolCollector> {
     public:
 
         std::set<ASR::symbol_t*>& syms;

@@ -88,8 +88,9 @@ public:
     void find_array_section_all_bounds(ASR::expr_t *e,
             std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> &dim_bounds);
 
-    ASR::expr_t* elementize_array_expr(ASR::expr_t *e,
-            std::vector<ASR::expr_t*> &loop_vars, const Location &loc);
+    ASR::expr_t* elementize_mask_multi(ASR::expr_t *e,
+            std::vector<ASR::expr_t*> &loop_vars,
+            ASR::ttype_t *logical_type, const Location &loc);
 
     ASR::expr_t* inline_single_all(ASR::IntrinsicArrayFunction_t *iaf,
             const Location &loc, Vec<ASR::stmt_t*> &preamble);

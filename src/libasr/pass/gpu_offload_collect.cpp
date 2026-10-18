@@ -23,8 +23,7 @@ bool gpu_is_array_function_result(ASR::expr_t *e) {
     ASR::ttype_t *elem = ASRUtils::extract_type(fc->m_type);
     return ASR::is_a<ASR::Integer_t>(*elem) || ASR::is_a<ASR::Real_t>(*elem)
         || ASR::is_a<ASR::Complex_t>(*elem)
-        || ASR::is_a<ASR::Logical_t>(*elem)
-        || ASR::is_a<ASR::StructType_t>(*elem);
+        || ASR::is_a<ASR::Logical_t>(*elem);
 }
 
 void gpu_check_host_expr_index_free(ASR::expr_t *host_expr,
