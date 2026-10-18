@@ -16,6 +16,7 @@
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_device_struct_storage.h>
 #include <libasr/pass/gpu_offload_collect.h>
+#include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/gpu_offload_host_association.h>
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/symbol_expr_substitution.h>
@@ -42,9 +43,18 @@ public:
     GpuContiguousStoreFinder(const std::set<ASR::symbol_t*> &variables)
         : loop_variables(variables) {}
 
-    void visit_Assignment(const ASR::Assignment_t &x) {
-        if (!ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) return;
-        const auto &item = *ASR::down_cast<ASR::ArrayItem_t>(x.m_target);
+    void note_store(ASR::expr_t *target) {
+        ASR::ttype_t *type = ASRUtils::expr_type(target);
+        if (ASR::is_a<ASR::Var_t>(*target) && !ASRUtils::is_array(type)
+                && !ASRUtils::is_pointer(type)
+                && !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type))) {
+            return;
+        }
+        if (!ASR::is_a<ASR::ArrayItem_t>(*target)) {
+            has_unrecognized_store = true;
+            return;
+        }
+        const auto &item = *ASR::down_cast<ASR::ArrayItem_t>(target);
         if (item.n_args == 0) {
             has_unrecognized_store = true;
             return;
@@ -61,6 +71,31 @@ public:
             }
         }
         has_unrecognized_store = true;
+    }
+
+    void note_call_args(ASR::symbol_t *name, ASR::call_arg_t *args,
+            size_t n_args) {
+        for (size_t i = 0; i < n_args; i++) {
+            if (!args[i].m_value) continue;
+            ASR::Variable_t *dummy = GpuWrittenRootCollector::dummy_of(name, i);
+            if (dummy && dummy->m_intent == ASR::intentType::In) continue;
+            note_store(args[i].m_value);
+        }
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        note_store(x.m_target);
+        ASR::BaseWalkVisitor<GpuContiguousStoreFinder>::visit_Assignment(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        note_call_args(x.m_name, x.m_args, x.n_args);
+        ASR::BaseWalkVisitor<GpuContiguousStoreFinder>::visit_SubroutineCall(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        note_call_args(x.m_name, x.m_args, x.n_args);
+        ASR::BaseWalkVisitor<GpuContiguousStoreFinder>::visit_FunctionCall(x);
     }
 
     void visit_BlockCall(const ASR::BlockCall_t &x) {
