@@ -185,6 +185,26 @@ namespace LCompilers {
             }
     };
 
+    class FunctionCallFinder: public ASR::BaseWalkVisitor<FunctionCallFinder> {
+        public:
+            bool found = false;
+            void visit_FunctionCall(const ASR::FunctionCall_t& /*x*/) {
+                found = true;
+            }
+    };
+
+    // The extent of an array constructor element, for the type of the array
+    // section it is assigned to. A type is an annotation, not an evaluation,
+    // so an extent that needs a function call (e.g. `size(f(x > 0))`) is
+    // left deferred; the section's bounds already give it.
+    static inline ASR::expr_t* get_constructor_section_extent_for_type(
+            ASR::expr_t* curr_init, Allocator& al) {
+        ASR::expr_t* size = ASRUtils::get_size(curr_init, al, true);
+        FunctionCallFinder finder;
+        finder.visit_expr(*size);
+        return finder.found ? nullptr : size;
+    }
+
     static inline SymbolTable* instantiation_scope_for_expr(
             SymbolTable* global_scope, SymbolTable* caller_scope,
             ASR::expr_t* expr) {
@@ -1253,7 +1273,7 @@ namespace LCompilers {
                          ASR::is_a<ASR::RealBinOp_t>(*curr_init)) ) {
                         dimension.m_length = nullptr;
                     } else {
-                        dimension.m_length = ASRUtils::get_size(curr_init, al, true);
+                        dimension.m_length = get_constructor_section_extent_for_type(curr_init, al);
                     }
                     Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
                     dims.push_back(al, dimension);

@@ -2043,8 +2043,7 @@ namespace LCompilers {
                              ASR::is_a<ASR::RealBinOp_t>(*curr_init)) ) {
                             dimension.m_length = nullptr;
                         } else {
-                            ASR::expr_t* curr_init_array_size_for_type = ASRUtils::get_size(curr_init, al, true);
-                            dimension.m_length = curr_init_array_size_for_type;
+                            dimension.m_length = get_constructor_section_extent_for_type(curr_init, al);
                         }
                         Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
                         dims.push_back(al, dimension);

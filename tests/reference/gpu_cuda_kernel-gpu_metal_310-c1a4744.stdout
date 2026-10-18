@@ -14,7 +14,7 @@ __device__ inline float vla_fill_gpu_9(int m, float v, float* tmp) {
         tmp[((int)(k) - (1))] = v;
     }
     __gpu_sum_res =   0.00000000000000000e+00f;
-    __do_loop_end1 = (m);
+    __do_loop_end1 = m;
     __gpu_sum_k = (1 - 1);
     while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
         __gpu_sum_k = (__gpu_sum_k + 1);

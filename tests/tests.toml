@@ -5056,12 +5056,10 @@ asr_implicit_typing = true
 
 [[test]]
 filename = "errors/implicit_typing5.f90"
-asr = true
 asr_implicit_typing = true
 
 [[test]]
 filename = "errors/implicit_typing6.f90"
-asr = true
 asr_implicit_typing = true
 
 [[test]]
@@ -6163,6 +6161,14 @@ filename = "errors/missing_include_01.f90"
 ast = true
 
 [[test]]
+filename = "errors/include_location_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/include_location_02.f"
+ast = true
+
+[[test]]
 filename = "coarray_teams_01.f90"
 fortran = true
 pass = "coarray"
@@ -6671,3 +6677,7 @@ options = "--std=f23"
 filename = "../integration_tests/legacy_array_sections_26.f90"
 semantics_only_cc = true
 options = "--legacy-array-sections"
+
+[[test]]
+filename = "../integration_tests/real128_literal_02.f90"
+semantics_only_cc = true

@@ -4236,8 +4236,32 @@ semantic error: `pause` code must be a scalar integer or default character expre
 3365 |         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
      |               ^^^^^ 
 
-semantic error: no specific procedure of the generic 'ieee_is_nan' matches the arguments
-    --> tests/errors/continue_compilation_1.f90:3398:14
+semantic error: open with status 'new' requires a file specifier
+    --> tests/errors/continue_compilation_1.f90:3397:5
      |
-3398 |     print *, ieee_is_nan(1)  ! {Error} no specific procedure of the generic 'ieee_is_nan' matches the arguments
+3397 |     open(1, status='new')  ! {Error} open with status 'new' requires a file specifier
+     |     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: open with status 'replace' requires a file specifier
+    --> tests/errors/continue_compilation_1.f90:3398:5
+     |
+3398 |     open(2, status='replace')  ! {Error} open with status 'replace' requires a file specifier
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: open with status 'NEW' requires a file specifier
+    --> tests/errors/continue_compilation_1.f90:3399:5
+     |
+3399 |     open(3, status='NEW')  ! {Error} open with status 'NEW' requires a file specifier
+     |     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: open with status 'REPLACE' requires a file specifier
+    --> tests/errors/continue_compilation_1.f90:3400:5
+     |
+3400 |     open(4, status='REPLACE')  ! {Error} open with status 'REPLACE' requires a file specifier
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: no specific procedure of the generic 'ieee_is_nan' matches the arguments
+    --> tests/errors/continue_compilation_1.f90:3416:14
+     |
+3416 |     print *, ieee_is_nan(1)  ! {Error} no specific procedure of the generic 'ieee_is_nan' matches the arguments
      |              ^^^^^^^^^^^^^^ 
