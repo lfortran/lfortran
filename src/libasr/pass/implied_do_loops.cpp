@@ -7,7 +7,9 @@
 #include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/symbol_expr_substitution.h>
 
+#include <map>
 #include <set>
 #include <vector>
 
@@ -1864,6 +1866,19 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             return false;
         }
 
+        // A copy of `e` in which the variable of an earlier implied DO loop
+        // is replaced by the value it has after its loop.
+        ASR::expr_t *with_values_after_loops(ASR::expr_t *e,
+                std::map<ASR::symbol_t*, ASR::expr_t*> &after_loop) {
+            if (after_loop.empty()) return e;
+            ASRUtils::ExprStmtDuplicator dup(al);
+            ASR::expr_t *copy = dup.duplicate_expr(e);
+            AssociateVarResolver resolver(al, after_loop);
+            resolver.current_expr = &copy;
+            resolver.replace_expr(copy);
+            return copy;
+        }
+
         // The array `a` of `(a(i), i = m, n, s)`, a rank 1 array indexed by
         // the loop variable, or nullptr.
         static ASR::expr_t *implied_do_array(ASR::ImpliedDoLoop_t *idl) {
@@ -1890,8 +1905,11 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
         // `(a(i), i = m, n, s)`, it reads the section `a(m:n:s)` instead,
         // and afterwards `i` has the value it has after the loop,
         // `m + max((n - m + s) / s, 0) * s`. The section is taken before the
-        // statement, so when its bounds use a variable that an earlier item
-        // of the statement reads, the whole array `a` is read instead.
+        // statement, so a variable of an earlier implied DO loop in its
+        // bounds (or in a subscript of a later item) stands for the value it
+        // has after that loop, and when its bounds use a variable that an
+        // earlier item of the statement reads, the whole array `a` is read
+        // instead.
         void read_internal_implied_do_loops(const ASR::FileRead_t &x) {
             ASR::expr_t **values = x.m_values;
             size_t n_values = x.n_values;
@@ -1913,29 +1931,67 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
             }
             if (!has_implied_do) return;
             std::set<ASR::symbol_t*> items_read;
+            // The value that the variable of an earlier implied DO loop
+            // has after its loop, in terms of values before the statement.
+            std::map<ASR::symbol_t*, ASR::expr_t*> after_loop;
+            // The variables of earlier implied DO loops.
+            std::set<ASR::symbol_t*> loop_vars;
+            std::vector<ASR::expr_t*> new_values(values, values + n_values);
             std::vector<ASR::stmt_t*> loop_variables;
             for (size_t i = 0; i < n_values; i++) {
                 if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
+                    // A loop variable is set after the statement, so a
+                    // later item can only use one in a subscript, as the
+                    // value it has after its loop.
+                    if (ASR::is_a<ASR::Var_t>(*values[i]) && loop_vars.count(
+                            ASR::down_cast<ASR::Var_t>(values[i])->m_v)) {
+                        return;
+                    }
+                    for (ASR::symbol_t *var : loop_vars) {
+                        if (ASRUtils::expr_references_symbol(values[i], var) &&
+                                (after_loop.count(var) == 0 ||
+                                references_any(after_loop[var], items_read))) {
+                            return;
+                        }
+                    }
+                    new_values[i] = with_values_after_loops(values[i], after_loop);
                     VariablesOf(items_read).visit_expr(*values[i]);
                     continue;
                 }
                 ASR::ImpliedDoLoop_t *idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]);
                 const Location &loc = idl->base.base.loc;
                 ASRUtils::ASRBuilder b(al, loc);
-                ASR::expr_t *array = implied_do_array(idl);
+                ASR::expr_t *array = with_values_after_loops(implied_do_array(idl),
+                    after_loop);
                 ASR::ttype_t *int_type = ASRUtils::expr_type(idl->m_var);
+                ASR::symbol_t *var = ASR::down_cast<ASR::Var_t>(idl->m_var)->m_v;
                 ASR::expr_t *step = idl->m_increment ? idl->m_increment
                     : b.i_t(1, int_type);
-                if (references_any(idl->m_start, items_read) ||
-                        references_any(idl->m_end, items_read) ||
-                        references_any(idl->m_increment, items_read)) {
-                    values[i] = array;
+                ASR::expr_t *start = with_values_after_loops(idl->m_start, after_loop);
+                ASR::expr_t *end = with_values_after_loops(idl->m_end, after_loop);
+                step = with_values_after_loops(step, after_loop);
+                bool bounds_read = references_any(start, items_read) ||
+                    references_any(end, items_read) ||
+                    references_any(step, items_read);
+                VariablesOf(items_read).visit_expr(*array);
+                loop_vars.insert(var);
+                if (bounds_read) {
+                    new_values[i] = array;
+                    after_loop.erase(var);
+                    items_read.insert(var);
                 } else {
+                    ASRUtils::ExprStmtDuplicator dup(al);
+                    after_loop[var] = b.Add(dup.duplicate_expr(start),
+                        b.Mul(b.Max(b.Div(b.Add(b.Sub(dup.duplicate_expr(end),
+                            dup.duplicate_expr(start)), dup.duplicate_expr(step)),
+                            dup.duplicate_expr(step)), b.i_t(0, int_type)),
+                            dup.duplicate_expr(step)));
+                    items_read.erase(var);
                     Vec<ASR::array_index_t> args; args.reserve(al, 1);
                     ASR::array_index_t ai;
                     ai.loc = loc;
-                    ai.m_left = idl->m_start;
-                    ai.m_right = idl->m_end;
+                    ai.m_left = start;
+                    ai.m_right = end;
                     ai.m_step = step;
                     args.push_back(al, ai);
                     Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
@@ -1943,17 +1999,22 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                     ASR::ttype_t *section_type = ASRUtils::make_Array_t_util(al, loc,
                         ASRUtils::duplicate_type(al, ASRUtils::extract_type(
                             ASRUtils::expr_type(array))), dims.p, dims.size());
-                    values[i] = ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc,
+                    new_values[i] = ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc,
                         array, args.p, args.size(), section_type, nullptr));
                 }
                 ASRUtils::ExprStmtDuplicator dup(al);
+                ASR::expr_t *loop_step = idl->m_increment ? idl->m_increment
+                    : b.i_t(1, int_type);
                 ASR::expr_t *trip_count = b.Max(b.Div(b.Add(b.Sub(
                     dup.duplicate_expr(idl->m_end), dup.duplicate_expr(idl->m_start)),
-                    dup.duplicate_expr(step)), dup.duplicate_expr(step)),
+                    dup.duplicate_expr(loop_step)), dup.duplicate_expr(loop_step)),
                     b.i_t(0, int_type));
                 loop_variables.push_back(b.Assignment(dup.duplicate_expr(idl->m_var),
                     b.Add(dup.duplicate_expr(idl->m_start),
-                        b.Mul(trip_count, dup.duplicate_expr(step)))));
+                        b.Mul(trip_count, dup.duplicate_expr(loop_step)))));
+            }
+            for (size_t i = 0; i < n_values; i++) {
+                values[i] = new_values[i];
             }
             remove_original_statement = true;
             pass_result.push_back(al, const_cast<ASR::stmt_t*>(&x.base));
