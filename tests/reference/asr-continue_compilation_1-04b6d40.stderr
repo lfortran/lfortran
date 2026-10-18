@@ -4257,3 +4257,27 @@ semantic error: `pause` code must be a scalar integer or default character expre
      |
 3374 |         pause codes  ! {Error} `pause` code must be a scalar integer or default character expression, found integer(4) array
      |               ^^^^^ 
+
+semantic error: open with status 'new' requires a file specifier
+    --> tests/errors/continue_compilation_1.f90:3406:5
+     |
+3406 |     open(1, status='new')  ! {Error} open with status 'new' requires a file specifier
+     |     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: open with status 'replace' requires a file specifier
+    --> tests/errors/continue_compilation_1.f90:3407:5
+     |
+3407 |     open(2, status='replace')  ! {Error} open with status 'replace' requires a file specifier
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: open with status 'NEW' requires a file specifier
+    --> tests/errors/continue_compilation_1.f90:3408:5
+     |
+3408 |     open(3, status='NEW')  ! {Error} open with status 'NEW' requires a file specifier
+     |     ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: open with status 'REPLACE' requires a file specifier
+    --> tests/errors/continue_compilation_1.f90:3409:5
+     |
+3409 |     open(4, status='REPLACE')  ! {Error} open with status 'REPLACE' requires a file specifier
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
