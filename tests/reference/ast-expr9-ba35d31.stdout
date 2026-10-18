@@ -19,7 +19,9 @@
     )
     (DefUnaryOp
         "INVERSE"
-        (+ A B)
+        (Parenthesis
+            (+ A B)
+        )
     )
     (DefUnaryOp
         "anotherunary"
@@ -27,7 +29,9 @@
     )
     (DefUnaryOp
         "anotherunary"
-        (+ 1 2)
+        (Parenthesis
+            (+ 1 2)
+        )
     )
     (DefUnaryOp
         "anotherunary"
@@ -35,6 +39,8 @@
     )
     (DefUnaryOp
         "anotherunary"
-        (+ c d)
+        (Parenthesis
+            (+ c d)
+        )
     )]
 )

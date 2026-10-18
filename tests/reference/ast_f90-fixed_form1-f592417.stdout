@@ -13,7 +13,7 @@ elist(1) = 0.0d+00
 iord(1) = 0
 result = 0.0d+00
 abserr = 0.0d+00
-if (b <= a .or. epsabs == 0.0d+00 .and. epsrel < dmax1(0.5d+02*epmach, 0.5d-28) .or. alfa <= -0.1d+01 .or. beta <= -0.1d+01 .or. integr < 1 .or. integr > 4 .or. limit < 2) go to 999
+if (b <= a .or. (epsabs == 0.0d+00 .and. epsrel < dmax1(0.5d+02*epmach, 0.5d-28)) .or. alfa <= (-0.1d+01) .or. beta <= (-0.1d+01) .or. integr < 1 .or. integr > 4 .or. limit < 2) go to 999
 ier = 0
 call dqmomo(alfa, beta, ri, rj, rg, rh, integr)
 centre = 0.5d+00*(b + a)

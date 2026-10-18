@@ -111,7 +111,9 @@
         (Assignment
             0
             w
-            (+ (+ a b) (* i_ (- a b)))
+            (+ (+ a b) (* i_ (Parenthesis
+                (- a b)
+            )))
             (TriviaNode
                 []
                 [(EndOfLine)
