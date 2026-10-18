@@ -94,18 +94,22 @@ kernel void __lfortran_gpu_kernel_3(
 
 struct __ScalarArgs___lfortran_gpu_kernel_4 {
     int __loop_start_1;
+    int __gpu_lanes;
 };
 
 kernel void __lfortran_gpu_kernel_4(
     device int* a [[buffer(0)]],
     constant __ScalarArgs___lfortran_gpu_kernel_4& __scalar_args [[buffer(1)]],
-    uint __thread_id [[thread_position_in_grid]])
+    uint __gpu_grid_thread [[thread_position_in_grid]],
+    uint __gpu_simd_lane [[thread_index_in_simdgroup]])
 {
     int __loop_start_1 = __scalar_args.__loop_start_1;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes;
+    int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes);
     int __flat_idx;
     int i;
     int j;
-    int value;
     if ((((0 * 0) + __thread_id) >= (5 * (((4 >= __loop_start_1)) ? (((4 - __loop_start_1) + 1)) : (0))))) {
         return;
     }
@@ -113,8 +117,14 @@ kernel void __lfortran_gpu_kernel_4(
     i = ((__flat_idx - ((__flat_idx / ((4 - __loop_start_1) + 1)) * ((4 - __loop_start_1) + 1))) + __loop_start_1);
     __flat_idx = (__flat_idx / ((4 - __loop_start_1) + 1));
     j = (__flat_idx + 3);
-    value = ((2 * i) - j);
-    a[((int)(i) - (((-(2))))) + (7 * ((int)(j) - (3)))] = value;
+    {
+        int value;
+        value = ((2 * i) - j);
+        if ((__gpu_lane == 0)) {
+            a[((int)(i) - (((-(2))))) + (7 * ((int)(j) - (3)))] = value;
+        }
+        if (__gpu_lanes > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+    }
 }
 
 struct __ScalarArgs___lfortran_gpu_kernel_5 {

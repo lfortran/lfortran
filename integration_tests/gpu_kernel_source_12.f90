@@ -1,6 +1,6 @@
 program gpu_kernel_source_12
     implicit none
-    integer :: a(-2:4,3:7), b(3:7,-2:4), c(2,3,4), i, j, k, value
+    integer :: a(-2:4,3:7), b(3:7,-2:4), c(2,3,4), i, j, k
 
     do concurrent (j = 3:7, i = -2:4)
         a(i,j) = i + 10*j
@@ -43,9 +43,12 @@ program gpu_kernel_source_12
         end do
     end do
 
-    do concurrent (j = 3:7, i = -2:4) local(value)
-        value = 2*i - j
-        a(i,j) = value
+    do concurrent (j = 3:7, i = -2:4)
+        block
+            integer :: value
+            value = 2*i - j
+            a(i,j) = value
+        end block
     end do
     do j = 3, 7
         do i = -2, 4
