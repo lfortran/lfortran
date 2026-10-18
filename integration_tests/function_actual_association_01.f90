@@ -55,6 +55,9 @@ program function_actual_association_01
     if (any(objects(1)%data /= [8, 9])) error stop 15
 
     ! GNU repeats effectful selectors when deallocating an allocatable OUT actual.
+    deallocate(objects(1)%data)
+    allocate(objects(1)%data(1))
+    objects(1)%data = -2
     calls = 0
     i = index_of()
     values = replace_allocatable(objects(i)%data)
@@ -142,6 +145,7 @@ contains
     function replace_allocatable(n) result(r)
         integer, allocatable, intent(out) :: n(:)
         integer :: r(2)
+        if (allocated(n)) error stop 33
         allocate(n(2))
         n = [8, 9]
         r = n
