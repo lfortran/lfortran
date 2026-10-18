@@ -554,6 +554,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Allocate
                         [((Var 2 to)
@@ -687,6 +688,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (IntrinsicImpureSubroutine
                         MoveAlloc
@@ -787,6 +789,7 @@
                                 ()
                             )
                             ()
+                            .false.
                             .false.
                             .false.
                         )]
@@ -904,6 +907,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (IntrinsicImpureSubroutine
                         MoveAlloc
@@ -957,6 +961,7 @@
                         )
                         (IntegerConstant 42 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                     )

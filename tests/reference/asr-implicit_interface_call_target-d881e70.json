@@ -2,7 +2,7 @@
     "basename": "asr-implicit_interface_call_target-d881e70",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/asr/verify/implicit_interface_call_target.asr",
-    "infile_hash": "6e27043519589a9bb4ecfcf010df90b25122bc8dbb04b3f5083e7c8e",
+    "infile_hash": "271e5862b051ef83f396c204352712f7fd1f4a3c44c39da04554bbb2",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

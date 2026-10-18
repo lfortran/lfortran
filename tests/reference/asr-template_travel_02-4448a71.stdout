@@ -306,6 +306,7 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
                                                     )]
                                                     (Var 27 avg)
                                                     Public
@@ -500,6 +501,7 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
                                                     )]
                                                     (Var 25 avg)
                                                     Private
@@ -577,6 +579,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -752,6 +755,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     (Var 3 total)
                                     Public
@@ -870,6 +874,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )]
@@ -1789,6 +1794,7 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
                                                     )]
                                                     (Var 17 avg)
                                                     Private
@@ -2033,6 +2039,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                         .false.
                                                         .false.
                                                     )]
@@ -2922,6 +2929,7 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
                                                     )]
                                                     (Var 21 avg)
                                                     Private
@@ -3165,6 +3173,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                         .false.
                                                         .false.
                                                     )]

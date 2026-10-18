@@ -4662,7 +4662,8 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
 
 ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_target, ASR::expr_t* a_value,
-    ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move);
+    ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move,
+    bool a_new_target = false);
 
 ASR::asr_t* make_ArraySize_t_util(
     Allocator &al, const Location &a_loc, ASR::expr_t* a_v,
@@ -7155,6 +7156,10 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
                     ASRUtils::insert_module_dependency(x->m_original_name,
                         al, current_module_dependencies);
                 }
+            } else {
+                // A function of a program or procedure: nothing to import
+                ASR::BaseExprReplacer<ReplaceArgVisitor>::replace_FunctionCall(x);
+                ADD_ASR_DEPENDENCIES(current_scope, x->m_name, current_function_dependencies);
             }
             return;
         }
@@ -9719,6 +9724,10 @@ inline int64_t get_ArrayConstant_data_size(size_t n_args, ASR::ttype_t* a_type) 
     }
     if (ASR::is_a<ASR::CPtr_t>(*a_type)) {
         return n_args * sizeof(void*);
+    }
+    // Logical data is stored as one `bool` per element, whatever the kind.
+    if (ASR::is_a<ASR::Logical_t>(*a_type)) {
+        return n_args * sizeof(bool);
     }
     return n_args * ASRUtils::extract_kind_from_ttype_t(a_type);
 }

@@ -391,6 +391,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 c1)
@@ -415,6 +416,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -452,6 +454,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 y2)
@@ -474,6 +477,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 z2)
@@ -491,6 +495,7 @@
                             )
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )

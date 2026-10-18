@@ -3456,3 +3456,51 @@ implicit none
     complex*7 :: cc1_cs_z7  ! {Error} Kind 3 is not supported for Complex
     logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
 end module cc1_complex_star
+
+! FILE= is required when STATUS is NEW or REPLACE. Omitted STATUS, OLD,
+! UNKNOWN, and SCRATCH do not require it; SCRATCH forbids FILE=.
+subroutine cc1_open_status_new_replace_no_file()
+    character(len=7) :: cc1_open_status
+    open(1, status='new')  ! {Error} open with status 'new' requires a file specifier
+    open(2, status='replace')  ! {Error} open with status 'replace' requires a file specifier
+    open(3, status='NEW')  ! {Error} open with status 'NEW' requires a file specifier
+    open(4, status='REPLACE')  ! {Error} open with status 'REPLACE' requires a file specifier
+    open(5, file='cc1_open_new.dat', status='new')
+    open(6, file='cc1_open_replace.dat', status='replace')
+    open(7, status='scratch')
+    open(8, status='old')
+    open(9, status='unknown')
+    open(10)
+    cc1_open_status = 'new'
+    open(11, status=cc1_open_status)
+end subroutine cc1_open_status_new_replace_no_file
+
+! An array element passed to an assumed-shape dummy is never sequence
+! associated, so the error does not suggest --legacy-array-sections.
+module cc1_element_assumed_shape
+implicit none
+contains
+    subroutine cc1_eas_dummy(x)
+        integer, intent(in) :: x(:)
+    end subroutine cc1_eas_dummy
+    subroutine cc1_eas_use()
+        integer :: c(5)
+        c = 1
+        call cc1_eas_dummy(c(2))  ! {Error} Passing a scalar argument to an array dummy argument is not allowed
+    end subroutine cc1_eas_use
+end module cc1_element_assumed_shape
+
+! An element of a pointer array may not be contiguous with the elements that
+! follow it, so it is never sequence associated with an array dummy.
+module cc1_element_pointer_array
+implicit none
+contains
+    subroutine cc1_epa_dummy(x)
+        integer, intent(inout) :: x(2,2)
+    end subroutine cc1_epa_dummy
+    subroutine cc1_epa_use()
+        integer, pointer :: p(:,:)
+        allocate(p(2,3))
+        call cc1_epa_dummy(p(2,1))  ! {Error} Passing an element of a pointer array to an array dummy argument is not allowed
+    end subroutine cc1_epa_use
+end module cc1_element_pointer_array

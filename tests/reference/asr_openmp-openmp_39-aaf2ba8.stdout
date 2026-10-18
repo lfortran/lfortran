@@ -3873,11 +3873,13 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 nx)
                         (IntegerConstant 4 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -3887,11 +3889,13 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 nk)
                         (IntegerConstant 6 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                     )

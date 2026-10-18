@@ -7493,6 +7493,28 @@ pad_with_spaces(char* dest, int64_t orig_len, int64_t total_len)
     }
 }
 
+// Fortran STATUS/FILE strings are not terminated and may be blank-padded.
+// `word` must already be lowercase.
+static bool fortran_str_eq(const char *s, int64_t len, const char *word)
+{
+    if (s == NULL || word == NULL || len < 0) {
+        return false;
+    }
+    while (len > 0 && isspace((unsigned char)s[len - 1])) {
+        len--;
+    }
+    size_t word_len = strlen(word);
+    if ((size_t)len != word_len) {
+        return false;
+    }
+    for (int64_t i = 0; i < len; i++) {
+        if (tolower((unsigned char)s[i]) != (unsigned char)word[i]) {
+            return false;
+        }
+    }
+    return true;
+}
+
 LFORTRAN_API int64_t
 _lfortran_open(int32_t unit_num,
                char* f_name,
@@ -7570,13 +7592,30 @@ _lfortran_open(int32_t unit_num,
     
     bool ini_file = true;
     if (f_name == NULL) {  // Not Provided
-        char *format = "txt";
-        char unique_id[ID_LEN + 1];
-        get_unique_ID(unique_id);
-        size_t length = ID_LEN + strlen(scratch_prefix) + strlen(format) + 3;
-        f_name = (char*) internal_malloc(length);
-        snprintf(f_name, length, "%s_%s.%s", scratch_prefix, unique_id, format);
-        f_name_len = strlen(f_name);
+        // Unknown, including the default, is fort.<unit> for a nonnegative
+        // unit (same name as implicit ENDFILE/READ/WRITE). That name is not
+        // removed at shutdown. Negative units, including NEWUNIT, and
+        // STATUS='scratch' keep the generated name, which close/atexit
+        // delete. fort.<negative> would survive and be reopened by the
+        // next NEWUNIT.
+        bool use_fort_unit = unit_num >= 0
+            && (status == NULL
+                || fortran_str_eq(status, status_len, "unknown"));
+        if (use_fort_unit) {
+            char fort_filename[64];
+            snprintf(fort_filename, sizeof(fort_filename), "fort.%d", unit_num);
+            f_name_len = (int64_t)strlen(fort_filename);
+            f_name = (char*) internal_malloc((size_t)f_name_len + 1);
+            memcpy(f_name, fort_filename, (size_t)f_name_len + 1);
+        } else {
+            char *format = "txt";
+            char unique_id[ID_LEN + 1];
+            get_unique_ID(unique_id);
+            size_t length = ID_LEN + strlen(scratch_prefix) + strlen(format) + 3;
+            f_name = (char*) internal_malloc(length);
+            snprintf(f_name, length, "%s_%s.%s", scratch_prefix, unique_id, format);
+            f_name_len = strlen(f_name);
+        }
         ini_file = false;
     }
     bool ini_status = true;
@@ -7666,12 +7705,13 @@ _lfortran_open(int32_t unit_num,
     trim_trailing_spaces(&blank, &blank_len, ini_blank);
     trim_trailing_spaces(&decimal, &decimal_len, ini_decimal);
     trim_trailing_spaces(&pad, &pad_len, ini_pad);
-    // Prepare null-terminated names for C APIs
+    // Prepare null-terminated names for C APIs. f_name_c is the copy used
+    // below, including the internal INQUIRE. When FILE= is omitted, f_name
+    // is the generated name owned by this function; release it now.
     char* f_name_c = to_c_string((const fchar*)f_name, f_name_len);
     if (!ini_file) {
-        // f_name was allocated by us (generated temp name), free it now
-        // since f_name_c is the copy we'll use going forward
         internal_free(f_name);
+        f_name = NULL;
     }
 
     if (already_open) {
@@ -7692,7 +7732,7 @@ _lfortran_open(int32_t unit_num,
     char* pad_c = to_c_string((const fchar*)pad, pad_len);
 
     _lfortran_inquire(
-        (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL,
+        (const fchar*)f_name_c, f_name_len, file_exists, -1, NULL, NULL, NULL,
         NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL,
         NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, NULL, 0, NULL, 0, NULL, 0,
         NULL, 0, NULL, 0, NULL, 0, NULL, 0, NULL, NULL, 0, NULL, 0, NULL, 0, NULL, 0);

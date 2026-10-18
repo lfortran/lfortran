@@ -69,6 +69,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -278,6 +279,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Print
                                         (StringFormat
@@ -316,6 +318,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 f_val)
@@ -328,6 +331,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -429,6 +433,7 @@
                                                         (Var 6 getx)
                                                         (Var 5 x)
                                                         ()
+                                                        .false.
                                                         .false.
                                                         .false.
                                                     )]
@@ -590,6 +595,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Print
                                         (StringConstant
@@ -612,6 +618,7 @@
                                             ()
                                             .false.
                                             .false.
+                                            .false.
                                         )
                                         (Return)]
                                         []
@@ -629,6 +636,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 5 sub1)
@@ -642,6 +650,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )]

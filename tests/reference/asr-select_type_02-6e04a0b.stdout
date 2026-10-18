@@ -620,6 +620,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -633,6 +634,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -650,6 +652,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -663,6 +666,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -680,6 +684,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -693,6 +698,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -710,6 +716,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -720,6 +727,7 @@
                         )
                         (IntegerConstant 8 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                     )

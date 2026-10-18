@@ -2406,7 +2406,7 @@ class PRIFInterface {
             if (sc.init_value) {
                 body.push_back(al, ASRUtils::STMT(
                     ASR::make_Assignment_t(al, loc, bound, sc.init_value,
-                        nullptr, false, false)));
+                        nullptr, false, false, false)));
             }
         }
 
@@ -2795,7 +2795,7 @@ class PRIFInterface {
                     ASR::cast_kindType::IntegerToInteger, type, nullptr, nullptr));
                 
                 body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-                    al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret_sym)), cast_res, nullptr, false, false)));
+                    al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret_sym)), cast_res, nullptr, false, false, false)));
 
                 Vec<char*> deps;
                 deps.reserve(al, 1);
@@ -2882,7 +2882,7 @@ class PRIFInterface {
                     ASR::cast_kindType::IntegerToInteger, type, nullptr, nullptr));
                 
                 body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-                    al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret_sym)), cast_res, nullptr, false, false)));
+                    al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, ret_sym)), cast_res, nullptr, false, false, false)));
 
                 Vec<char*> deps;
                 deps.reserve(al, 1);
@@ -3172,10 +3172,10 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
             then_body.push_back(replacer.al, ASRUtils::STMT(ASR::make_Allocate_t(
                 replacer.al, loc, alloc_args.p, alloc_args.n, nullptr, nullptr, nullptr)));
             then_body.push_back(replacer.al, ASRUtils::STMT(ASR::make_Assignment_t(
-                replacer.al, loc, tmp_var, a, nullptr, false, false)));
+                replacer.al, loc, tmp_var, a, nullptr, false, false, false)));
             then_body.push_back(replacer.al, call_tmp);
             then_body.push_back(replacer.al, ASRUtils::STMT(ASR::make_Assignment_t(
-                replacer.al, loc, a, tmp_var, nullptr, false, false)));
+                replacer.al, loc, a, tmp_var, nullptr, false, false, false)));
             then_body.push_back(replacer.al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
                 replacer.al, loc, dealloc_vars.p, dealloc_vars.n)));
 
@@ -3392,6 +3392,20 @@ class CoarrayPrifVisitor : public ASR::CallReplacerOnExpressionsVisitor<CoarrayP
                                 size_t n_codims = x->m_args[j].n_codims;
                                 replacer.prif.make_allocate_coarray_stmts(
                                     x->base.base.loc, a, dims, n_dims, codims, n_codims, x->m_stat, x->m_errmsg, body, x->m_source);
+                                // The Allocate is replaced, so the array_op
+                                // pass does not copy SOURCE= into the new
+                                // elements of an array: copy it here. The
+                                // elements are defined by the copy, not
+                                // finalized (F2018 7.5.6.3).
+                                if (x->m_source && x->m_args[j].m_type == nullptr &&
+                                        ASRUtils::is_array(ASRUtils::expr_type(a))) {
+                                    ASRUtils::ExprStmtDuplicator duplicator(replacer.al);
+                                    ASR::expr_t *source_copy = duplicator.duplicate_expr(x->m_source);
+                                    body.push_back(replacer.al, ASRUtils::STMT(
+                                        ASRUtils::make_Assignment_t_util(replacer.al,
+                                            x->base.base.loc, a, source_copy, nullptr,
+                                            false, false, true)));
+                                }
                             } else {
                                 non_coarray_args.push_back(replacer.al, x->m_args[j]);
                             }

@@ -53,6 +53,7 @@ set(SRC
     pass/dtio_callbacks.cpp
     pass/array_passed_in_function_call.cpp
     pass/string_length_arguments.cpp
+    pass/string_format_array_args.cpp
     pass/openmp.cpp
     pass/parallel_canonicalize.cpp
     pass/parallel_dispatch.cpp

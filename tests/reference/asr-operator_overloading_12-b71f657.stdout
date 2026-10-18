@@ -120,6 +120,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     (Var 4 diagnosis)
                                     Public
@@ -252,11 +253,13 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 5 b)
                         (IntegerConstant 5 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -279,6 +282,7 @@
                             )
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )

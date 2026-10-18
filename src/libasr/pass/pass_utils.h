@@ -5,6 +5,7 @@
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/asr_pass_walk_visitor.h>
+#include <libasr/asr_verify.h>
 
 #include <cctype>
 #include <deque>
@@ -16,6 +17,14 @@ namespace LCompilers {
 
     // Restore casts after replacements change the physical types of shared operands.
     void normalize_string_physical_casts(Allocator &al, ASR::TranslationUnit_t &unit);
+
+    // Verifies the invariant that `verify_options` selects, which the pass
+    // `pass_name` has just established, whenever the passes are verified.
+    // The verification after each pass does not know which passes have run,
+    // so a pass that establishes an invariant checks it itself.
+    void verify_pass_invariant(const ASR::TranslationUnit_t &unit,
+        const PassOptions &pass_options, const ASRVerifyOptions &verify_options,
+        const std::string &pass_name);
 
     // The name of a temporary a pass creates, `__libasr_created_` followed
     // by `hint`, made unique in `scope`. The hint is often the name of the
@@ -184,6 +193,26 @@ namespace LCompilers {
                 }
             }
     };
+
+    class FunctionCallFinder: public ASR::BaseWalkVisitor<FunctionCallFinder> {
+        public:
+            bool found = false;
+            void visit_FunctionCall(const ASR::FunctionCall_t& /*x*/) {
+                found = true;
+            }
+    };
+
+    // The extent of an array constructor element, for the type of the array
+    // section it is assigned to. A type is an annotation, not an evaluation,
+    // so an extent that needs a function call (e.g. `size(f(x > 0))`) is
+    // left deferred; the section's bounds already give it.
+    static inline ASR::expr_t* get_constructor_section_extent_for_type(
+            ASR::expr_t* curr_init, Allocator& al) {
+        ASR::expr_t* size = ASRUtils::get_size(curr_init, al, true);
+        FunctionCallFinder finder;
+        finder.visit_expr(*size);
+        return finder.found ? nullptr : size;
+    }
 
     static inline SymbolTable* instantiation_scope_for_expr(
             SymbolTable* global_scope, SymbolTable* caller_scope,
@@ -1266,7 +1295,7 @@ namespace LCompilers {
                          ASR::is_a<ASR::RealBinOp_t>(*curr_init)) ) {
                         dimension.m_length = nullptr;
                     } else {
-                        dimension.m_length = ASRUtils::get_size(curr_init, al, true);
+                        dimension.m_length = get_constructor_section_extent_for_type(curr_init, al);
                     }
                     Vec<ASR::dimension_t> dims; dims.reserve(al, 1);
                     dims.push_back(al, dimension);

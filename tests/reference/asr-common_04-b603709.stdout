@@ -136,6 +136,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
@@ -143,11 +144,13 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 d)
                         (Var 2 b)
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -190,6 +193,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -206,6 +210,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
@@ -220,6 +225,7 @@
                             .true.
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )

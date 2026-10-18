@@ -50,6 +50,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (SubroutineCall
                         1 x
@@ -264,6 +265,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )

@@ -96,6 +96,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (SubroutineCall
                         5 foo_sub
@@ -224,6 +225,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )]

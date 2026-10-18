@@ -216,6 +216,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -233,6 +234,7 @@
                             (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
