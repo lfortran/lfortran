@@ -3593,8 +3593,7 @@ RUN(NAME file_open_10 LABELS gfortran llvm)
 RUN(NAME file_open_11 LABELS gfortran llvm)
 RUN(NAME file_open_12 LABELS gfortran llvm)
 RUN(NAME file_open_13 LABELS gfortran llvm)
-# open(newunit=) with no FILE= is rejected by GFortran.
-RUN(NAME file_open_14 LABELS llvm)
+RUN(NAME file_open_14 LABELS gfortran llvm)
 
 RUN(NAME file_overwrite LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
