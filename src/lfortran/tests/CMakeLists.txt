@@ -277,3 +277,9 @@ if (WITH_LSP)
         target_link_options(test_asr PRIVATE "LINKER:--export-dynamic")
     endif()
 endif()
+
+if (APPLE)
+    add_test(NAME test_gpu_metal_runtime
+        COMMAND bash ${CMAKE_CURRENT_SOURCE_DIR}/test_gpu_metal_runtime.sh)
+    set_tests_properties(test_gpu_metal_runtime PROPERTIES TIMEOUT 180)
+endif()
