@@ -2,6 +2,13 @@ module lfortran_display
   use iso_c_binding, only: c_char, c_null_char
   implicit none
 
+  type :: mime_bundle
+    character(len=:), allocatable :: mime_type
+    character(len=:), allocatable :: data
+  contains
+    procedure :: show => show_mime_bundle
+  end type
+
   interface
     subroutine lf_display_data(mime, payload) bind(C, name="lfortran_display_data")
       import :: c_char
@@ -13,6 +20,13 @@ module lfortran_display
   end interface
 
 contains
+
+  ! Return the representation consumed by the interactive evaluator.
+  function show_mime_bundle(self) result(bundle)
+    class(mime_bundle), intent(in) :: self
+    character(len=:), allocatable :: bundle
+    bundle = trim(self%mime_type) // new_line('a') // self%data
+  end function
 
   ! Generic display: send any MIME type + data to Jupyter
   ! Examples:
