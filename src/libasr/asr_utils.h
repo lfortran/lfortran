@@ -7558,17 +7558,22 @@ inline ASR::asr_t* make_FunctionType_t_util(Allocator &al,
     Vec<ASR::ttype_t*> arg_types;
     arg_types.reserve(al, n_args);
     ReplaceWithFunctionParamVisitor replacer(al, a_args, n_args);
+    // A dummy procedure's interface names the trait contracts of its own
+    // trait-view dummies from its own scope, which is nested in
+    // `current_scope`; the signature has to name them from `current_scope`.
     for( size_t i = 0; i < n_args; i++ ) {
         // We need to substitute all direct argument variable references with
         // FunctionParam.
         ASR::ttype_t *t = replacer.replace_args_with_FunctionParam(
                             expr_type(a_args[i]), current_scope);
-        arg_types.push_back(al, t);
+        arg_types.push_back(al, import_trait_type(al, t, current_scope));
     }
     ASR::ttype_t* return_var_type = nullptr;
     if( a_return_var ) {
-        return_var_type = replacer.replace_args_with_FunctionParam(
-                            ASRUtils::expr_type(a_return_var), current_scope);
+        return_var_type = import_trait_type(al,
+            replacer.replace_args_with_FunctionParam(
+                ASRUtils::expr_type(a_return_var), current_scope),
+            current_scope);
     }
 
     LCOMPILERS_ASSERT(arg_types.size() == n_args);

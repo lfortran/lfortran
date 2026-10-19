@@ -4158,6 +4158,9 @@ RUN(NAME traits_runtime_class_argument_01_oracle LABELS gfortran llvm)
 RUN(NAME traits_allocatable_interface_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_allocatable_interface_01_oracle LABELS gfortran llvm)
+RUN(NAME traits_dummy_procedure_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_dummy_procedure_01_oracle LABELS gfortran llvm)
 RUN(NAME traits_optional_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_optional_01_oracle LABELS gfortran llvm)
