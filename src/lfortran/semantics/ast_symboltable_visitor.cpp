@@ -1287,6 +1287,7 @@ public:
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        record_procedure_references(current_scope, x.m_items, x.n_items);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
         ClassProcedureScope class_procedure_scope(*this);
         std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
@@ -1558,19 +1559,12 @@ public:
         ASRUtils::SymbolDuplicator symbol_duplicator(al);
         std::vector<std::string> copy_external_procedure = external_procedures;
         external_procedures.clear();
-        std::vector<std::string> symbols_to_erase;
         for( auto item: old_scope->get_scope() ) {
             symbol_duplicator.duplicate_symbol(item.second, current_scope);
             bool is_external = check_is_external(item.first, old_scope);
             if (is_external) {
                 external_procedures.push_back(item.first);
-                // remove it from old_scope
-                symbols_to_erase.push_back(item.first);
             }
-        }
-
-        for (auto it: symbols_to_erase) {
-            old_scope->erase_symbol(it);
         }
 
         if (is_master) {
@@ -1870,6 +1864,7 @@ public:
 
         SymbolTable* parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
+        record_procedure_references(current_scope, x.m_items, x.n_items);
 
         ASRUtils::SymbolDuplicator symbol_duplicator(al);
         ASRUtils::ExprStmtWithScopeDuplicator exprstmt_duplicator(al, current_scope);
@@ -2234,6 +2229,7 @@ public:
             current_procedure_args.clear();
         }
 
+        record_procedure_references(current_scope, x.m_items, x.n_items);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
         bool subroutine_has_alternate_returns = false;
         for (size_t i=0; i<x.n_args; i++) {
@@ -2882,6 +2878,7 @@ public:
             current_procedure_args.clear();
         }
 
+        record_procedure_references(current_scope, x.m_items, x.n_items);
         ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
@@ -4809,11 +4806,13 @@ public:
 
             // Resolve AST node + set it in the holder.
             bool in_subroutine_or_function_copy{in_Subroutine}; in_Subroutine = true;
+            ASR::expr_t* call = nullptr;
             try {
                 visit_expr(*funcCall);
-                *expr_holder = ASRUtils::EXPR(tmp); tmp=nullptr;
+                call = ASRUtils::EXPR(tmp); tmp=nullptr;
+                *expr_holder = call;
                 // Invoke the call to the CheckFunc
-                if( CheckFunc ) CheckFunc(*expr_holder);
+                if( CheckFunc ) CheckFunc(call);
             } catch (SemanticAbort &) {
                 current_scope = current_scope_copy;
                 in_Subroutine = in_subroutine_or_function_copy;
@@ -4858,8 +4857,8 @@ public:
             // expr_holder may resolve to non-FunctionCall nodes (e.g.
             // StructInstanceMember for type-bound member access in dimension
             // expressions), so we guard instead of asserting FunctionCall_t.
-            if (ASR::is_a<ASR::FunctionCall_t>(**expr_holder)) {
-                ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(*expr_holder);
+            if (ASR::is_a<ASR::FunctionCall_t>(*call)) {
+                ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(call);
                 if(((ASR::symbol_t*)current_scope->asr_owner) == func_call->m_name){
                     diag.add(diag::Diagnostic(
                         "Variable declaration is calling its function scope recursively",

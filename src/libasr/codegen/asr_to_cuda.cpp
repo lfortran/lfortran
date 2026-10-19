@@ -182,9 +182,11 @@ struct CudaDialect {
             src << "}\n";
             return;
         }
+        if (kernel_names.empty()) return;
         src << "typedef void (*kernel_func_t)(void);\n";
         src << "extern \"C\" void lfortran_gpu_register_kernel("
                "const char *name, kernel_func_t func);\n\n";
+        src << "namespace {\n";
         src << "struct _lfortran_cuda_registrar {\n";
         src << "    _lfortran_cuda_registrar() {\n";
         for (auto &kname : kernel_names) {
@@ -193,6 +195,7 @@ struct CudaDialect {
         }
         src << "    }\n";
         src << "} _lfortran_cuda_reg;\n";
+        src << "}\n";
     }
 };
 

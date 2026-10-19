@@ -27,6 +27,18 @@ if (NOT XEUS_LFORTRAN_WASM_BUILD)
     ADDTEST(test_stacktrace)
 endif()
 
+add_library(cuda_link_helper_plain_fixture STATIC plain.c)
+set_target_properties(cuda_link_helper_plain_fixture PROPERTIES OUTPUT_NAME plain)
+set(cuda_link_helpers_fixture_header_content [=[
+#pragma once
+namespace cuda_link_helpers_fixture {
+inline constexpr const char plain_archive[] = R"PATH($<TARGET_FILE:cuda_link_helper_plain_fixture>)PATH";
+inline constexpr const char plain_member[] = "plain.c@CMAKE_C_OUTPUT_EXTENSION@";
+}
+]=])
+string(CONFIGURE "${cuda_link_helpers_fixture_header_content}" cuda_link_helpers_fixture_header_content @ONLY)
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/test_cuda_link_helpers_fixture.hpp" CONTENT "${cuda_link_helpers_fixture_header_content}")
+
 set(SRC
     test_parse.cpp
     test_ast.cpp
@@ -38,6 +50,8 @@ set(SRC
     test_asr_text.cpp
     test_asr_text_parser.cpp
     test_gpu.cpp
+    ../../bin/cuda_link_helpers.cpp
+    ../../tests/test_cuda_link_helpers.cpp
 )
 
 if (WITH_JSON)
@@ -68,6 +82,8 @@ endif()
 add_executable(test_lfortran ${SRC})
 target_link_libraries(test_lfortran lfortran_lib p::doctest)
 target_compile_definitions(test_lfortran PRIVATE LFORTRAN_PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+target_include_directories(test_lfortran PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
+add_dependencies(test_lfortran cuda_link_helper_plain_fixture)
 # The test binary never calls set_exec_path_and_mode(), so it cannot work out
 # where the runtime modfiles are; a test that uses an intrinsic module would
 # fail with "modfile was not found". Under Emscripten they are preloaded into
@@ -154,6 +170,17 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 -o ${PROJECT_BINARY_DIR}/${fixture_name}.o
         )
     endforeach()
+    # `--show-asm` must lower the ASR after the same passes as `-S`. Assembly
+    # differs between targets, so only success is checked. The program lives
+    # here because CI builds from the source tarball, which ships `src` but not
+    # `integration_tests`.
+    add_test(
+        NAME test_show_asm_01
+        COMMAND $<TARGET_FILE:lfortran>
+            ${CMAKE_CURRENT_SOURCE_DIR}/show_asm_01.f90
+            --show-asm
+            --no-color
+    )
     # The format claims to be an EDN data subset; enforce that with a reader
     # that knows nothing about LFortran.
     find_program(LFORTRAN_TEST_PYTHON NAMES python python3)

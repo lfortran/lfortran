@@ -3627,11 +3627,11 @@ semantic error: Unapplicable types for intrinsic function max
 2062 |     print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
      |                     ^^^ 
 
-semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found `func_alloc_target_01`
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found `allocate_func_target_01`
     --> tests/errors/continue_compilation_1.f90:2094:34
      |
-2094 |     allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
-     |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
+2094 |     allocate(character(len=5) :: ALLOCATE_FUNC_TARGET_01)
+     |                                  ^^^^^^^^^^^^^^^^^^^^^^^ 'allocate_func_target_01' is not allocatable or pointer
 
 semantic error: Cannot assign to an intent(in) variable `y`
     --> tests/errors/continue_compilation_1.f90:2135:5
@@ -4357,3 +4357,15 @@ semantic error: Passing an element of a pointer array to an array dummy argument
      |
 3500 |        end subroutine cc1_epa_dummy
      | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ array dummy argument
+
+semantic error: Variable 'cc1_external_name_sub' is not declared
+    --> tests/errors/continue_compilation_1.f90:3451:5
+     |
+3451 |     cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
+     |     ^^^^^^^^^^^^^^^^^^^^^ 'cc1_external_name_sub' is undeclared
+
+semantic error: Variable 'cc1_external_name_fn' is not declared
+    --> tests/errors/continue_compilation_1.f90:3452:14
+     |
+3452 |     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
+     |              ^^^^^^^^^^^^^^^^^^^^ 'cc1_external_name_fn' is undeclared
