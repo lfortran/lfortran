@@ -291,8 +291,11 @@ contains
         associate (z => c%poly(3))
             if (weight(z) /= 8) error stop 31
         end associate
+        ! GFortran 15 does not know the type of an associate name of a
+        ! function reference through a binding when a component of it is
+        ! referenced.
         associate (z => c%one())
-            if (z%id /= 3) error stop 32
+            if (weight(z) /= 3) error stop 32
         end associate
         ! GFortran 16 fails on the assignment of a polymorphic array function
         ! reference.
