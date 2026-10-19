@@ -17337,12 +17337,19 @@ public:
         }
         llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(x.m_test, x.m_type, module.get());
         llvm::Value* ifexp_res = llvm_utils->CreateAlloca(_type, nullptr, "");
+        auto emit_arm = [&](ASR::expr_t *arm) {
+            // As in visit_IfExp_string: an arm's string temporaries (e.g. a
+            // character conditional expression in the arm) exist only when
+            // the arm runs, so free them inside it, after its value is stored.
+            size_t strings_n_before_arm = strings_to_be_deallocated.n;
+            this->visit_expr_wrapper(arm, true);
+            builder->CreateStore(tmp, ifexp_res);
+            free_strings_to_be_deallocated(strings_n_before_arm);
+        };
         llvm_utils->create_if_else(cond, [&]() {
-            this->visit_expr_wrapper(x.m_body, true);
-            builder->CreateStore(tmp, ifexp_res);
+            emit_arm(x.m_body);
         }, [&]() {
-            this->visit_expr_wrapper(x.m_orelse, true);
-            builder->CreateStore(tmp, ifexp_res);
+            emit_arm(x.m_orelse);
         });
         tmp = llvm_utils->CreateLoad2(_type, ifexp_res);
     }
