@@ -1893,6 +1893,38 @@ ASR::symbol_t* get_root_var(ASR::expr_t* e) {
     }
 }
 
+// The symbol whose storage `sym` names: for an associate name of an
+// ASSOCIATE construct, that of its selector, e.g. `a` for `b` in
+// `associate (b => a(2:6))`, otherwise `sym` itself.
+ASR::symbol_t* get_associated_symbol(ASR::symbol_t* sym) {
+    while (sym && ASR::is_a<ASR::Variable_t>(*sym)) {
+        ASR::asr_t* owner = ASR::down_cast<ASR::Variable_t>(sym)->m_parent_symtab->asr_owner;
+        if (!owner || !ASR::is_a<ASR::symbol_t>(*owner) ||
+                !ASR::is_a<ASR::AssociateBlock_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
+            break;
+        }
+        ASR::AssociateBlock_t* block = ASR::down_cast<ASR::AssociateBlock_t>(
+            ASR::down_cast<ASR::symbol_t>(owner));
+        ASR::symbol_t* selector_sym = nullptr;
+        for (size_t i = 0; i < block->n_body; i++) {
+            if (!ASR::is_a<ASR::Associate_t>(*block->m_body[i])) {
+                continue;
+            }
+            ASR::Associate_t* assoc = ASR::down_cast<ASR::Associate_t>(block->m_body[i]);
+            if (ASR::is_a<ASR::Var_t>(*assoc->m_target) &&
+                    ASR::down_cast<ASR::Var_t>(assoc->m_target)->m_v == sym) {
+                selector_sym = extract_symbol(assoc->m_value);
+                break;
+            }
+        }
+        if (selector_sym == nullptr || selector_sym == sym) {
+            break;
+        }
+        sym = selector_sym;
+    }
+    return sym;
+}
+
 bool is_common_symbol_present_in_lhs_and_rhs(Allocator &al, ASR::expr_t* lhs, ASR::expr_t* rhs) {
     if (lhs == nullptr) {
         return false;
@@ -1905,9 +1937,9 @@ bool is_common_symbol_present_in_lhs_and_rhs(Allocator &al, ASR::expr_t* lhs, AS
     rhs_collector.visit_expr(*rhs);
 
     for( size_t i = 0; i < lhs_vars.size(); i++ ) {
-        ASR::symbol_t* lhs_sym = extract_symbol(lhs_vars[i]);
+        ASR::symbol_t* lhs_sym = get_associated_symbol(extract_symbol(lhs_vars[i]));
         for( size_t j = 0; j < rhs_vars.size(); j++ ) {
-            if( extract_symbol(rhs_vars[j]) == lhs_sym ) {
+            if( get_associated_symbol(extract_symbol(rhs_vars[j])) == lhs_sym ) {
                 return true;
             }
         }
