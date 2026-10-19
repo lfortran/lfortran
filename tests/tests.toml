@@ -5701,6 +5701,19 @@ rename_symbol = true
 line = 9
 column = 13
 
+[[test]]
+filename = "collect_occurence5.f90"
+rename_symbol = true
+line = 2
+column = 12
+
+[[test]]
+filename = "collect_occurence6.f"
+rename_symbol = true
+line = 3
+column = 15
+options = "--fixed-form"
+
 
 [[test]]
 filename = "../integration_tests/multiple_objects_args.f90"
@@ -5848,6 +5861,15 @@ filename = "errors/show_errors1.f90"
 show_errors = true
 
 [[test]]
+filename = "errors/show_errors2.f90"
+show_errors = true
+
+[[test]]
+filename = "errors/show_errors3.f"
+show_errors = true
+options = "--fixed-form"
+
+[[test]]
 filename = "document_symbols1.f90"
 document_symbols = true
 extrafiles = "document_symbols1_module.f90"
@@ -5856,6 +5878,10 @@ extrafiles = "document_symbols1_module.f90"
 filename = "document_symbols_implicit_interface.f90"
 document_symbols = true
 options = "--implicit-interface"
+
+[[test]]
+filename = "document_symbols_continuation.f90"
+document_symbols = true
 
 [[test]]
 filename = "../integration_tests/loop_var_use_after_loop.f90"

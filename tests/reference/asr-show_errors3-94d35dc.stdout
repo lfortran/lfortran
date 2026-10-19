@@ -1,0 +1,1 @@
+{"uri":"file://tests/errors/show_errors3.f","diagnostics":[{"source":"lpyth","range":{"start":{"line":4,"character":11},"end":{"line":4,"character":24}},"message":"Variable 'undeclared_var' is not declared","severity":0}]}
