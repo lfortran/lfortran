@@ -2644,6 +2644,7 @@ RUN(NAME operator_overloading_42 LABELS gfortran llvm)
 RUN(NAME operator_overloading_43 LABELS gfortran llvm)
 RUN(NAME operator_overloading_44 LABELS gfortran llvm)
 RUN(NAME operator_overloading_45 LABELS gfortran llvm)
+RUN(NAME operator_overloading_46 LABELS gfortran llvm)
 
 RUN(NAME custom_unary_operator_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME custom_unary_operator_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)

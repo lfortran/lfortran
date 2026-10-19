@@ -683,8 +683,17 @@ public :
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x){
+        std::vector<ASR::expr_t*> original_args;
+        for (size_t i = 0; i < x->n_args; i++) {
+            original_args.push_back(x->m_args[i].m_value);
+        }
         traverse_functionCall_args(x->m_args, x->n_args);
-        if (x->m_dt) {
+        ASR::expr_t* dt = x->m_dt;
+        for (size_t i = 0; i < x->n_args; i++) {
+            x->m_dt = passed_object_dispatch(x->m_dt, original_args[i],
+                x->m_args[i].m_value);
+        }
+        if (x->m_dt && x->m_dt == dt) {
             ASR::expr_t** current_expr_copy = current_expr;
             current_expr = &(x->m_dt);
             replace_expr(x->m_dt);
@@ -1241,13 +1250,20 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 
             // We skip the generic expression visitor on this statement, so
             // ensure nested calls inside the function call arguments are still replaced.
+            std::vector<ASR::expr_t*> original_args;
             for (size_t i = 0; i < fc->n_args; i++) {
+                original_args.push_back(fc->m_args[i].m_value);
                 ASR::expr_t** current_expr_copy = current_expr;
                 current_expr = &fc->m_args[i].m_value;
                 call_replacer();
                 current_expr = current_expr_copy;
             }
-            if (fc->m_dt) {
+            ASR::expr_t* dt = fc->m_dt;
+            for (size_t i = 0; i < fc->n_args; i++) {
+                fc->m_dt = passed_object_dispatch(fc->m_dt, original_args[i],
+                    fc->m_args[i].m_value);
+            }
+            if (fc->m_dt && fc->m_dt == dt) {
                 ASR::expr_t** current_expr_copy = current_expr;
                 current_expr = &fc->m_dt;
                 call_replacer();
