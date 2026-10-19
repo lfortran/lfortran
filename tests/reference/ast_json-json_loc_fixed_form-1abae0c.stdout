@@ -65,13 +65,13 @@
                                                 },
                                                 "loc": {
                                                     "first": 52,
-                                                    "last": 59,
+                                                    "last": 58,
                                                     "first_filename": "tests/json_loc_fixed_form.f",
                                                     "first_line": 6,
                                                     "first_column": 7,
                                                     "last_filename": "tests/json_loc_fixed_form.f",
                                                     "last_line": 6,
-                                                    "last_column": 15
+                                                    "last_column": 13
                                                 }
                                             },
                                             "attributes": [],
@@ -126,13 +126,13 @@
                                                 },
                                                 "loc": {
                                                     "first": 61,
-                                                    "last": 65,
+                                                    "last": 64,
                                                     "first_filename": "tests/json_loc_fixed_form.f",
                                                     "first_line": 7,
                                                     "first_column": 7,
                                                     "last_filename": "tests/json_loc_fixed_form.f",
                                                     "last_line": 7,
-                                                    "last_column": 12
+                                                    "last_column": 10
                                                 }
                                             },
                                             "attributes": [],
@@ -230,38 +230,38 @@
                             },
                             "loc": {
                                 "first": 35,
-                                "last": 83,
+                                "last": 82,
                                 "first_filename": "tests/json_loc_fixed_form.f",
                                 "first_line": 5,
                                 "first_column": 7,
                                 "last_filename": "tests/json_loc_fixed_form.f",
                                 "last_line": 9,
-                                "last_column": 21
+                                "last_column": 20
                             }
                         }
                     ]
                 },
                 "loc": {
                     "first": 0,
-                    "last": 93,
+                    "last": 92,
                     "first_filename": "tests/json_loc_fixed_form.f",
                     "first_line": 3,
                     "first_column": 7,
                     "last_filename": "tests/json_loc_fixed_form.f",
                     "last_line": 10,
-                    "last_column": 17
+                    "last_column": 16
                 }
             }
         ]
     },
     "loc": {
         "first": 0,
-        "last": 93,
+        "last": 92,
         "first_filename": "tests/json_loc_fixed_form.f",
         "first_line": 3,
         "first_column": 7,
         "last_filename": "tests/json_loc_fixed_form.f",
         "last_line": 10,
-        "last_column": 17
+        "last_column": 16
     }
 }

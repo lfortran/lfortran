@@ -3785,6 +3785,10 @@ filename = "errors/fixed_form_14.f"
 ast = true
 
 [[test]]
+filename = "errors/fixed_form_15.f"
+ast = true
+
+[[test]]
 filename = "errors/arithmetic_if1.f90"
 asr = true
 
@@ -4118,6 +4122,16 @@ filename = "json_loc_fixed_form.f"
 options = "--fixed-form"
 ast_json = true
 asr_json = true
+
+[[test]]
+filename = "json_loc_fixed_form_do.f"
+options = "--fixed-form"
+ast_json = true
+
+[[test]]
+filename = "json_loc_fixed_form_do_label.f"
+options = "--fixed-form"
+ast_json = true
 
 [[test]]
 filename = "redeclaration1.f90"
