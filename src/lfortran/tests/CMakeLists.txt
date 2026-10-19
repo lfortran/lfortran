@@ -191,6 +191,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 COMMAND ${LFORTRAN_TEST_PYTHON}
                     ${CMAKE_CURRENT_SOURCE_DIR}/test_gpu_launch_geometry.py
                     --backend cpu --cc ${CMAKE_C_COMPILER}
+                    "--sysroot=${CMAKE_OSX_SYSROOT}"
                     --workdir ${PROJECT_BINARY_DIR}/gpu-launch-geometry-cpu
             )
             set_tests_properties(test_gpu_launch_geometry_cpu PROPERTIES TIMEOUT 180)
@@ -200,6 +201,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     COMMAND ${LFORTRAN_TEST_PYTHON}
                         ${CMAKE_CURRENT_SOURCE_DIR}/test_gpu_launch_geometry.py
                         --backend metal --cc ${CMAKE_C_COMPILER}
+                        "--sysroot=${CMAKE_OSX_SYSROOT}"
                         --workdir ${PROJECT_BINARY_DIR}/gpu-launch-geometry-metal
                 )
                 set_tests_properties(test_gpu_launch_geometry_metal PROPERTIES TIMEOUT 300)

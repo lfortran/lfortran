@@ -9,6 +9,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--backend", choices=("cpu", "metal"), required=True)
     parser.add_argument("--cc", required=True)
+    parser.add_argument("--sysroot", default="",
+                        help="macOS SDK path or name (default: macosx)")
     parser.add_argument("--workdir", type=Path, required=True)
     args = parser.parse_args()
     here = Path(__file__).resolve().parent
@@ -18,6 +20,13 @@ def main():
     workdir.mkdir(parents=True, exist_ok=True)
     binary = workdir / "test_gpu_launch_geometry"
     command = [args.cc, "-O2", "-I" + str(runtime)]
+    if sys.platform == "darwin":
+        # Direct compiler calls do not inherit CMake's macOS SDK selection.
+        sysroot = args.sysroot or "macosx"
+        if not Path(sysroot).is_absolute():
+            sysroot = subprocess.check_output(
+                ["xcrun", "--sdk", sysroot, "--show-sdk-path"], text=True).strip()
+        command += ["-isysroot", sysroot]
     if args.backend == "metal":
         command += ["-x", "objective-c", "-fobjc-arc",
                     "-framework", "Foundation", "-framework", "Metal"]
