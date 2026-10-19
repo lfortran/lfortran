@@ -2430,10 +2430,11 @@ as `object%item%value()` borrow the selected payload without changing its witnes
 Readonly containing objects cannot define or deallocate their owner components.
 Pointer components and arrays of trait objects remain outside this slice;
 an array of an ordinary containing derived type is different and is supported.
-Structure constructors may omit an owner component or give it `null()`, but a
-component value, VALUE dummies of containing types and coarray components are
-not implemented yet. SEQUENCE, BIND(C) and union types cannot own trait
-components because they have no fixed storage layout for them.
+Structure constructors may omit an owner component, give it `null()` or give
+it a value (see "Structure constructors" below). VALUE dummies of containing
+types and coarray components are not implemented yet. SEQUENCE, BIND(C) and
+union types cannot own trait components because they have no fixed storage
+layout for them.
 
 Containing-object assignment snapshots its source before replacing allocatable
 components. It gives each replacement fresh storage and preserves the source's
@@ -2539,6 +2540,69 @@ types, which allocate, assign, inspect, copy in a BLOCK, PACK, `MOVE_ALLOC`
 and deallocate them, and `continue_compilation_traits_03` collects the
 diagnostics for `MOVE_ALLOC` of scalar, polymorphic and nested containing
 objects.
+
+### Structure constructors
+
+A default structure constructor gives a trait component a value, positionally
+or by keyword, with the semantics of an allocatable component (F2018 7.5.10):
+the component becomes an independent copy of the value, as by intrinsic
+assignment to an owner, and an unallocated owner leaves it unallocated
+(TD-41):
+
+```fortran
+type :: MyType
+    class(ITrait), allocatable :: tobj
+end type
+...
+class(*), allocatable :: res
+class(ITrait), allocatable :: obj
+res = MyType(obj)             ! unallocated component if obj is unallocated
+x = MyType(tobj=Circle(2.0))  ! a value of a conforming type
+y = MyType(x%tobj)            ! the trait component of another object
+```
+
+The value can be anything that owner assignment accepts: an owner, a view
+dummy, a trait pointer, a `CLASS IS` associate name, a trait component, a
+function result returning an owner, a value of a conforming nonpolymorphic
+type, or a `class(T)` object of a conforming declared type, which is copied
+with its dynamic type. A trait object of a combination gives a value to a
+component of one of its traits. Mutating the original afterwards does not
+change the component, and messages through `x%tobj` dispatch to the copy. The
+constructor works in assignments, including to `class(*)` allocatables,
+`ALLOCATE` with `SOURCE=`, actual arguments, array constructors, nested
+constructors and ASSOCIATE selectors, also for types with several trait
+components, ordinary components and parent types. It behaves like the
+equivalent user-defined constructor (a generic named like the type whose
+function assigns its `class(ITrait)` argument to the component), except that a
+constructor assigned to a variable copies straight into the variable's
+component, so there is no function result to finalize afterwards. A
+constructor that the compiler builds in a temporary keeps its copies there
+until the temporary is reused or its scope ends, when they are finalized.
+A value that does not conform, a value that is not a derived type, an array,
+a `class(*)` object, and a combination formed from a polymorphic object are
+diagnosed, and PURE procedures cannot construct such values.
+
+Semantics keeps each value as a borrowed view of the component's trait: a
+`TraitBorrow` of an owner or pointer, projected if needed, or a `TraitPack` of
+a concrete or polymorphic value. The `class_constructor` pass lowers the
+constructor to one `TraitAssignment` per trait component, which copies the
+view like owner assignment, guarded by `allocated` when the view borrows an
+allocatable owner, whose unallocated state deallocates the component instead.
+
+`traits_runtime_constructor_component_01` gives every kind of value, compares
+the results and FINAL counts with those of the equivalent user-defined
+constructor, checks independence and covers the usage contexts, including the
+`class(*)` function result of the original report. `_02` covers several trait
+components, combinations and their projections, ordinary components, type
+extensions, a value that reads its target and copies released in a loop.
+`_separate_01` compiles the contract, a consumer and the provider of the
+conforming types separately. The standard oracles `_01_oracle` and
+`_02_oracle` use an abstract type and are registered for GFortran, which
+shares instead of copying a polymorphic data source of an allocatable
+component in a structure constructor; they therefore give polymorphic values
+only to the user-defined constructor, and the full counterpart of `_01`, with
+its FINAL counts, was checked against Flang.
+`continue_compilation_traits_constructor_component` collects the diagnostics.
 
 ## Persistent scalar pointer views (R3)
 

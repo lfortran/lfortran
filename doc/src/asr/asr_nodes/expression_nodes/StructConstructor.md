@@ -30,6 +30,15 @@ The value of the expression.
 frontend has already reordered any component keywords and filled in any
 default initialisers.
 
+The value of an allocatable runtime trait component (`class(ITrait),
+allocatable`) is a borrowed view of the component's contract: a
+[TraitBorrow](TraitBorrow.md) of an owner or pointer, possibly projected, or a
+[TraitPack](TraitPack.md) of a concrete or polymorphic value. The
+`class_constructor` pass copies it into the component with a
+[TraitAssignment](../statement_nodes/TraitAssignment.md), and deallocates the
+component instead when the view borrows an unallocated allocatable owner
+(F2018 7.5.10).
+
 ## Examples
 
 ```clojure

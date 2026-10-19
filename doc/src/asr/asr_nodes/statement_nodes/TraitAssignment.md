@@ -31,6 +31,10 @@ association. Borrowed views are not assignment targets. Ordinary `Assignment`
 or `Associate` of a trait header is rejected by verification because neither
 expresses this ownership protocol.
 
+The `class_constructor` pass also creates it for the value of a trait
+component of a [StructConstructor](../expression_nodes/StructConstructor.md),
+which is always a borrowed view, so `witness` is then absent.
+
 This describes direct assignment to the owner slot. When an ordinary containing
 derived object is assigned instead, its noncoarray allocatable components are
 recreated before component assignment, following Fortran 2023 10.2.1.3.

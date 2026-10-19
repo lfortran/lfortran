@@ -184,6 +184,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-14 | Confirmed the agreement on explicit receivers and asked to update this record, update all tests and implement it; when in doubt, to stay close to Rust and other explicitly typed languages, or to ask. | TD-36 |
 | 2026-10-19 | Supplied modules whose trait messages return allocatable `real(8)` arrays, used through a view and through an allocatable trait component, which the prototype rejected, and asked for runtime dispatch of messages with allocatable and explicit-shape array results of intrinsic types, with a specific diagnostic for results that remain unsupported. | TD-39 |
 | 2026-10-19 | Supplied a module whose trait message takes a `character(*)` argument and returns `class(*), allocatable`, which the prototype rejected, and asked for runtime dispatch of such results of any dynamic type through every kind of receiver, also under separate compilation, and, as far as the same mechanism allows, of allocatable scalar, derived-type and `class(Base)` results, with a specific diagnostic for results that remain unsupported. | TD-40 |
+| 2026-10-19 | Reported that trait objects cannot be passed to the default structure constructor of a type with an allocatable trait component, although a user-defined constructor assigning its `class(ITrait)` argument to the component works, and asked for default constructor values with the Fortran semantics of allocatable components, for every kind of trait object, concrete and polymorphic value, in every usage context and under separate compilation, behaving like the equivalent user-defined constructor. | TD-41 |
 
 ## Entries
 
@@ -1240,6 +1241,61 @@ specification action, that is, what the paper should say.
   provider declares.
 - **Specification action.** None identified: ordinary Fortran function-result
   semantics apply.
+
+#### TD-41: Structure constructor values of trait components
+
+- **Status:** Implementation choice (the scope was requested by the
+  maintainer; the rules follow ordinary Fortran and were not asked).
+- **What the paper says.** Trait objects are declared like present `CLASS`
+  objects and can be allocatable components (`sect:trait_objects`, lines
+  1607-1650). The paper says nothing about structure constructors of types
+  with such components.
+- **Why it is not tight.** A default structure constructor gives an
+  allocatable component the value of its data source "as if by intrinsic
+  assignment" (F2018 7.5.10), and a component whose data source is an
+  unallocated allocatable is unallocated. For a trait component the data
+  source can be a value of a conforming concrete type, a `class(T)` object or
+  an already formed trait object, which owner assignment accepts, but the
+  prototype rejected any such value. A user-defined constructor that assigns
+  its `class(ITrait)` argument to the component worked, so only the default
+  constructor was missing.
+- **Options presented.** Not asked.
+- **Choice.** A trait component of a default structure constructor, positional
+  or by keyword, accepts the values that intrinsic assignment to an owner of
+  its trait accepts: an owner, allocated or not, a view, a trait pointer, a
+  `CLASS IS` associate name, a trait component of another object, a function
+  result returning an owner, a value of a conforming nonpolymorphic type
+  (variable, constructor or function result), and a `class(T)` object whose
+  declared type conforms (TD-38). A trait object of a combination supplies a
+  component of any of its traits. The component becomes an independent copy of
+  the value's dynamic type and its selected methods; an unallocated owner, like
+  `null()` or an omitted value, leaves it unallocated. Values that do not
+  conform, values that are not derived types, arrays, `class(*)` objects and
+  the temporary limits of TD-38 (combinations formed from a polymorphic object)
+  are diagnosed.
+- **Consequences.** A constructor assigned to a variable copies each value
+  straight into the variable's component, finalizing the value it replaces,
+  as `x%item = value` does; a user-defined constructor additionally finalizes
+  its result's copy after the statement (F2023 9.7.3.2), so the two differ by
+  that FINAL call, as they do for ordinary `CLASS` components in other
+  compilers. A constructor that the compiler materializes in a temporary (an
+  actual argument, an element of an array constructor, a `SOURCE=` or a value
+  that reads its own target) keeps its copies in that temporary, which
+  finalizes them when it is reused or when its scope ends, so nothing is
+  leaked. Fortran does not say when the components of a constructor value are
+  released; finalizing them after the statement, as for a function result, or
+  releasing them without finalization are alternatives to revisit if programs
+  depend on the timing. Copying has dynamic lifecycle effects, so PURE
+  procedures cannot construct such values, as they cannot assign owners.
+- **Implementation status.** Implemented for every value listed above in
+  assignments to variables and to `class(*)` allocatables, `ALLOCATE` with
+  `SOURCE=`, actual arguments, array constructors, nested constructors and
+  ASSOCIATE selectors, for types with several trait components, ordinary
+  components and parent types, also under separate compilation with a
+  conforming type that only the provider declares.
+- **Specification action.** State that a trait component in a structure
+  constructor takes its value as by intrinsic assignment to an owner, so that
+  the rules of F2018 7.5.10 for allocatable components apply unchanged.
 
 ### D. Generic procedures, methods and type sets
 
