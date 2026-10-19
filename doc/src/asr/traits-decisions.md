@@ -163,6 +163,8 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-16 | Whether the private components of a generic instance belong to the generic definition's module or, as in the prototype then, to the client scope that owns the generated instance | **Preserve the generic definition's privacy and include this case in the fix (recommended)**; Finish ordinary Fortran checking now; document and defer generic-instance privacy | TD-37 |
 | 2026-10-18 | The meaning of `CLASS IS (ITrait)` in `SELECT TYPE` (revising TD-11) | **A runtime conformance lookup, finding the conformances declared with the dynamic type even where its module is not used, and retroactive ones where visible**; a match only on the conformances visible at the `SELECT TYPE` statement; keep rejecting trait names in guards | TD-11 |
 | 2026-10-18 | Precedence of `SELECT TYPE` guards naming traits | **Concrete guards first; then a child trait over its ancestors, and the first in source order between unrelated traits**; reject guards naming unrelated traits; a runtime error when guards naming unrelated traits both match | TD-11 |
+| 2026-10-18 | How a trait object formed from a polymorphic `class(T)` object selects its methods | **Dispatch through the declared type's bindings, so that overrides of the dynamic type run**; call the declared type's implementations statically; keep the restriction | TD-38 |
+| 2026-10-18 | Which trait objects can be formed from polymorphic objects | **Borrowed views, pointers and owners**; views and pointers; views only | TD-38 |
 
 ### Instructions given without an option form
 
@@ -1093,6 +1095,62 @@ specification action, that is, what the paper should say.
   object, `intent(out)` and no INTENT in particular; what calls through trait
   objects and constrained type parameters may do; and which uses of `itself`
   prevent trait objects (OQ-04).
+
+#### TD-38: Trait objects formed from polymorphic objects
+
+- **Status:** Approved semantic decision (2026-10-18).
+- **What the paper says.** Calls through a trait object use dynamic binding,
+  "resolved by the run-time system of the language (e.g. through a virtual
+  method table)", and trait objects are declared like present `CLASS` objects
+  (`sect:trait_objects`, lines 1607-1650). An abstract type may pass the
+  obligations of the traits it adopts to its extensions (lines 1585-1605).
+- **Why it is not tight.** The paper forms trait objects only from objects of
+  known concrete types. It does not say whether a `class(T)` object, such as
+  the passed object of a type-bound procedure or a `CLASS IS` associate name,
+  can form a trait object of a trait that `T` conforms to, and if so whether
+  the trait object's methods are those of the declared type `T` or of the
+  dynamic type, which may override them, and which type `SELECT TYPE` then
+  sees. The prototype rejected such objects.
+- **Options presented (2026-10-18).** How the methods are selected: dispatch
+  through the declared type's ordinary type-bound bindings, so that an
+  override in the dynamic type runs (chosen); call the declared type's
+  implementations statically; or keep the restriction. Which forms are
+  supported: borrowed views, pointer association and owners (chosen); views and
+  pointers; or views only.
+- **Choice.** Dispatch through the bindings, for views, pointers and owners.
+- **Consequences.**
+  - A `class(T)` object forms a trait object of `ITrait` when its declared type
+    `T` conforms to `ITrait`: nominally through `implements`, also when `T` is
+    abstract or inherits the adoption from an ancestor, or through a visible
+    retroactive conformance under the rules of TD-07 and TD-08. A type that
+    does not conform is rejected even if some of its extensions do; `SELECT
+    TYPE` selects such an extension first. `class(*)` objects are rejected.
+  - Each method of the trait object calls `T`'s type-bound binding of the
+    message through ordinary dynamic dispatch, so an override in the dynamic
+    type runs. A binding of a retroactive conformance that is not that
+    type-bound procedure cannot be overridden: it calls the bound procedure.
+    The results are those of the equivalent program in which the trait is an
+    abstract type that `T` extends.
+  - The trait object keeps the payload's dynamic type: `SELECT TYPE` on it
+    selects the dynamic type, and an owner copies, finalizes and deallocates
+    the whole object of the dynamic type, with its extension components, as
+    ordinary polymorphic `ALLOCATE(SOURCE=)` and intrinsic assignment do.
+  - Views and pointers designate the original object, so a message whose
+    receiver is `intent(inout)` modifies it; definability follows the existing
+    rules of TD-35 and TD-36.
+- **Implementation status.** Implemented for scalar `intent(in)` and
+  `intent(inout)` view dummies (including the passed object, `CLASS IS`
+  associate names, components and array elements, and forwarding), for
+  pointer association with a target or pointer, and for `ALLOCATE(SOURCE=)`
+  and intrinsic assignment to owners, also under separate compilation.
+  Temporary limits, diagnosed as not implemented: combinations
+  (`class(A + B)`) formed from a polymorphic object, `MOLD=` from one, and
+  traits whose runtime contract has generic methods.
+- **Specification action.** State that a trait object can be formed from a
+  polymorphic object whose declared type conforms to the trait, that its
+  methods use the dynamic type's bindings and that it keeps the dynamic type,
+  and how this relates to bindings of retroactive conformances that are not
+  type-bound procedures.
 
 ### D. Generic procedures, methods and type sets
 

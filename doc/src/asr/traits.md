@@ -1676,7 +1676,9 @@ implemented yet.
 ## Borrowed runtime dispatch
 
 A scalar `class(IValue), intent(in)` dummy borrows an exact nonpolymorphic
-concrete actual with visible nominal conformance:
+concrete actual with visible nominal conformance, or a polymorphic `class(T)`
+actual whose declared type conforms (see "Trait objects formed from
+polymorphic objects" below):
 
 ```fortran
 function observe(object) result(value)
@@ -1783,8 +1785,8 @@ view dummy accept a view whose contract implies its own, or a nonpolymorphic
 derived value whose visible implementations provide every required trait,
 the same nominal evidence its association then selects. A reference that more
 than one specific accepts in that second tier is diagnosed as ambiguous.
-Trait arrays, aggregate method results, unrestricted generic methods, and adoption from unknown
-polymorphic sources remain unsupported. A plain nondummy trait local is
+Trait arrays, aggregate method results and unrestricted generic methods
+remain unsupported. A plain nondummy trait local is
 invalid, not an implicitly owning box. Concrete SELECT TYPE inspection, described
 below, tests concrete identity and real implementation inheritance; a
 `CLASS IS (ITrait)` guard queries the conformance of the dynamic type at run
@@ -2087,8 +2089,10 @@ deallocate(object, copy)
 ```
 
 `SOURCE=` and intrinsic assignment accept exact nonpolymorphic concrete derived
-values with visible nominal conformance, or an already formed view/owner of the
-same contract. Ordinary concrete constructors and concrete function results use
+values with visible nominal conformance, polymorphic `class(T)` objects whose
+declared type conforms, which are copied with their dynamic type (see "Trait
+objects formed from polymorphic objects"), or an already formed view/owner of
+the same contract. Ordinary concrete constructors and concrete function results use
 the existing result-storage/lifetime machinery. `MOLD=` selects the concrete
 type and witness but **does not copy values**; typed allocation likewise applies
 ordinary default initialization. `allocated` and explicit deallocation observe
@@ -2720,6 +2724,103 @@ The GFortran oracles `_01_oracle` to `_03_oracle` express the subset that
 single inheritance can, with abstract parent types in place of traits, and
 `continue_compilation_traits_01` and `_02` check the diagnostics.
 
+## Trait objects formed from polymorphic objects
+
+A polymorphic `class(T)` object forms a trait object of `ITrait` when its
+declared type `T` conforms to `ITrait` (TD-38): nominally through `implements`,
+also when `T` is abstract or inherits the adoption from an ancestor, or through
+a visible retroactive conformance. Such objects are the passed object of a
+type-bound procedure, `class(T)` dummies, allocatable and pointer variables,
+`CLASS IS` associate names, and components and array elements of these kinds:
+
+```fortran
+type, implements(IStep) :: Euler
+    real(8) :: h = 0.5d0
+contains
+    procedure :: step => euler_step
+    procedure :: run => euler_run
+end type
+type, extends(Euler) :: TracedEuler
+contains
+    procedure :: step => traced_step
+end type
+...
+subroutine euler_run(self, y)
+    class(Euler), intent(inout) :: self
+    real(8), intent(inout) :: y
+    call advance(self, y)    ! advance takes class(IStep), intent(inout)
+end subroutine
+```
+
+The trait object keeps the payload's dynamic type. Each of its methods calls
+`T`'s type-bound binding of the message through ordinary dynamic dispatch, so
+`call t%run(y)` on a `TracedEuler` runs `traced_step` through the
+`class(IStep)` view, and `SELECT TYPE` on the view selects `TracedEuler`. The
+results are those of the equivalent program in which `IStep` is an abstract
+type that `Euler` extends. A binding of a retroactive conformance that is not
+`T`'s type-bound procedure of the message's name, such as a plain procedure
+named in an `implements` block, cannot be overridden and calls that procedure.
+An abstract `T` dispatches through its deferred bindings. A type that does not
+conform is rejected even if some of its extensions do (select such an
+extension with `SELECT TYPE` first), as are `class(*)` objects. A sealed type
+has no extensions, so its class objects form trait objects with its ordinary
+witness.
+
+All three forms are supported:
+
+- A borrowed `intent(in)` or `intent(inout)` view designates the original
+  object, with the definability rules of the other views: a message whose
+  receiver is `intent(inout)` modifies the original object.
+- `p => e` associates a `class(ITrait), pointer` with a `class(T)` target or
+  pointer, which it designates with its dynamic type until it is reassociated.
+- `allocate(o, source=e)` and intrinsic assignment `o = e` to a
+  `class(ITrait), allocatable` owner copy the whole object of the dynamic type,
+  including the components of its extensions, into independent storage, which
+  is later finalized and deallocated as an object of that type, as ordinary
+  polymorphic `ALLOCATE(SOURCE=)` and assignment are. `MOLD=` from a
+  polymorphic object is diagnosed as not implemented.
+
+Combinations (`class(A + B)`) formed from a polymorphic object and traits
+whose runtime contract has generic methods are diagnosed as not implemented.
+Because the methods are found through the dynamic type's ordinary type-bound
+procedure table, a view formed in a module compiled before an extension of
+`T` runs the extension's overrides.
+
+A borrowed view of a class object is a `TraitPack` of the class designator
+with a *polymorphic witness* of `T`, whose `trait_lifecycle` is polymorphic. The
+unit forming the view owns this witness, as it owns the witness of a
+combination, so neither the contract nor the provider of `T` needs to know
+about it. Its adapters recover the receiver with `TraitReceiver` as an ordinary
+`class(T)` object of the payload's dynamic type and call the binding with that
+object as the passed object and dispatch object of an ordinary type-bound call.
+LLVM stores the class object's own vptr and data address in the view. The
+lifecycle of a polymorphic witness takes the payload's vptr and copies,
+assigns, finalizes and releases through the dynamic type's vtable, as ordinary
+polymorphic allocation does. The verifier admits a class payload only with a
+polymorphic witness of exactly its declared type, or with the ordinary witness
+of a sealed type; it checks that the declared type conforms and that each
+adapter dispatches through the declared type's binding of its slot's message
+or calls the procedure that the conformance binds, and it rejects polymorphic
+witnesses for concrete owning copies and typed allocation.
+
+`traits_runtime_polymorphic_source_01` forms views from the passed object of a
+type-bound procedure, `class(Euler)` dummies, allocatable variables, `CLASS IS`
+associate names of an owner and of an ordinary class object, allocatable and
+pointer components, array elements and an abstract declared type, and checks
+overrides, mutation through `intent(inout)` views, `SELECT TYPE`, and a
+retroactive binding that is not type-bound. `_02` associates pointers with
+`class(Euler)` targets and pointers and copies such objects into owners,
+checking copy independence, the extension's allocatable component and exact
+FINAL counts of both levels of the dynamic type. `_03` dispatches a
+receiverless (NOPASS) message, a named non-first PASS receiver and a
+character result to overrides.
+`traits_runtime_polymorphic_source_separate_01` compiles the contract, a
+consumer that uses only the contract, the provider type and its extension in
+another module separately, in that order. Each has a standard inheritance
+oracle (`_oracle`); the oracle of `_02` is registered for GFortran only, since
+LFortran finalizes an unallocated `class(T), allocatable` variable in ordinary
+intrinsic assignment.
+
 ## Compiler representation
 
 Three ASR symbol kinds preserve the semantic distinction from templates:
@@ -2864,6 +2965,9 @@ Explicit anonymous provenance records a normalized, parent-only conjunction;
 neither equality nor weakening recognizes generated symbol names.
 `TraitWitness` records the selected conformance, typed adapters, liveness
 dependencies, and a `trait_lifecycle` reference to the concrete nominal type.
+A polymorphic `trait_lifecycle` instead names the declared type of class
+objects, whose dynamic type is found through the payload's type metadata
+(see "Trait objects formed from polymorphic objects").
 Concrete conjunction construction instead records original component witnesses
 and reuses the existing binding-agreement and adapter machinery.
 `TraitObjectType`, `TraitPack`, `TraitReceiver`,
