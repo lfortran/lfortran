@@ -414,6 +414,98 @@ public:
         }
     }
 
+    // Visits the declaration statements of `x`, a function or subroutine
+    // named `sym_name`; the COMMON and EQUIVALENCE statements come last. A
+    // procedure declaration statement whose interface is `sym_name` is left
+    // in `procedure_decl_indices`, and one whose interface is declared later,
+    // by an interface body or one of the internal procedures `contained`, in
+    // `later_interface_decls`.
+    template <typename T>
+    void visit_specification_declarations(const T &x,
+            const std::string &sym_name,
+            const std::set<std::string> &deferred_ifaces,
+            ContainedProcedureScope *contained,
+            Vec<size_t> &procedure_decl_indices,
+            Vec<AST::decl_stmt_t*> &later_interface_decls) {
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (is_equivalence_declaration(x.m_items[i])) continue;
+            if (is_common_declaration(x.m_items[i])) continue;
+            // The deferred constants and procedures belong to the Template,
+            // where they were declared above; declaring them here as well would
+            // shadow them with a symbol that instantiation never substitutes.
+            AST::decl_stmt_t *item = x.m_items[i];
+            if (x.n_temp_args > 0) {
+                item = deferred_argument_part(al, item, x.m_temp_args,
+                    x.n_temp_args, deferred_ifaces, false);
+                if (!item) continue;
+            }
+            is_Function = true;
+            if(x.m_items[i]->type == AST::decl_stmtType::Declaration) {
+                AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_items[i];
+                if(decl.m_vartype) {
+                    AST::AttrType_t* type = nullptr;
+                    if (AST::is_a<AST::AttrType_t>(*decl.m_vartype)) {
+                        type = AST::down_cast<AST::AttrType_t>(decl.m_vartype);
+                    } else if  (AST::is_a<AST::AttrTypeList_t>(*decl.m_vartype)){
+                        type = AST::down_cast<AST::AttrType_t>(
+                                AST::down_cast<AST::decl_attribute_t>(
+                                    AST::make_AttrType_t(
+                                    al, decl.m_vartype->base.loc,
+                                    AST::decl_typeType::TypeType,
+                                    nullptr, 0, decl.m_vartype,
+                                    nullptr, AST::symbolType::None)));
+
+                    }
+
+                    LCOMPILERS_ASSERT(type);
+                    if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
+                           type->m_name && to_lower(type->m_name) == sym_name) {
+                        check_self_dependent_interface(decl, sym_name);
+                        procedure_decl_indices.push_back(al, i);
+                        continue;
+                    }
+                }
+            }
+            if (has_interface_declared_later(x.m_items, i, x.n_items, contained)) {
+                later_interface_decls.push_back(al, item);
+                is_Function = false;
+                continue;
+            }
+            if (!AST::is_a<AST::Require_t>(*x.m_items[i])) {
+                try {
+                    visit_decl_stmt(*item);
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                }
+            }
+            is_Function = false;
+        }
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (!is_common_declaration(x.m_items[i])) continue;
+            is_Function = true;
+            try {
+                visit_decl_stmt(*x.m_items[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+            is_Function = false;
+        }
+        complete_common_blocks(x.m_items, x.n_items);
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            if (!is_equivalence_declaration(x.m_items[i])) continue;
+            is_Function = true;
+            try {
+                visit_decl_stmt(*x.m_items[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+            is_Function = false;
+        }
+    }
+
     // A module procedure, or a procedure of an interface body in the
     // module's specification part, is not defined until its turn comes, so
     // until then its name must not be taken to be an intrinsic procedure.
@@ -2289,85 +2381,8 @@ public:
         // here, while an array bound or a character length of this
         // specification part may still name one of those objects.
         CommonBlockObjectsScope common_block_objects(*this, x.m_items, x.n_items);
-        for (size_t i=0; i<x.n_items; i++) {
-            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            if (is_equivalence_declaration(x.m_items[i])) continue;
-            if (is_common_declaration(x.m_items[i])) continue;
-            // The deferred constants and procedures belong to the Template,
-            // where they were declared above; declaring them here as well would
-            // shadow them with a symbol that instantiation never substitutes.
-            AST::decl_stmt_t *item = x.m_items[i];
-            if (x.n_temp_args > 0) {
-                item = deferred_argument_part(al, item, x.m_temp_args,
-                    x.n_temp_args, deferred_ifaces, false);
-                if (!item) continue;
-            }
-            is_Function = true;
-            if(x.m_items[i]->type == AST::decl_stmtType::Declaration) {
-                AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_items[i];
-                if(decl.m_vartype) {
-                    AST::AttrType_t* type = nullptr;
-                    if (AST::is_a<AST::AttrType_t>(*decl.m_vartype)) {
-                        type = AST::down_cast<AST::AttrType_t>(decl.m_vartype);
-                    } else if  (AST::is_a<AST::AttrTypeList_t>(*decl.m_vartype)){
-                        type = AST::down_cast<AST::AttrType_t>(
-                                AST::down_cast<AST::decl_attribute_t>(
-                                    AST::make_AttrType_t(
-                                    al, decl.m_vartype->base.loc, 
-                                    AST::decl_typeType::TypeType,
-                                    nullptr, 0, decl.m_vartype, 
-                                    nullptr, AST::symbolType::None)));
-                        
-                    } 
-
-                    LCOMPILERS_ASSERT(type);
-
-                    if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
-                           type->m_name && to_lower(type->m_name) == sym_name) {
-                        check_self_dependent_interface(decl, sym_name);
-                        procedure_decl_indices.push_back(al, i);
-                        continue;
-                    }
-                }
-            }
-            if (has_interface_declared_later(x.m_items, i, x.n_items,
-                    &contained_procedures)) {
-                later_interface_decls.push_back(al, item);
-                is_Function = false;
-                continue;
-            }
-            if (!AST::is_a<AST::Require_t>(*x.m_items[i])) {
-                try {
-                    visit_decl_stmt(*item);
-                } catch (SemanticAbort &e) {
-                    if ( !compiler_options.continue_compilation ) throw e;
-                }
-            }
-            is_Function = false;
-        }
-        for (size_t i=0; i<x.n_items; i++) {
-            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            if (!is_common_declaration(x.m_items[i])) continue;
-            is_Function = true;
-            try {
-                visit_decl_stmt(*x.m_items[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-            }
-            is_Function = false;
-        }
-        complete_common_blocks(x.m_items, x.n_items);
-        for (size_t i=0; i<x.n_items; i++) {
-            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            if (!is_equivalence_declaration(x.m_items[i])) continue;
-            is_Function = true;
-            try {
-                visit_decl_stmt(*x.m_items[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-            }
-            is_Function = false;
-        }
+        visit_specification_declarations(x, sym_name, deferred_ifaces,
+            &contained_procedures, procedure_decl_indices, later_interface_decls);
         process_simd_variables();
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
@@ -2939,86 +2954,11 @@ public:
         // here, while an array bound or a character length of this
         // specification part may still name one of those objects.
         CommonBlockObjectsScope common_block_objects(*this, x.m_items, x.n_items);
-        for (size_t i=0; i<x.n_items; i++) {
-            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            if (is_equivalence_declaration(x.m_items[i])) continue;
-            if (is_common_declaration(x.m_items[i])) continue;
-            // The deferred constants and procedures belong to the Template,
-            // where they were declared above; declaring them here as well would
-            // shadow them with a symbol that instantiation never substitutes.
-            AST::decl_stmt_t *item = x.m_items[i];
-            if (x.n_temp_args > 0) {
-                item = deferred_argument_part(al, item, x.m_temp_args,
-                    x.n_temp_args, deferred_ifaces, false);
-                if (!item) continue;
-            }
-            is_Function = true;
-            if(x.m_items[i]->type == AST::decl_stmtType::Declaration) {
-                AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_items[i];
-                if(decl.m_vartype) {
-                    AST::AttrType_t* type = nullptr;
-                    if (AST::is_a<AST::AttrType_t>(*decl.m_vartype)) {
-                        type = AST::down_cast<AST::AttrType_t>(decl.m_vartype);
-                    } else if  (AST::is_a<AST::AttrTypeList_t>(*decl.m_vartype)){
-                        type = AST::down_cast<AST::AttrType_t>(
-                                AST::down_cast<AST::decl_attribute_t>(
-                                    AST::make_AttrType_t(
-                                    al, decl.m_vartype->base.loc, 
-                                    AST::decl_typeType::TypeType,
-                                    nullptr, 0, decl.m_vartype, 
-                                    nullptr, AST::symbolType::None)));
-                        
-                    } 
-
-                    LCOMPILERS_ASSERT(type);
-                    if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
-                           type->m_name && to_lower(type->m_name) == sym_name) {
-                        check_self_dependent_interface(decl, sym_name);
-                        procedure_decl_indices.push_back(al, i);
-                        continue;
-                    }
-                }
-            }
-            // The internal procedures are visited only after the dummy
-            // arguments are complete, so here only a later interface body
-            // can be waited for.
-            if (has_interface_declared_later(x.m_items, i, x.n_items, nullptr)) {
-                later_interface_decls.push_back(al, item);
-                is_Function = false;
-                continue;
-            }
-            if (!AST::is_a<AST::Require_t>(*x.m_items[i])) {
-                try {
-                    visit_decl_stmt(*item);
-                } catch (SemanticAbort &e) {
-                    if ( !compiler_options.continue_compilation ) throw e;
-                }
-            }
-            is_Function = false;
-        }
-        for (size_t i=0; i<x.n_items; i++) {
-            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            if (!is_common_declaration(x.m_items[i])) continue;
-            is_Function = true;
-            try {
-                visit_decl_stmt(*x.m_items[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-            }
-            is_Function = false;
-        }
-        complete_common_blocks(x.m_items, x.n_items);
-        for (size_t i=0; i<x.n_items; i++) {
-            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-            if (!is_equivalence_declaration(x.m_items[i])) continue;
-            is_Function = true;
-            try {
-                visit_decl_stmt(*x.m_items[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-            }
-            is_Function = false;
-        }
+        // The internal procedures are visited only after the dummy
+        // arguments are complete, so here only a later interface body
+        // can be waited for.
+        visit_specification_declarations(x, sym_name, deferred_ifaces, nullptr,
+            procedure_decl_indices, later_interface_decls);
         visit_later_interface_decls(later_interface_decls);
         process_simd_variables();
 
