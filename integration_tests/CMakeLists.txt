@@ -2119,6 +2119,10 @@ RUN(NAME parameter_27 LABELS gfortran llvm)
 # that element (F2018 15.5.2.11 p2). Not gfortran: it passes the element in a
 # one-element temporary, so the callee reads past it (a gfortran bug).
 RUN(NAME parameter_28 LABELS llvm EXTRAFILES parameter_28_ext.f90 EXTRA_ARGS --implicit-interface)
+# The same for an explicit-shape array dummy of a type-bound procedure after
+# the passed object. Not gfortran: it treats the element of the named constant
+# as a scalar constant and rejects the call (rank mismatch).
+RUN(NAME parameter_29 LABELS llvm EXTRA_ARGS --legacy-array-sections)
 
 RUN(NAME fortuno_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 

@@ -16,9 +16,10 @@
 namespace LCompilers {
 
 // True if the actual argument `arg` is an array element designator or an
-// array element substring designator. Such an actual argument represents the
-// element sequence that starts at that element (F2018 15.5.2.11 p2), so it
-// cannot be replaced by the value of the element.
+// array element substring designator. Such an actual argument may represent
+// the element sequence that starts at that element (F2018 15.5.2.11 p2), so
+// it is not replaced by the value of the element. Keeping it is always
+// correct, and folding it would gain nothing for a dummy passed by reference.
 static bool is_array_element_designator(ASR::expr_t* arg) {
     if (ASR::is_a<ASR::StringSection_t>(*arg)) {
         arg = ASR::down_cast<ASR::StringSection_t>(arg)->m_arg;
@@ -26,76 +27,6 @@ static bool is_array_element_designator(ASR::expr_t* arg) {
         arg = ASR::down_cast<ASR::StringItem_t>(arg)->m_arg;
     }
     return ASR::is_a<ASR::ArrayItem_t>(*arg);
-}
-
-// True if `sym` is a procedure with an implicit interface: nothing is known
-// about its dummy arguments.
-static bool has_implicit_interface(ASR::symbol_t* sym) {
-    sym = ASRUtils::symbol_get_past_external(sym);
-    return ASRUtils::is_bare_implicit_interface(sym) ||
-        (ASR::is_a<ASR::Variable_t>(*sym) && ASRUtils::is_opaque_procedure_type(
-            ASR::down_cast<ASR::Variable_t>(sym)->m_type));
-}
-
-// Collects the procedure pointers associated with a procedure with an
-// implicit interface, `Associate(p, FunctionPointerCast(f, iface))`. A
-// reference to `f` is a call through such a `p`, whose interface `iface` is
-// built from the actual arguments of the call, so the dummy arguments of the
-// called procedure are unknown.
-class ImplicitInterfacePointerCollector:
-        public ASR::BaseWalkVisitor<ImplicitInterfacePointerCollector> {
-    public:
-    std::unordered_set<ASR::symbol_t*>& pointers;
-
-    ImplicitInterfacePointerCollector(
-        std::unordered_set<ASR::symbol_t*>& pointers_): pointers(pointers_) {}
-
-    void visit_Associate(const ASR::Associate_t& x) {
-        if (!ASR::is_a<ASR::Var_t>(*x.m_target) ||
-                !ASR::is_a<ASR::FunctionPointerCast_t>(*x.m_value)) {
-            return;
-        }
-        ASR::expr_t* source =
-            ASR::down_cast<ASR::FunctionPointerCast_t>(x.m_value)->m_arg;
-        if (ASR::is_a<ASR::Var_t>(*source) &&
-                has_implicit_interface(ASR::down_cast<ASR::Var_t>(source)->m_v)) {
-            pointers.insert(ASR::down_cast<ASR::Var_t>(x.m_target)->m_v);
-        }
-    }
-};
-
-// True if the dummy argument associated with the actual argument `i` of a
-// call to `name` may be an array, in which case an array element designator
-// actual argument is sequence associated with it (F2018 15.5.2.4 p14): the
-// called procedure has an implicit interface, or the dummy is a non-VALUE
-// array.
-static bool dummy_may_be_array(ASR::symbol_t* name, ASR::expr_t* dt, size_t i,
-        const std::unordered_set<ASR::symbol_t*>& implicit_interface_pointers) {
-    ASR::symbol_t* callee = ASRUtils::symbol_get_past_external(name);
-    if (has_implicit_interface(callee) ||
-            implicit_interface_pointers.count(callee) ||
-            !(ASR::is_a<ASR::Function_t>(*callee) ||
-              ASR::is_a<ASR::Variable_t>(*callee) ||
-              ASR::is_a<ASR::StructMethodDeclaration_t>(*callee))) {
-        return true;
-    }
-    ASR::Function_t* fn = ASRUtils::get_function(callee);
-    if (fn == nullptr) {
-        return true;
-    }
-    if (dt && !ASRUtils::get_class_proc_nopass_val(callee) &&
-            i >= ASRUtils::get_pass_arg_index(callee)) {
-        i++;
-    }
-    if (i >= fn->n_args || !ASR::is_a<ASR::Var_t>(*fn->m_args[i])) {
-        return true;
-    }
-    ASR::symbol_t* dummy = ASR::down_cast<ASR::Var_t>(fn->m_args[i])->m_v;
-    if (!ASR::is_a<ASR::Variable_t>(*dummy)) {
-        return true;
-    }
-    ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(dummy);
-    return !v->m_value_attr && ASRUtils::is_array(v->m_type);
 }
 
 class CompileTimeValueReplacer: public ASR::BaseExprReplacer<CompileTimeValueReplacer> {
@@ -108,32 +39,24 @@ class CompileTimeValueReplacer: public ASR::BaseExprReplacer<CompileTimeValueRep
 
     bool inside_prohibited_expression;
 
-    // Actual arguments that are array element designators associated with
-    // a dummy that may be an array. They are kept as they are.
+    // Actual arguments of procedure calls that are array element
+    // designators. They are kept as they are.
     std::unordered_set<ASR::expr_t*> element_sequence_args;
 
-    const std::unordered_set<ASR::symbol_t*>& implicit_interface_pointers;
+    CompileTimeValueReplacer(Allocator& al_):
+        al(al_), inside_prohibited_expression(false) {}
 
-    CompileTimeValueReplacer(Allocator& al_,
-        const std::unordered_set<ASR::symbol_t*>& implicit_interface_pointers_):
-        al(al_), inside_prohibited_expression(false),
-        implicit_interface_pointers(implicit_interface_pointers_) {}
-
-    void mark_element_sequence_args(ASR::symbol_t* name,
-            ASR::call_arg_t* args, size_t n_args, ASR::expr_t* dt) {
+    void mark_element_sequence_args(ASR::call_arg_t* args, size_t n_args) {
         for (size_t i = 0; i < n_args; i++) {
             ASR::expr_t* arg = args[i].m_value;
-            if (arg && is_array_element_designator(arg) &&
-                    dummy_may_be_array(name, dt, i,
-                        implicit_interface_pointers)) {
+            if (arg && is_array_element_designator(arg)) {
                 element_sequence_args.insert(arg);
             }
         }
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
-        mark_element_sequence_args(x->m_name, x->m_args, x->n_args,
-            x->m_dt);
+        mark_element_sequence_args(x->m_args, x->n_args);
         ASR::BaseExprReplacer<CompileTimeValueReplacer>::replace_FunctionCall(x);
     }
 
@@ -210,9 +133,7 @@ class ExprVisitor: public ASR::CallReplacerOnExpressionsVisitor<ExprVisitor> {
         replacer.replace_expr(*current_expr);
     }
 
-    ExprVisitor(Allocator& al_,
-        const std::unordered_set<ASR::symbol_t*>& implicit_interface_pointers):
-        replacer(al_, implicit_interface_pointers)
+    ExprVisitor(Allocator& al_): replacer(al_)
     {}
 
     template <typename ExprType>
@@ -237,14 +158,12 @@ class ExprVisitor: public ASR::CallReplacerOnExpressionsVisitor<ExprVisitor> {
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
-        replacer.mark_element_sequence_args(x.m_name, x.m_args, x.n_args,
-            x.m_dt);
+        replacer.mark_element_sequence_args(x.m_args, x.n_args);
         ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_SubroutineCall(x);
     }
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
-        replacer.mark_element_sequence_args(x.m_name, x.m_args, x.n_args,
-            x.m_dt);
+        replacer.mark_element_sequence_args(x.m_args, x.n_args);
         ASR::CallReplacerOnExpressionsVisitor<ExprVisitor>::visit_FunctionCall(x);
     }
 
@@ -373,10 +292,7 @@ class ExprVisitor: public ASR::CallReplacerOnExpressionsVisitor<ExprVisitor> {
 void pass_replace_with_compile_time_values(
     Allocator &al, ASR::TranslationUnit_t &unit,
     const LCompilers::PassOptions& /*pass_options*/) {
-    std::unordered_set<ASR::symbol_t*> implicit_interface_pointers;
-    ImplicitInterfacePointerCollector c(implicit_interface_pointers);
-    c.visit_TranslationUnit(unit);
-    ExprVisitor v(al, implicit_interface_pointers);
+    ExprVisitor v(al);
     // v.call_replacer_on_value = false;
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);
