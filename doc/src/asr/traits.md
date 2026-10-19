@@ -2937,6 +2937,12 @@ All three forms are supported:
   polymorphic `ALLOCATE(SOURCE=)` and assignment are. `MOLD=` from a
   polymorphic object is diagnosed as not implemented.
 
+Generic resolution accepts such an object for a view dummy in its conformance
+tier, as it accepts a value of a conforming type, so a generic procedure, or a
+generic named like a type that is then not its structure constructor, calls a
+specific taking `class(ITrait)`. A specific taking `class(T)` itself is an
+exact match and is preferred. `class(*)` objects never match.
+
 Combinations (`class(A + B)`) formed from a polymorphic object and traits
 whose runtime contract has generic methods are diagnosed as not implemented.
 Because the methods are found through the dynamic type's ordinary type-bound
@@ -2970,7 +2976,9 @@ retroactive binding that is not type-bound. `_02` associates pointers with
 checking copy independence, the extension's allocatable component and exact
 FINAL counts of both levels of the dynamic type. `_03` dispatches a
 receiverless (NOPASS) message, a named non-first PASS receiver and a
-character result to overrides.
+character result to overrides. `_04` resolves function and subroutine
+generics, an `intent(inout)` view and a generic named like a type for class
+objects.
 `traits_runtime_polymorphic_source_separate_01` compiles the contract, a
 consumer that uses only the contract, the provider type and its extension in
 another module separately, in that order. Each has a standard inheritance

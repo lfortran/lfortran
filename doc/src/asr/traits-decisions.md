@@ -1145,9 +1145,12 @@ specification action, that is, what the paper should say.
   associate names, components and array elements, and forwarding), for
   pointer association with a target or pointer, and for `ALLOCATE(SOURCE=)`
   and intrinsic assignment to owners, also under separate compilation.
-  Temporary limits, diagnosed as not implemented: combinations
-  (`class(A + B)`) formed from a polymorphic object, `MOLD=` from one, and
-  traits whose runtime contract has generic methods.
+  Generic resolution selects a specific with such a view dummy for a
+  `class(T)` actual in its conformance tier (since 2026-10-19; before, only
+  nonpolymorphic values did, so a generic named like a type fell back to the
+  structure constructor). Temporary limits, diagnosed as not implemented:
+  combinations (`class(A + B)`) formed from a polymorphic object, `MOLD=` from
+  one, and traits whose runtime contract has generic methods.
 - **Specification action.** State that a trait object can be formed from a
   polymorphic object whose declared type conforms to the trait, that its
   methods use the dynamic type's bindings and that it keeps the dynamic type,

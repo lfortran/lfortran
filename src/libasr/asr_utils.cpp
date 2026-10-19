@@ -4120,14 +4120,15 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                         !ASRUtils::is_allocatable(arg2) && !ASRUtils::is_pointer(arg2) &&
                         !ASRUtils::is_array(arg2) && !ASRUtils::is_array(arg1)) {
                     // The conformance tier: a borrowed view accepts views whose
-                    // contract implies its own, and nonpolymorphic derived values
-                    // that visibly conform. Exact matching compares contracts below.
+                    // contract implies its own, and derived values, or class(T)
+                    // objects, whose (declared) type visibly conforms. Exact
+                    // matching compares contracts below.
                     ASR::ttype_t *actual = ASRUtils::extract_type(arg1);
                     if (ASR::is_a<ASR::TraitObjectType_t>(*actual)) {
                         if (!trait_contract_implies(*trait_runtime_contract(actual),
                                 *trait_runtime_contract(arg2_ext))) return false;
                     } else if (!ASR::is_a<ASR::StructType_t>(*actual) ||
-                            ASRUtils::is_class_type(actual) ||
+                            ASRUtils::is_unlimited_polymorphic_type(actual) ||
                             !conforms(args[i].m_value, arg2_ext)) {
                         return false;
                     }
