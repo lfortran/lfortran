@@ -1,0 +1,361 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            json_loc_module_m:
+                (Module
+                    (SymbolTable
+                        4
+                        {
+                            ik:
+                                (Variable
+                                    4
+                                    ik
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        8
+                                        [1, 2]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                            Global
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        8
+                                        [1, 2]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                            Global
+                                        )
+                                        ColMajor
+                                    )
+                                    Parameter
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            s:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            i:
+                                                (Variable
+                                                    5
+                                                    i
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                ),
+                                            x:
+                                                (Variable
+                                                    5
+                                                    x
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                                        PointerArray
+                                                        Global
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    s
+                                    (FunctionType
+                                        [(Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            PointerArray
+                                            Global
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    [t]
+                                    [(Var 5 x)]
+                                    [(DoLoop
+                                        ()
+                                        ((Var 5 i)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        ())
+                                        [(Assignment
+                                            (ArrayItem
+                                                (Var 5 x)
+                                                [(()
+                                                (Var 5 i)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                                .false.
+                                            )
+                                            (ArrayItem
+                                                (Var 4 ik)
+                                                [(()
+                                                (Var 5 i)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                                .false.
+                                            )
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                        )]
+                                        []
+                                    )
+                                    (SubroutineCall
+                                        4 t
+                                        ()
+                                        [((ArrayItem
+                                            (Var 5 x)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            ())]
+                                            (Integer 4)
+                                            ColMajor
+                                            ()
+                                            .true.
+                                        ))]
+                                        ()
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                ),
+                            t:
+                                (Function
+                                    (SymbolTable
+                                        6
+                                        {
+                                            y:
+                                                (Variable
+                                                    6
+                                                    y
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    NotMethod
+                                                    ()
+                                                    []
+                                                    ()
+                                                )
+                                        })
+                                    t
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                        Host
+                                    )
+                                    []
+                                    [(Var 6 y)]
+                                    []
+                                    ()
+                                    Public
+                                    .true.
+                                    .true.
+                                    ()
+                                )
+                        })
+                    json_loc_module_m
+                    ()
+                    []
+                    .true.
+                    .false.
+                    .false.
+                    ()
+                ),
+            json_loc_use_module:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            a:
+                                (Variable
+                                    2
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                        Global
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
+                            ik:
+                                (ExternalSymbol
+                                    2
+                                    ik
+                                    4 ik
+                                    json_loc_module_m
+                                    []
+                                    ik
+                                    Public
+                                ),
+                            s:
+                                (ExternalSymbol
+                                    2
+                                    s
+                                    4 s
+                                    json_loc_module_m
+                                    []
+                                    s
+                                    Public
+                                )
+                        })
+                    json_loc_use_module
+                    [json_loc_module_m]
+                    [(Assignment
+                        (Var 2 a)
+                        (Var 2 ik)
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (SubroutineCall
+                        2 s
+                        ()
+                        [((ArrayPhysicalCast
+                            (Var 2 a)
+                            FixedSizeArray
+                            PointerArray
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                PointerArray
+                                Global
+                            )
+                            ()
+                        ))]
+                        ()
+                        .false.
+                    )]
+                    ()
+                )
+        })
+    []
+    ()
+)

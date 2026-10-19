@@ -4155,6 +4155,12 @@ options = "--fixed-form"
 ast_json = true
 
 [[test]]
+filename = "json_loc_use_module.f90"
+extrafiles = "json_loc_module.f90"
+asr = true
+asr_json = true
+
+[[test]]
 filename = "redeclaration1.f90"
 asr_implicit_typing = true
 
