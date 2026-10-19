@@ -268,3 +268,18 @@ void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
 long long lfortran_gpu_heap_size(void) {
     return lfortran_gpu_parse_heap_size();
 }
+
+void lfortran_gpu_metal_telemetry_snapshot(lfortran_gpu_ctx* ctx,
+    lfortran_gpu_metal_telemetry *out)
+{
+    (void)ctx;
+    if (!out) return;
+    memset(out, 0, sizeof(*out));
+}
+
+void lfortran_gpu_metal_telemetry_snapshot_sync(lfortran_gpu_ctx* ctx,
+    lfortran_gpu_metal_telemetry *out)
+{
+    if (ctx) lfortran_gpu_sync(ctx);
+    lfortran_gpu_metal_telemetry_snapshot(ctx, out);
+}

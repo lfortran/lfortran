@@ -3472,6 +3472,10 @@ filename = "errors/write_kind4_item_c.f90"
 c = true
 
 [[test]]
+filename = "errors/write_array_pointer_item_c.f90"
+c = true
+
+[[test]]
 filename = "errors/continue_compilation_1.f90"
 semantics_only_cc = true
 
@@ -4833,6 +4837,16 @@ asr = true
 options = "--gpu=metal --pass=gpu_offload --cumulative"
 
 [[test]]
+filename = "../integration_tests/gpu_kernel_source_12.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_13.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
 
@@ -5056,12 +5070,10 @@ asr_implicit_typing = true
 
 [[test]]
 filename = "errors/implicit_typing5.f90"
-asr = true
 asr_implicit_typing = true
 
 [[test]]
 filename = "errors/implicit_typing6.f90"
-asr = true
 asr_implicit_typing = true
 
 [[test]]
@@ -5337,6 +5349,10 @@ asr = true
 
 [[test]]
 filename = "errors/incorrect_allocate_for_array.f90"
+asr = true
+
+[[test]]
+filename = "errors/allocatable_generic_bounds_01.f90"
 asr = true
 
 [[test]]
@@ -6163,6 +6179,14 @@ filename = "errors/missing_include_01.f90"
 ast = true
 
 [[test]]
+filename = "errors/include_location_01.f90"
+asr = true
+
+[[test]]
+filename = "errors/include_location_02.f"
+ast = true
+
+[[test]]
 filename = "coarray_teams_01.f90"
 fortran = true
 pass = "coarray"
@@ -6669,5 +6693,22 @@ options = "--std=f23"
 # The rank-mismatch warning for an array passed to a scalar dummy.
 [[test]]
 filename = "../integration_tests/legacy_array_sections_26.f90"
+semantics_only_cc = true
+options = "--legacy-array-sections"
+
+[[test]]
+filename = "../integration_tests/real128_literal_02.f90"
+semantics_only_cc = true
+
+# An array element passed to an assumed-shape, allocatable or pointer dummy.
+[[test]]
+filename = "errors/legacy_array_sections_assumed_shape_01.f90"
+semantics_only_cc = true
+options = "--legacy-array-sections"
+
+# An element of a pointer, assumed-shape or polymorphic array passed to an
+# explicit-shape or assumed-size dummy.
+[[test]]
+filename = "errors/legacy_array_sections_pointer_element_01.f90"
 semantics_only_cc = true
 options = "--legacy-array-sections"

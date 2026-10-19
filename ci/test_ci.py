@@ -311,6 +311,70 @@ class RunnerTests(unittest.TestCase):
                             with self.assertRaises(SystemExit):
                                 tester.check_llvm_version("lfortran", 11)
 
+    def test_reference_update_removes_only_unwritten_references(self):
+        sys.path.insert(0, str(ROOT / "src/libasr"))
+        try:
+            from compiler_tester import tester
+        finally:
+            sys.path.pop(0)
+        backends = ("asr", "tokens")
+        written = {f"{b}-{t}.{ext}" for b in backends for t in ("a", "b")
+                   for ext in ("json", "stdout")}
+        fail = []
+
+        def single_test(test, update_reference, specific_backends,
+                        excluded_backends, **kwargs):
+            self.assertTrue(update_reference)
+            if fail:
+                raise tester.RunException("failed")
+            for b in backends:
+                if (specific_backends and b not in specific_backends) or \
+                        (excluded_backends and b in excluded_backends):
+                    continue
+                name = f"{b}-{test['filename']}"
+                jo = output / f"{name}.json"
+                jo.write_text("{}")
+                (output / f"{name}.stdout").write_text("")
+                tester.do_update_reference(
+                    str(jo), str(reference / jo.name),
+                    {"outfile": None, "stdout": f"{name}.stdout",
+                     "stderr": None})
+
+        cases = (([], written, False),
+                 (["-s"], written, False),
+                 ([], written | {"orphan.json"}, True),
+                 (["-t", "a"], written | {"orphan.json"}, False),
+                 (["-b", "tokens"], written | {"orphan.json"}, False),
+                 (["--exclude-test", "b"], written | {"orphan.json"}, False),
+                 (["--exclude-backend", "asr"], written | {"orphan.json"},
+                  False),
+                 (["--no-llvm"], written | {"orphan.json"}, False),
+                 (["--skip-run-with-dbg"], written | {"orphan.json"}, False))
+        for args, expected, failing in cases:
+            with self.subTest(args=args, failing=failing), \
+                    tempfile.TemporaryDirectory() as root:
+                root = Path(root)
+                reference = root / "tests/reference"
+                output = root / "output"
+                reference.mkdir(parents=True)
+                output.mkdir()
+                (root / "tests/tests.toml").write_text(
+                    '[[test]]\nfilename = "a"\nasr = true\ntokens = true\n\n'
+                    '[[test]]\nfilename = "b"\nasr = true\ntokens = true\n')
+                for name in written | {"orphan.json"}:
+                    (reference / name).write_text("old")
+                fail[:] = [True] if failing else []
+                with patch.object(tester, "ROOT_DIR", str(root)), \
+                        patch.object(tester, "REFERENCE_DIR", str(reference)), \
+                        patch.object(sys, "argv", ["run_tests.py", "-u"] + args):
+                    if failing:
+                        with self.assertRaises(tester.RunException):
+                            tester.tester_main("LFortran", single_test, True)
+                    else:
+                        tester.tester_main("LFortran", single_test, True)
+                self.assertEqual({p.name for p in reference.iterdir()},
+                                 expected)
+
     def test_application_catalog_has_no_quick_subset(self):
         source = (ROOT / "ci/test_third_party_codes.sh").read_text()
         self.assertNotIn("--quick", source)

@@ -612,8 +612,6 @@ public:
                     }
                     ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
                                                       array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
-                    // Logical ArrayConstant_t data is stored packed one byte per element (`sizeof(bool) == 1`)
-                    // regardless of Fortran kind, while m_n_data follows the Fortran kind size convention.
                     value = ASRUtils::EXPR(ASRUtils::make_ArrayConstant_t_util(al, value->base.loc,
                                             new_array, new_array_type, array->m_storage_format));
                 }
