@@ -11529,6 +11529,40 @@ static inline long saturate_to_long(int64_t value) {
 // These functions parse already-read data from a buffer, allowing code reuse
 // between file-based and string-based formatted reads.
 
+// Integer and logical type codes of the formatted read protocol (see
+// _lfortran_formatted_read). The code determines the storage size of the item.
+static bool is_formatted_read_integer(int32_t type_code)
+{
+    return type_code == 2 || type_code == 3 || type_code == 9 || type_code == 10;
+}
+
+static bool is_formatted_read_logical(int32_t type_code)
+{
+    return type_code == 1 || type_code == 11 || type_code == 12 || type_code == 13;
+}
+
+// Storage size in bytes of an integer or logical item
+static size_t formatted_read_int_size(int32_t type_code)
+{
+    switch (type_code) {
+        case 9: case 11: return sizeof(int8_t);
+        case 10: case 12: return sizeof(int16_t);
+        case 3: case 13: return sizeof(int64_t);
+        default: return sizeof(int32_t);
+    }
+}
+
+// Store `value` into the integer or logical item `ptr` of type `type_code`
+static void store_formatted_read_int(void* ptr, int32_t type_code, int64_t value)
+{
+    switch (formatted_read_int_size(type_code)) {
+        case sizeof(int8_t): *((int8_t*)ptr) = (int8_t)value; break;
+        case sizeof(int16_t): *((int16_t*)ptr) = (int16_t)value; break;
+        case sizeof(int64_t): *((int64_t*)ptr) = value; break;
+        default: *((int32_t*)ptr) = (int32_t)value; break;
+    }
+}
+
 // blank_mode: 0 = BN (blank null - ignore blanks), 1 = BZ (blank zero - treat blanks as zeros)
 static void parse_integer_from_buffer(char* buffer, int field_len,
         void* int_ptr, int32_t type_code, int blank_mode, bool* error)
@@ -11558,12 +11592,9 @@ static void parse_integer_from_buffer(char* buffer, int field_len,
         return;
     }
     
-    if (type_code == 2) {
-        *((int32_t*)int_ptr) = (int32_t)strtol(processed, NULL, 10);
-    } else {
-        *((int64_t*)int_ptr) = (int64_t)strtoll(processed, NULL, 10);
-    }
-    
+    store_formatted_read_int(int_ptr, type_code,
+        (int64_t)strtoll(processed, NULL, 10));
+
     internal_free(processed);
 }
 
@@ -11584,8 +11615,7 @@ static void parse_boz_from_buffer(char* buffer, int field_len,
     processed[j] = '\0';
     if (j == 0) {
         // All-blank field reads as zero per Fortran standard.
-        if (type_code == 2) *((int32_t*)int_ptr) = 0;
-        else *((int64_t*)int_ptr) = 0;
+        store_formatted_read_int(int_ptr, type_code, 0);
         internal_free(processed);
         return;
     }
@@ -11600,32 +11630,21 @@ static void parse_boz_from_buffer(char* buffer, int field_len,
         if (digit >= base) { internal_free(processed); *error = true; return; }
     }
     uint64_t uval = (uint64_t)strtoull(processed, NULL, base);
-    if (type_code == 2) {
-        *((int32_t*)int_ptr) = (int32_t)uval;
-    } else {
-        *((int64_t*)int_ptr) = (int64_t)uval;
-    }
+    store_formatted_read_int(int_ptr, type_code, (int64_t)uval);
     internal_free(processed);
 }
 
 static void parse_real_from_buffer(char* buffer, int field_len,
         void* real_ptr, int32_t type_code, int scale_factor, int decimal_places)
 {
-    // Handle integer types (type_code 2 = int32, type_code 3 = int64)
-    if (type_code == 2 || type_code == 3) {
+    // Handle integer types
+    if (is_formatted_read_integer(type_code)) {
         char* temp = (char*)internal_malloc(field_len + 1);
         if (temp) {
             memcpy(temp, buffer, field_len);
             temp[field_len] = '\0';
-            if (type_code == 2) {
-                char* endptr;
-                long val = strtol(temp, &endptr, 10);
-                *(int32_t*)real_ptr = (int32_t)val;
-            } else {
-                char* endptr;
-                long long val = strtoll(temp, &endptr, 10);
-                *(int64_t*)real_ptr = (int64_t)val;
-            }
+            store_formatted_read_int(real_ptr, type_code,
+                (int64_t)strtoll(temp, NULL, 10));
             internal_free(temp);
         }
         return;
@@ -11701,19 +11720,20 @@ static void parse_real_from_buffer(char* buffer, int field_len,
 }
 
 static void parse_logical_from_buffer(char* buffer, int field_len,
-        int32_t* log_ptr)
+        void* log_ptr, int32_t type_code)
 {
-    *log_ptr = 0;
+    int64_t value = 0;
     for (int i = 0; i < field_len; i++) {
         char c = toupper(buffer[i]);
         if (c == 'T') {
-            *log_ptr = 1;
+            value = 1;
             break;
         } else if (c == 'F') {
-            *log_ptr = 0;
+            value = 0;
             break;
         }
     }
+    store_formatted_read_int(log_ptr, type_code, value);
 }
 
 // A destination of character kind > 1 holds `kind`-wide code units. With
@@ -11952,7 +11972,7 @@ static bool read_field(InputSource *inputSource, int read_width, bool advance_no
 typedef struct {
     bool active;
     void* data_ptr;
-    int32_t elem_tc;      // component type code (2=int32, 3=int64, 4=float, 5=double)
+    int32_t elem_tc;      // component type code (see _lfortran_formatted_read)
     int32_t n_elems;
     int32_t rank;
     int32_t* extents;
@@ -12147,14 +12167,14 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
         ArrayReadCont *arr_cont)
 {
     if (arr_cont->active) {
-        if (arr_cont->is_char || arr_cont->elem_tc != 1) {
+        if (arr_cont->is_char || !is_formatted_read_logical(arr_cont->elem_tc)) {
             if (iostat) *iostat = 5010;
             arr_cont->active = false;
             return false;
         }
         int32_t i = arr_cont->current_idx;
         int64_t offset = get_array_read_offset(arr_cont, i);
-        int32_t* log_ptr = (int32_t*)((char*)arr_cont->data_ptr + offset * (int64_t)arr_cont->elem_sz);
+        void* log_ptr = (char*)arr_cont->data_ptr + offset * (int64_t)arr_cont->elem_sz;
 
         int read_width = (width > 0) ? width : 1;
         if (read_width < 0) read_width = 0;
@@ -12167,7 +12187,7 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
             return false;
         }
 
-        parse_logical_from_buffer(buffer, field_len, log_ptr);
+        parse_logical_from_buffer(buffer, field_len, log_ptr, arr_cont->elem_tc);
         internal_free(buffer);
         arr_cont->current_idx++;
         if (arr_cont->current_idx >= arr_cont->n_elems) arr_cont->active = false;
@@ -12196,7 +12216,7 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
             return false;
         }
 
-        parse_logical_from_buffer(buffer, field_len, (int32_t*)data_ptr);
+        parse_logical_from_buffer(buffer, field_len, data_ptr, type_code);
         internal_free(buffer);
 
         arr_cont->data_ptr = data_ptr;
@@ -12209,13 +12229,12 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
         arr_cont->is_complex = false;
         arr_cont->reading_imag = false;
         arr_cont->is_char = false;
-        arr_cont->component_sz = sizeof(int32_t);
-        arr_cont->elem_sz = sizeof(int32_t);
+        arr_cont->component_sz = formatted_read_int_size(type_code);
+        arr_cont->elem_sz = arr_cont->component_sz;
         arr_cont->active = (n_elems > 1);
         return true;
     }
-    (void)type_code;
-    int32_t* log_ptr = va_arg(*args, int32_t*);
+    void* log_ptr = va_arg(*args, void*);
     (*arg_idx)++;
 
     int read_width = (width > 0) ? width : 1;
@@ -12228,7 +12247,7 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
         return false;
     }
 
-    parse_logical_from_buffer(buffer, field_len, log_ptr);
+    parse_logical_from_buffer(buffer, field_len, log_ptr, type_code);
 
     internal_free(buffer);
     return true;
@@ -12239,7 +12258,7 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
         ArrayReadCont *arr_cont)
 {
     if (arr_cont->active) {
-        if (arr_cont->is_char || (arr_cont->elem_tc != 2 && arr_cont->elem_tc != 3)) {
+        if (arr_cont->is_char || !is_formatted_read_integer(arr_cont->elem_tc)) {
             if (iostat) *iostat = 5010;
             arr_cont->active = false;
             return false;
@@ -12274,7 +12293,7 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
         if (n_elems <= 0) {
             return true;
         }
-        size_t esz = (elem_tc == 3) ? sizeof(int64_t) : sizeof(int32_t);
+        size_t esz = formatted_read_int_size(elem_tc);
         arr_cont->data_ptr = data_ptr;
         arr_cont->elem_tc = elem_tc;
         arr_cont->n_elems = n_elems;
@@ -12329,7 +12348,7 @@ static bool handle_read_BOZ(InputSource *inputSource, va_list *args, int width, 
         int blank_mode, int base, ArrayReadCont *arr_cont)
 {
     if (arr_cont->active) {
-        if (arr_cont->is_char || (arr_cont->elem_tc != 2 && arr_cont->elem_tc != 3)) {
+        if (arr_cont->is_char || !is_formatted_read_integer(arr_cont->elem_tc)) {
             if (iostat) *iostat = 5010;
             arr_cont->active = false;
             return false;
@@ -12364,7 +12383,7 @@ static bool handle_read_BOZ(InputSource *inputSource, va_list *args, int width, 
         if (n_elems <= 0) {
             return true;
         }
-        size_t esz = (elem_tc == 3) ? sizeof(int64_t) : sizeof(int32_t);
+        size_t esz = formatted_read_int_size(elem_tc);
         arr_cont->data_ptr = data_ptr;
         arr_cont->elem_tc = elem_tc;
         arr_cont->n_elems = n_elems;
@@ -12837,19 +12856,22 @@ LFORTRAN_API void _lfortran_string_array_formatted_read(
 // Type codes for _lfortran_formatted_read:
 // 0 = character (followed by ptr, str_len). For scalar strings, `ptr` is `char**`
 // (pointer to the data pointer inside a string descriptor).
-// 1 = logical (followed by ptr)
+// 1 = logical(4) (followed by ptr)
 // 2 = int32 (followed by ptr)
 // 3 = int64 (followed by ptr)
 // 4 = float (followed by ptr)
 // 5 = double (followed by ptr)
 // 8 = wide character (same as character, followed by char kind after str_len)
+// 9 = int8, 10 = int16 (followed by ptr)
+// 11 = logical(1), 12 = logical(2), 13 = logical(8) (followed by ptr)
 // Variadic protocol for _lfortran_formatted_read / _lfortran_string_formatted_read:
 // Each read target is introduced by a bool flag `is_descriptor_array` (passed as int32_t):
 //
 // Scalar (is_descriptor_array == 0):
 //     int32_t is_descriptor_array = 0
-//     int32_t type_code   (0=char/ptr+len, 1=logical, 2=int32, 3=int64, 4=float, 5=double,
-//                          6=complex4, 7=complex8)
+//     int32_t type_code   (0=char/ptr+len, 1=logical(4), 2=int32, 3=int64, 4=float, 5=double,
+//                          6=complex4, 7=complex8, 8=wide char, 9=int8, 10=int16,
+//                          11=logical(1), 12=logical(2), 13=logical(8))
 //     void*   ptr          (char** + int64_t str_len for type_code 0)
 //
 // Descriptor array (is_descriptor_array == 1):

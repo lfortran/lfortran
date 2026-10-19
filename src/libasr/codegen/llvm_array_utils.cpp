@@ -2021,22 +2021,33 @@ namespace LCompilers {
             return internal;
         }
 
-        static int32_t get_formatted_read_type_code(ASR::ttype_t* val_type,
+        int32_t get_formatted_read_type_code(ASR::ttype_t* val_type,
                 ASR::expr_t* val_expr) {
             if (ASR::is_a<ASR::Integer_t>(*val_type)){
-                return (ASR::down_cast<ASR::Integer_t>(val_type)->m_kind <= 4) ? 2 : 3;
+                switch (ASR::down_cast<ASR::Integer_t>(val_type)->m_kind) {
+                    case 1: return 9;
+                    case 2: return 10;
+                    case 4: return 2;
+                    case 8: return 3;
+                    default: break;
+                }
             } else if (ASR::is_a<ASR::String_t>(*val_type)) {
                 return (ASR::down_cast<ASR::String_t>(val_type)->m_kind > 1) ? 8 : 0;
             } else if (ASR::is_a<ASR::Logical_t>(*val_type)) {
-                return 1;
+                switch (ASR::down_cast<ASR::Logical_t>(val_type)->m_kind) {
+                    case 1: return 11;
+                    case 2: return 12;
+                    case 4: return 1;
+                    case 8: return 13;
+                    default: break;
+                }
             } else if (ASR::is_a<ASR::Real_t>(*val_type)){
                 return (ASR::down_cast<ASR::Real_t>(val_type)->m_kind == 4) ? 4 : 5;
             } else if (ASR::is_a<ASR::Complex_t>(*val_type)) {
                 return (ASR::down_cast<ASR::Complex_t>(val_type)->m_kind == 4) ? 6 : 7;
-            } else {
-                throw CodeGenError("Not implemented: read into allocatable targets for dtype "
-                    + ASRUtils::type_to_str_python_expr(val_type, val_expr));
             }
+            throw CodeGenError("Not implemented: read into allocatable targets for dtype "
+                + ASRUtils::type_to_str_python_expr(val_type, val_expr));
         }
 
         void SimpleCMODescriptor::push_data_array_args(

@@ -45,6 +45,14 @@ namespace LCompilers {
         bool is_explicit_shape(ASR::Variable_t* v);
 
         /*
+        * The type code of an item of type `val_type` in the variadic
+        * protocol of _lfortran_formatted_read. It determines how the
+        * runtime converts the field and the storage size of the item.
+        */
+        int32_t get_formatted_read_type_code(ASR::ttype_t* val_type,
+            ASR::expr_t* val_expr);
+
+        /*
         * Available descriptors are listed
         * under this enum.
         */

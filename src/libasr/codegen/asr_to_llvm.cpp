@@ -22184,9 +22184,6 @@ public:
     void add_formatted_read_arg(std::vector<llvm::Value*>& args, ASR::ttype_t* val_type,
             llvm::Value* elem_ptr) {
         constexpr int32_t kChar = 0;
-        constexpr int32_t kLogical = 1;
-        constexpr int32_t kInt32 = 2;
-        constexpr int32_t kInt64 = 3;
         constexpr int32_t kFloat = 4;
         constexpr int32_t kDouble = 5;
         constexpr int32_t kWideChar = 8;
@@ -22208,21 +22205,14 @@ public:
             if (char_kind > 1) {
                 args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, char_kind)));
             }
-        } else if (ASR::is_a<ASR::Logical_t>(*val_type)) {
+        } else if (ASR::is_a<ASR::Logical_t>(*val_type)
+                || ASR::is_a<ASR::Integer_t>(*val_type)
+                || ASR::is_a<ASR::Real_t>(*val_type)) {
+            // The type code carries the kind, so that the runtime stores an
+            // item of its own size.
             args.push_back(is_descriptor_array_false);
-            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, kLogical)));
-            args.push_back(elem_ptr);
-        } else if (ASR::is_a<ASR::Integer_t>(*val_type)) {
-            ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(val_type);
-            int32_t type_code = (int_type->m_kind <= 4) ? kInt32 : kInt64;
-            args.push_back(is_descriptor_array_false);
-            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, type_code)));
-            args.push_back(elem_ptr);
-        } else if (ASR::is_a<ASR::Real_t>(*val_type)) {
-            ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(val_type);
-            int32_t type_code = (real_type->m_kind == 4) ? kFloat : kDouble;
-            args.push_back(is_descriptor_array_false);
-            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, type_code)));
+            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32,
+                LLVMArrUtils::get_formatted_read_type_code(val_type, nullptr))));
             args.push_back(elem_ptr);
         } else if (ASR::is_a<ASR::Complex_t>(*val_type)) {
             ASR::Complex_t* complex_type = ASR::down_cast<ASR::Complex_t>(val_type);
