@@ -395,11 +395,14 @@ namespace LCompilers {
                 // where it next needs what a kernel wrote.
                 "gpu_launch_sync",
                 "device_launch_expand",
-                // Every array a StringFormat formats, or a READ or WRITE
-                // statement transfers, is passed to the runtime as its
-                // contiguous data, after every pass above that can change
-                // the physical type of an array, and before its copy loops
-                // are lowered.
+                // Every array a StringFormat formats or a WRITE statement
+                // transfers, and every internal file, is passed to the
+                // runtime as its contiguous data. An array item of a READ is
+                // passed so only when it is contiguous by construction;
+                // otherwise the backend reads it in place through its
+                // descriptor. This runs after every pass above that can
+                // change the physical type of an array, and before its copy
+                // loops are lowered.
                 "string_format_array_args",
                 "do_loops",
                 "while_else",
