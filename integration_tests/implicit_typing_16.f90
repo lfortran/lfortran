@@ -33,6 +33,20 @@ end subroutine
 subroutine kount()
 end subroutine
 
+subroutine set_value(x)
+    real :: x
+    x = 1.0
+    return
+entry set_other(x)
+    x = 2.0
+end subroutine
+
+subroutine use_set_other(y)
+    real :: y
+    set_other = 5.0
+    y = set_other
+end subroutine
+
 subroutine point_to_dist()
     interface
         subroutine iface()
@@ -50,6 +64,10 @@ program implicit_typing_16
     common /counter/ ncalls
     ncalls = 0
     call use_dist(y)
+    if (abs(y - 2.0) > 1e-6) error stop
+    call use_set_other(y)
+    if (abs(y - 5.0) > 1e-6) error stop
+    call set_other(y)
     if (abs(y - 2.0) > 1e-6) error stop
     call use_area(y)
     if (abs(y - 3.0) > 1e-6) error stop

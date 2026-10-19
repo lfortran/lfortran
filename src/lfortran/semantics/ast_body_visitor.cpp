@@ -1754,54 +1754,6 @@ public:
             body.p, body.size(), nullptr, 0));
     }
 
-    bool unit_references_procedure(const std::string &name) {
-        class ProcedureReferenceFinder :
-                public AST::BaseWalkVisitor<ProcedureReferenceFinder> {
-        public:
-            const std::string &name;
-            bool found = false;
-            ProcedureReferenceFinder(const std::string &name) : name{name} {}
-
-            void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
-                if (x.n_member == 0 && to_lower(x.m_name) == name) {
-                    found = true;
-                    return;
-                }
-                AST::BaseWalkVisitor<ProcedureReferenceFinder>
-                    ::visit_SubroutineCall(x);
-            }
-
-            void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
-                if (x.n_member == 0 && to_lower(x.m_func) == name) {
-                    found = true;
-                    return;
-                }
-                AST::BaseWalkVisitor<ProcedureReferenceFinder>
-                    ::visit_FuncCallOrArray(x);
-            }
-
-            // A data target needs the TARGET or POINTER attribute, so a name
-            // the unit does not declare can only be a procedure target.
-            void visit_Associate(const AST::Associate_t &x) {
-                if (AST::is_a<AST::Name_t>(*x.m_value)) {
-                    AST::Name_t *target = AST::down_cast<AST::Name_t>(x.m_value);
-                    if (target->n_member == 0 && to_lower(target->m_id) == name) {
-                        found = true;
-                        return;
-                    }
-                }
-                AST::BaseWalkVisitor<ProcedureReferenceFinder>
-                    ::visit_Associate(x);
-            }
-        };
-        if (starting_m_body == nullptr) return false;
-        ProcedureReferenceFinder finder(name);
-        for (size_t i = 0; i < starting_n_body && !finder.found; i++) {
-            finder.visit_decl_stmt(*starting_m_body[i]);
-        }
-        return finder.found;
-    }
-
     void collect_labels() {
         labels.clear();
         if (starting_m_body == nullptr) return;
@@ -5871,6 +5823,7 @@ public:
         }
         ASR::Program_t *v = ASR::down_cast<ASR::Program_t>(t);
         current_scope = v->m_symtab;
+        record_procedure_references(current_scope, x.m_items, x.n_items);
         starting_m_body = x.m_items;
         starting_n_body = x.n_items;
         collect_labels();
@@ -6435,6 +6388,7 @@ public:
         SymbolTable* old_scope = current_scope;
         current_scope = master_function->m_symtab;
         current_body_scope = current_scope;
+        record_procedure_references(current_scope, x.m_items, x.n_items);
         // Record where each copy of the body starts and ends, so that statement
         // labels repeated across copies can be told apart afterwards.
         std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> copies;
@@ -6488,6 +6442,7 @@ public:
 
         ASR::Function_t* v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
+        record_procedure_references(current_scope, x.m_items, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             is_Function = true;
@@ -6573,6 +6528,7 @@ public:
 
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
+        record_procedure_references(current_scope, x.m_items, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             is_Function = true;
@@ -6681,6 +6637,7 @@ public:
 
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
+        record_procedure_references(current_scope, x.m_items, x.n_items);
         if (entry_functions.find(to_lower(v->m_name)) != entry_functions.end()) {
             /*
                 Subroutine is parent of entry function.
