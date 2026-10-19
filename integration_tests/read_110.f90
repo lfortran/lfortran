@@ -2,7 +2,8 @@ program read_110
     ! A bad Z field for the imaginary part of a complex array item, without
     ! iostat=. LFortran goes on with the READ (#15081; gfortran stops with an
     ! error, hence no gfortran label). The next array item, started by I and
-    ! continued by G, must still be read into its own elements.
+    ! continued by G, must still be read into its own elements. Delete this
+    ! test once #15081 is fixed and the READ terminates at the error.
     implicit none
     type t
         complex :: c(1)
