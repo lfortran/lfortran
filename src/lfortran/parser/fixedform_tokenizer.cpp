@@ -1510,6 +1510,21 @@ struct FixedFormRecursiveDescent {
         }
     }
 
+    // Push an `end_do` token that ends a labeled do loop at its terminal
+    // statement, which starts at `term_first` and was consumed up to `cur`
+    // (the end of its line or its `;` separator). The token covers the
+    // terminal statement, so that the loop ends there and not at the
+    // statement after it.
+    void push_end_do_terminal(unsigned char *term_first, unsigned char *cur) {
+        unsigned char *term_last = cur - 1;
+        while (term_last > term_first && (*term_last == '\n'
+                || *term_last == '\r' || *term_last == ';')) {
+            term_last--;
+        }
+        push_token_no_advance_token(term_first, "end_do", KW_END_DO,
+            term_last - term_first + 1);
+    }
+
     // Returns true if this is "end do" or equivalent, otherwise false
     // It will always consume the label.
     // If true, it will consume the terminal statement, up to and including
@@ -1540,6 +1555,7 @@ struct FixedFormRecursiveDescent {
         } else if (all_labels_match(label)) {
             // end entire loop nesting with single `CONTINUE`
             // the usual terminal statement for do loops
+            unsigned char *term_first = cur;
             if (next_is(cur, "continue")) {
                 // Drop the redundant CONTINUE keyword. The TK_LABEL pushed
                 // by eat_label() above already precedes the `end_do` we
@@ -1556,7 +1572,7 @@ struct FixedFormRecursiveDescent {
             }
             size_t n_match = do_labels.size();
             for (size_t i=0; i<n_match; i++) {
-                push_token_no_advance(cur, "end_do");
+                push_end_do_terminal(term_first, cur);
                 push_token_no_advance(cur, "\n");
                 LCOMPILERS_ASSERT(label_last(do_label))
                 do_labels.pop_back();
@@ -1566,6 +1582,7 @@ struct FixedFormRecursiveDescent {
             int64_t n_match = last_labels_match(label);
             // end entire loop nesting with single `CONTINUE`
             // the usual terminal statement for do loops
+            unsigned char *term_first = cur;
             if (next_is(cur, "continue")) {
                 // See note above; label attaches to innermost end_do.
                 skip_continue(cur);
@@ -1575,7 +1592,7 @@ struct FixedFormRecursiveDescent {
                 lex_body_statement(cur);
             }
             for (int i=0;i<n_match;++i) {
-                push_token_no_advance(cur, "end_do");
+                push_end_do_terminal(term_first, cur);
                 push_token_no_advance(cur, "\n");
                 LCOMPILERS_ASSERT(label_last(do_label))
                 do_labels.pop_back();
@@ -1583,6 +1600,7 @@ struct FixedFormRecursiveDescent {
             return true;
         } else {
             // end one nesting of loop
+            unsigned char *term_first = cur;
             if (next_is(cur, "continue")) {
                 // See note above; label attaches to end_do.
                 skip_continue(cur);
@@ -1591,7 +1609,7 @@ struct FixedFormRecursiveDescent {
                 // TODO: add a continue label
                 lex_body_statement(cur);
             }
-            push_token_no_advance(cur, "end_do");
+            push_end_do_terminal(term_first, cur);
             push_token_no_advance(cur, "\n");
             LCOMPILERS_ASSERT(label_last(do_label))
             do_labels.pop_back();

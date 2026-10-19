@@ -4125,6 +4125,11 @@ options = "--fixed-form"
 ast_json = true
 
 [[test]]
+filename = "json_loc_fixed_form_do_label.f"
+options = "--fixed-form"
+ast_json = true
+
+[[test]]
 filename = "redeclaration1.f90"
 asr_implicit_typing = true
 
