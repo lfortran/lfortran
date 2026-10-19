@@ -1890,7 +1890,11 @@ struct FixedFormRecursiveDescent {
         push_token_advance(cur, "rank");
         tokenize_line(cur); // tokenize rest of line where `select rank` starts
         while (!is_construct_stmt(cur, "endselect")) {
-            if (next_is(cur, "rank")) {
+            if (next_is(cur, "rankdefault")) {
+                push_token_advance(cur, "rank");
+                push_token_advance(cur, "default");
+                tokenize_line(cur);
+            } else if (next_is(cur, "rank")) {
                 push_token_advance(cur, "rank");
                 tokenize_line(cur);
             } else {
