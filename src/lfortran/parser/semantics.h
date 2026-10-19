@@ -2676,7 +2676,7 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
         TYPE_STMTS(body), body.size(), trivia_cast(trivia), nullptr)
 
 #define TYPE_STMTNAME(x, trivia, body, l) make_TypeStmtName_t(p.m_a, l, \
-        x.c_str(p.m_a), trivia_cast(trivia), STMTS(body), body.size())
+        name2char(x), trivia_cast(trivia), STMTS(body), body.size())
 #define TYPE_STMTVAR(vartype, trivia, body, l) make_TypeStmtType_t(p.m_a, l, \
         down_cast<decl_attribute_t>(vartype), trivia_cast(trivia), STMTS(body), body.size())
 #define CLASS_STMT(id, trivia, body, l) make_ClassStmt_t(p.m_a, l, \
