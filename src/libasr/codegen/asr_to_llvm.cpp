@@ -17297,6 +17297,11 @@ public:
                 }
             }
         }
+        // String temporaries of the test (e.g. a character conditional
+        // expression compared to a string) are no longer needed once it is
+        // evaluated; free them before branching, as the list is discarded
+        // below.
+        free_strings_to_be_deallocated(0);
         llvm_utils->create_if_else(tmp, [&]() {
             for (size_t i=0; i<x.n_body; i++) {
                 this->visit_stmt(*x.m_body[i]);
@@ -17381,6 +17386,8 @@ public:
         strings_to_be_deallocated.reserve(al, 1);
         create_loop(x.m_name, [=]() {
             this->visit_expr_wrapper(x.m_test, true);
+            // Free the test's string temporaries on every evaluation.
+            free_strings_to_be_deallocated(0);
             return tmp;
         }, [&]() {
             for (size_t i=0; i<x.n_body; i++) {
@@ -24168,10 +24175,12 @@ public:
     }
 
     void visit_Print(const ASR::Print_t &x) {
+        DeallocateStringsScope _scope(this);
         handle_print(x.m_text, nullptr);
     }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
+        DeallocateStringsScope _scope(this);
         if( x.m_overloaded ) {
             // DTIO: set child I/O mode to suppress record terminators in
             // child writes, call the user-defined I/O subroutine, then
