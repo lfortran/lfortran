@@ -3228,7 +3228,7 @@ public:
                     loc, unit_name, ASRUtils::intent_local, unit_type);
                 ASR::expr_t* unit_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, unit_sym));
                 tmp_vec.push_back(ASR::make_Assignment_t(al, loc, unit_var, a_unit,
-                    nullptr, false, false));
+                    nullptr, false, false, false));
                 a_unit = unit_var;
                 for (ASR::asr_t* newline_if : newline_for_advance) {
                     ASR::If_t* if_stmt = ASR::down_cast2<ASR::If_t>(newline_if);
