@@ -16,6 +16,22 @@ namespace LCompilers {
 using ASR::down_cast;
 using ASR::is_a;
 
+// Whether a function result of type `type` is returned through a dummy
+// argument, the function becoming a subroutine. An allocatable scalar
+// result of an intrinsic type is too: the caller then gets it in an
+// allocatable variable, whose value it can reference or assign like that of
+// any other variable, and which it deallocates. The result is not otherwise
+// lowered as a value.
+static bool is_result_returned_through_argument(ASR::ttype_t* type) {
+    return PassUtils::is_non_primitive_return_type(type) ||
+        PassUtils::is_aggregate_or_array_type(type) ||
+        ASRUtils::is_allocatable(type);
+}
+
+static bool is_result_returned_through_argument(ASR::expr_t* result) {
+    return is_result_returned_through_argument(ASRUtils::expr_type(result));
+}
+
 
 /**
  * @class CreateFunctionFromSubroutine
@@ -60,7 +76,7 @@ public:
             ASR::ttype_t* const return_type = ASRUtils::get_FunctionType(x_ptr)->m_return_var_type;
             
             /* Transform This Function Into Subroutine IF NEEDED */
-            bool transform_success = PassUtils::handle_fn_return_var(al, x_ptr, PassUtils::is_aggregate_or_array_or_nonPrimitive_type);
+            bool transform_success = PassUtils::handle_fn_return_var(al, x_ptr, is_result_returned_through_argument);
             if(transform_success) {
                 Function__TO__ReturnType_MAP_[x_ptr] = return_type;
                 handle_finalizable_result(*x_ptr);
@@ -720,8 +736,7 @@ public :
             pass_result.push_back(al, assign);
             return;
         }
-        if(PassUtils::is_non_primitive_return_type(x->m_type)
-            || PassUtils::is_aggregate_or_array_type(x->m_type)){
+        if (is_result_returned_through_argument(x->m_type)) {
 
             // Create variable in current_scope to be holding the return.
             // For converted functions (structs/arrays), pass the last arg as
