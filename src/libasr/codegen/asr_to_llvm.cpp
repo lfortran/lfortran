@@ -7898,10 +7898,10 @@ public:
                             create_null_array_descriptor_global(type_,
                                 llvm_var_name + "_descriptor__"));
                 } else {
+                    // A runtime trait pointer is a descriptor, not an LLVM
+                    // pointer, so its null value is a zero aggregate.
                     module->getNamedGlobal(llvm_var_name)->setInitializer(
-                            llvm::ConstantPointerNull::get(
-                                static_cast<llvm::PointerType*>(x_ptr))
-                            );
+                            llvm::Constant::getNullValue(x_ptr));
                     set_global_variable_linkage_as_common(ptr, x);
                 }
             }
