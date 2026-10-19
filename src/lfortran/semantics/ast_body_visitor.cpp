@@ -8318,8 +8318,20 @@ public:
             bool is_nopass = false;
             if (ASR::is_a<ASR::Variable_t>(*f2)) {
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(f2);
-                [[maybe_unused]] ASR::ttype_t* v_type = ASRUtils::type_get_past_pointer(v->m_type);
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*v_type));
+                ASR::ttype_t* v_type = ASRUtils::type_get_past_pointer(v->m_type);
+                if (!ASR::is_a<ASR::FunctionType_t>(*v_type)) {
+                    // A data variable is only callable as a procedure with an
+                    // implicit interface, which cannot take keyword arguments.
+                    std::string msg = compiler_options.implicit_interface
+                        ? "keyword arguments require an explicit interface for procedure '"
+                            + std::string(v->m_name) + "'"
+                        : "Cannot call '" + std::string(v->m_name) + "' as a procedure; it is a variable. "
+                            "Use --implicit-interface to enable implicit procedure interfaces.";
+                    diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {
+                            Label("", {x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
                 f2 = ASRUtils::symbol_get_past_external(v->m_type_declaration);
                 is_nopass = (v->m_pass_attr == ASR::pass_attrType::NoPass ||
                              v->m_pass_attr == ASR::pass_attrType::NotMethod);

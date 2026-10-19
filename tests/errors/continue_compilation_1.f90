@@ -3451,3 +3451,9 @@ subroutine cc1_external_name_user()
     cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
 end subroutine cc1_external_name_user
+
+! A data variable is not a procedure, also when the call uses keyword arguments.
+subroutine cc1_call_variable_keyword_arg()
+    integer :: i
+    call i(a=1)  ! {Error} Cannot call 'i' as a procedure; it is a variable. Use --implicit-interface to enable implicit procedure interfaces.
+end subroutine cc1_call_variable_keyword_arg

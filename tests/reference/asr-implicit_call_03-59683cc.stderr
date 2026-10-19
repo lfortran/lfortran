@@ -1,0 +1,5 @@
+semantic error: keyword arguments require an explicit interface for procedure 'i'
+ --> tests/errors/implicit_call_03.f90:7:5
+  |
+7 |     call i(a=1)
+  |     ^^^^^^^^^^^ 
