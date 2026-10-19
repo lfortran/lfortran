@@ -3184,6 +3184,9 @@ public:
     void visit_FunctionCall(const ASR::FunctionCall_t & /*x*/) {
         found = true;
     }
+    void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t & /*x*/) {
+        found = true;
+    }
     void visit_ttype(const ASR::ttype_t & /*x*/) {}
 };
 

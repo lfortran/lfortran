@@ -4101,6 +4101,8 @@ RUN(NAME traits_runtime_result_04 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all
 RUN(NAME traits_runtime_result_01_oracle LABELS gfortran)
 RUN(NAME traits_runtime_result_alias_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_result_alias_01_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_arithmetic_if_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_arithmetic_if_01_oracle LABELS gfortran llvm)
 RUN(NAME traits_runtime_07 LABELS llvm llvm2 NO_STD_F23 EXTRA_ARGS --verify-all-passes
     EXTRAFILES traits_runtime_07_contracts.f90 traits_runtime_07_impl_a.f90
         traits_runtime_07_impl_b.f90 traits_runtime_07_consumer.f90)
