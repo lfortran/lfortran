@@ -183,6 +183,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-14 | Asked how Rust, Swift, Mojo and Go handle receivers, whether `type(ICounter), intent(inout) :: self` would be flawed, and why not `type(itself)`, which corresponds to `Self`. | TD-36 |
 | 2026-10-14 | Confirmed the agreement on explicit receivers and asked to update this record, update all tests and implement it; when in doubt, to stay close to Rust and other explicitly typed languages, or to ask. | TD-36 |
 | 2026-10-19 | Supplied modules whose trait messages return allocatable `real(8)` arrays, used through a view and through an allocatable trait component, which the prototype rejected, and asked for runtime dispatch of messages with allocatable and explicit-shape array results of intrinsic types, with a specific diagnostic for results that remain unsupported. | TD-39 |
+| 2026-10-19 | Supplied a module whose trait message takes a `character(*)` argument and returns `class(*), allocatable`, which the prototype rejected, and asked for runtime dispatch of such results of any dynamic type through every kind of receiver, also under separate compilation, and, as far as the same mechanism allows, of allocatable scalar, derived-type and `class(Base)` results, with a specific diagnostic for results that remain unsupported. | TD-40 |
 
 ## Entries
 
@@ -1175,7 +1176,9 @@ specification action, that is, what the paper should say.
   dummies replaced by the actual arguments. Derived-type, polymorphic,
   trait-object, pointer and allocatable scalar results, and array results of
   generic messages, remain outside the runtime surface and are diagnosed by
-  naming the message and its result.
+  naming the message and its result. Since TD-40, derived-type, polymorphic
+  and allocatable scalar results, and arrays of derived types, are dispatched
+  as well.
 - **Consequences.** The results are those of the equivalent program in which
   the trait is an abstract type with deferred bindings. The variable for the
   result is deallocated before each call of a message with an allocatable
@@ -1187,6 +1190,51 @@ specification action, that is, what the paper should say.
   views formed from polymorphic objects, with additional array and scalar
   arguments, every receiver position and INTENT and receiverless messages,
   also under separate compilation.
+- **Specification action.** None identified: ordinary Fortran function-result
+  semantics apply.
+
+#### TD-40: Derived-type, polymorphic and allocatable results of runtime messages
+
+- **Status:** Implementation choice (the scope was requested by the
+  maintainer; the lowering was not asked).
+- **What the paper says.** As for TD-39: calls through trait objects use
+  dynamic binding (`sect:trait_objects`, lines 1607-1650), and the results of
+  a trait's methods are not restricted.
+- **Why it is not tight.** The paper does not say how a result that is
+  polymorphic, of a derived type or allocatable crosses dynamic binding. After
+  TD-39 the prototype still rejected such messages, so a trait whose message
+  returns `class(*), allocatable`, a common way to return a value of a type
+  that depends on an argument, could not be used as a view.
+- **Options presented.** Not asked.
+- **Choice.** A message that is not generic may also return a derived type,
+  polymorphic or not, `class(*)`, an allocatable scalar of an intrinsic type,
+  an allocatable deferred-length character, and an allocatable or
+  explicit-shape array of a derived type or of `class(Base)` elements. A
+  reference through a view, an owner, a pointer or a `CLASS IS` associate name
+  is an ordinary function reference whose result has the dynamic type the
+  implementation gave it. An allocatable scalar result assigned to an
+  allocatable variable of the same declared type that no argument aliases is
+  returned into that variable, whose previous value is deallocated, and so
+  finalized, when the implementation is entered; every other reference
+  evaluates into a variable of the calling scope. Pointer, trait-object and
+  unlimited polymorphic array results, results of a finalized derived type
+  that are not allocatable, and array and allocatable results of generic
+  messages remain outside the runtime surface and are diagnosed by naming the
+  message and its result.
+- **Consequences.** The results are those of the equivalent program in which
+  the trait is an abstract type with deferred bindings, and the lifetime of a
+  result is that of an ordinary function result (TD-14, TD-39): the variable
+  for it is deallocated before each call and when its scope ends, so no result
+  is leaked. A result returned into the target of an assignment becomes its
+  value and is not finalized separately, as LFortran also does for an ordinary
+  function; a result that would be finalized after its statement and has no
+  variable of its own to be deallocated with is therefore not dispatched yet.
+- **Implementation status.** Implemented for borrowed views, owners (including
+  allocatable trait components), pointers and `CLASS IS` associate names, with
+  assumed-length character arguments, in assignments, `ALLOCATE` with
+  `SOURCE=`, actual arguments, SELECT TYPE and ASSOCIATE selectors and function
+  results, also under separate compilation with a dynamic type that only the
+  provider declares.
 - **Specification action.** None identified: ordinary Fortran function-result
   semantics apply.
 

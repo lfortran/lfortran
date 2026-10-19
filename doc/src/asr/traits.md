@@ -1707,7 +1707,9 @@ continues to reject actual runtime views with an explicit backend diagnostic.
 Supported methods are functions with scalar integer, real, complex, logical
 or constant-length character results, and subroutines. A message that is not
 generic may also return an array of these types, allocatable or of explicit
-shape (see "Array results" below). Arguments are scalar
+shape (see "Array results" below), and derived-type, polymorphic and
+allocatable scalar results, also `class(*), allocatable` ones (see
+"Derived-type, polymorphic and allocatable results" below). Arguments are scalar
 integer, real, complex, logical, character, or nonpolymorphic derived-type
 values, or required, nonallocatable, nonpointer assumed-shape arrays of an
 intrinsic numeric or logical type or of character of a constant length. The
@@ -1787,9 +1789,10 @@ view dummy accept a view whose contract implies its own, or a nonpolymorphic
 derived value whose visible implementations provide every required trait,
 the same nominal evidence its association then selects. A reference that more
 than one specific accepts in that second tier is diagnosed as ambiguous.
-Trait arrays, derived-type, polymorphic, pointer and allocatable scalar
-method results, array results of generic messages and unrestricted generic
-methods remain unsupported. A plain nondummy trait local is
+Trait arrays, pointer, trait-object and unlimited polymorphic array method
+results, derived-type results that are finalized and not allocatable, array
+and allocatable results of generic messages and unrestricted generic methods
+remain unsupported. A plain nondummy trait local is
 invalid, not an implicitly owning box. Concrete SELECT TYPE inspection, described
 below, tests concrete identity and real implementation inheritance; a
 `CLASS IS (ITrait)` guard queries the conformance of the dynamic type at run
@@ -2145,11 +2148,86 @@ registered for GFortran. `traits_runtime_array_result_separate_01` compiles
 the trait, the provider and a contract-only consumer, which calls the messages
 through an owner component, separately. `traits_runtime_array_expression_01`
 checks a scalar message with an array argument in array expressions. The
-results that remain outside the slot surface are diagnosed by name, for
-example "runtime dispatch of trait method 'points' with a derived-type result
-is not implemented yet", as `continue_compilation_traits_array_result` checks
-for derived-type, polymorphic, pointer and allocatable scalar results and for
-the array result of a generic message.
+results that remain outside the slot surface are diagnosed by name (see the
+next section).
+
+### Derived-type, polymorphic and allocatable results
+
+A message that is not generic may also return a derived type, polymorphic or
+not, an allocatable scalar of an intrinsic type, an allocatable
+deferred-length character, and an allocatable or explicit-shape array of a
+derived type or of `class(Base)` elements:
+
+```fortran
+abstract interface :: ISomeTrait
+   function method(self, string) result(res)
+      type(itself), pass, intent(in) :: self
+      character(*), intent(in) :: string
+      class(*), allocatable :: res
+   end function method
+end interface
+```
+
+A reference `c%method("x")` through a borrowed view, an owner (also an
+allocatable trait component), a trait pointer or a `CLASS IS` associate name
+is a function reference like any other (TD-40): its result can be assigned,
+also to a variable of another declared type, allocated from with `SOURCE=`,
+passed as an actual argument, be the selector of a SELECT TYPE or ASSOCIATE
+construct, or be the result of another function, as in `res = c%method("x")`
+in a function whose result is `class(*), allocatable`. Its dynamic type is the
+one the implementation gave it, also a type that only the provider declares.
+
+The result crosses the slot as the result of an ordinary function of its type
+crosses a call. `subroutine_from_function` makes it the last argument of the
+slot's interface, of the witness adapters and of the provider's
+implementations; for an allocatable scalar of an intrinsic type, whose
+ordinary functions keep their result, it does so only for the slot and its
+adapters, and an adapter assigns its provider's result to that argument. A
+reference evaluates into a variable of the calling scope of the result's
+declared type, whose derived type the slot's lowered result declares; an
+allocatable one is deallocated before each call and when its scope ends. An
+assignment `res = c%method("x")` to an allocatable variable of the same
+declared type, which no argument of the call may alias, passes the variable
+itself for the result: the adapter's `intent(out)` deallocates, and so
+finalizes, its previous value on entry, and the provider allocates the new
+one, of whatever dynamic type, as in an ordinary call. The result becomes the
+variable's value and is not finalized separately, as with an ordinary
+function whose result LFortran returns into the variable. Any other target is
+assigned from the variable, so a `class(*)` variable can receive an
+allocatable integer result and `i = c%count(i)` reads `i` before it is
+replaced. Semantics evaluates a SELECT TYPE selector that is a trait call
+into a temporary, as for an ordinary function reference.
+
+`traits_runtime_polymorphic_result_01` is a user's trait whose message returns
+`class(*), allocatable` results of an integer, a `real(8)`, characters of
+lengths that depend on an assumed-length argument (including zero), a derived
+type and an extension of it, through all of the receivers above.
+`traits_runtime_polymorphic_result_02` covers allocatable integer, `real(8)`
+and deferred-length character results, derived-type results with and without
+allocatable components, `class(Base)` results whose dynamic type changes
+between calls, and derived and `class(Base)` arrays, also assigned to targets
+of other declared types, to targets that are not allocatable and to targets
+that are actual arguments of the same call. Both run without leaks under
+`--detect-leaks`, and each has a standard inheritance oracle, registered for
+GFortran; the oracles avoid a few GFortran 16 defects with polymorphic results,
+which their comments name. `traits_runtime_polymorphic_result_separate_01`
+compiles the trait, the provider, which declares an extension that only it
+knows, and a contract-only consumer separately.
+
+Results that remain outside the slot surface are diagnosed by name, as
+`continue_compilation_traits_array_result` checks:
+
+- "runtime dispatch of trait method 'samples' with a pointer result is not
+  implemented yet";
+- "... with a trait-object result ...", for a `class(ITrait)` result;
+- "... with an unlimited polymorphic array result ...", for a
+  `class(*), allocatable :: x(:)` result;
+- "... with a finalizable derived-type result that is not allocatable ...",
+  for a result of a type with a final procedure (or a component that has one)
+  that would be finalized after the statement that references it;
+- "runtime dispatch of generic trait method 'twice' with an array result is
+  not implemented yet", and "... with an allocatable result ..." for a generic
+  message.
 
 ## Scalar allocatable ownership, slots and results (R2)
 
