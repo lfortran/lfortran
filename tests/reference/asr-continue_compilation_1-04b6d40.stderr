@@ -1484,6 +1484,12 @@ semantic error: Kind 3 is not supported for Logical
 3390 |     logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
      |     ^^^^^^^^^ 
 
+semantic error: a specification expression calls the function it belongs to: 'cc1_sfl_f2' calls 'cc1_sfl_f1', 'cc1_sfl_f1' calls 'cc1_sfl_f2'
+    --> tests/errors/continue_compilation_1.f90:3462:34
+     |
+3462 |         integer, intent(in) :: x(cc1_sfl_f2(n, [1]))  ! {Error} a specification expression calls the function it belongs to: 'cc1_sfl_f2' calls 'cc1_sfl_f1', 'cc1_sfl_f1' calls 'cc1_sfl_f2'
+     |                                  ^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

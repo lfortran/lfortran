@@ -4290,6 +4290,7 @@ RUN(NAME spec_expr_04 LABELS gfortran llvm)
 RUN(NAME spec_expr_05 LABELS gfortran llvm)
 RUN(NAME spec_expr_06 LABELS gfortran llvm)
 RUN(NAME spec_expr_07 LABELS gfortran llvm)
+RUN(NAME spec_expr_08 LABELS gfortran llvm)
 
 RUN(NAME enum_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME enum_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES
