@@ -1514,15 +1514,20 @@ struct FixedFormRecursiveDescent {
     // statement, which starts at `term_first` and was consumed up to `cur`
     // (the end of its line or its `;` separator). The token covers the
     // terminal statement, so that the loop ends there and not at the
-    // statement after it.
+    // statement after it. If nothing was consumed (an empty or invalid
+    // terminal statement, such as `10 end`), the token covers the single
+    // character at `term_first`.
     void push_end_do_terminal(unsigned char *term_first, unsigned char *cur) {
-        unsigned char *term_last = cur - 1;
-        while (term_last > term_first && (*term_last == '\n'
-                || *term_last == '\r' || *term_last == ';')) {
-            term_last--;
+        size_t len = 1;
+        if (cur > term_first) {
+            unsigned char *term_last = cur - 1;
+            while (term_last > term_first && (*term_last == '\n'
+                    || *term_last == '\r' || *term_last == ';')) {
+                term_last--;
+            }
+            len = term_last - term_first + 1;
         }
-        push_token_no_advance_token(term_first, "end_do", KW_END_DO,
-            term_last - term_first + 1);
+        push_token_no_advance_token(term_first, "end_do", KW_END_DO, len);
     }
 
     // Returns true if this is "end do" or equivalent, otherwise false
