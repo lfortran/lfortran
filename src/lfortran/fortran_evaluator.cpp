@@ -1046,6 +1046,9 @@ Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
     // ASR -> MLIR
     std::unique_ptr<LCompilers::MLIRModule> m;
     LCompilers::PassManager pass_manager;
+    // The MLIR backend formats only scalars; the array arguments of a
+    // StringFormat are lowered for the LLVM backend alone.
+    pass_manager.skip_pass("string_format_array_args");
     if (ASR::is_a<ASR::unit_t>(asr)) {
         pass_manager.use_default_passes();
         pass_manager.apply_passes(al, (ASR::TranslationUnit_t *)&asr,

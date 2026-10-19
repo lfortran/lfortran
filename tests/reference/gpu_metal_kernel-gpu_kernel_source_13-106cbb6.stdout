@@ -1,0 +1,128 @@
+#include <metal_stdlib>
+using namespace metal;
+
+kernel void __lfortran_gpu_kernel_0(
+    device int* a [[buffer(0)]],
+    device int* b [[buffer(1)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __flat_idx;
+    int i;
+    int j;
+    if ((((0 * 0) + __thread_id) >= (3 * 2))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    j = ((__flat_idx - ((__flat_idx / ((3 - 1) + 1)) * ((3 - 1) + 1))) + 1);
+    __flat_idx = (__flat_idx / ((3 - 1) + 1));
+    i = (__flat_idx + 1);
+    a[((int)(i) - (1)) + (2 * ((int)(j) - (1)))] = (i + j);
+    b[((int)(j) - (1)) + (3 * ((int)(i) - (1)))] = (i - j);
+}
+
+inline void put_element_gpu_13(thread int& destination, int value) {
+    destination = value;
+}
+
+kernel void __lfortran_gpu_kernel_1(
+    device int* a [[buffer(0)]],
+    device int* b [[buffer(1)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __flat_idx;
+    int __gpu_scalar_argument;
+    int i;
+    int j;
+    if ((((0 * 0) + __thread_id) >= (3 * 2))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    j = ((__flat_idx - ((__flat_idx / ((3 - 1) + 1)) * ((3 - 1) + 1))) + 1);
+    __flat_idx = (__flat_idx / ((3 - 1) + 1));
+    i = (__flat_idx + 1);
+    a[((int)(i) - (1)) + (2 * ((int)(j) - (1)))] = (i + j);
+    __gpu_scalar_argument = b[((int)(j) - (1)) + (3 * ((int)(i) - (1)))];
+    put_element_gpu_13(__gpu_scalar_argument, ((2 * i) - j));
+    b[((int)(j) - (1)) + (3 * ((int)(i) - (1)))] = __gpu_scalar_argument;
+}
+
+inline void put_array_gpu_18(device int* destination, int __1destination, int __2destination, int row, int column, int value) {
+    destination[((int)(row) - (1)) + (__1destination * ((int)(column) - (1)))] = value;
+}
+
+kernel void __lfortran_gpu_kernel_2(
+    device int* a [[buffer(0)]],
+    device int* b [[buffer(1)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __flat_idx;
+    int i;
+    int j;
+    if ((((0 * 0) + __thread_id) >= (3 * 2))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    j = ((__flat_idx - ((__flat_idx / ((3 - 1) + 1)) * ((3 - 1) + 1))) + 1);
+    __flat_idx = (__flat_idx / ((3 - 1) + 1));
+    i = (__flat_idx + 1);
+    a[((int)(i) - (1)) + (2 * ((int)(j) - (1)))] = (i + j);
+    put_array_gpu_18(b, 3, 2, j, i, (i - (2 * j)));
+}
+
+inline void copy_element_gpu_23(device int* source, int __1source, int __2source, int row, int column, thread int& value) {
+    value = source[((int)(row) - (1)) + (__1source * ((int)(column) - (1)))];
+}
+
+inline int read_element_gpu_24(device int* source, int __1source, int __2source, int row, int column) {
+    int value;
+    value = source[((int)(row) - (1)) + (__1source * ((int)(column) - (1)))];
+    return value;
+}
+
+kernel void __lfortran_gpu_kernel_3(
+    device int* a [[buffer(0)]],
+    device int* b [[buffer(1)]],
+    device int* c [[buffer(2)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __flat_idx;
+    int __gpu_scalar_argument;
+    int i;
+    int j;
+    if ((((0 * 0) + __thread_id) >= (3 * 2))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i = ((__flat_idx - ((__flat_idx / ((2 - 1) + 1)) * ((2 - 1) + 1))) + 1);
+    __flat_idx = (__flat_idx / ((2 - 1) + 1));
+    j = (__flat_idx + 1);
+    a[((int)(i) - (1)) + (2 * ((int)(j) - (1)))] = read_element_gpu_24(b, 3, 2, j, i);
+    __gpu_scalar_argument = c[((int)(i) - (1)) + (2 * ((int)(j) - (1)))];
+    copy_element_gpu_23(b, 3, 2, j, i, __gpu_scalar_argument);
+    c[((int)(i) - (1)) + (2 * ((int)(j) - (1)))] = __gpu_scalar_argument;
+}
+
+inline void put_element_gpu_29(thread int& destination, int value) {
+    destination = value;
+}
+
+kernel void __lfortran_gpu_kernel_4(
+    device int* a [[buffer(0)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __flat_idx;
+    int __gpu_scalar_argument;
+    int i;
+    int j;
+    if ((((0 * 0) + __thread_id) >= (3 * 2))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i = ((__flat_idx - ((__flat_idx / ((2 - 1) + 1)) * ((2 - 1) + 1))) + 1);
+    __flat_idx = (__flat_idx / ((2 - 1) + 1));
+    j = (__flat_idx + 1);
+    __gpu_scalar_argument = a[((int)(i) - (1)) + (2 * ((int)(j) - (1)))];
+    put_element_gpu_29(__gpu_scalar_argument, (i + j));
+    a[((int)(i) - (1)) + (2 * ((int)(j) - (1)))] = __gpu_scalar_argument;
+}
+

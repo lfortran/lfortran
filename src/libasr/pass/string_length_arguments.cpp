@@ -588,28 +588,6 @@ public:
     }
 };
 
-// The verification after each pass does not know which passes have run, so
-// this pass checks the invariant it establishes itself, whenever the passes
-// are verified.
-void verify_hidden_string_lengths(const ASR::TranslationUnit_t &unit,
-        const LCompilers::PassOptions &pass_options) {
-    bool verify = pass_options.verify_all_passes;
-#if defined(WITH_LFORTRAN_ASSERT)
-    verify = true;
-#endif
-    if (!verify) return;
-    diag::Diagnostics local_diagnostics;
-    diag::Diagnostics &diagnostics = pass_options.diagnostics != nullptr
-        ? *pass_options.diagnostics : local_diagnostics;
-    ASRVerifyOptions verify_options;
-    verify_options.string_length_arguments = true;
-    if (!asr_verify(unit, verify_options, diagnostics)) {
-        std::cerr << diagnostics.render2();
-        throw LCompilersException("pass=string_length_arguments",
-            LFORTRAN_ASR_PASS_VERIFY_FAILED);
-    }
-}
-
 } // namespace
 
 void pass_string_length_arguments(Allocator &al, ASR::TranslationUnit_t &unit,
@@ -657,7 +635,10 @@ void pass_string_length_arguments(Allocator &al, ASR::TranslationUnit_t &unit,
     PassUtils::normalize_string_physical_casts(al, unit);
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);
-    verify_hidden_string_lengths(unit, pass_options);
+    ASRVerifyOptions verify_options;
+    verify_options.string_length_arguments = true;
+    PassUtils::verify_pass_invariant(unit, pass_options, verify_options,
+        "string_length_arguments");
 }
 
 } // namespace LCompilers

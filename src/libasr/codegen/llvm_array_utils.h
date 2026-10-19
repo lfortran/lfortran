@@ -369,18 +369,6 @@ namespace LCompilers {
                     llvm::Value* num_elements, llvm::Module* module) = 0;
 
                 /*
-                * Creates a contiguous copy of a DescriptorArray of strings,
-                * whose elements all live in the buffer of the one string
-                * descriptor that its data pointer addresses.
-                * Returns a new string descriptor for the copy. Its data is
-                * allocated on heap using lfortran_malloc, so free it after use.
-                */
-                virtual
-                llvm::Value* create_contiguous_string_copy_from_descriptor(
-                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    ASR::String_t* string_type, int rank, llvm::Module* module) = 0;
-
-                /*
                 * Copies contiguous data into a potentially-strided descriptor array.
                 * The inverse of create_contiguous_copy_from_descriptor.
                 * Uses element-wise copy respecting the target descriptor's strides.
@@ -396,16 +384,12 @@ namespace LCompilers {
                 * descriptor array, in array element order, with the
                 * element's 0-based position in that order and a pointer
                 * to the element (respecting the descriptor's strides).
-                * For an array of strings, pass its `string_type`, with the
-                * string descriptor type as `elem_type`; the pointer then
-                * addresses the characters of the element.
                 */
                 virtual
                 void for_each_element_of_descriptor(
                     llvm::Type* desc_llvm_type, llvm::Value* desc,
                     llvm::Type* elem_type, int rank, const std::string& loop_name,
-                    const std::function<void(llvm::Value*, llvm::Value*)>& body,
-                    ASR::String_t* string_type = nullptr) = 0;
+                    const std::function<void(llvm::Value*, llvm::Value*)>& body) = 0;
 
                 // CFI interop: convert internal descriptor to CFI layout
                 virtual
@@ -688,11 +672,6 @@ namespace LCompilers {
                     llvm::Value* num_elements, llvm::Module* module);
 
                 virtual
-                llvm::Value* create_contiguous_string_copy_from_descriptor(
-                    llvm::Type* source_llvm_type, llvm::Value* source_desc,
-                    ASR::String_t* string_type, int rank, llvm::Module* module);
-
-                virtual
                 void copy_contiguous_data_to_descriptor(
                     llvm::Value* source_data,
                     llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
@@ -702,8 +681,7 @@ namespace LCompilers {
                 void for_each_element_of_descriptor(
                     llvm::Type* desc_llvm_type, llvm::Value* desc,
                     llvm::Type* elem_type, int rank, const std::string& loop_name,
-                    const std::function<void(llvm::Value*, llvm::Value*)>& body,
-                    ASR::String_t* string_type = nullptr);
+                    const std::function<void(llvm::Value*, llvm::Value*)>& body);
 
                 // CFI field indices (C-interop layout, no offset field)
                 static constexpr int CFI_FIELD_BASE_ADDR   = 0;

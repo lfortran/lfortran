@@ -3,6 +3,7 @@
 #include "lfortran_gpu_runtime.h"
 #include <sched.h>
 #include <stdatomic.h>
+#include <mach/mach_time.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -98,6 +99,19 @@ typedef struct pooled {
     uint64_t last_use;
 } pooled;
 
+static int gpu_profile_enabled(void) {
+    const char *value = getenv("LFORTRAN_GPU_PROFILE");
+    return value != NULL && strcmp(value, "1") == 0;
+}
+
+static double telemetry_now(void) {
+    static mach_timebase_info_data_t info = {0, 0};
+    if (info.denom == 0) mach_timebase_info(&info);
+    uint64_t ticks = mach_absolute_time();
+    double nanos = (double)ticks * (double)info.numer / (double)info.denom;
+    return nanos * 1e-9;
+}
+
 struct lfortran_gpu_ctx {
     id<MTLDevice> device;
     id<MTLCommandQueue> queue;
@@ -113,10 +127,28 @@ struct lfortran_gpu_ctx {
     // Command buffers are numbered from 1 as they are committed; `completed`
     // is the highest number the device has finished.
     uint64_t serial;
+    int profile_enabled;
     _Atomic uint64_t completed;
     _Atomic uint64_t handled;
     _Atomic int failed;
     char error[512];
+    struct {
+        uint64_t applied_serial;
+        uint64_t completed_command_buffers;
+        uint64_t commits;
+        uint64_t dispatches;
+        uint64_t host_syncs;
+        uint64_t host_waits;
+        uint64_t memcpy_h2d_bytes;
+        uint64_t memcpy_d2h_bytes;
+        uint64_t buffer_allocations;
+        uint64_t buffer_alloc_bytes;
+        double gpu_elapsed_seconds;
+        double gpu_busy_seconds;
+        double gpu_busy_cursor;
+        double jit_seconds;
+        int gpu_timing_available;
+    } telemetry;
     uint64_t lru_clock;
     // How many times the host has synced.
     uint64_t n_syncs;
@@ -171,6 +203,31 @@ static int completed_by_device(lfortran_gpu_ctx *ctx, uint64_t serial) {
         memory_order_acquire);
 }
 
+static void telemetry_collect_command_buffer(lfortran_gpu_ctx *ctx,
+    uint64_t serial, id<MTLCommandBuffer> cb)
+{
+    if (!ctx->profile_enabled || !cb) return;
+    if (ctx->telemetry.gpu_timing_available) {
+        double start = [cb GPUStartTime];
+        double end = [cb GPUEndTime];
+        if (start <= 0.0 || end < start) {
+            ctx->telemetry.gpu_timing_available = 0;
+        } else {
+            ctx->telemetry.gpu_elapsed_seconds += end - start;
+            double begin = start > ctx->telemetry.gpu_busy_cursor
+                ? start : ctx->telemetry.gpu_busy_cursor;
+            if (end > begin) {
+                ctx->telemetry.gpu_busy_seconds += end - begin;
+            }
+            if (end > ctx->telemetry.gpu_busy_cursor) {
+                ctx->telemetry.gpu_busy_cursor = end;
+            }
+        }
+    }
+    ctx->telemetry.completed_command_buffers++;
+    ctx->telemetry.applied_serial = serial;
+}
+
 // ---------------------------------------------------------------- pool ---
 
 static id<MTLBuffer> acquire_buffer(lfortran_gpu_ctx *ctx, size_t size) {
@@ -191,6 +248,10 @@ static id<MTLBuffer> acquire_buffer(lfortran_gpu_ctx *ctx, size_t size) {
     size_t length = 256;
     while (length < size) length *= 2;
     if (length > POOLED_BUFFER_MAX) length = size;
+    if (ctx->profile_enabled) {
+        ctx->telemetry.buffer_allocations++;
+        ctx->telemetry.buffer_alloc_bytes += length;
+    }
     id<MTLBuffer> buffer = [ctx->device newBufferWithLength:length
         options:MTLResourceStorageModeShared];
     if (!buffer) fail("pool", length);
@@ -339,6 +400,9 @@ static id<MTLBuffer> resident_for_write(lfortran_gpu_ctx *ctx, void *host,
         e->buffer = acquire_buffer(ctx, size);
         release_buffer(old, e->last_use);
     }
+    if (ctx->profile_enabled) {
+        ctx->telemetry.memcpy_h2d_bytes += size;
+    }
     memcpy([e->buffer contents], host, size);
     set_dirty(i);
     return e->buffer;
@@ -376,6 +440,8 @@ lfortran_gpu_ctx* lfortran_gpu_init(void) {
     }
     singleton->queue = [singleton->device newCommandQueue];
     singleton->last_command_buffer = nil;
+    singleton->profile_enabled = gpu_profile_enabled();
+    singleton->telemetry.gpu_timing_available = singleton->profile_enabled;
     return singleton;
 }
 
@@ -409,6 +475,7 @@ void lfortran_gpu_register_metal_source(const char *name, const char *source) {
 static id<MTLComputePipelineState> compile_pipeline(lfortran_gpu_ctx* ctx,
     const char *name_buf, const char *source)
 {
+    double started = ctx->profile_enabled ? telemetry_now() : 0.0;
     NSError *error = nil;
     NSString *src = [NSString stringWithUTF8String:source];
 
@@ -435,6 +502,9 @@ static id<MTLComputePipelineState> compile_pipeline(lfortran_gpu_ctx* ctx,
         fprintf(stderr, "lfortran_gpu_load_kernel: Failed to create pipeline:\n%s\n",
                 [[error localizedDescription] UTF8String]);
         exit(1);
+    }
+    if (ctx->profile_enabled) {
+        ctx->telemetry.jit_seconds += telemetry_now() - started;
     }
     return pipeline;
 }
@@ -503,6 +573,17 @@ static void set_arg(lfortran_gpu_kernel *k, int idx, int kind) {
     if (idx >= k->n_args) k->n_args = idx + 1;
 }
 
+static id<MTLBuffer> tracked_buffer_alloc(lfortran_gpu_ctx *ctx, size_t length) {
+    if (ctx->profile_enabled) {
+        ctx->telemetry.buffer_allocations++;
+        ctx->telemetry.buffer_alloc_bytes += length;
+    }
+    id<MTLBuffer> buffer = [ctx->device newBufferWithLength:length
+        options:MTLResourceStorageModeShared];
+    if (!buffer) fail("buffer", length);
+    return buffer;
+}
+
 void lfortran_gpu_set_scratch_arg(lfortran_gpu_kernel* k, int idx,
     size_t size)
 {
@@ -523,6 +604,9 @@ void lfortran_gpu_read_scratch_arg(lfortran_gpu_kernel* k, int idx,
         exit(1);
     }
     sync_all(k->ctx);
+    if (k->ctx->profile_enabled) {
+        k->ctx->telemetry.memcpy_d2h_bytes += size;
+    }
     memcpy(dst, [k->scratch_buffers[idx] contents], size);
 }
 
@@ -601,35 +685,51 @@ static id<MTLBuffer> scratch_buffer(lfortran_gpu_ctx *ctx, int entry,
     int slot, size_t size)
 {
     if (size > POOLED_BUFFER_MAX) {
-        id<MTLBuffer> buffer = [ctx->device newBufferWithLength:size
-            options:MTLResourceStorageModeShared];
-        if (!buffer) fail("scratch", size);
-        return buffer;
+        return tracked_buffer_alloc(ctx, size);
     }
     id<MTLBuffer> buffer = source_registry[entry].scratch[slot];
     if (buffer && [buffer length] >= size) return buffer;
     size_t length = 256;
     while (length < size) length *= 2;
-    buffer = [ctx->device newBufferWithLength:length
-        options:MTLResourceStorageModeShared];
-    if (!buffer) fail("scratch", length);
+    buffer = tracked_buffer_alloc(ctx, length);
     source_registry[entry].scratch[slot] = buffer;
     return buffer;
+}
+
+static void wait_for_completion(lfortran_gpu_ctx *ctx,
+        id<MTLCommandBuffer> cb)
+{
+    if (!cb) return;
+    if (ctx->profile_enabled) ctx->telemetry.host_waits++;
+    [cb waitUntilCompleted];
 }
 
 // Waits for every launch made so far.
 static void wait_all(lfortran_gpu_ctx *ctx) {
     commit_open(ctx);
     if (ctx->last_command_buffer) {
-        [ctx->last_command_buffer waitUntilCompleted];
+        wait_for_completion(ctx, ctx->last_command_buffer);
         ctx->last_command_buffer = nil;
     }
-    for (int i = 0; i < MAX_PENDING_COMMITS; i++) ctx->pending[i] = nil;
-    // The completion handlers run after the wait returns; every one of them
-    // has to have looked at its command buffer's error.
     while (atomic_load_explicit(&ctx->handled, memory_order_acquire)
             < ctx->serial) {
         sched_yield();
+    }
+    if (ctx->profile_enabled) {
+        uint64_t first = ctx->telemetry.applied_serial + 1;
+        uint64_t last = ctx->serial;
+        uint64_t floor = last > (uint64_t)(MAX_PENDING_COMMITS - 1)
+            ? last - (uint64_t)(MAX_PENDING_COMMITS - 1) : 1;
+        if (first < floor) first = floor;
+        for (uint64_t serial = first; serial <= last; serial++) {
+            id<MTLCommandBuffer> cb = ctx->pending[serial % MAX_PENDING_COMMITS];
+            if (!cb) continue;
+            telemetry_collect_command_buffer(ctx, serial, cb);
+            ctx->pending[serial % MAX_PENDING_COMMITS] = nil;
+        }
+    }
+    for (int i = 0; i < MAX_PENDING_COMMITS; i++) {
+        ctx->pending[i] = nil;
     }
     // A kernel that faulted or was stopped by the watchdog has not computed
     // its results, so the program cannot go on with what is in the buffers;
@@ -643,9 +743,13 @@ static void wait_all(lfortran_gpu_ctx *ctx) {
 
 static void sync_all(lfortran_gpu_ctx *ctx) {
     ctx->n_syncs++;
+    if (ctx->profile_enabled) ctx->telemetry.host_syncs++;
     wait_all(ctx);
     while (n_dirty > 0) {
         int i = dirty_list[n_dirty - 1];
+        if (ctx->profile_enabled) {
+            ctx->telemetry.memcpy_d2h_bytes += entries[i].size;
+        }
         memcpy(entries[i].host, [entries[i].buffer contents],
             entries[i].size);
         set_clean(i);
@@ -659,10 +763,19 @@ static void commit_open(lfortran_gpu_ctx *ctx) {
     ctx->encoder = nil;
     id<MTLCommandBuffer> cb = ctx->open_command_buffer;
     ctx->open_command_buffer = nil;
+    if (ctx->profile_enabled) {
+        ctx->telemetry.dispatches += (uint64_t)ctx->n_encoded;
+        ctx->telemetry.commits++;
+    }
     ctx->n_encoded = 0;
     uint64_t serial = ++ctx->serial;
     int slot = (int)(serial % MAX_PENDING_COMMITS);
-    if (ctx->pending[slot]) [ctx->pending[slot] waitUntilCompleted];
+    if (ctx->pending[slot]) {
+        wait_for_completion(ctx, ctx->pending[slot]);
+        telemetry_collect_command_buffer(ctx, serial - MAX_PENDING_COMMITS,
+            ctx->pending[slot]);
+        ctx->pending[slot] = nil;
+    }
     ctx->pending[slot] = cb;
     lfortran_gpu_ctx *c = ctx;
     [cb addCompletedHandler:^(id<MTLCommandBuffer> done) {
@@ -764,6 +877,9 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
                             atIndex:i];
                     } else {
                         buffer = acquire_buffer(ctx, k->sizes[i]);
+                        if (ctx->profile_enabled) {
+                            ctx->telemetry.memcpy_h2d_bytes += k->sizes[i];
+                        }
                         memcpy([buffer contents], k->ptrs[i], k->sizes[i]);
                         [encoder setBuffer:buffer offset:0 atIndex:i];
                         release_buffer(buffer, serial);
@@ -824,4 +940,36 @@ void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
 
 long long lfortran_gpu_heap_size(void) {
     return lfortran_gpu_parse_heap_size();
+}
+
+void lfortran_gpu_metal_telemetry_snapshot(lfortran_gpu_ctx* ctx,
+    lfortran_gpu_metal_telemetry *out)
+{
+    if (!out) return;
+    memset(out, 0, sizeof(*out));
+    if (!ctx) return;
+    out->gpu_timing_available = ctx->profile_enabled
+        && ctx->telemetry.gpu_timing_available;
+    if (!ctx->profile_enabled) return;
+    out->completed_command_buffers = ctx->telemetry.completed_command_buffers;
+    out->commits = ctx->telemetry.commits;
+    out->dispatches = ctx->telemetry.dispatches;
+    out->host_syncs = ctx->telemetry.host_syncs;
+    out->host_waits = ctx->telemetry.host_waits;
+    out->memcpy_h2d_bytes = ctx->telemetry.memcpy_h2d_bytes;
+    out->memcpy_d2h_bytes = ctx->telemetry.memcpy_d2h_bytes;
+    out->buffer_allocations = ctx->telemetry.buffer_allocations;
+    out->buffer_alloc_bytes = ctx->telemetry.buffer_alloc_bytes;
+    out->jit_seconds = ctx->telemetry.jit_seconds;
+    if (ctx->telemetry.gpu_timing_available) {
+        out->gpu_elapsed_seconds = ctx->telemetry.gpu_elapsed_seconds;
+        out->gpu_busy_seconds = ctx->telemetry.gpu_busy_seconds;
+    }
+}
+
+void lfortran_gpu_metal_telemetry_snapshot_sync(lfortran_gpu_ctx* ctx,
+    lfortran_gpu_metal_telemetry *out)
+{
+    if (ctx) lfortran_gpu_sync(ctx);
+    lfortran_gpu_metal_telemetry_snapshot(ctx, out);
 }

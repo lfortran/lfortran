@@ -8,7 +8,7 @@ Assigns the value of an expression to a variable.
 
 ```text
 Assignment(expr target, expr value, stmt? overloaded, bool realloc_lhs,
-    bool move_allocation)
+    bool move_allocation, bool new_target)
 ```
 
 ### Arguments
@@ -20,6 +20,7 @@ Assignment(expr target, expr value, stmt? overloaded, bool realloc_lhs,
 | `overloaded` | for a defined assignment, the [SubroutineCall](SubroutineCall.md) that implements it. A backend that does not care about the original spelling can lower this member and ignore the rest. |
 | `realloc_lhs` | `true` when an allocatable `target` must be reallocated to the shape of `value` first. |
 | `move_allocation` | `true` when the allocation of `value` is moved to `target` instead of being copied, as for `move_alloc`. Both are allocatable arrays, or both are allocatable noncharacter scalars and `target` is type compatible with `value`; the object is neither copied nor finalized. |
+| `new_target` | `true` when `target` is a new object that the assignment only defines, such as an element of an array allocated with `SOURCE=`. The value is copied into it: `target` is not finalized first, and its components are not assigned by defined assignment, as they are for the variable of an intrinsic assignment. Such an assignment is neither a move nor a defined assignment. |
 
 ### Return values
 
@@ -72,6 +73,7 @@ pass turns it into loops later.
   :overloaded nil
   :realloc_lhs false
   :move_allocation false
+  :new_target false
 )
 ```
 
