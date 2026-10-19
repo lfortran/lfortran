@@ -1705,7 +1705,9 @@ Executable Fortran output leaves this compile-only metadata as comments and
 continues to reject actual runtime views with an explicit backend diagnostic.
 
 Supported methods are functions with scalar integer, real, complex, logical
-or constant-length character results, and subroutines. Arguments are scalar
+or constant-length character results, and subroutines. A message that is not
+generic may also return an array of these types, allocatable or of explicit
+shape (see "Array results" below). Arguments are scalar
 integer, real, complex, logical, character, or nonpolymorphic derived-type
 values, or required, nonallocatable, nonpointer assumed-shape arrays of an
 intrinsic numeric or logical type or of character of a constant length. The
@@ -1785,8 +1787,9 @@ view dummy accept a view whose contract implies its own, or a nonpolymorphic
 derived value whose visible implementations provide every required trait,
 the same nominal evidence its association then selects. A reference that more
 than one specific accepts in that second tier is diagnosed as ambiguous.
-Trait arrays, aggregate method results and unrestricted generic methods
-remain unsupported. A plain nondummy trait local is
+Trait arrays, derived-type, polymorphic, pointer and allocatable scalar
+method results, array results of generic messages and unrestricted generic
+methods remain unsupported. A plain nondummy trait local is
 invalid, not an implicitly owning box. Concrete SELECT TYPE inspection, described
 below, tests concrete identity and real implementation inheritance; a
 `CLASS IS (ITrait)` guard queries the conformance of the dynamic type at run
@@ -2071,6 +2074,82 @@ owners and a borrowed view. The reference test
 `-c`, and the diagnostics are checked by
 `continue_compilation_traits_explicit_shape`. `array_section_37` checks the
 copy of ordinary calls, also with `--legacy-array-sections`.
+
+### Array results
+
+A message that is not generic may return an array of any rank whose elements
+are of an intrinsic integer, real, complex or logical type of any kind, or of
+character of a constant length. The result is either allocatable, with a
+shape that the implementation chooses, or of explicit shape, with bounds that
+are specification expressions of the message's other dummies, such as `x(n)`
+or `x(size(v))`, or constants:
+
+```fortran
+abstract interface :: ISamples
+   function samples(self) result(x)
+      type(itself), pass, intent(in) :: self
+      real(8), allocatable :: x(:)
+   end function samples
+   function window(self, n) result(x)
+      type(itself), pass, intent(in) :: self
+      integer, intent(in) :: n
+      integer :: x(n)
+   end function window
+end interface
+```
+
+A reference `view%samples()` through a borrowed view, an owner (also an
+allocatable trait component), a trait pointer or a `CLASS IS` associate name is an array-valued function reference
+like any other (TD-39): it can be assigned, printed, passed as an actual
+argument, be an operand of an array expression or the selector of an
+ASSOCIATE, and its lower bounds are one. Semantics gives the
+`TraitFunctionCall` the result type of the slot's interface with its dummies
+replaced by the actual arguments, as `handle_return_type` does for an ordinary
+call, so the bounds of `x(n)` are those of the actual `n` in the caller.
+
+The result crosses the slot as it crosses an ordinary call whose function
+returns an array. `subroutine_from_function` makes it the last argument of the
+slot's interface, of the witness adapters and of the provider's
+implementations, and the verifier compares that lowered dummy with the
+message's result. `array_struct_temporary` evaluates a reference that is part
+of an expression into a temporary, as for a function that is not elemental,
+and `subroutine_from_function` turns each remaining `TraitFunctionCall` into a
+`TraitSubroutineCall` that passes an allocatable variable of the calling scope
+for the result. That variable is deallocated before each call of a message
+with an allocatable result, so that the provider allocates it, or allocated
+with the bounds of the call's type for an explicit-shape result. An
+allocatable target of an assignment, of the same character length if its
+elements are characters, takes the result over with its shape and lower
+bounds of one, as a move; the variable is otherwise deallocated when its
+scope ends, so no result is leaked. `array_op` and `implied_do_loops` keep a
+trait call whole, so array arguments of a message are never indexed element
+by element, also when its result is scalar.
+
+`traits_runtime_array_result_01` returns an allocatable `real(8)` array of
+data-dependent size through borrowed views, owners, a component owner, a trait
+pointer and a `CLASS IS` associate name, in assignments to allocatable and
+fixed-size targets, `SIZE`, reductions, array expressions, array constructors
+and a loop. `traits_runtime_array_result_02` covers integer, real, complex and
+logical results of non-default kinds, a constant-length character result and
+ranks one to three. `traits_runtime_array_result_03` covers explicit-shape
+results with constant bounds, bounds from scalar and array dummies, a
+parameter and a module variable and a lower bound of zero, additional array
+and scalar arguments, a receiver after another dummy, an `intent(inout)`
+receiver and a receiverless message. `traits_runtime_array_result_04` uses the
+results as actual arguments, in elemental intrinsics, ASSOCIATE, DO WHILE and
+WHERE, through a parent trait and through a view formed from a polymorphic
+object. `traits_runtime_array_result_05` is a user's module whose derived type
+owns the object through an allocatable trait component, `x%p%method(n)`
+returning an array of size `n`. Each has a standard inheritance oracle,
+registered for GFortran. `traits_runtime_array_result_separate_01` compiles
+the trait, the provider and a contract-only consumer, which calls the messages
+through an owner component, separately. `traits_runtime_array_expression_01`
+checks a scalar message with an array argument in array expressions. The
+results that remain outside the slot surface are diagnosed by name, for
+example "runtime dispatch of trait method 'points' with a derived-type result
+is not implemented yet", as `continue_compilation_traits_array_result` checks
+for derived-type, polymorphic, pointer and allocatable scalar results and for
+the array result of a generic message.
 
 ## Scalar allocatable ownership, slots and results (R2)
 

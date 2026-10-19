@@ -182,6 +182,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-14 | Asked which uses of `intent(inout)` remained impossible, for a standalone example that the prototype rejects, and what removing every limitation on the receiver's intent would take. | TD-35, TD-36 |
 | 2026-10-14 | Asked how Rust, Swift, Mojo and Go handle receivers, whether `type(ICounter), intent(inout) :: self` would be flawed, and why not `type(itself)`, which corresponds to `Self`. | TD-36 |
 | 2026-10-14 | Confirmed the agreement on explicit receivers and asked to update this record, update all tests and implement it; when in doubt, to stay close to Rust and other explicitly typed languages, or to ask. | TD-36 |
+| 2026-10-19 | Supplied modules whose trait messages return allocatable `real(8)` arrays, used through a view and through an allocatable trait component, which the prototype rejected, and asked for runtime dispatch of messages with allocatable and explicit-shape array results of intrinsic types, with a specific diagnostic for results that remain unsupported. | TD-39 |
 
 ## Entries
 
@@ -1151,6 +1152,43 @@ specification action, that is, what the paper should say.
   methods use the dynamic type's bindings and that it keeps the dynamic type,
   and how this relates to bindings of retroactive conformances that are not
   type-bound procedures.
+
+#### TD-39: Array results of runtime messages
+
+- **Status:** Implementation choice (the scope was requested by the
+  maintainer; the lowering was not asked).
+- **What the paper says.** Calls of the methods of a trait object use dynamic
+  binding (`sect:trait_objects`, lines 1607-1650), and a trait's methods are
+  ordinary procedure interfaces, whose results the paper does not restrict.
+- **Why it is not tight.** The paper does not say how a result that is not a
+  scalar crosses dynamic binding. The prototype dispatched only messages with
+  scalar intrinsic results and rejected every other message, so a trait with
+  a message returning an allocatable array could not be used as a view.
+- **Options presented.** Not asked.
+- **Choice.** A message that is not generic may return an allocatable or
+  explicit-shape array of an intrinsic numeric or logical type of any kind, or
+  of character of a constant length. A reference through a view, an owner or
+  a pointer is an ordinary array-valued function reference: its result is
+  returned as the result of an ordinary function is, through a variable of
+  the calling scope that the reference evaluates into, and its lower bounds
+  are one. The bounds of an explicit-shape result are those of the message's
+  dummies replaced by the actual arguments. Derived-type, polymorphic,
+  trait-object, pointer and allocatable scalar results, and array results of
+  generic messages, remain outside the runtime surface and are diagnosed by
+  naming the message and its result.
+- **Consequences.** The results are those of the equivalent program in which
+  the trait is an abstract type with deferred bindings. The variable for the
+  result is deallocated before each call of a message with an allocatable
+  result and at the end of its scope, and an allocatable target takes the
+  result over, so no copy is leaked and the lifetime of a result is that of
+  an ordinary function result (TD-14).
+- **Implementation status.** Implemented for borrowed views, owners (including
+  allocatable trait components), pointers, `CLASS IS` associate names and
+  views formed from polymorphic objects, with additional array and scalar
+  arguments, every receiver position and INTENT and receiverless messages,
+  also under separate compilation.
+- **Specification action.** None identified: ordinary Fortran function-result
+  semantics apply.
 
 ### D. Generic procedures, methods and type sets
 
