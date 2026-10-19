@@ -1614,6 +1614,12 @@ class ContainsFunctionReference:
         }
     }
 
+    // A message sent through a runtime trait slot is always a run-time
+    // function reference, e.g. `f%rate(y)` in `y = y + h*f%rate(y)`.
+    void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t& /*x*/) {
+        found = true;
+    }
+
     void visit_ttype(const ASR::ttype_t& /*x*/) {}
 };
 
@@ -3036,16 +3042,36 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     // Its temporary is named like that of a function result, whose lower
     // bounds an allocatable target does not take (see array_op).
     void replace_TraitFunctionCall(ASR::TraitFunctionCall_t* x) {
+        std::string name_hint = std::string("_function_call_") +
+            ASRUtils::symbol_name(x->m_name);
+        if( replace_scalar_call_sharing_target(x->m_type, name_hint) ) {
+            return ;
+        }
         if( !ASRUtils::is_array(x->m_type) ) {
             ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_TraitFunctionCall(x);
             return ;
         }
-        std::string name_hint = std::string("_function_call_") +
-            ASRUtils::symbol_name(x->m_name);
         if( replace_array_call_linked_to_target(x->m_type, name_hint) ) {
             return ;
         }
         replace_current_expr(x, name_hint);
+    }
+
+    // Whether the scalar result of a call that is not elemental, which
+    // shares a variable with the target of an array assignment, is evaluated
+    // into a temporary first, so that the call does not see the elements
+    // already assigned. In an array expression such a call is usually
+    // evaluated once already (see replace_expr), but not in a WHERE
+    // construct.
+    bool replace_scalar_call_sharing_target(ASR::ttype_t* type,
+            const std::string& name_hint) {
+        if( ASRUtils::is_array(type) ||
+                !is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, *current_expr) ) {
+            return false;
+        }
+        force_replace_current_expr_for_scalar(current_expr, name_hint, al,
+            current_body, current_scope, exprs_with_target);
+        return true;
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
@@ -3081,10 +3107,8 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 ASRUtils::symbol_name(x->m_name)) ) {
             return ;
         }
-        if( !ASRUtils::is_array(x->m_type) &&
-               is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, *current_expr) ) {
-            force_replace_current_expr_for_scalar(current_expr, std::string("_function_call_") +
-                                           ASRUtils::symbol_name(x->m_name), al, current_body, current_scope, exprs_with_target);
+        if( replace_scalar_call_sharing_target(x->m_type, std::string("_function_call_") +
+                ASRUtils::symbol_name(x->m_name)) ) {
             return ;
         }
 
