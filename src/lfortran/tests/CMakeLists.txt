@@ -155,11 +155,13 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
         )
     endforeach()
     # `--show-asm` must lower the ASR after the same passes as `-S`. Assembly
-    # differs between targets, so only success is checked.
+    # differs between targets, so only success is checked. The program lives
+    # here because CI builds from the source tarball, which ships `src` but not
+    # `integration_tests`.
     add_test(
         NAME test_show_asm_01
         COMMAND $<TARGET_FILE:lfortran>
-            ${CMAKE_SOURCE_DIR}/integration_tests/show_asm_01.f90
+            ${CMAKE_CURRENT_SOURCE_DIR}/show_asm_01.f90
             --show-asm
             --no-color
     )

@@ -1,6 +1,6 @@
 program show_asm_01
 ! Uses intrinsics that the ASR passes lower before LLVM code generation.
-! `src/lfortran/tests/CMakeLists.txt` also compiles it with `--show-asm`.
+! The `test_show_asm_01` ctest compiles it with `--show-asm`.
 implicit none
 integer :: n, a(3)
 real :: x, y
