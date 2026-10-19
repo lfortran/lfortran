@@ -27608,10 +27608,14 @@ public:
             return;
         }
         auto *concrete = ASRUtils::extract_type(source);
-        if (!ASR::is_a<ASR::StructType_t>(*concrete) || ASRUtils::is_array(source)
-                || ASRUtils::is_class_type(concrete)) {
-            trait_call_error("runtime trait packing currently requires an exact "
-                "nonpolymorphic scalar derived type", actual->base.loc);
+        if (ASR::is_a<ASR::StructType_t>(*concrete) && !ASRUtils::is_array(source)
+                && ASRUtils::is_class_type(concrete)) {
+            make_polymorphic_runtime_trait_view(actual, target);
+            return;
+        }
+        if (!ASR::is_a<ASR::StructType_t>(*concrete) || ASRUtils::is_array(source)) {
+            trait_call_error("runtime trait packing currently requires a scalar "
+                "derived type", actual->base.loc);
         }
         if (ASRUtils::is_constant_designator(actual) ||
                 ASR::is_a<ASR::StructConstant_t>(*actual)) {
@@ -27642,6 +27646,306 @@ public:
             make_operator_proc_visible(&contract->base, "trait", current_scope)));
         actual = ASRUtils::EXPR(ASR::make_TraitPack_t(
             al, actual->base.loc, actual, reference, view_type));
+    }
+
+    // A class(T) object borrowed as a view keeps its dynamic type: the
+    // selected witness of the declared type T dispatches through T's
+    // ordinary bindings, so an override in an extension runs.
+    void make_polymorphic_runtime_trait_view(ASR::expr_t *&actual, ASR::ttype_t *target) {
+        if (ASRUtils::is_unlimited_polymorphic_type(ASRUtils::expr_type(actual))) {
+            trait_call_error("an unlimited polymorphic object cannot form a runtime "
+                "trait object; use select type to select its dynamic type",
+                actual->base.loc);
+        }
+        if (!ASR::is_a<ASR::Var_t>(*actual) &&
+                !ASR::is_a<ASR::StructInstanceMember_t>(*actual) &&
+                !ASR::is_a<ASR::ArrayItem_t>(*actual)) {
+            trait_call_error("borrowing a runtime trait from this expression "
+                "is not implemented yet", actual->base.loc);
+        }
+        auto *declaration = ASRUtils::symbol_get_past_external(
+            ASRUtils::get_struct_sym_from_struct_expr(actual));
+        auto *contract = ASRUtils::trait_runtime_contract(target);
+        if (!declaration || !ASR::is_a<ASR::Struct_t>(*declaration)) {
+            trait_call_error("runtime trait construction requires a resolved derived type",
+                actual->base.loc);
+        }
+        ASR::symbol_t *reference = nullptr;
+        if (ASR::down_cast<ASR::Struct_t>(declaration)->m_is_sealed) {
+            // A sealed type has no extension: its class object is an exact payload.
+            reference = select_runtime_trait_witness(target, declaration, actual->base.loc);
+        } else {
+            if (contract->m_anonymous) {
+                trait_call_error("forming a combined runtime trait object from a "
+                    "polymorphic object is not implemented yet", actual->base.loc);
+            }
+            auto *witness = polymorphic_runtime_trait_witness(contract, declaration,
+                actual->base.loc);
+            reference = make_operator_proc_visible(&witness->base, "trait", current_scope);
+            ASRUtils::insert_module_dependency(reference, al, current_module_dependencies);
+        }
+        auto *view_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(
+            al, actual->base.loc,
+            make_operator_proc_visible(&contract->base, "trait", current_scope)));
+        actual = ASRUtils::EXPR(ASR::make_TraitPack_t(
+            al, actual->base.loc, actual, reference, view_type));
+    }
+
+    // The type-bound procedure that `name` binds for objects of declared
+    // type `declaration`, found through its ancestors.
+    ASR::StructMethodDeclaration_t *runtime_trait_type_bound(ASR::Struct_t *declaration,
+            const std::string &name) {
+        std::set<ASR::Struct_t*> seen;
+        while (declaration && seen.insert(declaration).second) {
+            auto *method = declaration->m_symtab->get_symbol(name);
+            if (method) {
+                method = ASRUtils::symbol_get_past_external(method);
+                return ASR::is_a<ASR::StructMethodDeclaration_t>(*method)
+                    ? ASR::down_cast<ASR::StructMethodDeclaration_t>(method) : nullptr;
+            }
+            auto *parent = ASRUtils::symbol_get_past_external(declaration->m_parent);
+            declaration = parent && ASR::is_a<ASR::Struct_t>(*parent)
+                ? ASR::down_cast<ASR::Struct_t>(parent) : nullptr;
+        }
+        return nullptr;
+    }
+
+    // The witness of class(`declaration`) objects for `contract`, owned by
+    // the scope that forms the view (like a combination's witness): its
+    // lifecycle is polymorphic, and each adapter calls the declared type's
+    // type-bound binding of the message through ordinary dynamic dispatch,
+    // or, for a binding of a retroactive conformance that is not that
+    // type-bound procedure, the bound procedure itself.
+    ASR::TraitWitness_t *polymorphic_runtime_trait_witness(
+            ASR::TraitRuntimeContract_t *contract, ASR::symbol_t *declaration,
+            const Location &loc, ASR::TraitImplementation_t *implementation = nullptr,
+            bool selected = false) {
+        auto *structure = ASR::down_cast<ASR::Struct_t>(declaration);
+        auto *trait = ASR::down_cast<ASR::Trait_t>(
+            ASRUtils::symbol_get_past_external(contract->m_trait));
+        if (!selected) {
+            for (auto *candidate : trait_implementations_for_type(declaration, loc)) {
+                auto hierarchy = checked_trait_hierarchy(*ASR::down_cast<ASR::Trait_t>(
+                    ASRUtils::symbol_get_past_external(candidate->m_trait)), loc);
+                for (auto *parent : hierarchy.traits) {
+                    if (parent == trait && !implementation) implementation = candidate;
+                }
+            }
+            bool adopted = false;
+            for (size_t i = 0; !implementation && i < structure->n_trait_obligations; i++) {
+                auto *obligation = ASRUtils::symbol_get_past_external(
+                    structure->m_trait_obligations[i]);
+                if (!obligation || !ASR::is_a<ASR::Trait_t>(*obligation)) continue;
+                for (auto *parent : checked_trait_hierarchy(
+                        *ASR::down_cast<ASR::Trait_t>(obligation), loc).traits) {
+                    adopted |= parent == trait;
+                }
+            }
+            if (!implementation && !adopted) {
+                trait_call_error("the declared type '" + ASRUtils::generic_type_spelling(*structure)
+                    + "' of this polymorphic object does not implement trait '"
+                    + std::string(trait->m_name) + "'; use select type to form the trait "
+                    "object from a type that does", loc);
+            }
+        }
+        auto *scope = runtime_trait_storage_scope();
+        for (const auto &entry : scope->get_scope()) {
+            if (!ASR::is_a<ASR::TraitWitness_t>(*entry.second)) continue;
+            auto *candidate = ASR::down_cast<ASR::TraitWitness_t>(entry.second);
+            if (candidate->m_lifecycle.m_polymorphic &&
+                    ASRUtils::symbol_get_past_external(
+                        candidate->m_lifecycle.m_type_declaration) == declaration &&
+                    ASRUtils::symbol_get_past_external(candidate->m_implementation) ==
+                        (implementation ? &implementation->base : nullptr) &&
+                    ASRUtils::symbol_get_past_external(candidate->m_contract) ==
+                        &contract->base) {
+                return candidate;
+            }
+        }
+        std::vector<ASR::StructMethodDeclaration_t*> dispatched(contract->n_slots, nullptr);
+        std::vector<const ASR::trait_binding_t*> bindings(contract->n_slots, nullptr);
+        for (size_t i = 0; i < contract->n_slots; i++) {
+            auto &slot = contract->m_slots[i];
+            auto *member = ASRUtils::trait_method_function(slot.m_origins[0]);
+            std::string method = member->m_name;
+            if (slot.n_type_arguments || ASRUtils::trait_method_template(*member)) {
+                trait_call_error("forming a runtime trait object with generic method '"
+                    + method + "' from a polymorphic object is not implemented yet", loc);
+            }
+            if (!ASRUtils::runtime_trait_method_supported(*member)) {
+                trait_call_error("runtime dispatch of trait method '" + method
+                    + "' is not implemented yet", loc);
+            }
+            auto *bound = runtime_trait_type_bound(structure, method);
+            if (implementation) {
+                bindings[i] = ASRUtils::find_trait_binding(*implementation, slot.m_origins[0]);
+                LCOMPILERS_ASSERT(bindings[i]);
+                auto *procedure = ASRUtils::trait_method_function(bindings[i]->m_procedure);
+                if (ASRUtils::trait_method_template(*procedure)) {
+                    trait_call_error("forming a runtime trait object with generic method '"
+                        + method + "' from a polymorphic object is not implemented yet", loc);
+                }
+                if (bound && !bound->m_is_deferred && bound->m_is_nopass ==
+                        bindings[i]->m_is_nopass && ASRUtils::symbol_get_past_external(
+                            bound->m_proc) == ASRUtils::symbol_get_past_external(
+                            bindings[i]->m_procedure)) {
+                    dispatched[i] = bound;
+                }
+            } else if (bound) {
+                dispatched[i] = bound;
+            } else {
+                trait_call_error("the declared type '" + ASRUtils::generic_type_spelling(
+                    *structure) + "' of this polymorphic object has no binding of method '"
+                    + method + "' of trait '" + std::string(trait->m_name) + "'", loc);
+            }
+            if (dispatched[i]) {
+                auto *procedure = ASRUtils::symbol_get_past_external(dispatched[i]->m_proc);
+                if (!ASR::is_a<ASR::Function_t>(*procedure) ||
+                        ASRUtils::trait_method_template(*ASR::down_cast<ASR::Function_t>(
+                            procedure))) {
+                    trait_call_error("forming a runtime trait object with generic method '"
+                        + method + "' from a polymorphic object is not implemented yet", loc);
+                }
+            }
+        }
+        ASR::trait_lifecycle_t lifecycle;
+        lifecycle.loc = loc;
+        lifecycle.m_type_declaration = ASRUtils::import_type_declaration(al, declaration, scope);
+        lifecycle.m_polymorphic = true;
+        std::string name = scope->get_unique_name("__trait_dispatch_"
+            + std::string(structure->m_name) + "_" + std::string(trait->m_name) + "_witness");
+        auto *witness_scope = al.make_new<SymbolTable>(scope);
+        ASR::symbol_t *evidence = nullptr;
+        if (implementation) {
+            evidence = make_operator_proc_visible(&implementation->base, "trait", scope);
+            ASRUtils::insert_module_dependency(evidence, al, current_module_dependencies);
+        }
+        auto *witness = ASR::down_cast2<ASR::TraitWitness_t>(ASR::make_TraitWitness_t(
+            al, loc, witness_scope, s2c(al, name),
+            make_operator_proc_visible(&contract->base, "trait", scope), evidence,
+            nullptr, 0, nullptr, 0, ASR::abiType::Source, lifecycle,
+            nullptr, 0, nullptr, 0));
+        scope->add_symbol(name, &witness->base);
+        Vec<ASR::symbol_t*> procedures;
+        Vec<char*> dependencies;
+        procedures.reserve(al, contract->n_slots);
+        dependencies.reserve(al, contract->n_slots);
+        for (size_t i = 0; i < contract->n_slots; i++) {
+            auto *procedure = polymorphic_trait_adapter(
+                ASR::down_cast<ASR::Function_t>(contract->m_slots[i].m_procedure),
+                declaration, dispatched[i], bindings[i], witness_scope, loc, witness, i);
+            procedures.push_back(al, procedure);
+            dependencies.push_back(al, ASRUtils::symbol_name(procedure));
+        }
+        witness->m_procedures = procedures.p;
+        witness->n_procedures = procedures.size();
+        witness->m_dependencies = dependencies.p;
+        witness->n_dependencies = dependencies.size();
+        Vec<ASR::symbol_t*> projections;
+        projections.reserve(al, trait->n_parents);
+        for (size_t i = 0; i < trait->n_parents; i++) {
+            auto *parent_contract = ASRUtils::trait_runtime_contract(trait->m_parents[i]);
+            LCOMPILERS_ASSERT(parent_contract);
+            projections.push_back(al, &polymorphic_runtime_trait_witness(parent_contract,
+                declaration, loc, implementation, true)->base);
+        }
+        witness->m_projections = projections.p;
+        witness->n_projections = projections.size();
+        return witness;
+    }
+
+    // The adapter of a polymorphic witness's slot: the receiver is the view's
+    // class(`declaration`) object. A `dispatched` type-bound procedure is
+    // called through it with ordinary dynamic dispatch; otherwise the
+    // procedure of `binding` is called directly.
+    ASR::symbol_t *polymorphic_trait_adapter(ASR::Function_t *required,
+            ASR::symbol_t *declaration, ASR::StructMethodDeclaration_t *dispatched,
+            const ASR::trait_binding_t *binding, SymbolTable *scope, const Location &loc,
+            ASR::TraitWitness_t *witness, size_t slot) {
+        ASRUtils::SymbolDuplicator duplicator(al);
+        ASR::symbol_t *copy = duplicator.duplicate_Function(required, scope);
+        if (!copy) trait_call_error("cannot construct the trait method adapter", loc);
+        ASR::Function_t *adapter = ASR::down_cast<ASR::Function_t>(copy);
+        adapter->m_name = s2c(al, scope->get_unique_name(
+            std::string(witness->m_name) + "_" + std::to_string(slot)));
+        adapter->m_access = ASR::accessType::Private;
+        auto *signature = ASRUtils::get_FunctionType(adapter);
+        signature->m_is_restriction = false;
+        signature->m_deftype = ASR::deftypeType::Implementation;
+        LCOMPILERS_ASSERT(adapter->n_args > 0);
+        forward_trait_out_arguments(*adapter);
+        ASR::Variable_t *receiver = ASRUtils::EXPR2VAR(adapter->m_args[0]);
+        receiver->m_pass_attr = ASR::pass_attrType::NotMethod;
+        receiver->m_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(al, loc,
+            make_operator_proc_visible(witness->m_contract, "trait", adapter->m_symtab)));
+        receiver->m_type_declaration = nullptr;
+        signature->m_arg_types[0] = receiver->m_type;
+        auto *type_declaration = ASRUtils::import_type_declaration(al, declaration,
+            adapter->m_symtab);
+        auto object = [&]() {
+            return ASRUtils::EXPR(ASR::make_TraitReceiver_t(al, loc, adapter->m_args[0],
+                &witness->base, type_declaration, ASRUtils::make_StructType_t_util(
+                    al, loc, type_declaration, false)));
+        };
+        ASR::symbol_t *callee = nullptr;
+        ASR::Function_t *implementation = nullptr;
+        bool nopass = false;
+        size_t self = 0;
+        if (dispatched) {
+            callee = ASRUtils::import_class_procedure(al, loc, &dispatched->base,
+                adapter->m_symtab);
+            implementation = ASR::down_cast<ASR::Function_t>(
+                ASRUtils::symbol_get_past_external(dispatched->m_proc));
+            nopass = dispatched->m_is_nopass;
+            self = ASRUtils::passed_object_index(*dispatched, implementation);
+        } else {
+            callee = make_operator_proc_visible(binding->m_procedure, "trait",
+                adapter->m_symtab);
+            implementation = ASRUtils::trait_method_function(binding->m_procedure);
+            nopass = binding->m_is_nopass;
+            self = implementation->n_args;
+            for (size_t i = 0; !nopass && i < implementation->n_args; i++) {
+                if (std::string(ASRUtils::EXPR2VAR(implementation->m_args[i])->m_name)
+                        == binding->m_self_argument) self = i;
+            }
+        }
+        Vec<ASR::call_arg_t> args;
+        args.reserve(al, implementation->n_args);
+        for (size_t i = 0, j = 1; i < implementation->n_args; i++) {
+            ASR::call_arg_t arg;
+            arg.loc = loc;
+            arg.m_value = !nopass && i == self ? object() : adapter->m_args[j++];
+            args.push_back(al, arg);
+        }
+        ASR::expr_t *dt = dispatched ? object() : nullptr;
+        SetChar dependencies;
+        dependencies.reserve(al, 4);
+        ADD_ASR_DEPENDENCIES(adapter->m_symtab, callee, dependencies);
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, 2);
+        if (adapter->m_return_var) {
+            ASR::expr_t *value = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(
+                al, loc, callee, nullptr, args.p, args.size(),
+                ASRUtils::expr_type(adapter->m_return_var), nullptr, dt,
+                adapter->m_symtab, dependencies,
+                compiler_options.implicit_argument_casting));
+            body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                al, loc, adapter->m_return_var, value, nullptr,
+                compiler_options.po.realloc_lhs_arrays, false)));
+        } else {
+            ASR::stmt_t *cast = nullptr;
+            ASR::stmt_t *call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
+                al, loc, callee, nullptr, args.p, args.size(), dt, &cast,
+                compiler_options.implicit_argument_casting, adapter->m_symtab, dependencies));
+            if (cast) body.push_back(al, cast);
+            body.push_back(al, call);
+        }
+        adapter->m_body = body.p;
+        adapter->n_body = body.size();
+        adapter->m_dependencies = dependencies.p;
+        adapter->n_dependencies = dependencies.size();
+        scope->add_symbol(adapter->m_name, copy);
+        return copy;
     }
 
     // The value of a named constant, or of a component of one, derived from
@@ -27911,6 +28215,7 @@ public:
                 ASR::trait_lifecycle_t lifecycle;
                 lifecycle.loc = loc;
                 lifecycle.m_type_declaration = ASRUtils::import_type_declaration(al, declaration, scope);
+                lifecycle.m_polymorphic = false;
                 std::string name = scope->get_unique_name("__trait_combination_witness");
                 auto *witness_scope = al.make_new<SymbolTable>(scope);
                 witness = ASR::down_cast2<ASR::TraitWitness_t>(ASR::make_TraitWitness_t(
@@ -27942,10 +28247,23 @@ public:
         return reference;
     }
 
-    ASR::symbol_t *prepare_runtime_trait_value(ASR::expr_t *&value, ASR::ttype_t *target) {
+    // `copy` is false for MOLD=, which takes only the source's type.
+    ASR::symbol_t *prepare_runtime_trait_value(ASR::expr_t *&value, ASR::ttype_t *target,
+            bool copy = true) {
         auto *type = ASRUtils::expr_type(value);
         auto *scalar = ASRUtils::extract_type(type);
         if (ASR::is_a<ASR::TraitObjectType_t>(*scalar)) {
+            make_runtime_trait_view(value, target);
+            return nullptr;
+        }
+        // A polymorphic source is borrowed as a view of its dynamic type,
+        // which the owner then copies like an already formed view.
+        if (ASR::is_a<ASR::StructType_t>(*scalar) && !ASRUtils::is_array(type) &&
+                ASRUtils::is_class_type(scalar)) {
+            if (!copy) {
+                trait_call_error("a polymorphic mold of a runtime trait object is not "
+                    "implemented yet", value->base.loc);
+            }
             make_runtime_trait_view(value, target);
             return nullptr;
         }
@@ -30410,6 +30728,7 @@ public:
         ASR::trait_lifecycle_t lifecycle;
         lifecycle.loc = loc;
         lifecycle.m_type_declaration = implementation->m_type_declaration;
+        lifecycle.m_polymorphic = false;
         auto *witness = ASR::down_cast2<ASR::TraitWitness_t>(ASR::make_TraitWitness_t(
             al, loc, witness_scope, s2c(al, name),
             make_operator_proc_visible(&contract->base, "trait", current_scope),

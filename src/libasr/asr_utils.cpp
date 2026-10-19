@@ -6966,7 +6966,8 @@ ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implement
     for (const auto &entry : implementation.m_parent_symtab->get_scope()) {
         if (!ASR::is_a<ASR::TraitWitness_t>(*entry.second)) continue;
         auto *witness = ASR::down_cast<ASR::TraitWitness_t>(entry.second);
-        if (symbol_get_past_external(witness->m_implementation) == &implementation.base &&
+        if (!witness->m_lifecycle.m_polymorphic &&
+                symbol_get_past_external(witness->m_implementation) == &implementation.base &&
                 symbol_get_past_external(witness->m_contract) == &contract->base) {
             return witness;
         }

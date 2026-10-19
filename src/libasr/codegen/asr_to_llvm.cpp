@@ -29263,8 +29263,9 @@ public:
         }
         if (define && !table->hasInitializer()) {
             std::vector<llvm::Constant*> entries;
-            entries.push_back(llvm::ConstantExpr::getBitCast(
-                struct_api->get_trait_lifecycle(x.m_lifecycle.m_type_declaration, module.get()),
+            entries.push_back(llvm::ConstantExpr::getBitCast(x.m_lifecycle.m_polymorphic
+                ? struct_api->get_dynamic_trait_lifecycle(module.get())
+                : struct_api->get_trait_lifecycle(x.m_lifecycle.m_type_declaration, module.get()),
                 llvm_utils->i8_ptr));
             for (size_t i = 0; i < x.n_procedures; i++) {
                 auto *procedure = ASRUtils::symbol_get_past_external(x.m_procedures[i]);
@@ -29277,12 +29278,17 @@ public:
         return table;
     }
 
+    // `vptr` is the dynamic type metadata of a polymorphic payload; an exact
+    // payload has its witness's concrete type.
     llvm::Value *trait_witness_view(const ASR::TraitWitness_t &witness,
-            llvm::Value *payload) {
-        auto *concrete = ASRUtils::symbol_get_past_external(witness.m_lifecycle.m_type_declaration);
+            llvm::Value *payload, llvm::Value *vptr = nullptr) {
         auto *type = llvm_utils->getTraitType(witness.n_procedures);
         llvm::Value *view = llvm_utils->CreateAlloca(type, nullptr, "trait_borrow");
-        llvm::Value *vptr = struct_api->get_pointer_to_method(concrete, module.get());
+        if (!vptr) {
+            auto *concrete = ASRUtils::symbol_get_past_external(
+                witness.m_lifecycle.m_type_declaration);
+            vptr = struct_api->get_pointer_to_method(concrete, module.get());
+        }
         vptr = builder->CreateBitCast(vptr, llvm_utils->i8_ptr);
         builder->CreateStore(vptr, llvm_utils->create_gep2(type, view, 0));
         builder->CreateStore(payload, llvm_utils->create_gep2(type, view, 1));
@@ -29303,6 +29309,32 @@ public:
     void visit_TraitPack(const ASR::TraitPack_t &x) {
         auto *witness = ASR::down_cast<ASR::TraitWitness_t>(
             ASRUtils::symbol_get_past_external(x.m_witness));
+        auto *payload_type = expr_type(x.m_payload);
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(payload_type))) {
+            // A polymorphic payload keeps its dynamic type: the view takes the
+            // vptr and data address of its class object.
+            this->visit_expr_load_wrapper(x.m_payload, 0);
+            llvm::Value *object = tmp;
+            if (LLVM::is_llvm_pointer(*payload_type)) {
+                auto *class_type = llvm_utils->get_type_from_ttype_t_util(
+                    x.m_payload, ASRUtils::extract_type(payload_type), module.get());
+                object = llvm_utils->CreateLoad2(class_type->getPointerTo(), object);
+                llvm_utils->trait_error_if(builder->CreateIsNull(object),
+                    "cannot borrow an unallocated or disassociated polymorphic object "
+                    "as a runtime trait object");
+            }
+            object = builder->CreateBitCast(object, llvm_utils->i8_ptr->getPointerTo());
+            llvm::Value *vptr = llvm_utils->CreateLoad2(llvm_utils->i8_ptr, object);
+            llvm::Value *payload = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                llvm_utils->create_ptr_gep2(llvm_utils->i8_ptr, object, 1));
+            if (LLVM::is_llvm_pointer(*payload_type)) {
+                llvm_utils->trait_error_if(builder->CreateIsNull(payload),
+                    "cannot borrow an unallocated or disassociated polymorphic object "
+                    "as a runtime trait object");
+            }
+            tmp = trait_witness_view(*witness, payload, vptr);
+            return;
+        }
         // Inline subobjects provide storage; indirect components store its address.
         bool indirect_payload = LLVM::is_llvm_pointer(*expr_type(x.m_payload));
         visit_expr_load_wrapper(x.m_payload, indirect_payload, indirect_payload);
@@ -29518,6 +29550,7 @@ public:
         if (selected_witness) {
             auto *witness = ASR::down_cast<ASR::TraitWitness_t>(
                 ASRUtils::symbol_get_past_external(selected_witness));
+            LCOMPILERS_ASSERT(!witness->m_lifecycle.m_polymorphic);
             auto *concrete = ASRUtils::symbol_get_past_external(
                 witness->m_lifecycle.m_type_declaration);
             llvm::Value *payload = llvm::Constant::getNullValue(llvm_utils->i8_ptr);
@@ -29598,6 +29631,19 @@ public:
         llvm::Value *payload = llvm_utils->trait_field(tmp, 1);
         auto *concrete_type = llvm_utils->get_type_from_ttype_t_util(
             x.m_type, x.m_type_declaration, module.get());
+        if (ASRUtils::is_class_type(x.m_type)) {
+            // The receiver of a polymorphic witness is an ordinary class
+            // object of the payload's dynamic type.
+            auto *class_type = llvm::cast<llvm::StructType>(concrete_type);
+            llvm::Value *view = tmp;
+            auto *object = llvm_utils->CreateAlloca(class_type, nullptr, "trait_receiver");
+            builder->CreateStore(builder->CreateBitCast(llvm_utils->trait_field(view, 0),
+                class_type->getElementType(0)), llvm_utils->create_gep2(class_type, object, 0));
+            builder->CreateStore(builder->CreateBitCast(payload,
+                class_type->getElementType(1)), llvm_utils->create_gep2(class_type, object, 1));
+            tmp = object;
+            return;
+        }
         tmp = builder->CreateBitCast(payload, concrete_type->getPointerTo());
     }
 

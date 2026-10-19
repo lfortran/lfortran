@@ -7,8 +7,13 @@ The concrete nominal identity of the scalar owned-value protocol.
 ### Syntax
 
 ```text
-trait_lifecycle = (symbol type_declaration)
+trait_lifecycle = (symbol type_declaration, bool polymorphic)
 ```
+
+`polymorphic` marks the lifecycle of a witness formed from a polymorphic
+`class(T)` object, where `type_declaration` is the declared type `T`. Such a
+witness copies, finalizes and releases its payload through the dynamic type's
+vtable, so an owner keeps the extension components of the dynamic type.
 
 This record belongs to a `TraitWitness` but references the canonical concrete
 type, not a trait or conformance identity. Verification requires agreement with

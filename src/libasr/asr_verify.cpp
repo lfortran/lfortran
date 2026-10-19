@@ -2495,10 +2495,12 @@ public:
             const Location &loc) {
         auto *contract_symbol = ASRUtils::symbol_get_past_external(witness.m_contract);
         auto *impl_symbol = ASRUtils::symbol_get_past_external(witness.m_implementation);
+        bool polymorphic = witness.m_lifecycle.m_polymorphic;
         require_with_loc_id(contract_symbol && ASR::is_a<TraitRuntimeContract_t>(*contract_symbol) &&
                 ((impl_symbol && ASR::is_a<TraitImplementation_t>(*impl_symbol) &&
                   !witness.n_components) || (!impl_symbol && witness.n_components &&
-                  witness.m_components)),
+                  witness.m_components && !polymorphic) ||
+                 (!impl_symbol && !witness.n_components && polymorphic)),
             "asr.verify.trait_witness.evidence",
             "A runtime witness requires a contract and nominal implementation", loc);
         auto *contract = ASR::down_cast<TraitRuntimeContract_t>(contract_symbol);
@@ -2516,6 +2518,47 @@ public:
         require_with_loc_id(lifecycle && ASR::is_a<Struct_t>(*lifecycle),
             "asr.verify.trait_witness.lifecycle",
             "A witness must retain its exact concrete nominal lifecycle", loc);
+        if (polymorphic) {
+            // The declared type of class objects conforms through a
+            // conformance of its own or, when it has none (an abstract type),
+            // through its nominal adoption; extensions keep both.
+            require_with_loc_id(!contract->m_anonymous &&
+                    !ASR::down_cast<Struct_t>(lifecycle)->m_is_sealed,
+                "asr.verify.trait_witness.polymorphic",
+                "A polymorphic witness proves a named contract for an extensible declared type",
+                loc);
+            auto *target = ASRUtils::symbol_get_past_external(contract->m_trait);
+            bool provided = false;
+            if (impl_symbol) {
+                implementation = ASR::down_cast<TraitImplementation_t>(impl_symbol);
+                require_with_loc_id(lifecycle == ASRUtils::symbol_get_past_external(
+                        implementation->m_type_declaration),
+                    "asr.verify.trait_witness.lifecycle",
+                    "A polymorphic witness must retain the conformance of its declared type", loc);
+                auto *origin = ASRUtils::symbol_get_past_external(implementation->m_trait);
+                if (origin && ASR::is_a<Trait_t>(*origin)) {
+                    for (auto *trait : verify_trait_hierarchy(
+                            *ASR::down_cast<Trait_t>(origin), loc).traits) {
+                        provided |= &trait->base == target;
+                    }
+                }
+            } else {
+                auto *declaration = ASR::down_cast<Struct_t>(lifecycle);
+                for (size_t i = 0; i < declaration->n_trait_obligations; i++) {
+                    auto *obligation = ASRUtils::symbol_get_past_external(
+                        declaration->m_trait_obligations[i]);
+                    if (!obligation || !ASR::is_a<Trait_t>(*obligation)) continue;
+                    for (auto *trait : verify_trait_hierarchy(
+                            *ASR::down_cast<Trait_t>(obligation), loc).traits) {
+                        provided |= &trait->base == target;
+                    }
+                }
+            }
+            require_with_loc_id(provided,
+                "asr.verify.trait_witness.polymorphic_conformance",
+                "A polymorphic witness's declared type must conform to its contract", loc);
+            return implementation;
+        }
         if (impl_symbol) {
             implementation = ASR::down_cast<TraitImplementation_t>(impl_symbol);
             require_with_loc_id(!implementation->n_bindings || implementation->m_bindings,
@@ -2540,7 +2583,8 @@ public:
                     "Combination evidence must reference nominal witnesses", loc);
                 auto *component = ASR::down_cast<TraitWitness_t>(symbol);
                 require_with_loc_id(component->m_symtab && component->m_symtab->parent &&
-                        component->m_implementation && !component->n_components,
+                        component->m_implementation && !component->n_components &&
+                        !component->m_lifecycle.m_polymorphic,
                     "asr.verify.trait_witness.component_kind",
                     "Combination components must be original nominal evidence, not recursive compositions", loc);
                 auto *original = verify_runtime_trait_evidence(*component, loc);
@@ -3153,7 +3197,8 @@ public:
                 !id_symtab_map.count(x.m_symtab->counter),
             "asr.verify.trait_witness.scope",
             "A runtime witness must own a unique scope in its defining conformance module");
-        require_id(x.m_contract && (x.m_implementation || x.n_components) &&
+        require_id(x.m_contract &&
+                (x.m_implementation || x.n_components || x.m_lifecycle.m_polymorphic) &&
                 symtab_in_scope(current_symtab, x.m_contract) &&
                 (!x.m_implementation || symtab_in_scope(current_symtab, x.m_implementation)) &&
                 x.m_lifecycle.m_type_declaration &&
@@ -3194,6 +3239,11 @@ public:
         auto *implementation = verify_runtime_trait_evidence(x, x.base.base.loc);
         auto *contract = ASR::down_cast<TraitRuntimeContract_t>(
             ASRUtils::symbol_get_past_external(x.m_contract));
+        if (x.m_lifecycle.m_polymorphic) {
+            verify_polymorphic_trait_witness(x, implementation, *contract);
+            visit_adapters();
+            return;
+        }
         // A program owns the generic entries of a conformance only for a
         // generic type instance it owns, through the procedure copies it owns,
         // when every conformance its type arguments use is a module's or,
@@ -3330,6 +3380,139 @@ public:
             }
         }
         visit_adapters();
+    }
+
+    // The type-bound procedure that `name` binds for declared type `type`,
+    // found through its ancestors.
+    StructMethodDeclaration_t *type_bound_procedure(symbol_t *type, const std::string &name) {
+        std::set<symbol_t*> seen;
+        for (type = ASRUtils::symbol_get_past_external(type);
+                type && ASR::is_a<Struct_t>(*type) && seen.insert(type).second;) {
+            auto *structure = ASR::down_cast<Struct_t>(type);
+            if (auto *method = structure->m_symtab->get_symbol(name)) {
+                method = ASRUtils::symbol_get_past_external(method);
+                return ASR::is_a<StructMethodDeclaration_t>(*method)
+                    ? ASR::down_cast<StructMethodDeclaration_t>(method) : nullptr;
+            }
+            type = ASRUtils::symbol_get_past_external(structure->m_parent);
+        }
+        return nullptr;
+    }
+
+    // A polymorphic witness, which a scope forming views of class(T)
+    // objects owns: its parents are polymorphic witnesses of the same
+    // evidence, and each adapter forwards its slot either through T's
+    // type-bound binding of the message, dispatching on the recovered class
+    // object, or to the procedure that T's conformance binds to it.
+    void verify_polymorphic_trait_witness(const TraitWitness_t &x,
+            TraitImplementation_t *implementation, const TraitRuntimeContract_t &contract) {
+        auto *declaration = ASRUtils::symbol_get_past_external(x.m_lifecycle.m_type_declaration);
+        auto *trait = ASR::down_cast<Trait_t>(ASRUtils::symbol_get_past_external(contract.m_trait));
+        require_id(x.n_projections == trait->n_parents,
+            "asr.verify.trait_witness.projections",
+            "A witness must retain every direct parent view in declaration order");
+        for (size_t i = 0; i < x.n_projections; i++) {
+            auto *reference = ASRUtils::symbol_get_past_external(x.m_projections[i]);
+            auto *parent = reference && ASR::is_a<TraitWitness_t>(*reference)
+                ? ASR::down_cast<TraitWitness_t>(reference) : nullptr;
+            auto *parent_contract = parent
+                ? ASRUtils::symbol_get_past_external(parent->m_contract) : nullptr;
+            require_id(parent && parent->m_lifecycle.m_polymorphic && parent_contract &&
+                    ASR::is_a<TraitRuntimeContract_t>(*parent_contract) &&
+                    ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<TraitRuntimeContract_t>(parent_contract)->m_trait) ==
+                        ASRUtils::symbol_get_past_external(trait->m_parents[i]) &&
+                    ASRUtils::symbol_get_past_external(parent->m_implementation) ==
+                        ASRUtils::symbol_get_past_external(x.m_implementation) &&
+                    parent->m_symtab && parent->m_symtab->parent == current_symtab &&
+                    ASRUtils::symbol_get_past_external(
+                        parent->m_lifecycle.m_type_declaration) == declaration,
+                "asr.verify.trait_witness.projection_origin",
+                "A projection must retain the parent's contract, selected implementation and lifecycle");
+        }
+        std::set<symbol_t*> procedures;
+        for (size_t i = 0; i < x.n_procedures; i++) {
+            auto *procedure = verify_runtime_trait_procedure(x.m_procedures[i],
+                x.base.base.loc, "asr.verify.trait_witness.unique_procedure");
+            auto *symbol = &procedure->base;
+            require_id(ASRUtils::symbol_parent_symtab(symbol) == x.m_symtab &&
+                    x.m_symtab->get_symbol(ASRUtils::symbol_name(symbol)) == symbol &&
+                    procedures.insert(symbol).second,
+                "asr.verify.trait_witness.unique_procedure",
+                "Every runtime slot requires its own provider-owned typed adapter");
+            require_id(x.m_dependencies[i] &&
+                    std::string(x.m_dependencies[i]) == procedure->m_name &&
+                    ASRUtils::get_FunctionType(procedure)->m_deftype == deftypeType::Implementation,
+                "asr.verify.trait_witness.dependency",
+                "A witness slot must retain its executable adapter dependency");
+            auto signature = *ASRUtils::get_FunctionType(procedure);
+            // Imported definitions keep their ordinary ABI but have unavailable bodies.
+            bool imported = signature.m_abi == abiType::ExternalUndefined;
+            if (imported) signature.m_abi = abiType::Source;
+            auto comparable = *procedure;
+            comparable.m_function_signature = &signature.base;
+            auto *slot_procedure = verify_runtime_trait_slot(contract, i, x.base.base.loc);
+            auto mismatch = ASRUtils::trait_method_mismatch(*slot_procedure, comparable,
+                0, 0, true);
+            require_id(mismatch.difference == ASRUtils::TraitMethodDifference::None &&
+                    ASRUtils::EXPR2VAR(procedure->m_args[0])->m_intent ==
+                        ASRUtils::EXPR2VAR(slot_procedure->m_args[0])->m_intent,
+                "asr.verify.trait_witness.signature",
+                "A runtime witness adapter must match its slot: " + mismatch.message);
+            verify_runtime_trait_adapter_receiver(*procedure);
+            auto &slot = contract.m_slots[i];
+            require_id(!slot.n_type_arguments,
+                "asr.verify.trait_witness.polymorphic_slot",
+                "A polymorphic witness forwards only ordinary messages");
+            const trait_binding_t *binding = nullptr;
+            for (size_t j = 0; implementation && j < slot.n_origins; j++) {
+                TraitImplementation_t *selected = nullptr;
+                auto *bound = ASRUtils::runtime_trait_binding(x, slot.m_origins[j], selected);
+                require_id(bound != nullptr,
+                    "asr.verify.trait_witness.origin_covered",
+                    "A runtime witness must prove every nominal origin of a slot");
+                verify_runtime_binding(*selected, *bound);
+                if (!binding) binding = bound;
+            }
+            auto *member = ASRUtils::trait_method_function(slot.m_origins[0]);
+            auto *method = member ? type_bound_procedure(declaration, member->m_name) : nullptr;
+            // The forwarding call: a dispatch through the declared type's
+            // binding of the message on the recovered class object, or a
+            // direct call of the procedure the conformance binds.
+            class Calls : public ASR::BaseWalkVisitor<Calls> {
+            public:
+                std::vector<std::pair<symbol_t*, expr_t*>> calls;
+                void visit_FunctionCall(const FunctionCall_t &call) {
+                    calls.push_back({call.m_name, call.m_dt});
+                    ASR::BaseWalkVisitor<Calls>::visit_FunctionCall(call);
+                }
+                void visit_SubroutineCall(const SubroutineCall_t &call) {
+                    calls.push_back({call.m_name, call.m_dt});
+                    ASR::BaseWalkVisitor<Calls>::visit_SubroutineCall(call);
+                }
+            } calls;
+            for (size_t j = 0; j < procedure->n_body; j++) calls.visit_stmt(*procedure->m_body[j]);
+            bool forwards = false;
+            for (auto &call : calls.calls) {
+                auto *callee = ASRUtils::symbol_get_past_external(call.first);
+                bool receiver = call.second && ASR::is_a<TraitReceiver_t>(*call.second);
+                bool dispatches = method && callee == &method->base && receiver &&
+                    (!binding || (!method->m_is_deferred &&
+                        ASRUtils::symbol_get_past_external(method->m_proc) ==
+                            ASRUtils::symbol_get_past_external(binding->m_procedure)));
+                bool direct = binding && !call.second &&
+                    callee == ASRUtils::symbol_get_past_external(binding->m_procedure);
+                require_id(!receiver || dispatches,
+                    "asr.verify.trait_witness.polymorphic_dispatch",
+                    "A polymorphic witness dispatches only through its declared type's "
+                    "binding of the slot's message");
+                forwards |= dispatches || direct;
+            }
+            require_id(forwards || imported,
+                "asr.verify.trait_witness.polymorphic_dispatch",
+                "A polymorphic witness adapter must forward its slot to the declared type's "
+                "binding of the message or to the procedure its conformance binds");
+        }
     }
 
     void verify_runtime_binding(const TraitImplementation_t &implementation,
@@ -3484,16 +3667,31 @@ public:
         visit_ttype(*x.m_type);
         if (!check_external) return;
         auto *witness = verify_trait_witness_reference(x.m_witness, x.base.base.loc);
-        auto *implementation = verify_runtime_trait_evidence(*witness, x.base.base.loc);
+        verify_runtime_trait_evidence(*witness, x.base.base.loc);
         auto *type = ASRUtils::expr_type(x.m_payload);
         auto *scalar = ASRUtils::extract_type(type);
+        auto *declaration = ASRUtils::symbol_get_past_external(
+            witness->m_lifecycle.m_type_declaration);
+        // A class object is borrowed with its dynamic type by a polymorphic
+        // witness of its declared type, or exactly when that type is sealed.
+        bool polymorphic = ASR::is_a<StructType_t>(*scalar) && ASRUtils::is_class_type(scalar);
         require_id(ASR::is_a<TraitObjectType_t>(*x.m_type) &&
                 ASRUtils::trait_contracts_equal(
                     &ASRUtils::trait_runtime_contract(x.m_type)->base, witness->m_contract) &&
                 ASR::is_a<StructType_t>(*scalar) && !ASRUtils::is_array(type) &&
-                !ASRUtils::is_class_type(scalar),
+                (!polymorphic || witness->m_lifecycle.m_polymorphic ||
+                    ASR::down_cast<Struct_t>(declaration)->m_is_sealed),
             "asr.verify.trait_pack.exact_scalar",
             "A borrowed pack requires exact, nonpolymorphic concrete storage and its contract");
+        require_id(polymorphic || !witness->m_lifecycle.m_polymorphic,
+            "asr.verify.trait_pack.polymorphic",
+            "A polymorphic witness borrows only a class object of its declared type");
+        require_id(!polymorphic || (!ASRUtils::is_unlimited_polymorphic_type(scalar) &&
+                (ASR::is_a<Var_t>(*x.m_payload) ||
+                 ASR::is_a<StructInstanceMember_t>(*x.m_payload) ||
+                 ASR::is_a<ArrayItem_t>(*x.m_payload))),
+            "asr.verify.trait_pack.polymorphic",
+            "A polymorphic pack must borrow an existing class object designator");
         // A value of its statement is materialized by the passes before code
         // generation; a structure constant is static data that they leave in
         // place, so it is not one. A designator that stands for a compile-time
@@ -3511,8 +3709,7 @@ public:
             "asr.verify.trait_pack.constant_designator",
             "A borrowed pack cannot designate a named constant or a value folded from one as storage");
         require_id(ASRUtils::symbol_get_past_external(
-                    ASRUtils::get_struct_sym_from_struct_expr(x.m_payload)) ==
-                ASRUtils::symbol_get_past_external(implementation->m_type_declaration),
+                    ASRUtils::get_struct_sym_from_struct_expr(x.m_payload)) == declaration,
             "asr.verify.trait_pack.nominal_type",
             "A borrowed payload's nominal type must match its selected witness");
     }
@@ -3604,6 +3801,9 @@ public:
             if (!check_external) return;
             auto *witness = verify_trait_witness_reference(selected_witness, loc);
             auto *implementation = verify_runtime_trait_evidence(*witness, loc);
+            require_with_loc_id(!witness->m_lifecycle.m_polymorphic,
+                "asr.verify.trait_owner.exact_scalar",
+                "A concrete owning source requires the witness of its exact type", loc);
             require_with_loc_id(!ASR::down_cast<Struct_t>(
                     ASRUtils::symbol_get_past_external(
                         witness->m_lifecycle.m_type_declaration))->m_is_abstract,
@@ -3844,6 +4044,9 @@ public:
         } else if (check_external) {
             auto *witness = verify_trait_witness_reference(x.m_witness, x.base.base.loc);
             verify_runtime_trait_evidence(*witness, x.base.base.loc);
+            require_id(!witness->m_lifecycle.m_polymorphic,
+                "asr.verify.trait_allocate.nominal_type",
+                "Typed allocation requires the witness of its exact type");
             require_id(symtab_in_scope(current_symtab, x.m_type_declaration) &&
                     ASRUtils::symbol_get_past_external(x.m_type_declaration) ==
                     ASRUtils::symbol_get_past_external(witness->m_lifecycle.m_type_declaration),
@@ -3906,7 +4109,7 @@ public:
         visit_ttype(*x.m_type);
         if (!check_external) return;
         auto *witness = verify_trait_witness_reference(x.m_witness, x.base.base.loc);
-        auto *implementation = verify_runtime_trait_evidence(*witness, x.base.base.loc);
+        verify_runtime_trait_evidence(*witness, x.base.base.loc);
         auto *view_type = typed_expr_type(x.m_view);
         require_id(view_type && ASR::is_a<TraitObjectType_t>(*view_type),
             "asr.verify.trait_receiver.nominal_type",
@@ -3914,10 +4117,11 @@ public:
         visit_ttype(*view_type);
         require_id(ASRUtils::trait_contracts_equal(
                     &ASRUtils::trait_runtime_contract(view_type)->base, witness->m_contract) &&
-                ASR::is_a<StructType_t>(*x.m_type) && !ASRUtils::is_class_type(x.m_type) &&
+                ASR::is_a<StructType_t>(*x.m_type) &&
+                ASRUtils::is_class_type(x.m_type) == bool(witness->m_lifecycle.m_polymorphic) &&
                 x.m_type_declaration && symtab_in_scope(current_symtab, x.m_type_declaration) &&
                 ASRUtils::symbol_get_past_external(x.m_type_declaration) ==
-                    ASRUtils::symbol_get_past_external(implementation->m_type_declaration),
+                    ASRUtils::symbol_get_past_external(witness->m_lifecycle.m_type_declaration),
             "asr.verify.trait_receiver.nominal_type",
             "Concrete recovery must preserve the witness's proven nominal payload type");
         auto *scope = current_symtab;

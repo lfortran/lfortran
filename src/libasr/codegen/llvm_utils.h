@@ -930,7 +930,7 @@ class ASRToLLVMVisitor;
             llvm::Value* trait_field(llvm::Value* view, unsigned field);
             llvm::Value* trait_method_address(llvm::Value* view, size_t slot);
             llvm::Value* trait_lifecycle_call(llvm::Value* lifecycle,
-                TraitLifecycleEntry entry, llvm::FunctionType* type,
+                llvm::Value* vptr, TraitLifecycleEntry entry, llvm::FunctionType* type,
                 const std::vector<llvm::Value*>& args);
             void trait_error_if(llvm::Value* condition, const std::string& message);
             llvm::Value* trait_malloc(llvm::Type* type);
@@ -3482,6 +3482,7 @@ class ASRToLLVMVisitor;
             // The link-unique identity of a named trait.
             llvm::GlobalVariable* get_trait_identity(
                 ASR::symbol_t* trait, llvm::Module* module);
+            llvm::GlobalVariable* get_dynamic_trait_lifecycle(llvm::Module* module);
             
             llvm::Function* define_intrinsic_type_copy_function(ASR::ttype_t* type, llvm::Module* module); 
 

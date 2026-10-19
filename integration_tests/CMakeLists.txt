@@ -4171,6 +4171,24 @@ RUN(NAME traits_runtime_component_18_oracle LABELS gfortran llvm)
 RUN(NAME traits_runtime_class_argument_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_class_argument_01_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_polymorphic_source_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_polymorphic_source_01_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_polymorphic_source_02 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+# LFortran finalizes an unallocated class(t), allocatable variable in an
+# ordinary intrinsic assignment, which the oracle's FINAL counts detect.
+RUN(NAME traits_runtime_polymorphic_source_02_oracle LABELS gfortran)
+RUN(NAME traits_runtime_polymorphic_source_03 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_polymorphic_source_03_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_polymorphic_source_separate_01 LABELS llvm llvm2 NO_STD_F23
+    ISOLATE_MODULES EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_polymorphic_source_separate_01_contracts.f90
+        traits_runtime_polymorphic_source_separate_01_consumer.f90
+        traits_runtime_polymorphic_source_separate_01_provider.f90
+        traits_runtime_polymorphic_source_separate_01_extension.f90)
+RUN(NAME traits_runtime_polymorphic_source_separate_01_oracle LABELS gfortran llvm)
 RUN(NAME traits_allocatable_interface_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_allocatable_interface_01_oracle LABELS gfortran llvm)

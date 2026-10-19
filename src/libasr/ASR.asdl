@@ -43,8 +43,12 @@ trait_erased_parameter
 -- Its callbacks default-initialize raw storage, initialize-copy without
 -- finalizing the destination, assign to prepared/live storage, destroy a live
 -- value, and release a compiler snapshot without user finalization.
+-- A polymorphic lifecycle belongs to a witness of a class(type_declaration)
+-- payload: the payload keeps its dynamic type, whose own lifecycle its type
+-- metadata selects, and the witness's adapters call type-bound bindings
+-- through ordinary dynamic dispatch.
 trait_lifecycle
-    = (symbol type_declaration)
+    = (symbol type_declaration, bool polymorphic)
 
 -- A generic derived type is a Template package that owns its binders, their
 -- constraints, its definition Struct and the procedures that depend on its

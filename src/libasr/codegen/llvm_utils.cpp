@@ -10432,13 +10432,20 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         return builder->CreateBitCast(function, type->getPointerTo());
     }
 
+    // Every callback also receives the payload's type metadata (the view's
+    // concrete vptr), which only the lifecycle of a polymorphic payload uses.
     llvm::Value* LLVMUtils::trait_lifecycle_call(llvm::Value* lifecycle,
-            TraitLifecycleEntry entry, llvm::FunctionType* type,
+            llvm::Value* vptr, TraitLifecycleEntry entry, llvm::FunctionType* type,
             const std::vector<llvm::Value*>& args) {
+        std::vector<llvm::Type*> parameters(type->param_begin(), type->param_end());
+        parameters.push_back(i8_ptr);
+        auto *callback_type = llvm::FunctionType::get(type->getReturnType(), parameters, false);
+        std::vector<llvm::Value*> callback_args = args;
+        callback_args.push_back(builder->CreateBitCast(vptr, i8_ptr));
         auto *callback = CreateLoad2(i8_ptr,
             create_ptr_gep2(i8_ptr, lifecycle, static_cast<int>(entry)));
-        callback = builder->CreateBitCast(callback, type->getPointerTo());
-        return builder->CreateCall(type, callback, args);
+        callback = builder->CreateBitCast(callback, callback_type->getPointerTo());
+        return builder->CreateCall(callback_type, callback, callback_args);
     }
 
     void LLVMUtils::trait_error_if(llvm::Value* condition, const std::string& message) {
@@ -10461,8 +10468,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
     llvm::Value* LLVMUtils::create_trait_value(llvm::StructType* type,
             llvm::Value* view, llvm::Value* source) {
         auto *initialize = llvm::FunctionType::get(i8_ptr, {i8_ptr}, false);
-        auto *payload = trait_lifecycle_call(trait_field(view, 2), TraitLifecycleEntry::Initialize,
-            initialize, {source});
+        auto *payload = trait_lifecycle_call(trait_field(view, 2), trait_field(view, 0),
+            TraitLifecycleEntry::Initialize, initialize, {source});
         auto *copy = trait_malloc(type);
         builder->CreateStore(CreateLoad2(type, view), copy);
         builder->CreateStore(payload, create_gep2(type, copy, 1));
@@ -10474,7 +10481,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             auto *payload = trait_field(view, 1);
             auto *destroy = llvm::FunctionType::get(
                 llvm::Type::getVoidTy(context), {i8_ptr}, false);
-            trait_lifecycle_call(trait_field(view, 2),
+            trait_lifecycle_call(trait_field(view, 2), trait_field(view, 0),
                 finalize ? TraitLifecycleEntry::Destroy : TraitLifecycleEntry::Discard,
                 destroy, {payload});
             lfortran_free(payload);
@@ -10518,12 +10525,13 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             llvm::StructType* type) {
         auto *old = CreateLoad2(type->getPointerTo(), slot);
         auto *witness = trait_field(snapshot, 2);
+        auto *vptr = trait_field(snapshot, 0);
         auto *source = trait_field(snapshot, 1);
         auto *assign = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
             {i8_ptr, i8_ptr, llvm::Type::getInt1Ty(context)}, false);
         auto apply = [&](llvm::Value *destination, bool live) {
             auto *payload = trait_field(destination, 1);
-            trait_lifecycle_call(witness, TraitLifecycleEntry::Assign, assign,
+            trait_lifecycle_call(witness, vptr, TraitLifecycleEntry::Assign, assign,
                 {payload, source,
                     llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), live)});
             builder->CreateStore(CreateLoad2(type, snapshot), destination);
@@ -10547,7 +10555,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         }, initialize);
         auto *release = llvm::FunctionType::get(
             llvm::Type::getVoidTy(context), {i8_ptr}, false);
-        trait_lifecycle_call(witness, TraitLifecycleEntry::Discard, release, {source});
+        trait_lifecycle_call(witness, vptr, TraitLifecycleEntry::Discard, release, {source});
         lfortran_free(source);
         lfortran_free(snapshot);
     }
@@ -10606,8 +10614,10 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             llvm::GlobalValue::LinkOnceODRLinkage, nullptr, name);
         auto saved_ip = builder->saveIP();
         auto *payload_type = llvm_utils->getStructType(concrete, module);
+        // Each callback takes the payload's vptr last, which a concrete
+        // lifecycle does not need (LLVMUtils::trait_lifecycle_call).
         auto *initialize_type = llvm::FunctionType::get(
-            llvm_utils->i8_ptr, {llvm_utils->i8_ptr}, false);
+            llvm_utils->i8_ptr, {llvm_utils->i8_ptr, llvm_utils->i8_ptr}, false);
         auto *initialize = llvm::Function::Create(initialize_type,
             llvm::GlobalValue::LinkOnceODRLinkage, name + "_initialize", module);
         initialize->addFnAttr(LLVM::checked_allocation_attribute);
@@ -10624,13 +10634,24 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                 concrete->m_struct_signature, concrete->m_struct_signature, module,
                 false, false);
         }, [](){});
-        auto *destroy = finalizer_instnace.get_UPoly_finalize_fn(concrete);
-        auto *discard = finalizer_instnace.get_storage_release_fn(
-            concrete->m_struct_signature, concrete);
         builder->CreateRet(builder->CreateBitCast(payload, llvm_utils->i8_ptr));
+        auto release = [&](llvm::Function *function, const std::string &suffix) {
+            auto *type = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
+                {llvm_utils->i8_ptr, llvm_utils->i8_ptr}, false);
+            auto *callback = llvm::Function::Create(type,
+                llvm::GlobalValue::LinkOnceODRLinkage, name + suffix, module);
+            builder->SetInsertPoint(llvm::BasicBlock::Create(context, "entry", callback));
+            builder->CreateCall(function, {&*callback->arg_begin()});
+            builder->CreateRetVoid();
+            return callback;
+        };
+        auto *destroy = release(finalizer_instnace.get_UPoly_finalize_fn(concrete), "_destroy");
+        auto *discard = release(finalizer_instnace.get_storage_release_fn(
+            concrete->m_struct_signature, concrete), "_discard");
 
         auto *assign_type = llvm::FunctionType::get(llvm::Type::getVoidTy(context),
-            {llvm_utils->i8_ptr, llvm_utils->i8_ptr, llvm::Type::getInt1Ty(context)}, false);
+            {llvm_utils->i8_ptr, llvm_utils->i8_ptr, llvm::Type::getInt1Ty(context),
+                llvm_utils->i8_ptr}, false);
         auto *assign = llvm::Function::Create(assign_type,
             llvm::GlobalValue::LinkOnceODRLinkage, name + "_assign", module);
         assign->addFnAttr(LLVM::checked_allocation_attribute);
@@ -10654,6 +10675,86 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         std::vector<llvm::Constant*> entries;
         for (llvm::Function *function : {initialize, destroy, assign, discard}) {
             entries.push_back(llvm::ConstantExpr::getBitCast(function, llvm_utils->i8_ptr));
+        }
+        table->setInitializer(llvm::ConstantArray::get(table_type, entries));
+        builder->restoreIP(saved_ip);
+        return table;
+    }
+
+    // The lifecycle of a polymorphic payload, whose dynamic type is known
+    // only from the vptr each callback receives last: its vtable allocates
+    // prepared storage, and its value-lifecycle family copies and releases
+    // it, as for ordinary polymorphic allocation with SOURCE=.
+    llvm::GlobalVariable* LLVMStruct::get_dynamic_trait_lifecycle(llvm::Module* module) {
+        std::string name = "__trait_lifecycle_dynamic";
+        if (auto *existing = module->getNamedGlobal(name)) return existing;
+        auto *i8_ptr = llvm_utils->i8_ptr;
+        auto *i1 = llvm::Type::getInt1Ty(context);
+        auto *void_type = llvm::Type::getVoidTy(context);
+        auto *table_type = llvm::ArrayType::get(i8_ptr, 4);
+        auto *table = new llvm::GlobalVariable(*module, table_type, true,
+            llvm::GlobalValue::LinkOnceODRLinkage, nullptr, name);
+        auto saved_ip = builder->saveIP();
+        auto define = [&](llvm::Type *result, std::vector<llvm::Type*> parameters,
+                const std::string &suffix) {
+            auto *function = llvm::Function::Create(
+                llvm::FunctionType::get(result, parameters, false),
+                llvm::GlobalValue::LinkOnceODRLinkage, name + suffix, module);
+            function->addFnAttr(LLVM::checked_allocation_attribute);
+            builder->SetInsertPoint(llvm::BasicBlock::Create(context, "entry", function));
+            std::vector<llvm::Value*> args;
+            for (llvm::Argument &arg : function->args()) args.push_back(&arg);
+            return std::make_pair(function, args);
+        };
+        auto vtable_entry = [&](llvm::Value *vptr, int entry, llvm::FunctionType *type) {
+            auto *table = builder->CreateBitCast(vptr, i8_ptr->getPointerTo());
+            auto *function = llvm_utils->CreateLoad2(i8_ptr,
+                llvm_utils->create_ptr_gep2(i8_ptr, table, entry));
+            return builder->CreateBitCast(function, type->getPointerTo());
+        };
+        auto *copy_type = llvm::FunctionType::get(void_type,
+            {i8_ptr, i8_ptr, i1, i1, i1}, false);
+        auto *release_type = llvm::FunctionType::get(void_type, {i8_ptr}, false);
+        auto flag = [&](bool value) { return llvm::ConstantInt::get(i1, value); };
+
+        auto initialize = define(i8_ptr, {i8_ptr, i8_ptr}, "_initialize");
+        {
+            llvm::Value *source = initialize.second[0], *vptr = initialize.second[1];
+            auto *allocate_type = llvm::FunctionType::get(void_type,
+                {i8_ptr->getPointerTo()}, false);
+            auto *wrapper_slot = llvm_utils->CreateAlloca(*builder, i8_ptr);
+            builder->CreateCall(allocate_type, vtable_entry(vptr, 1, allocate_type),
+                {wrapper_slot});
+            auto *wrapper = builder->CreateBitCast(
+                llvm_utils->CreateLoad2(i8_ptr, wrapper_slot), i8_ptr->getPointerTo());
+            auto *payload = llvm_utils->CreateLoad2(i8_ptr,
+                llvm_utils->create_ptr_gep2(i8_ptr, wrapper, 1));
+            llvm_utils->lfortran_free(wrapper);
+            llvm_utils->create_if_else(builder->CreateIsNotNull(source), [&]() {
+                builder->CreateCall(copy_type,
+                    llvm_utils->value_lifecycle_function(vptr, 0, copy_type),
+                    {source, payload, flag(false), flag(false), flag(false)});
+            }, [](){});
+            builder->CreateRet(payload);
+        }
+        auto destroy = define(void_type, {i8_ptr, i8_ptr}, "_destroy");
+        builder->CreateCall(release_type, vtable_entry(destroy.second[1],
+            LLVMFinalize::vtable_finalize_slot, release_type), {destroy.second[0]});
+        builder->CreateRetVoid();
+        auto assign = define(void_type, {i8_ptr, i8_ptr, i1, i8_ptr}, "_assign");
+        builder->CreateCall(copy_type,
+            llvm_utils->value_lifecycle_function(assign.second[3], 0, copy_type),
+            {assign.second[1], assign.second[0], flag(false), flag(true), assign.second[2]});
+        builder->CreateRetVoid();
+        auto discard = define(void_type, {i8_ptr, i8_ptr}, "_discard");
+        builder->CreateCall(release_type,
+            llvm_utils->value_lifecycle_function(discard.second[1], 1, release_type),
+            {discard.second[0]});
+        builder->CreateRetVoid();
+        std::vector<llvm::Constant*> entries;
+        for (llvm::Function *function : {initialize.first, destroy.first,
+                assign.first, discard.first}) {
+            entries.push_back(llvm::ConstantExpr::getBitCast(function, i8_ptr));
         }
         table->setInitializer(llvm::ConstantArray::get(table_type, entries));
         builder->restoreIP(saved_ip);

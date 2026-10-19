@@ -2028,7 +2028,7 @@ contains
         class(IValue), intent(in) :: object
     end subroutine
     subroutine polymorphic_source(object)
-        class(Payload), intent(in) :: object
+        class(*), intent(in) :: object
         call consume(object)
     end subroutine
     subroutine concrete_inspection(object)

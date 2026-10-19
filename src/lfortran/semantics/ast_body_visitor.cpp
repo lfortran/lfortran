@@ -4301,7 +4301,7 @@ public:
             ASR::expr_t *view = source ? source : mold;
             auto *type = ASRUtils::expr_type(arg.m_a);
             if (view) {
-                witness = prepare_runtime_trait_value(view, type);
+                witness = prepare_runtime_trait_value(view, type, source != nullptr);
             } else if (arg.m_sym_subclass) {
                 auto *concrete = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(arg.m_sym_subclass));
