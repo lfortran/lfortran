@@ -1,0 +1,13 @@
+{
+    "basename": "ast_json-json_loc_fixed_form-1abae0c",
+    "cmd": "lfortran --show-ast --no-indent --json {infile} -o {outfile}",
+    "infile": "tests/json_loc_fixed_form.f",
+    "infile_hash": "930258ac2815ee5175afb4481f263e17f9ed1db52f1e1328a808a613",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_json-json_loc_fixed_form-1abae0c.stdout",
+    "stdout_hash": "f89ea21bcba7c1e4896a44768d10e7016db52f58b8292f22d4c5c269",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
