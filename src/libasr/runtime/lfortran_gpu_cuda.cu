@@ -13,7 +13,6 @@ extern "C" {
 } // extern "C" for the header
 
 #define MAX_ARGS 32
-#define MAX_KERNELS 64
 
 typedef void (*kernel_func_t)(void);
 
@@ -52,13 +51,17 @@ typedef struct slot_cache {
     size_t capacities[MAX_ARGS];
 } slot_cache;
 
-// Registry for pre-compiled CUDA kernels
-static struct {
+// Registry for pre-compiled CUDA kernels, one entry for each kernel a
+// translation unit registers, however many there are. An entry is never
+// moved, since a loaded kernel keeps a pointer to its cache.
+typedef struct kernel_entry {
     const char *name;
     kernel_func_t func;
     slot_cache cache;
-} kernel_registry[MAX_KERNELS];
+} kernel_entry;
+static kernel_entry **kernel_registry = NULL;
 static int n_registered = 0;
+static int registry_capacity = 0;
 
 static resident entries[MAX_RESIDENT];
 static int n_entries = 0;
@@ -66,13 +69,25 @@ static void *deferred_free[MAX_DEFERRED];
 static int n_deferred = 0;
 
 extern "C" void lfortran_gpu_register_kernel(const char *name, kernel_func_t func) {
-    if (n_registered >= MAX_KERNELS) {
-        fprintf(stderr, "lfortran_gpu_register_kernel: too many kernels\n");
+    if (n_registered == registry_capacity) {
+        int capacity = registry_capacity ? 2 * registry_capacity : 64;
+        kernel_entry **grown = (kernel_entry**)realloc(kernel_registry,
+            capacity * sizeof(kernel_entry*));
+        if (!grown) {
+            fprintf(stderr, "lfortran_gpu_register_kernel: out of memory\n");
+            exit(1);
+        }
+        kernel_registry = grown;
+        registry_capacity = capacity;
+    }
+    kernel_entry *entry = (kernel_entry*)calloc(1, sizeof(kernel_entry));
+    if (!entry) {
+        fprintf(stderr, "lfortran_gpu_register_kernel: out of memory\n");
         exit(1);
     }
-    kernel_registry[n_registered].name = name;
-    kernel_registry[n_registered].func = func;
-    n_registered++;
+    entry->name = name;
+    entry->func = func;
+    kernel_registry[n_registered++] = entry;
 }
 
 typedef struct scalar_arg {
@@ -240,7 +255,7 @@ void lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx) {
     sync_all();
     // The reset frees all device memory, the kept buffers included.
     for (int i = 0; i < n_registered; i++) {
-        memset(&kernel_registry[i].cache, 0, sizeof(slot_cache));
+        memset(&kernel_registry[i]->cache, 0, sizeof(slot_cache));
     }
     memset(entries, 0, sizeof(entries));
     n_entries = 0;
@@ -258,7 +273,7 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
 
     int entry = -1;
     for (int i = 0; i < n_registered; i++) {
-        if (strcmp(kernel_registry[i].name, name_buf) == 0) {
+        if (strcmp(kernel_registry[i]->name, name_buf) == 0) {
             entry = i;
             break;
         }
@@ -270,10 +285,10 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
     }
 
     lfortran_gpu_kernel *k = (lfortran_gpu_kernel*)calloc(1, sizeof(lfortran_gpu_kernel));
-    k->func = kernel_registry[entry].func;
+    k->func = kernel_registry[entry]->func;
     k->ctx = ctx;
     k->n_args = 0;
-    k->cache = &kernel_registry[entry].cache;
+    k->cache = &kernel_registry[entry]->cache;
     return k;
 }
 
