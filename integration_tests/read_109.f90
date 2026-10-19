@@ -166,5 +166,15 @@ program read_109
     read(z, '(2I3)', iostat=ios) rt4(1:2)
     if (ios == 0 .or. any(rt4 /= -1)) error stop 31
 
+    ! L into fixed-size and allocatable integer arrays (an extension that
+    ! scalars already have)
+    i4 = -1
+    z = 'TFFT'
+    read(z, '(4L1)', iostat=ios) i4
+    if (ios /= 0 .or. any(i4 /= [1, 0, 0, 1])) error stop 32
+    a8 = -1
+    read(z, '(4L1)', iostat=ios) a8
+    if (ios /= 0 .or. any(a8 /= [1, 0, 0, 1])) error stop 33
+
     print *, 'ok'
 end program read_109

@@ -11541,6 +11541,13 @@ static bool is_formatted_read_logical(int32_t type_code)
     return type_code == 1 || type_code == 11 || type_code == 12 || type_code == 13;
 }
 
+// Items that an L edit reads: logical items, and integer items as an extension
+// (T gives 1, F gives 0), as for scalars
+static bool is_formatted_read_l_item(int32_t type_code)
+{
+    return is_formatted_read_logical(type_code) || is_formatted_read_integer(type_code);
+}
+
 static bool is_formatted_read_complex(int32_t type_code)
 {
     return type_code == 6 || type_code == 7;
@@ -12228,7 +12235,8 @@ static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bo
         consumed_newline, pad_no, str_data, str_len, char_kind);
 }
 
-// Read the next element of the logical array in `arr_cont` with an L edit
+// Read the next element of the logical or integer array in `arr_cont` with an
+// L edit
 static bool read_logical_array_component(InputSource *inputSource, int width,
         bool advance_no, int32_t *iostat, int32_t *chunk, bool *consumed_newline,
         bool pad_no, ArrayReadCont *arr_cont)
@@ -12253,7 +12261,7 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
         ArrayReadCont *arr_cont)
 {
     if (arr_cont->active) {
-        if (arr_cont->is_char || !is_formatted_read_logical(arr_cont->elem_tc)) {
+        if (arr_cont->is_char || !is_formatted_read_l_item(arr_cont->elem_tc)) {
             if (iostat) *iostat = 5010;
             arr_cont->active = false;
             return false;
@@ -12274,7 +12282,7 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
         if (n_elems <= 0) {
             return true;
         }
-        if (!start_array_read(arr_cont, is_formatted_read_logical, type_code,
+        if (!start_array_read(arr_cont, is_formatted_read_l_item, type_code,
                 data_ptr, n_elems, rank, extents, strides)) {
             if (iostat) *iostat = 5010;
             return false;
