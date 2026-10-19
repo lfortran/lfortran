@@ -29,3 +29,8 @@ if (c(1) == "abcd") r = r + 1
 if (c(2) == "efgh") r = r + 2
 if (c(3) == "ijkl") r = r + 4
 end subroutine
+
+integer function parameter_28_fsum(a)
+integer :: a(3)
+parameter_28_fsum = a(1) + a(2) + a(3)
+end function

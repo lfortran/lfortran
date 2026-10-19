@@ -2114,11 +2114,11 @@ RUN(NAME parameter_25 LABELS gfortran llvm)
 RUN(NAME parameter_26 LABELS gfortran llvm)
 RUN(NAME parameter_27 LABELS gfortran llvm)
 # Sequence association of an element of a named constant array with an array
-# dummy of a separately compiled external procedure. Not gfortran: it passes the
-# element in a one-element temporary, so the callee reads past it. NO_FAST: the
-# --fast-only replace_with_compile_time_values pass replaces the element by its
-# value (pre-existing, #15522).
-RUN(NAME parameter_28 LABELS llvm EXTRAFILES parameter_28_ext.f90 EXTRA_ARGS --implicit-interface NO_FAST)
+# dummy of a separately compiled external procedure: an array element
+# designator actual argument represents the element sequence that starts at
+# that element (F2018 15.5.2.11 p2). Not gfortran: it passes the element in a
+# one-element temporary, so the callee reads past it (a gfortran bug).
+RUN(NAME parameter_28 LABELS llvm EXTRAFILES parameter_28_ext.f90 EXTRA_ARGS --implicit-interface)
 
 RUN(NAME fortuno_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
