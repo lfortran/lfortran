@@ -4001,6 +4001,9 @@ RUN(NAME traits_runtime_pointer_null_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --veri
 RUN(NAME traits_runtime_pointer_null_01_oracle LABELS gfortran)
 # Ordinary CLASS ASSOCIATED with allocatable targets has a pre-existing LLVM failure.
 RUN(NAME traits_runtime_pointer_01_oracle LABELS gfortran)
+RUN(NAME traits_host_association_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+# Host-associated ordinary CLASS owners are copied and finalized by LFortran.
+RUN(NAME traits_host_association_01_oracle LABELS gfortran)
 RUN(NAME traits_runtime_pointer_separate_01 LABELS llvm llvm2 NO_STD_F23
     EXTRA_ARGS --verify-all-passes --separate-compilation
     EXTRAFILES traits_runtime_pointer_separate_01_contracts.f90

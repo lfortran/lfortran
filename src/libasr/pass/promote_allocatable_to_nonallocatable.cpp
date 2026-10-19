@@ -537,7 +537,10 @@ class FixMoveAssignment: public ASR::CallReplacerOnExpressionsVisitor<FixMoveAss
                                             ASRUtils::is_allocatable(value_type) &&
                                             ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray;
 
-            if (x.m_move_allocation && (!is_target_allocatable_array || !is_value_allocatable_array)) {
+            // A runtime trait owner's allocation is only ever moved, never
+            // copied by an ordinary assignment.
+            if (x.m_move_allocation && !ASRUtils::is_trait_owner(target_type) &&
+                    (!is_target_allocatable_array || !is_value_allocatable_array)) {
                 xx.m_move_allocation = false;
             }
         }

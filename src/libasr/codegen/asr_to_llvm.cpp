@@ -13795,6 +13795,11 @@ public:
             assign_trait_recovered(*ASR::down_cast<ASR::TraitRecover_t>(x.m_target), x.m_value);
             return;
         }
+        if (x.m_move_allocation && ASR::is_a<ASR::Var_t>(*x.m_value) &&
+                ASRUtils::is_trait_owner(ASRUtils::expr_type(x.m_target))) {
+            transfer_trait_owner(x.m_target, x.m_value);
+            return;
+        }
 
         if (ASR::is_a<ASR::BitCast_t>(*x.m_value)) {
             ASR::BitCast_t* bc = ASR::down_cast<ASR::BitCast_t>(x.m_value);
@@ -29441,6 +29446,22 @@ public:
         auto *slot = trait_owner_slot(x.m_target);
         llvm_utils->assign_trait_value(slot, snapshot,
             llvm_utils->getTraitType(ASRUtils::expr_type(x.m_target)));
+    }
+
+    // Move the allocation of the owner `source` into `target`, leaving
+    // `source` unallocated, without copying or finalizing the moved payload.
+    // A value `target` held before is destroyed.
+    void transfer_trait_owner(ASR::expr_t *target, ASR::expr_t *source) {
+        auto *type = llvm_utils->getTraitType(ASRUtils::expr_type(target))->getPointerTo();
+        auto *from = trait_owner_slot(source);
+        auto *to = trait_owner_slot(target);
+        auto *value = llvm_utils->CreateLoad2(type, from);
+        auto *old = llvm_utils->CreateLoad2(type, to);
+        builder->CreateStore(llvm::Constant::getNullValue(type), from);
+        builder->CreateStore(value, to);
+        llvm_utils->create_if_else(builder->CreateICmpNE(old, value), [&]() {
+            llvm_utils->destroy_trait_value(old);
+        }, [](){});
     }
 
     void visit_TraitRetain(const ASR::TraitRetain_t &x) {

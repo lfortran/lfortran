@@ -456,6 +456,8 @@ public:
     SymbolTable *current_scope;
     SymbolTable *current_function_scope;
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> nested_var_to_ext_var;
+    // Context pointers standing for borrowed trait views of the host
+    std::set<ASR::symbol_t*> trait_view_ctx_vars;
     bool skip_replace=false;
     ReplacerNestedVars(Allocator &_al) : al(_al) {}
 
@@ -464,6 +466,7 @@ public:
             if (skip_replace) {
                 return;
             }
+            ASR::ttype_t *host_type = ASRUtils::symbol_type(x->m_v);
             std::string m_name = nested_var_to_ext_var[x->m_v].first;
             ASR::symbol_t *t = nested_var_to_ext_var[x->m_v].second;
             std::string sym_name = ASRUtils::symbol_name(t);
@@ -472,15 +475,19 @@ public:
                     ASR::is_a<ASR::ExternalSymbol_t>(*existing) &&
                     ASRUtils::symbol_get_past_external(existing) == t) {
                 x->m_v = existing;
-                return;
+            } else {
+                std::string unique_name = sym_name;
+                if (existing != nullptr) {
+                    unique_name = current_function_scope->get_unique_name(sym_name, false);
+                }
+                x->m_v = make_external_symbol(al, current_function_scope, t, unique_name,
+                    m_name, sym_name, ASR::accessType::Public);
             }
-            std::string unique_name = sym_name;
-            if (existing != nullptr) {
-                unique_name = current_function_scope->get_unique_name(sym_name, false);
+            if (trait_view_ctx_vars.find(t) != trait_view_ctx_vars.end()) {
+                // The view is borrowed from the pointer that reaches it.
+                *current_expr = ASRUtils::EXPR(ASR::make_TraitBorrow_t(al,
+                    x->base.base.loc, &x->base, host_type));
             }
-            ASR::symbol_t *ext_sym = make_external_symbol(al, current_function_scope, t, unique_name,
-                m_name, sym_name, ASR::accessType::Public);
-            x->m_v = ext_sym;
         }
     }
 
@@ -605,6 +612,41 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 ASR::ttype_t* var_type = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(var->m_type));
                 ASR::ttype_t* var_type_ = ASRUtils::type_get_past_array(var_type);
+                if (ASR::is_a<ASR::TraitObjectType_t>(*var_type)) {
+                    // A runtime trait object keeps its ownership protocol.
+                    // An owner's allocation moves into an owner of the
+                    // context for each use and back (AssignNestedVars). A
+                    // pointer is copied into a pointer of the context, and a
+                    // borrowed view is associated with one, which makes the
+                    // view a target.
+                    ASR::ttype_t *ctx_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(
+                        al, var_type->base.loc, ASRUtils::import_type_declaration(al,
+                            ASR::down_cast<ASR::TraitObjectType_t>(var_type)->m_contract,
+                            current_scope)));
+                    bool is_view = !ASRUtils::is_trait_owner(var->m_type) && !is_pointer;
+                    if (ASRUtils::is_trait_owner(var->m_type)) {
+                        ctx_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al,
+                            ctx_type->base.loc, ctx_type));
+                    } else {
+                        ctx_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
+                            ctx_type->base.loc, ctx_type));
+                    }
+                    if (is_view) {
+                        var->m_target_attr = true;
+                    }
+                    ASR::expr_t *ctx_var = PassUtils::create_auxiliary_variable(
+                        it2->base.loc, new_ext_var, al, current_scope, ctx_type,
+                        ASR::intentType::Local, nullptr, nullptr);
+                    ASR::symbol_t *ctx_sym = ASR::down_cast<ASR::Var_t>(ctx_var)->m_v;
+                    // The context owner holds the host's allocation
+                    ASR::down_cast<ASR::Variable_t>(ctx_sym)->m_target_attr =
+                        var->m_target_attr;
+                    if (is_view) {
+                        replacer.trait_view_ctx_vars.insert(ctx_sym);
+                    }
+                    nested_var_to_ext_var[it2] = std::make_pair(module_name, ctx_sym);
+                    continue;
+                }
                 if ( var->m_type_declaration &&
                      ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(var->m_type_declaration)) ) {
                     ASRUtils::SymbolDuplicator sd(al);
@@ -1229,6 +1271,67 @@ private :
             else_body.p, else_body.size()));
     }
 
+    // Moves the allocation of the trait owner `from` into the unallocated
+    // owner `to`, if `from` is allocated, leaving `from` unallocated.
+    ASR::stmt_t* move_trait_owner(ASR::expr_t* from, ASR::expr_t* to) {
+        Vec<ASR::expr_t*> args;
+        args.reserve(al, 1);
+        args.push_back(al, from);
+        diag::Diagnostics diag_instance;
+        ASR::expr_t* is_allocated = ASRUtils::EXPR(ASRUtils::Allocated::create_Allocated(
+            al, from->base.loc, args, diag_instance));
+        if (diag_instance.has_error()) throw diag_instance;
+        Vec<ASR::stmt_t*> move;
+        move.reserve(al, 1);
+        move.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
+            from->base.loc, to, from, nullptr, false, true)));
+        return ASRUtils::STMT(ASR::make_If_t(al, from->base.loc, nullptr,
+            is_allocated, move.p, move.size(), nullptr, 0));
+    }
+
+    /*
+    A runtime trait object is never copied into or out of the context:
+    copying an owner would create an independent payload, finalize the
+    replaced values and lose the identity that pointers to the payload rely
+    on. The owner's allocation instead moves into the context owner and
+    back, so the host owner is unallocated in between and the statement
+    refers to the context owner (`owner_ctx_vars`). A pointer is associated
+    like the host pointer and its association is copied back, and a borrowed
+    view is reached through a context pointer associated with it.
+    */
+    void sync_trait_object(ASR::symbol_t* sym, ASR::symbol_t* ext_sym,
+            ASR::expr_t* target, ASR::expr_t* val, Vec<ASR::stmt_t*> &body,
+            std::vector<ASR::stmt_t*> &assigns_at_end,
+            std::vector<ASR::stmt_t*> &loop_end_syncs,
+            std::vector<ASR::stmt_t*> &owner_moves_back,
+            std::map<ASR::symbol_t*, ASR::symbol_t*> &owner_ctx_vars,
+            bool sync_in_loop, bool skip_sync_back) {
+        ASR::ttype_t *type = ASRUtils::symbol_type(sym);
+        if (ASRUtils::is_trait_owner(type)) {
+            body.push_back(al, move_trait_owner(val, target));
+            assigns_at_end.push_back(move_trait_owner(target, val));
+            if (sync_in_loop) {
+                loop_end_syncs.push_back(move_trait_owner(val, target));
+                owner_moves_back.push_back(move_trait_owner(target, val));
+            }
+            owner_ctx_vars[ASRUtils::symbol_get_past_external(sym)] = ext_sym;
+            return;
+        }
+        body.push_back(al, ASRUtils::STMT(ASR::make_TraitAssociate_t(al,
+            val->base.loc, target, val)));
+        ASR::Variable_t *host = ASRUtils::EXPR2VAR(val);
+        if (!ASRUtils::is_trait_pointer(type) ||
+                host->m_intent == ASR::intentType::In || skip_sync_back) {
+            return;
+        }
+        assigns_at_end.push_back(ASRUtils::STMT(ASR::make_TraitAssociate_t(al,
+            val->base.loc, val, target)));
+        if (sync_in_loop) {
+            loop_end_syncs.push_back(ASRUtils::STMT(ASR::make_TraitAssociate_t(al,
+                val->base.loc, target, val)));
+        }
+    }
+
     // Inject sync statements before cycle recursively 
     // Currently used for do-loops
     template<typename T>
@@ -1347,6 +1450,10 @@ public:
         std::vector<ASR::stmt_t*> assigns_at_end;
         std::vector<ASR::stmt_t*> loop_end_syncs;
         HostToContextVarDuplicator ctx_duplicator(al);
+        // Host trait owners whose allocation is in the context, and the
+        // moves back after a loop whose condition leaves it there
+        std::map<ASR::symbol_t*, ASR::symbol_t*> owner_ctx_vars;
+        std::vector<ASR::stmt_t*> owner_moves_back;
         for (size_t i=0; i<n_body; i++) {
             calls_present = false;
             calls_in_loop_condition = false;
@@ -1358,6 +1465,8 @@ public:
             assigns_at_end.clear();
             loop_end_syncs.clear();
             ctx_duplicator.ctx_vars.clear();
+            owner_ctx_vars.clear();
+            owner_moves_back.clear();
             ASR::symbol_t *assigned_target_sym = nullptr;
             if (ASR::is_a<ASR::Assignment_t>(*m_body[i])) {
                 ASR::Assignment_t *assignment = ASR::down_cast<ASR::Assignment_t>(m_body[i]);
@@ -1462,6 +1571,13 @@ public:
                         LCOMPILERS_ASSERT(sym_ != nullptr);
                         ASR::expr_t *target = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, ext_sym));
                         ASR::expr_t *val = ASRUtils::EXPR(ASR::make_Var_t(al, t->base.loc, sym_));
+                        if (ASR::is_a<ASR::TraitObjectType_t>(*ASRUtils::extract_type(
+                                ASRUtils::symbol_type(sym)))) {
+                            sync_trait_object(sym, ext_sym, target, val, body,
+                                assigns_at_end, loop_end_syncs, owner_moves_back, owner_ctx_vars,
+                                is_do_loop_sync && calls_in_loop_condition, skip_sync_back);
+                            continue;
+                        }
                         bool is_sym_allocatable_or_pointer = (ASRUtils::is_pointer(ASRUtils::symbol_type(sym)) ||
                             ASRUtils::is_allocatable(ASRUtils::symbol_type(sym)));
                         bool is_ext_sym_allocatable_or_pointer = (ASRUtils::is_pointer(ASRUtils::symbol_type(ext_sym)) ||
@@ -1560,7 +1676,9 @@ public:
                 }
             }
 
-            // A moved array is unallocated in the host until it is moved back
+            // A moved array or trait owner is unallocated in the host until
+            // it is moved back
+            ctx_duplicator.ctx_vars.insert(owner_ctx_vars.begin(), owner_ctx_vars.end());
             if (!ctx_duplicator.ctx_vars.empty()) {
                 if (ASR::is_a<ASR::If_t>(*m_body[i])) {
                     ASR::If_t *if_stmt = ASR::down_cast<ASR::If_t>(m_body[i]);
@@ -1568,6 +1686,16 @@ public:
                 } else if (!is_do_loop_sync) {
                     m_body[i] = ctx_duplicator.duplicate_stmt(m_body[i]);
                 }
+            }
+            // A loop whose condition calls a nested procedure starts every
+            // iteration with assigns_at_end and ends it with loop_end_syncs,
+            // so its condition refers to the moved trait owners, which the
+            // final test leaves in the context (owner_moves_back).
+            if (calls_in_loop_condition && is_do_loop_sync && !owner_ctx_vars.empty()) {
+                HostToContextVarDuplicator owner_duplicator(al);
+                owner_duplicator.ctx_vars = owner_ctx_vars;
+                ASR::WhileLoop_t *loop = ASR::down_cast<ASR::WhileLoop_t>(m_body[i]);
+                loop->m_test = owner_duplicator.duplicate_expr(loop->m_test);
             }
 
             // Inject syncs before cycle/exit if this is a loop statement
@@ -1603,6 +1731,9 @@ public:
                 new_body.n = 0;  // Clear size
                 new_body.p = nullptr;  // Clear pointer after ownership transfer
                 body.push_back(al, m_body[i]);
+                for (auto &stm: owner_moves_back) {
+                    body.push_back(al, stm);
+                }
             } else if (calls_in_loop_condition && ASR::is_a<ASR::If_t>(*m_body[i])) {
                 // Handling for IF condition having function calls
                 // Handle assignments from function temporaries to main

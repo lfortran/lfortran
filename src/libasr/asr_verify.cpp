@@ -933,10 +933,35 @@ public:
                 "asr.verify.trait_result.capture_nonalias",
                 "A result capture slot must not be targetable or referenced by its producing call");
         }
+        // A host owner is lent to its internal procedures by moving its
+        // allocation into a module owner and back. The allocation keeps a
+        // single owner, is neither copied nor finalized, and leaves the
+        // source unallocated.
+        bool trait_owner_transfer = false;
+        if (ASRUtils::is_trait_owner(assign_target_type) && x.m_move_allocation &&
+                !x.m_realloc_lhs && !x.m_overloaded &&
+                ASR::is_a<Var_t>(*x.m_target) && ASR::is_a<Var_t>(*x.m_value) &&
+                ASRUtils::is_trait_owner(assign_value_type)) {
+            auto *target = ASRUtils::get_variable_from_symbol(
+                ASR::down_cast<Var_t>(x.m_target)->m_v);
+            auto *source = ASRUtils::get_variable_from_symbol(
+                ASR::down_cast<Var_t>(x.m_value)->m_v);
+            auto in_module = [](Variable_t *variable) {
+                auto *owner = variable->m_parent_symtab->asr_owner;
+                return variable->m_intent == intentType::Local && owner &&
+                    ASR::is_a<symbol_t>(*owner) &&
+                    ASR::is_a<Module_t>(*ASR::down_cast<symbol_t>(owner));
+            };
+            trait_owner_transfer = target && source && target != source &&
+                (in_module(target) || in_module(source)) &&
+                ASRUtils::trait_contracts_equal(assign_target_type, assign_value_type);
+        }
         require_id(!assign_target_type || !ASR::is_a<TraitObjectType_t>(
-                *ASRUtils::extract_type(assign_target_type)) || trait_result_capture,
+                *ASRUtils::extract_type(assign_target_type)) || trait_result_capture ||
+                trait_owner_transfer,
             "asr.verify.trait_owner.value_copy",
-            "Trait assignment requires value-copy semantics; only scoped function-result capture can move ownership");
+            "Trait assignment requires value-copy semantics; only scoped function-result capture "
+            "and owner-to-owner transfer can move ownership");
         if (!diagnostics.has_error() && x.m_overloaded == nullptr
                 && assign_target_type && assign_value_type
                 && !is_procedure_type(assign_target_type)
@@ -971,7 +996,7 @@ public:
                 "asr.verify.assignment.realloc_lhs_requires_allocatable",
                 "Reallocation of non allocatable variable is not allowed");
         }
-        if (x.m_move_allocation && !trait_result_capture) {
+        if (x.m_move_allocation && !trait_result_capture && !trait_owner_transfer) {
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
             ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
 
