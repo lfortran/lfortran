@@ -1864,6 +1864,7 @@ public:
             throw SemanticAbort();
         }
 
+        PendingAttributeScope pending_attribute_scope(*this);
         SymbolTable* parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         record_procedure_references(current_scope, x.m_items, x.n_items);
