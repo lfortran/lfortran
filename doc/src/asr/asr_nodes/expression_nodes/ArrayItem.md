@@ -42,7 +42,11 @@ set `in_bounds` when the subscript cannot be out of bounds, and the check is
 then omitted. The frontend sets it when every subscript is a compile-time
 constant and the array, neither allocatable nor a pointer, has compile-time
 constant bounds in every dimension, as for `a(2, 3)` with `a(8, 4)`; a
-constant subscript outside such bounds is a compile-time error. A reference
+constant subscript outside such bounds is a compile-time error. With legacy
+array sections enabled, it also sets it for an element of a dummy whose last
+dimension is `1`, as in `a(lda, 1)`: that is the FORTRAN 66 form of an
+assumed-size `a(lda, *)`, whose element references are not checked, and the
+dummy keeps its declared shape for whole-array references. A reference
 into an assumed-shape, assumed-size, allocatable or pointer array, or with a
 subscript that is not a constant, is still checked. The `array_op` pass sets it in
 the loops it creates for an array assignment: for the operand whose bounds
