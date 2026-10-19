@@ -86,6 +86,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--implicit-argument-casting`: Allow implicit argument casting
 - `--print-leading-space`: Print leading white space if format is unspecified
 - `--interactive-parse`: Use interactive parse
+- `--status-file TEXT`: Write a JSON line to this file as each cell of the interactive prompt finishes
 - `--verbose`: Print debugging statements
 - `--dump-all-passes`: Apply all the passes and dump the ASR into a file
 - `--dump-all-passes-fortran`: Apply all passes and dump the ASR after each pass into a Fortran file

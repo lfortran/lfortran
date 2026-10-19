@@ -376,6 +376,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--semantics-only", compiler_options.semantics_only, "do parsing and semantics, and report all the errors")->group(group_miscellaneous_options);
         app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified")->group(group_miscellaneous_options);
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse")->group(group_miscellaneous_options);
+        app.add_option("--status-file", opts.arg_status_file, "Write a JSON line to this file as each cell of the interactive prompt finishes")->group(group_miscellaneous_options);
         app.add_flag("--verbose", compiler_options.po.verbose, "Print debugging statements")->group(group_miscellaneous_options);
         app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)")->group(group_miscellaneous_options);
         app.add_flag("--no-fast-math", compiler_options.po.no_fast_math, "Disable fast-math optimizations (preserve NaN/Inf semantics)")->group(group_miscellaneous_options);

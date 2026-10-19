@@ -132,6 +132,23 @@ declares, but `:=` makes the intent explicit.
 LFortran supports an interactive mode; just run the `lfortran` command
 to start it.
 
+A tool can send cells to the prompt while a person types at it too. To
+learn when each cell has finished, it starts the prompt with
+`--status-file <path>`. LFortran then writes one line to that file as each
+cell finishes, after the cell's output:
+
+```json
+{"cell": 1, "status": "ok"}
+{"cell": 2, "status": "error"}
+```
+
+`ok` means the cell ran, and `error` that it did not compile or the
+compiler raised an error. Cells are numbered as in diagnostics
+(`<cell 2>`). If the prompt exits during a cell, for example after a
+runtime error, no line is written for it, so the tool should also watch
+for the prompt exiting. If a line cannot be written, the prompt exits
+with an error.
+
 ## Invoking LFortran
 
 The LFortran compiler supports numerous command-line flags to select
