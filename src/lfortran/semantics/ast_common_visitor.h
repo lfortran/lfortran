@@ -2315,6 +2315,9 @@ public:
     bool in_Subroutine = false;
     bool _processing_dimensions = false;
     bool _processing_char_len = false;
+    // True while a bare name that may designate a procedure (an actual
+    // argument or a pointer assignment target) is resolved.
+    bool bare_name_may_designate_procedure = false;
 
     // Fortran 2023 10.1.11 and 10.1.12 are closed lists of the primaries that
     // a specification expression and a constant expression may contain. A
@@ -2851,6 +2854,27 @@ public:
         }
     }
 
+    // The name of an external procedure is a global identifier, which a
+    // scoping unit that does not reference the procedure may use as a local
+    // identifier (F2023 19.3.1). So a bare name that is not a procedure
+    // designator and is only known as an external procedure of the
+    // translation unit is an implicitly typed local variable.
+    bool is_implicit_local_shadowing_external_procedure(ASR::symbol_t *v,
+            const std::string &var_name) {
+        if (!compiler_options.implicit_typing || bare_name_may_designate_procedure
+                || v == nullptr || !ASR::is_a<ASR::Function_t>(*v)
+                || !ASRUtils::is_tu_scope(ASRUtils::symbol_parent_symtab(v))) {
+            return false;
+        }
+        for (SymbolTable *s = current_scope; s != nullptr; s = s->parent) {
+            if (s->asr_owner == (ASR::asr_t*) v) {
+                return false;
+            }
+        }
+        auto it = implicit_dictionary.find(std::string(1, var_name[0]));
+        return it == implicit_dictionary.end() || it->second != nullptr;
+    }
+
     ASR::asr_t* resolve_variable(const Location &loc, const std::string &var_name) {
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
@@ -2868,6 +2892,9 @@ public:
                     }
                     }
             }
+        }
+        if (is_implicit_local_shadowing_external_procedure(v, var_name)) {
+            v = nullptr;
         }
 
         if (ASRUtils::is_iso_c_null_symbol(current_scope, v)) {
@@ -26586,7 +26613,10 @@ public:
                     ast_list[i].m_end->base.loc, current_scope, null_dummy,
                     current_variable_type_, current_struct_type_var_expr);
             }
+            bool prev_bare_name_may_designate_procedure = bare_name_may_designate_procedure;
+            bare_name_may_designate_procedure = AST::is_a<AST::Name_t>(*ast_list[i].m_end);
             this->visit_expr(*ast_list[i].m_end);
+            bare_name_may_designate_procedure = prev_bare_name_may_designate_procedure;
             current_variable_type_ = prev_variable_type;
             current_struct_type_var_expr = prev_struct_type_var_expr;
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);

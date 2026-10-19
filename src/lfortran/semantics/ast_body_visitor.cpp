@@ -3377,7 +3377,9 @@ public:
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
         current_variable_type_ = target_type;
         current_struct_type_var_expr = target;
+        bare_name_may_designate_procedure = AST::is_a<AST::Name_t>(*x.m_value);
         this->visit_expr(*(x.m_value));
+        bare_name_may_designate_procedure = false;
         ASR::expr_t* value = ASRUtils::EXPR(tmp);
         // Inside a `select rank (arr)` block the selector keeps its assumed-rank
         // type, but the rank is fixed by the enclosing `rank (N)` case. Cast it
