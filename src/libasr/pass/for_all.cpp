@@ -880,29 +880,44 @@ public:
         return true;
     }
 
-    void visit_ForAllSingle(const ASR::ForAllSingle_t &x) {
-        if (lower_with_temporary(x)) return;
+    // A nested FORALL whose bounds use an outer index gets a loop of its own
+    ASR::stmt_t *make_do_concurrent(const ASR::ForAllSingle_t &x) {
         Location loc = x.base.base.loc;
         Vec<ASR::do_loop_head_t> heads;
         heads.reserve(al, 4);
         heads.push_back(al, x.m_head);
+        std::set<ASR::symbol_t*> index_syms;
+        index_syms.insert(ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(x.m_head.m_v)->m_v));
         // Unwrap nested ForAllSingle nodes (from multi-index forall)
         ASR::stmt_t *inner = x.m_assign_stmt;
         while (ASR::is_a<ASR::ForAllSingle_t>(*inner)) {
             ASR::ForAllSingle_t &nested = *ASR::down_cast<ASR::ForAllSingle_t>(inner);
+            if (references_any(nested.m_head.m_start, index_syms)
+                    || references_any(nested.m_head.m_end, index_syms)
+                    || references_any(nested.m_head.m_increment, index_syms)) {
+                inner = make_do_concurrent(nested);
+                break;
+            }
             heads.push_back(al, nested.m_head);
+            index_syms.insert(ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(nested.m_head.m_v)->m_v));
             inner = nested.m_assign_stmt;
         }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
         body.push_back(al, inner);
-        ASR::stmt_t *stmt = ASRUtils::STMT(
+        return ASRUtils::STMT(
             ASR::make_DoConcurrentLoop_t(al, loc, heads.p, heads.n, nullptr, 0,
                 nullptr, 0, nullptr, 0, body.p, body.size())
         );
+    }
+
+    void visit_ForAllSingle(const ASR::ForAllSingle_t &x) {
+        if (lower_with_temporary(x)) return;
         Vec<ASR::stmt_t*> result;
         result.reserve(al, 1);
-        result.push_back(al, stmt);
+        result.push_back(al, make_do_concurrent(x));
         pass_result = result;
     }
 };
