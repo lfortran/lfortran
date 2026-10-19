@@ -154,6 +154,17 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                 -o ${PROJECT_BINARY_DIR}/${fixture_name}.o
         )
     endforeach()
+    # `--show-asm` must lower the ASR after the same passes as `-S`. Assembly
+    # differs between targets, so only success is checked. The program lives
+    # here because CI builds from the source tarball, which ships `src` but not
+    # `integration_tests`.
+    add_test(
+        NAME test_show_asm_01
+        COMMAND $<TARGET_FILE:lfortran>
+            ${CMAKE_CURRENT_SOURCE_DIR}/show_asm_01.f90
+            --show-asm
+            --no-color
+    )
     # The format claims to be an EDN data subset; enforce that with a reader
     # that knows nothing about LFortran.
     find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
