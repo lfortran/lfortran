@@ -6192,7 +6192,7 @@ RUN(NAME gpu_metal_242 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_243 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_244 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_245 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_246 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_246 LABELS gfortran llvm metal cuda cuda_cpu)
 RUN(NAME gpu_metal_247 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_248 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_249 LABELS gfortran llvm metal cuda_cpu)
@@ -6412,6 +6412,7 @@ RUN(NAME gpu_metal_480 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_481 LABELS gfortran llvm metal cuda_cpu)
 # GFortran 13 in Quick does not support REDUCE.
 RUN(NAME gpu_metal_482 LABELS llvm metal cuda_cpu cuda)
+RUN(NAME gpu_metal_483 LABELS gfortran llvm metal cuda cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
@@ -6462,6 +6463,7 @@ RUN(NAME gpu_decline_13 LABELS gfortran)
 RUN(NAME gpu_decline_14 LABELS gfortran llvm)
 RUN(NAME gpu_decline_15 LABELS gfortran llvm)
 RUN(NAME gpu_decline_16 LABELS gfortran llvm)
+RUN(NAME gpu_decline_17 LABELS gfortran llvm)
 
 # One program per entry of the GPU unsupported list. Each runs on the CPU with
 # --gpu-allow-cpu-fallback where its loop is on the list, and the error
@@ -6488,6 +6490,7 @@ RUN(NAME gpu_kernel_source_10 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_kernel_source_11 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_kernel_source_12 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_kernel_source_13 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_kernel_source_14 LABELS gfortran llvm metal cuda cuda_cpu)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)

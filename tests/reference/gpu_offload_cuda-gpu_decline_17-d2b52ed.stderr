@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: array 't' of local locality cannot be given a copy per gpu thread
+  --> tests/../integration_tests/gpu_decline_17.f90:18:1 - 22:6
+   |
+18 |    do concurrent (j = 1:n) local(t)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+22 |    end do
+   | ...^^^^^^ array 't' of local locality cannot be given a copy per gpu thread

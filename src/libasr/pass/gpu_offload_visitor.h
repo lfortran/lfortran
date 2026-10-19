@@ -548,14 +548,21 @@ public:
     void resolve_enclosing_associates(ParallelLoopNest &work, size_t n_dims,
             std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
 
-    // Gives each iteration its own copy of an array of unspecified
-    // locality that the iteration defines whole before it references it,
-    // by making it a local of a BLOCK around the body (see
-    // gpu_offload_privatize.cpp).
-    void privatize_iteration_arrays(const ASR::OMPRegion_t &region,
+    // Gives each iteration its own copy of a variable of LOCAL
+    // locality, and of an array of unspecified locality that
+    // the iteration defines whole before it references it, by making it a
+    // local of a BLOCK around the body (see gpu_offload_privatize.cpp).
+    // False when the loop has been reported as one the kernel cannot run.
+    bool privatize_iteration_arrays(const ASR::OMPRegion_t &region,
             ParallelLoopNest &work,
             const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map,
             Vec<ASR::stmt_t*> &private_shapes);
+
+    // The variables of LOCAL locality the body names.
+    bool locality_spec_variables(const ASR::OMPRegion_t &region,
+            ParallelLoopNest &work,
+            const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map,
+            std::vector<ASR::symbol_t*> &local, std::string &rejected);
 
     // The arrays privatize_iteration_arrays may make local.
     std::vector<ASR::symbol_t*> iteration_array_candidates(

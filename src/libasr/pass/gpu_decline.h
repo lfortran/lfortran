@@ -131,6 +131,9 @@ enum class GpuDeclineReason {
     // --- what the pass's own lowering cannot yet do to the body ---
     StructElementGather,
     UnsizedLocalArray,
+    // An array of LOCAL locality that a thread cannot hold a copy of its
+    // own of.
+    LocalityNotPrivate,
     AliasTemporaryRuntimeSized,
     UngatherableStridedSection,
     // A section passed to a procedure has to be copied into a contiguous

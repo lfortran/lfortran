@@ -4622,6 +4622,10 @@ filename = "../integration_tests/gpu_decline_16.f90"
 gpu_offload_cuda = true
 
 [[test]]
+filename = "../integration_tests/gpu_decline_17.f90"
+gpu_offload_cuda = true
+
+[[test]]
 filename = "gpu_decline_impure_condition.f90"
 gpu_offload_cuda = true
 
@@ -4868,6 +4872,11 @@ gpu_cuda_kernel = true
 
 [[test]]
 filename = "../integration_tests/gpu_kernel_source_13.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_14.f90"
 gpu_metal_kernel = true
 gpu_cuda_kernel = true
 
