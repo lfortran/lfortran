@@ -1,5 +1,5 @@
       PROGRAM FIXED_FORM_NAMED_CONSTRUCT_01
-      INTEGER MODE, I, K
+      INTEGER MODE, I, K, BLOCK
       REAL A(3)
 
       K = 0
@@ -54,6 +54,16 @@
          A(I) = REAL(I)
       END DO OUTER
       IF (ANY(A .NE. [1.0, 2.0, 3.0])) ERROR STOP 6
+
+      BLOCK = 1
+      IFX: IF (BLOCK .EQ. 2) THEN
+         K = -1
+      ELSE IFX
+         BLOCK
+            K = BLOCK
+         END BLOCK
+      END IF IFX
+      IF (K .NE. 1) ERROR STOP 7
 
       PRINT *, 'ok'
       END
