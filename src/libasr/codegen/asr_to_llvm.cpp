@@ -1,5 +1,6 @@
 #include "libasr/assert.h"
 #include "libasr/string_utils.h"
+#include <functional>
 #include <iostream>
 #include <llvm/IR/Value.h>
 #include <memory>
@@ -20963,21 +20964,127 @@ public:
             false);
     }
 
-    // List-directed internal read into an array, which the
-    // string_format_array_args pass makes a PointerArray, its contiguous
-    // elements. They are read in array element order, continuing in the
-    // record at `str_offset`, the position after the previous item of the
-    // same READ.
+    // The descriptor of the array input item `item`, from `ptr`, its value
+    // visited with ptr_loads = 0, with its LLVM type.
+    std::pair<llvm::Type*, llvm::Value*> input_item_descriptor(ASR::expr_t* item,
+            llvm::Value* ptr) {
+        ASR::ttype_t* type = ASRUtils::expr_type(item);
+        llvm::Type* desc_type = llvm_utils->get_type_from_ttype_t_util(item,
+            ASRUtils::type_get_past_allocatable_pointer(type), module.get());
+        if (ASRUtils::is_allocatable_or_pointer(type)) {
+            ptr = llvm_utils->CreateLoad2(desc_type->getPointerTo(), ptr);
+        }
+        return {desc_type, ptr};
+    }
+
+    // Calls `body` with the offset, in elements from the data pointer of the
+    // array descriptor `desc` of LLVM type `desc_type`, of each element of
+    // the array, in array element order. `body` may branch to the block it
+    // is given to end the loop, and leaves the insertion point where the
+    // loop continues.
+    void for_each_descriptor_element(llvm::Type* desc_type, llvm::Value* desc,
+            const std::function<void(llvm::Value*, llvm::BasicBlock*)>& body) {
+        llvm::Type* i32_type = llvm::Type::getInt32Ty(context);
+        llvm::Type* i64_type = llvm::Type::getInt64Ty(context);
+        llvm::Value* zero = llvm::ConstantInt::get(i64_type, 0);
+        llvm::Value* one = llvm::ConstantInt::get(i64_type, 1);
+        llvm::Value* n_elems = arr_descr->get_array_size(desc_type, desc, nullptr, 8);
+        llvm::Value* rank = arr_descr->get_rank(desc_type, desc, false);
+        llvm::Value* dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+            desc_type, desc);
+        llvm::Value* desc_offset = builder->CreateSExtOrTrunc(
+            arr_descr->get_offset(desc_type, desc), i64_type);
+        llvm::Function* parent_fn = builder->GetInsertBlock()->getParent();
+        llvm::Value* idx_ptr = llvm_utils->CreateAlloca(i64_type, nullptr, "read_elem_idx");
+        llvm::Value* rem_ptr = llvm_utils->CreateAlloca(i64_type, nullptr, "read_elem_rem");
+        llvm::Value* off_ptr = llvm_utils->CreateAlloca(i64_type, nullptr, "read_elem_off");
+        llvm::Value* dim_ptr = llvm_utils->CreateAlloca(i32_type, nullptr, "read_elem_dim");
+        builder->CreateStore(zero, idx_ptr);
+        llvm::BasicBlock* loop_cond = llvm::BasicBlock::Create(context, "read_elem.cond", parent_fn);
+        llvm::BasicBlock* loop_body = llvm::BasicBlock::Create(context, "read_elem.body", parent_fn);
+        llvm::BasicBlock* dim_cond = llvm::BasicBlock::Create(context, "read_elem.dim.cond", parent_fn);
+        llvm::BasicBlock* dim_body = llvm::BasicBlock::Create(context, "read_elem.dim.body", parent_fn);
+        llvm::BasicBlock* dim_end = llvm::BasicBlock::Create(context, "read_elem.dim.end", parent_fn);
+        llvm::BasicBlock* loop_end = llvm::BasicBlock::Create(context, "read_elem.end", parent_fn);
+        builder->CreateBr(loop_cond);
+
+        builder->SetInsertPoint(loop_cond);
+        llvm::Value* cur_idx = builder->CreateLoad(i64_type, idx_ptr);
+        builder->CreateCondBr(builder->CreateICmpSLT(cur_idx, n_elems), loop_body, loop_end);
+
+        // The linear index in array element order gives the subscript of
+        // each dimension, and their strides the offset.
+        builder->SetInsertPoint(loop_body);
+        builder->CreateStore(cur_idx, rem_ptr);
+        builder->CreateStore(desc_offset, off_ptr);
+        builder->CreateStore(llvm::ConstantInt::get(i32_type, 0), dim_ptr);
+        builder->CreateBr(dim_cond);
+
+        builder->SetInsertPoint(dim_cond);
+        llvm::Value* cur_dim = builder->CreateLoad(i32_type, dim_ptr);
+        builder->CreateCondBr(builder->CreateICmpSLT(cur_dim, rank), dim_body, dim_end);
+
+        builder->SetInsertPoint(dim_body);
+        llvm::Value* extent = builder->CreateSExtOrTrunc(
+            arr_descr->get_dimension_size(dim_des_arr, cur_dim), i64_type);
+        llvm::Value* stride = builder->CreateSExtOrTrunc(arr_descr->get_stride(
+            arr_descr->get_pointer_to_dimension_descriptor(dim_des_arr, cur_dim)), i64_type);
+        llvm::Value* rem = builder->CreateLoad(i64_type, rem_ptr);
+        builder->CreateStore(builder->CreateAdd(builder->CreateLoad(i64_type, off_ptr),
+            builder->CreateMul(builder->CreateSRem(rem, extent), stride)), off_ptr);
+        builder->CreateStore(builder->CreateSDiv(rem, extent), rem_ptr);
+        builder->CreateStore(builder->CreateAdd(cur_dim, llvm::ConstantInt::get(i32_type, 1)), dim_ptr);
+        builder->CreateBr(dim_cond);
+
+        builder->SetInsertPoint(dim_end);
+        body(builder->CreateLoad(i64_type, off_ptr), loop_end);
+        builder->CreateStore(builder->CreateAdd(cur_idx, one), idx_ptr);
+        builder->CreateBr(loop_cond);
+
+        builder->SetInsertPoint(loop_end);
+    }
+
+    // Whether the array input item `item` is a rank 1 descriptor, whose
+    // elements are equally spaced: its first element is at the offset of
+    // the descriptor, and their spacing is the stride of its dimension.
+    bool is_rank_1_descriptor(ASR::expr_t* item) {
+        ASR::ttype_t* type = ASRUtils::expr_type(item);
+        return ASRUtils::extract_physical_type(type) ==
+                ASR::array_physical_typeType::DescriptorArray &&
+            ASRUtils::extract_n_dims_from_ttype(type) == 1;
+    }
+
+    llvm::Value* rank_1_descriptor_stride(llvm::Type* desc_type, llvm::Value* desc) {
+        return arr_descr->get_stride(arr_descr->get_pointer_to_dimension_descriptor(
+            arr_descr->get_pointer_to_dimension_descriptor_array(desc_type, desc),
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0)));
+    }
+
+    // List-directed internal read into an array, in array element order,
+    // continuing in the record at `str_offset`, the position after the
+    // previous item of the same READ. A PointerArray, which the
+    // string_format_array_args pass makes of an array that is contiguous by
+    // construction, is its contiguous elements; any other array is read in
+    // place, through its descriptor.
     void emit_string_read_array(ASR::expr_t* item, llvm::Value* arr_ptr,
             llvm::Function* fn, llvm::Value* fmt, llvm::Value* str_src_data,
             llvm::Value* str_src_len, llvm::Value* iostat, llvm::Value* str_offset) {
         llvm::Type* i64_type = llvm::Type::getInt64Ty(context);
         ASR::ttype_t* type = ASRUtils::expr_type(item);
-        llvm::Value* n_elems = contiguous_array_size(item);
         llvm::Value* one = llvm::ConstantInt::get(i64_type, 1);
-        if (ASRUtils::is_array_of_strings(type)) {
+        bool is_pointer_array = ASRUtils::extract_physical_type(type) ==
+            ASR::array_physical_typeType::PointerArray;
+        llvm::Type* desc_type = nullptr;
+        if (!is_pointer_array) {
+            std::tie(desc_type, arr_ptr) = input_item_descriptor(item, arr_ptr);
+        }
+        bool is_string_array = ASRUtils::is_array_of_strings(type);
+        llvm::Value* elem_len = nullptr;
+        llvm::Type* el_type = nullptr;
+        // The data of the element with offset 0.
+        llvm::Value* data = nullptr;
+        if (is_string_array) {
             ASR::String_t* str_type = ASRUtils::get_string_type(type);
-            llvm::Value* elem_len;
             int64_t elem_len_val;
             if (ASRUtils::extract_value(str_type->m_len, elem_len_val)) {
                 elem_len = llvm::ConstantInt::get(i64_type, elem_len_val);
@@ -20988,15 +21095,126 @@ public:
             } else {
                 elem_len = llvm_utils->get_stringArray_length(type, arr_ptr);
             }
-            builder->CreateCall(fn, { str_src_data, str_src_len, fmt,
-                llvm_utils->get_stringArray_data(type, arr_ptr), elem_len,
-                n_elems, one, str_offset });
+            data = llvm_utils->get_stringArray_data(type, arr_ptr);
+        } else {
+            el_type = llvm_utils->get_el_type(item, ASRUtils::extract_type(type),
+                module.get());
+            data = is_pointer_array ? builder->CreateBitCast(arr_ptr, el_type->getPointerTo())
+                : llvm_utils->CreateLoad2(el_type->getPointerTo(),
+                    arr_descr->get_pointer_to_data(desc_type, arr_ptr));
+        }
+        auto emit_call = [&](llvm::Value* offset, llvm::Value* n_elems,
+                llvm::Value* stride) {
+            n_elems = builder->CreateSExtOrTrunc(n_elems, i64_type);
+            stride = builder->CreateSExtOrTrunc(stride, i64_type);
+            if (is_string_array) {
+                llvm::Value* first = llvm_utils->create_ptr_gep2(
+                    llvm::Type::getInt8Ty(context), data,
+                    builder->CreateMul(offset, elem_len));
+                builder->CreateCall(fn, { str_src_data, str_src_len, fmt, first,
+                    elem_len, n_elems, stride, str_offset });
+            } else {
+                llvm::Value* first = builder->CreateBitCast(
+                    llvm_utils->create_ptr_gep2(el_type, data, offset),
+                    fn->getFunctionType()->getParamType(3));
+                builder->CreateCall(fn, { str_src_data, str_src_len, fmt, first,
+                    n_elems, stride, iostat, str_offset });
+            }
+        };
+        if (is_pointer_array) {
+            emit_call(llvm::ConstantInt::get(i64_type, 0),
+                contiguous_array_size(item), one);
+        } else if (is_rank_1_descriptor(item)) {
+            emit_call(builder->CreateSExtOrTrunc(
+                    arr_descr->get_offset(desc_type, arr_ptr), i64_type),
+                arr_descr->get_array_size(desc_type, arr_ptr, nullptr, 8),
+                rank_1_descriptor_stride(desc_type, arr_ptr));
+        } else {
+            for_each_descriptor_element(desc_type, arr_ptr,
+                [&](llvm::Value* offset, llvm::BasicBlock*) {
+                    emit_call(offset, one, one);
+                });
+        }
+    }
+
+    // Unformatted or list-directed READ from `unit_val` into the array input
+    // item `item`, which is not contiguous by construction, in place through
+    // its descriptor, in array element order. `ptr` is its value visited
+    // with ptr_loads = 0 and `fn` the runtime function that reads an array
+    // of its element type. With `iostat`, an element is defined only if it
+    // is read, and the transfer stops at the first error.
+    void emit_descriptor_read(ASR::expr_t* item, llvm::Value* ptr,
+            llvm::Function* fn, llvm::Value* unit_val, llvm::Value* iostat) {
+        llvm::Type* i32_type = llvm::Type::getInt32Ty(context);
+        llvm::Type* i64_type = llvm::Type::getInt64Ty(context);
+        ASR::ttype_t* type = ASRUtils::expr_type(item);
+        ASR::ttype_t* elem_type = ASRUtils::extract_type(type);
+        llvm::Type* desc_type;
+        llvm::Value* desc;
+        std::tie(desc_type, desc) = input_item_descriptor(item, ptr);
+        bool has_iostat = !llvm::isa<llvm::ConstantPointerNull>(iostat);
+        auto stop_on_error = [&](llvm::BasicBlock* loop_end) {
+            if (!has_iostat) return;
+            llvm::BasicBlock* next = llvm::BasicBlock::Create(context,
+                "read_elem.next", builder->GetInsertBlock()->getParent());
+            builder->CreateCondBr(builder->CreateICmpEQ(
+                builder->CreateLoad(i32_type, iostat),
+                llvm::ConstantInt::get(i32_type, 0)), next, loop_end);
+            builder->SetInsertPoint(next);
+        };
+        if (ASR::is_a<ASR::String_t>(*elem_type)) {
+            llvm::Value* data = llvm_utils->get_stringArray_data(type, desc);
+            llvm::Value* len = builder->CreateSExtOrTrunc(
+                llvm_utils->get_stringArray_length(type, desc), i64_type);
+            llvm::Function* read_fn = get_read_function(elem_type);
+            llvm::Value* elem_data = llvm_utils->CreateAlloca(character_type,
+                nullptr, "read_elem_data");
+            for_each_descriptor_element(desc_type, desc,
+                [&](llvm::Value* offset, llvm::BasicBlock* loop_end) {
+                    builder->CreateStore(llvm_utils->create_ptr_gep2(
+                        llvm::Type::getInt8Ty(context), data,
+                        builder->CreateMul(offset, len)), elem_data);
+                    builder->CreateCall(read_fn, {elem_data, len, unit_val, iostat});
+                    stop_on_error(loop_end);
+                });
             return;
         }
-        llvm::Value* first = builder->CreateBitCast(arr_ptr,
-            fn->getFunctionType()->getParamType(3));
-        builder->CreateCall(fn, { str_src_data, str_src_len, fmt, first,
-            n_elems, one, iostat, str_offset });
+        llvm::Type* el_type = llvm_utils->get_el_type(item, elem_type, module.get());
+        llvm::Value* data = llvm_utils->CreateLoad2(el_type->getPointerTo(),
+            arr_descr->get_pointer_to_data(desc_type, desc));
+        bool is_logical = ASR::is_a<ASR::Logical_t>(*elem_type);
+        if (is_rank_1_descriptor(item)) {
+            llvm::Value* first = llvm_utils->create_ptr_gep2(el_type, data,
+                arr_descr->get_offset(desc_type, desc));
+            llvm::Value* n_elems = arr_descr->get_array_size(desc_type, desc, nullptr, 4);
+            llvm::Value* stride = builder->CreateSExtOrTrunc(
+                rank_1_descriptor_stride(desc_type, desc), i32_type);
+            if (is_logical) {
+                llvm::Value* kind_val = llvm::ConstantInt::get(i32_type,
+                    ASRUtils::extract_kind_from_ttype_t(elem_type));
+                builder->CreateCall(fn, {first, n_elems, kind_val, stride, unit_val, iostat});
+            } else {
+                builder->CreateCall(fn, {first, n_elems, stride, unit_val, iostat});
+            }
+            return;
+        }
+        // An element is read into a temporary, which starts as its value, and
+        // stored once it is read.
+        llvm::Function* read_fn = get_read_function(elem_type);
+        llvm::Type* read_type = is_logical ? llvm::Type::getInt1Ty(context) : el_type;
+        llvm::Value* elem_tmp = llvm_utils->CreateAlloca(read_type, nullptr, "read_elem_value");
+        for_each_descriptor_element(desc_type, desc,
+            [&](llvm::Value* offset, llvm::BasicBlock* loop_end) {
+                llvm::Value* elem_ptr = llvm_utils->create_ptr_gep2(el_type, data, offset);
+                llvm::Value* value = llvm_utils->CreateLoad2(el_type, elem_ptr);
+                builder->CreateStore(is_logical ? builder->CreateICmpNE(value,
+                    llvm::Constant::getNullValue(el_type)) : value, elem_tmp);
+                builder->CreateCall(read_fn, {elem_tmp, unit_val, iostat});
+                stop_on_error(loop_end);
+                value = llvm_utils->CreateLoad2(read_type, elem_tmp);
+                builder->CreateStore(is_logical ? builder->CreateZExt(value, el_type)
+                    : value, elem_ptr);
+            });
     }
 
     void generate_read_implied_do_loop(ASR::ImpliedDoLoop_t* idl,
@@ -21803,9 +22021,14 @@ public:
                 } else {
                     fn = get_read_function(type);
                 }
-                if (ASRUtils::is_array(type)) {
+                if (ASRUtils::is_array(type) && ASRUtils::extract_physical_type(type) !=
+                        ASR::array_physical_typeType::PointerArray) {
+                    emit_descriptor_read(x.m_values[i], var_to_read_into, fn,
+                        unit_val, iostat);
+                } else if (ASRUtils::is_array(type)) {
                     // The string_format_array_args pass makes an array item
-                    // a PointerArray, which is its contiguous data.
+                    // that is contiguous by construction a PointerArray,
+                    // which is its contiguous data.
                     llvm::Value* n_elems = builder->CreateTrunc(
                         contiguous_array_size(x.m_values[i]), llvm_utils->i32);
                     llvm::Value* stride = llvm::ConstantInt::get(
@@ -22072,6 +22295,26 @@ public:
         emit_seek_record(unit_val, rec_val, iostat);
     }
 
+    // The arguments of a formatted read into the array input item
+    // `val_expr`, from `var_ptr`, its value visited with ptr_loads = 0. A
+    // PointerArray, which the string_format_array_args pass makes of an
+    // array that is contiguous by construction, is its contiguous data; the
+    // runtime reads any other array in place, in array element order,
+    // through the extents and strides of its descriptor.
+    void push_input_array_args(ASR::expr_t* val_expr, ASR::ttype_t* val_type,
+            llvm::Value* var_ptr, std::vector<llvm::Value*>& args) {
+        ASR::ttype_t* type = ASRUtils::expr_type(val_expr);
+        if (ASRUtils::extract_physical_type(type) ==
+                ASR::array_physical_typeType::PointerArray) {
+            arr_descr->push_data_array_args(val_type, val_expr, var_ptr,
+                contiguous_array_size(val_expr), llvm::ConstantInt::get(
+                    llvm::Type::getInt32Ty(context), 1), args);
+        } else {
+            arr_descr->push_descriptor_array_args(val_expr, type, val_type,
+                var_ptr, module.get(), args);
+        }
+    }
+
     void emit_single_formatted_read(ASR::expr_t *val_expr, llvm::Value *unit_val,
                                     llvm::Value *iostat, llvm::Value *read_size,
                                     llvm::Value *advance, llvm::Value *advance_len,
@@ -22115,15 +22358,10 @@ public:
         single_args.push_back(fmt_len);
 
         if (ASRUtils::is_array(expr_type_full)) {
-            // The string_format_array_args pass makes an array item a
-            // PointerArray, which is its contiguous data.
             single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             single_args.push_back(pad_data);
             single_args.push_back(pad_len);
-            arr_descr->push_data_array_args(val_type, val_expr, var_ptr,
-                contiguous_array_size(val_expr),
-                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1),
-                single_args);
+            push_input_array_args(val_expr, val_type, var_ptr, single_args);
         } else {
             // Scalar: one arg with is_descriptor_array=0 (pushed inside add_formatted_read_arg)
             single_args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32,
@@ -22455,11 +22693,7 @@ public:
             }
 
             if (ASRUtils::is_array(expr_type_full)) {
-                // The string_format_array_args pass makes an array item a
-                // PointerArray, which is its contiguous data.
-                arr_descr->push_data_array_args(val_type, val_expr, var_ptr,
-                    contiguous_array_size(val_expr), llvm::ConstantInt::get(
-                        llvm::Type::getInt32Ty(context), 1), args);
+                push_input_array_args(val_expr, val_type, var_ptr, args);
             } else {
                 add_formatted_read_arg(args, val_type, var_ptr);
             }

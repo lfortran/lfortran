@@ -117,6 +117,8 @@ public:
     bool check_string_length_arguments = false;
     // See ASRVerifyOptions::string_format_array_args.
     bool check_string_format_array_args = false;
+    // The StringFormats whose arguments are the items of a READ statement.
+    std::set<const StringFormat_t*> input_formats;
 
     VerifyVisitor(bool check_external,
         diag::Diagnostics &diagnostics) : check_external{check_external},
@@ -3728,41 +3730,56 @@ public:
             "StringFormat::m_fmt must be nil for FormatFortranLeadingBlank");
         if (check_string_format_array_args) {
             if (x.m_fmt) verify_string_format_array_arg(x.m_fmt);
-            for (size_t i = 0; i < x.n_args; i++) {
+            for (size_t i = 0; i < x.n_args && !input_formats.count(&x); i++) {
                 verify_string_format_array_arg(x.m_args[i]);
             }
         }
         BaseWalkVisitor<VerifyVisitor>::visit_StringFormat(x);
     }
 
-    // After the string_format_array_args pass, the array items of a data
-    // transfer statement, and an internal file that is an array, are
-    // contiguous data too. An implied DO loop transfers its items one
-    // element at a time.
+    // After the string_format_array_args pass, the array items of an output
+    // statement, and an internal file that is an array, are contiguous data
+    // too. An array item of an input statement is defined in place: it is
+    // contiguous data, or it is transferred element by element through its
+    // descriptor when it is not contiguous by construction. An implied DO
+    // loop transfers its items one element at a time.
     void verify_transfer_arrays(ASR::expr_t* unit, ASR::expr_t** values,
-            size_t n_values) {
+            size_t n_values, bool input) {
         if (unit) {
             verify_contiguous_array_data(unit, "data_transfer.internal_file",
                 "an internal file that is an array");
         }
         for (size_t i = 0; i < n_values; i++) {
-            if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
-                verify_contiguous_array_data(values[i], "data_transfer.array_item",
-                    "an array item of a data transfer statement");
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) continue;
+            if (input && ASR::is_a<ASR::StringFormat_t>(*values[i])) {
+                ASR::StringFormat_t* sf = ASR::down_cast<ASR::StringFormat_t>(values[i]);
+                input_formats.insert(sf);
+                verify_transfer_arrays(nullptr, sf->m_args, sf->n_args, input);
+                continue;
             }
+            ASR::ttype_t* type = ASRUtils::expr_type(values[i]);
+            if (input && ASRUtils::is_array(type) && !ASRUtils::is_allocatable(type)) {
+                ASR::array_physical_typeType phys = ASRUtils::extract_physical_type(type);
+                if (phys == ASR::array_physical_typeType::DescriptorArray ||
+                        phys == ASR::array_physical_typeType::AssumedRankArray) {
+                    continue;
+                }
+            }
+            verify_contiguous_array_data(values[i], "data_transfer.array_item",
+                "an array item of a data transfer statement");
         }
     }
 
     void visit_FileWrite(const FileWrite_t& x) {
         if (check_string_format_array_args && !x.m_overloaded && !x.m_nml) {
-            verify_transfer_arrays(x.m_unit, x.m_values, x.n_values);
+            verify_transfer_arrays(x.m_unit, x.m_values, x.n_values, false);
         }
         BaseWalkVisitor<VerifyVisitor>::visit_FileWrite(x);
     }
 
     void visit_FileRead(const FileRead_t& x) {
         if (check_string_format_array_args && !x.m_overloaded && !x.m_nml) {
-            verify_transfer_arrays(x.m_unit, x.m_values, x.n_values);
+            verify_transfer_arrays(x.m_unit, x.m_values, x.n_values, true);
         }
         BaseWalkVisitor<VerifyVisitor>::visit_FileRead(x);
     }
