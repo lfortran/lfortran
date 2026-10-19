@@ -458,6 +458,8 @@ public:
     std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> nested_var_to_ext_var;
     // Context pointers standing for borrowed trait views of the host
     std::set<ASR::symbol_t*> trait_view_ctx_vars;
+    // Context pointers lending intent(in) trait owners of the host
+    std::set<ASR::symbol_t*> trait_readonly_owner_ctx_vars;
     bool skip_replace=false;
     ReplacerNestedVars(Allocator &_al) : al(_al) {}
 
@@ -469,6 +471,11 @@ public:
             ASR::ttype_t *host_type = ASRUtils::symbol_type(x->m_v);
             std::string m_name = nested_var_to_ext_var[x->m_v].first;
             ASR::symbol_t *t = nested_var_to_ext_var[x->m_v].second;
+            if (trait_readonly_owner_ctx_vars.find(t) != trait_readonly_owner_ctx_vars.end() &&
+                    ASRUtils::symbol_parent_symtab(x->m_v) == current_function_scope) {
+                // The host keeps using its own lent owner.
+                return;
+            }
             std::string sym_name = ASRUtils::symbol_name(t);
             ASR::symbol_t *existing = current_function_scope->get_symbol(sym_name);
             if (existing != nullptr &&
@@ -488,6 +495,21 @@ public:
                 *current_expr = ASRUtils::EXPR(ASR::make_TraitBorrow_t(al,
                     x->base.base.loc, &x->base, host_type));
             }
+        }
+    }
+
+    void replace_IntrinsicImpureFunction(ASR::IntrinsicImpureFunction_t* x) {
+        ASR::BaseExprReplacer<ReplacerNestedVars>::replace_IntrinsicImpureFunction(x);
+        // A lent intent(in) owner is allocated exactly when the context
+        // pointer lending it is associated.
+        if (x->m_impure_intrinsic_id == static_cast<int64_t>(
+                    ASRUtils::IntrinsicImpureFunctions::Allocated) &&
+                x->n_args == 1 && ASR::is_a<ASR::Var_t>(*x->m_args[0]) &&
+                trait_readonly_owner_ctx_vars.find(ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(x->m_args[0])->m_v)) !=
+                    trait_readonly_owner_ctx_vars.end()) {
+            *current_expr = ASRUtils::EXPR(ASR::make_PointerAssociated_t(al,
+                x->base.base.loc, x->m_args[0], nullptr, x->m_type, nullptr));
         }
     }
 
@@ -618,20 +640,25 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                     // context for each use and back (AssignNestedVars). A
                     // pointer is copied into a pointer of the context, and a
                     // borrowed view is associated with one, which makes the
-                    // view a target.
+                    // view a target. An intent(in) owner cannot be defined,
+                    // so it is not moved but lent like a view: the context
+                    // pointer is associated with it exactly when it is
+                    // allocated.
                     ASR::ttype_t *ctx_type = ASRUtils::TYPE(ASR::make_TraitObjectType_t(
                         al, var_type->base.loc, ASRUtils::import_type_declaration(al,
                             ASR::down_cast<ASR::TraitObjectType_t>(var_type)->m_contract,
                             current_scope)));
                     bool is_view = !ASRUtils::is_trait_owner(var->m_type) && !is_pointer;
-                    if (ASRUtils::is_trait_owner(var->m_type)) {
+                    bool is_readonly_owner = ASRUtils::is_trait_owner(var->m_type) &&
+                        var->m_intent == ASR::intentType::In;
+                    if (ASRUtils::is_trait_owner(var->m_type) && !is_readonly_owner) {
                         ctx_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al,
                             ctx_type->base.loc, ctx_type));
                     } else {
                         ctx_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
                             ctx_type->base.loc, ctx_type));
                     }
-                    if (is_view) {
+                    if (is_view || is_readonly_owner) {
                         var->m_target_attr = true;
                     }
                     ASR::expr_t *ctx_var = PassUtils::create_auxiliary_variable(
@@ -643,6 +670,9 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         var->m_target_attr;
                     if (is_view) {
                         replacer.trait_view_ctx_vars.insert(ctx_sym);
+                    }
+                    if (is_readonly_owner) {
+                        replacer.trait_readonly_owner_ctx_vars.insert(ctx_sym);
                     }
                     nested_var_to_ext_var[it2] = std::make_pair(module_name, ctx_sym);
                     continue;
@@ -1307,6 +1337,29 @@ private :
             std::map<ASR::symbol_t*, ASR::symbol_t*> &owner_ctx_vars,
             bool sync_in_loop, bool skip_sync_back) {
         ASR::ttype_t *type = ASRUtils::symbol_type(sym);
+        ASR::Variable_t *host = ASRUtils::EXPR2VAR(val);
+        if (ASRUtils::is_trait_owner(type) && host->m_intent == ASR::intentType::In) {
+            // Lend the intent(in) owner without defining it
+            Vec<ASR::expr_t*> args;
+            args.reserve(al, 1);
+            args.push_back(al, val);
+            diag::Diagnostics diag_instance;
+            ASR::expr_t* is_allocated = ASRUtils::EXPR(ASRUtils::Allocated::create_Allocated(
+                al, val->base.loc, args, diag_instance));
+            if (diag_instance.has_error()) throw diag_instance;
+            Vec<ASR::stmt_t*> lend;
+            lend.reserve(al, 1);
+            lend.push_back(al, ASRUtils::STMT(ASR::make_TraitAssociate_t(al,
+                val->base.loc, target, ASRUtils::EXPR(ASR::make_TraitBorrow_t(al,
+                    val->base.loc, val, ASRUtils::type_get_past_allocatable(type))))));
+            Vec<ASR::stmt_t*> disassociate;
+            disassociate.reserve(al, 1);
+            disassociate.push_back(al, ASRUtils::STMT(ASR::make_TraitAssociate_t(al,
+                val->base.loc, target, nullptr)));
+            body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, val->base.loc, nullptr,
+                is_allocated, lend.p, lend.size(), disassociate.p, disassociate.size())));
+            return;
+        }
         if (ASRUtils::is_trait_owner(type)) {
             body.push_back(al, move_trait_owner(val, target));
             assigns_at_end.push_back(move_trait_owner(target, val));
@@ -1319,7 +1372,6 @@ private :
         }
         body.push_back(al, ASRUtils::STMT(ASR::make_TraitAssociate_t(al,
             val->base.loc, target, val)));
-        ASR::Variable_t *host = ASRUtils::EXPR2VAR(val);
         if (!ASRUtils::is_trait_pointer(type) ||
                 host->m_intent == ASR::intentType::In || skip_sync_back) {
             return;

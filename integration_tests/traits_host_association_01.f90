@@ -92,6 +92,33 @@ contains
         end subroutine
     end function
 
+    ! A readonly allocatable owner dummy lent to internal procedures.
+    integer function lent(o) result(r)
+        class(IVal), allocatable, intent(in) :: o
+        r = -1
+        call look()
+        if (allocated(o)) then
+            if (r /= o%get() .or. r /= through_view()) error stop 4
+        else if (has_value()) then
+            error stop 5
+        end if
+    contains
+        subroutine look()
+            if (allocated(o)) r = o%get()
+        end subroutine
+        logical function has_value()
+            has_value = allocated(o)
+        end function
+        integer function through_view()
+            through_view = borrow(o)
+        end function
+    end function
+
+    integer function borrow(w)
+        class(IVal), intent(in) :: w
+        borrow = w%get()
+    end function
+
     ! A local owner of a procedure, released when the procedure returns.
     integer function scoped() result(r)
         class(IVal), allocatable :: t
@@ -121,9 +148,10 @@ program traits_host_association_01
     integer :: f0
 
     ! Allocation by an internal procedure defines the host owner.
+    if (lent(o) /= -1) error stop 32
     call make_it()
     if (.not. allocated(o)) error stop 10
-    if (o%get() /= 3) error stop 11
+    if (o%get() /= 3 .or. lent(o) /= 3) error stop 11
 
     ! Mutation through host association keeps the same payload: no copies
     ! are made or finalized, and a pointer to the owner sees each update.
@@ -132,6 +160,7 @@ program traits_host_association_01
     call bump()
     call bump()
     if (o%get() /= 5 .or. q%get() /= 5) error stop 12
+    if (lent(o) /= 5 .or. q%get() /= 5) error stop 33
     if (finals /= f0) error stop 13
     if (peek() /= 5 .or. o%get() + peek() /= 10) error stop 14
     call o%add(1)
@@ -152,6 +181,7 @@ program traits_host_association_01
     nullify(q)
     call drop()
     if (allocated(o)) error stop 19
+    if (lent(o) /= -1) error stop 34
     if (finals /= f0 + 1) error stop 20
 
     ! A host pointer: messages, mutation and reassociation.
