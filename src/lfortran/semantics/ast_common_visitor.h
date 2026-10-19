@@ -4317,11 +4317,66 @@ public:
         return true;
     }
 
+    // With --legacy-array-sections, whether `array` is an explicit-shape dummy
+    // whose last dimension is `1` (or `1:1`), as in `a(lda, 1)` or `x(1)`.
+    // FORTRAN 66 had no assumed-size arrays, and such a dummy is its form of
+    // `a(lda, *)`: the procedure indexes it past the last extent, reaching the
+    // elements of the actual argument that follow in array element order. The
+    // dummy keeps its declared shape, so a whole-array reference such as
+    // `sum(x)` or `size(x)` still uses it, as with GFortran.
+    bool is_legacy_assumed_size_dummy(ASR::expr_t* array) {
+        if (!compiler_options.legacy_array_sections ||
+                !ASR::is_a<ASR::Var_t>(*array)) {
+            return false;
+        }
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(array)->m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+            return false;
+        }
+        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+        if (!ASRUtils::is_arg_dummy(var->m_intent) ||
+                ASRUtils::is_allocatable_or_pointer(var->m_type)) {
+            return false;
+        }
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(var->m_type, m_dims);
+        if (n_dims == 0 || ASRUtils::is_dimension_empty(m_dims, n_dims)) {
+            return false;
+        }
+        int64_t lb = 0, len = 0;
+        ASR::dimension_t& last = m_dims[n_dims - 1];
+        return last.m_start && last.m_length &&
+            ASRUtils::extract_value(ASRUtils::expr_value(last.m_start), lb) &&
+            ASRUtils::extract_value(ASRUtils::expr_value(last.m_length), len) &&
+            lb == 1 && len == 1;
+    }
+
+    // Whether `array(args)` is an element of a legacy assumed-size dummy.
+    bool is_legacy_assumed_size_element(ASR::expr_t* array,
+            ASR::array_index_t* args, size_t n_args) {
+        if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array))
+                != (int64_t) n_args || !is_legacy_assumed_size_dummy(array)) {
+            return false;
+        }
+        for (size_t i = 0; i < n_args; i++) {
+            if (args[i].m_left != nullptr || args[i].m_step != nullptr ||
+                    args[i].m_right == nullptr ||
+                    ASRUtils::is_array(ASRUtils::expr_type(args[i].m_right))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     // Reports a constant subscript of `array` that lies outside the constant
     // bounds of its dimension. Returns whether every subscript is known to be
     // within the bounds: all are constants and the array is neither
     // allocatable nor a pointer and has constant bounds, which are then those
-    // of its declaration.
+    // of its declaration. The last dimension of a legacy assumed-size dummy
+    // (see `is_legacy_assumed_size_dummy`) has no upper bound to check, and,
+    // as for an assumed-size array, its element references are not checked
+    // at run time.
     bool validate_fixed_size_array_index_bounds(ASR::expr_t* array,
             ASR::array_index_t* args, size_t n_args, const Location& loc) {
         if (_processing_common_block_object) {
@@ -4335,6 +4390,11 @@ public:
         bool in_bounds = n_dims > 0 && n_dims == n_args &&
             !ASRUtils::is_allocatable(array_type) &&
             !ASRUtils::is_pointer(array_type);
+        bool legacy_assumed_size = n_dims == n_args &&
+            is_legacy_assumed_size_dummy(array);
+        if (legacy_assumed_size) {
+            n_dims--;
+        }
         for (size_t i = 0; i < std::min(n_dims, n_args); i++) {
             if (args[i].m_left != nullptr || args[i].m_step != nullptr) {
                 in_bounds = false;
@@ -4379,7 +4439,8 @@ public:
                 in_bounds = false;
             }
         }
-        return in_bounds;
+        return legacy_assumed_size
+            ? is_legacy_assumed_size_element(array, args, n_args) : in_bounds;
     }
 
     // Whether DATA gives the local variables of `owner` the SAVE attribute,
@@ -15882,7 +15943,8 @@ public:
                 ASR::expr_t* array_item = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al, loc,
                     v_Var, args.p, args.size(), ASRUtils::type_get_past_pointer(
                         ASRUtils::type_get_past_allocatable(type)),
-                    ASR::arraystorageType::ColMajor, arr_ref_val));
+                    ASR::arraystorageType::ColMajor, arr_ref_val,
+                    is_legacy_assumed_size_element(v_Var, args.p, args.size())));
                 LCOMPILERS_ASSERT(n_subargs == 1);
 
                 ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
