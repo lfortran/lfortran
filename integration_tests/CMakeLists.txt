@@ -4476,6 +4476,8 @@ RUN(NAME traits_procedure_value_01_oracle LABELS gfortran llvm EXTRA_ARGS --veri
 RUN(NAME traits_procedure_value_02 LABELS llvm llvm2 NO_STD_F23
     EXTRA_ARGS --verify-all-passes EXTRAFILES traits_procedure_value_02_library.f90
     traits_procedure_value_02_facade.f90)
+RUN(NAME traits_procedure_component_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_procedure_component_01_oracle LABELS gfortran llvm EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_recursive_01 LABELS llvm llvm2 NO_STD_F23
     EXTRAFILES traits_recursive_01_mod.f90)
 RUN(NAME traits_recursive_01_oracle LABELS gfortran llvm)

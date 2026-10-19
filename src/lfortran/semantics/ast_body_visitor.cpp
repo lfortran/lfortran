@@ -9444,7 +9444,9 @@ public:
                     }
                     f = ASR::down_cast<ASR::Function_t>(f4);
                 } else if (ASR::is_a<ASR::Variable_t>(*final_sym)) {
-                    nopass = true;
+                    // A procedure pointer component receives the passed
+                    // object unless it is NOPASS.
+                    nopass = ASRUtils::get_class_proc_nopass_val(final_sym);
                     final_sym = original_sym;
                     original_sym = nullptr;
                 } else {
@@ -9530,14 +9532,17 @@ public:
             }
         }
         ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
-        // If the call goes through a FunctionPointerCast temp, type-check
-        // against the cast target interface so the call agrees with its callee.
-        if (ASR::is_a<ASR::Variable_t>(*final_sym)) {
-            ASR::Variable_t* fv = ASR::down_cast<ASR::Variable_t>(final_sym);
+        // A call through a procedure variable, including a procedure pointer
+        // component or a FunctionPointerCast temp, is checked against its
+        // explicit interface, which associates the actuals with its dummies.
+        if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(final_sym))) {
+            ASR::Variable_t* fv = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(final_sym));
             if (fv->m_type_declaration) {
                 ASR::symbol_t* td = ASRUtils::symbol_get_past_external(
                     fv->m_type_declaration);
-                if (ASR::is_a<ASR::Function_t>(*td)) {
+                if (ASR::is_a<ASR::Function_t>(*td) && !ASRUtils::is_bare_implicit_interface(
+                        *ASR::down_cast<ASR::Function_t>(td))) {
                     f = ASR::down_cast<ASR::Function_t>(td);
                 }
             }
