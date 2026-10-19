@@ -567,7 +567,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             replacer.current_function_scope = current_scope;
         }
         replacer.skip_replace = skip_replace;
-        if (!skip_replace && *current_expr) {
+        if (!skip_replace && *current_expr && !nested_var_to_ext_var.empty()) {
             NestedVarReferenceFinder finder(nested_var_to_ext_var);
             finder.visit_expr(**current_expr);
             if (finder.found) {
@@ -1022,7 +1022,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
 
     void visit_Variable(const ASR::Variable_t &x) {
         ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
-        if (replaces_nested_vars()) {
+        if (replaces_nested_vars() && !nested_var_to_ext_var.empty()) {
             NestedVarReferenceFinder finder(nested_var_to_ext_var);
             finder.visit_ttype(*xx.m_type);
             if (finder.found) {
