@@ -26,6 +26,17 @@ static inline void lfortran_gpu_copy_kernel_name(char *dest, const char *name,
     dest[name_len] = '\0';
 }
 
+// Whether a launch has no threads: a grid or block extent that is not
+// positive, as an empty iteration space gives. Such a launch runs nothing.
+static inline int lfortran_gpu_launch_is_empty(const int grid[3],
+    const int block[3])
+{
+    for (int i = 0; i < 3; i++) {
+        if (grid[i] <= 0 || block[i] <= 0) return 1;
+    }
+    return 0;
+}
+
 // The size in bytes of the device heap of a launch that allocates on the
 // device: the value of the environment variable LFORTRAN_GPU_HEAP_SIZE, a
 // number with an optional K, M or G suffix (powers of 1024), or 256 MiB when

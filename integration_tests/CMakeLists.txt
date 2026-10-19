@@ -6379,7 +6379,7 @@ RUN(NAME gpu_metal_442 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-
 RUN(NAME gpu_metal_443 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_444 LABELS gfortran llvm metal cuda_cpu EXTRA_ARGS --realloc-lhs-arrays)
 RUN(NAME gpu_metal_450 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_metal_449 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_metal_449 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_metal_454 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_445 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_460 LABELS gfortran llvm metal cuda_cpu)
@@ -6407,6 +6407,8 @@ RUN(NAME gpu_metal_478 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_479 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_480 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_481 LABELS gfortran llvm metal cuda_cpu)
+# GFortran 13 in Quick does not support REDUCE.
+RUN(NAME gpu_metal_482 LABELS llvm metal cuda_cpu cuda)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
@@ -6481,7 +6483,7 @@ RUN(NAME gpu_kernel_source_08 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_09 LABELS gfortran llvm)
 RUN(NAME gpu_kernel_source_10 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_kernel_source_11 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_kernel_source_12 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_kernel_source_12 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_kernel_source_13 LABELS gfortran llvm metal cuda_cpu)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
