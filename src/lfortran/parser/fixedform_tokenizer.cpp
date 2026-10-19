@@ -476,17 +476,27 @@ struct FixedFormRecursiveDescent {
     }
 
     // Push the token_type, YYSTYPE and Location of the token_str at `cur`.
+    // The token covers `len` characters of the source starting at `cur`
+    // (`loc.last` is the offset of its last character).
     // (Does not modify `cur`.)
     void push_token_no_advance_token(unsigned char *cur, const std::string &token_str,
-            yytokentype const token_type) {
+            yytokentype const token_type, size_t len) {
+        LCOMPILERS_ASSERT(len > 0)
         YYSTYPE yy;
         yy.string.from_str(m_a, token_str);
         stypes.push_back(yy);
         tokens.push_back(token_type);
         Location loc;
         loc.first = source_offset(cur - string_start);
-        loc.last = source_offset(cur - string_start + token_str.size());
+        loc.last = source_offset(cur - string_start + len - 1);
         locations.push_back(loc);
+    }
+
+    // The token covers token_str.size() characters of the source
+    void push_token_no_advance_token(unsigned char *cur, const std::string &token_str,
+            yytokentype const token_type) {
+        push_token_no_advance_token(cur, token_str, token_type,
+            token_str.size());
     }
 
     // token_type automatically determined
@@ -1717,7 +1727,8 @@ struct FixedFormRecursiveDescent {
 
     void lex_enddo_line(unsigned char *&cur) {
         LCOMPILERS_ASSERT(next_is(cur, "enddo"))
-        push_token_no_advance(cur, "end_do");
+        // The `end_do` token covers the 5 characters of `enddo`
+        push_token_no_advance_token(cur, "end_do", KW_END_DO, 5);
         cur += 5;
         t.cur = cur;
         unsigned char *name_start = cur;
