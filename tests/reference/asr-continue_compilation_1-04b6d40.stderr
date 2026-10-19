@@ -4359,13 +4359,13 @@ semantic error: Passing an element of a pointer array to an array dummy argument
      | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ array dummy argument
 
 semantic error: Variable 'cc1_external_name_sub' is not declared
-    --> tests/errors/continue_compilation_1.f90:3451:5
+    --> tests/errors/continue_compilation_1.f90:3518:5
      |
-3451 |     cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
+3518 |     cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
      |     ^^^^^^^^^^^^^^^^^^^^^ 'cc1_external_name_sub' is undeclared
 
 semantic error: Variable 'cc1_external_name_fn' is not declared
-    --> tests/errors/continue_compilation_1.f90:3452:14
+    --> tests/errors/continue_compilation_1.f90:3519:14
      |
-3452 |     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
+3519 |     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
      |              ^^^^^^^^^^^^^^^^^^^^ 'cc1_external_name_fn' is undeclared
