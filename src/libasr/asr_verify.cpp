@@ -1227,7 +1227,12 @@ public:
                     ASR::is_a<ASR::FunctionType_t>(*proc->m_function_signature),
                 "asr.verify.trait_binding.procedure_signature_required",
                 "A trait binding procedure must have a function signature");
-            check(ASRUtils::get_FunctionType(*proc)->m_deftype != ASR::deftypeType::Interface,
+            // A separate module procedure's interface is bound like an
+            // ordinary type-bound procedure: its body is in a submodule,
+            // which may be compiled separately.
+            ASR::FunctionType_t *proc_type = ASRUtils::get_FunctionType(*proc);
+            check(proc_type->m_deftype != ASR::deftypeType::Interface ||
+                    proc_type->m_module,
                 "asr.verify.trait_binding.procedure_is_implementation",
                 "A trait binding procedure must be a concrete implementation");
         }

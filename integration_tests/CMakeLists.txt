@@ -4542,6 +4542,10 @@ RUN(NAME traits_generics_module_04 LABELS llvm llvm2 NO_STD_F23 ISOLATE_MODULES
     EXTRA_ARGS --verify-all-passes
     EXTRAFILES traits_generics_module_01_sums.f90 traits_generics_module_01_ops.f90
         traits_generics_module_03_plain.f90)
+RUN(NAME traits_submodule_binding_01 LABELS llvm llvm2 llvm_submodule NO_STD_F23
+    EXTRA_ARGS --verify-all-passes
+    EXTRAFILES traits_submodule_binding_01_mod.f90 traits_submodule_binding_01_impl.f90)
+RUN(NAME traits_submodule_binding_01_oracle LABELS gfortran llvm)
 RUN(NAME traits_receiver_intent_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_receiver_intent_01_oracle LABELS gfortran llvm)
 RUN(NAME traits_receiver_intent_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)

@@ -35491,7 +35491,7 @@ public:
                     /* a_symtab */ current_scope,
                     /* a_name */ s2c(al, item.first),
                     es0->m_external,
-                    es0->m_module_name, nullptr, 0,
+                    es0->m_module_name, es0->m_scope_names, es0->n_scope_names,
                     es0->m_original_name,
                     dflt_access
                     );
