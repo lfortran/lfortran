@@ -457,6 +457,24 @@ public:
 };
 
 
+// Finds a reference to a host variable that is replaced by its context
+// variable in an expression, including in the types of its subexpressions
+class NestedVarReferenceFinder: public ASR::BaseWalkVisitor<NestedVarReferenceFinder> {
+public:
+    const std::map<ASR::symbol_t*, std::pair<std::string, ASR::symbol_t*>> &nested_var_to_ext_var;
+    bool found = false;
+
+    NestedVarReferenceFinder(const std::map<ASR::symbol_t*,
+            std::pair<std::string, ASR::symbol_t*>> &nested_var_to_ext_var_)
+        : nested_var_to_ext_var(nested_var_to_ext_var_) {}
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (nested_var_to_ext_var.find(x.m_v) != nested_var_to_ext_var.end()) {
+            found = true;
+        }
+    }
+};
+
 class ReplacerNestedVars: public ASR::BaseExprReplacer<ReplacerNestedVars> {
 private:
     Allocator &al;
@@ -533,11 +551,14 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
         std::map<ASR::symbol_t*, std::set<ASR::symbol_t*>> &n_map) : al(al_),
         replacer(al_), nesting_map(n_map) {}
 
+    // Skip replacing original variables with context variables
+    // in the parent function except for function/subroutine calls
+    bool replaces_nested_vars() {
+        return nesting_depth != 1 || is_in_call;
+    }
+
     void call_replacer() {
-        // Skip replacing original variables with context variables
-        // in the parent function except for function/subroutine calls
-        bool skip_replace = false;
-        if (nesting_depth==1 && !is_in_call) skip_replace = true;
+        bool skip_replace = !replaces_nested_vars();
         replacer.current_expr = current_expr;
         replacer.current_scope = current_scope;
         if (!func_stack.empty()) {
@@ -553,6 +574,18 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             replacer.current_function_scope = current_scope;
         }
         replacer.skip_replace = skip_replace;
+        if (!skip_replace && *current_expr) {
+            NestedVarReferenceFinder finder(nested_var_to_ext_var);
+            finder.visit_expr(**current_expr);
+            if (finder.found) {
+                // The expression can share nodes, notably its type, with a
+                // declaration of the host: `2*s` has the type of the host's
+                // `s(size(a))`. Replace in a copy, so that the declaration
+                // keeps referring to the host's own variables.
+                ASRUtils::ExprStmtDuplicator duplicator(al);
+                *current_expr = duplicator.duplicate_expr(*current_expr);
+            }
+        }
         replacer.replace_expr(*current_expr);
     }
 
@@ -996,6 +1029,19 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
 
     void visit_Variable(const ASR::Variable_t &x) {
         ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
+        if (replaces_nested_vars()) {
+            NestedVarReferenceFinder finder(nested_var_to_ext_var);
+            finder.visit_ttype(*xx.m_type);
+            if (finder.found) {
+                // A variable of a nested procedure can share its type with
+                // a declaration of the host, e.g. a temporary created for
+                // `v = v*v + 1` has the type of the host's `v(n)`. Replace
+                // in a copy, so that the declaration keeps referring to
+                // the host's own variables.
+                ASRUtils::ExprStmtDuplicator duplicator(al);
+                xx.m_type = duplicator.duplicate_ttype(xx.m_type);
+            }
+        }
         if ( ASRUtils::is_array(xx.m_type) ) {
             ASR::Array_t* array = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(xx.m_type));
             ASR::dimension_t* m_dims;
@@ -1023,7 +1069,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         current_expr = const_cast<ASR::expr_t**>(&(m_dims[i].m_length));
                         ASR::symbol_t* prev_sym = ASR::down_cast<ASR::Var_t>(m_length)->m_v;
                         call_replacer();
-                        ASR::symbol_t* new_sym = ASR::down_cast<ASR::Var_t>(m_length)->m_v;
+                        ASR::symbol_t* new_sym = ASR::down_cast<ASR::Var_t>(m_dims[i].m_length)->m_v;
                         if ( prev_sym != new_sym ) {
                             // need to convert this to a pointer
                             array->m_physical_type = ASR::array_physical_typeType::PointerArray;
