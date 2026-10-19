@@ -245,6 +245,22 @@ class UpdateFunctionPointerCastTypes: public ASR::ASRPassBaseWalkVisitor<UpdateF
             const_cast<ASR::FunctionPointerCast_t&>(x).m_type = to_fn->m_function_signature;
         }
 
+        void visit_PointerNullConstant(const ASR::PointerNullConstant_t &x) {
+            ASR::ASRPassBaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_PointerNullConstant(x);
+            if (x.m_var_expr == nullptr) {
+                return;
+            }
+            ASR::ttype_t* type = ASRUtils::expr_type(x.m_var_expr);
+            if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(type))) {
+                // A modfile stores the null constant's signature separately
+                // from its procedure variable, whose interface was lowered.
+                // Its specification expressions must be visible here, not
+                // just in the procedure variable's declaration scope.
+                const_cast<ASR::PointerNullConstant_t&>(x).m_type =
+                    ASRUtils::import_procedure_type(al, type, current_scope);
+            }
+        }
+
         // The type of the procedure variable `x` declared by a transformed
         // interface, or null.
         ASR::ttype_t* transformed_procedure_variable_type(const ASR::Variable_t &x) {
@@ -393,7 +409,7 @@ public :
             }
 
             /* Create Assignment ---> `funcCall_temp_var = f()` --- Push Assignment Statement */
-            ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al_, f_call_->base.base.loc,temp_var, fnCall_argument, nullptr, false, false));
+            ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al_, f_call_->base.base.loc,temp_var, fnCall_argument, nullptr, false, false, false));
             pass_result_.push_back(al_, assignment_stmt);                            
 
             /* Replace Current FuncParam With `temp_var` */
@@ -667,8 +683,17 @@ public :
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x){
+        std::vector<ASR::expr_t*> original_args;
+        for (size_t i = 0; i < x->n_args; i++) {
+            original_args.push_back(x->m_args[i].m_value);
+        }
         traverse_functionCall_args(x->m_args, x->n_args);
-        if (x->m_dt) {
+        ASR::expr_t* dt = x->m_dt;
+        for (size_t i = 0; i < x->n_args; i++) {
+            x->m_dt = passed_object_dispatch(x->m_dt, original_args[i],
+                x->m_args[i].m_value);
+        }
+        if (x->m_dt && x->m_dt == dt) {
             ASR::expr_t** current_expr_copy = current_expr;
             current_expr = &(x->m_dt);
             replace_expr(x->m_dt);
@@ -690,7 +715,7 @@ public :
                 current_scope, nullptr);
             ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(
                 al, x->base.base.loc, result_var,
-                ASRUtils::EXPR((ASR::asr_t*)x), nullptr, false, false));
+                ASRUtils::EXPR((ASR::asr_t*)x), nullptr, false, false, false));
             *current_expr = result_var;
             pass_result.push_back(al, assign);
             return;
@@ -1225,13 +1250,20 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 
             // We skip the generic expression visitor on this statement, so
             // ensure nested calls inside the function call arguments are still replaced.
+            std::vector<ASR::expr_t*> original_args;
             for (size_t i = 0; i < fc->n_args; i++) {
+                original_args.push_back(fc->m_args[i].m_value);
                 ASR::expr_t** current_expr_copy = current_expr;
                 current_expr = &fc->m_args[i].m_value;
                 call_replacer();
                 current_expr = current_expr_copy;
             }
-            if (fc->m_dt) {
+            ASR::expr_t* dt = fc->m_dt;
+            for (size_t i = 0; i < fc->n_args; i++) {
+                fc->m_dt = passed_object_dispatch(fc->m_dt, original_args[i],
+                    fc->m_args[i].m_value);
+            }
+            if (fc->m_dt && fc->m_dt == dt) {
                 ASR::expr_t** current_expr_copy = current_expr;
                 current_expr = &fc->m_dt;
                 call_replacer();

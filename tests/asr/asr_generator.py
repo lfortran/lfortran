@@ -140,7 +140,7 @@ def assignment(table, name, value, realloc=False, move=False):
     return (
         f"(Assignment :target {var(table, name)} :value {value} "
         f":overloaded nil :realloc_lhs {'true' if realloc else 'false'} "
-        f":move_allocation {'true' if move else 'false'})"
+        f":move_allocation {'true' if move else 'false'} :new_target false)"
     )
 
 
@@ -621,7 +621,8 @@ def generate_valid(seed):
         return (
             f"(Assignment :target {target} "
             f":value {element_expression(element)} "
-            f":overloaded nil :realloc_lhs false :move_allocation false)"
+            f":overloaded nil :realloc_lhs false :move_allocation false "
+            f":new_target false)"
         )
 
     def array_read_statement():
@@ -1711,7 +1712,7 @@ def invalid_array_constructor_element(_rng):
         {"a": variable(PROGRAM_SYMTAB, "a", element)},
         [f"(Assignment :target {var(PROGRAM_SYMTAB, 'a')} "
          f":value {constructor} :overloaded nil :realloc_lhs false "
-         f":move_allocation false)"],
+         f":move_allocation false :new_target false)"],
     ), "schema-invalid array constructor element type"
 
 

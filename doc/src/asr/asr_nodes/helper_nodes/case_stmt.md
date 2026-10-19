@@ -71,6 +71,7 @@ and at most one of them runs.
       :overloaded nil
       :realloc_lhs false
       :move_allocation false
+      :new_target false
     )
   ]
   :fall_through false

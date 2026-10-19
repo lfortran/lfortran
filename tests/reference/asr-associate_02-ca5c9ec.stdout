@@ -209,6 +209,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 p2)
@@ -226,6 +227,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -277,6 +279,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Print
                         (StringFormat
@@ -304,6 +307,7 @@
                         (Var 2 t1)
                         (IntegerConstant 8 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -351,6 +355,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )

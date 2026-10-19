@@ -402,6 +402,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (DoConcurrentLoop
                                         [((Var 3 i)
@@ -456,6 +457,7 @@
                                             ()
                                             .false.
                                             .false.
+                                            .false.
                                         )]
                                     )]
                                     ()
@@ -482,6 +484,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 nsize)
@@ -492,6 +495,7 @@
                             (IntegerConstant 10000 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -527,6 +531,7 @@
                             ()
                             .false.
                             .false.
+                            .false.
                         )
                         (Assignment
                             (ArrayItem
@@ -550,6 +555,7 @@
                                 ()
                             )
                             ()
+                            .false.
                             .false.
                             .false.
                         )]

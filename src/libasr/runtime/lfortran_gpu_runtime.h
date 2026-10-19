@@ -2,6 +2,7 @@
 #define LFORTRAN_GPU_RUNTIME_H
 
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -60,8 +61,33 @@ static inline long long lfortran_gpu_parse_heap_size(void)
 typedef struct lfortran_gpu_ctx    lfortran_gpu_ctx;
 typedef struct lfortran_gpu_kernel lfortran_gpu_kernel;
 
+// Optional Metal telemetry collected by the runtime when command buffers are
+// retired on the host. It is opt-in via LFORTRAN_GPU_PROFILE=1. The snapshot
+// is cumulative and non-blocking; timings include only retired command buffers.
+// Use snapshot_sync at measurement boundaries before subtracting snapshots.
+// Elapsed time sums command-buffer intervals; busy time is their union, not
+// hardware occupancy. Copy counters exclude inline/scalar setBytes arguments.
+// Other backends return zeros, but snapshot_sync still synchronizes the runtime.
+typedef struct lfortran_gpu_metal_telemetry {
+    int gpu_timing_available;
+    uint64_t completed_command_buffers;
+    uint64_t commits;
+    uint64_t dispatches;
+    uint64_t host_syncs;
+    uint64_t host_waits;
+    uint64_t memcpy_h2d_bytes;
+    uint64_t memcpy_d2h_bytes;
+    uint64_t buffer_allocations;
+    uint64_t buffer_alloc_bytes;
+    double gpu_elapsed_seconds;
+    double gpu_busy_seconds;
+    double jit_seconds;
+} lfortran_gpu_metal_telemetry;
+
 lfortran_gpu_ctx*    lfortran_gpu_init(void);
 void                 lfortran_gpu_shutdown(lfortran_gpu_ctx* ctx);
+void                 lfortran_gpu_register_metal_source(const char *name,
+    const char *source);
 
 // The device source is registered by the device code generator, so a kernel
 // is looked up by name only. The name is not assumed to be null terminated,
@@ -117,6 +143,11 @@ void lfortran_gpu_sync(lfortran_gpu_ctx* ctx);
 // range without copying anything back.
 void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size);
 long long lfortran_gpu_heap_size(void);
+
+void lfortran_gpu_metal_telemetry_snapshot(lfortran_gpu_ctx* ctx,
+    lfortran_gpu_metal_telemetry *out);
+void lfortran_gpu_metal_telemetry_snapshot_sync(lfortran_gpu_ctx* ctx,
+    lfortran_gpu_metal_telemetry *out);
 
 #ifdef __cplusplus
 }

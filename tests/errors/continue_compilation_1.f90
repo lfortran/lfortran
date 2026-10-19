@@ -2091,7 +2091,7 @@ subroutine parameter_nonconstant_init()
 end subroutine
 
 subroutine allocate_func_target_01()
-    allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
+    allocate(character(len=5) :: ALLOCATE_FUNC_TARGET_01)
 end subroutine allocate_func_target_01
 
 function func_alloc_target_01() result(res) bind(c)
@@ -3407,6 +3407,50 @@ subroutine cc1_open_status_new_replace_no_file()
     cc1_open_status = 'new'
     open(11, status=cc1_open_status)
 end subroutine cc1_open_status_new_replace_no_file
+
+! An array element passed to an assumed-shape dummy is never sequence
+! associated, so the error does not suggest --legacy-array-sections.
+module cc1_element_assumed_shape
+implicit none
+contains
+    subroutine cc1_eas_dummy(x)
+        integer, intent(in) :: x(:)
+    end subroutine cc1_eas_dummy
+    subroutine cc1_eas_use()
+        integer :: c(5)
+        c = 1
+        call cc1_eas_dummy(c(2))  ! {Error} Passing a scalar argument to an array dummy argument is not allowed
+    end subroutine cc1_eas_use
+end module cc1_element_assumed_shape
+
+! An element of a pointer array may not be contiguous with the elements that
+! follow it, so it is never sequence associated with an array dummy.
+module cc1_element_pointer_array
+implicit none
+contains
+    subroutine cc1_epa_dummy(x)
+        integer, intent(inout) :: x(2,2)
+    end subroutine cc1_epa_dummy
+    subroutine cc1_epa_use()
+        integer, pointer :: p(:,:)
+        allocate(p(2,3))
+        call cc1_epa_dummy(p(2,1))  ! {Error} Passing an element of a pointer array to an array dummy argument is not allowed
+    end subroutine cc1_epa_use
+end module cc1_element_pointer_array
+
+! An external procedure is not accessible by host association, so a name used
+! as a variable in another scoping unit is not the external procedure.
+subroutine cc1_external_name_sub()
+end subroutine cc1_external_name_sub
+
+real function cc1_external_name_fn()
+    cc1_external_name_fn = 1.0
+end function cc1_external_name_fn
+
+subroutine cc1_external_name_user()
+    cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
+    print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
+end subroutine cc1_external_name_user
 
 ! An ieee_arithmetic generic with no specific procedure for the argument is
 ! reported as such, not as a missing 'use, intrinsic :: ieee_arithmetic'.
