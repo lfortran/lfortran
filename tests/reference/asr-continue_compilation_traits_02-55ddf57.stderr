@@ -60,11 +60,11 @@ semantic error: Call to impure procedure 'dispose' is not allowed inside a PURE 
 78 |         call dispose(x)
    |         ^^^^^^^^^^^^^^^ 
 
-semantic error: a runtime trait component value in a structure constructor is not implemented yet
+semantic error: the value of runtime trait component 'item' must be scalar, not an array of rank 1
   --> tests/errors/continue_compilation_traits_02.f90:88:20
    |
-88 |         x = Holder(s)
-   |                    ^ 
+88 |         x = Holder([s, s])
+   |                    ^^^^^^ 
 
 semantic error: move_alloc for runtime trait owners is not implemented yet
   --> tests/errors/continue_compilation_traits_02.f90:97:9

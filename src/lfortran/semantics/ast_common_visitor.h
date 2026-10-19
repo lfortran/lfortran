@@ -14804,7 +14804,7 @@ public:
         }
         // Before the keyword values are visited, so that a component that
         // cannot be given here is reported rather than any problem of its
-        // value, such as an unimplemented runtime trait component value.
+        // value, such as a value that cannot form a runtime trait component.
         check_struct_constructor_access(x, v, info, positional_ancestor, n_given);
         if (is_pdt) {
             visit_kwargs(vals, x.m_keywords, x.n_keywords, loc, v, diag, false, false,
@@ -14957,12 +14957,15 @@ public:
             if (vals[i].m_value != nullptr && members[i] != nullptr &&
                     ASR::is_a<ASR::Variable_t>(*members[i]) && ASRUtils::is_trait_owner(
                         ASR::down_cast<ASR::Variable_t>(members[i])->m_type)) {
-                diag.semantic_error_label("a runtime trait component value in a structure "
-                    "constructor is not implemented yet", {vals[i].m_value->base.loc}, "");
-                if (!compiler_options.continue_compilation) {
-                    throw SemanticAbort();
+                try {
+                    runtime_trait_component_value(vals.p[i].m_value,
+                        ASR::down_cast<ASR::Variable_t>(members[i]));
+                } catch (const SemanticAbort &) {
+                    if (!compiler_options.continue_compilation) {
+                        throw;
+                    }
+                    vals.p[i].m_value = nullptr;
                 }
-                vals.p[i].m_value = nullptr;
             }
         }
         conform_struct_constructor_args(vals, members);
@@ -28300,6 +28303,34 @@ public:
             ASRUtils::get_struct_sym_from_struct_expr(value), value->base.loc, true);
     }
 
+    // F2018 7.5.10: an allocatable component of a structure constructor takes
+    // the value of its data source as if by intrinsic assignment. The value of
+    // a runtime trait component is kept as a borrowed view: of an owner,
+    // pointer or view of a conforming contract, of a class(T) object of a
+    // conforming declared type, or of a concrete value. Lowering the
+    // constructor copies it into the component, as owner assignment does; an
+    // unallocated owner leaves the component unallocated.
+    void runtime_trait_component_value(ASR::expr_t *&value, ASR::Variable_t *member) {
+        auto *type = ASRUtils::expr_type(value);
+        auto *scalar = ASRUtils::extract_type(type);
+        if (ASRUtils::is_array(type)) {
+            trait_call_error("the value of runtime trait component '"
+                + std::string(member->m_name) + "' must be scalar, not an array of rank "
+                + std::to_string(ASRUtils::extract_n_dims_from_ttype(type)), value->base.loc);
+        }
+        if (!(ASR::is_a<ASR::TraitObjectType_t>(*scalar) ||
+                ASR::is_a<ASR::StructType_t>(*scalar))) {
+            trait_call_error("type mismatch in structure constructor: value of type "
+                + ASRUtils::type_to_str_with_kind(type, value)
+                + " cannot be the value of runtime trait component '"
+                + std::string(member->m_name) + "' of type "
+                + struct_component_type_to_str(member), value->base.loc);
+        }
+        make_runtime_trait_view(value, member->m_type, true);
+        current_function_deterministic = false;
+        current_function_side_effect_free = false;
+    }
+
     void check_runtime_trait_locals() {
         std::vector<std::string> invalid;
         for (const auto &entry : current_scope->get_scope()) {
@@ -34896,9 +34927,12 @@ public:
             // A null constant has no value to convert. `null()` for a
             // component that is neither a pointer nor allocatable, and a null
             // constant of a type the component does not accept, are reported
-            // by the caller.
+            // by the caller. The value of a runtime trait component is not
+            // converted but borrowed, see `runtime_trait_component_value()`.
             if( args[i].m_value != nullptr
-                    && !ASR::is_a<ASR::PointerNullConstant_t>(*args[i].m_value) ) {
+                    && !ASR::is_a<ASR::PointerNullConstant_t>(*args[i].m_value)
+                    && !ASRUtils::is_trait_owner(
+                        ASRUtils::symbol_type(constructor_arg_syms[i])) ) {
                 ASR::symbol_t* member_sym = constructor_arg_syms[i];
                 ASR::ttype_t* member_type = ASRUtils::type_get_past_allocatable(
                     ASRUtils::symbol_type(member_sym));

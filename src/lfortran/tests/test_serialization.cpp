@@ -8932,7 +8932,8 @@ end type
             "end subroutine\nsubroutine probe(x)", "type(Holder), intent(in) :: x",
             "call replace(x%item)", "definable allocatable actual"},
         {"subroutine probe(source)", "type(Payload), intent(in) :: source\n"
-            "type(Holder) :: x", "x = Holder(source)", "structure constructor"},
+            "type(Holder) :: x", "x = Holder([source, source])",
+            "runtime trait component 'item' must be scalar"},
         {"subroutine probe(x)", "type(Holder), value :: x", "", "value dummies"},
         {"subroutine probe(x, y)", "type(Holder), intent(inout) :: x, y",
             "call move_alloc(x%item, y%item)", "move_alloc for runtime trait owners"},

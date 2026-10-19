@@ -85,7 +85,7 @@ contains
     subroutine build()
         type(Holder) :: x
         type(Seed) :: s
-        x = Holder(s)
+        x = Holder([s, s])
     end subroutine
 end module
 
@@ -337,7 +337,7 @@ end module
 
 ! A runtime trait component that is private to its module cannot be given by
 ! a structure constructor outside that module (F2018 7.5.10, C7102), which is
-! reported instead of the unimplemented runtime trait component value.
+! reported instead of any problem of the value.
 module traits_component_body_error_private_types
     use traits_component_body_error_types, only: IValue
     private

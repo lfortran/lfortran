@@ -120,7 +120,7 @@ semantic error: forwarding between distinct type-set traits is not implemented y
 85 |         r = summer%sum(x)
    |             ^^^^^^^^^^^^^ 
 
-semantic error: a runtime trait component value in a structure constructor is not implemented yet
+semantic error: no visible nominal implementation of trait 'ivalue' for type 'unrelated'
    --> tests/errors/continue_compilation_traits_03.f90:177:20
     |
 177 |         h = Holder(Unrelated())

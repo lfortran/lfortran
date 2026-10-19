@@ -986,7 +986,17 @@ namespace LCompilers {
                             x_m_args_i, cast_kind, casted_type, nullptr, nullptr));
                     }
                     ASR::stmt_t* assign;
-                    if (ASRUtils::is_pointer(ASRUtils::expr_type(derived_ref))) {
+                    if (ASRUtils::is_trait_owner(ASRUtils::expr_type(derived_ref))) {
+                        // The value is a borrowed view, copied into the
+                        // component as owner assignment copies it. A
+                        // borrowed allocatable owner that is not allocated
+                        // leaves the component unallocated.
+                        assign = ASRUtils::STMT(ASR::make_TraitAssignment_t(replacer->al,
+                            x->base.base.loc, derived_ref, x_m_args_i, nullptr));
+                        assign = guard_allocatable_component_assignment(
+                            replacer->al, x->base.base.loc,
+                            ASRUtils::trait_borrowed_owner(x_m_args_i), derived_ref, assign);
+                    } else if (ASRUtils::is_pointer(ASRUtils::expr_type(derived_ref))) {
                         assign = ASRUtils::STMT(ASRUtils::make_Associate_t_util(replacer->al,
                                                     x->base.base.loc, derived_ref, x_m_args_i));
                     } else {

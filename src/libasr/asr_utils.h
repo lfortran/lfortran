@@ -11446,6 +11446,16 @@ inline bool is_trait_pointer(const ASR::ttype_t *type) {
             *ASR::down_cast<ASR::Pointer_t>(type)->m_type);
 }
 
+// The owner or pointer a view borrows, looking through projections, or the
+// view itself when it borrows neither.
+inline ASR::expr_t *trait_borrowed_owner(ASR::expr_t *view) {
+    while (ASR::is_a<ASR::TraitProject_t>(*view)) {
+        view = ASR::down_cast<ASR::TraitProject_t>(view)->m_view;
+    }
+    return ASR::is_a<ASR::TraitBorrow_t>(*view)
+        ? ASR::down_cast<ASR::TraitBorrow_t>(view)->m_owner : view;
+}
+
 bool contains_trait_owner(const ASR::ttype_t *type);
 // Whether assigning to or deallocating a designator of `type` runs dynamic
 // trait lifecycle code. A designated pointer's target counts: assignment

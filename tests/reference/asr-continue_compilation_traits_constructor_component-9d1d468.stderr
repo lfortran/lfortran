@@ -1,0 +1,75 @@
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
+ --> tests/errors/continue_compilation_traits_constructor_component.f90:5:5 - 9:18
+  |
+5 |        abstract interface :: IA
+  |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+  |
+9 |        end interface
+  | ...^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: no visible nominal implementation of trait 'ia' for type 'b'
+  --> tests/errors/continue_compilation_traits_constructor_component.f90:60:20
+   |
+60 |         h = Holder(B(2))
+   |                    ^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'ia'
+  --> tests/errors/continue_compilation_traits_constructor_component.f90:62:20
+   |
+62 |         h = Holder(vb)
+   |                    ^^ 
+
+semantic error: type mismatch in structure constructor: value of type integer(4) cannot be the value of runtime trait component 'item' of type class(ia)
+  --> tests/errors/continue_compilation_traits_constructor_component.f90:64:20
+   |
+64 |         h = Holder(3)
+   |                    ^ 
+
+semantic error: type mismatch in structure constructor: value of type logical(4) cannot be the value of runtime trait component 'item' of type class(ia)
+  --> tests/errors/continue_compilation_traits_constructor_component.f90:65:25
+   |
+65 |         h = Holder(item=.true.)
+   |                         ^^^^^^ 
+
+semantic error: an unlimited polymorphic object cannot form a runtime trait object; use select type to select its dynamic type
+  --> tests/errors/continue_compilation_traits_constructor_component.f90:67:20
+   |
+67 |         h = Holder(star)
+   |                    ^^^^ 
+
+semantic error: the value of runtime trait component 'item' must be scalar, not an array of rank 1
+  --> tests/errors/continue_compilation_traits_constructor_component.f90:69:20
+   |
+69 |         h = Holder(arr)
+   |                    ^^^ 
+
+semantic error: the declared type 'b' of this polymorphic object does not implement trait 'ia'; use select type to form the trait object from a type that does
+  --> tests/errors/continue_compilation_traits_constructor_component.f90:71:20
+   |
+71 |         h = Holder(cls_b)
+   |                    ^^^^^ 
+
+semantic error: the declared runtime trait does not provide the required parent contract 'ia+ib'
+  --> tests/errors/continue_compilation_traits_constructor_component.f90:73:19
+   |
+73 |         bo = Both(va)
+   |                   ^^ 
+
+semantic error: no visible nominal implementation of trait 'ib' for type 'a'
+  --> tests/errors/continue_compilation_traits_constructor_component.f90:74:19
+   |
+74 |         bo = Both(A(1))
+   |                   ^^^^ 
+
+semantic error: forming a combined runtime trait object from a polymorphic object is not implemented yet
+  --> tests/errors/continue_compilation_traits_constructor_component.f90:76:19
+   |
+76 |         bo = Both(cls_a)
+   |                   ^^^^^ 
+
+semantic error: runtime trait temporary with unchecked dynamic lifecycle effects is not allowed inside a PURE procedure
+  --> tests/errors/continue_compilation_traits_constructor_component.f90:92:29
+   |
+92 |         construct = observe(Holder(v))
+   |                             ^^^^^^^^^ 
