@@ -160,5 +160,11 @@ program read_109
     read(z, '(3Z16)', iostat=ios) rp8
     if (ios /= 0 .or. any(rt8 /= [1.0d0, -1.0d0, 2.0d0, -1.0d0, 3.0d0])) error stop 30
 
+    ! I cannot read a real array; the array stays unchanged
+    rt4 = -1
+    z = '  1  2'
+    read(z, '(2I3)', iostat=ios) rt4(1:2)
+    if (ios == 0 .or. any(rt4 /= -1)) error stop 31
+
     print *, 'ok'
 end program read_109

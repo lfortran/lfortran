@@ -12070,44 +12070,43 @@ static int64_t get_array_read_offset(const ArrayReadCont *arr_cont, int32_t idx)
     return offset;
 }
 
-// Start reading the descriptor array `data_ptr` of type `elem_tc` with a
-// numeric edit (F/E/D/G or B/O/Z), one component per edit. Returns false if
-// these edits cannot read an item of this type.
-static bool start_numeric_array_read(ArrayReadCont *arr_cont, int32_t elem_tc,
-        void* data_ptr, int32_t n_elems, int32_t rank, int32_t* extents,
-        int32_t* strides)
+// Start reading the numeric or logical descriptor array `data_ptr` of type
+// `elem_tc`, one component per edit, resetting all of `arr_cont`. Returns
+// false if `accepts` (the item types the edit can read) rejects `elem_tc`.
+static bool start_array_read(ArrayReadCont *arr_cont, bool (*accepts)(int32_t),
+        int32_t elem_tc, void* data_ptr, int32_t n_elems, int32_t rank,
+        int32_t* extents, int32_t* strides)
 {
-    if (!is_formatted_read_numeric(elem_tc)) {
+    if (!accepts(elem_tc)) {
         return false;
     }
     bool is_complex = is_formatted_read_complex(elem_tc);
     size_t component_sz = formatted_read_component_size(elem_tc);
+    *arr_cont = (ArrayReadCont){0};
     arr_cont->data_ptr = data_ptr;
     arr_cont->elem_tc = is_complex ? ((elem_tc == 6) ? 4 : 5) : elem_tc;
     arr_cont->n_elems = n_elems;
     arr_cont->rank = rank;
     arr_cont->extents = extents;
     arr_cont->strides = strides;
-    arr_cont->current_idx = 0;
     arr_cont->is_complex = is_complex;
-    arr_cont->reading_imag = false;
-    arr_cont->is_char = false;
     arr_cont->component_sz = component_sz;
     arr_cont->elem_sz = is_complex ? (2 * component_sz) : component_sz;
     arr_cont->active = true;
     return true;
 }
 
-// Address of the next component of the array that a numeric edit reads
-static void* numeric_array_read_target(const ArrayReadCont *arr_cont)
+// Address of the next component of the numeric or logical array being read
+static void* array_read_target(const ArrayReadCont *arr_cont)
 {
     int64_t offset = get_array_read_offset(arr_cont, arr_cont->current_idx);
     char* elem_ptr = (char*)arr_cont->data_ptr + offset * (int64_t)arr_cont->elem_sz;
-    return arr_cont->reading_imag ? (void*)(elem_ptr + arr_cont->component_sz) : (void*)elem_ptr;
+    return (arr_cont->is_complex && arr_cont->reading_imag)
+        ? (void*)(elem_ptr + arr_cont->component_sz) : (void*)elem_ptr;
 }
 
-// Move past the component that a numeric edit has just read
-static void advance_numeric_array_read(ArrayReadCont *arr_cont)
+// Move past the component of the numeric or logical array just read
+static void advance_array_read(ArrayReadCont *arr_cont)
 {
     if (arr_cont->is_complex && !arr_cont->reading_imag) {
         arr_cont->reading_imag = true;
@@ -12229,6 +12228,26 @@ static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bo
         consumed_newline, pad_no, str_data, str_len, char_kind);
 }
 
+// Read the next element of the logical array in `arr_cont` with an L edit
+static bool read_logical_array_component(InputSource *inputSource, int width,
+        bool advance_no, int32_t *iostat, int32_t *chunk, bool *consumed_newline,
+        bool pad_no, ArrayReadCont *arr_cont)
+{
+    int read_width = (width > 0) ? width : 1;
+    char* buffer = NULL;
+    int field_len = 0;
+    if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
+            consumed_newline, &buffer, &field_len, pad_no)) {
+        arr_cont->active = false;
+        return false;
+    }
+    parse_logical_from_buffer(buffer, field_len, array_read_target(arr_cont),
+        arr_cont->elem_tc);
+    internal_free(buffer);
+    advance_array_read(arr_cont);
+    return true;
+}
+
 static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no, int *arg_idx,
         ArrayReadCont *arr_cont)
@@ -12239,26 +12258,8 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
             arr_cont->active = false;
             return false;
         }
-        int32_t i = arr_cont->current_idx;
-        int64_t offset = get_array_read_offset(arr_cont, i);
-        void* log_ptr = (char*)arr_cont->data_ptr + offset * (int64_t)arr_cont->elem_sz;
-
-        int read_width = (width > 0) ? width : 1;
-        if (read_width < 0) read_width = 0;
-
-        char* buffer = NULL;
-        int field_len = 0;
-        if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
-                consumed_newline, &buffer, &field_len, pad_no)) {
-            arr_cont->active = false;
-            return false;
-        }
-
-        parse_logical_from_buffer(buffer, field_len, log_ptr, arr_cont->elem_tc);
-        internal_free(buffer);
-        arr_cont->current_idx++;
-        if (arr_cont->current_idx >= arr_cont->n_elems) arr_cont->active = false;
-        return true;
+        return read_logical_array_component(inputSource, width, advance_no,
+            iostat, chunk, consumed_newline, pad_no, arr_cont);
     }
 
     int32_t is_descriptor_array = va_arg(*args, int32_t);
@@ -12273,33 +12274,13 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
         if (n_elems <= 0) {
             return true;
         }
-        int read_width = (width > 0) ? width : 1;
-        if (read_width < 0) read_width = 0;
-
-        char* buffer = NULL;
-        int field_len = 0;
-        if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
-                consumed_newline, &buffer, &field_len, pad_no)) {
+        if (!start_array_read(arr_cont, is_formatted_read_logical, type_code,
+                data_ptr, n_elems, rank, extents, strides)) {
+            if (iostat) *iostat = 5010;
             return false;
         }
-
-        parse_logical_from_buffer(buffer, field_len, data_ptr, type_code);
-        internal_free(buffer);
-
-        arr_cont->data_ptr = data_ptr;
-        arr_cont->elem_tc = type_code;
-        arr_cont->n_elems = n_elems;
-        arr_cont->rank = rank;
-        arr_cont->extents = extents;
-        arr_cont->strides = strides;
-        arr_cont->current_idx = 1;
-        arr_cont->is_complex = false;
-        arr_cont->reading_imag = false;
-        arr_cont->is_char = false;
-        arr_cont->component_sz = formatted_read_component_size(type_code);
-        arr_cont->elem_sz = arr_cont->component_sz;
-        arr_cont->active = (n_elems > 1);
-        return true;
+        return read_logical_array_component(inputSource, width, advance_no,
+            iostat, chunk, consumed_newline, pad_no, arr_cont);
     }
     void* log_ptr = va_arg(*args, void*);
     (*arg_idx)++;
@@ -12320,6 +12301,27 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
     return true;
 }
 
+// Read the next element of the integer array in `arr_cont` with an I edit
+static bool read_integer_array_component(InputSource *inputSource, int width,
+        bool advance_no, int32_t *iostat, int32_t *chunk, bool *consumed_newline,
+        bool pad_no, int blank_mode, ArrayReadCont *arr_cont)
+{
+    int read_width = (width > 0) ? width : 10;
+    char* buffer = NULL; int field_len = 0;
+    if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
+                    consumed_newline, &buffer, &field_len, pad_no)) {
+        arr_cont->active = false;
+        return false;
+    }
+    bool parse_error = false;
+    parse_integer_from_buffer(buffer, field_len, array_read_target(arr_cont),
+        arr_cont->elem_tc, blank_mode, &parse_error);
+    internal_free(buffer);
+    if (parse_error) { if (iostat) *iostat = 5010; arr_cont->active = false; return false; }
+    advance_array_read(arr_cont);
+    return true;
+}
+
 static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no, int *arg_idx, int blank_mode,
         ArrayReadCont *arr_cont)
@@ -12330,23 +12332,8 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
             arr_cont->active = false;
             return false;
         }
-        int read_width = (width > 0) ? width : 10;
-        int32_t i = arr_cont->current_idx;
-        int64_t offset = get_array_read_offset(arr_cont, i);
-        void* elem_ptr = (char*)arr_cont->data_ptr + offset * (int64_t)arr_cont->elem_sz;
-        char* buffer = NULL; int field_len = 0;
-        if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
-                        consumed_newline, &buffer, &field_len, pad_no)) {
-            arr_cont->active = false;
-            return false;
-        }
-        bool parse_error = false;
-        parse_integer_from_buffer(buffer, field_len, elem_ptr, arr_cont->elem_tc, blank_mode, &parse_error);
-        internal_free(buffer);
-        if (parse_error) { if (iostat) *iostat = 5010; arr_cont->active = false; return false; }
-        arr_cont->current_idx++;
-        if (arr_cont->current_idx >= arr_cont->n_elems) arr_cont->active = false;
-        return true;
+        return read_integer_array_component(inputSource, width, advance_no,
+            iostat, chunk, consumed_newline, pad_no, blank_mode, arr_cont);
     }
     int32_t is_descriptor_array = va_arg(*args, int32_t);
     if (is_descriptor_array) {
@@ -12360,32 +12347,13 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
         if (n_elems <= 0) {
             return true;
         }
-        size_t esz = formatted_read_component_size(elem_tc);
-        arr_cont->data_ptr = data_ptr;
-        arr_cont->elem_tc = elem_tc;
-        arr_cont->n_elems = n_elems;
-        arr_cont->rank = rank;
-        arr_cont->extents = extents;
-        arr_cont->strides = strides;
-        arr_cont->current_idx = 0;
-        arr_cont->is_complex = false;
-        arr_cont->is_char = false;
-        arr_cont->component_sz = esz;
-        arr_cont->elem_sz = esz;
-        int read_width = (width > 0) ? width : 10;
-        void* elem_ptr = data_ptr;
-        char* buffer = NULL; int field_len = 0;
-        if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
-                        consumed_newline, &buffer, &field_len, pad_no)) {
+        if (!start_array_read(arr_cont, is_formatted_read_integer, elem_tc,
+                data_ptr, n_elems, rank, extents, strides)) {
+            if (iostat) *iostat = 5010;
             return false;
         }
-        bool parse_error = false;
-        parse_integer_from_buffer(buffer, field_len, elem_ptr, elem_tc, blank_mode, &parse_error);
-        internal_free(buffer);
-        if (parse_error) { if (iostat) *iostat = 5010; return false; }
-        arr_cont->current_idx = 1;
-        arr_cont->active = (n_elems > 1);
-        return true;
+        return read_integer_array_component(inputSource, width, advance_no,
+            iostat, chunk, consumed_newline, pad_no, blank_mode, arr_cont);
     }
     int32_t type_code = va_arg(*args, int32_t);
     void* int_ptr = va_arg(*args, void*);
@@ -12421,11 +12389,11 @@ static bool read_boz_array_component(InputSource *inputSource, int width,
         return false;
     }
     bool parse_error = false;
-    parse_boz_from_buffer(buffer, field_len, numeric_array_read_target(arr_cont),
+    parse_boz_from_buffer(buffer, field_len, array_read_target(arr_cont),
         arr_cont->elem_tc, base, blank_mode, &parse_error);
     internal_free(buffer);
     if (parse_error) { if (iostat) *iostat = 5010; arr_cont->active = false; return false; }
-    advance_numeric_array_read(arr_cont);
+    advance_array_read(arr_cont);
     return true;
 }
 
@@ -12457,8 +12425,8 @@ static bool handle_read_BOZ(InputSource *inputSource, va_list *args, int width, 
         if (n_elems <= 0) {
             return true;
         }
-        if (!start_numeric_array_read(arr_cont, elem_tc, data_ptr, n_elems,
-                rank, extents, strides)) {
+        if (!start_array_read(arr_cont, is_formatted_read_numeric, elem_tc,
+                data_ptr, n_elems, rank, extents, strides)) {
             if (iostat) *iostat = 5010;
             return false;
         }
@@ -12546,14 +12514,14 @@ static bool read_real_array_component(InputSource *inputSource, int read_width,
         bool pad_no, int blank_mode, int scale_factor, int decimal_mode,
         int decimal_places, ArrayReadCont *arr_cont)
 {
-    if (!read_and_parse_real_field(inputSource, numeric_array_read_target(arr_cont),
+    if (!read_and_parse_real_field(inputSource, array_read_target(arr_cont),
             arr_cont->elem_tc, read_width, advance_no,
             iostat, chunk, consumed_newline, pad_no,
             blank_mode, scale_factor, decimal_mode, decimal_places)) {
         arr_cont->active = false;
         return false;
     }
-    advance_numeric_array_read(arr_cont);
+    advance_array_read(arr_cont);
     return true;
 }
 
@@ -12587,8 +12555,8 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
         if (n_elems <= 0) {
             return true;
         }
-        if (!start_numeric_array_read(arr_cont, elem_tc, data_ptr, n_elems,
-                rank, extents, strides)) {
+        if (!start_array_read(arr_cont, is_formatted_read_numeric, elem_tc,
+                data_ptr, n_elems, rank, extents, strides)) {
             if (iostat) *iostat = 5010;
             return false;
         }
