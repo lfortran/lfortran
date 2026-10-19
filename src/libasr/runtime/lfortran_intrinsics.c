@@ -11541,25 +11541,44 @@ static bool is_formatted_read_logical(int32_t type_code)
     return type_code == 1 || type_code == 11 || type_code == 12 || type_code == 13;
 }
 
-// Storage size in bytes of an integer or logical item
-static size_t formatted_read_int_size(int32_t type_code)
+static bool is_formatted_read_complex(int32_t type_code)
+{
+    return type_code == 6 || type_code == 7;
+}
+
+// Items that the numeric edits (F/E/D/G and B/O/Z) read one number per
+// component into: integer and real items have one component, complex two
+static bool is_formatted_read_numeric(int32_t type_code)
+{
+    return is_formatted_read_integer(type_code)
+        || type_code == 4 || type_code == 5 || is_formatted_read_complex(type_code);
+}
+
+// Storage size in bytes of one component of a numeric or logical item; 0 for
+// a character item
+static size_t formatted_read_component_size(int32_t type_code)
 {
     switch (type_code) {
         case 9: case 11: return sizeof(int8_t);
         case 10: case 12: return sizeof(int16_t);
+        case 1: case 2: return sizeof(int32_t);
         case 3: case 13: return sizeof(int64_t);
-        default: return sizeof(int32_t);
+        case 4: case 6: return sizeof(float);
+        case 5: case 7: return sizeof(double);
+        default: return 0;
     }
 }
 
-// Store `value` into the integer or logical item `ptr` of type `type_code`
+// Store `value` into the component `ptr` of type `type_code`. An integer or
+// logical item gets the value, a real component (B/O/Z input) its bit pattern.
 static void store_formatted_read_int(void* ptr, int32_t type_code, int64_t value)
 {
-    switch (formatted_read_int_size(type_code)) {
+    switch (formatted_read_component_size(type_code)) {
         case sizeof(int8_t): *((int8_t*)ptr) = (int8_t)value; break;
         case sizeof(int16_t): *((int16_t*)ptr) = (int16_t)value; break;
+        case sizeof(int32_t): *((int32_t*)ptr) = (int32_t)value; break;
         case sizeof(int64_t): *((int64_t*)ptr) = value; break;
-        default: *((int32_t*)ptr) = (int32_t)value; break;
+        default: break;
     }
 }
 
@@ -12051,6 +12070,54 @@ static int64_t get_array_read_offset(const ArrayReadCont *arr_cont, int32_t idx)
     return offset;
 }
 
+// Start reading the descriptor array `data_ptr` of type `elem_tc` with a
+// numeric edit (F/E/D/G or B/O/Z), one component per edit. Returns false if
+// these edits cannot read an item of this type.
+static bool start_numeric_array_read(ArrayReadCont *arr_cont, int32_t elem_tc,
+        void* data_ptr, int32_t n_elems, int32_t rank, int32_t* extents,
+        int32_t* strides)
+{
+    if (!is_formatted_read_numeric(elem_tc)) {
+        return false;
+    }
+    bool is_complex = is_formatted_read_complex(elem_tc);
+    size_t component_sz = formatted_read_component_size(elem_tc);
+    arr_cont->data_ptr = data_ptr;
+    arr_cont->elem_tc = is_complex ? ((elem_tc == 6) ? 4 : 5) : elem_tc;
+    arr_cont->n_elems = n_elems;
+    arr_cont->rank = rank;
+    arr_cont->extents = extents;
+    arr_cont->strides = strides;
+    arr_cont->current_idx = 0;
+    arr_cont->is_complex = is_complex;
+    arr_cont->reading_imag = false;
+    arr_cont->is_char = false;
+    arr_cont->component_sz = component_sz;
+    arr_cont->elem_sz = is_complex ? (2 * component_sz) : component_sz;
+    arr_cont->active = true;
+    return true;
+}
+
+// Address of the next component of the array that a numeric edit reads
+static void* numeric_array_read_target(const ArrayReadCont *arr_cont)
+{
+    int64_t offset = get_array_read_offset(arr_cont, arr_cont->current_idx);
+    char* elem_ptr = (char*)arr_cont->data_ptr + offset * (int64_t)arr_cont->elem_sz;
+    return arr_cont->reading_imag ? (void*)(elem_ptr + arr_cont->component_sz) : (void*)elem_ptr;
+}
+
+// Move past the component that a numeric edit has just read
+static void advance_numeric_array_read(ArrayReadCont *arr_cont)
+{
+    if (arr_cont->is_complex && !arr_cont->reading_imag) {
+        arr_cont->reading_imag = true;
+        return;
+    }
+    arr_cont->reading_imag = false;
+    arr_cont->current_idx++;
+    if (arr_cont->current_idx >= arr_cont->n_elems) arr_cont->active = false;
+}
+
 static bool read_character_target(InputSource *inputSource, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no,
         char* str_data, int64_t str_len, int32_t char_kind)
@@ -12229,7 +12296,7 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
         arr_cont->is_complex = false;
         arr_cont->reading_imag = false;
         arr_cont->is_char = false;
-        arr_cont->component_sz = formatted_read_int_size(type_code);
+        arr_cont->component_sz = formatted_read_component_size(type_code);
         arr_cont->elem_sz = arr_cont->component_sz;
         arr_cont->active = (n_elems > 1);
         return true;
@@ -12293,7 +12360,7 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
         if (n_elems <= 0) {
             return true;
         }
-        size_t esz = formatted_read_int_size(elem_tc);
+        size_t esz = formatted_read_component_size(elem_tc);
         arr_cont->data_ptr = data_ptr;
         arr_cont->elem_tc = elem_tc;
         arr_cont->n_elems = n_elems;
@@ -12341,35 +12408,42 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
     return true;
 }
 
-// Handle B/O/Z (binary/octal/hex) integer descriptors on read.
+// Read the next component of the array in `arr_cont` with a B/O/Z edit
+static bool read_boz_array_component(InputSource *inputSource, int width,
+        bool advance_no, int32_t *iostat, int32_t *chunk, bool *consumed_newline,
+        bool pad_no, int blank_mode, int base, ArrayReadCont *arr_cont)
+{
+    int read_width = (width > 0) ? width : 10;
+    char* buffer = NULL; int field_len = 0;
+    if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
+                    consumed_newline, &buffer, &field_len, pad_no)) {
+        arr_cont->active = false;
+        return false;
+    }
+    bool parse_error = false;
+    parse_boz_from_buffer(buffer, field_len, numeric_array_read_target(arr_cont),
+        arr_cont->elem_tc, base, blank_mode, &parse_error);
+    internal_free(buffer);
+    if (parse_error) { if (iostat) *iostat = 5010; arr_cont->active = false; return false; }
+    advance_numeric_array_read(arr_cont);
+    return true;
+}
+
+// Handle B/O/Z (binary/octal/hex) descriptors on read: an integer item gets
+// the value, a real or complex component its bit pattern.
 // `base` is 2, 8, or 16.
 static bool handle_read_BOZ(InputSource *inputSource, va_list *args, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no, int *arg_idx,
         int blank_mode, int base, ArrayReadCont *arr_cont)
 {
     if (arr_cont->active) {
-        if (arr_cont->is_char || !is_formatted_read_integer(arr_cont->elem_tc)) {
+        if (arr_cont->is_char || !is_formatted_read_numeric(arr_cont->elem_tc)) {
             if (iostat) *iostat = 5010;
             arr_cont->active = false;
             return false;
         }
-        int read_width = (width > 0) ? width : 10;
-        int32_t i = arr_cont->current_idx;
-        int64_t offset = get_array_read_offset(arr_cont, i);
-        void* elem_ptr = (char*)arr_cont->data_ptr + offset * (int64_t)arr_cont->elem_sz;
-        char* buffer = NULL; int field_len = 0;
-        if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
-                        consumed_newline, &buffer, &field_len, pad_no)) {
-            arr_cont->active = false;
-            return false;
-        }
-        bool parse_error = false;
-        parse_boz_from_buffer(buffer, field_len, elem_ptr, arr_cont->elem_tc, base, blank_mode, &parse_error);
-        internal_free(buffer);
-        if (parse_error) { if (iostat) *iostat = 5010; arr_cont->active = false; return false; }
-        arr_cont->current_idx++;
-        if (arr_cont->current_idx >= arr_cont->n_elems) arr_cont->active = false;
-        return true;
+        return read_boz_array_component(inputSource, width, advance_no, iostat,
+            chunk, consumed_newline, pad_no, blank_mode, base, arr_cont);
     }
     int32_t is_descriptor_array = va_arg(*args, int32_t);
     if (is_descriptor_array) {
@@ -12383,32 +12457,13 @@ static bool handle_read_BOZ(InputSource *inputSource, va_list *args, int width, 
         if (n_elems <= 0) {
             return true;
         }
-        size_t esz = formatted_read_int_size(elem_tc);
-        arr_cont->data_ptr = data_ptr;
-        arr_cont->elem_tc = elem_tc;
-        arr_cont->n_elems = n_elems;
-        arr_cont->rank = rank;
-        arr_cont->extents = extents;
-        arr_cont->strides = strides;
-        arr_cont->current_idx = 0;
-        arr_cont->is_complex = false;
-        arr_cont->is_char = false;
-        arr_cont->component_sz = esz;
-        arr_cont->elem_sz = esz;
-        int read_width = (width > 0) ? width : 10;
-        void* elem_ptr = data_ptr;
-        char* buffer = NULL; int field_len = 0;
-        if (!read_field(inputSource, read_width, advance_no, iostat, chunk,
-                        consumed_newline, &buffer, &field_len, pad_no)) {
+        if (!start_numeric_array_read(arr_cont, elem_tc, data_ptr, n_elems,
+                rank, extents, strides)) {
+            if (iostat) *iostat = 5010;
             return false;
         }
-        bool parse_error = false;
-        parse_boz_from_buffer(buffer, field_len, elem_ptr, elem_tc, base, blank_mode, &parse_error);
-        internal_free(buffer);
-        if (parse_error) { if (iostat) *iostat = 5010; return false; }
-        arr_cont->current_idx = 1;
-        arr_cont->active = (n_elems > 1);
-        return true;
+        return read_boz_array_component(inputSource, width, advance_no, iostat,
+            chunk, consumed_newline, pad_no, blank_mode, base, arr_cont);
     }
     int32_t type_code = va_arg(*args, int32_t);
     void* int_ptr = va_arg(*args, void*);
@@ -12485,6 +12540,23 @@ static bool read_and_parse_real_field(InputSource *inputSource, void* elem_ptr,
     return true;
 }
 
+// Read the next component of the array in `arr_cont` with an F/E/D/G edit
+static bool read_real_array_component(InputSource *inputSource, int read_width,
+        bool advance_no, int32_t *iostat, int32_t *chunk, bool *consumed_newline,
+        bool pad_no, int blank_mode, int scale_factor, int decimal_mode,
+        int decimal_places, ArrayReadCont *arr_cont)
+{
+    if (!read_and_parse_real_field(inputSource, numeric_array_read_target(arr_cont),
+            arr_cont->elem_tc, read_width, advance_no,
+            iostat, chunk, consumed_newline, pad_no,
+            blank_mode, scale_factor, decimal_mode, decimal_places)) {
+        arr_cont->active = false;
+        return false;
+    }
+    advance_numeric_array_read(arr_cont);
+    return true;
+}
+
 static bool handle_read_real(InputSource *inputSource, va_list *args, int width, bool advance_no,
         int32_t *iostat, int32_t *chunk, bool *consumed_newline, bool pad_no, int *arg_idx, int blank_mode, int scale_factor, int decimal_mode,
         ArrayReadCont *arr_cont, int decimal_places)
@@ -12493,42 +12565,14 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
     if (read_width < 0) read_width = 0;
 
     if (arr_cont->active) {
-        if (arr_cont->is_char || (arr_cont->elem_tc != 4 && arr_cont->elem_tc != 5)) {
+        if (arr_cont->is_char || !is_formatted_read_numeric(arr_cont->elem_tc)) {
             if (iostat) *iostat = 5010;
             arr_cont->active = false;
             return false;
         }
-        int32_t i = arr_cont->current_idx;
-        int64_t offset = get_array_read_offset(arr_cont, i);
-        void* elem_ptr = (char*)arr_cont->data_ptr + offset * (int64_t)arr_cont->elem_sz;
-        if (arr_cont->is_complex && arr_cont->reading_imag) {
-            void* imag_ptr = (char*)elem_ptr + arr_cont->component_sz;
-            if (!read_and_parse_real_field(inputSource, imag_ptr, arr_cont->elem_tc,
-                    read_width, advance_no,
-                    iostat, chunk, consumed_newline, pad_no,
-                    blank_mode, scale_factor, decimal_mode, decimal_places)) {
-                arr_cont->active = false;
-                return false;
-            }
-            arr_cont->reading_imag = false;
-            arr_cont->current_idx++;
-            if (arr_cont->current_idx >= arr_cont->n_elems) arr_cont->active = false;
-        } else {
-            if (!read_and_parse_real_field(inputSource, elem_ptr, arr_cont->elem_tc,
-                    read_width, advance_no,
-                    iostat, chunk, consumed_newline, pad_no,
-                    blank_mode, scale_factor, decimal_mode, decimal_places)) {
-                arr_cont->active = false;
-                return false;
-            }
-            if (arr_cont->is_complex) {
-                arr_cont->reading_imag = true;
-            } else {
-                arr_cont->current_idx++;
-                if (arr_cont->current_idx >= arr_cont->n_elems) arr_cont->active = false;
-            }
-        }
-        return true;
+        return read_real_array_component(inputSource, read_width, advance_no,
+            iostat, chunk, consumed_newline, pad_no, blank_mode, scale_factor,
+            decimal_mode, decimal_places, arr_cont);
     }
 
     int32_t is_descriptor_array = va_arg(*args, int32_t);
@@ -12543,41 +12587,14 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
         if (n_elems <= 0) {
             return true;
         }
-        bool is_complex = (elem_tc == 6 || elem_tc == 7);
-        int32_t component_tc = elem_tc;
-        if (component_tc == 6) component_tc = 4;
-        if (component_tc == 7) component_tc = 5;
-        size_t component_sz = (component_tc == 5) ? sizeof(double) : sizeof(float);
-        size_t elem_sz = is_complex ? (2 * component_sz) : component_sz;
-
-        arr_cont->data_ptr = data_ptr;
-        arr_cont->elem_tc = component_tc;
-        arr_cont->n_elems = n_elems;
-        arr_cont->rank = rank;
-        arr_cont->extents = extents;
-        arr_cont->strides = strides;
-        arr_cont->current_idx = 0;
-        arr_cont->is_complex = is_complex;
-        arr_cont->reading_imag = false;
-        arr_cont->is_char = false;
-        arr_cont->component_sz = component_sz;
-        arr_cont->elem_sz = elem_sz;
-
-        void* elem_ptr = data_ptr;
-        if (!read_and_parse_real_field(inputSource, elem_ptr, component_tc,
-                read_width, advance_no,
-                iostat, chunk, consumed_newline, pad_no,
-                blank_mode, scale_factor, decimal_mode, decimal_places)) {
+        if (!start_numeric_array_read(arr_cont, elem_tc, data_ptr, n_elems,
+                rank, extents, strides)) {
+            if (iostat) *iostat = 5010;
             return false;
         }
-        if (is_complex) {
-            arr_cont->reading_imag = true;
-            arr_cont->active = true;
-        } else {
-            arr_cont->current_idx = 1;
-            arr_cont->active = (n_elems > 1);
-        }
-        return true;
+        return read_real_array_component(inputSource, read_width, advance_no,
+            iostat, chunk, consumed_newline, pad_no, blank_mode, scale_factor,
+            decimal_mode, decimal_places, arr_cont);
     }
 
     // Scalar path
