@@ -4373,6 +4373,15 @@ RUN(NAME traits_runtime_array_result_separate_01 LABELS llvm llvm2 NO_STD_F23
     EXTRAFILES traits_runtime_array_result_separate_01_contracts.f90
         traits_runtime_array_result_separate_01_provider.f90
         traits_runtime_array_result_separate_01_consumer.f90)
+RUN(NAME traits_runtime_polymorphic_result_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_polymorphic_result_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_polymorphic_result_01_oracle LABELS gfortran)
+RUN(NAME traits_runtime_polymorphic_result_02_oracle LABELS gfortran)
+RUN(NAME traits_runtime_polymorphic_result_separate_01 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_polymorphic_result_separate_01_contracts.f90
+        traits_runtime_polymorphic_result_separate_01_provider.f90
+        traits_runtime_polymorphic_result_separate_01_consumer.f90)
 RUN(NAME class_nominal_separate_01 LABELS gfortran llvm llvm2
     EXTRAFILES class_nominal_separate_01_a.f90 class_nominal_separate_01_b.f90)
 RUN(NAME traits_static_01_oracle LABELS gfortran llvm)

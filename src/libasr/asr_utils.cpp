@@ -635,8 +635,13 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         }
         case ASR::exprType::TraitFunctionCall: {
             // A concrete result of an erased slot has the type its dictionary
-            // argument describes.
-            return trait_call_result_declaration(expression);
+            // argument describes; any other result, that of the slot.
+            ASR::symbol_t *declaration = trait_call_result_declaration(expression);
+            if (declaration) return declaration;
+            ASR::Function_t *slot = get_function(
+                ASR::down_cast<ASR::TraitFunctionCall_t>(expression)->m_name);
+            if (slot == nullptr || slot->m_return_var == nullptr) return nullptr;
+            return ASRUtils::get_struct_sym_from_struct_expr(slot->m_return_var);
         }
         case ASR::exprType::TraitReceiver: {
             return ASR::down_cast<ASR::TraitReceiver_t>(expression)->m_type_declaration;
@@ -7002,6 +7007,20 @@ std::vector<ASR::TraitWitness_t*> trait_conformance_table(const ASR::Struct_t &t
     return result;
 }
 
+// Whether the derived-type result of a message that is not generic stays
+// outside the runtime slot surface: an array of unlimited polymorphic
+// elements, or a result that is not allocatable of a type that is finalized
+// (F2018 7.5.6.3 p5).
+static bool runtime_trait_unsupported_derived_result(const ASR::Function_t &method)
+{
+    auto *type = expr_type(method.m_return_var);
+    auto *element = type_get_past_array(type_get_past_allocatable(type));
+    if (!ASR::is_a<ASR::StructType_t>(*element)) return false;
+    if (is_array(type) && is_unlimited_polymorphic_type(element)) return true;
+    return !is_allocatable(type) && is_finalizable_function_result(element,
+        get_struct_sym_from_struct_expr(method.m_return_var));
+}
+
 // A character type of a constant length, which crosses a runtime slot with
 // the ordinary character calling convention.
 static bool runtime_trait_character(ASR::ttype_t *type)
@@ -7025,7 +7044,10 @@ static bool runtime_trait_character(ASR::ttype_t *type)
 // view dummies of ordinary procedures. Scalar polymorphic derived-type dummies
 // with the same attributes keep their ordinary class calling convention.
 // Non-generic messages also retain ordinary optional-argument presence and
-// allocatable array descriptors.
+// allocatable array descriptors. Their results may also be allocatable or
+// explicit-shape arrays of those types, and allocatable scalars, derived
+// types and polymorphic objects, within the limits of
+// runtime_trait_unsupported_derived_result.
 static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
         const std::map<std::string, ASR::ttype_t*> &members)
 {
@@ -7037,16 +7059,20 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
     if (method.m_return_var) {
         auto *result = expr_type(method.m_return_var);
         if (is_pointer(result)) return false;
-        if (is_array(result)) {
-            if (trait_method_template(method)) return false;
-            result = type_get_past_array(type_get_past_allocatable(result));
-        } else if (is_allocatable(result)) {
-            return false;
-        }
-        result = member(result);
-        if (!result || !(ASR::is_a<ASR::Integer_t>(*result) || ASR::is_a<ASR::Real_t>(*result) ||
-                ASR::is_a<ASR::Complex_t>(*result) || ASR::is_a<ASR::Logical_t>(*result) ||
-                runtime_trait_character(result))) {
+        bool concrete = !trait_method_template(method);
+        bool allocatable = is_allocatable(result);
+        if ((is_array(result) || allocatable) && !concrete) return false;
+        result = member(type_get_past_array(type_get_past_allocatable(result)));
+        // A message that is not generic also returns derived types,
+        // polymorphic or not, and allocatable deferred-length characters,
+        // except arrays of unlimited polymorphic elements and results that
+        // are finalized after the statement that references them.
+        bool other = concrete && result && (ASR::is_a<ASR::StructType_t>(*result) ||
+            (allocatable && ASR::is_a<ASR::String_t>(*result)));
+        if (other && runtime_trait_unsupported_derived_result(method)) return false;
+        if (!other && (!result || !(ASR::is_a<ASR::Integer_t>(*result) ||
+                ASR::is_a<ASR::Real_t>(*result) || ASR::is_a<ASR::Complex_t>(*result) ||
+                ASR::is_a<ASR::Logical_t>(*result) || runtime_trait_character(result)))) {
             return false;
         }
     }
@@ -7124,16 +7150,16 @@ std::string runtime_trait_unsupported_result(const ASR::Function_t &method)
     if (!method.m_return_var || runtime_trait_method_supported(method)) return "";
     auto *type = expr_type(method.m_return_var);
     if (trait_method_template(method)) {
-        return is_array(type) ? "an array result" : "";
+        if (is_array(type)) return "an array result";
+        return is_allocatable(type) ? "an allocatable result" : "";
     }
     if (is_pointer(type)) return "a pointer result";
     auto *element = type_get_past_array(type_get_past_allocatable(type));
     if (ASR::is_a<ASR::TraitObjectType_t>(*element)) return "a trait-object result";
-    if (ASR::is_a<ASR::StructType_t>(*element)) {
-        return is_class_type(element) ? "a polymorphic result" : "a derived-type result";
-    }
-    if (is_allocatable(type) && !is_array(type) && !ASR::is_a<ASR::String_t>(*element)) {
-        return "an allocatable scalar result";
+    if (ASR::is_a<ASR::StructType_t>(*element) &&
+            runtime_trait_unsupported_derived_result(method)) {
+        return is_array(type) ? "an unlimited polymorphic array result"
+            : "a finalizable derived-type result that is not allocatable";
     }
     return "";
 }

@@ -5614,10 +5614,12 @@ public:
         bool trait_view_target = ASRUtils::association_has_target(m_selector);
         std::set<ASR::Trait_t*> seen_traits;
         std::vector<SelectTypeTraitGuard> trait_guards;
-        // When the selector is a function call, create a temporary variable
-        // to hold the result. The codegen expects Var or StructInstanceMember
-        // as the selector, not a FunctionCall.
-        if( ASR::is_a<ASR::FunctionCall_t>(*m_selector) ) {
+        // When the selector is a function call, also one through a runtime
+        // trait slot, create a temporary variable to hold the result. The
+        // codegen expects Var or StructInstanceMember as the selector, not a
+        // FunctionCall.
+        if( ASR::is_a<ASR::FunctionCall_t>(*m_selector) ||
+                ASR::is_a<ASR::TraitFunctionCall_t>(*m_selector) ) {
             ASR::ttype_t* selector_type = ASRUtils::expr_type(m_selector);
             std::string tmp_name = current_scope->get_unique_name("~select_type_selector_tmp_");
             ASR::symbol_t* type_decl = ASRUtils::get_struct_sym_from_struct_expr(m_selector);

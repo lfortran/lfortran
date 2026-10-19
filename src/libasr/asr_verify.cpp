@@ -2347,6 +2347,15 @@ public:
         return procedure;
     }
 
+    // Whether a result of type `type` crosses a runtime slot as the last
+    // explicit dummy that subroutine_from_function makes of it: a character,
+    // an array, an allocatable or a derived-type result.
+    static bool lowered_trait_result(ttype_t *type) {
+        return ASRUtils::is_character(*type) || ASRUtils::is_array(type) ||
+            ASRUtils::is_allocatable(type) ||
+            ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(type));
+    }
+
     // `procedure`, which has the signature of `message` after `offset`
     // leading arguments, such as a runtime slot, as `message` declares it,
     // once the lowering passes have changed `procedure`: subroutine_from_function
@@ -2377,8 +2386,7 @@ public:
                 : nullptr;
             if (!lowered || !ASR::is_a<Variable_t>(*lowered) ||
                     ASR::down_cast<Variable_t>(lowered)->m_intent != intentType::Out ||
-                    !(ASRUtils::is_character(*ASR::down_cast<Variable_t>(lowered)->m_type) ||
-                      ASRUtils::is_array(ASR::down_cast<Variable_t>(lowered)->m_type))) {
+                    !lowered_trait_result(ASR::down_cast<Variable_t>(lowered)->m_type)) {
                 return false;
             }
         }
@@ -3563,12 +3571,12 @@ public:
         // subroutine_from_function makes an aggregate result of a static
         // binding's procedure its last explicit argument, while the message
         // keeps its result, of type `itself` or an associated type. A
-        // runtime binding's procedure has such a result only of a character
-        // or an array type, which its slot passes the same way.
+        // runtime binding's procedure has such a result only of a character,
+        // an array, an allocatable or a derived type, which its slot passes
+        // the same way.
         ASR::expr_t *lowered_result = required->m_return_var &&
             !procedure->m_return_var && n_procedure == ordinary + 1 &&
-            (!runtime || ASRUtils::is_character(*typed_expr_type(required->m_return_var)) ||
-                ASRUtils::is_array(typed_expr_type(required->m_return_var)))
+            (!runtime || lowered_trait_result(typed_expr_type(required->m_return_var)))
             ? procedure->m_args[--n_procedure] : nullptr;
         ASR::expr_t *result = lowered_result ? lowered_result : procedure->m_return_var;
         size_t receiver = n_procedure;

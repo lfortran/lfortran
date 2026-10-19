@@ -67,7 +67,9 @@ public:
             ASR::ttype_t* const return_type = ASRUtils::get_FunctionType(x_ptr)->m_return_var_type;
             
             /* Transform This Function Into Subroutine IF NEEDED */
-            bool transform_success = PassUtils::handle_fn_return_var(al, x_ptr, PassUtils::is_aggregate_or_array_or_nonPrimitive_type);
+            bool transform_success = PassUtils::handle_fn_return_var(al, x_ptr,
+                trait_runtime_procedure ? is_trait_runtime_lowered_result
+                    : PassUtils::is_aggregate_or_array_or_nonPrimitive_type);
             if(transform_success) {
                 Function__TO__ReturnType_MAP_[x_ptr] = return_type;
                 handle_finalizable_result(*x_ptr);
@@ -91,6 +93,19 @@ public:
             visit_trait_runtime_procedures(*x.m_symtab);
         }
 
+        // Whether a function of a runtime trait slot, witness or erasure is
+        // being transformed. An allocatable scalar result of an intrinsic
+        // type is the last argument of these as well, so that a call through
+        // a slot returns it into an allocatable variable of the calling scope
+        // like any other allocatable result (see replace_TraitFunctionCall).
+        // The provider's implementation keeps it, and the adapter assigns it.
+        bool trait_runtime_procedure = false;
+
+        static bool is_trait_runtime_lowered_result(ASR::expr_t* result) {
+            return PassUtils::is_aggregate_or_array_or_nonPrimitive_type(result) ||
+                ASRUtils::is_allocatable(ASRUtils::expr_type(result));
+        }
+
         // The interfaces of runtime trait slots, the adapters of the
         // witnesses that fill them and the provider entries the adapters
         // call are transformed like any other function, so that a call
@@ -103,7 +118,10 @@ public:
                         !ASR::is_a<ASR::TraitErasure_t>(*a.second)) continue;
                 for (auto &b : ASRUtils::symbol_symtab(a.second)->get_scope()) {
                     if (ASR::is_a<ASR::Function_t>(*b.second)) {
+                        bool outer = trait_runtime_procedure;
+                        trait_runtime_procedure = true;
                         this->visit_Function(*down_cast<ASR::Function_t>(b.second));
+                        trait_runtime_procedure = outer;
                     }
                 }
             }
@@ -863,22 +881,48 @@ public :
         }
     }
 
+    // Whether the interface of the slot that `x` calls became a subroutine
+    // whose last argument is the result.
+    bool trait_result_is_argument(ASR::TraitFunctionCall_t* x) {
+        ASR::Function_t* slot = ASRUtils::get_function(x->m_name);
+        return slot && Function__TO__ReturnType_MAP_.count(slot) > 0;
+    }
+
+    // The call through the slot of `x` that returns into `result`.
+    void push_trait_subroutine_call(ASR::TraitFunctionCall_t* x, ASR::expr_t* result) {
+        Vec<ASR::call_arg_t> args;
+        args.reserve(al, x->n_args + 1);
+        args.from_pointer_n_copy(al, x->m_args, x->n_args);
+        args.push_back(al, {result->base.loc, result});
+        // The result argument takes the physical form of the slot's dummy.
+        auto *call = ASR::down_cast2<ASR::SubroutineCall_t>(
+            ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, x->m_name,
+                nullptr, args.p, args.size(), nullptr, nullptr, false, current_scope));
+        pass_result.push_back(al, ASRUtils::STMT(ASR::make_TraitSubroutineCall_t(al,
+            x->base.base.loc, x->m_name, x->m_slot, call->m_args, call->n_args)));
+    }
+
     // A call through a runtime trait slot whose interface became a
     // subroutine passes the variable for its result as the last argument,
     // like a call of any other such function (see replace_FunctionCall).
-    // A character result of a constant length needs no allocation. An array
-    // result of intrinsic elements is returned into an allocatable variable:
-    // one that is allocatable itself is deallocated before each call, and
-    // one of explicit shape is allocated with the bounds of the call's type,
-    // which semantics expressed in terms of the actual arguments. The
-    // variable is a local of the calling scope, deallocated when it ends.
+    // A character result of a constant length and a derived-type result
+    // that is not allocatable need no allocation. An array result is
+    // returned into an allocatable variable: one that is allocatable itself
+    // is deallocated before each call, and one of explicit shape is
+    // allocated with the bounds of the call's type, which semantics
+    // expressed in terms of the actual arguments. An allocatable scalar
+    // result, polymorphic or not, is returned into an allocatable variable
+    // of the same declared type, deallocated before each call. The variable
+    // is a local of the calling scope, deallocated when it ends.
     void replace_TraitFunctionCall(ASR::TraitFunctionCall_t* x) {
         traverse_functionCall_args(x->m_args, x->n_args);
+        if (!trait_result_is_argument(x)) return;
         ASR::Function_t* slot = ASRUtils::get_function(x->m_name);
-        if (!slot || Function__TO__ReturnType_MAP_.count(slot) == 0) return;
         bool array = ASRUtils::is_array(x->m_type);
-        LCOMPILERS_ASSERT(array || (ASRUtils::is_string_only(x->m_type) &&
-            !ASRUtils::is_allocatable_or_pointer(x->m_type)));
+        LCOMPILERS_ASSERT(array || ASRUtils::is_allocatable(x->m_type) ||
+            ASR::is_a<ASR::StructType_t>(*x->m_type) ||
+            (ASRUtils::is_string_only(x->m_type) &&
+             !ASRUtils::is_allocatable_or_pointer(x->m_type)));
         LCOMPILERS_ASSERT(!ASRUtils::is_pointer(x->m_type));
         ASR::ttype_t* result_type = ASRUtils::duplicate_type(al, x->m_type);
         if (array && !ASRUtils::is_allocatable(result_type)) {
@@ -887,24 +931,17 @@ public :
                     ASRUtils::extract_n_dims_from_ttype(x->m_type),
                     ASRUtils::type_get_past_array(x->m_type))));
         }
+        // The slot's lowered result declares the derived type of the result.
         ASR::expr_t* result_var = PassUtils::create_var(result_counter++,
-            "return_slot", x->base.base.loc, result_type, al, current_scope, nullptr);
+            "return_slot", x->base.base.loc, result_type, al, current_scope,
+            slot->m_args[slot->n_args - 1]);
         if (ASRUtils::is_allocatable(x->m_type)) {
             insert_implicit_deallocate(result_var);
         } else if (array) {
             insert_allocate_stmt_for_array(al, result_var,
                 ASRUtils::EXPR((ASR::asr_t*)x), &pass_result);
         }
-        Vec<ASR::call_arg_t> args;
-        args.reserve(al, x->n_args + 1);
-        args.from_pointer_n_copy(al, x->m_args, x->n_args);
-        args.push_back(al, {result_var->base.loc, result_var});
-        // The result argument takes the physical form of the slot's dummy.
-        auto *call = ASR::down_cast2<ASR::SubroutineCall_t>(
-            ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, x->m_name,
-                nullptr, args.p, args.size(), nullptr, nullptr, false, current_scope));
-        pass_result.push_back(al, ASRUtils::STMT(ASR::make_TraitSubroutineCall_t(al,
-            x->base.base.loc, x->m_name, x->m_slot, call->m_args, call->n_args)));
+        push_trait_subroutine_call(x, result_var);
         *current_expr = result_var;
     }
 };
@@ -1573,7 +1610,73 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 a_length == b_length;
         }
 
+        // Whether `target` has the declared type of the allocatable scalar
+        // `result`: the same intrinsic type and kind, deferred-length
+        // characters, or the same derived type, polymorphic in both or in
+        // neither.
+        static bool same_declared_type(ASR::expr_t* target, ASR::expr_t* result) {
+            ASR::ttype_t* t = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(target));
+            ASR::ttype_t* r = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(result));
+            if (t->type != r->type) return false;
+            if (ASR::is_a<ASR::StructType_t>(*t)) {
+                ASR::symbol_t* t_sym = ASRUtils::get_struct_sym_from_struct_expr(target);
+                ASR::symbol_t* r_sym = ASRUtils::get_struct_sym_from_struct_expr(result);
+                return t_sym && r_sym &&
+                    ASRUtils::is_class_type(t) == ASRUtils::is_class_type(r) &&
+                    ASRUtils::is_unlimited_polymorphic_type(t) ==
+                        ASRUtils::is_unlimited_polymorphic_type(r) &&
+                    (ASRUtils::is_unlimited_polymorphic_type(t) ||
+                     ASRUtils::symbol_get_past_external(t_sym) ==
+                        ASRUtils::symbol_get_past_external(r_sym));
+            }
+            if (ASR::is_a<ASR::String_t>(*t)) {
+                return ASRUtils::is_deferredLength_string(t) &&
+                    ASRUtils::is_deferredLength_string(r) &&
+                    ASRUtils::extract_kind_from_ttype_t(t) ==
+                        ASRUtils::extract_kind_from_ttype_t(r);
+            }
+            return ASRUtils::check_equal_type(t, r, target, result);
+        }
+
+        // The allocatable scalar result of a call through a runtime trait
+        // slot is returned straight into an allocatable variable of the same
+        // declared type that no argument may alias, as the result of an
+        // ordinary function is (see subroutine_call_from_function): the
+        // slot's witness adapter deallocates its previous value on entry.
+        bool trait_scalar_result_into_target(const ASR::Assignment_t &x) {
+            if (x.m_overloaded || !ASR::is_a<ASR::TraitFunctionCall_t>(*x.m_value)) {
+                return false;
+            }
+            auto *call = ASR::down_cast<ASR::TraitFunctionCall_t>(x.m_value);
+            if (!replacer.trait_result_is_argument(call) ||
+                    !ASRUtils::is_allocatable(call->m_type) || ASRUtils::is_array(call->m_type) ||
+                    !ASRUtils::is_allocatable(x.m_target) ||
+                    ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ||
+                    !(ASR::is_a<ASR::Var_t>(*x.m_target) ||
+                      ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target))) {
+                return false;
+            }
+            ASR::Function_t* slot = ASRUtils::get_function(call->m_name);
+            if (!same_declared_type(x.m_target, slot->m_args[slot->n_args - 1])) return false;
+            for (size_t i = 0; i < call->n_args; i++) {
+                if (call->m_args[i].m_value &&
+                        expr_may_alias(x.m_target, call->m_args[i].m_value)) {
+                    return false;
+                }
+            }
+            for (size_t i = 0; i < call->n_args; i++) {
+                ASR::expr_t** current_expr_copy = current_expr;
+                current_expr = &call->m_args[i].m_value;
+                call_replacer();
+                current_expr = current_expr_copy;
+            }
+            replacer.push_trait_subroutine_call(call, x.m_target);
+            remove_original_statement = true;
+            return true;
+        }
+
         void visit_Assignment(const ASR::Assignment_t &x) {
+            if (trait_scalar_result_into_target(x)) return;
             if(is_function_call_returning_aggregate_type(x.m_value)) {
                 if (x.m_overloaded) {
                     // User-defined assignment(=) where the RHS is a function
