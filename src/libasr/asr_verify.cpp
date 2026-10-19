@@ -2377,7 +2377,8 @@ public:
                 : nullptr;
             if (!lowered || !ASR::is_a<Variable_t>(*lowered) ||
                     ASR::down_cast<Variable_t>(lowered)->m_intent != intentType::Out ||
-                    !ASRUtils::is_character(*ASR::down_cast<Variable_t>(lowered)->m_type)) {
+                    !(ASRUtils::is_character(*ASR::down_cast<Variable_t>(lowered)->m_type) ||
+                      ASRUtils::is_array(ASR::down_cast<Variable_t>(lowered)->m_type))) {
                 return false;
             }
         }
@@ -3563,10 +3564,11 @@ public:
         // binding's procedure its last explicit argument, while the message
         // keeps its result, of type `itself` or an associated type. A
         // runtime binding's procedure has such a result only of a character
-        // type, which its slot passes the same way.
+        // or an array type, which its slot passes the same way.
         ASR::expr_t *lowered_result = required->m_return_var &&
             !procedure->m_return_var && n_procedure == ordinary + 1 &&
-            (!runtime || ASRUtils::is_character(*typed_expr_type(required->m_return_var)))
+            (!runtime || ASRUtils::is_character(*typed_expr_type(required->m_return_var)) ||
+                ASRUtils::is_array(typed_expr_type(required->m_return_var)))
             ? procedure->m_args[--n_procedure] : nullptr;
         ASR::expr_t *result = lowered_result ? lowered_result : procedure->m_return_var;
         size_t receiver = n_procedure;

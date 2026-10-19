@@ -5,11 +5,11 @@
             traits_dependent_result_02:
                 (Program
                     (SymbolTable
-                        10
+                        13
                         {
                             ivalues:
                                 (ExternalSymbol
-                                    10
+                                    13
                                     ivalues
                                     2 ivalues
                                     traits_dependent_result_02_m
@@ -19,7 +19,7 @@
                                 ),
                             unused:
                                 (ExternalSymbol
-                                    10
+                                    13
                                     unused
                                     2 unused
                                     traits_dependent_result_02_m
@@ -38,6 +38,368 @@
                     (SymbolTable
                         2
                         {
+                            __trait_contract_ivalues:
+                                (TraitRuntimeContract
+                                    (SymbolTable
+                                        6
+                                        {
+                                            __trait_ivalues_shifted_values:
+                                                (Function
+                                                    (SymbolTable
+                                                        7
+                                                        {
+                                                            n:
+                                                                (Variable
+                                                                    7
+                                                                    n
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                ),
+                                                            offset:
+                                                                (Variable
+                                                                    7
+                                                                    offset
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                ),
+                                                            r:
+                                                                (Variable
+                                                                    7
+                                                                    r
+                                                                    [n]
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                        (Var 7 n))]
+                                                                        PointerArray
+                                                                        Global
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                ),
+                                                            self:
+                                                                (Variable
+                                                                    7
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TraitObjectType
+                                                                        2 __trait_contract_ivalues
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                ),
+                                                            zinput:
+                                                                (Variable
+                                                                    7
+                                                                    zinput
+                                                                    [n]
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                        (Var 7 n))]
+                                                                        PointerArray
+                                                                        Global
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                )
+                                                        })
+                                                    __trait_ivalues_shifted_values
+                                                    (FunctionType
+                                                        [(TraitObjectType
+                                                            2 __trait_contract_ivalues
+                                                        )
+                                                        (Integer 4)
+                                                        (Integer 4)
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (FunctionParam
+                                                                2
+                                                                (Integer 4)
+                                                                ()
+                                                            ))]
+                                                            PointerArray
+                                                            Global
+                                                        )]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (FunctionParam
+                                                                2
+                                                                (Integer 4)
+                                                                ()
+                                                            ))]
+                                                            PointerArray
+                                                            Global
+                                                        )
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 7 self)
+                                                    (Var 7 offset)
+                                                    (Var 7 n)
+                                                    (Var 7 zinput)]
+                                                    []
+                                                    (Var 7 r)
+                                                    Private
+                                                    .false.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            __trait_ivalues_values:
+                                                (Function
+                                                    (SymbolTable
+                                                        8
+                                                        {
+                                                            n:
+                                                                (Variable
+                                                                    8
+                                                                    n
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Integer 4)
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                ),
+                                                            r:
+                                                                (Variable
+                                                                    8
+                                                                    r
+                                                                    [n]
+                                                                    ReturnVar
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                        (Var 8 n))]
+                                                                        PointerArray
+                                                                        Global
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                ),
+                                                            self:
+                                                                (Variable
+                                                                    8
+                                                                    self
+                                                                    []
+                                                                    In
+                                                                    ()
+                                                                    ()
+                                                                    Default
+                                                                    (TraitObjectType
+                                                                        2 __trait_contract_ivalues
+                                                                    )
+                                                                    ()
+                                                                    Source
+                                                                    Public
+                                                                    Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    NotMethod
+                                                                    ()
+                                                                    []
+                                                                    ()
+                                                                )
+                                                        })
+                                                    __trait_ivalues_values
+                                                    (FunctionType
+                                                        [(TraitObjectType
+                                                            2 __trait_contract_ivalues
+                                                        )
+                                                        (Integer 4)]
+                                                        (Array
+                                                            (Integer 4)
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (FunctionParam
+                                                                1
+                                                                (Integer 4)
+                                                                ()
+                                                            ))]
+                                                            PointerArray
+                                                            Global
+                                                        )
+                                                        Source
+                                                        Interface
+                                                        ()
+                                                        .false.
+                                                        .true.
+                                                        .false.
+                                                        .false.
+                                                        .false.
+                                                        []
+                                                        .false.
+                                                        Host
+                                                    )
+                                                    []
+                                                    [(Var 8 self)
+                                                    (Var 8 n)]
+                                                    []
+                                                    (Var 8 r)
+                                                    Private
+                                                    .false.
+                                                    .true.
+                                                    ()
+                                                ),
+                                            __trait_member_ivalues_shifted_values:
+                                                (ExternalSymbol
+                                                    6
+                                                    __trait_member_ivalues_shifted_values
+                                                    3 shifted_values
+                                                    traits_dependent_result_02_m
+                                                    [ivalues]
+                                                    shifted_values
+                                                    Private
+                                                ),
+                                            __trait_member_ivalues_values:
+                                                (ExternalSymbol
+                                                    6
+                                                    __trait_member_ivalues_values
+                                                    3 values
+                                                    traits_dependent_result_02_m
+                                                    [ivalues]
+                                                    values
+                                                    Private
+                                                )
+                                        })
+                                    __trait_contract_ivalues
+                                    2 ivalues
+                                    [([6 __trait_member_ivalues_shifted_values]
+                                    6 __trait_ivalues_shifted_values
+                                    [])
+                                    ([6 __trait_member_ivalues_values]
+                                    6 __trait_ivalues_values
+                                    [])]
+                                    .false.
+                                ),
                             ivalues:
                                 (Trait
                                     (SymbolTable
@@ -417,25 +779,25 @@
                             unused:
                                 (Template
                                     (SymbolTable
-                                        6
+                                        9
                                         {
                                             __constraint_t:
                                                 (TraitConstraint
-                                                    6
+                                                    9
                                                     __constraint_t
-                                                    6 t
+                                                    9 t
                                                     2 ivalues
-                                                    [(6 __trait_member_ivalues_shifted_values
-                                                    6 __trait_t_shifted_values
+                                                    [(9 __trait_member_ivalues_shifted_values
+                                                    9 __trait_t_shifted_values
                                                     [])
-                                                    (6 __trait_member_ivalues_values
-                                                    6 __trait_t_values
+                                                    (9 __trait_member_ivalues_values
+                                                    9 __trait_t_values
                                                     [])]
                                                     []
                                                 ),
                                             __trait_member_ivalues_shifted_values:
                                                 (ExternalSymbol
-                                                    6
+                                                    9
                                                     __trait_member_ivalues_shifted_values
                                                     3 shifted_values
                                                     traits_dependent_result_02_m
@@ -445,7 +807,7 @@
                                                 ),
                                             __trait_member_ivalues_values:
                                                 (ExternalSymbol
-                                                    6
+                                                    9
                                                     __trait_member_ivalues_values
                                                     3 values
                                                     traits_dependent_result_02_m
@@ -456,11 +818,11 @@
                                             __trait_t_shifted_values:
                                                 (Function
                                                     (SymbolTable
-                                                        8
+                                                        11
                                                         {
                                                             n:
                                                                 (Variable
-                                                                    8
+                                                                    11
                                                                     n
                                                                     []
                                                                     In
@@ -485,7 +847,7 @@
                                                                 ),
                                                             offset:
                                                                 (Variable
-                                                                    8
+                                                                    11
                                                                     offset
                                                                     []
                                                                     In
@@ -510,7 +872,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    8
+                                                                    11
                                                                     r
                                                                     [n]
                                                                     ReturnVar
@@ -520,7 +882,7 @@
                                                                     (Array
                                                                         (Integer 4)
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 8 n))]
+                                                                        (Var 11 n))]
                                                                         PointerArray
                                                                         Global
                                                                     )
@@ -541,7 +903,7 @@
                                                                 ),
                                                             self:
                                                                 (Variable
-                                                                    8
+                                                                    11
                                                                     self
                                                                     []
                                                                     In
@@ -570,7 +932,7 @@
                                                                 ),
                                                             zinput:
                                                                 (Variable
-                                                                    8
+                                                                    11
                                                                     zinput
                                                                     [n]
                                                                     In
@@ -580,7 +942,7 @@
                                                                     (Array
                                                                         (Integer 4)
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 8 n))]
+                                                                        (Var 11 n))]
                                                                         PointerArray
                                                                         Global
                                                                     )
@@ -644,12 +1006,12 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 8 self)
-                                                    (Var 8 offset)
-                                                    (Var 8 n)
-                                                    (Var 8 zinput)]
+                                                    [(Var 11 self)
+                                                    (Var 11 offset)
+                                                    (Var 11 n)
+                                                    (Var 11 zinput)]
                                                     []
-                                                    (Var 8 r)
+                                                    (Var 11 r)
                                                     Private
                                                     .false.
                                                     .true.
@@ -658,11 +1020,11 @@
                                             __trait_t_values:
                                                 (Function
                                                     (SymbolTable
-                                                        9
+                                                        12
                                                         {
                                                             n:
                                                                 (Variable
-                                                                    9
+                                                                    12
                                                                     n
                                                                     []
                                                                     In
@@ -687,7 +1049,7 @@
                                                                 ),
                                                             r:
                                                                 (Variable
-                                                                    9
+                                                                    12
                                                                     r
                                                                     [n]
                                                                     ReturnVar
@@ -697,7 +1059,7 @@
                                                                     (Array
                                                                         (Integer 4)
                                                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (Var 9 n))]
+                                                                        (Var 12 n))]
                                                                         PointerArray
                                                                         Global
                                                                     )
@@ -718,7 +1080,7 @@
                                                                 ),
                                                             self:
                                                                 (Variable
-                                                                    9
+                                                                    12
                                                                     self
                                                                     []
                                                                     In
@@ -778,10 +1140,10 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 9 self)
-                                                    (Var 9 n)]
+                                                    [(Var 12 self)
+                                                    (Var 12 n)]
                                                     []
-                                                    (Var 9 r)
+                                                    (Var 12 r)
                                                     Private
                                                     .false.
                                                     .true.
@@ -789,7 +1151,7 @@
                                                 ),
                                             t:
                                                 (Variable
-                                                    6
+                                                    9
                                                     t
                                                     []
                                                     In
@@ -819,11 +1181,11 @@
                                             unused:
                                                 (Function
                                                     (SymbolTable
-                                                        7
+                                                        10
                                                         {
                                                             r:
                                                                 (Variable
-                                                                    7
+                                                                    10
                                                                     r
                                                                     []
                                                                     ReturnVar
@@ -848,7 +1210,7 @@
                                                                 ),
                                                             t:
                                                                 (Variable
-                                                                    7
+                                                                    10
                                                                     t
                                                                     []
                                                                     In
@@ -877,7 +1239,7 @@
                                                                 ),
                                                             x:
                                                                 (Variable
-                                                                    7
+                                                                    10
                                                                     x
                                                                     []
                                                                     In
@@ -926,15 +1288,15 @@
                                                         Host
                                                     )
                                                     []
-                                                    [(Var 7 x)]
+                                                    [(Var 10 x)]
                                                     [(Assignment
-                                                        (Var 7 r)
+                                                        (Var 10 r)
                                                         (IntegerConstant 0 (Integer 4) Decimal)
                                                         ()
                                                         .false.
                                                         .false.
                                                     )]
-                                                    (Var 7 r)
+                                                    (Var 10 r)
                                                     Public
                                                     .true.
                                                     .true.

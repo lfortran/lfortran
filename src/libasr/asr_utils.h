@@ -11467,6 +11467,7 @@ inline bool has_trait_out_cleanup(const ASR::Function_t &function) {
     return false;
 }
 bool runtime_trait_method_supported(const ASR::Function_t &method);
+std::string runtime_trait_unsupported_result(const ASR::Function_t &method);
 std::string nominal_symbol_name(const ASR::symbol_t *symbol);
 bool reject_runtime_traits(const ASR::TranslationUnit_t &unit,
     diag::Diagnostics &diagnostics, const std::string &backend);

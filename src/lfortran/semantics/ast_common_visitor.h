@@ -13290,6 +13290,7 @@ public:
                 check_runtime_trait_without_associated_types(*trait, loc);
                 check_trait_runtime_view(*trait, loc);
                 check_runtime_trait_length_wildcards(*trait, loc);
+                check_runtime_trait_results(*trait, loc);
                 auto *contract = ASRUtils::trait_runtime_contract(v);
                 if (!contract) {
                     std::string reason = trait_runtime_contract_obstacle(
@@ -25370,8 +25371,10 @@ public:
     // A dimension bound postponed to the end of its module still reads as
     // assumed-shape here, but it is an explicit bound: not a runtime array.
     bool has_postponed_array_bounds(const ASR::Function_t &method) {
-        for (size_t i = 0; i < method.n_args; i++) {
-            auto *type = ASRUtils::expr_type(method.m_args[i]);
+        for (size_t i = 0; i <= method.n_args; i++) {
+            auto *value = i < method.n_args ? method.m_args[i] : method.m_return_var;
+            if (!value) continue;
+            auto *type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(value));
             if (!type || !ASR::is_a<ASR::Array_t>(*type)) continue;
             auto *array = ASR::down_cast<ASR::Array_t>(type);
             for (size_t j = 0; j < array->n_dims; j++) {
@@ -25551,6 +25554,23 @@ public:
         }
     }
 
+    // A message whose result is outside the runtime slot surface is named
+    // with that result.
+    void check_runtime_trait_results(const ASR::Trait_t &trait, const Location &loc) {
+        for (auto *member : checked_trait_hierarchy(trait, loc).members) {
+            if (ASRUtils::trait_member_is_initializer(member)) continue;
+            auto *method = ASRUtils::trait_method_function(member);
+            std::string result = method ? ASRUtils::runtime_trait_unsupported_result(*method) : "";
+            if (!result.empty()) {
+                trait_call_error(std::string("runtime dispatch of ") +
+                    (ASRUtils::trait_method_template(*method) ? "generic " : "") +
+                    "trait method '" + ASRUtils::trait_member_display_name(member) +
+                    "' with " + result +
+                    " is not implemented yet", loc);
+            }
+        }
+    }
+
     ASR::TraitRuntimeContract_t *runtime_trait_combination(
             char **names, size_t count, const Location &loc) {
         warn_traits_extension(loc);
@@ -25568,6 +25588,7 @@ public:
             check_runtime_trait_without_associated_types(*trait, loc);
             check_trait_runtime_view(*trait, loc);
             check_runtime_trait_length_wildcards(*trait, loc);
+            check_runtime_trait_results(*trait, loc);
             traits.push_back(symbol);
         }
         traits = ASRUtils::normalized_trait_requirements(traits);
@@ -29479,6 +29500,13 @@ public:
             auto *function = ASR::down_cast<ASR::Function_t>(
                 ASRUtils::symbol_get_past_external(callee));
             ASRUtils::check_simple_intent_mismatch<SemanticAbort>(diag, function, args);
+            if (is_function && ASRUtils::is_array(result)) {
+                // The bounds of an explicit-shape result are those of the
+                // slot's result, with its dummies replaced by the actual
+                // arguments, as in an ordinary call.
+                result = handle_return_type(ASRUtils::expr_type(function->m_return_var),
+                    loc, args, function);
+            }
             if (is_function) {
                 auto *call = ASR::down_cast2<ASR::FunctionCall_t>(
                     ASRUtils::make_FunctionCall_t_util(al, loc, callee, nullptr,

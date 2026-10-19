@@ -866,23 +866,45 @@ public :
     // A call through a runtime trait slot whose interface became a
     // subroutine passes the variable for its result as the last argument,
     // like a call of any other such function (see replace_FunctionCall).
-    // Only a character result of a constant length crosses a slot this way,
-    // so the variable needs no allocation.
+    // A character result of a constant length needs no allocation. An array
+    // result of intrinsic elements is returned into an allocatable variable:
+    // one that is allocatable itself is deallocated before each call, and
+    // one of explicit shape is allocated with the bounds of the call's type,
+    // which semantics expressed in terms of the actual arguments. The
+    // variable is a local of the calling scope, deallocated when it ends.
     void replace_TraitFunctionCall(ASR::TraitFunctionCall_t* x) {
         traverse_functionCall_args(x->m_args, x->n_args);
         ASR::Function_t* slot = ASRUtils::get_function(x->m_name);
         if (!slot || Function__TO__ReturnType_MAP_.count(slot) == 0) return;
-        LCOMPILERS_ASSERT(ASRUtils::is_string_only(x->m_type) &&
-            !ASRUtils::is_allocatable_or_pointer(x->m_type));
+        bool array = ASRUtils::is_array(x->m_type);
+        LCOMPILERS_ASSERT(array || (ASRUtils::is_string_only(x->m_type) &&
+            !ASRUtils::is_allocatable_or_pointer(x->m_type)));
+        LCOMPILERS_ASSERT(!ASRUtils::is_pointer(x->m_type));
+        ASR::ttype_t* result_type = ASRUtils::duplicate_type(al, x->m_type);
+        if (array && !ASRUtils::is_allocatable(result_type)) {
+            result_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al,
+                x->base.base.loc, ASRUtils::create_array_type_with_empty_dims(al,
+                    ASRUtils::extract_n_dims_from_ttype(x->m_type),
+                    ASRUtils::type_get_past_array(x->m_type))));
+        }
         ASR::expr_t* result_var = PassUtils::create_var(result_counter++,
-            "return_slot", x->base.base.loc, ASRUtils::duplicate_type(al, x->m_type),
-            al, current_scope, nullptr);
+            "return_slot", x->base.base.loc, result_type, al, current_scope, nullptr);
+        if (ASRUtils::is_allocatable(x->m_type)) {
+            insert_implicit_deallocate(result_var);
+        } else if (array) {
+            insert_allocate_stmt_for_array(al, result_var,
+                ASRUtils::EXPR((ASR::asr_t*)x), &pass_result);
+        }
         Vec<ASR::call_arg_t> args;
         args.reserve(al, x->n_args + 1);
         args.from_pointer_n_copy(al, x->m_args, x->n_args);
         args.push_back(al, {result_var->base.loc, result_var});
+        // The result argument takes the physical form of the slot's dummy.
+        auto *call = ASR::down_cast2<ASR::SubroutineCall_t>(
+            ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, x->m_name,
+                nullptr, args.p, args.size(), nullptr, nullptr, false, current_scope));
         pass_result.push_back(al, ASRUtils::STMT(ASR::make_TraitSubroutineCall_t(al,
-            x->base.base.loc, x->m_name, x->m_slot, args.p, args.size())));
+            x->base.base.loc, x->m_name, x->m_slot, call->m_args, call->n_args)));
         *current_expr = result_var;
     }
 };
@@ -1536,6 +1558,21 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             pointer_base_.clear();
         }
 
+        // Whether the elements of `a` and `b` are not characters, or are
+        // characters of the same constant length.
+        static bool same_character_length(ASR::ttype_t* a, ASR::ttype_t* b) {
+            ASR::ttype_t* a_element = ASRUtils::extract_type(a);
+            ASR::ttype_t* b_element = ASRUtils::extract_type(b);
+            if (!ASR::is_a<ASR::String_t>(*a_element) &&
+                    !ASR::is_a<ASR::String_t>(*b_element)) {
+                return true;
+            }
+            int64_t a_length = 0, b_length = 0;
+            return ASRUtils::constant_string_length(a_element, a_length) &&
+                ASRUtils::constant_string_length(b_element, b_length) &&
+                a_length == b_length;
+        }
+
         void visit_Assignment(const ASR::Assignment_t &x) {
             if(is_function_call_returning_aggregate_type(x.m_value)) {
                 if (x.m_overloaded) {
@@ -1556,8 +1593,24 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     return;
                 }
             }
+            // The array result of a call through a runtime trait slot is
+            // returned into an allocatable variable of its own (see
+            // replace_TraitFunctionCall), which an allocatable target of the
+            // same character length takes over, with the result's shape and
+            // lower bounds of one.
+            bool trait_array_result = ASR::is_a<ASR::TraitFunctionCall_t>(*x.m_value) &&
+                ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) && !x.m_overloaded &&
+                ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) &&
+                ASRUtils::is_allocatable(x.m_target) &&
+                same_character_length(ASRUtils::expr_type(x.m_target),
+                    ASRUtils::expr_type(x.m_value));
             ASR::CallReplacerOnExpressionsVisitor \
             <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Assignment(x);
+            if (trait_array_result && ASR::is_a<ASR::Var_t>(*x.m_value)) {
+                ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+                xx.m_move_allocation = true;
+                xx.m_realloc_lhs = true;
+            }
         }
 
         void visit_Associate(const ASR::Associate_t &x) {

@@ -592,7 +592,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
 
     void replace_ArrayConstructor(ASR::ArrayConstructor_t* x) {
         // Skip ArrayConstructor replacement when any argument is a function
-        // call (FunctionCall or IntrinsicElementalFunction) returning an array.
+        // call (FunctionCall, TraitFunctionCall or IntrinsicElementalFunction)
+        // returning an array.
         // The implied_do_loop pass incorrectly expands these into do-loops,
         // generating invalid code (e.g. lbound(Nint(data), ...) or calling
         // functions multiple times). The downstream passes
@@ -601,7 +602,8 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             ASR::expr_t* arg = x->m_args[i];
             if( arg == nullptr ) continue;
             bool is_array_func_call = false;
-            if( ASR::is_a<ASR::FunctionCall_t>(*arg) &&
+            if( (ASR::is_a<ASR::FunctionCall_t>(*arg) ||
+                 ASR::is_a<ASR::TraitFunctionCall_t>(*arg)) &&
                 ASRUtils::is_array(ASRUtils::expr_type(arg)) ) {
                 is_array_func_call = true;
             } else if( ASR::is_a<ASR::IntrinsicElementalFunction_t>(*arg) &&

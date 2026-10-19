@@ -7036,7 +7036,13 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
     };
     if (method.m_return_var) {
         auto *result = expr_type(method.m_return_var);
-        if (is_array(result) || is_allocatable(result) || is_pointer(result)) return false;
+        if (is_pointer(result)) return false;
+        if (is_array(result)) {
+            if (trait_method_template(method)) return false;
+            result = type_get_past_array(type_get_past_allocatable(result));
+        } else if (is_allocatable(result)) {
+            return false;
+        }
         result = member(result);
         if (!result || !(ASR::is_a<ASR::Integer_t>(*result) || ASR::is_a<ASR::Real_t>(*result) ||
                 ASR::is_a<ASR::Complex_t>(*result) || ASR::is_a<ASR::Logical_t>(*result) ||
@@ -7108,6 +7114,28 @@ std::map<std::string, ASR::ttype_t*> trait_member_substitution(
         substitution[generic.m_args[i]] = members[i];
     }
     return substitution;
+}
+
+// The result of `method` that keeps it out of the runtime slot surface,
+// described for a diagnostic (such as "a derived-type result"), or an empty
+// string if its result is in the surface or is not described specifically.
+std::string runtime_trait_unsupported_result(const ASR::Function_t &method)
+{
+    if (!method.m_return_var || runtime_trait_method_supported(method)) return "";
+    auto *type = expr_type(method.m_return_var);
+    if (trait_method_template(method)) {
+        return is_array(type) ? "an array result" : "";
+    }
+    if (is_pointer(type)) return "a pointer result";
+    auto *element = type_get_past_array(type_get_past_allocatable(type));
+    if (ASR::is_a<ASR::TraitObjectType_t>(*element)) return "a trait-object result";
+    if (ASR::is_a<ASR::StructType_t>(*element)) {
+        return is_class_type(element) ? "a polymorphic result" : "a derived-type result";
+    }
+    if (is_allocatable(type) && !is_array(type) && !ASR::is_a<ASR::String_t>(*element)) {
+        return "an allocatable scalar result";
+    }
+    return "";
 }
 
 bool runtime_trait_method_supported(const ASR::Function_t &method)

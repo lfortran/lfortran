@@ -506,14 +506,18 @@ bool set_allocation_size(
         return true;
     }
     switch( value->type ) {
-        case ASR::exprType::FunctionCall: {
-            ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(value);
-            ASR::ttype_t* type = function_call->m_type;
+        case ASR::exprType::FunctionCall:
+        case ASR::exprType::TraitFunctionCall: {
+            // A call through a runtime trait slot has the shape of an
+            // ordinary call of its message: never elemental.
+            ASR::ttype_t* type = ASRUtils::expr_type(value);
             if( ASRUtils::is_allocatable(type) || ASRUtils::is_pointer(type) ) {
                 return false;
             }
-            if (ASRUtils::is_elemental(function_call->m_name)) {
-                set_allocation_size_elemental_function(al, loc, function_call, allocate_dims,
+            if (ASR::is_a<ASR::FunctionCall_t>(*value) &&
+                    ASRUtils::is_elemental(ASR::down_cast<ASR::FunctionCall_t>(value)->m_name)) {
+                set_allocation_size_elemental_function(al, loc,
+                    ASR::down_cast<ASR::FunctionCall_t>(value), allocate_dims,
                     len_allocte_expr);
                 break;
             }
@@ -2200,6 +2204,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             !(ASR::is_a<ASR::FunctionCall_t>(*value) &&
               !ASRUtils::is_elemental(
                   ASR::down_cast<ASR::FunctionCall_t>(value)->m_name)) &&
+            !ASR::is_a<ASR::TraitFunctionCall_t>(*value) &&
             can_rhs_refer_to_lhs(al, xx.m_target, xx.m_value)) {
             xx.m_value = create_and_allocate_temporary_variable_for_array(
                 value, "_assignment_", al, current_body, current_scope,
@@ -2998,6 +3003,51 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         replace_current_expr(x, "_complex_constructor_");
     }
 
+    // Whether the array result of a call that is not elemental, linked to the
+    // target of an assignment, is evaluated into a temporary first: when the
+    // target may be reallocated, is indexed with vector subscripts, shares a
+    // variable with the value or cannot take an allocatable result directly.
+    bool replace_array_call_linked_to_target(ASR::ttype_t* type,
+            const std::string& name_hint) {
+        if( !is_current_expr_linked_to_target(exprs_with_target, current_expr) ||
+                !ASRUtils::is_array(type) ) {
+            return false;
+        }
+        targetType target_Type = exprs_with_target[*current_expr].second;
+        ASR::expr_t* target = exprs_with_target[*current_expr].first;
+        ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
+        ASRUtils::extract_indices(target, m_args, n_args);
+        if( (target_Type == targetType::OriginalTarget && (realloc_lhs ||
+             ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) ||
+             is_common_symbol_present_in_lhs_and_rhs(al, target, *current_expr)) ) ||
+             target_Type == targetType::GeneratedTargetPointerForArraySection ||
+            (!ASRUtils::is_allocatable(target) && ASRUtils::is_allocatable(type)) ) {
+            force_replace_current_expr_for_array(current_expr, name_hint, al,
+                current_body, current_scope, exprs_with_target,
+                is_assignment_target_array_section_item);
+            return true;
+        }
+        return false;
+    }
+
+    // A call through a runtime trait slot with an array result is evaluated
+    // like a call of a function that is not elemental (see
+    // replace_FunctionCall); its arguments are simplified by ArgSimplifier.
+    // Its temporary is named like that of a function result, whose lower
+    // bounds an allocatable target does not take (see array_op).
+    void replace_TraitFunctionCall(ASR::TraitFunctionCall_t* x) {
+        if( !ASRUtils::is_array(x->m_type) ) {
+            ASR::BaseExprReplacer<ReplaceExprWithTemporary>::replace_TraitFunctionCall(x);
+            return ;
+        }
+        std::string name_hint = std::string("_function_call_") +
+            ASRUtils::symbol_name(x->m_name);
+        if( replace_array_call_linked_to_target(x->m_type, name_hint) ) {
+            return ;
+        }
+        replace_current_expr(x, name_hint);
+    }
+
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         if( ASRUtils::is_elemental(x->m_name) && !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
             // ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x->m_name);
@@ -3027,23 +3077,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             return ;
         }
 
-        if( is_current_expr_linked_to_target(exprs_with_target, current_expr) && ASRUtils::is_array(x->m_type) ) {
-            targetType target_Type = exprs_with_target[*current_expr].second;
-            ASR::expr_t* target = exprs_with_target[*current_expr].first;
-            ASR::array_index_t* m_args = nullptr; size_t n_args = 0;
-            ASRUtils::extract_indices(target, m_args, n_args);
-            if( (target_Type == targetType::OriginalTarget && (realloc_lhs ||
-                 ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) ||
-                 ((ASRUtils::is_array(ASRUtils::expr_type(target)) ||
-                   ASRUtils::is_array(x->m_type)) &&
-                   is_common_symbol_present_in_lhs_and_rhs(al, target, *current_expr))) ) ||
-                 target_Type == targetType::GeneratedTargetPointerForArraySection ||
-                (!ASRUtils::is_allocatable(target) && ASRUtils::is_allocatable(x->m_type)) ) {
-                force_replace_current_expr_for_array(current_expr, std::string("_function_call_") +
-                                           ASRUtils::symbol_name(x->m_name), al, current_body, current_scope,
-                                           exprs_with_target, is_assignment_target_array_section_item);
-                return ;
-            }
+        if( replace_array_call_linked_to_target(x->m_type, std::string("_function_call_") +
+                ASRUtils::symbol_name(x->m_name)) ) {
+            return ;
         }
         if( !ASRUtils::is_array(x->m_type) &&
                is_common_symbol_present_in_lhs_and_rhs(al, lhs_var, *current_expr) ) {
