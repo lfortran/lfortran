@@ -6230,7 +6230,27 @@ public:
             if (ast_stmt->type == AST::decl_stmtType::Entry) {
                 entry_encountered = true;
             }
-            this->visit_decl_stmt(*ast_stmt);
+            // Statements that the visitor adds before this one (temporaries,
+            // an alternate-return call and its branches) must stay in front
+            // of it in the same copy of the body, not before the dispatch.
+            Vec<ASR::stmt_t*> hoisted; hoisted.reserve(al, 1);
+            {
+                CurrentBodyScope body_scope(*this, &hoisted, current_body_scope);
+                this->visit_decl_stmt(*ast_stmt);
+            }
+            if (tmp == nullptr && !this->tmp_vec.empty()) {
+                std::vector<ASR::asr_t*> stmts;
+                for (auto &s: hoisted) stmts.push_back(&s->base);
+                this->tmp_vec.insert(this->tmp_vec.begin(), stmts.begin(), stmts.end());
+            } else {
+                for (auto &s: hoisted) {
+                    if (is_main_function && return_encountered && !entry_encountered) {
+                        after_return_stmt_entry_function.push_back(s);
+                    } else if (!(is_main_function && entry_encountered && return_encountered)) {
+                        stmt_vector.push_back(s);
+                    }
+                }
+            }
             ASR::stmt_t* tmp_stmt = nullptr;
             if (tmp != nullptr) {
                 tmp_stmt = ASRUtils::STMT(tmp);
