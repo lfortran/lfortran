@@ -32,8 +32,8 @@
                                                                 "kind": 4
                                                             },
                                                             "loc": {
-                                                                "first": 190,
-                                                                "last": 198,
+                                                                "first": 202,
+                                                                "last": 210,
                                                                 "first_filename": "tests/json_loc_continuation.f90",
                                                                 "first_line": 6,
                                                                 "first_column": 1,
@@ -58,8 +58,8 @@
                                                         "common_block": []
                                                     },
                                                     "loc": {
-                                                        "first": 198,
-                                                        "last": 198,
+                                                        "first": 210,
+                                                        "last": 210,
                                                         "first_filename": "tests/json_loc_continuation.f90",
                                                         "first_line": 6,
                                                         "first_column": 9,
@@ -81,8 +81,8 @@
                                                             "kind": 4
                                                         },
                                                         "loc": {
-                                                            "first": 190,
-                                                            "last": 198,
+                                                            "first": 202,
+                                                            "last": 210,
                                                             "first_filename": "tests/json_loc_continuation.f90",
                                                             "first_line": 6,
                                                             "first_column": 1,
@@ -106,8 +106,8 @@
                                                 "exec_space": "Host"
                                             },
                                             "loc": {
-                                                "first": 174,
-                                                "last": 227,
+                                                "first": 186,
+                                                "last": 239,
                                                 "first_filename": "tests/json_loc_continuation.f90",
                                                 "first_line": 5,
                                                 "first_column": 1,
@@ -124,8 +124,8 @@
                                                     "v": "x (SymbolTable3)"
                                                 },
                                                 "loc": {
-                                                    "first": 174,
-                                                    "last": 227,
+                                                    "first": 186,
+                                                    "last": 239,
                                                     "first_filename": "tests/json_loc_continuation.f90",
                                                     "first_line": 5,
                                                     "first_column": 1,
@@ -145,8 +145,8 @@
                                                             "v": "x (SymbolTable3)"
                                                         },
                                                         "loc": {
-                                                            "first": 200,
-                                                            "last": 200,
+                                                            "first": 212,
+                                                            "last": 212,
                                                             "first_filename": "tests/json_loc_continuation.f90",
                                                             "first_line": 7,
                                                             "first_column": 1,
@@ -168,8 +168,8 @@
                                                                             "kind": 4
                                                                         },
                                                                         "loc": {
-                                                                            "first": 204,
-                                                                            "last": 206,
+                                                                            "first": 216,
+                                                                            "last": 218,
                                                                             "first_filename": "tests/json_loc_continuation.f90",
                                                                             "first_line": 7,
                                                                             "first_column": 5,
@@ -180,8 +180,8 @@
                                                                     }
                                                                 },
                                                                 "loc": {
-                                                                    "first": 204,
-                                                                    "last": 206,
+                                                                    "first": 216,
+                                                                    "last": 218,
                                                                     "first_filename": "tests/json_loc_continuation.f90",
                                                                     "first_line": 7,
                                                                     "first_column": 5,
@@ -201,8 +201,8 @@
                                                                             "kind": 4
                                                                         },
                                                                         "loc": {
-                                                                            "first": 210,
-                                                                            "last": 212,
+                                                                            "first": 222,
+                                                                            "last": 224,
                                                                             "first_filename": "tests/json_loc_continuation.f90",
                                                                             "first_line": 8,
                                                                             "first_column": 5,
@@ -213,8 +213,8 @@
                                                                     }
                                                                 },
                                                                 "loc": {
-                                                                    "first": 210,
-                                                                    "last": 212,
+                                                                    "first": 222,
+                                                                    "last": 224,
                                                                     "first_filename": "tests/json_loc_continuation.f90",
                                                                     "first_line": 8,
                                                                     "first_column": 5,
@@ -229,8 +229,8 @@
                                                                     "kind": 4
                                                                 },
                                                                 "loc": {
-                                                                    "first": 204,
-                                                                    "last": 206,
+                                                                    "first": 216,
+                                                                    "last": 218,
                                                                     "first_filename": "tests/json_loc_continuation.f90",
                                                                     "first_line": 7,
                                                                     "first_column": 5,
@@ -249,8 +249,8 @@
                                                                             "kind": 4
                                                                         },
                                                                         "loc": {
-                                                                            "first": 204,
-                                                                            "last": 206,
+                                                                            "first": 216,
+                                                                            "last": 218,
                                                                             "first_filename": "tests/json_loc_continuation.f90",
                                                                             "first_line": 7,
                                                                             "first_column": 5,
@@ -261,8 +261,8 @@
                                                                     }
                                                                 },
                                                                 "loc": {
-                                                                    "first": 204,
-                                                                    "last": 206,
+                                                                    "first": 216,
+                                                                    "last": 218,
                                                                     "first_filename": "tests/json_loc_continuation.f90",
                                                                     "first_line": 7,
                                                                     "first_column": 5,
@@ -273,8 +273,8 @@
                                                             }
                                                         },
                                                         "loc": {
-                                                            "first": 204,
-                                                            "last": 212,
+                                                            "first": 216,
+                                                            "last": 224,
                                                             "first_filename": "tests/json_loc_continuation.f90",
                                                             "first_line": 7,
                                                             "first_column": 5,
@@ -289,8 +289,8 @@
                                                     "new_target": false
                                                 },
                                                 "loc": {
-                                                    "first": 200,
-                                                    "last": 212,
+                                                    "first": 212,
+                                                    "last": 224,
                                                     "first_filename": "tests/json_loc_continuation.f90",
                                                     "first_line": 7,
                                                     "first_column": 1,
@@ -307,8 +307,8 @@
                                         "module_file": []
                                     },
                                     "loc": {
-                                        "first": 174,
-                                        "last": 227,
+                                        "first": 186,
+                                        "last": 239,
                                         "first_filename": "tests/json_loc_continuation.f90",
                                         "first_line": 5,
                                         "first_column": 1,
@@ -339,8 +339,8 @@
                                                                 "kind": 4
                                                             },
                                                             "loc": {
-                                                                "first": 257,
-                                                                "last": 265,
+                                                                "first": 269,
+                                                                "last": 277,
                                                                 "first_filename": "tests/json_loc_continuation.f90",
                                                                 "first_line": 14,
                                                                 "first_column": 1,
@@ -365,8 +365,8 @@
                                                         "common_block": []
                                                     },
                                                     "loc": {
-                                                        "first": 265,
-                                                        "last": 265,
+                                                        "first": 277,
+                                                        "last": 277,
                                                         "first_filename": "tests/json_loc_continuation.f90",
                                                         "first_line": 14,
                                                         "first_column": 9,
@@ -388,8 +388,8 @@
                                                             "kind": 4
                                                         },
                                                         "loc": {
-                                                            "first": 257,
-                                                            "last": 265,
+                                                            "first": 269,
+                                                            "last": 277,
                                                             "first_filename": "tests/json_loc_continuation.f90",
                                                             "first_line": 14,
                                                             "first_column": 1,
@@ -413,8 +413,8 @@
                                                 "exec_space": "Host"
                                             },
                                             "loc": {
-                                                "first": 241,
-                                                "last": 280,
+                                                "first": 253,
+                                                "last": 292,
                                                 "first_filename": "tests/json_loc_continuation.f90",
                                                 "first_line": 13,
                                                 "first_column": 1,
@@ -431,8 +431,8 @@
                                                     "v": "y (SymbolTable4)"
                                                 },
                                                 "loc": {
-                                                    "first": 241,
-                                                    "last": 280,
+                                                    "first": 253,
+                                                    "last": 292,
                                                     "first_filename": "tests/json_loc_continuation.f90",
                                                     "first_line": 13,
                                                     "first_column": 1,
@@ -450,8 +450,8 @@
                                         "module_file": []
                                     },
                                     "loc": {
-                                        "first": 241,
-                                        "last": 280,
+                                        "first": 253,
+                                        "last": 292,
                                         "first_filename": "tests/json_loc_continuation.f90",
                                         "first_line": 13,
                                         "first_column": 1,
@@ -472,7 +472,7 @@
                     },
                     "loc": {
                         "first": 0,
-                        "last": 291,
+                        "last": 303,
                         "first_filename": "tests/json_loc_continuation.f90",
                         "first_line": 1,
                         "first_column": 1,
@@ -488,7 +488,7 @@
     },
     "loc": {
         "first": 0,
-        "last": 291,
+        "last": 303,
         "first_filename": "tests/json_loc_continuation.f90",
         "first_line": 1,
         "first_column": 1,

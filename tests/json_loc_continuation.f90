@@ -1,6 +1,6 @@
 module json_loc_continuation
-! The continuation in `a` and the comment lines are removed by the
-! prescanner; the JSON `loc` of `b` must still point to lines 13-15.
+! The prescanner joins the continuation in `a`, so later offsets no longer
+! match the file; the JSON `loc` of `b` must still point to lines 13-15.
 contains
 subroutine a(x)
 real :: x
