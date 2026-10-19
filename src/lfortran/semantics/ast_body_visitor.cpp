@@ -6389,6 +6389,14 @@ public:
         current_scope = master_function->m_symtab;
         current_body_scope = current_scope;
         record_procedure_references(current_scope, x.m_items, x.n_items);
+        // The master function implements the procedure and its ENTRY points,
+        // so its statements access their names like the procedure's own.
+        std::set<std::string> &own_names =
+            procedure_references[current_scope->counter];
+        own_names.insert(original_function_name);
+        for (auto &it: entry_functions[original_function_name]) {
+            own_names.insert(it.first);
+        }
         // Record where each copy of the body starts and ends, so that statement
         // labels repeated across copies can be told apart afterwards.
         std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> copies;

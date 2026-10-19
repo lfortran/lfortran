@@ -7045,7 +7045,8 @@ public:
     // association from a host that does; otherwise the name is a local
     // entity of that unit, such as an implicitly typed variable. The
     // external procedure itself, and the procedures it contains, do access
-    // their own name.
+    // their own name; so does the master function of a procedure with ENTRY
+    // statements, see `populate_master_function()`.
     bool is_inaccessible_external_procedure(ASR::symbol_t* sym,
             const std::string &name) {
         if (!ASR::is_a<ASR::Function_t>(*sym)) {

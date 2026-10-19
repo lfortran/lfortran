@@ -2,7 +2,8 @@
 ! make accessible: an undeclared name used as a variable in another scoping
 ! unit is a local, implicitly typed variable, even if an external procedure of
 ! that name is defined in the same file, before or after that scoping unit.
-! A scoping unit that references the name as a procedure accesses it.
+! A scoping unit that references the name as a procedure accesses it, and a
+! procedure with ENTRY statements accesses its own name and its ENTRY names.
 subroutine dist()
     common /counter/ ncalls
     ncalls = ncalls + 1
@@ -58,6 +59,26 @@ subroutine point_to_dist()
     call dist()
 end subroutine
 
+subroutine call_f(f)
+    interface
+        subroutine f()
+        end subroutine
+    end interface
+    call f()
+end subroutine
+
+recursive subroutine count_entry()
+    common /counter/ ncalls
+    ncalls = ncalls + 1
+    return
+entry count_entry2()
+    ncalls = ncalls + 10
+    if (ncalls < 20) then
+        call call_f(count_entry2)
+        call call_f(count_entry)
+    end if
+end subroutine
+
 program implicit_typing_16
     real :: y
     integer :: n
@@ -77,5 +98,7 @@ program implicit_typing_16
     call kount()
     call point_to_dist()
     if (ncalls /= 2) error stop
+    call count_entry2()
+    if (ncalls /= 23) error stop
     print *, y, n, ncalls
 end program

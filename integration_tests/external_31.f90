@@ -1,7 +1,8 @@
 ! A scoping unit that references an external procedure defined in the same
 ! file as a procedure (here with a CALL statement) accesses it everywhere in
 ! that unit: in its specification part, as an actual argument, and in the
-! procedures it contains, by host association.
+! procedures it contains, by host association. A procedure with ENTRY
+! statements accesses its own name and its ENTRY names.
 subroutine dist()
     integer :: ncalls
     common /counter/ ncalls
@@ -85,6 +86,83 @@ entry other_entry(n)
     other_entry = 2*n
 end function
 
+subroutine with_block()
+    interface
+        subroutine bar(f)
+            interface
+                subroutine f()
+                end subroutine
+            end interface
+        end subroutine
+    end interface
+    call dist()
+    block
+        call bar(dist)
+    end block
+end subroutine
+
+subroutine bar_n(f, n)
+    integer :: n
+    interface
+        subroutine f(n)
+            integer :: n
+        end subroutine
+    end interface
+    call f(n)
+end subroutine
+
+recursive subroutine self_entry(n)
+    integer :: n
+    integer :: ncalls
+    common /counter/ ncalls
+    interface
+        subroutine bar_n(f, n)
+            integer :: n
+            interface
+                subroutine f(n)
+                    integer :: n
+                end subroutine
+            end interface
+        end subroutine
+    end interface
+    ncalls = ncalls + 1
+    if (n > 0) call bar_n(self_entry, n - 1)
+    return
+entry self_entry2(n)
+    ncalls = ncalls + 10
+    if (n > 0) call bar_n(self_entry2, n - 1)
+end subroutine
+
+integer function apply(f, n)
+    integer :: n
+    interface
+        integer function f(n)
+            integer :: n
+        end function
+    end interface
+    apply = f(n)
+end function
+
+recursive integer function self_entry_fn(n) result(r)
+    integer :: n, r2
+    interface
+        integer function apply(f, n)
+            integer :: n
+            interface
+                integer function f(n)
+                    integer :: n
+                end function
+            end interface
+        end function
+    end interface
+    r = 1
+    if (n > 0) r = 10 + apply(self_entry_fn, n - 1)
+    return
+entry self_entry_fn2(n) result(r2)
+    r2 = 2
+    if (n > 0) r2 = 20 + apply(self_entry_fn2, n - 1)
+end function
+
 program external_31
     integer :: ncalls
     common /counter/ ncalls
@@ -93,6 +171,12 @@ program external_31
             integer :: n
         end function
         integer function other_entry(n)
+            integer :: n
+        end function
+        integer function self_entry_fn(n)
+            integer :: n
+        end function
+        integer function self_entry_fn2(n)
             integer :: n
         end function
     end interface
@@ -107,5 +191,13 @@ program external_31
     if (ncalls /= 9) error stop
     if (other_entry(3) /= 6) error stop
     if (ncalls /= 10) error stop
+    call with_block()
+    if (ncalls /= 12) error stop
+    call self_entry(1)
+    if (ncalls /= 14) error stop
+    call self_entry2(1)
+    if (ncalls /= 34) error stop
+    if (self_entry_fn(1) /= 11) error stop
+    if (self_entry_fn2(1) /= 22) error stop
     print *, ncalls
 end program
