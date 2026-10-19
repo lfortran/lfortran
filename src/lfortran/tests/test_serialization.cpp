@@ -7264,6 +7264,148 @@ end module
     }
 }
 
+TEST_CASE("Trait conformance queries round-trip and verify their guards") {
+    using namespace LCompilers;
+    std::string source = R"(
+module conformance_query_serialization_m
+    abstract interface :: IValue
+        integer function value(self)
+            type(itself), intent(in), pass :: self
+        end function
+    end interface
+    abstract interface :: ILabel
+        integer function label(self)
+            type(itself), intent(in), pass :: self
+        end function
+    end interface
+    type, implements(IValue) :: Cell
+        integer :: n = 0
+    contains
+        procedure :: value => cell_value
+    end type
+contains
+    integer function cell_value(self)
+        class(Cell), intent(in) :: self
+        cell_value = self%n
+    end function
+    integer function query(object)
+        class(*), intent(in) :: object
+        select type (x => object)
+        class is (IValue)
+            query = x%value()
+        class is (ILabel)
+            query = x%label()
+        class default
+            query = 0
+        end select
+    end function
+end module
+)";
+    ast_ser(source);
+    asr_ser(source);
+    asr_mod(source, "conformance_query_serialization_m");
+    Allocator al(1024 * 1024);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::CompilerOptions options;
+    auto parsed = LCompilers::LFortran::parse(al, source, diagnostics, options);
+    REQUIRE(parsed.ok);
+    LCompilers::LocationManager lm;
+    auto result = LCompilers::LFortran::ast_to_asr(
+        al, *parsed.result, diagnostics, nullptr, false, options, lm);
+    INFO(diagnostics.render2());
+    REQUIRE(result.ok);
+    CHECK(LCompilers::asr_verify(*result.result, true, diagnostics));
+    auto *module = ASR::down_cast<ASR::Module_t>(
+        result.result->m_symtab->get_symbol("conformance_query_serialization_m"));
+    auto *cell = ASR::down_cast<ASR::Struct_t>(module->m_symtab->get_symbol("cell"));
+    auto table = ASRUtils::trait_conformance_table(*cell);
+    REQUIRE(table.size() == 1);
+    auto *function = ASR::down_cast<ASR::Function_t>(module->m_symtab->get_symbol("query"));
+    auto *selection = ASR::down_cast<ASR::SelectType_t>(function->m_body[0]);
+    REQUIRE(selection->n_body == 0);
+    REQUIRE(selection->n_default == 1);
+    auto *first = ASR::down_cast<ASR::If_t>(selection->m_default[0]);
+    REQUIRE(first->n_orelse == 1);
+    auto *second = ASR::down_cast<ASR::If_t>(first->m_orelse[0]);
+    auto *query = ASR::down_cast<ASR::TraitConforms_t>(first->m_test);
+    auto *guard = ASR::down_cast<ASR::Block_t>(
+        ASR::down_cast<ASR::BlockCall_t>(first->m_body[0])->m_m);
+    auto *binding = ASR::down_cast<ASR::Associate_t>(guard->m_body[0]);
+    auto *discovery = ASR::down_cast<ASR::TraitDiscover_t>(binding->m_value);
+    auto *alias = ASRUtils::EXPR2VAR(binding->m_target);
+    CHECK(alias->m_storage == ASR::storage_typeType::Association);
+    CHECK(alias->m_intent == ASR::intentType::In);
+    CHECK(query->n_witnesses == 0);
+    auto rejects = [&](const std::string &code) {
+        LCompilers::diag::Diagnostics invalid;
+        CHECK_FALSE(LCompilers::asr_verify(*result.result, true, invalid));
+        INFO(invalid.render2());
+        bool found = false;
+        for (auto &diagnostic : invalid.diagnostics) found |= diagnostic.code == code;
+        CHECK(found);
+    };
+    SUBCASE("binary and both text forms retain the queries") {
+        LCompilers::SymbolTable imports(nullptr);
+        auto binary = LCompilers::serialize(*result.result);
+        auto *loaded = ASR::down_cast2<ASR::TranslationUnit_t>(
+            LCompilers::deserialize_asr(al, binary, true, imports, 0));
+        fix_external_symbols(*loaded, imports);
+        CHECK(LCompilers::asr_verify(*loaded, true, diagnostics));
+        auto *loaded_module = ASR::down_cast<ASR::Module_t>(
+            loaded->m_symtab->get_symbol("conformance_query_serialization_m"));
+        CHECK(ASRUtils::trait_conformance_table(*ASR::down_cast<ASR::Struct_t>(
+            loaded_module->m_symtab->get_symbol("cell"))).size() == 1);
+        for (auto form : {LCompilers::ASRTextForm::Named, LCompilers::ASRTextForm::Positional}) {
+            LCompilers::ASRTextOptions text_options;
+            text_options.form = form;
+            auto text = LCompilers::asr_to_text(*result.result, text_options);
+            CHECK(text.find("TraitConforms") != std::string::npos);
+            CHECK(text.find("TraitDiscover") != std::string::npos);
+            LCompilers::diag::Diagnostics text_diagnostics;
+            LCompilers::LocationManager text_lm;
+            auto reloaded = LCompilers::asr_from_text(
+                al, text, "conformance_query.asr", text_lm, text_diagnostics);
+            INFO(text_diagnostics.render2());
+            REQUIRE(reloaded.ok);
+            CHECK(LCompilers::asr_verify(*reloaded.result, true, text_diagnostics));
+            CHECK(text == LCompilers::asr_to_text(*reloaded.result, text_options));
+        }
+        LCompilers::diag::Diagnostics unsupported;
+        CHECK(ASRUtils::reject_runtime_traits(*result.result, unsupported, "C"));
+        CHECK(unsupported.has_error());
+    }
+    SUBCASE("a discovered view requires its own conformance query") {
+        std::swap(first->m_test, second->m_test);
+        rejects("asr.verify.association.guarded_conformance");
+    }
+    SUBCASE("a conformance query is logical") {
+        query->m_type = alias->m_type;
+        rejects("asr.verify.trait_conformance.type");
+    }
+    SUBCASE("a discovered view has the queried contract") {
+        discovery->m_type = ASRUtils::expr_type(ASR::down_cast<ASR::Associate_t>(
+            ASR::down_cast<ASR::Block_t>(ASR::down_cast<ASR::BlockCall_t>(
+                second->m_body[0])->m_m)->m_body[0])->m_value);
+        rejects("asr.verify.trait_conformance.type");
+    }
+    SUBCASE("a conformance query inspects an ordinary polymorphic selector") {
+        query->m_selector = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al,
+            query->base.base.loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(
+                al, query->base.base.loc, 4))));
+        discovery->m_selector = query->m_selector;
+        rejects("asr.verify.trait_conformance.selector");
+    }
+    SUBCASE("table conformances are not searched as retroactive witnesses") {
+        ASR::symbol_t **witnesses = al.allocate<ASR::symbol_t*>(1);
+        witnesses[0] = &table[0]->base;
+        query->m_witnesses = witnesses;
+        query->n_witnesses = 1;
+        discovery->m_witnesses = witnesses;
+        discovery->n_witnesses = 1;
+        rejects("asr.verify.trait_conformance.witness");
+    }
+}
+
 static const std::string type_adoption_source = R"(
 module type_adoption
 implicit none

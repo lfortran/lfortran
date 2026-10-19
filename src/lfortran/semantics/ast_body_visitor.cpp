@@ -5151,31 +5151,157 @@ public:
 
     ASR::symbol_t *concrete_type_guard(ASR::symbol_t *symbol, const Location &loc) {
         auto *resolved = ASRUtils::symbol_get_past_external(symbol);
-        if (resolved && ASR::is_a<ASR::Trait_t>(*resolved)) {
-            trait_call_error("a trait name in select type is not a concrete type guard; "
-                "inspection does not query conformance", loc);
-        }
         if (!resolved || !ASR::is_a<ASR::Struct_t>(*resolved)) {
             trait_call_error("select type requires a declared concrete derived type guard", loc);
         }
         return symbol;
     }
 
-    void visit_data_select_type(const AST::SelectType_t &x, ASR::expr_t *selector) {
-        if (!ASR::is_a<ASR::Var_t>(*selector) &&
-                !ASRUtils::trait_owner_variable(selector) &&
-                !(ASR::is_a<ASR::FunctionCall_t>(*selector) &&
-                  ASRUtils::is_trait_owner(ASRUtils::expr_type(selector)))) {
-            trait_call_error("runtime trait inspection requires a scalar variable "
-                "or an owning function result", selector->base.loc);
+    // The trait a select type guard names, or nullptr. CLASS IS (T) queries
+    // the conformance of the dynamic type to T (TD-11); a trait is not a type.
+    ASR::Trait_t *select_type_trait_guard(ASR::symbol_t *symbol, bool is_class,
+            const Location &loc) {
+        auto *resolved = ASRUtils::symbol_get_past_external(symbol);
+        if (!resolved || !ASR::is_a<ASR::Trait_t>(*resolved)) return nullptr;
+        auto *trait = ASR::down_cast<ASR::Trait_t>(resolved);
+        if (!is_class) {
+            trait_call_error("trait '" + std::string(trait->m_name) + "' is not a type; "
+                "class is (" + std::string(trait->m_name) + ") queries conformance to it", loc);
         }
-        if (!x.m_assoc_name && (!AST::is_a<AST::Name_t>(*x.m_selector) ||
-                !ASR::is_a<ASR::Var_t>(*selector))) {
-            trait_call_error("an associate name is required for this select type selector",
-                selector->base.loc);
+        return trait;
+    }
+
+    struct SelectTypeTraitGuard {
+        ASR::Trait_t *trait = nullptr;
+        // The runtime contract and retroactive witnesses, visible where the
+        // select type statement is.
+        ASR::symbol_t *contract = nullptr;
+        std::vector<ASR::symbol_t*> witnesses;
+        ASR::ttype_t *view_type = nullptr;
+        ASR::stmt_t *call = nullptr;
+        Location loc;
+        // The selector is a trait object whose contract implies the trait:
+        // the guard always matches with the conformance the object carries.
+        bool implied = false;
+    };
+
+    // The evidence of the trait guard `class is (name)`, made visible in
+    // current_scope: the runtime contract of the trait, and the retroactive
+    // conformances to it visible here, the first one of each type. The
+    // conformances declared in the scope of their type are found at run time
+    // through its runtime conformance table instead.
+    SelectTypeTraitGuard select_type_trait_evidence(ASR::Trait_t &trait, char *name,
+            const Location &loc) {
+        SelectTypeTraitGuard guard;
+        guard.trait = &trait;
+        guard.loc = loc;
+        auto *contract = runtime_trait_combination(&name, 1, loc);
+        guard.view_type = runtime_trait_type(contract, loc, false, false, false);
+        guard.contract = ASR::down_cast<ASR::TraitObjectType_t>(guard.view_type)->m_contract;
+        std::set<ASR::symbol_t*> types;
+        for (auto *implementation : visible_trait_implementations()) {
+            if (ASRUtils::trait_conformance_in_table(*implementation)) continue;
+            auto *type = ASRUtils::symbol_get_past_external(implementation->m_type_declaration);
+            if (!type || !ASR::is_a<ASR::Struct_t>(*type) ||
+                    ASR::down_cast<ASR::Struct_t>(type)->m_is_abstract || types.count(type)) {
+                continue;
+            }
+            bool provides = false;
+            for (auto *parent : checked_trait_hierarchy(*ASR::down_cast<ASR::Trait_t>(
+                    ASRUtils::symbol_get_past_external(implementation->m_trait)), loc).traits) {
+                provides |= parent == &trait;
+            }
+            auto *witness = provides
+                ? ASRUtils::trait_runtime_witness(*implementation, contract) : nullptr;
+            if (!witness) continue;
+            types.insert(type);
+            auto *reference = make_operator_proc_visible(&witness->base, "trait", current_scope);
+            ASRUtils::insert_module_dependency(reference, al, current_module_dependencies);
+            guard.witnesses.push_back(reference);
         }
+        return guard;
+    }
+
+    // The CLASS DEFAULT part of a select type with trait guards, whose
+    // concrete guards have not matched: the block of the first guard in
+    // source order whose trait the dynamic type of `selector` conforms to,
+    // unless it also conforms to the trait of another guard that extends
+    // it, or else `default_body`.
+    Vec<ASR::stmt_t*> select_type_trait_dispatch(
+            const std::vector<SelectTypeTraitGuard> &guards, ASR::expr_t *selector,
+            const Vec<ASR::stmt_t*> &default_body) {
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        auto *query_type = ASRUtils::TYPE(ASR::make_Logical_t(al, selector->base.loc, 4));
+        auto conforms = [&](const SelectTypeTraitGuard &guard) {
+            if (guard.implied) {
+                return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, guard.loc, true,
+                    query_type));
+            }
+            Vec<ASR::symbol_t*> witnesses;
+            witnesses.reserve(al, guard.witnesses.size());
+            for (auto *witness : guard.witnesses) witnesses.push_back(al, witness);
+            return ASRUtils::EXPR(ASR::make_TraitConforms_t(al, guard.loc,
+                duplicator.duplicate_expr(selector), guard.contract,
+                witnesses.p, witnesses.size(), query_type));
+        };
+        Vec<ASR::stmt_t*> tail = default_body;
+        for (size_t i = guards.size(); i-- > 0;) {
+            ASR::expr_t *test = conforms(guards[i]);
+            for (size_t j = 0; j < guards.size(); j++) {
+                if (j == i) continue;
+                bool extends = false;
+                for (auto *parent : checked_trait_hierarchy(*guards[j].trait,
+                        guards[j].loc).traits) {
+                    extends |= parent == guards[i].trait;
+                }
+                if (!extends) continue;
+                test = ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, guards[i].loc, test,
+                    ASR::logicalbinopType::And, ASRUtils::EXPR(ASR::make_LogicalNot_t(al,
+                        guards[j].loc, conforms(guards[j]), query_type, nullptr)),
+                    query_type, nullptr));
+            }
+            Vec<ASR::stmt_t*> body;
+            body.reserve(al, 1);
+            body.push_back(al, guards[i].call);
+            Vec<ASR::stmt_t*> next;
+            next.reserve(al, 1);
+            next.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, guards[i].loc, nullptr,
+                test, body.p, body.size(), tail.p, tail.size())));
+            tail = next;
+        }
+        return tail;
+    }
+
+    // The associate name of the trait guard `guard` in `block`, a borrowed
+    // view of the payload of `selector` with the conformance it finds.
+    void bind_select_type_trait_guard(const SelectTypeTraitGuard &guard,
+            const std::string &name, ASR::expr_t *selector, bool definable,
+            bool target_attr, Vec<ASR::stmt_t*> &block_body) {
+        const Location &loc = guard.loc;
+        auto *symbol = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+            al, loc, current_scope, s2c(al, name), nullptr, 0,
+            definable ? ASR::intentType::Local : ASR::intentType::In,
+            nullptr, nullptr, ASR::storage_typeType::Association, guard.view_type,
+            nullptr, ASR::abiType::Source, ASR::accessType::Private,
+            ASR::presenceType::Required, false));
+        ASR::down_cast<ASR::Variable_t>(symbol)->m_target_attr = target_attr;
+        current_scope->add_symbol(name, symbol);
+        Vec<ASR::symbol_t*> witnesses;
+        witnesses.reserve(al, guard.witnesses.size());
+        for (auto *witness : guard.witnesses) witnesses.push_back(al, witness);
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        auto *value = ASRUtils::EXPR(ASR::make_TraitDiscover_t(al, loc,
+            duplicator.duplicate_expr(selector), guard.contract, witnesses.p,
+            witnesses.size(), guard.view_type));
+        block_body.push_back(al, ASRUtils::STMT(ASR::make_Associate_t(al, loc,
+            ASRUtils::EXPR(ASR::make_Var_t(al, loc, symbol)), value)));
+    }
+
+    // Whether the associate name of a select type with `selector` is
+    // definable: an association with a definable selector, unless a PURE
+    // procedure could not define the selector itself.
+    bool select_type_definable(ASR::expr_t *selector) {
         bool definable = ASRUtils::association_is_definable(selector);
-        bool target_attr = ASRUtils::association_has_target(selector);
         auto *base = extract_assignment_base_symbol(selector);
         auto *source_var = base ? ASRUtils::get_variable_from_symbol(base) : nullptr;
         for (auto *scope = current_scope; scope; scope = scope->parent) {
@@ -5194,6 +5320,24 @@ public:
             }
             break;
         }
+        return definable;
+    }
+
+    void visit_data_select_type(const AST::SelectType_t &x, ASR::expr_t *selector) {
+        if (!ASR::is_a<ASR::Var_t>(*selector) &&
+                !ASRUtils::trait_owner_variable(selector) &&
+                !(ASR::is_a<ASR::FunctionCall_t>(*selector) &&
+                  ASRUtils::is_trait_owner(ASRUtils::expr_type(selector)))) {
+            trait_call_error("runtime trait inspection requires a scalar variable "
+                "or an owning function result", selector->base.loc);
+        }
+        if (!x.m_assoc_name && (!AST::is_a<AST::Name_t>(*x.m_selector) ||
+                !ASR::is_a<ASR::Var_t>(*selector))) {
+            trait_call_error("an associate name is required for this select type selector",
+                selector->base.loc);
+        }
+        bool definable = select_type_definable(selector);
+        bool target_attr = ASRUtils::association_has_target(selector);
         std::string associate_name = x.m_assoc_name ? to_lower(x.m_assoc_name)
             : ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(selector)->m_v);
         auto *parent_scope = current_scope;
@@ -5266,6 +5410,8 @@ public:
             Vec<ASR::stmt_t*> default_body; default_body.reserve(al, 1);
             bool has_default = false;
             std::set<std::pair<ASR::symbol_t*, bool>> seen_guards;
+            std::set<ASR::Trait_t*> seen_traits;
+            std::vector<SelectTypeTraitGuard> trait_guards;
             for (size_t i = 0; i < x.n_body; i++) {
                 auto *guard = x.m_body[i];
                 const Location &loc = guard->base.loc;
@@ -5310,6 +5456,44 @@ public:
                     }
                     default:
                         trait_call_error("unsupported runtime trait type guard", loc);
+                }
+                ASR::Trait_t *guard_trait = is_default ? nullptr
+                    : select_type_trait_guard(type_symbol, is_class, loc);
+                if (guard_trait) {
+                    if (!seen_traits.insert(guard_trait).second) {
+                        trait_call_error("duplicate nominal select type guard", loc);
+                    }
+                    auto *block_scope = current_scope;
+                    current_scope = inspection_scope;
+                    auto trait_guard = select_type_trait_evidence(*guard_trait,
+                        AST::down_cast<AST::ClassStmt_t>(guard)->m_id, loc);
+                    current_scope = block_scope;
+                    Vec<ASR::stmt_t*> block_body; block_body.reserve(al, n_statements + 1);
+                    auto *contract = ASRUtils::trait_runtime_contract(trait_guard.view_type);
+                    if (ASR::is_a<ASR::TraitObjectType_t>(*view_type) &&
+                            ASRUtils::trait_contract_implies(
+                                *ASRUtils::trait_runtime_contract(view_type), *contract)) {
+                        // The guard projects the selected view, keeping the
+                        // implementations selected when the object was formed.
+                        trait_guard.implied = true;
+                        ASR::expr_t *projection = ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+                            ASR::down_cast<ASR::Var_t>(view)->m_v));
+                        project_runtime_trait_view(projection, trait_guard.view_type);
+                        auto *alias = bind_alias(associate_name,
+                            ASRUtils::expr_type(projection), nullptr, nullptr, loc, block_body);
+                        block_body.push_back(al, ASRUtils::STMT(
+                            ASR::make_Associate_t(al, loc, alias, projection)));
+                    } else {
+                        bind_select_type_trait_guard(trait_guard, associate_name, ordinary,
+                            definable, target_attr, block_body);
+                    }
+                    transform_stmts(block_body, n_statements, statements);
+                    auto *block = ASR::down_cast<ASR::Block_t>(block_symbol);
+                    block->m_body = block_body.p; block->n_body = block_body.size();
+                    trait_guard.call = ASRUtils::STMT(ASR::make_BlockCall_t(al,
+                        loc, -1, block_symbol));
+                    trait_guards.push_back(trait_guard);
+                    continue;
                 }
                 ASR::ttype_t *type = view_type;
                 if (!is_default) {
@@ -5358,6 +5542,9 @@ public:
                 }
             }
             ASRUtils::order_select_type_guards(guards.p, guards.size());
+            if (!trait_guards.empty()) {
+                default_body = select_type_trait_dispatch(trait_guards, ordinary, default_body);
+            }
             body.push_back(al, ASRUtils::STMT(ASR::make_SelectType_t(al,
                 x.base.base.loc, ordinary, s2c(al, associate_name), guards.p,
                 guards.size(), default_body.p, default_body.size())));
@@ -5421,6 +5608,12 @@ public:
                 return;
             }
         }
+        // The associate name of a trait guard is a borrowed view that keeps
+        // the definability of the selector (an expression has none).
+        bool trait_view_definable = select_type_definable(m_selector);
+        bool trait_view_target = ASRUtils::association_has_target(m_selector);
+        std::set<ASR::Trait_t*> seen_traits;
+        std::vector<SelectTypeTraitGuard> trait_guards;
         // When the selector is a function call, create a temporary variable
         // to hold the result. The codegen expects Var or StructInstanceMember
         // as the selector, not a FunctionCall.
@@ -5562,6 +5755,11 @@ public:
             return result;
         };
 
+        // A trait guard's block is valid only with its conformance query in
+        // the CLASS DEFAULT part, so an error drops the blocks made so far.
+        SymbolTable *select_scope = current_scope;
+        std::vector<std::string> trait_blocks;
+        try {
         for( size_t i = 0; i < x.n_body; i++ ) {
             SymbolTable* parent_scope = current_scope;
             current_scope = al.make_new<SymbolTable>(parent_scope);
@@ -5592,8 +5790,48 @@ public:
             switch( x.m_body[i]->type ) {
                 case AST::type_stmtType::ClassStmt: {
                     AST::ClassStmt_t* class_stmt = AST::down_cast<AST::ClassStmt_t>(x.m_body[i]);
-                    ASR::symbol_t* sym = concrete_type_guard(current_scope->resolve_symbol(
-                        to_lower(std::string(class_stmt->m_id))), class_stmt->base.base.loc);
+                    ASR::symbol_t* guard_symbol = current_scope->resolve_symbol(
+                        to_lower(std::string(class_stmt->m_id)));
+                    const Location &guard_loc = class_stmt->base.base.loc;
+                    if (auto *guard_trait = select_type_trait_guard(guard_symbol, true,
+                            guard_loc)) {
+                        if (ASRUtils::is_array(ASRUtils::expr_type(m_selector))) {
+                            trait_call_error("a trait guard requires a scalar selector",
+                                guard_loc);
+                        }
+                        if (!seen_traits.insert(guard_trait).second) {
+                            trait_call_error("duplicate nominal select type guard", guard_loc);
+                        }
+                        if (assoc_sym) current_scope->erase_symbol(std::string(assoc_name));
+                        SymbolTable *block_scope = current_scope;
+                        current_scope = parent_scope;
+                        auto trait_guard = select_type_trait_evidence(*guard_trait,
+                            class_stmt->m_id, guard_loc);
+                        current_scope = block_scope;
+                        std::string block_name = parent_scope->get_unique_name("~select_type_block_");
+                        ASR::symbol_t* block_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Block_t(
+                            al, guard_loc, current_scope, s2c(al, block_name), nullptr, 0));
+                        Vec<ASR::stmt_t*> trait_body;
+                        trait_body.reserve(al, class_stmt->n_body + 1);
+                        std::string view_name = x.m_assoc_name ? to_lower(x.m_assoc_name)
+                            : ASR::is_a<ASR::Var_t>(*m_selector) ? std::string(ASRUtils::symbol_name(
+                                ASR::down_cast<ASR::Var_t>(m_selector)->m_v)) : std::string();
+                        if (!view_name.empty()) {
+                            bind_select_type_trait_guard(trait_guard, view_name, m_selector,
+                                trait_view_definable, trait_view_target, trait_body);
+                        }
+                        transform_stmts(trait_body, class_stmt->n_body, class_stmt->m_body);
+                        ASR::Block_t* trait_block = ASR::down_cast<ASR::Block_t>(block_sym);
+                        trait_block->m_body = trait_body.p;
+                        trait_block->n_body = trait_body.size();
+                        parent_scope->add_symbol(block_name, block_sym);
+                        trait_blocks.push_back(block_name);
+                        trait_guard.call = ASRUtils::STMT(ASR::make_BlockCall_t(al,
+                            guard_loc, -1, block_sym));
+                        trait_guards.push_back(trait_guard);
+                        break;
+                    }
+                    ASR::symbol_t* sym = concrete_type_guard(guard_symbol, guard_loc);
                     if( assoc_variable ) {
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* selector_m_type_declaration = nullptr;
@@ -5677,8 +5915,11 @@ public:
                 }
                 case AST::type_stmtType::TypeStmtName: {
                     AST::TypeStmtName_t* type_stmt_name = AST::down_cast<AST::TypeStmtName_t>(x.m_body[i]);
-                    ASR::symbol_t* sym = concrete_type_guard(current_scope->resolve_symbol(
-                        to_lower(std::string(type_stmt_name->m_name))), type_stmt_name->base.base.loc);
+                    ASR::symbol_t* guard_symbol = current_scope->resolve_symbol(
+                        to_lower(std::string(type_stmt_name->m_name)));
+                    select_type_trait_guard(guard_symbol, false, type_stmt_name->base.base.loc);
+                    ASR::symbol_t* sym = concrete_type_guard(guard_symbol,
+                        type_stmt_name->base.base.loc);
                     if( assoc_variable ) {
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* selector_m_type_declaration = nullptr;
@@ -6074,6 +6315,11 @@ public:
             }
             current_scope = parent_scope;
         }
+        } catch (const SemanticAbort &) {
+            current_scope = select_scope;
+            for (auto &name : trait_blocks) select_scope->erase_symbol(name);
+            throw;
+        }
 
         if (selector_variable) {
             selector_variable->m_type = selector_variable_type;
@@ -6083,6 +6329,10 @@ public:
         }
 
         ASRUtils::order_select_type_guards(select_type_body.p, select_type_body.size());
+        if (!trait_guards.empty()) {
+            select_type_default = select_type_trait_dispatch(trait_guards, m_selector,
+                select_type_default);
+        }
         tmp = ASR::make_SelectType_t(al, x.base.base.loc, m_selector, x.m_assoc_name,
                                      select_type_body.p, select_type_body.size(),
                                      select_type_default.p, select_type_default.size());

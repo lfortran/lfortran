@@ -1968,17 +1968,23 @@ semantic error: a select type association with a nondefinable selector cannot ap
 3266 |             concrete%n = 1
      |             ^^^^^^^^^^ 
 
-semantic error: a trait name in select type is not a concrete type guard; inspection does not query conformance
+semantic error: trait 'ichild' is not a type; class is (ichild) queries conformance to it
     --> tests/errors/continue_compilation_traits_01.f90:3273:9
      |
 3273 |         type is (IChild)
      |         ^^^^^^^^^^^^^^^^^ 
 
-semantic error: a trait name in select type is not a concrete type guard; inspection does not query conformance
+warning: traits are an experimental LFortran extension; use ordinary derived types and procedures for portable Fortran
     --> tests/errors/continue_compilation_traits_01.f90:3279:9
      |
-3279 |         class is (IChild)
-     |         ^^^^^^^^^^^^^^^^^^ 
+3279 |         class is (IChild); class is (IChild)
+     |         ^^^^^^^^^^^^^^^^^^ LFortran extension
+
+semantic error: duplicate nominal select type guard
+    --> tests/errors/continue_compilation_traits_01.f90:3279:28
+     |
+3279 |         class is (IChild); class is (IChild)
+     |                            ^^^^^^^^^^^^^^^^^^ 
 
 semantic error: select type requires a declared concrete derived type guard
     --> tests/errors/continue_compilation_traits_01.f90:3285:9

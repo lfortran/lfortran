@@ -2399,6 +2399,10 @@ static inline bool is_modifiable_actual_argument_expr(ASR::expr_t* a_value) {
             return is_modifiable_actual_argument_expr(
                 ASR::down_cast<ASR::TraitProject_t>(a_value)->m_view);
         }
+        case ASR::exprType::TraitDiscover: {
+            return is_modifiable_actual_argument_expr(
+                ASR::down_cast<ASR::TraitDiscover_t>(a_value)->m_selector);
+        }
         case ASR::exprType::ComplexRe: {
             ASR::ComplexRe_t* re = ASR::down_cast<ASR::ComplexRe_t>(a_value);
             return is_modifiable_actual_argument_expr(re->m_arg);
@@ -11410,6 +11414,15 @@ std::string trait_deferred_dictionary_key(const ASR::TraitDeferredDictionary_t &
 std::string trait_dictionary_binder_key(const std::string &requirement);
 ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implementation,
     ASR::TraitRuntimeContract_t *contract = nullptr);
+// The runtime conformance table of the concrete derived type `type`: the
+// witnesses, in its declaring scope, of the conformances of exactly `type`
+// declared there (with the type, inherited from its parent's declaration, or
+// in an implementation block of that scope), in symbol-table order. A
+// retroactive conformance of another scope is not part of it.
+std::vector<ASR::TraitWitness_t*> trait_conformance_table(const ASR::Struct_t &type);
+// Whether `implementation` is recorded in the runtime conformance table of
+// its implementing type.
+bool trait_conformance_in_table(const ASR::TraitImplementation_t &implementation);
 std::vector<ASR::symbol_t*> normalized_trait_requirements(
     const std::vector<ASR::symbol_t*> &traits);
 std::vector<ASR::symbol_t*> trait_contract_requirements(

@@ -16206,3 +16206,26 @@ __lfortran_dynamic_cast(const void* static_ptr,
 
     return (void*) dst_ptr;
 }
+
+/*
+ * Finds the conformance of the dynamic type of the polymorphic object
+ * `static_ptr` to the trait whose identity is `trait`, in the trait
+ * conformance table that the type-info object of the dynamic type records.
+ * Returns the trait witness table of the conformance, or NULL if there is no
+ * such conformance (also for a NULL object, vtable or table).
+ */
+LFORTRAN_API void*
+_lfortran_trait_conformance(const void* static_ptr, const void* trait)
+{
+    if (static_ptr == NULL) return NULL;
+    void** vtable = *(void* const*) static_ptr;
+    if (vtable == NULL) return NULL;
+    const __si_class_type_info* dynamic_type = (const __si_class_type_info*) vtable[-1];
+    if (dynamic_type == NULL) return NULL;
+    const void* const* entry = dynamic_type->__trait_conformances;
+    if (entry == NULL) return NULL;
+    for (; entry[0] != NULL; entry += 2) {
+        if (entry[0] == trait) return (void*) entry[1];
+    }
+    return NULL;
+}

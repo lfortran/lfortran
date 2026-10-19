@@ -1312,6 +1312,20 @@ public:
         src = "trait_inspect(" + src + ")";
     }
 
+    void visit_TraitConforms(const ASR::TraitConforms_t &x) {
+        visit_expr(*x.m_selector);
+        src = "trait_conforms(" + src + ", " + ASRUtils::trait_contract_name(
+            *ASR::down_cast<ASR::TraitRuntimeContract_t>(
+                ASRUtils::symbol_get_past_external(x.m_contract))) + ")";
+    }
+
+    void visit_TraitDiscover(const ASR::TraitDiscover_t &x) {
+        visit_expr(*x.m_selector);
+        src = "trait_discover(" + src + ", " + ASRUtils::trait_contract_name(
+            *ASR::down_cast<ASR::TraitRuntimeContract_t>(
+                ASRUtils::symbol_get_past_external(x.m_contract))) + ")";
+    }
+
     void visit_TraitProject(const ASR::TraitProject_t &x) {
         visit_expr(*x.m_view);
         auto *contract = ASRUtils::trait_runtime_contract(x.m_type);

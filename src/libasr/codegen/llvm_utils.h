@@ -3474,6 +3474,14 @@ class ASRToLLVMVisitor;
 
             llvm::GlobalVariable* get_trait_lifecycle(
                 ASR::symbol_t* type_declaration, llvm::Module* module);
+            // The runtime conformance table of a concrete type, defined by the
+            // module that owns its witnesses (ASRUtils::trait_conformance_table):
+            // pairs of a trait identity and a witness table, then null.
+            llvm::GlobalVariable* get_trait_conformance_table(
+                ASR::Struct_t* type, llvm::Module* module);
+            // The link-unique identity of a named trait.
+            llvm::GlobalVariable* get_trait_identity(
+                ASR::symbol_t* trait, llvm::Module* module);
             
             llvm::Function* define_intrinsic_type_copy_function(ASR::ttype_t* type, llvm::Module* module); 
 

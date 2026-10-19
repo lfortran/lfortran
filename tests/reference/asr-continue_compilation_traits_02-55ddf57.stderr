@@ -125,6 +125,30 @@ semantic error: component 'item' of type 'privateholder' is private and cannot b
 347 |         class(IValue), allocatable :: item
     |                                       ~~~~ 'item' is declared here
 
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+   --> tests/errors/continue_compilation_traits_02.f90:379:13
+    |
+379 |             call counter%bump()
+    |             ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a select type association with a nondefinable selector cannot appear in a variable definition context
+   --> tests/errors/continue_compilation_traits_02.f90:386:13
+    |
+386 |             call counter%bump()
+    |             ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a trait guard requires a scalar selector
+   --> tests/errors/continue_compilation_traits_02.f90:392:9
+    |
+392 |         class is (ICounter)
+    |         ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: a type-set trait cannot be used as a runtime class
+   --> tests/errors/continue_compilation_traits_02.f90:398:9
+    |
+398 |         class is (INumeric)
+    |         ^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Call to impure procedure 'overwrite' is not allowed inside a PURE procedure
    --> tests/errors/continue_compilation_traits_02.f90:168:9
     |

@@ -10173,10 +10173,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         std::vector<llvm::Type*> type_info_member_types = {
             llvm_utils->i8_ptr,
             llvm_utils->i8_ptr,
+            llvm_utils->i8_ptr,
             llvm_utils->i8_ptr
         };
         std::vector<llvm::Constant*> type_info_member_values;
-        type_info_member_values.reserve(3); // A type-info object has 3 members.
+        type_info_member_values.reserve(4); // A type-info object has 4 members.
 
         // Intrinsic type ttype number + kind (used as a unique tag)
         type_info_member_values.push_back(llvm::ConstantExpr::getIntToPtr(
@@ -10189,7 +10190,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             llvm::ConstantExpr::getIntToPtr(
                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), type_size),
                 llvm_utils->i8_ptr));
-        // No parent for intrinsic types
+        // No parent and no trait conformances for intrinsic types
+        type_info_member_values.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
         type_info_member_values.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
 
         llvm::StructType* type_info_struct_type = llvm::StructType::get(context, type_info_member_types, false);
@@ -10357,10 +10359,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
         std::vector<llvm::Type*> type_info_member_types = {
             llvm_utils->i8_ptr,
             llvm_utils->i8_ptr,
+            llvm_utils->i8_ptr,
             llvm_utils->i8_ptr
         };
         std::vector<llvm::Constant*> type_info_member_values;
-        type_info_member_values.reserve(3); // A type-info object has 3 members.
+        type_info_member_values.reserve(4); // A type-info object has 4 members.
 
         if (struct_t->m_parent) {
             create_type_info_for_struct(struct_t->m_parent, module);
@@ -10385,6 +10388,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             // No parent — null pointer
             type_info_member_values.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
         }
+        // The trait conformances declared with the type (TD-11), or null.
+        auto *conformances = get_trait_conformance_table(struct_t, module);
+        type_info_member_values.push_back(conformances
+            ? llvm::ConstantExpr::getBitCast(conformances, llvm_utils->i8_ptr)
+            : llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
 
         llvm::StructType* type_info_struct_type = llvm::StructType::get(context, type_info_member_types, false);
         
@@ -10563,6 +10571,28 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
             destroy_trait_value(old, finalize_destination);
             builder->CreateStore(llvm::ConstantPointerNull::get(type->getPointerTo()), destination);
         });
+    }
+
+    llvm::GlobalVariable* LLVMStruct::get_trait_conformance_table(
+            ASR::Struct_t* type, llvm::Module* module) {
+        size_t n = ASRUtils::trait_conformance_table(*type).size();
+        if (n == 0) return nullptr;
+        std::string name = "_Trait_Conformances_" +
+            ASRUtils::nominal_symbol_name(&type->base);
+        if (auto *existing = module->getNamedGlobal(name)) return existing;
+        return new llvm::GlobalVariable(*module,
+            llvm::ArrayType::get(llvm_utils->i8_ptr, 2 * n + 1), true,
+            llvm::GlobalValue::ExternalLinkage, nullptr, name);
+    }
+
+    llvm::GlobalVariable* LLVMStruct::get_trait_identity(
+            ASR::symbol_t* trait, llvm::Module* module) {
+        std::string name = "_Trait_Id_" + ASRUtils::nominal_symbol_name(trait);
+        if (auto *existing = module->getNamedGlobal(name)) return existing;
+        // Not unnamed_addr: the merged address is the identity of the trait.
+        auto *type = llvm::Type::getInt8Ty(context);
+        return new llvm::GlobalVariable(*module, type, true,
+            llvm::GlobalValue::LinkOnceODRLinkage, llvm::ConstantInt::get(type, 0), name);
     }
 
     llvm::GlobalVariable* LLVMStruct::get_trait_lifecycle(

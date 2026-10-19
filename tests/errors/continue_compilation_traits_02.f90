@@ -358,3 +358,44 @@ contains
         x = PrivateHolder(item=s)
     end subroutine
 end module
+
+! CLASS IS (trait) queries conformance (TD-11); its associate name keeps the
+! definability of the selector.
+module traits_conformance_query_error_m
+    implicit none
+    abstract interface :: ICounter
+        subroutine bump(self)
+            type(itself), intent(inout), pass :: self
+        end subroutine
+    end interface
+    abstract interface :: INumeric
+        integer | real
+    end interface
+contains
+    subroutine readonly_trait_guard(object)
+        class(*), intent(in) :: object
+        select type (counter => object)
+        class is (ICounter)
+            call counter%bump()
+        end select
+    end subroutine
+    subroutine readonly_trait_guard_view(view)
+        class(ICounter), intent(in) :: view
+        select type (counter => view)
+        class is (ICounter)
+            call counter%bump()
+        end select
+    end subroutine
+    subroutine array_trait_guard(objects)
+        class(*), intent(inout) :: objects(:)
+        select type (counter => objects)
+        class is (ICounter)
+        end select
+    end subroutine
+    subroutine constraint_only_trait_guard(object)
+        class(*), intent(in) :: object
+        select type (x => object)
+        class is (INumeric)
+        end select
+    end subroutine
+end module

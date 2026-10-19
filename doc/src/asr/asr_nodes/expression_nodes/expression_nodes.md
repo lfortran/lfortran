@@ -27,6 +27,8 @@ ArrayTranspose
 BitCast
 Cast
 TraitInspect
+TraitConforms
+TraitDiscover
 TraitDeferredPack
 TraitDeferredCall
 TraitDictionaryValue

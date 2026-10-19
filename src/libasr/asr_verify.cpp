@@ -746,6 +746,80 @@ public:
         return visitor.found;
     }
 
+    static bool same_designator(ASR::expr_t *left, ASR::expr_t *right) {
+        if (!left || !right || left->type != right->type) return false;
+        if (ASR::is_a<Var_t>(*left)) return same_variable(left, right);
+        if (!ASR::is_a<StructInstanceMember_t>(*left)) return false;
+        auto *l = ASR::down_cast<StructInstanceMember_t>(left);
+        auto *r = ASR::down_cast<StructInstanceMember_t>(right);
+        return l->m_m == r->m_m && same_designator(l->m_v, r->m_v);
+    }
+
+    static bool same_conformance_query(const TraitConforms_t &query,
+            const TraitDiscover_t &discovery) {
+        if (!same_designator(query.m_selector, discovery.m_selector) ||
+                ASRUtils::symbol_get_past_external(query.m_contract) !=
+                    ASRUtils::symbol_get_past_external(discovery.m_contract) ||
+                query.n_witnesses != discovery.n_witnesses) return false;
+        for (size_t i = 0; i < query.n_witnesses; i++) {
+            if (ASRUtils::symbol_get_past_external(query.m_witnesses[i]) !=
+                    ASRUtils::symbol_get_past_external(discovery.m_witnesses[i])) return false;
+        }
+        return true;
+    }
+
+    // A trait guard's block, whose associate name `variable` is bound to
+    // `discovery`, is entered only from an IF whose condition requires the
+    // conformance that `discovery` uses.
+    bool guarded_trait_discovery(const Variable_t &variable,
+            const TraitDiscover_t &discovery) {
+        auto *scope = variable.m_parent_symtab;
+        auto *block = scope ? scope->asr_owner : nullptr;
+        auto *parent = scope ? scope->parent : nullptr;
+        auto *owner = parent ? parent->asr_owner : nullptr;
+        if (!block || !owner || !ASR::is_a<symbol_t>(*owner)) return false;
+        auto *symbol = ASR::down_cast<symbol_t>(owner);
+        stmt_t **body = nullptr;
+        size_t n = 0;
+        if (ASR::is_a<Block_t>(*symbol)) {
+            body = ASR::down_cast<Block_t>(symbol)->m_body;
+            n = ASR::down_cast<Block_t>(symbol)->n_body;
+        } else if (ASR::is_a<AssociateBlock_t>(*symbol)) {
+            body = ASR::down_cast<AssociateBlock_t>(symbol)->m_body;
+            n = ASR::down_cast<AssociateBlock_t>(symbol)->n_body;
+        } else if (ASR::is_a<Function_t>(*symbol)) {
+            body = ASR::down_cast<Function_t>(symbol)->m_body;
+            n = ASR::down_cast<Function_t>(symbol)->n_body;
+        } else if (ASR::is_a<Program_t>(*symbol)) {
+            body = ASR::down_cast<Program_t>(symbol)->m_body;
+            n = ASR::down_cast<Program_t>(symbol)->n_body;
+        }
+        class FindGuard : public BaseWalkVisitor<FindGuard> {
+        public:
+            asr_t *block;
+            const TraitDiscover_t &discovery;
+            bool found = false;
+            FindGuard(asr_t *block, const TraitDiscover_t &discovery)
+                : block(block), discovery(discovery) {}
+            void visit_If(const If_t &x) {
+                if (x.n_body == 1 && ASR::is_a<BlockCall_t>(*x.m_body[0]) &&
+                        (asr_t*)ASR::down_cast<BlockCall_t>(x.m_body[0])->m_m == block) {
+                    expr_t *test = x.m_test;
+                    while (ASR::is_a<LogicalBinOp_t>(*test) &&
+                            ASR::down_cast<LogicalBinOp_t>(test)->m_op ==
+                                logicalbinopType::And) {
+                        test = ASR::down_cast<LogicalBinOp_t>(test)->m_left;
+                    }
+                    found |= ASR::is_a<TraitConforms_t>(*test) && same_conformance_query(
+                        *ASR::down_cast<TraitConforms_t>(test), discovery);
+                }
+                BaseWalkVisitor<FindGuard>::visit_If(x);
+            }
+        } find(block, discovery);
+        for (size_t i = 0; i < n && !find.found; i++) find.visit_stmt(*body[i]);
+        return find.found;
+    }
+
     bool guarded_data_association(const Variable_t &variable, const Cast_t &cast) {
         auto *scope = variable.m_parent_symtab;
         auto *parent = scope ? scope->parent : nullptr;
@@ -814,9 +888,16 @@ public:
             } else {
                 require_id(ASR::is_a<TraitProject_t>(*x.m_value) ||
                         ASR::is_a<TraitInspect_t>(*x.m_value) ||
+                        ASR::is_a<TraitDiscover_t>(*x.m_value) ||
                         ASRUtils::association_variable(x.m_value),
                     "asr.verify.association.source",
                     "A data association must preserve a captured or explicitly inspected view");
+                if (ASR::is_a<TraitDiscover_t>(*x.m_value)) {
+                    require_id(guarded_trait_discovery(*variable,
+                            *ASR::down_cast<TraitDiscover_t>(x.m_value)),
+                        "asr.verify.association.guarded_conformance",
+                        "A discovered trait view requires its matching conformance query");
+                }
             }
             return;
         }
@@ -3581,6 +3662,67 @@ public:
                 ASRUtils::is_unlimited_polymorphic_type(declaration),
             "asr.verify.trait_inspect.declaration",
             "Concrete inspection cannot claim an unchecked concrete type");
+    }
+
+    // The operands of a runtime conformance query (TD-11).
+    template <typename T>
+    void verify_conformance_query(const T &x) {
+        auto *selector = typed_expr_type(x.m_selector);
+        require_id(selector && !ASRUtils::is_array(selector) &&
+                ASRUtils::is_class_type(ASRUtils::extract_type(selector)),
+            "asr.verify.trait_conformance.selector",
+            "A conformance query inspects a scalar ordinary polymorphic selector");
+        visit_expr(*x.m_selector);
+        visit_ttype(*x.m_type);
+        require_id(x.m_contract && symtab_in_scope(current_symtab, x.m_contract),
+            "asr.verify.trait_conformance.contract",
+            "A conformance query names an in-scope runtime contract");
+        for (size_t i = 0; i < x.n_witnesses; i++) {
+            require_id(x.m_witnesses[i] && symtab_in_scope(current_symtab, x.m_witnesses[i]),
+                "asr.verify.trait_conformance.witness",
+                "A conformance query names in-scope retroactive witnesses");
+        }
+        if (!check_external) return;
+        auto *contract = ASRUtils::symbol_get_past_external(x.m_contract);
+        require_id(contract && ASR::is_a<TraitRuntimeContract_t>(*contract) &&
+                !ASR::down_cast<TraitRuntimeContract_t>(contract)->m_anonymous,
+            "asr.verify.trait_conformance.contract",
+            "A conformance query asks for one named trait");
+        std::set<ASR::symbol_t*> types;
+        for (size_t i = 0; i < x.n_witnesses; i++) {
+            auto *symbol = ASRUtils::symbol_get_past_external(x.m_witnesses[i]);
+            auto *witness = symbol && ASR::is_a<TraitWitness_t>(*symbol)
+                ? ASR::down_cast<TraitWitness_t>(symbol) : nullptr;
+            auto *implementation = witness
+                ? ASRUtils::symbol_get_past_external(witness->m_implementation) : nullptr;
+            require_id(witness && ASRUtils::symbol_get_past_external(witness->m_contract) ==
+                    contract && implementation &&
+                    ASR::is_a<TraitImplementation_t>(*implementation) &&
+                    !ASRUtils::trait_conformance_in_table(
+                        *ASR::down_cast<TraitImplementation_t>(implementation)) &&
+                    types.insert(ASRUtils::symbol_get_past_external(
+                        witness->m_lifecycle.m_type_declaration)).second,
+                "asr.verify.trait_conformance.witness",
+                "A conformance query searches one retroactive conformance of each type "
+                "to its trait; the others are in the runtime conformance tables");
+        }
+    }
+
+    void visit_TraitConforms(const TraitConforms_t &x) {
+        require_id(x.m_type && ASR::is_a<Logical_t>(*x.m_type),
+            "asr.verify.trait_conformance.type",
+            "A conformance query is logical");
+        verify_conformance_query(x);
+    }
+
+    void visit_TraitDiscover(const TraitDiscover_t &x) {
+        require_id(x.m_type && ASR::is_a<TraitObjectType_t>(*x.m_type) &&
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<TraitObjectType_t>(x.m_type)->m_contract) ==
+                ASRUtils::symbol_get_past_external(x.m_contract),
+            "asr.verify.trait_conformance.type",
+            "A discovered conformance is a borrowed view of the queried trait");
+        verify_conformance_query(x);
     }
 
     void visit_TraitProject(const TraitProject_t &x) {

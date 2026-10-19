@@ -11470,6 +11470,7 @@ public:
             current_scope = saved_scope;
         }
         if (!prototype_only) {
+            define_trait_conformance_tables(x.m_symtab);
             for (const auto &item : x.m_symtab->get_scope()) {
                 if (!ASR::is_a<ASR::TraitWitness_t>(*item.second)) continue;
                 auto *witness = ASR::down_cast<ASR::TraitWitness_t>(item.second);
@@ -29383,6 +29384,125 @@ public:
         builder->CreateStore(llvm_utils->trait_field(view, 1),
             llvm_utils->create_gep2(type, result, 1));
         tmp = result;
+    }
+
+    // The witness table of the conformance of the dynamic type of `selector`
+    // to the trait of `contract` (TD-11), or null: the dynamic type's runtime
+    // conformance table first, then the visible retroactive `witnesses` of
+    // exactly their lifecycle types. `object` is the selector's class object.
+    llvm::Value *trait_conformance(ASR::expr_t *selector, ASR::symbol_t *contract,
+            ASR::symbol_t **witnesses, size_t n_witnesses, llvm::Value *&object) {
+        int64_t saved_loads = ptr_loads;
+        ptr_loads = 0;
+        visit_expr(*selector);
+        ptr_loads = saved_loads;
+        object = tmp;
+        ASR::ttype_t *selector_type = ASRUtils::expr_type(selector);
+        if (LLVM::is_llvm_pointer(*selector_type)) {
+            object = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(
+                selector, selector_type, module.get()), object);
+        }
+        object = builder->CreateBitCast(object, llvm_utils->i8_ptr);
+        auto *trait = ASR::down_cast<ASR::TraitRuntimeContract_t>(
+            ASRUtils::symbol_get_past_external(contract))->m_trait;
+        auto *identity = builder->CreateBitCast(
+            struct_api->get_trait_identity(trait, module.get()), llvm_utils->i8_ptr);
+        std::string name = "_lfortran_trait_conformance";
+        llvm::Function *lookup = module->getFunction(name);
+        if (!lookup) {
+            lookup = llvm::Function::Create(llvm::FunctionType::get(llvm_utils->i8_ptr,
+                    {llvm_utils->i8_ptr, llvm_utils->i8_ptr}, false),
+                llvm::Function::ExternalLinkage, name, module.get());
+        }
+        llvm::Value *table = builder->CreateCall(lookup, {object, identity});
+        if (n_witnesses == 0) return table;
+        auto *found = llvm_utils->CreateAlloca(*builder, llvm_utils->i8_ptr);
+        builder->CreateStore(table, found);
+        for (size_t i = 0; i < n_witnesses; i++) {
+            auto *witness = ASR::down_cast<ASR::TraitWitness_t>(
+                ASRUtils::symbol_get_past_external(witnesses[i]));
+            auto *concrete = ASRUtils::symbol_get_past_external(
+                witness->m_lifecycle.m_type_declaration);
+            struct_api->create_type_info_for_struct(concrete, module.get());
+            auto *pending = builder->CreateAnd(
+                builder->CreateIsNull(llvm_utils->CreateLoad2(llvm_utils->i8_ptr, found)),
+                builder->CreateIsNotNull(object));
+            llvm_utils->create_if_else(pending, [&]() {
+                auto *exact = lfortran_dynamic_cast(object,
+                    struct_api->newclass2typeinfo.at(concrete), true);
+                llvm_utils->create_if_else(builder->CreateIsNotNull(exact), [&]() {
+                    builder->CreateStore(builder->CreateBitCast(
+                        emit_trait_witness(*witness, false), llvm_utils->i8_ptr), found);
+                }, [](){});
+            }, [](){});
+        }
+        return llvm_utils->CreateLoad2(llvm_utils->i8_ptr, found);
+    }
+
+    void visit_TraitConforms(const ASR::TraitConforms_t &x) {
+        llvm::Value *object = nullptr;
+        tmp = builder->CreateIsNotNull(trait_conformance(x.m_selector, x.m_contract,
+            x.m_witnesses, x.n_witnesses, object));
+    }
+
+    void visit_TraitDiscover(const ASR::TraitDiscover_t &x) {
+        llvm::Value *object = nullptr;
+        llvm::Value *table = trait_conformance(x.m_selector, x.m_contract,
+            x.m_witnesses, x.n_witnesses, object);
+        llvm_utils->trait_error_if(builder->CreateIsNull(table),
+            "the dynamic type does not conform to the trait of the select type guard");
+        auto *type = llvm_utils->getTraitType(x.m_type);
+        auto *view = llvm_utils->CreateAlloca(type, nullptr, "trait_discovery");
+        auto *ordinary = llvm::StructType::get(context,
+            {llvm_utils->i8_ptr, llvm_utils->i8_ptr}, false);
+        object = builder->CreateBitCast(object, ordinary->getPointerTo());
+        for (unsigned i = 0; i < 2; i++) {
+            builder->CreateStore(llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                    llvm_utils->create_gep2(ordinary, object, i)),
+                llvm_utils->create_gep2(type, view, i));
+        }
+        table = builder->CreateBitCast(table, llvm_utils->i8_ptr->getPointerTo());
+        builder->CreateStore(builder->CreateBitCast(
+                llvm_utils->CreateLoad2(llvm_utils->i8_ptr, table),
+                llvm_utils->i8_ptr->getPointerTo()),
+            llvm_utils->create_gep2(type, view, 2));
+        size_t slots = ASRUtils::trait_runtime_contract(x.m_type)->n_slots;
+        for (size_t i = 0; i < slots; i++) {
+            auto *method = llvm_utils->CreateLoad2(llvm_utils->i8_ptr,
+                llvm_utils->create_ptr_gep2(llvm_utils->i8_ptr, table, i + 1));
+            builder->CreateStore(method, llvm_utils->trait_method_address(view, i));
+        }
+        tmp = view;
+    }
+
+    // Defines the runtime conformance tables of the concrete types of
+    // `scope` whose witnesses this module defines.
+    void define_trait_conformance_tables(SymbolTable *scope) {
+        for (const auto &item : scope->get_scope()) {
+            if (!ASR::is_a<ASR::Struct_t>(*item.second)) continue;
+            auto *type = ASR::down_cast<ASR::Struct_t>(item.second);
+            auto witnesses = ASRUtils::trait_conformance_table(*type);
+            if (witnesses.empty()) continue;
+            bool owned = true;
+            for (auto *witness : witnesses) {
+                owned &= witness->m_abi == ASR::abiType::Source;
+            }
+            if (!owned) continue;
+            auto *table = struct_api->get_trait_conformance_table(type, module.get());
+            if (table->hasInitializer()) continue;
+            std::vector<llvm::Constant*> entries;
+            for (auto *witness : witnesses) {
+                auto *trait = ASR::down_cast<ASR::TraitRuntimeContract_t>(
+                    ASRUtils::symbol_get_past_external(witness->m_contract))->m_trait;
+                entries.push_back(llvm::ConstantExpr::getBitCast(
+                    struct_api->get_trait_identity(trait, module.get()), llvm_utils->i8_ptr));
+                entries.push_back(llvm::ConstantExpr::getBitCast(
+                    emit_trait_witness(*witness, false), llvm_utils->i8_ptr));
+            }
+            entries.push_back(llvm::ConstantPointerNull::get(llvm_utils->i8_ptr));
+            table->setInitializer(llvm::ConstantArray::get(
+                llvm::cast<llvm::ArrayType>(table->getValueType()), entries));
+        }
     }
 
     void visit_TraitAssociate(const ASR::TraitAssociate_t &x) {

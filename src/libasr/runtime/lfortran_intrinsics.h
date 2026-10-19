@@ -521,6 +521,9 @@ typedef struct type_info {
 typedef struct __si_class_type_info {
     type_info base;                               // Inherits from type_info
     const struct __class_type_info* __base_type;  // Pointer to base class' type info
+    // The runtime trait conformance table of the type, or NULL: pairs of a
+    // trait identity and a trait witness table, terminated by a NULL identity.
+    const void* const* __trait_conformances;
 } __si_class_type_info;
 
 static inline bool
@@ -534,6 +537,9 @@ LFORTRAN_API void*
 __lfortran_dynamic_cast(const void* static_ptr,
                         const struct __si_class_type_info* dst_type,
                         bool match_exact_type);
+
+LFORTRAN_API void*
+_lfortran_trait_conformance(const void* static_ptr, const void* trait);
 
 
 #ifdef __cplusplus

@@ -3273,10 +3273,10 @@ contains
         type is (IChild)
         end select
     end subroutine
-    subroutine not_class_conformance(view)
+    subroutine duplicate_trait_guard(view)
         class(IValue), pointer :: view
         select type (concrete => view)
-        class is (IChild)
+        class is (IChild); class is (IChild)
         end select
     end subroutine
     subroutine no_intrinsic_guard(view)

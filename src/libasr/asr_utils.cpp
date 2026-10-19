@@ -623,6 +623,8 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::TraitPack:
         case ASR::exprType::TraitBorrow:
         case ASR::exprType::TraitProject:
+        case ASR::exprType::TraitConforms:
+        case ASR::exprType::TraitDiscover:
         case ASR::exprType::TraitDeferredPack:
         case ASR::exprType::TraitDeferredCall:
         case ASR::exprType::TraitDictionaryValue:
@@ -978,6 +980,10 @@ bool is_valid_pointer_assignment_target(ASR::expr_t* expr)
     if (ASR::is_a<ASR::TraitProject_t>(*expr)) {
         return is_valid_pointer_assignment_target(
             ASR::down_cast<ASR::TraitProject_t>(expr)->m_view);
+    }
+    if (ASR::is_a<ASR::TraitDiscover_t>(*expr)) {
+        return is_valid_pointer_assignment_target(
+            ASR::down_cast<ASR::TraitDiscover_t>(expr)->m_selector);
     }
     if (ASR::is_a<ASR::Var_t>(*expr)) {
         ASR::Variable_t* var = get_variable_from_symbol(
@@ -6968,6 +6974,33 @@ ASR::TraitWitness_t *trait_runtime_witness(ASR::TraitImplementation_t &implement
     return nullptr;
 }
 
+bool trait_conformance_in_table(const ASR::TraitImplementation_t &implementation)
+{
+    auto *declaration = symbol_get_past_external(implementation.m_type_declaration);
+    return declaration && ASR::is_a<ASR::Struct_t>(*declaration) &&
+        !ASR::down_cast<ASR::Struct_t>(declaration)->m_is_abstract &&
+        symbol_parent_symtab(declaration) == implementation.m_parent_symtab;
+}
+
+std::vector<ASR::TraitWitness_t*> trait_conformance_table(const ASR::Struct_t &type)
+{
+    std::vector<ASR::TraitWitness_t*> result;
+    SymbolTable *scope = type.m_symtab->parent;
+    if (type.m_is_abstract || !scope) return result;
+    for (const auto &entry : scope->get_scope()) {
+        if (!ASR::is_a<ASR::TraitWitness_t>(*entry.second)) continue;
+        auto *witness = ASR::down_cast<ASR::TraitWitness_t>(entry.second);
+        auto *implementation = symbol_get_past_external(witness->m_implementation);
+        if (!implementation || !ASR::is_a<ASR::TraitImplementation_t>(*implementation)) continue;
+        auto *conformance = ASR::down_cast<ASR::TraitImplementation_t>(implementation);
+        if (conformance->m_parent_symtab != scope ||
+                symbol_get_past_external(conformance->m_type_declaration) !=
+                    &type.base) continue;
+        result.push_back(witness);
+    }
+    return result;
+}
+
 // A character type of a constant length, which crosses a runtime slot with
 // the ordinary character calling convention.
 static bool runtime_trait_character(ASR::ttype_t *type)
@@ -7231,6 +7264,8 @@ static ASR::expr_t *association_source(ASR::expr_t *value) {
             return ASR::down_cast<ASR::TraitProject_t>(value)->m_view;
         case ASR::exprType::TraitInspect:
             return ASR::down_cast<ASR::TraitInspect_t>(value)->m_view;
+        case ASR::exprType::TraitDiscover:
+            return ASR::down_cast<ASR::TraitDiscover_t>(value)->m_selector;
         case ASR::exprType::Cast:
             return ASR::down_cast<ASR::Cast_t>(value)->m_arg;
         default: return nullptr;
@@ -7421,6 +7456,10 @@ bool reject_runtime_traits(const ASR::TranslationUnit_t &unit,
             found = true;
         }
         void visit_TraitOwnerList(const ASR::TraitOwnerList_t &x) {
+            if (!found) loc = x.base.base.loc;
+            found = true;
+        }
+        void visit_TraitConforms(const ASR::TraitConforms_t &x) {
             if (!found) loc = x.base.base.loc;
             found = true;
         }
