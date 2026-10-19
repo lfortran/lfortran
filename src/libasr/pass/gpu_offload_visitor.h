@@ -558,11 +558,15 @@ public:
             const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map,
             Vec<ASR::stmt_t*> &private_shapes);
 
-    // The variables of LOCAL locality the body names.
+    // Appends to `local` the variables of LOCAL locality that the body
+    // names and a thread can hold a copy of its own of. A scalar it
+    // cannot is left alone. An array it cannot makes it return false,
+    // with `rejected` set to the decline that names the array and why;
+    // the caller reports it, and the loop is not offloaded.
     bool locality_spec_variables(const ASR::OMPRegion_t &region,
             ParallelLoopNest &work,
             const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map,
-            std::vector<ASR::symbol_t*> &local, std::string &rejected);
+            std::vector<ASR::symbol_t*> &local, GpuDecline &rejected);
 
     // The arrays privatize_iteration_arrays may make local.
     std::vector<ASR::symbol_t*> iteration_array_candidates(

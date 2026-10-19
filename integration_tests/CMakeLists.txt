@@ -6464,6 +6464,8 @@ RUN(NAME gpu_decline_14 LABELS gfortran llvm)
 RUN(NAME gpu_decline_15 LABELS gfortran llvm)
 RUN(NAME gpu_decline_16 LABELS gfortran llvm)
 RUN(NAME gpu_decline_17 LABELS gfortran llvm)
+RUN(NAME gpu_decline_18 LABELS gfortran llvm)
+RUN(NAME gpu_decline_19 LABELS gfortran llvm)
 
 # One program per entry of the GPU unsupported list. Each runs on the CPU with
 # --gpu-allow-cpu-fallback where its loop is on the list, and the error
@@ -6491,6 +6493,7 @@ RUN(NAME gpu_kernel_source_11 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_kernel_source_12 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_kernel_source_13 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_kernel_source_14 LABELS gfortran llvm metal cuda cuda_cpu)
+RUN(NAME gpu_kernel_source_16 LABELS gfortran llvm metal cuda cuda_cpu)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)

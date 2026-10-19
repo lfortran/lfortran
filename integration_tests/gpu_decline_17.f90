@@ -1,4 +1,4 @@
-! gpu decline reason: LocalityNotPrivate
+! gpu decline reason: LocalityElementType
 ! An array of LOCAL locality is a new array in each iteration. Each thread
 ! needs a copy of its own, and an array of derived type is not one a thread
 ! can hold as a local yet: one buffer shared by every thread would be a

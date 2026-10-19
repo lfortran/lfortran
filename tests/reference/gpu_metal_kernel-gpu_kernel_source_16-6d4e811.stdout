@@ -1,0 +1,90 @@
+#include <metal_stdlib>
+using namespace metal;
+
+kernel void __lfortran_gpu_kernel_0(
+    device float* g [[buffer(0)]],
+    device float* t [[buffer(1)]],
+    device float* x [[buffer(2)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __flat_idx;
+    int __gpu_bc_i;
+    int __gpu_loop_end;
+    int __gpu_loop_group;
+    int j;
+    if ((((0 * 0) + __thread_id) >= 1)) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    j = (__flat_idx + 1);
+    __gpu_loop_end = 2;
+    __gpu_bc_i = 1;
+    if ((__gpu_loop_end >= 1)) {
+        for (__gpu_loop_group = 1; __gpu_loop_group <= (__gpu_loop_end - 15); __gpu_loop_group += 16) {
+            __gpu_bc_i = __gpu_loop_group;
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+            __gpu_bc_i = (__gpu_loop_group + 1);
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+            __gpu_bc_i = (__gpu_loop_group + 2);
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+            __gpu_bc_i = (__gpu_loop_group + 3);
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+            __gpu_bc_i = (__gpu_loop_group + 4);
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+            __gpu_bc_i = (__gpu_loop_group + 5);
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+            __gpu_bc_i = (__gpu_loop_group + 6);
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+            __gpu_bc_i = (__gpu_loop_group + 7);
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+            __gpu_bc_i = (__gpu_loop_group + 8);
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+            __gpu_bc_i = (__gpu_loop_group + 9);
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+            __gpu_bc_i = (__gpu_loop_group + 10);
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+            __gpu_bc_i = (__gpu_loop_group + 11);
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+            __gpu_bc_i = (__gpu_loop_group + 12);
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+            __gpu_bc_i = (__gpu_loop_group + 13);
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+            __gpu_bc_i = (__gpu_loop_group + 14);
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+            __gpu_bc_i = (__gpu_loop_group + 15);
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+        }
+        for (__gpu_bc_i = __gpu_loop_group; __gpu_bc_i <= __gpu_loop_end; __gpu_bc_i++) {
+            t[((int)(__gpu_bc_i) - (1))] = (x[((int)(j) - (1))] +   4.10000000000000000e+01);
+        }
+    }
+    g[((int)(j) - (1))] = t[((int)(1) - (1))];
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int __loop_end_0;
+};
+
+kernel void __lfortran_gpu_kernel_1(
+    device float* g [[buffer(0)]],
+    device float* u [[buffer(1)]],
+    device float* x [[buffer(2)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_1& __scalar_args [[buffer(3)]],
+    uint __thread_id [[thread_position_in_grid]])
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int j;
+    int k;
+    const int n = 8;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    j = (__flat_idx + 1);
+    k = 1;
+    u[((int)(k) - (1))] =   1.00000000000000000e+00;
+    u[((int)(((k + 1) - 1)) - (1))] =   1.00000000000000000e+00;
+    g[((int)(j) - (1))] = ((u[((int)(1) - (1))] + u[((int)(2) - (1))]) + x[((int)(j) - (1))]);
+}
+

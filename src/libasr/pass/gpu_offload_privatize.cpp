@@ -70,11 +70,6 @@ public:
         return conflicts(acc, path, routine);
     }
 
-    // The same question asked about another variable of the procedure.
-    GpuArrayAccess of(ASR::symbol_t *other) {
-        return GpuArrayAccess(other, routine, pointers, outside);
-    }
-
     SymbolTable *procedure() const { return routine; }
 
 private:
@@ -187,6 +182,22 @@ private:
         }
     }
 };
+
+// Whether a thread can hold a copy of its own of a variable whose
+// elements are of type `elem`.
+bool gpu_private_element_type(ASR::ttype_t *elem) {
+    return ASR::is_a<ASR::Integer_t>(*elem) || ASR::is_a<ASR::Real_t>(*elem)
+        || ASR::is_a<ASR::Complex_t>(*elem)
+        || ASR::is_a<ASR::Logical_t>(*elem);
+}
+
+// The variables the statements of a loop body name.
+std::set<ASR::symbol_t*> gpu_body_names(const ParallelLoopNest &work) {
+    std::set<ASR::symbol_t*> named;
+    VarSymbolCollector c(named);
+    for (size_t i = 0; i < work.n_body; i++) c.visit_stmt(*work.body[i]);
+    return named;
+}
 
 // What a run of statements does with the value an array held when the
 // run was entered.
@@ -305,9 +316,14 @@ private:
     }
 
     // Follows the integer locals a statement the run went on past
-    // assigns. Any statement other than such an assignment, or the
-    // definition of an element, may change them in ways not followed
-    // here, and forgets them all.
+    // assigns. Only two kinds of statement keep what is known: `k = e`
+    // where `k` is such a local and `e` a value `evaluate` knows, which
+    // calls nothing; and the definition of an element (`element`), which
+    // calls no procedure that is not pure, and so changes no local but
+    // its target. Every other statement -- an assignment to anything
+    // else (an associate name of a local among them), a call, a loop,
+    // an input statement -- may change one in ways not followed here,
+    // and forgets them all.
     void count(ASR::stmt_t *s) {
         if (ASR::is_a<ASR::Assignment_t>(*s)) {
             ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(s);
@@ -316,18 +332,37 @@ private:
                 ASR::symbol_t *t = ASR::down_cast<ASR::Var_t>(
                     a->m_target)->m_v;
                 int64_t v = 0;
-                bool known = trackable(t) && evaluate(a->m_value, v);
-                counters.erase(t);
-                if (known) {
+                if (trackable(t) && evaluate(a->m_value, v)) {
                     counters[t] = v;
-                } else if (access.of(t).expr(a->m_value)) {
-                    counters.clear();
+                    return;
                 }
+            } else if (element(s, nullptr)) {
                 return;
             }
-            if (element(s, nullptr)) return;
         }
         counters.clear();
+    }
+
+    // Whether `e` may call a procedure that is not pure, which may change
+    // a local passed to it or reached through a pointer. A pure function
+    // changes neither its arguments nor anything outside it (F2018
+    // 15.7, C1583, C1594).
+    static bool calls_impure(ASR::expr_t *e) {
+        struct Calls : public ASR::BaseWalkVisitor<Calls> {
+            bool found = false;
+            void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+                ASR::symbol_t *f = ASRUtils::symbol_get_past_external(
+                    x.m_name);
+                if (!ASR::is_a<ASR::Function_t>(*f) ||
+                        !ASRUtils::get_FunctionType(
+                            ASR::down_cast<ASR::Function_t>(f))->m_pure) {
+                    found = true;
+                }
+                ASR::BaseWalkVisitor<Calls>::visit_FunctionCall(x);
+            }
+        } calls;
+        calls.visit_expr(*e);
+        return calls.found;
     }
 
     // Whether an element of the array, its subscripts values known here,
@@ -385,7 +420,7 @@ private:
 
     // `t(i1, ..., ir) = v`, each subscript a value known here within the
     // declared bounds of its dimension, where `v` reads `t` only through
-    // elements defined before and names no integer local followed here.
+    // elements defined before and calls no procedure that is not pure.
     // `offset` is set to the element's position in array element order.
     bool element(ASR::stmt_t *s, int64_t *offset) {
         if (!ASR::is_a<ASR::Assignment_t>(*s)) return false;
@@ -395,9 +430,7 @@ private:
                 !reads_defined(a->m_value)) {
             return false;
         }
-        for (auto &c : counters) {
-            if (access.of(c.first).expr(a->m_value)) return false;
-        }
+        if (calls_impure(a->m_value)) return false;
         int64_t position = 0;
         if (!known_element(*ASR::down_cast<ASR::ArrayItem_t>(a->m_target),
                 position, false)) {
@@ -832,8 +865,9 @@ bool read_after_region(GpuArrayFlowReader &reader,
 // path through the body that accesses it first defines all of it -- by
 // an assignment to the whole array, by a nest of DO loops over its full
 // declared extent, or by assignments to each of its elements in turn, as
-// the lowering of an array constructor fills its temporary -- and no statement that can run after the loop, however
-// a jump gets there, may read it before it is defined again. So no
+// the lowering of an array constructor fills its temporary -- and no
+// statement that can run after the loop, however a jump gets there, may
+// read it before it is defined again. So no
 // iteration reads a value it did not define, whether every iteration,
 // some or none define the array, and nothing after the loop reads what
 // they defined. It is a local, non-saved variable that no pointer and no
@@ -900,13 +934,7 @@ GpuOffloadVisitor::iteration_array_candidates(
         if (s == proc_scope) break;
     }
 
-    std::set<ASR::symbol_t*> named;
-    {
-        VarSymbolCollector c(named);
-        for (size_t i = 0; i < work.n_body; i++) {
-            c.visit_stmt(*work.body[i]);
-        }
-    }
+    std::set<ASR::symbol_t*> named = gpu_body_names(work);
 
     // What the procedures contained in this one name, which they reach by
     // host association.
@@ -955,13 +983,7 @@ GpuOffloadVisitor::iteration_array_candidates(
             continue;
         }
         ASR::Array_t *arr = ASR::down_cast<ASR::Array_t>(v->m_type);
-        ASR::ttype_t *elem = arr->m_type;
-        if (!ASR::is_a<ASR::Integer_t>(*elem) &&
-                !ASR::is_a<ASR::Real_t>(*elem) &&
-                !ASR::is_a<ASR::Complex_t>(*elem) &&
-                !ASR::is_a<ASR::Logical_t>(*elem)) {
-            continue;
-        }
+        if (!gpu_private_element_type(arr->m_type)) continue;
         GpuArrayAccess access(sym, proc_scope, pointers, outside);
         bool named_outside_body = false;
         for (size_t d = 0; d < work.n_heads(); d++) {
@@ -994,25 +1016,16 @@ GpuOffloadVisitor::iteration_array_candidates(
     return candidates;
 }
 
-// A variable of LOCAL locality (the OMPPrivate clause of the canonical
-// region, from `local(t)` or an OpenMP `private(t)`) is a construct
-// entity: each iteration has its own, undefined on entry, and the
-// variable outside the loop is not affected by it (Fortran 2018,
-// 11.1.7.5). It becomes a local of the BLOCK around the body, with no
-// analysis of the body. False, when an array the body names is not one
-// the kernel can hold as a local of a thread: its one buffer would be
-// shared by every thread.
+// A variable of LOCAL locality (`local(t)`, the OMPPrivate clause of the
+// canonical region) is a construct entity: each iteration has its own,
+// undefined on entry, and the variable outside the loop is not affected
+// by it (Fortran 2018, 11.1.7.5). It becomes a local of the BLOCK around
+// the body, with no analysis of the body.
 bool GpuOffloadVisitor::locality_spec_variables(
         const ASR::OMPRegion_t &region, ParallelLoopNest &work,
         const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map,
-        std::vector<ASR::symbol_t*> &local, std::string &rejected) {
-    std::set<ASR::symbol_t*> named;
-    {
-        VarSymbolCollector c(named);
-        for (size_t i = 0; i < work.n_body; i++) {
-            c.visit_stmt(*work.body[i]);
-        }
-    }
+        std::vector<ASR::symbol_t*> &local, GpuDecline &rejected) {
+    std::set<ASR::symbol_t*> named = gpu_body_names(work);
     std::set<ASR::symbol_t*> indices;
     for (size_t d = 0; d < work.n_heads(); d++) {
         if (work.head(d).m_v && ASR::is_a<ASR::Var_t>(*work.head(d).m_v)) {
@@ -1037,33 +1050,44 @@ bool GpuOffloadVisitor::locality_spec_variables(
             if (!ASR::is_a<ASR::Var_t>(*clause->m_vars[k])) continue;
             ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(
                 clause->m_vars[k])->m_v;
-            if (!named.count(sym) || indices.count(sym) ||
+            if (!ASR::is_a<ASR::Variable_t>(*sym) || !named.count(sym) ||
+                    indices.count(sym) ||
                     std::find(local.begin(), local.end(), sym)
                         != local.end()) {
                 continue;
             }
-            bool array = ASR::is_a<ASR::Variable_t>(*sym) &&
-                ASRUtils::is_array(ASRUtils::symbol_type(sym));
-            ASR::ttype_t *elem = ASR::is_a<ASR::Variable_t>(*sym)
-                ? ASRUtils::type_get_past_array(ASRUtils::symbol_type(sym))
-                : nullptr;
-            bool holdable = elem != nullptr && inlined &&
-                !in_associates.count(sym) &&
-                ASR::down_cast<ASR::Variable_t>(sym)->n_codims == 0 &&
-                (ASR::is_a<ASR::Integer_t>(*elem) ||
-                    ASR::is_a<ASR::Real_t>(*elem) ||
-                    ASR::is_a<ASR::Complex_t>(*elem) ||
-                    ASR::is_a<ASR::Logical_t>(*elem));
-            if (!holdable) {
-                // A scalar is still a local of each thread when the body
-                // assigns it (see visit_OMPRegion); an array is a buffer.
-                if (array) {
-                    rejected = ASRUtils::symbol_name(sym);
-                    return false;
-                }
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+            ASR::ttype_t *elem = ASRUtils::type_get_past_array(v->m_type);
+            GpuDeclineReason why = GpuDeclineReason::None;
+            if (!gpu_private_element_type(elem)) {
+                why = GpuDeclineReason::LocalityElementType;
+            } else if (v->n_codims > 0) {
+                why = GpuDeclineReason::LocalityCoarray;
+            } else if (in_associates.count(sym)) {
+                why = GpuDeclineReason::LocalityNamedByAssociate;
+            } else if (!inlined) {
+                why = GpuDeclineReason::LocalityAssociateNotInlined;
+            }
+            if (why == GpuDeclineReason::None) {
+                local.push_back(sym);
                 continue;
             }
-            local.push_back(sym);
+            // A scalar the body assigns is still a local of each thread
+            // (see visit_OMPRegion); an array would be one buffer that
+            // every thread shares.
+            if (ASRUtils::is_array(v->m_type)) {
+                rejected = GpuDecline(why, v->m_name);
+                rejected.type_name = ASRUtils::type_to_str_fortran_symbol(
+                    elem, v->m_type_declaration, true);
+                if (ASR::is_a<ASR::StructType_t>(*elem) &&
+                        !ASR::down_cast<ASR::StructType_t>(elem)
+                            ->m_is_unlimited_polymorphic) {
+                    rejected.type_name = (ASR::down_cast<ASR::StructType_t>(
+                        elem)->m_is_cstruct ? "type(" : "class(")
+                        + rejected.type_name + ")";
+                }
+                return false;
+            }
         }
     }
     return true;
@@ -1076,11 +1100,10 @@ bool GpuOffloadVisitor::privatize_iteration_arrays(
         const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map,
         Vec<ASR::stmt_t*> &private_shapes) {
     std::vector<ASR::symbol_t*> privatized;
-    std::string rejected;
+    GpuDecline rejected;
     if (!locality_spec_variables(region, work, enclosing_assoc_map,
             privatized, rejected)) {
-        report_not_offloaded(region.base.base.loc,
-            GpuDecline(GpuDeclineReason::LocalityNotPrivate, rejected));
+        report_not_offloaded(region.base.base.loc, rejected);
         return false;
     }
     for (ASR::symbol_t *sym : iteration_array_candidates(region, work,
