@@ -27,6 +27,18 @@ if (NOT XEUS_LFORTRAN_WASM_BUILD)
     ADDTEST(test_stacktrace)
 endif()
 
+add_library(cuda_link_helper_plain_fixture STATIC plain.c)
+set_target_properties(cuda_link_helper_plain_fixture PROPERTIES OUTPUT_NAME plain)
+set(cuda_link_helpers_fixture_header_content [=[
+#pragma once
+namespace cuda_link_helpers_fixture {
+inline constexpr const char plain_archive[] = R"PATH($<TARGET_FILE:cuda_link_helper_plain_fixture>)PATH";
+inline constexpr const char plain_member[] = "plain.c@CMAKE_C_OUTPUT_EXTENSION@";
+}
+]=])
+string(CONFIGURE "${cuda_link_helpers_fixture_header_content}" cuda_link_helpers_fixture_header_content @ONLY)
+file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/test_cuda_link_helpers_fixture.hpp" CONTENT "${cuda_link_helpers_fixture_header_content}")
+
 set(SRC
     test_parse.cpp
     test_ast.cpp
@@ -70,6 +82,8 @@ endif()
 add_executable(test_lfortran ${SRC})
 target_link_libraries(test_lfortran lfortran_lib p::doctest)
 target_compile_definitions(test_lfortran PRIVATE LFORTRAN_PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+target_include_directories(test_lfortran PRIVATE "${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>")
+add_dependencies(test_lfortran cuda_link_helper_plain_fixture)
 # The test binary never calls set_exec_path_and_mode(), so it cannot work out
 # where the runtime modfiles are; a test that uses an intrinsic module would
 # fail with "modfile was not found". Under Emscripten they are preloaded into

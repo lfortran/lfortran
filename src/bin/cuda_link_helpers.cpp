@@ -9,6 +9,7 @@
 #include <libasr/string_utils.h>
 
 #ifdef HAVE_LFORTRAN_LLVM
+#include <llvm/Config/llvm-config.h>
 #include <llvm/Object/Archive.h>
 #include <llvm/Object/Binary.h>
 #include <llvm/Object/ObjectFile.h>
@@ -47,7 +48,7 @@ bool append_cuda_sidecar(
     }
 
     std::string sidecar_source;
-    if (!LCompilers::read_file(sidecar, sidecar_source)) {
+    if (!LCompilers::read_file(sidecar.string(), sidecar_source)) {
         std::cerr << "Failed to read CUDA sidecar '" << sidecar << "'"
                   << std::endl;
         return false;
@@ -57,6 +58,34 @@ bool append_cuda_sidecar(
 }
 
 #ifdef HAVE_LFORTRAN_LLVM
+llvm::Expected<llvm::StringRef> cuda_section_name(
+    const llvm::object::SectionRef &section)
+{
+#if LLVM_VERSION_MAJOR >= 10
+    return section.getName();
+#else
+    llvm::StringRef name;
+    if (auto error = section.getName(name)) {
+        return llvm::errorCodeToError(error);
+    }
+    return name;
+#endif
+}
+
+llvm::Expected<llvm::StringRef> cuda_section_contents(
+    const llvm::object::SectionRef &section)
+{
+#if LLVM_VERSION_MAJOR >= 9
+    return section.getContents();
+#else
+    llvm::StringRef contents;
+    if (auto error = section.getContents(contents)) {
+        return llvm::errorCodeToError(error);
+    }
+    return contents;
+#endif
+}
+
 const char *cuda_source_section_name()
 {
 #ifdef HAVE_LFORTRAN_MACHO
@@ -99,7 +128,7 @@ bool append_cuda_section_from_object(
     bool &found_cuda_section)
 {
     for (const auto &section : object.sections()) {
-        auto section_name_or_err = section.getName();
+        auto section_name_or_err = cuda_section_name(section);
         if (!section_name_or_err) {
             std::cerr << "Failed to read CUDA section name: "
                       << llvm::toString(section_name_or_err.takeError())
@@ -110,7 +139,7 @@ bool append_cuda_section_from_object(
             continue;
         }
         found_cuda_section = true;
-        auto contents_or_err = section.getContents();
+        auto contents_or_err = cuda_section_contents(section);
         if (!contents_or_err) {
             std::cerr << "Failed to read CUDA section contents: "
                       << llvm::toString(contents_or_err.takeError())

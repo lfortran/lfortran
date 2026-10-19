@@ -2366,7 +2366,7 @@ int link_executable(const std::vector<std::string> &infiles,
                     // The device compiler also drives the link, since it knows
                     // where its own device runtime lives.
                     compile_cmd = device_cc
-                        + (static_library_search ? " -static" : "")
+                        + (static_library_search ? " -Xcompiler=-static" : "")
                         + " -o " + outfile + " ";
                     for (auto &s : infiles) {
                         compile_cmd += s + " ";
