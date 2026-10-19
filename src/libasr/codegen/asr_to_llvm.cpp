@@ -17320,6 +17320,11 @@ public:
                 }
             }
         }
+        // String temporaries of the test (e.g. a character conditional
+        // expression compared to a string) are no longer needed once it is
+        // evaluated; free them before branching, as the list is discarded
+        // below.
+        free_strings_to_be_deallocated(0);
         llvm_utils->create_if_else(tmp, [&]() {
             for (size_t i=0; i<x.n_body; i++) {
                 this->visit_stmt(*x.m_body[i]);
@@ -17339,20 +17344,35 @@ public:
         // Fortran 2023 requires that only the chosen arm is evaluated
         // (10.1.4 NOTE 3), so this must stay a real branch and must never be
         // turned into a select over both arms.
-        this->visit_expr_wrapper(x.m_test, true);
+        //
+        // The test is always needed as a logical value, whatever the context
+        // the conditional expression appears in: a character result is
+        // evaluated with `ptr_loads` 0 (to get its string descriptor), which
+        // would otherwise yield the address of a logical variable.
+        this->visit_expr_load_wrapper(x.m_test,
+            LLVM::is_llvm_pointer(*expr_type(x.m_test)) ? 2 : 1, true);
         llvm::Value *cond = tmp;
+        load_non_array_non_character_pointers(x.m_test,
+            ASRUtils::expr_type(x.m_test), cond);
         if (ASRUtils::is_character(*x.m_type)) {
             visit_IfExp_string(x, cond);
             return;
         }
         llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(x.m_test, x.m_type, module.get());
         llvm::Value* ifexp_res = llvm_utils->CreateAlloca(_type, nullptr, "");
+        auto emit_arm = [&](ASR::expr_t *arm) {
+            // As in visit_IfExp_string: an arm's string temporaries (e.g. a
+            // character conditional expression in the arm) exist only when
+            // the arm runs, so free them inside it, after its value is stored.
+            size_t strings_n_before_arm = strings_to_be_deallocated.n;
+            this->visit_expr_wrapper(arm, true);
+            builder->CreateStore(tmp, ifexp_res);
+            free_strings_to_be_deallocated(strings_n_before_arm);
+        };
         llvm_utils->create_if_else(cond, [&]() {
-            this->visit_expr_wrapper(x.m_body, true);
-            builder->CreateStore(tmp, ifexp_res);
+            emit_arm(x.m_body);
         }, [&]() {
-            this->visit_expr_wrapper(x.m_orelse, true);
-            builder->CreateStore(tmp, ifexp_res);
+            emit_arm(x.m_orelse);
         });
         tmp = llvm_utils->CreateLoad2(_type, ifexp_res);
     }
@@ -17370,7 +17390,9 @@ public:
             // where values created inside this block do not dominate. The
             // copy into `res` happens first, so the data survives the free.
             size_t strings_n_before_arm = strings_to_be_deallocated.n;
-            this->visit_expr_wrapper(arm, true);
+            // The copy needs the arm's string descriptor, also when the
+            // conditional expression is an operand evaluated for its value.
+            this->visit_expr_load_wrapper(arm, 0, true);
             llvm_utils->lfortran_str_copy(res, tmp, res_str,
                 ASRUtils::get_string_type(ASRUtils::expr_type(arm)), true);
             free_strings_to_be_deallocated(strings_n_before_arm);
@@ -17394,6 +17416,8 @@ public:
         strings_to_be_deallocated.reserve(al, 1);
         create_loop(x.m_name, [=]() {
             this->visit_expr_wrapper(x.m_test, true);
+            // Free the test's string temporaries on every evaluation.
+            free_strings_to_be_deallocated(0);
             return tmp;
         }, [&]() {
             for (size_t i=0; i<x.n_body; i++) {
@@ -24181,10 +24205,12 @@ public:
     }
 
     void visit_Print(const ASR::Print_t &x) {
+        DeallocateStringsScope _scope(this);
         handle_print(x.m_text, nullptr);
     }
 
     void visit_FileWrite(const ASR::FileWrite_t &x) {
+        DeallocateStringsScope _scope(this);
         if( x.m_overloaded ) {
             // DTIO: set child I/O mode to suppress record terminators in
             // child writes, call the user-defined I/O subroutine, then
