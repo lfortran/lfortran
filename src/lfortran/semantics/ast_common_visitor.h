@@ -27556,7 +27556,11 @@ public:
 
     // The conformance tier of generic resolution: a derived actual matches a
     // borrowed trait view dummy when its visible implementations provide
-    // every requirement of the view's contract. It reports nothing itself;
+    // every requirement of the view's contract, and a class(T) actual also
+    // when T adopts them nominally, which includes an abstract T that leaves
+    // a method deferred and an adoption inherited from an ancestor, as
+    // forming the view of a direct call accepts (see
+    // polymorphic_runtime_trait_witness). It reports nothing itself;
     // associating the selected specific's actuals diagnoses an implementation
     // or runtime witness that cannot be used.
     ASRUtils::TraitConformance runtime_trait_conformance() {
@@ -27565,14 +27569,24 @@ public:
                 ASRUtils::get_struct_sym_from_struct_expr(actual));
             if (!declaration || !ASR::is_a<ASR::Struct_t>(*declaration)) return false;
             std::set<const ASR::symbol_t*> provided;
+            auto provide = [&](ASR::symbol_t *trait) {
+                trait = ASRUtils::symbol_get_past_external(trait);
+                if (!trait || !ASR::is_a<ASR::Trait_t>(*trait)) return;
+                auto hierarchy = ASRUtils::trait_hierarchy(*ASR::down_cast<ASR::Trait_t>(trait));
+                if (hierarchy.error != ASRUtils::TraitHierarchyError::None) return;
+                for (auto *provider : hierarchy.traits) provided.insert(&provider->base);
+            };
             for (auto *implementation : visible_trait_implementations()) {
                 if (!ASRUtils::trait_implementation_matches_type(*implementation,
                         declaration, nullptr)) continue;
-                auto *trait = ASRUtils::symbol_get_past_external(implementation->m_trait);
-                if (!trait || !ASR::is_a<ASR::Trait_t>(*trait)) continue;
-                auto hierarchy = ASRUtils::trait_hierarchy(*ASR::down_cast<ASR::Trait_t>(trait));
-                if (hierarchy.error != ASRUtils::TraitHierarchyError::None) continue;
-                for (auto *provider : hierarchy.traits) provided.insert(&provider->base);
+                provide(implementation->m_trait);
+            }
+            if (ASRUtils::is_class_type(ASRUtils::extract_type(
+                    ASRUtils::expr_type(actual)))) {
+                auto *structure = ASR::down_cast<ASR::Struct_t>(declaration);
+                for (size_t i = 0; i < structure->n_trait_obligations; i++) {
+                    provide(structure->m_trait_obligations[i]);
+                }
             }
             for (auto *required : ASRUtils::trait_contract_requirements(
                     *ASRUtils::trait_runtime_contract(view))) {

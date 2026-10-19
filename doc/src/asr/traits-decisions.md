@@ -1149,7 +1149,11 @@ specification action, that is, what the paper should say.
   Generic resolution selects a specific with such a view dummy for a
   `class(T)` actual in its conformance tier (since 2026-10-19; before, only
   nonpolymorphic values did, so a generic named like a type fell back to the
-  structure constructor). Temporary limits, diagnosed as not implemented:
+  structure constructor), also when `T` is abstract and leaves a method of
+  the trait deferred or inherits the adoption, which the conformance tier
+  first accepted only for types with an implementation of their own.
+  Defined and intrinsic operators with view dummies still accept only trait
+  objects. Temporary limits, diagnosed as not implemented:
   combinations (`class(A + B)`) formed from a polymorphic object, `MOLD=` from
   one, and traits whose runtime contract has generic methods.
 - **Specification action.** State that a trait object can be formed from a
