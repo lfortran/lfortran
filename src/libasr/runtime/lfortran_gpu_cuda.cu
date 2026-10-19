@@ -33,6 +33,11 @@ default stream ordering every copy and launch:
   is a dirty range, the kernel reads the resident memory instead.
 * A range that overlaps a dirty one without being the same range makes the
   runtime sync first.
+* A scratch buffer, which only the device holds, is the memory its argument
+  slot keeps as well. What a launch leaves there is dead once it ends (a part
+  the host reads back is read before the next launch is made), and the
+  stream runs the launches one after another, so every launch of the kernel
+  uses the same memory, however many of them are still pending.
 * Memory a launch may still use is freed only at the next sync.
 */
 
@@ -202,7 +207,8 @@ static void* dirty_resident(void *host, size_t size) {
     return entries[i].device;
 }
 
-// The memory argument `idx` of a kernel keeps for what it only reads.
+// The memory argument `idx` of a kernel keeps for what it only reads, or
+// for its scratch buffer.
 static void* slot_buffer(slot_cache *cache, int idx, size_t size) {
     if (cache->buffers[idx] && cache->capacities[idx] >= size) {
         return cache->buffers[idx];
@@ -280,7 +286,6 @@ lfortran_gpu_kernel* lfortran_gpu_load_kernel(
 void lfortran_gpu_release_kernel(lfortran_gpu_kernel* k) {
     if (!k) return;
     for (int i = 0; i < k->n_args; i++) {
-        if (k->kind[i] == ARG_SCRATCH) free_later(k->buffer_device_ptrs[i]);
         if (k->kind[i] == ARG_SCALAR && k->scalar_args[i].data) {
             free(k->scalar_args[i].data);
         }
@@ -305,16 +310,17 @@ void lfortran_gpu_set_scratch_arg(lfortran_gpu_kernel* k, int idx,
     if (!k || idx >= MAX_ARGS) return;
     k->buffer_host_ptrs[idx] = NULL;
     k->buffer_sizes[idx] = size;
+    k->buffer_device_ptrs[idx] = NULL;
     k->kind[idx] = ARG_SCRATCH;
     if (idx >= k->n_args) k->n_args = idx + 1;
-    k->buffer_device_ptrs[idx] = size > 0 ? device_alloc(size) : NULL;
 }
 
 void lfortran_gpu_read_scratch_arg(lfortran_gpu_kernel* k, int idx,
     void* dst, size_t size)
 {
     if (!k || idx >= MAX_ARGS || size == 0) return;
-    if (k->kind[idx] != ARG_SCRATCH || size > k->buffer_sizes[idx]) {
+    if (k->kind[idx] != ARG_SCRATCH || !k->buffer_device_ptrs[idx]
+            || size > k->buffer_sizes[idx]) {
         fprintf(stderr, "lfortran_gpu_read_scratch_arg: no scratch buffer "
             "%d of %zu bytes\n", idx, size);
         exit(1);
@@ -375,6 +381,11 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
             }
         }
         k->buffer_device_ptrs[i] = d_ptr;
+    }
+    for (int i = 0; i < k->n_args; i++) {
+        if (k->kind[i] != ARG_SCRATCH) continue;
+        k->buffer_device_ptrs[i] = k->buffer_sizes[i] == 0 ? NULL
+            : slot_buffer(k->cache, i, k->buffer_sizes[i]);
     }
 
     // Build the kernel argument array for cudaLaunchKernel: a device
