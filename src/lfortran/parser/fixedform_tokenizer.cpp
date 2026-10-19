@@ -1426,6 +1426,7 @@ struct FixedFormRecursiveDescent {
         if (next_is(cur, "cycle")){
             push_token_advance(cur, "cycle");
             tokenize_line(cur);
+            return true;
         }
 
         if (l != -1) {

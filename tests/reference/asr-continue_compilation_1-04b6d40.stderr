@@ -1506,6 +1506,38 @@ semantic error: Kind 3 is not supported for Logical
 3399 |     logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
      |     ^^^^^^^^^ 
 
+semantic error: Duplicate DIMENSION attribute specified
+    --> tests/errors/continue_compilation_1.f90:3426:32
+     |
+3426 |         integer, intent(in) :: x(:)
+     |                                ^^^^ 
+
+semantic error: Dummy argument 'x' not defined
+    --> tests/errors/continue_compilation_1.f90:3425:5 - 3427:32
+     |
+3425 |        subroutine cc1_eas_dummy(x)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3427 |        end subroutine cc1_eas_dummy
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Duplicate DIMENSION attribute specified
+    --> tests/errors/continue_compilation_1.f90:3441:35
+     |
+3441 |         integer, intent(inout) :: x(2,2)
+     |                                   ^^^^^^ 
+
+semantic error: Dummy argument 'x' not defined
+    --> tests/errors/continue_compilation_1.f90:3440:5 - 3442:32
+     |
+3440 |        subroutine cc1_epa_dummy(x)
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3442 |        end subroutine cc1_epa_dummy
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -3649,11 +3681,11 @@ semantic error: Unapplicable types for intrinsic function max
 2062 |     print *, iita_h{max}(1, 2)  ! {Error} Unapplicable types for intrinsic function max
      |                     ^^^ 
 
-semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found `func_alloc_target_01`
+semantic error: Allocate should only be called with Allocatable or Pointer type inputs, found `allocate_func_target_01`
     --> tests/errors/continue_compilation_1.f90:2094:34
      |
-2094 |     allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
-     |                                  ^^^^^^^^^^^^^^^^^^^^ 'func_alloc_target_01' is not allocatable or pointer
+2094 |     allocate(character(len=5) :: ALLOCATE_FUNC_TARGET_01)
+     |                                  ^^^^^^^^^^^^^^^^^^^^^^^ 'allocate_func_target_01' is not allocatable or pointer
 
 semantic error: Cannot assign to an intent(in) variable `y`
     --> tests/errors/continue_compilation_1.f90:2135:5
@@ -4281,3 +4313,37 @@ semantic error: open with status 'REPLACE' requires a file specifier
      |
 3409 |     open(4, status='REPLACE')  ! {Error} open with status 'REPLACE' requires a file specifier
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: More actual than formal arguments in procedure call
+    --> tests/errors/continue_compilation_1.f90:3431:28
+     |
+3431 |         call cc1_eas_dummy(c(2))  ! {Error} Passing a scalar argument to an array dummy argument is not allowed
+     |                            ^^^^ 
+
+semantic error: More actual than formal arguments in procedure call
+    --> tests/errors/continue_compilation_1.f90:3446:28
+     |
+3446 |         call cc1_epa_dummy(p(2,1))  ! {Error} Passing an element of a pointer array to an array dummy argument is not allowed
+     |                            ^^^^^^ 
+
+semantic error: Variable 'cc1_external_name_sub' is not declared
+    --> tests/errors/continue_compilation_1.f90:3460:5
+     |
+3460 |     cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
+     |     ^^^^^^^^^^^^^^^^^^^^^ 'cc1_external_name_sub' is undeclared
+
+semantic error: Variable 'cc1_external_name_fn' is not declared
+    --> tests/errors/continue_compilation_1.f90:3461:14
+     |
+3461 |     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
+     |              ^^^^^^^^^^^^^^^^^^^^ 'cc1_external_name_fn' is undeclared
+
+ASR verify pass error: Function cc1_eas_use doesn't depend on cc1_eas_dummy but is found in its dependency list.
+    --> tests/errors/continue_compilation_1.f90:3428:5 - 3432:30
+     |
+3428 |        subroutine cc1_eas_use()
+     |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+     |
+3432 |        end subroutine cc1_eas_use
+     | ...^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ failed here

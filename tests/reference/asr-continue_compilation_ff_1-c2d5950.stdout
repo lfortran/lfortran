@@ -93,6 +93,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )]
                                     (Var 3 f)
                                     Public
@@ -961,11 +962,13 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 4 i)
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -996,6 +999,7 @@
                             (IntegerConstant 3 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )]

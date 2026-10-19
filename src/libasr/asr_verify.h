@@ -14,6 +14,10 @@ namespace LCompilers {
         // dummy that ASRUtils::is_string_dummy_with_hidden_length() selects
         // must then have its hidden length dummy, and every call must pass it.
         bool string_length_arguments = false;
+        // Set once the string_format_array_args pass has run: every array
+        // argument (and an array format) of a StringFormat must then be of
+        // PointerArray physical type, with all its dimensions present.
+        bool string_format_array_args = false;
     };
 
     // Verifies that ASR is correctly constructed and contains valid Fortran

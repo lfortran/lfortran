@@ -76,6 +76,7 @@ advance; a **WhileLoop** does not.
       :overloaded nil
       :realloc_lhs false
       :move_allocation false
+      :new_target false
     )
   ]
   :orelse []

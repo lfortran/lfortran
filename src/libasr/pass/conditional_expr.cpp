@@ -105,7 +105,7 @@ public:
             insert_allocate_stmt_for_array(al, temporary_var, arm, &branch_body);
         }
         branch_body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-            al, arm->base.loc, temporary_var, arm, nullptr, true, false)));
+            al, arm->base.loc, temporary_var, arm, nullptr, true, false, false)));
     }
 
     void replace_IfExp(ASR::IfExp_t* x) {

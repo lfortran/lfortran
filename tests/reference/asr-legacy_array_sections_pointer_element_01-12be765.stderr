@@ -1,0 +1,116 @@
+semantic error: Passing an element of an assumed-shape array to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_pointer_element_01.f90:44:27
+   |
+44 |         call int_explicit(a(2))  ! {Error} element of an assumed-shape array, explicit-shape dummy
+   |                           ^^^^ element of an assumed-shape array
+   |
+16 |        subroutine int_explicit(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+18 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ array dummy argument
+
+semantic error: Passing an element of an assumed-shape array to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_pointer_element_01.f90:45:23
+   |
+45 |         call int_size(a(2))  ! {Error} element of an assumed-shape array, assumed-size dummy
+   |                       ^^^^ element of an assumed-shape array
+   |
+20 |        subroutine int_size(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+22 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ array dummy argument
+
+semantic error: Passing an element of an assumed-shape array to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_pointer_element_01.f90:46:25
+   |
+46 |         call t_explicit(c(2))  ! {Error} element of a polymorphic assumed-shape array
+   |                         ^^^^ element of an assumed-shape array
+   |
+29 |        subroutine t_explicit(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+31 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ array dummy argument
+
+semantic error: Passing an element of a pointer array to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_pointer_element_01.f90:62:17
+   |
+62 |     call negate(p(2,1))  ! {Error} element of a pointer array, internal procedure
+   |                 ^^^^^^ element of a pointer array
+   |
+75 |        subroutine negate(x)
+   |        ^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+78 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ array dummy argument
+
+semantic error: Passing an element of a pointer array to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_pointer_element_01.f90:63:23
+   |
+63 |     call int_explicit(q(2))  ! {Error} element of a contiguous pointer array
+   |                       ^^^^ element of a pointer array
+   |
+16 |        subroutine int_explicit(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+18 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ array dummy argument
+
+semantic error: Passing an element of a pointer array to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_pointer_element_01.f90:64:19
+   |
+64 |     call int_size(q(2))  ! {Error} element of a pointer array, assumed-size dummy
+   |                   ^^^^ element of a pointer array
+   |
+20 |        subroutine int_size(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+22 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ array dummy argument
+
+semantic error: Passing an element of a pointer array to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_pointer_element_01.f90:65:24
+   |
+65 |     n = int_explicit_f(q(2))  ! {Error} function reference
+   |                        ^^^^ element of a pointer array
+   |
+24 |        integer function int_explicit_f(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+27 |        end function
+   | ...^^^^^^^^^^^^^^^^ array dummy argument
+
+semantic error: Passing an element of a polymorphic array to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_pointer_element_01.f90:66:21
+   |
+66 |     call t_explicit(ca(2))  ! {Error} element of an allocatable polymorphic array
+   |                     ^^^^^ element of a polymorphic array
+   |
+29 |        subroutine t_explicit(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+31 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ array dummy argument
+
+semantic error: Passing an element of a pointer array to an array dummy argument is not allowed
+  --> tests/errors/legacy_array_sections_pointer_element_01.f90:67:23
+   |
+67 |     call int_explicit(h%p(2))  ! {Error} element of a pointer array component
+   |                       ^^^^^^ element of a pointer array
+   |
+16 |        subroutine int_explicit(x)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+18 |        end subroutine
+   | ...^^^^^^^^^^^^^^^^^^ array dummy argument

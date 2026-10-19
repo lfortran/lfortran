@@ -517,6 +517,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -534,6 +535,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -646,7 +648,9 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
+                    (Return)
                     (GoToTarget
                         2
                         2
@@ -669,6 +673,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -686,6 +691,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -798,7 +804,9 @@
                         ()
                         .false.
                         .false.
-                    )]
+                        .false.
+                    )
+                    (Return)]
                     ()
                     Public
                     .true.
