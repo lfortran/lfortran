@@ -161,6 +161,8 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-14 | Matching an implementation to a message with a receiver | **Require a passed receiver with matching INTENT**; also allow weaker receiver effects or NOPASS implementations, and define adaptation rules | TD-36 |
 | 2026-10-14 | Marking the receiver, since `type(itself)` also declares ordinary same-type arguments | **Always mark the receiver with PASS on its dummy declaration**; infer a unique `type(itself)` dummy, and require PASS when there are several; use `PASS(name)` on the trait method declaration instead | TD-36 |
 | 2026-10-16 | Whether the private components of a generic instance belong to the generic definition's module or, as in the prototype then, to the client scope that owns the generated instance | **Preserve the generic definition's privacy and include this case in the fix (recommended)**; Finish ordinary Fortran checking now; document and defer generic-instance privacy | TD-37 |
+| 2026-10-18 | The meaning of `CLASS IS (ITrait)` in `SELECT TYPE` (revising TD-11) | **A runtime conformance lookup, finding the conformances declared with the dynamic type even where its module is not used, and retroactive ones where visible**; a match only on the conformances visible at the `SELECT TYPE` statement; keep rejecting trait names in guards | TD-11 |
+| 2026-10-18 | Precedence of `SELECT TYPE` guards naming traits | **Concrete guards first; then a child trait over its ancestors, and the first in source order between unrelated traits**; reject guards naming unrelated traits; a runtime error when guards naming unrelated traits both match | TD-11 |
 
 ### Instructions given without an option form
 
@@ -646,25 +648,58 @@ specification action, that is, what the paper should say.
   specify pointer, allocatable and `intent(out)` receivers. The prototype's
   answer is TD-36: an explicit receiver whose ordinary INTENT is the effect.
 
-#### TD-11: Concrete `SELECT TYPE` inspection of trait objects
+#### TD-11: `SELECT TYPE` inspection of trait objects and conformance queries
 
-- **Status:** Approved semantic decision.
+- **Status:** Approved semantic decision (2026-10-05, revised 2026-10-18).
 - **Why the paper is not tight.** The paper does not discuss `SELECT TYPE` on
-  trait objects.
+  trait objects, nor whether a `CLASS IS` guard can name a trait.
 - **Options presented (2026-10-05).** Permit ordinary concrete inspection
   (chosen), or keep trait payloads opaque and defer inspection. The question
   concerned `TYPE IS (concrete type)` and `CLASS IS (actual base type)`, not
-  `CLASS IS` with an unrelated trait.
+  `CLASS IS` with an unrelated trait, which was then diagnosed.
+- **Options presented (2026-10-18).** The meaning of `CLASS IS (ITrait)`: a
+  runtime conformance lookup, which finds the conformances declared with the
+  dynamic type even where its module is not used (chosen); a match only on
+  the conformances visible at the `SELECT TYPE` statement; or keep rejecting
+  trait names in guards. The precedence of guards naming traits: concrete
+  guards first, then a guard naming a child trait over guards naming its
+  ancestors and, between unrelated traits, the first in source order
+  (chosen); reject guards naming unrelated traits that one type could both
+  satisfy; or a runtime error when guards naming unrelated traits both match.
 - **Consequences.** `TYPE IS` uses the exact nominal concrete type, including
-  kind parameters. `CLASS IS` follows only the concrete type's real extension
-  chain; the concrete parent need not implement the trait. A trait name in
-  `TYPE IS` or `CLASS IS` is diagnosed, because inspection is not a query for
-  conformance to another trait. `CLASS DEFAULT` keeps the object's trait
-  contract. The associate name follows the ordinary Fortran rules.
-- **Implementation status.** Implemented for scalar trait objects.
-- **Specification action.** Specify `SELECT TYPE` on trait objects, including
-  whether a dynamic conformance query such as `CLASS IS (ITrait)` exists (the
-  prototype says no) and what it would require under separate compilation.
+  kind parameters. `CLASS IS` with a type follows only the concrete type's real
+  extension chain; the concrete parent need not implement the trait.
+  `CLASS IS (ITrait)` matches when the dynamic type conforms to `ITrait` or to
+  a trait extending it. The conformances declared with a type, by
+  `implements(...)` in its definition (including those an extension inherits,
+  with the extension's overrides) and by implementation blocks in the type's
+  own module, are recorded in the type's runtime metadata, so they are found
+  even where the `SELECT TYPE` statement does not use that module, as in a
+  factory pattern whose consumer uses only the contracts. A retroactive
+  conformance declared in another module is found only where it is visible
+  (TD-07). A trait object always conforms to the traits its own contract
+  implies, with the conformance it was formed with (an implementation
+  choice). Combined and separate compilation behave identically. The selector
+  can be a trait object, `class(*)` or an ordinary `class(Base)` object. The
+  associate name is a `class(ITrait)` view borrowing the same payload without
+  a copy: it keeps the dynamic type, so nested `SELECT TYPE` works, dispatches
+  the messages of `ITrait` to the implementations of the conformance found,
+  and is definable exactly when the selector is. Concrete guards keep the
+  standard rule; trait guards are tried only if none matches, and then a guard
+  naming a child trait beats guards naming its ancestors and, between
+  unrelated traits, the first in source order wins; `CLASS DEFAULT` comes
+  last and keeps the object's trait contract. A trait name in `TYPE IS` is
+  diagnosed, because a trait is not a type.
+- **Implementation status.** Concrete inspection is implemented for scalar
+  trait objects; conformance queries for scalar trait, `class(*)` and
+  `class(Base)` selectors, with the conformance tables in the runtime type
+  metadata of the LLVM backend. Combinations such as `CLASS IS (A + B)` are
+  not supported.
+- **Specification action.** Specify `SELECT TYPE` on trait objects, the
+  conformance query of `CLASS IS (ITrait)` and its precedence, and the
+  runtime information it requires under separate compilation: the prototype
+  records the conformances declared with a type in that type's metadata and
+  searches only the visible retroactive ones.
 
 #### TD-12: Anonymous combinations and conversions between trait objects
 
@@ -1760,7 +1795,7 @@ names the entries with the details.
 | OQ-03 | Composition: identity of requirements, overloads across parents, agreement of intrinsic acknowledgements. Overloaded requirements that coincide after substituting `itself`, such as `operator(*)` with `(itself, itself)` and `(itself, integer)` when the implementing type is `integer`. How an elemental and a non-elemental requirement that both accept a call are resolved (standard generic resolution prefers the non-elemental one; the prototype currently reports an ambiguity). | TD-05 |
 | OQ-04 | Whether a message may modify its receiver, how this is declared, and what generic code and trait objects may assume; pointer, allocatable and `intent(out)` receivers; the INTENTs of trait-object dummy arguments. The prototype's answer for receivers is TD-36: an explicit PASS-marked `type(itself)` receiver with an ordinary INTENT. | TD-10, TD-35, TD-36 |
 | OQ-05 | Initializer requirements and trait objects. Which procedures implement an initializer requirement: `initial ::` procedures and matching standard constructor interfaces are approved for the prototype (TD-33); whether the implicit structure constructor can is open. | TD-13, TD-33 |
-| OQ-06 | Trait objects: conversions and combinations; `SELECT TYPE`, including dynamic conformance queries; arrays of trait objects (homogeneous like `CLASS` arrays or not); pointer components and results. | TD-11, TD-12 |
+| OQ-06 | Trait objects: conversions and combinations; `SELECT TYPE`, including dynamic conformance queries (the prototype implements `CLASS IS (ITrait)` as a runtime lookup of the conformances declared with the dynamic type and of the visible retroactive ones; combinations in guards, and whether retroactive conformances should be found where they are not visible, are open); arrays of trait objects (homogeneous like `CLASS` arrays or not); pointer components and results. | TD-11, TD-12 |
 | OQ-07 | Associated types: inference, one type per conformance, constraints on associated types, projection syntax, use as generic constraints. | TD-20 |
 | OQ-08 | Type sets: the exact common operations and their result types, mixed-mode operations, intrinsic procedures, identity of inline type sets, composition with `+`. | TD-23 |
 | OQ-09 | The member set of kind wildcards and its processor dependence. | TD-17 |

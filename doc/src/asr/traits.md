@@ -1786,8 +1786,9 @@ than one specific accepts in that second tier is diagnosed as ambiguous.
 Trait arrays, aggregate method results, unrestricted generic methods, and adoption from unknown
 polymorphic sources remain unsupported. A plain nondummy trait local is
 invalid, not an implicitly owning box. Concrete SELECT TYPE inspection, described
-below, tests concrete identity and real implementation inheritance, not
-unrelated-trait discovery.
+below, tests concrete identity and real implementation inheritance; a
+`CLASS IS (ITrait)` guard queries the conformance of the dynamic type at run
+time (see "Conformance queries in SELECT TYPE" below).
 Universal traits with supported open scalar or closed type-set generic methods
 have runtime contracts; other generic signatures are diagnosed as not
 implemented. Type-set traits remain constraint-only.
@@ -2623,8 +2624,9 @@ extra FINAL nor finalizes the result before the selected block. An unallocated
 owner or disassociated pointer terminates with an explicit state diagnostic
 before any matching/default decision, even when the construct has no default.
 
-A trait name in TYPE IS or CLASS IS is diagnosed: inspection is not an
-unrelated-interface conformance query. Intrinsic guards, runtime trait arrays,
+A trait name in TYPE IS is diagnosed, because a trait is not a type; in
+CLASS IS it queries conformance, as described in the next section. Intrinsic
+guards, runtime trait arrays,
 pointer components, pointer results and unrestricted generic methods are
 not added by this scalar slice. Parameterized implementation declarations remain
 part of the separate generic-derived-type work; inspection reuses the existing
@@ -2649,6 +2651,74 @@ NULLIFY-associate-name negative contrary to those rules and rejects the
 same-spelled/different-module twin guards as overlapping. The portable nominal
 control therefore uses distinct names; neither limitation weakens the trait
 tests or their required diagnostics.
+
+### Conformance queries in SELECT TYPE
+
+A `CLASS IS` guard can name a trait. It matches when the dynamic type of the
+selector conforms to that trait or to a trait extending it (TD-11):
+
+```fortran
+function describe(object) result(r)
+    class(*), intent(in) :: object
+    integer :: r
+    select type (x => object)
+    type is (Plain)
+        r = 0
+    class is (IScaled)          ! IScaled extends IValue
+        r = x%scaled(2)
+    class is (IValue)
+        r = x%value()
+    class default
+        r = -1
+    end select
+end function
+```
+
+The selector can be a trait object (a view, owner, pointer or component), a
+`class(*)` object or an ordinary `class(Base)` object. The conformances
+declared with a type are recorded in its runtime metadata: those adopted by
+`implements(...)` in its definition, including those an extension inherits
+from its parent's definition with its own overrides, and the implementation
+blocks of the type's own module. They are found even where that module is not
+used, for example by a consumer that uses only the contracts module and
+receives its objects from a factory. A retroactive conformance declared in
+another module is found only where it is visible under the rules of TD-07.
+Combined and separate compilation find the same conformances. A trait object
+always conforms to the traits its own contract implies: such a guard matches
+without a lookup and projects the selected view, keeping the implementations
+the object was formed with, even when the conformance that formed it is not
+visible here.
+
+Inside the guard the associate name is a `class(ITrait)` view that borrows
+the payload of the selector without copying, finalizing or rebinding it. It
+keeps the dynamic type, so a nested SELECT TYPE can inspect it further, and
+calls the messages of `ITrait` through the implementations of the conformance
+found. It is definable exactly when the selector is: through an `intent(in)`
+selector, calling a message with an `intent(inout)` receiver is diagnosed like
+any other definition of a readonly association.
+
+Concrete guards keep the standard rule: TYPE IS first, then the most specific
+CLASS IS type. Only when no concrete guard matches are the trait guards tried.
+Among those that match, a guard naming a child trait beats guards naming its
+ancestors, and between unrelated traits the first in source order wins. With
+guards `IParent`, `IOther` and `IChild` (extending `IParent`), in that order,
+a type conforming to all three selects `IOther`, and one conforming only to
+`IParent` and `IOther` selects `IParent`; no fixed order of the guards
+expresses this. CLASS DEFAULT comes last. A guard naming a trait twice, a trait
+guard on an array selector, and a trait that has no runtime view (a type set,
+or a trait that can only be used as a generic constraint) are diagnosed. Combinations such as `CLASS IS (A + B)` are not supported.
+
+`traits_runtime_conformance_query_01` checks each kind of selector, inherited
+conformances with overrides, nested inspection and the associate name of a
+selector without one; `_02` checks the precedence, including the guard order
+above; `_03` checks borrowed definable and readonly views and FINAL counts;
+`_04` checks a retroactive conformance in a third module, with and without
+its module, and a trait object formed with one its inspector cannot see. The contract-only consumer of
+`traits_runtime_conformance_query_separate_01` is compiled before the
+provider of the private types it inspects, under `--separate-compilation`.
+The GFortran oracles `_01_oracle` to `_03_oracle` express the subset that
+single inheritance can, with abstract parent types in place of traits, and
+`continue_compilation_traits_01` and `_02` check the diagnostics.
 
 ## Compiler representation
 
@@ -2833,6 +2903,31 @@ The verifier checks local binding, guarded nominal narrowing, readonly contexts,
 and class-guard specificity. Result-scope lowering retains owning selectors
 through the whole construct. Backends neither select conformance nor finalize
 association storage.
+
+Semantics lowers the trait guards of a SELECT TYPE into the CLASS DEFAULT part
+of the ordinary `SelectType`, as an IF chain in source order whose conditions
+encode the precedence: a guard's `TraitConforms` query, and the negated
+queries of the guards naming traits that extend its trait. Each guard's block
+binds its associate name to `TraitDiscover`, a borrowed view of the same query
+result, and the verifier requires that block to be entered only under its
+matching query. A guard whose trait the contract of a trait-object selector
+implies has a true condition and binds a `TraitProject` of the selected view
+instead. Both nodes name the ordinary polymorphic selector (the
+`TraitInspect` view for a trait object), the runtime contract of the trait,
+and the witnesses of the retroactive conformances to it visible at the
+statement, one per type. The runtime conformance table of a concrete type,
+`ASRUtils::trait_conformance_table`, is the set of witnesses in the type's
+declaring scope of conformances of exactly that type declared there; it
+survives module files as those witnesses do. LLVM gives every type-info
+object a fourth word, the address of the type's table or null, and defines
+the table, pairs of a trait identity and a witness table ending in null, in
+the object of the module that defines those witnesses. A trait identity is the
+address of a link-unique `linkonce_odr` byte named after the trait's defining
+scopes. The runtime function `_lfortran_trait_conformance` searches the table
+of the dynamic type; only if it finds nothing are the retroactive witnesses
+compared with the exact dynamic type. The view copies the concrete vptr and
+payload address of the selector and the lifecycle and methods of the witness
+found.
 
 The private owner descriptor has a common three-word prefix (concrete vptr, raw
 payload, lifecycle) followed by one method address per declared slot; it is not
