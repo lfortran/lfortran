@@ -51,3 +51,8 @@ double precision function fma(x, y, z)
 double precision, intent(in) :: x, y, z
 fma = x*y - z
 end function
+
+double precision function type(x)
+double precision, intent(in) :: x
+type = x - 3
+end function
