@@ -1,0 +1,13 @@
+{
+    "basename": "asr-json_loc_template_use_module-214889c",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/json_loc_template_use_module.f90",
+    "infile_hash": "670c5c6987f768e4741263742a1a81978ecf3c30f244ba90d537db63",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-json_loc_template_use_module-214889c.stdout",
+    "stdout_hash": "f084c124c4c771c4fc060af3e50e5f00127e2e76d29a588bc0934290",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

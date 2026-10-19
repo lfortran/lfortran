@@ -1,0 +1,13 @@
+{
+    "basename": "asr_json-json_loc_implicit_argument_casting-ed5adb7",
+    "cmd": "lfortran --show-asr --no-indent --json {infile} -o {outfile}",
+    "infile": "tests/json_loc_implicit_argument_casting.f90",
+    "infile_hash": "0c1446d9bc5e145564ad4872c510c29df039ad0e7bd4c960f8efc233",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr_json-json_loc_implicit_argument_casting-ed5adb7.stdout",
+    "stdout_hash": "f140debf7b6ec487a73bb1ef70ff350934c710daf711884e47338bd6",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

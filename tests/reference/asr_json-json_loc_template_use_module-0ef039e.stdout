@@ -1,0 +1,1155 @@
+{
+    "node": "TranslationUnit",
+    "fields": {
+        "symtab": {
+            "node": "SymbolTable1",
+            "fields": {
+                "json_loc_template_module_m": {
+                    "node": "Module",
+                    "fields": {
+                        "symtab": {
+                            "node": "SymbolTable4",
+                            "fields": {
+                                "first_int": {
+                                    "node": "Function",
+                                    "fields": {
+                                        "symtab": {
+                                            "node": "SymbolTable8",
+                                            "fields": {
+                                                "lst": {
+                                                    "node": "Variable",
+                                                    "fields": {
+                                                        "parent_symtab": 8,
+                                                        "name": "lst",
+                                                        "dependencies": [],
+                                                        "intent": "In",
+                                                        "symbolic_value": [],
+                                                        "value": [],
+                                                        "storage": "Default",
+                                                        "type": {
+                                                            "node": "Array",
+                                                            "fields": {
+                                                                "type": {
+                                                                    "node": "Integer",
+                                                                    "fields": {
+                                                                        "kind": 4
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 715,
+                                                                        "last": 721,
+                                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                                        "first_line": 25,
+                                                                        "first_column": 25,
+                                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                                        "last_line": 25,
+                                                                        "last_column": 31
+                                                                    }
+                                                                },
+                                                                "dims": [
+                                                                    {
+                                                                        "node": "dimension",
+                                                                        "fields": {
+                                                                            "start": [],
+                                                                            "length": []
+                                                                        },
+                                                                        "loc": {
+                                                                            "first": 613,
+                                                                            "last": 613,
+                                                                            "first_filename": "tests/json_loc_template_module.f90",
+                                                                            "first_line": 19,
+                                                                            "first_column": 36,
+                                                                            "last_filename": "tests/json_loc_template_module.f90",
+                                                                            "last_line": 19,
+                                                                            "last_column": 36
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "physical_type": "DescriptorArray",
+                                                                "memory_space": "Global"
+                                                            },
+                                                            "loc": {
+                                                                "first": 715,
+                                                                "last": 721,
+                                                                "first_filename": "tests/json_loc_template_module.f90",
+                                                                "first_line": 25,
+                                                                "first_column": 25,
+                                                                "last_filename": "tests/json_loc_template_module.f90",
+                                                                "last_line": 25,
+                                                                "last_column": 31
+                                                            }
+                                                        },
+                                                        "type_declaration": [],
+                                                        "abi": "Source",
+                                                        "access": "Private",
+                                                        "presence": "Required",
+                                                        "value_attr": false,
+                                                        "target_attr": false,
+                                                        "contiguous_attr": false,
+                                                        "bindc_name": [],
+                                                        "is_volatile": false,
+                                                        "is_protected": false,
+                                                        "pass_attr": "NotMethod",
+                                                        "self_argument": [],
+                                                        "codims": [],
+                                                        "common_block": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 609,
+                                                        "last": 614,
+                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                        "first_line": 19,
+                                                        "first_column": 32,
+                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                        "last_line": 19,
+                                                        "last_column": 37
+                                                    }
+                                                },
+                                                "res": {
+                                                    "node": "Variable",
+                                                    "fields": {
+                                                        "parent_symtab": 8,
+                                                        "name": "res",
+                                                        "dependencies": [],
+                                                        "intent": "ReturnVar",
+                                                        "symbolic_value": [],
+                                                        "value": [],
+                                                        "storage": "Default",
+                                                        "type": {
+                                                            "node": "Integer",
+                                                            "fields": {
+                                                                "kind": 4
+                                                            },
+                                                            "loc": {
+                                                                "first": 715,
+                                                                "last": 721,
+                                                                "first_filename": "tests/json_loc_template_module.f90",
+                                                                "first_line": 25,
+                                                                "first_column": 25,
+                                                                "last_filename": "tests/json_loc_template_module.f90",
+                                                                "last_line": 25,
+                                                                "last_column": 31
+                                                            }
+                                                        },
+                                                        "type_declaration": [],
+                                                        "abi": "Source",
+                                                        "access": "Private",
+                                                        "presence": "Required",
+                                                        "value_attr": false,
+                                                        "target_attr": false,
+                                                        "contiguous_attr": false,
+                                                        "bindc_name": [],
+                                                        "is_volatile": false,
+                                                        "is_protected": false,
+                                                        "pass_attr": "NotMethod",
+                                                        "self_argument": [],
+                                                        "codims": [],
+                                                        "common_block": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 635,
+                                                        "last": 637,
+                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                        "first_line": 20,
+                                                        "first_column": 20,
+                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                        "last_line": 20,
+                                                        "last_column": 22
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "name": "first_int",
+                                        "function_signature": {
+                                            "node": "FunctionType",
+                                            "fields": {
+                                                "arg_types": [
+                                                    {
+                                                        "node": "Array",
+                                                        "fields": {
+                                                            "type": {
+                                                                "node": "Integer",
+                                                                "fields": {
+                                                                    "kind": 4
+                                                                },
+                                                                "loc": {
+                                                                    "first": 715,
+                                                                    "last": 721,
+                                                                    "first_filename": "tests/json_loc_template_module.f90",
+                                                                    "first_line": 25,
+                                                                    "first_column": 25,
+                                                                    "last_filename": "tests/json_loc_template_module.f90",
+                                                                    "last_line": 25,
+                                                                    "last_column": 31
+                                                                }
+                                                            },
+                                                            "dims": [
+                                                                {
+                                                                    "node": "dimension",
+                                                                    "fields": {
+                                                                        "start": [],
+                                                                        "length": []
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 613,
+                                                                        "last": 613,
+                                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                                        "first_line": 19,
+                                                                        "first_column": 36,
+                                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                                        "last_line": 19,
+                                                                        "last_column": 36
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "physical_type": "DescriptorArray",
+                                                            "memory_space": "Global"
+                                                        },
+                                                        "loc": {
+                                                            "first": 715,
+                                                            "last": 721,
+                                                            "first_filename": "tests/json_loc_template_module.f90",
+                                                            "first_line": 25,
+                                                            "first_column": 25,
+                                                            "last_filename": "tests/json_loc_template_module.f90",
+                                                            "last_line": 25,
+                                                            "last_column": 31
+                                                        }
+                                                    }
+                                                ],
+                                                "return_var_type": {
+                                                    "node": "Integer",
+                                                    "fields": {
+                                                        "kind": 4
+                                                    },
+                                                    "loc": {
+                                                        "first": 715,
+                                                        "last": 721,
+                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                        "first_line": 25,
+                                                        "first_column": 25,
+                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                        "last_line": 25,
+                                                        "last_column": 31
+                                                    }
+                                                },
+                                                "abi": "Source",
+                                                "deftype": "Implementation",
+                                                "bindc_name": [],
+                                                "elemental": false,
+                                                "pure": false,
+                                                "module": false,
+                                                "inline": false,
+                                                "static": false,
+                                                "restrictions": [],
+                                                "is_restriction": false,
+                                                "exec_space": "Host"
+                                            },
+                                            "loc": {
+                                                "first": 544,
+                                                "last": 675,
+                                                "first_filename": "tests/json_loc_template_module.f90",
+                                                "first_line": 18,
+                                                "first_column": 5,
+                                                "last_filename": "tests/json_loc_template_module.f90",
+                                                "last_line": 22,
+                                                "last_column": 16
+                                            }
+                                        },
+                                        "dependencies": [],
+                                        "args": [
+                                            {
+                                                "node": "Var",
+                                                "fields": {
+                                                    "v": "lst (SymbolTable8)"
+                                                },
+                                                "loc": {
+                                                    "first": 544,
+                                                    "last": 675,
+                                                    "first_filename": "tests/json_loc_template_module.f90",
+                                                    "first_line": 18,
+                                                    "first_column": 5,
+                                                    "last_filename": "tests/json_loc_template_module.f90",
+                                                    "last_line": 22,
+                                                    "last_column": 16
+                                                }
+                                            }
+                                        ],
+                                        "body": [
+                                            {
+                                                "node": "Assignment",
+                                                "fields": {
+                                                    "target": {
+                                                        "node": "Var",
+                                                        "fields": {
+                                                            "v": "res (SymbolTable8)"
+                                                        },
+                                                        "loc": {
+                                                            "first": 647,
+                                                            "last": 649,
+                                                            "first_filename": "tests/json_loc_template_module.f90",
+                                                            "first_line": 21,
+                                                            "first_column": 9,
+                                                            "last_filename": "tests/json_loc_template_module.f90",
+                                                            "last_line": 21,
+                                                            "last_column": 11
+                                                        }
+                                                    },
+                                                    "value": {
+                                                        "node": "ArrayItem",
+                                                        "fields": {
+                                                            "v": {
+                                                                "node": "Var",
+                                                                "fields": {
+                                                                    "v": "lst (SymbolTable8)"
+                                                                },
+                                                                "loc": {
+                                                                    "first": 653,
+                                                                    "last": 658,
+                                                                    "first_filename": "tests/json_loc_template_module.f90",
+                                                                    "first_line": 21,
+                                                                    "first_column": 15,
+                                                                    "last_filename": "tests/json_loc_template_module.f90",
+                                                                    "last_line": 21,
+                                                                    "last_column": 20
+                                                                }
+                                                            },
+                                                            "args": [
+                                                                {
+                                                                    "node": "array_index",
+                                                                    "fields": {
+                                                                        "left": [],
+                                                                        "right": {
+                                                                            "node": "IntegerConstant",
+                                                                            "fields": {
+                                                                                "n": 1,
+                                                                                "type": {
+                                                                                    "node": "Integer",
+                                                                                    "fields": {
+                                                                                        "kind": 4
+                                                                                    },
+                                                                                    "loc": {
+                                                                                        "first": 657,
+                                                                                        "last": 657,
+                                                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                                                        "first_line": 21,
+                                                                                        "first_column": 19,
+                                                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                                                        "last_line": 21,
+                                                                                        "last_column": 19
+                                                                                    }
+                                                                                },
+                                                                                "intboz_type": "Decimal"
+                                                                            },
+                                                                            "loc": {
+                                                                                "first": 657,
+                                                                                "last": 657,
+                                                                                "first_filename": "tests/json_loc_template_module.f90",
+                                                                                "first_line": 21,
+                                                                                "first_column": 19,
+                                                                                "last_filename": "tests/json_loc_template_module.f90",
+                                                                                "last_line": 21,
+                                                                                "last_column": 19
+                                                                            }
+                                                                        },
+                                                                        "step": []
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 657,
+                                                                        "last": 657,
+                                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                                        "first_line": 21,
+                                                                        "first_column": 19,
+                                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                                        "last_line": 21,
+                                                                        "last_column": 19
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "type": {
+                                                                "node": "Integer",
+                                                                "fields": {
+                                                                    "kind": 4
+                                                                },
+                                                                "loc": {
+                                                                    "first": 715,
+                                                                    "last": 721,
+                                                                    "first_filename": "tests/json_loc_template_module.f90",
+                                                                    "first_line": 25,
+                                                                    "first_column": 25,
+                                                                    "last_filename": "tests/json_loc_template_module.f90",
+                                                                    "last_line": 25,
+                                                                    "last_column": 31
+                                                                }
+                                                            },
+                                                            "storage_format": "ColMajor",
+                                                            "value": [],
+                                                            "in_bounds": false
+                                                        },
+                                                        "loc": {
+                                                            "first": 653,
+                                                            "last": 658,
+                                                            "first_filename": "tests/json_loc_template_module.f90",
+                                                            "first_line": 21,
+                                                            "first_column": 15,
+                                                            "last_filename": "tests/json_loc_template_module.f90",
+                                                            "last_line": 21,
+                                                            "last_column": 20
+                                                        }
+                                                    },
+                                                    "overloaded": [],
+                                                    "realloc_lhs": false,
+                                                    "move_allocation": false,
+                                                    "new_target": false
+                                                },
+                                                "loc": {
+                                                    "first": 647,
+                                                    "last": 658,
+                                                    "first_filename": "tests/json_loc_template_module.f90",
+                                                    "first_line": 21,
+                                                    "first_column": 9,
+                                                    "last_filename": "tests/json_loc_template_module.f90",
+                                                    "last_line": 21,
+                                                    "last_column": 20
+                                                }
+                                            }
+                                        ],
+                                        "return_var": {
+                                            "node": "Var",
+                                            "fields": {
+                                                "v": "res (SymbolTable8)"
+                                            },
+                                            "loc": {
+                                                "first": 544,
+                                                "last": 675,
+                                                "first_filename": "tests/json_loc_template_module.f90",
+                                                "first_line": 18,
+                                                "first_column": 5,
+                                                "last_filename": "tests/json_loc_template_module.f90",
+                                                "last_line": 22,
+                                                "last_column": 16
+                                            }
+                                        },
+                                        "access": "Public",
+                                        "deterministic": true,
+                                        "side_effect_free": true,
+                                        "module_file": []
+                                    },
+                                    "loc": {
+                                        "first": 544,
+                                        "last": 675,
+                                        "first_filename": "tests/json_loc_template_module.f90",
+                                        "first_line": 18,
+                                        "first_column": 5,
+                                        "last_filename": "tests/json_loc_template_module.f90",
+                                        "last_line": 22,
+                                        "last_column": 16
+                                    }
+                                },
+                                "first_tmpl": {
+                                    "node": "Template",
+                                    "fields": {
+                                        "symtab": {
+                                            "node": "SymbolTable5",
+                                            "fields": {
+                                                "first_t": {
+                                                    "node": "Function",
+                                                    "fields": {
+                                                        "symtab": {
+                                                            "node": "SymbolTable6",
+                                                            "fields": {
+                                                                "lst": {
+                                                                    "node": "Variable",
+                                                                    "fields": {
+                                                                        "parent_symtab": 6,
+                                                                        "name": "lst",
+                                                                        "dependencies": [],
+                                                                        "intent": "In",
+                                                                        "symbolic_value": [],
+                                                                        "value": [],
+                                                                        "storage": "Default",
+                                                                        "type": {
+                                                                            "node": "Array",
+                                                                            "fields": {
+                                                                                "type": {
+                                                                                    "node": "TypeParameter",
+                                                                                    "fields": {
+                                                                                        "param": "t",
+                                                                                        "deferred_attr": "NonExtensible",
+                                                                                        "is_class": false
+                                                                                    },
+                                                                                    "loc": {
+                                                                                        "first": 586,
+                                                                                        "last": 614,
+                                                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                                                        "first_line": 19,
+                                                                                        "first_column": 9,
+                                                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                                                        "last_line": 19,
+                                                                                        "last_column": 37
+                                                                                    }
+                                                                                },
+                                                                                "dims": [
+                                                                                    {
+                                                                                        "node": "dimension",
+                                                                                        "fields": {
+                                                                                            "start": [],
+                                                                                            "length": []
+                                                                                        },
+                                                                                        "loc": {
+                                                                                            "first": 613,
+                                                                                            "last": 613,
+                                                                                            "first_filename": "tests/json_loc_template_module.f90",
+                                                                                            "first_line": 19,
+                                                                                            "first_column": 36,
+                                                                                            "last_filename": "tests/json_loc_template_module.f90",
+                                                                                            "last_line": 19,
+                                                                                            "last_column": 36
+                                                                                        }
+                                                                                    }
+                                                                                ],
+                                                                                "physical_type": "DescriptorArray",
+                                                                                "memory_space": "Global"
+                                                                            },
+                                                                            "loc": {
+                                                                                "first": 586,
+                                                                                "last": 614,
+                                                                                "first_filename": "tests/json_loc_template_module.f90",
+                                                                                "first_line": 19,
+                                                                                "first_column": 9,
+                                                                                "last_filename": "tests/json_loc_template_module.f90",
+                                                                                "last_line": 19,
+                                                                                "last_column": 37
+                                                                            }
+                                                                        },
+                                                                        "type_declaration": [],
+                                                                        "abi": "Source",
+                                                                        "access": "Private",
+                                                                        "presence": "Required",
+                                                                        "value_attr": false,
+                                                                        "target_attr": false,
+                                                                        "contiguous_attr": false,
+                                                                        "bindc_name": [],
+                                                                        "is_volatile": false,
+                                                                        "is_protected": false,
+                                                                        "pass_attr": "NotMethod",
+                                                                        "self_argument": [],
+                                                                        "codims": [],
+                                                                        "common_block": []
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 609,
+                                                                        "last": 614,
+                                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                                        "first_line": 19,
+                                                                        "first_column": 32,
+                                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                                        "last_line": 19,
+                                                                        "last_column": 37
+                                                                    }
+                                                                },
+                                                                "res": {
+                                                                    "node": "Variable",
+                                                                    "fields": {
+                                                                        "parent_symtab": 6,
+                                                                        "name": "res",
+                                                                        "dependencies": [],
+                                                                        "intent": "ReturnVar",
+                                                                        "symbolic_value": [],
+                                                                        "value": [],
+                                                                        "storage": "Default",
+                                                                        "type": {
+                                                                            "node": "TypeParameter",
+                                                                            "fields": {
+                                                                                "param": "t",
+                                                                                "deferred_attr": "NonExtensible",
+                                                                                "is_class": false
+                                                                            },
+                                                                            "loc": {
+                                                                                "first": 624,
+                                                                                "last": 637,
+                                                                                "first_filename": "tests/json_loc_template_module.f90",
+                                                                                "first_line": 20,
+                                                                                "first_column": 9,
+                                                                                "last_filename": "tests/json_loc_template_module.f90",
+                                                                                "last_line": 20,
+                                                                                "last_column": 22
+                                                                            }
+                                                                        },
+                                                                        "type_declaration": [],
+                                                                        "abi": "Source",
+                                                                        "access": "Private",
+                                                                        "presence": "Required",
+                                                                        "value_attr": false,
+                                                                        "target_attr": false,
+                                                                        "contiguous_attr": false,
+                                                                        "bindc_name": [],
+                                                                        "is_volatile": false,
+                                                                        "is_protected": false,
+                                                                        "pass_attr": "NotMethod",
+                                                                        "self_argument": [],
+                                                                        "codims": [],
+                                                                        "common_block": []
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 635,
+                                                                        "last": 637,
+                                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                                        "first_line": 20,
+                                                                        "first_column": 20,
+                                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                                        "last_line": 20,
+                                                                        "last_column": 22
+                                                                    }
+                                                                }
+                                                            }
+                                                        },
+                                                        "name": "first_t",
+                                                        "function_signature": {
+                                                            "node": "FunctionType",
+                                                            "fields": {
+                                                                "arg_types": [
+                                                                    {
+                                                                        "node": "Array",
+                                                                        "fields": {
+                                                                            "type": {
+                                                                                "node": "TypeParameter",
+                                                                                "fields": {
+                                                                                    "param": "t",
+                                                                                    "deferred_attr": "NonExtensible",
+                                                                                    "is_class": false
+                                                                                },
+                                                                                "loc": {
+                                                                                    "first": 586,
+                                                                                    "last": 614,
+                                                                                    "first_filename": "tests/json_loc_template_module.f90",
+                                                                                    "first_line": 19,
+                                                                                    "first_column": 9,
+                                                                                    "last_filename": "tests/json_loc_template_module.f90",
+                                                                                    "last_line": 19,
+                                                                                    "last_column": 37
+                                                                                }
+                                                                            },
+                                                                            "dims": [
+                                                                                {
+                                                                                    "node": "dimension",
+                                                                                    "fields": {
+                                                                                        "start": [],
+                                                                                        "length": []
+                                                                                    },
+                                                                                    "loc": {
+                                                                                        "first": 613,
+                                                                                        "last": 613,
+                                                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                                                        "first_line": 19,
+                                                                                        "first_column": 36,
+                                                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                                                        "last_line": 19,
+                                                                                        "last_column": 36
+                                                                                    }
+                                                                                }
+                                                                            ],
+                                                                            "physical_type": "DescriptorArray",
+                                                                            "memory_space": "Global"
+                                                                        },
+                                                                        "loc": {
+                                                                            "first": 586,
+                                                                            "last": 614,
+                                                                            "first_filename": "tests/json_loc_template_module.f90",
+                                                                            "first_line": 19,
+                                                                            "first_column": 9,
+                                                                            "last_filename": "tests/json_loc_template_module.f90",
+                                                                            "last_line": 19,
+                                                                            "last_column": 37
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "return_var_type": {
+                                                                    "node": "TypeParameter",
+                                                                    "fields": {
+                                                                        "param": "t",
+                                                                        "deferred_attr": "NonExtensible",
+                                                                        "is_class": false
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 624,
+                                                                        "last": 637,
+                                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                                        "first_line": 20,
+                                                                        "first_column": 9,
+                                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                                        "last_line": 20,
+                                                                        "last_column": 22
+                                                                    }
+                                                                },
+                                                                "abi": "Source",
+                                                                "deftype": "Implementation",
+                                                                "bindc_name": [],
+                                                                "elemental": false,
+                                                                "pure": false,
+                                                                "module": false,
+                                                                "inline": false,
+                                                                "static": false,
+                                                                "restrictions": [],
+                                                                "is_restriction": false,
+                                                                "exec_space": "Host"
+                                                            },
+                                                            "loc": {
+                                                                "first": 544,
+                                                                "last": 675,
+                                                                "first_filename": "tests/json_loc_template_module.f90",
+                                                                "first_line": 18,
+                                                                "first_column": 5,
+                                                                "last_filename": "tests/json_loc_template_module.f90",
+                                                                "last_line": 22,
+                                                                "last_column": 16
+                                                            }
+                                                        },
+                                                        "dependencies": [],
+                                                        "args": [
+                                                            {
+                                                                "node": "Var",
+                                                                "fields": {
+                                                                    "v": "lst (SymbolTable6)"
+                                                                },
+                                                                "loc": {
+                                                                    "first": 544,
+                                                                    "last": 675,
+                                                                    "first_filename": "tests/json_loc_template_module.f90",
+                                                                    "first_line": 18,
+                                                                    "first_column": 5,
+                                                                    "last_filename": "tests/json_loc_template_module.f90",
+                                                                    "last_line": 22,
+                                                                    "last_column": 16
+                                                                }
+                                                            }
+                                                        ],
+                                                        "body": [
+                                                            {
+                                                                "node": "Assignment",
+                                                                "fields": {
+                                                                    "target": {
+                                                                        "node": "Var",
+                                                                        "fields": {
+                                                                            "v": "res (SymbolTable6)"
+                                                                        },
+                                                                        "loc": {
+                                                                            "first": 647,
+                                                                            "last": 649,
+                                                                            "first_filename": "tests/json_loc_template_module.f90",
+                                                                            "first_line": 21,
+                                                                            "first_column": 9,
+                                                                            "last_filename": "tests/json_loc_template_module.f90",
+                                                                            "last_line": 21,
+                                                                            "last_column": 11
+                                                                        }
+                                                                    },
+                                                                    "value": {
+                                                                        "node": "ArrayItem",
+                                                                        "fields": {
+                                                                            "v": {
+                                                                                "node": "Var",
+                                                                                "fields": {
+                                                                                    "v": "lst (SymbolTable6)"
+                                                                                },
+                                                                                "loc": {
+                                                                                    "first": 653,
+                                                                                    "last": 658,
+                                                                                    "first_filename": "tests/json_loc_template_module.f90",
+                                                                                    "first_line": 21,
+                                                                                    "first_column": 15,
+                                                                                    "last_filename": "tests/json_loc_template_module.f90",
+                                                                                    "last_line": 21,
+                                                                                    "last_column": 20
+                                                                                }
+                                                                            },
+                                                                            "args": [
+                                                                                {
+                                                                                    "node": "array_index",
+                                                                                    "fields": {
+                                                                                        "left": [],
+                                                                                        "right": {
+                                                                                            "node": "IntegerConstant",
+                                                                                            "fields": {
+                                                                                                "n": 1,
+                                                                                                "type": {
+                                                                                                    "node": "Integer",
+                                                                                                    "fields": {
+                                                                                                        "kind": 4
+                                                                                                    },
+                                                                                                    "loc": {
+                                                                                                        "first": 657,
+                                                                                                        "last": 657,
+                                                                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                                                                        "first_line": 21,
+                                                                                                        "first_column": 19,
+                                                                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                                                                        "last_line": 21,
+                                                                                                        "last_column": 19
+                                                                                                    }
+                                                                                                },
+                                                                                                "intboz_type": "Decimal"
+                                                                                            },
+                                                                                            "loc": {
+                                                                                                "first": 657,
+                                                                                                "last": 657,
+                                                                                                "first_filename": "tests/json_loc_template_module.f90",
+                                                                                                "first_line": 21,
+                                                                                                "first_column": 19,
+                                                                                                "last_filename": "tests/json_loc_template_module.f90",
+                                                                                                "last_line": 21,
+                                                                                                "last_column": 19
+                                                                                            }
+                                                                                        },
+                                                                                        "step": []
+                                                                                    },
+                                                                                    "loc": {
+                                                                                        "first": 657,
+                                                                                        "last": 657,
+                                                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                                                        "first_line": 21,
+                                                                                        "first_column": 19,
+                                                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                                                        "last_line": 21,
+                                                                                        "last_column": 19
+                                                                                    }
+                                                                                }
+                                                                            ],
+                                                                            "type": {
+                                                                                "node": "TypeParameter",
+                                                                                "fields": {
+                                                                                    "param": "t",
+                                                                                    "deferred_attr": "NonExtensible",
+                                                                                    "is_class": false
+                                                                                },
+                                                                                "loc": {
+                                                                                    "first": 586,
+                                                                                    "last": 614,
+                                                                                    "first_filename": "tests/json_loc_template_module.f90",
+                                                                                    "first_line": 19,
+                                                                                    "first_column": 9,
+                                                                                    "last_filename": "tests/json_loc_template_module.f90",
+                                                                                    "last_line": 19,
+                                                                                    "last_column": 37
+                                                                                }
+                                                                            },
+                                                                            "storage_format": "ColMajor",
+                                                                            "value": [],
+                                                                            "in_bounds": false
+                                                                        },
+                                                                        "loc": {
+                                                                            "first": 653,
+                                                                            "last": 658,
+                                                                            "first_filename": "tests/json_loc_template_module.f90",
+                                                                            "first_line": 21,
+                                                                            "first_column": 15,
+                                                                            "last_filename": "tests/json_loc_template_module.f90",
+                                                                            "last_line": 21,
+                                                                            "last_column": 20
+                                                                        }
+                                                                    },
+                                                                    "overloaded": [],
+                                                                    "realloc_lhs": false,
+                                                                    "move_allocation": false,
+                                                                    "new_target": false
+                                                                },
+                                                                "loc": {
+                                                                    "first": 647,
+                                                                    "last": 658,
+                                                                    "first_filename": "tests/json_loc_template_module.f90",
+                                                                    "first_line": 21,
+                                                                    "first_column": 9,
+                                                                    "last_filename": "tests/json_loc_template_module.f90",
+                                                                    "last_line": 21,
+                                                                    "last_column": 20
+                                                                }
+                                                            }
+                                                        ],
+                                                        "return_var": {
+                                                            "node": "Var",
+                                                            "fields": {
+                                                                "v": "res (SymbolTable6)"
+                                                            },
+                                                            "loc": {
+                                                                "first": 544,
+                                                                "last": 675,
+                                                                "first_filename": "tests/json_loc_template_module.f90",
+                                                                "first_line": 18,
+                                                                "first_column": 5,
+                                                                "last_filename": "tests/json_loc_template_module.f90",
+                                                                "last_line": 22,
+                                                                "last_column": 16
+                                                            }
+                                                        },
+                                                        "access": "Public",
+                                                        "deterministic": true,
+                                                        "side_effect_free": true,
+                                                        "module_file": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 544,
+                                                        "last": 675,
+                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                        "first_line": 18,
+                                                        "first_column": 5,
+                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                        "last_line": 22,
+                                                        "last_column": 16
+                                                    }
+                                                },
+                                                "t": {
+                                                    "node": "Variable",
+                                                    "fields": {
+                                                        "parent_symtab": 5,
+                                                        "name": "t",
+                                                        "dependencies": [],
+                                                        "intent": "In",
+                                                        "symbolic_value": [],
+                                                        "value": [],
+                                                        "storage": "Default",
+                                                        "type": {
+                                                            "node": "TypeParameter",
+                                                            "fields": {
+                                                                "param": "t",
+                                                                "deferred_attr": "NonExtensible",
+                                                                "is_class": false
+                                                            },
+                                                            "loc": {
+                                                                "first": 433,
+                                                                "last": 433,
+                                                                "first_filename": "tests/json_loc_template_module.f90",
+                                                                "first_line": 10,
+                                                                "first_column": 22,
+                                                                "last_filename": "tests/json_loc_template_module.f90",
+                                                                "last_line": 10,
+                                                                "last_column": 22
+                                                            }
+                                                        },
+                                                        "type_declaration": [],
+                                                        "abi": "Source",
+                                                        "access": "Private",
+                                                        "presence": "Required",
+                                                        "value_attr": false,
+                                                        "target_attr": false,
+                                                        "contiguous_attr": false,
+                                                        "bindc_name": [],
+                                                        "is_volatile": false,
+                                                        "is_protected": false,
+                                                        "pass_attr": "NotMethod",
+                                                        "self_argument": [],
+                                                        "codims": [],
+                                                        "common_block": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 433,
+                                                        "last": 433,
+                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                        "first_line": 10,
+                                                        "first_column": 22,
+                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                        "last_line": 10,
+                                                        "last_column": 22
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "name": "first_tmpl",
+                                        "args": [
+                                            "t"
+                                        ],
+                                        "requires": [
+                                            {
+                                                "node": "Require",
+                                                "fields": {
+                                                    "name": "r",
+                                                    "args": [
+                                                        "t"
+                                                    ]
+                                                },
+                                                "loc": {
+                                                    "first": 491,
+                                                    "last": 495,
+                                                    "first_filename": "tests/json_loc_template_module.f90",
+                                                    "first_line": 14,
+                                                    "first_column": 16,
+                                                    "last_filename": "tests/json_loc_template_module.f90",
+                                                    "last_line": 14,
+                                                    "last_column": 20
+                                                }
+                                            }
+                                        ]
+                                    },
+                                    "loc": {
+                                        "first": 452,
+                                        "last": 690,
+                                        "first_filename": "tests/json_loc_template_module.f90",
+                                        "first_line": 13,
+                                        "first_column": 1,
+                                        "last_filename": "tests/json_loc_template_module.f90",
+                                        "last_line": 24,
+                                        "last_column": 1
+                                    }
+                                },
+                                "r": {
+                                    "node": "Requirement",
+                                    "fields": {
+                                        "symtab": {
+                                            "node": "SymbolTable7",
+                                            "fields": {
+                                                "t": {
+                                                    "node": "Variable",
+                                                    "fields": {
+                                                        "parent_symtab": 7,
+                                                        "name": "t",
+                                                        "dependencies": [],
+                                                        "intent": "In",
+                                                        "symbolic_value": [],
+                                                        "value": [],
+                                                        "storage": "Default",
+                                                        "type": {
+                                                            "node": "TypeParameter",
+                                                            "fields": {
+                                                                "param": "t",
+                                                                "deferred_attr": "NonExtensible",
+                                                                "is_class": false
+                                                            },
+                                                            "loc": {
+                                                                "first": 433,
+                                                                "last": 433,
+                                                                "first_filename": "tests/json_loc_template_module.f90",
+                                                                "first_line": 10,
+                                                                "first_column": 22,
+                                                                "last_filename": "tests/json_loc_template_module.f90",
+                                                                "last_line": 10,
+                                                                "last_column": 22
+                                                            }
+                                                        },
+                                                        "type_declaration": [],
+                                                        "abi": "Source",
+                                                        "access": "Private",
+                                                        "presence": "Required",
+                                                        "value_attr": false,
+                                                        "target_attr": false,
+                                                        "contiguous_attr": false,
+                                                        "bindc_name": [],
+                                                        "is_volatile": false,
+                                                        "is_protected": false,
+                                                        "pass_attr": "NotMethod",
+                                                        "self_argument": [],
+                                                        "codims": [],
+                                                        "common_block": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 433,
+                                                        "last": 433,
+                                                        "first_filename": "tests/json_loc_template_module.f90",
+                                                        "first_line": 10,
+                                                        "first_column": 22,
+                                                        "last_filename": "tests/json_loc_template_module.f90",
+                                                        "last_line": 10,
+                                                        "last_column": 22
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "name": "r",
+                                        "args": [
+                                            "t"
+                                        ],
+                                        "requires": []
+                                    },
+                                    "loc": {
+                                        "first": 394,
+                                        "last": 451,
+                                        "first_filename": "tests/json_loc_template_module.f90",
+                                        "first_line": 9,
+                                        "first_column": 1,
+                                        "last_filename": "tests/json_loc_template_module.f90",
+                                        "last_line": 12,
+                                        "last_column": 1
+                                    }
+                                }
+                            }
+                        },
+                        "name": "json_loc_template_module_m",
+                        "parent_module": [],
+                        "dependencies": [],
+                        "loaded_from_mod": true,
+                        "intrinsic": false,
+                        "has_submodules": false,
+                        "global_init": []
+                    },
+                    "loc": {
+                        "first": 111,
+                        "last": 761,
+                        "first_filename": "tests/json_loc_template_module.f90",
+                        "first_line": 1,
+                        "first_column": 1,
+                        "last_filename": "tests/json_loc_template_module.f90",
+                        "last_line": 26,
+                        "last_column": 10
+                    }
+                },
+                "json_loc_template_use_module": {
+                    "node": "Program",
+                    "fields": {
+                        "symtab": {
+                            "node": "SymbolTable2",
+                            "fields": {
+                                "first_int": {
+                                    "node": "ExternalSymbol",
+                                    "fields": {
+                                        "parent_symtab": 2,
+                                        "name": "first_int",
+                                        "external": "first_int (SymbolTable4)",
+                                        "module_name": "json_loc_template_module_m",
+                                        "scope_names": [],
+                                        "original_name": "first_int",
+                                        "access": "Public"
+                                    },
+                                    "loc": {
+                                        "first": 75,
+                                        "last": 83,
+                                        "first_filename": "tests/json_loc_template_use_module.f90",
+                                        "first_line": 2,
+                                        "first_column": 39,
+                                        "last_filename": "tests/json_loc_template_use_module.f90",
+                                        "last_line": 2,
+                                        "last_column": 47
+                                    }
+                                }
+                            }
+                        },
+                        "name": "json_loc_template_use_module",
+                        "dependencies": [
+                            "json_loc_template_module_m"
+                        ],
+                        "body": [],
+                        "global_init": []
+                    },
+                    "loc": {
+                        "first": 0,
+                        "last": 109,
+                        "first_filename": "tests/json_loc_template_use_module.f90",
+                        "first_line": 1,
+                        "first_column": 1,
+                        "last_filename": "tests/json_loc_template_use_module.f90",
+                        "last_line": 4,
+                        "last_column": 11
+                    }
+                }
+            }
+        },
+        "items": [],
+        "global_init": []
+    },
+    "loc": {
+        "first": 0,
+        "last": 109,
+        "first_filename": "tests/json_loc_template_use_module.f90",
+        "first_line": 1,
+        "first_column": 1,
+        "last_filename": "tests/json_loc_template_use_module.f90",
+        "last_line": 4,
+        "last_column": 11
+    }
+}
