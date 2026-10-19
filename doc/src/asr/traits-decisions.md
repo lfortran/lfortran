@@ -1187,7 +1187,8 @@ specification action, that is, what the paper should say.
   the trait is an abstract type with deferred bindings. The variable for the
   result is deallocated before each call of a message with an allocatable
   result and at the end of its scope, and an allocatable target takes the
-  result over, so no copy is leaked and the lifetime of a result is that of
+  result over once the message has returned (so the implementation still
+  sees the target's previous value), so no copy is leaked and the lifetime of a result is that of
   an ordinary function result (TD-14).
 - **Implementation status.** Implemented for borrowed views, owners (including
   allocatable trait components), pointers, `CLASS IS` associate names and
@@ -1217,10 +1218,16 @@ specification action, that is, what the paper should say.
   reference through a view, an owner, a pointer or a `CLASS IS` associate name
   is an ordinary function reference whose result has the dynamic type the
   implementation gave it. An allocatable scalar result assigned to an
-  allocatable variable of the same declared type that no argument aliases is
+  allocatable variable of the same declared type, or a component of one, is
   returned into that variable, whose previous value is deallocated, and so
-  finalized, when the implementation is entered; every other reference
-  evaluates into a variable of the calling scope. Pointer, trait-object and
+  finalized, when the implementation is entered, only when no other
+  procedure can reference the variable: it is local to the calling
+  procedure, program or BLOCK, not saved, without the TARGET attribute, not
+  reached through a pointer, in a scope without internal procedures, and no
+  argument aliases it. Every other reference, such as one assigned to a
+  module variable or a dummy argument that the implementation may read,
+  evaluates into a variable of the calling scope, which is then assigned to
+  the target. Pointer, trait-object and
   unlimited polymorphic array results, results of a finalized derived type
   that are not allocatable, and array and allocatable results of generic
   messages remain outside the runtime surface and are diagnosed by naming the

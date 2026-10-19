@@ -1638,11 +1638,56 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             return ASRUtils::check_equal_type(t, r, target, result);
         }
 
+        // Whether the storage of the designator `e` cannot be referenced by
+        // a procedure it is not passed to: `e` is, or is a component of, a
+        // variable local to the procedure, program or BLOCK whose scope owns
+        // it, that is not saved (a recursive invocation would share it), has
+        // no TARGET attribute (a pointer could reach it) and is not reached
+        // through a pointer, in a scope with no internal procedure (which
+        // could reference it by host association, also when passed as a
+        // procedure argument). A module variable or a dummy argument
+        // (which may be associated with one) is visible elsewhere.
+        static bool is_invisible_to_callees(ASR::expr_t *e) {
+            while (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+                if (ASRUtils::is_pointer(ASRUtils::expr_type(e))) return false;
+                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+            }
+            if (!ASR::is_a<ASR::Var_t>(*e) ||
+                    ASRUtils::is_pointer(ASRUtils::expr_type(e))) {
+                return false;
+            }
+            ASR::symbol_t *sym = ASR::down_cast<ASR::Var_t>(e)->m_v;
+            if (!ASR::is_a<ASR::Variable_t>(*sym)) return false;
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+            if (v->m_intent != ASR::intentType::Local ||
+                    v->m_storage == ASR::storage_typeType::Save ||
+                    v->m_target_attr) {
+                return false;
+            }
+            SymbolTable *owner = v->m_parent_symtab;
+            if (owner == nullptr || owner->asr_owner == nullptr ||
+                    !ASR::is_a<ASR::symbol_t>(*owner->asr_owner)) {
+                return false;
+            }
+            ASR::symbol_t *owner_sym = ASR::down_cast<ASR::symbol_t>(owner->asr_owner);
+            if (!ASR::is_a<ASR::Function_t>(*owner_sym) &&
+                    !ASR::is_a<ASR::Program_t>(*owner_sym) &&
+                    !ASR::is_a<ASR::Block_t>(*owner_sym)) {
+                return false;
+            }
+            for (auto &item : owner->get_scope()) {
+                if (ASR::is_a<ASR::Function_t>(*item.second)) return false;
+            }
+            return true;
+        }
+
         // The allocatable scalar result of a call through a runtime trait
         // slot is returned straight into an allocatable variable of the same
-        // declared type that no argument may alias, as the result of an
-        // ordinary function is (see subroutine_call_from_function): the
-        // slot's witness adapter deallocates its previous value on entry.
+        // declared type, whose previous value the slot's witness adapter
+        // deallocates on entry. So the variable is one no callee can see
+        // (see is_invisible_to_callees) and no argument may alias; any other
+        // target, such as a module variable the implementation reads, is
+        // assigned from a temporary that receives the result.
         bool trait_scalar_result_into_target(const ASR::Assignment_t &x) {
             if (x.m_overloaded || !ASR::is_a<ASR::TraitFunctionCall_t>(*x.m_value)) {
                 return false;
@@ -1652,8 +1697,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     !ASRUtils::is_allocatable(call->m_type) || ASRUtils::is_array(call->m_type) ||
                     !ASRUtils::is_allocatable(x.m_target) ||
                     ASRUtils::is_array(ASRUtils::expr_type(x.m_target)) ||
-                    !(ASR::is_a<ASR::Var_t>(*x.m_target) ||
-                      ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target))) {
+                    !is_invisible_to_callees(x.m_target)) {
                 return false;
             }
             ASR::Function_t* slot = ASRUtils::get_function(call->m_name);
