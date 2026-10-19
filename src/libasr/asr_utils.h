@@ -3265,6 +3265,17 @@ static inline ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::
     return nullptr;
 }
 
+// A function reference is not a whole array, so its lower bounds are 1.
+static inline void set_function_result_lbounds_to_one(Allocator& al,
+        ASR::dimension_t* dims, size_t n_dims) {
+    for (size_t i = 0; i < n_dims; i++) {
+        if (dims[i].m_start && dims[i].m_length) {
+            dims[i].m_start = get_constant_one_with_given_type(
+                al, expr_type(dims[i].m_start));
+        }
+    }
+}
+
 void mark_modules_as_external(const LCompilers::ASR::TranslationUnit_t &u);
 
 // Returns a string as long as `string_type` with every character equal to
