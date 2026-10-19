@@ -2819,6 +2819,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                           ret_dims[di].m_start = (replaced_start == ret_dims[di].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
                                            }
                                         }
+                                       ASRUtils::set_function_result_lbounds_to_one(al, ret_dims, n_ret_dims);
                                     }
                                 }
                             }
@@ -2936,6 +2937,7 @@ void process_overloaded_unary_function(ASR::symbol_t* proc, ASR::expr_t* operand
                                ret_dims[di].m_start = (replaced_start == ret_dims[di].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
                             }
                         }
+                       ASRUtils::set_function_result_lbounds_to_one(al, ret_dims, n_ret_dims);
                     }
                 }
             }
@@ -3959,6 +3961,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                         }
                                         new_dims.push_back(al, new_dim);
                                     }
+                                    ASRUtils::set_function_result_lbounds_to_one(al, new_dims.p, new_dims.size());
                                     bool for_type = true;
                                     for (size_t k = 0; k < new_dims.size(); k++) {
                                         if (new_dims[k].m_length && ASR::is_a<ASR::ArraySize_t>(*new_dims[k].m_length)) {
@@ -4102,6 +4105,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                             ret_dims[di].m_start = (replaced_start == ret_dims[di].m_start) ? caller_dup.duplicate_expr(replaced_start) : replaced_start;
                                          }
                                         }
+                                        ASRUtils::set_function_result_lbounds_to_one(al, ret_dims, n_ret_dims);
                                      }
                                 }
                             }
