@@ -401,7 +401,10 @@ public:
 
         Vec<ASR::stmt_t*> new_body; new_body.reserve(al, 1);
         std::string new_function_name = helper_parent->get_unique_name("__lcompilers_created_helper_function_", false);
-        ASR::ttype_t* integer_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(assignment_value));
+        // The helper returns the value of the expression, also when that is
+        // an allocatable function result.
+        ASR::ttype_t* integer_type = ASRUtils::duplicate_type(al,
+            ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(assignment_value)));
         ASR::expr_t* return_var = b.Variable(new_scope, new_scope->get_unique_name("__lcompilers_return_var_", false), integer_type, ASR::intentType::ReturnVar);
 
         helper_arguments.clear();
@@ -1082,6 +1085,11 @@ private:
         expr_contains_functionCall_with_Nonscalar_return() = default;
         bool found = false; // If any sub-expression is of non-scalar return
         bool is_non_scalar(ASR::ttype_t* type){
+            // An allocatable result is returned through an argument, like
+            // the others (see the subroutine_from_function pass).
+            if (ASRUtils::is_allocatable(type)) {
+                return true;
+            }
             type = ASRUtils::type_get_past_allocatable_pointer(type);
             return ASRUtils::is_character(*type) || 
             ASRUtils::is_array(type)      ||
