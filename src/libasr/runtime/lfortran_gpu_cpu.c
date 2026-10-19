@@ -205,6 +205,7 @@ static void run_thread(lfortran_gpu_kernel* k, void **args,
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3])
 {
+    lfortran_gpu_validate_launch(grid, block);
     if (!ctx || !k) return;
 
     // Same argument array the CUDA runtime hands to cudaLaunchKernel: every
