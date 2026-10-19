@@ -2091,7 +2091,7 @@ subroutine parameter_nonconstant_init()
 end subroutine
 
 subroutine allocate_func_target_01()
-    allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
+    allocate(character(len=5) :: ALLOCATE_FUNC_TARGET_01)
 end subroutine allocate_func_target_01
 
 function func_alloc_target_01() result(res) bind(c)
@@ -3437,3 +3437,17 @@ contains
         call cc1_epa_dummy(p(2,1))  ! {Error} Passing an element of a pointer array to an array dummy argument is not allowed
     end subroutine cc1_epa_use
 end module cc1_element_pointer_array
+
+! An external procedure is not accessible by host association, so a name used
+! as a variable in another scoping unit is not the external procedure.
+subroutine cc1_external_name_sub()
+end subroutine cc1_external_name_sub
+
+real function cc1_external_name_fn()
+    cc1_external_name_fn = 1.0
+end function cc1_external_name_fn
+
+subroutine cc1_external_name_user()
+    cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
+    print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
+end subroutine cc1_external_name_user

@@ -1754,6 +1754,54 @@ public:
             body.p, body.size(), nullptr, 0));
     }
 
+    bool unit_references_procedure(const std::string &name) {
+        class ProcedureReferenceFinder :
+                public AST::BaseWalkVisitor<ProcedureReferenceFinder> {
+        public:
+            const std::string &name;
+            bool found = false;
+            ProcedureReferenceFinder(const std::string &name) : name{name} {}
+
+            void visit_SubroutineCall(const AST::SubroutineCall_t &x) {
+                if (x.n_member == 0 && to_lower(x.m_name) == name) {
+                    found = true;
+                    return;
+                }
+                AST::BaseWalkVisitor<ProcedureReferenceFinder>
+                    ::visit_SubroutineCall(x);
+            }
+
+            void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
+                if (x.n_member == 0 && to_lower(x.m_func) == name) {
+                    found = true;
+                    return;
+                }
+                AST::BaseWalkVisitor<ProcedureReferenceFinder>
+                    ::visit_FuncCallOrArray(x);
+            }
+
+            // A data target needs the TARGET or POINTER attribute, so a name
+            // the unit does not declare can only be a procedure target.
+            void visit_Associate(const AST::Associate_t &x) {
+                if (AST::is_a<AST::Name_t>(*x.m_value)) {
+                    AST::Name_t *target = AST::down_cast<AST::Name_t>(x.m_value);
+                    if (target->n_member == 0 && to_lower(target->m_id) == name) {
+                        found = true;
+                        return;
+                    }
+                }
+                AST::BaseWalkVisitor<ProcedureReferenceFinder>
+                    ::visit_Associate(x);
+            }
+        };
+        if (starting_m_body == nullptr) return false;
+        ProcedureReferenceFinder finder(name);
+        for (size_t i = 0; i < starting_n_body && !finder.found; i++) {
+            finder.visit_decl_stmt(*starting_m_body[i]);
+        }
+        return finder.found;
+    }
+
     void collect_labels() {
         labels.clear();
         if (starting_m_body == nullptr) return;

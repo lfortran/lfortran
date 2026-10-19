@@ -2854,6 +2854,9 @@ public:
     ASR::asr_t* resolve_variable(const Location &loc, const std::string &var_name) {
         SymbolTable *scope = current_scope;
         ASR::symbol_t *v = scope->resolve_symbol(var_name);
+        if (v && is_inaccessible_external_procedure(v, var_name)) {
+            v = nullptr;
+        }
         if (compiler_options.implicit_typing) {
             if (!in_Subroutine) {
                 if (implicit_mapping.size() != 0 && current_scope->asr_owner) {
@@ -6973,6 +6976,43 @@ public:
     bool host_contains_procedure(SymbolTable* /*scope*/,
             const std::string &/*name*/) {
         return false;
+    }
+
+    // Whether the program unit being visited references `name` as a
+    // procedure, in a CALL statement, a function reference or as the target
+    // of a pointer assignment, anywhere in its executable part. Only the
+    // body visitor, which visits that part, overrides this.
+    bool unit_references_procedure(const std::string &/*name*/) {
+        return false;
+    }
+
+    // Whether `sym`, what the name `name` resolves to, is an external
+    // procedure that is not accessible in the scoping unit being visited.
+    // An external procedure is a global entity, which host association does
+    // not make accessible. Another scoping unit accesses it only if it
+    // declares the name (EXTERNAL, an interface body) or references it as a
+    // procedure; otherwise the name is a local entity of that unit, such as
+    // an implicitly typed variable. The external procedure itself, and the
+    // procedures it contains, do access their own name.
+    bool is_inaccessible_external_procedure(ASR::symbol_t* sym,
+            const std::string &name) {
+        if (!ASR::is_a<ASR::Function_t>(*sym)) {
+            return false;
+        }
+        SymbolTable* sym_scope = ASRUtils::symbol_parent_symtab(sym);
+        if (!ASRUtils::is_tu_scope(sym_scope) || sym_scope == current_scope) {
+            return false;
+        }
+        for (SymbolTable* s = current_scope; s != sym_scope; s = s->parent) {
+            // A scope that the procedure owns is in the procedure itself.
+            // Interactive evaluation chains translation units by scope, see
+            // `ASRUtils::cell_prefix()`: leave a procedure of an earlier
+            // cell accessible.
+            if (s->asr_owner == &sym->base || ASRUtils::is_tu_scope(s)) {
+                return false;
+            }
+        }
+        return !static_cast<Derived&>(*this).unit_references_procedure(name);
     }
 
     bool is_pending_proc_placeholder(ASR::symbol_t *s) {
