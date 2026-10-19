@@ -11,6 +11,7 @@
 #define CLI11_HAS_FILESYSTEM 0
 #endif // CLI11_HAS_FILESYSTEM
 #include <bin/CLI11.hpp>
+#include "cuda_link_helpers.h"
 
 #include <libasr/stacktrace.h>
 #include <lfortran/parser/parser.h>
@@ -127,249 +128,6 @@ std::string get_system_temp_dir()
 }
 
 std::string LFORTRAN_TEMP_DIR = get_system_temp_dir();
-
-bool append_cuda_sidecar(
-    const std::filesystem::path &sidecar_path,
-    std::set<std::string> &seen_sidecars,
-    std::vector<std::string> &cuda_sources)
-{
-    const std::string sidecar = sidecar_path.string();
-    if (!seen_sidecars.insert(sidecar).second) return true;
-
-    std::error_code ec;
-    if (!std::filesystem::exists(sidecar_path, ec)) {
-        if (ec) {
-            std::cerr << "Failed to inspect CUDA sidecar '" << sidecar
-                      << "': " << ec.message() << std::endl;
-            return false;
-        }
-        return true;
-    }
-    if (!std::filesystem::is_regular_file(sidecar_path, ec)) {
-        if (ec) {
-            std::cerr << "Failed to inspect CUDA sidecar '" << sidecar
-                      << "': " << ec.message() << std::endl;
-        } else {
-            std::cerr << "CUDA sidecar '" << sidecar
-                      << "' is not a regular file" << std::endl;
-        }
-        return false;
-    }
-
-    std::string sidecar_source;
-    if (!read_file(sidecar, sidecar_source)) {
-        std::cerr << "Failed to read CUDA sidecar '" << sidecar << "'"
-                  << std::endl;
-        return false;
-    }
-    cuda_sources.push_back(std::move(sidecar_source));
-    return true;
-}
-
-bool append_cuda_source_from_input(
-    const std::string &input,
-    std::set<std::string> &seen_sidecars,
-    std::vector<std::string> &cuda_sources);
-
-bool resolve_linker_library(
-    const std::string &library_name,
-    const std::vector<std::string> &lib_dirs,
-    LCompilers::Platform platform,
-    std::filesystem::path &resolved_path,
-    bool &is_static_archive)
-{
-    std::vector<std::string> shared_suffixes;
-    if (platform == LCompilers::Platform::macOS_Intel ||
-            platform == LCompilers::Platform::macOS_ARM ||
-            platform == LCompilers::Platform::macOS_PowerPC) {
-        shared_suffixes = {".dylib", ".so", ".tbd"};
-    } else if (platform == LCompilers::Platform::Windows) {
-        shared_suffixes = {".dll"};
-    } else {
-        shared_suffixes = {".so"};
-    }
-    const std::vector<std::string> static_suffixes =
-        (platform == LCompilers::Platform::Windows) ?
-            std::vector<std::string>{".lib"} :
-            std::vector<std::string>{".a"};
-    const std::string library_prefix =
-        (platform == LCompilers::Platform::Windows) ? "" : "lib";
-
-    for (const auto &dir : lib_dirs) {
-        const std::filesystem::path base_dir(dir);
-        for (const auto &suffix : shared_suffixes) {
-            const std::filesystem::path candidate =
-                base_dir / (library_prefix + library_name + suffix);
-            std::error_code ec;
-            if (std::filesystem::is_regular_file(candidate, ec) && !ec) {
-                resolved_path = candidate;
-                is_static_archive = false;
-                return true;
-            }
-        }
-        for (const auto &suffix : static_suffixes) {
-            const std::filesystem::path candidate =
-                base_dir / (library_prefix + library_name + suffix);
-            std::error_code ec;
-            if (std::filesystem::is_regular_file(candidate, ec) && !ec) {
-                resolved_path = candidate;
-                is_static_archive = true;
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-bool append_cuda_source_from_library(
-    const std::string &library_name,
-    const std::vector<std::string> &lib_dirs,
-    LCompilers::Platform platform,
-    std::set<std::string> &seen_sidecars,
-    std::vector<std::string> &cuda_sources)
-{
-    std::filesystem::path resolved_library;
-    bool is_static_archive = false;
-    if (!resolve_linker_library(library_name, lib_dirs, platform,
-            resolved_library, is_static_archive)) {
-        return true;
-    }
-    if (!is_static_archive) return true;
-    return append_cuda_source_from_input(resolved_library.string(),
-        seen_sidecars, cuda_sources);
-}
-
-#ifdef HAVE_LFORTRAN_LLVM
-const char *cuda_source_section_name()
-{
-#ifdef HAVE_LFORTRAN_MACHO
-    return "__lcgpu";
-#else
-    return ".lcompilers.gpu.cuda.source";
-#endif
-}
-
-bool append_cuda_payload(
-    const char *data,
-    size_t size,
-    std::vector<std::string> &cuda_sources)
-{
-    size_t pos = 0;
-    while (pos < size) {
-        size_t end = pos;
-        while (end < size && data[end] != '\0') {
-            end++;
-        }
-        if (end == size) {
-            std::cerr << "Malformed CUDA metadata: missing NUL terminator"
-                      << std::endl;
-            return false;
-        }
-        if (end > pos) {
-            cuda_sources.emplace_back(data + pos, end - pos);
-        }
-        pos = end + 1;
-        while (pos < size && data[pos] == '\0') {
-            pos++;
-        }
-    }
-    return true;
-}
-
-bool append_cuda_section_from_object(
-    llvm::object::ObjectFile &object,
-    std::vector<std::string> &cuda_sources,
-    bool &found_cuda_section)
-{
-    for (const auto &section : object.sections()) {
-        auto section_name_or_err = section.getName();
-        if (!section_name_or_err) {
-            std::cerr << "Failed to read CUDA section name: "
-                      << llvm::toString(section_name_or_err.takeError())
-                      << std::endl;
-            return false;
-        }
-        if (*section_name_or_err != cuda_source_section_name()) {
-            continue;
-        }
-        found_cuda_section = true;
-        auto contents_or_err = section.getContents();
-        if (!contents_or_err) {
-            std::cerr << "Failed to read CUDA section contents: "
-                      << llvm::toString(contents_or_err.takeError())
-                      << std::endl;
-            return false;
-        }
-        if (!append_cuda_payload(contents_or_err->data(),
-                contents_or_err->size(), cuda_sources)) {
-            return false;
-        }
-    }
-    return true;
-}
-
-bool append_cuda_source_from_input(
-    const std::string &input,
-    std::set<std::string> &seen_sidecars,
-    std::vector<std::string> &cuda_sources)
-{
-    auto binary_or_err = llvm::object::createBinary(input);
-    if (!binary_or_err) {
-        std::cerr << "Failed to open linker input '" << input << "': "
-                  << llvm::toString(binary_or_err.takeError()) << std::endl;
-        return false;
-    }
-    bool found_cuda_section = false;
-    llvm::object::Binary *binary = binary_or_err->getBinary();
-    if (auto *object = llvm::dyn_cast<llvm::object::ObjectFile>(binary)) {
-        if (!append_cuda_section_from_object(*object, cuda_sources,
-                found_cuda_section)) {
-            return false;
-        }
-    } else if (auto *archive = llvm::dyn_cast<llvm::object::Archive>(binary)) {
-        llvm::Error err = llvm::Error::success();
-        for (auto child : archive->children(err)) {
-            auto child_binary_or_err = child.getAsBinary();
-            if (!child_binary_or_err) {
-                std::cerr << "Failed to open archive member binary: "
-                          << llvm::toString(child_binary_or_err.takeError())
-                          << std::endl;
-                return false;
-            }
-            if (auto *child_object = llvm::dyn_cast<llvm::object::ObjectFile>(
-                    child_binary_or_err->get())) {
-                bool child_found_cuda_section = false;
-                if (!append_cuda_section_from_object(*child_object,
-                        cuda_sources, child_found_cuda_section)) {
-                    return false;
-                }
-                found_cuda_section = found_cuda_section || child_found_cuda_section;
-            }
-        }
-        if (err) {
-            std::cerr << "Failed to read archive member list: "
-                      << llvm::toString(std::move(err)) << std::endl;
-            return false;
-        }
-    }
-    if (!found_cuda_section) {
-        return append_cuda_sidecar(
-            std::filesystem::path(input + ".cuda.cu"),
-            seen_sidecars, cuda_sources);
-    }
-    return true;
-}
-#else
-bool append_cuda_source_from_input(
-    const std::string &input,
-    std::set<std::string> &seen_sidecars,
-    std::vector<std::string> &cuda_sources)
-{
-    return append_cuda_sidecar(
-        std::filesystem::path(input + ".cuda.cu"),
-        seen_sidecars, cuda_sources);
-}
-#endif
 
 // The unique compilation ID for this invocation of the compiler.
 // Used in naming unique intermediate object files during both compilation modes.
@@ -2363,6 +2121,10 @@ int link_executable(const std::vector<std::string> &infiles,
         std::cout << "Cannot use static_executable and shared_executable together" << std::endl;
         return 10;
     }
+    const bool static_library_search = static_executable
+        && compiler_options.platform != LCompilers::Platform::macOS_Intel
+        && compiler_options.platform != LCompilers::Platform::macOS_ARM
+        && compiler_options.platform != LCompilers::Platform::macOS_PowerPC;
     if (backend == Backend::llvm || backend == Backend::mlir) {
         std::string run_cmd = "", compile_cmd = "";
         if (t == "x86_64-pc-windows-msvc") {
@@ -2458,7 +2220,7 @@ int link_executable(const std::vector<std::string> &infiles,
             if(!extra_library_flags.empty()) {
                 compile_cmd += extra_library_flags + " ";
             }
-            compile_cmd += + " -L"
+            compile_cmd += " -L"
                 + base_path + " -Wl,-rpath," + base_path;
             if (!extra_linker_flags.empty()) {
                 compile_cmd += extra_linker_flags;
@@ -2503,8 +2265,8 @@ int link_executable(const std::vector<std::string> &infiles,
                 }
                 for (auto &library_name : libraries) {
                     if (!append_cuda_source_from_library(library_name, lib_dirs,
-                            compiler_options.platform, seen_cuda_sidecars,
-                            cuda_sources)) {
+                            compiler_options.platform, static_library_search,
+                            seen_cuda_sidecars, cuda_sources)) {
                         return 10;
                     }
                 }
@@ -2603,7 +2365,9 @@ int link_executable(const std::vector<std::string> &infiles,
                 } else {
                     // The device compiler also drives the link, since it knows
                     // where its own device runtime lives.
-                    compile_cmd = device_cc + " -o " + outfile + " ";
+                    compile_cmd = device_cc
+                        + (static_library_search ? " -static" : "")
+                        + " -o " + outfile + " ";
                     for (auto &s : infiles) {
                         compile_cmd += s + " ";
                     }
@@ -2611,6 +2375,7 @@ int link_executable(const std::vector<std::string> &infiles,
                         compile_cmd += cuda_kernel_obj + " ";
                     }
                     compile_cmd += cuda_runtime_obj;
+                    compile_cmd += extra_library_flags;
                     compile_cmd += " -L" + base_path
                         + " -Xlinker -rpath -Xlinker " + base_path
                         + " -l" + runtime_lib + " -lm";
