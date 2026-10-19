@@ -4809,11 +4809,13 @@ public:
 
             // Resolve AST node + set it in the holder.
             bool in_subroutine_or_function_copy{in_Subroutine}; in_Subroutine = true;
+            ASR::expr_t* call = nullptr;
             try {
                 visit_expr(*funcCall);
-                *expr_holder = ASRUtils::EXPR(tmp); tmp=nullptr;
+                call = ASRUtils::EXPR(tmp); tmp=nullptr;
+                *expr_holder = call;
                 // Invoke the call to the CheckFunc
-                if( CheckFunc ) CheckFunc(*expr_holder);
+                if( CheckFunc ) CheckFunc(call);
             } catch (SemanticAbort &) {
                 current_scope = current_scope_copy;
                 in_Subroutine = in_subroutine_or_function_copy;
@@ -4858,8 +4860,8 @@ public:
             // expr_holder may resolve to non-FunctionCall nodes (e.g.
             // StructInstanceMember for type-bound member access in dimension
             // expressions), so we guard instead of asserting FunctionCall_t.
-            if (ASR::is_a<ASR::FunctionCall_t>(**expr_holder)) {
-                ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(*expr_holder);
+            if (ASR::is_a<ASR::FunctionCall_t>(*call)) {
+                ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(call);
                 if(((ASR::symbol_t*)current_scope->asr_owner) == func_call->m_name){
                     diag.add(diag::Diagnostic(
                         "Variable declaration is calling its function scope recursively",

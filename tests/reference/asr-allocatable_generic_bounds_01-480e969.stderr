@@ -1,0 +1,5 @@
+semantic error: Allocatable array 'c' must have a deferred shape or assumed rank
+  --> tests/errors/allocatable_generic_bounds_01.f90:13:9
+   |
+13 |         integer, allocatable :: c(g(n):g(n+1))
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
