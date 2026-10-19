@@ -25,7 +25,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __lb_p_0 = __scalar_args.__lb_p_0;
     int __dim_p_1 = __scalar_args.__dim_p_1;
     int __lb_p_1 = __scalar_args.__lb_p_1;
-    int __dim_p_2 = __scalar_args.__dim_p_2;
     int __lb_p_2 = __scalar_args.__lb_p_2;
     int __flat_idx;
     int i;
@@ -57,7 +56,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     int __lb_p_0 = __scalar_args.__lb_p_0;
     int __dim_p_1 = __scalar_args.__dim_p_1;
     int __lb_p_1 = __scalar_args.__lb_p_1;
-    int __dim_p_2 = __scalar_args.__dim_p_2;
     int __lb_p_2 = __scalar_args.__lb_p_2;
     int __flat_idx;
     int i;

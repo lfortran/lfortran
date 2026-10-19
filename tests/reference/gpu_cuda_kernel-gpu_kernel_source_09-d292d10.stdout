@@ -22,7 +22,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __flat_idx;
     int j;
     int k;
-    const int n = 4;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
@@ -79,7 +78,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     int __flat_idx;
     int j;
     int k;
-    const int n = 4;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
@@ -133,7 +131,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     aggregate __gpu_struct_argument;
     int j;
     int k;
-    const int n = 4;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
@@ -173,7 +170,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     int __flat_idx;
     int j;
     int k;
-    const int n = 4;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
