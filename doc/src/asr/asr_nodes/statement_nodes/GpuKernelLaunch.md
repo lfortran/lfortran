@@ -18,7 +18,7 @@ gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 | Argument | Description |
 |----------|-------------|
 | `kernel` | the [Function](../symbol_nodes/Function.md) to run. Its signature has `exec_space = Kernel`; see [exec_space](../enum_nodes/exec_space.md). |
-| `thread_count` | the number of threads that run the kernel's body, one per iteration of the loop; a count below one runs none. |
+| `thread_count` | the number of threads the launch numbers: one per iteration of the loop, or, when the nest is launched in tiles, one per place in whole tiles; a count below one runs none. |
 | `block_size` | the number of threads per block. |
 | `args` | the arguments passed to every thread. |
 | `component_fit` | the [Block](../symbol_nodes/Block.md) the host runs before the launch to give the allocatable array components of elements of an array argument the loop writes the storage the kernel writes into, or `nil` when the loop writes none. |
@@ -37,7 +37,16 @@ blocks of `block_size`, and returns without waiting for them. The threads are
 numbered from zero, block after block; the kernel sends every thread numbered
 `thread_count` or higher back before its body, so the host sizes what the
 launch holds per thread -- a workspace slice -- by `thread_count`, not by the
-threads it starts. [GpuSync](GpuSync.md) is what waits; the `gpu_launch_sync`
+threads it starts.
+
+On a device that asks for tiles (CUDA), a nest of two or more dimensions
+without a reduction is launched in tiles: a block covers a tile of up to 32
+iterations of the dimension its stores are contiguous in by the rest of the
+block along the next one, the block index numbers the tiles, and
+`thread_count` counts whole tiles. The kernel sends a thread whose place
+falls outside the nest back before its body as well. The host picks the
+width of a tile from the extent of the fastest dimension and passes it to
+the kernel. [GpuSync](GpuSync.md) is what waits; the `gpu_launch_sync`
 pass places it where the host next needs what a kernel wrote (see
 [GPU offloading](../../../gpu_offloading.md)).
 

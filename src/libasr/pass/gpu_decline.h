@@ -73,6 +73,15 @@ struct GpuDeviceCapabilities {
     int lanes_per_iteration = 1;
 
     int threads_per_block = 256;
+
+    // The widest tile of iterations the threads of one block of a loop nest
+    // of two or more dimensions cover along the dimension its stores are
+    // contiguous in; the block's other threads cover the next dimension.
+    // A block then reads a two-dimensional neighbourhood of an array
+    // instead of a single run of one of its columns, so a stencil reuses
+    // what its neighbours in the other dimension loaded. Zero numbers the
+    // iterations of a nest in one flat range.
+    int tile_width = 0;
     int sequential_loop_unroll_factor = 1;
 
     // How many bytes of stack a thread of a kernel has. Late kernel storage

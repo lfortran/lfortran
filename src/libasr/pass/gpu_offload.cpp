@@ -2123,126 +2123,235 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         ASR::make_IntegerConstant_t(al, loc, 1, int_type,
             ASR::integerbozType::Decimal));
 
-    // Compute total flat size for guard. Every thread past it returns, so
-    // the per-dim ranges below are only computed when none is empty.
-    ASR::expr_t *total_size_kernel = nullptr;
-    for (size_t d = 0; d < n_dims; d++) {
-        // dim_range = max(0, kernel_end - kernel_start + 1)
-        ASR::expr_t *dim_range = gpu_loop_extent(al, loc,
-            kernel_starts[d], kernel_ends[d], int_type);
-        if (total_size_kernel == nullptr) {
-            total_size_kernel = dim_range;
-        } else {
-            total_size_kernel = ASRUtils::EXPR(
-                ASR::make_IntegerBinOp_t(al, loc,
-                    total_size_kernel, ASR::binopType::Mul,
-                    dim_range, int_type, nullptr));
-        }
+    auto int_binop = [&](ASR::expr_t *left, ASR::binopType op,
+            ASR::expr_t *right) {
+        return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+            left, op, right, int_type, nullptr));
+    };
+    // ASR has no integer remainder operator: a - (a/b)*b.
+    auto int_mod = [&](ASR::expr_t *left, ASR::expr_t *right) {
+        return int_binop(left, ASR::binopType::Sub, int_binop(
+            int_binop(left, ASR::binopType::Div, right),
+            ASR::binopType::Mul, right));
+    };
+    auto assign = [&](ASR::expr_t *target, ASR::expr_t *value) {
+        kernel_body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al,
+            loc, target, value, nullptr, false, false, false)));
+    };
+    auto return_if = [&](ASR::expr_t *test) {
+        Vec<ASR::stmt_t*> exit_body;
+        exit_body.reserve(al, 1);
+        exit_body.push_back(al, ASRUtils::STMT(ASR::make_Return_t(al, loc)));
+        Vec<ASR::stmt_t*> no_else;
+        no_else.reserve(al, 0);
+        kernel_body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc,
+            nullptr, test, exit_body.p, exit_body.n, no_else.p, no_else.n)));
+    };
+    auto kernel_local = [&](const std::string &name) {
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc, gpu_new_variable(al,
+            loc, kernel_scope, name, ASRUtils::duplicate_type(al,
+                int_type))));
+    };
+    // The number of iterations of dimension d, in a launch that has some.
+    auto kernel_range = [&](size_t d) {
+        return int_binop(int_binop(kernel_ends[d], ASR::binopType::Sub,
+            kernel_starts[d]), ASR::binopType::Add, one_const);
+    };
+    // The dimension the iterations are numbered along at a position: the
+    // fastest first, then the others in the order the loop names them.
+    auto dimension_at = [&](size_t position) {
+        return position == 0 ? fastest_dimension
+            : (position <= fastest_dimension ? position - 1 : position);
+    };
+    auto loop_var = [&](size_t d) {
+        return ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+            kernel_scope->get_symbol(loop_var_names[d])));
+    };
+
+    // A nest of two or more dimensions is launched in tiles where the
+    // device asks for them (GpuDeviceCapabilities::tile_width): a block
+    // covers 2**__tile_shift iterations of the fastest dimension by the rest
+    // of its threads along the next one, and the block index numbers the
+    // tiles. The host picks the width from the extent of the fastest
+    // dimension, so a short one does not leave most threads of a tile idle
+    // (gpu_offload_launch.cpp), and launches whole tiles: a thread of a
+    // partial tile that falls outside the nest returns. Widths and block
+    // sizes are powers of two, so a thread finds its place in a tile with
+    // shifts and masks, and one division of the block index finds the tile.
+    // A reduction keeps the flat numbering, which gives every thread an
+    // accumulator slot.
+    auto is_power_of_two = [](int64_t value) {
+        return value > 0 && (value & (value - 1)) == 0;
+    };
+    bool tiled = device_caps.tile_width > 0 && n_dims >= 2
+        && slot_index == nullptr
+        && is_power_of_two(device_caps.tile_width)
+        && is_power_of_two(device_caps.threads_per_block)
+        && device_caps.threads_per_block % device_caps.tile_width == 0;
+    ASR::expr_t *tile_shift = nullptr;
+    int tile_shift_arg = -1;
+    if (tiled) {
+        ASR::symbol_t *param = gpu_new_variable(al, loc, kernel_scope,
+            "__tile_shift", ASRUtils::duplicate_type(al, int_type),
+            ASR::intentType::InOut);
+        tile_shift = ASRUtils::EXPR(ASR::make_Var_t(al, loc, param));
+        kernel_args.push_back(al, tile_shift);
+        // The launch replaces this with the width it picks.
+        ASR::call_arg_t carg;
+        carg.loc = loc;
+        carg.m_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
+            0, int_type, ASR::integerbozType::Decimal));
+        call_args.push_back(al, carg);
+        tile_shift_arg = static_cast<int>(call_args.n) - 1;
     }
 
-    // Guard: if (flat_idx >= total_size) return
-    ASR::expr_t *guard = ASRUtils::EXPR(
-        ASR::make_IntegerCompare_t(al, loc, flat_idx,
-            ASR::cmpopType::GtE, total_size_kernel,
-            ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
-    Vec<ASR::stmt_t*> guard_body;
-    guard_body.reserve(al, 1);
-    guard_body.push_back(al, ASRUtils::STMT(ASR::make_Return_t(al, loc)));
-    Vec<ASR::stmt_t*> guard_else;
-    guard_else.reserve(al, 0);
-    kernel_body.push_back(al, ASRUtils::STMT(
-        ASR::make_If_t(al, loc, nullptr, guard,
-            guard_body.p, guard_body.n,
-            guard_else.p, guard_else.n)));
+    if (!tiled) {
+        // Compute total flat size for guard. Every thread past it returns,
+        // so the per-dim ranges below are only computed when none is empty.
+        ASR::expr_t *total_size_kernel = nullptr;
+        for (size_t d = 0; d < n_dims; d++) {
+            // dim_range = max(0, kernel_end - kernel_start + 1)
+            ASR::expr_t *dim_range = gpu_loop_extent(al, loc,
+                kernel_starts[d], kernel_ends[d], int_type);
+            total_size_kernel = total_size_kernel == nullptr ? dim_range
+                : int_binop(total_size_kernel, ASR::binopType::Mul,
+                    dim_range);
+        }
+
+        // Guard: if (flat_idx >= total_size) return
+        return_if(ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+            flat_idx, ASR::cmpopType::GtE, total_size_kernel,
+            ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
+    }
 
     // Compute per-dim loop variable from flat_idx
     // We need a "remaining" variable in kernel scope
-    std::string remain_name = "__flat_idx";
-    {
-        gpu_new_variable(al, loc, kernel_scope, remain_name,
-            ASRUtils::duplicate_type(al, int_type));
-    }
-    ASR::expr_t *remain_var = ASRUtils::EXPR(
-        ASR::make_Var_t(al, loc, kernel_scope->get_symbol(remain_name)));
+    ASR::expr_t *remain_var = kernel_local("__flat_idx");
 
-    // __flat_idx = flat_idx (the raw thread index)
-    kernel_body.push_back(al, ASRUtils::STMT(
-        ASR::make_Assignment_t(al, loc, remain_var, flat_idx, nullptr, false, false, false)));
+    size_t first_flat_position = 0;
+    if (tiled) {
+        // The tile, then the thread's place in it: its width runs along the
+        // fastest dimension, its height along the next one.
+        size_t across = dimension_at(0), down = dimension_at(1);
+        int64_t block_shift = 0;
+        while ((int64_t(1) << block_shift) < device_caps.threads_per_block) {
+            block_shift++;
+        }
+        auto constant = [&](int64_t value) {
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, value,
+                int_type, ASR::integerbozType::Decimal));
+        };
+        // 2**shift - 1, the mask of a place within 2**shift.
+        auto low_mask = [&](ASR::expr_t *shift) {
+            return int_binop(int_binop(one_const, ASR::binopType::BitLShift,
+                shift), ASR::binopType::Sub, one_const);
+        };
+        // ceil(range / 2**shift)
+        auto tiles_of = [&](ASR::expr_t *range, ASR::expr_t *shift) {
+            return int_binop(int_binop(range, ASR::binopType::Add,
+                low_mask(shift)), ASR::binopType::BitRShift, shift);
+        };
+        // Every value below is written once for the device's full tile
+        // width, as constants, and once for the width the launch passes,
+        // and the kernel picks one: the launch picks the full width for
+        // every nest whose fastest dimension is not short, and a device
+        // compiler only folds the arithmetic of a tile, and what it knows
+        // of the indices that come out of it, when the width is constant.
+        int64_t full_shift = 0;
+        while ((int64_t(1) << full_shift) < device_caps.tile_width) {
+            full_shift++;
+        }
+        ASR::expr_t *full_width = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
+            al, loc, tile_shift, ASR::cmpopType::Eq, constant(full_shift),
+            ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
+        auto by_width = [&](const std::function<ASR::expr_t*(ASR::expr_t*,
+                ASR::expr_t*)> &value) {
+            return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, full_width,
+                value(constant(full_shift),
+                    constant(block_shift - full_shift)),
+                value(tile_shift, int_binop(constant(block_shift),
+                    ASR::binopType::Sub, tile_shift)),
+                int_type, nullptr));
+        };
+        ASR::expr_t *tiles = kernel_local("__tiles");
+        assign(remain_var, block_idx);
+        assign(tiles, by_width([&](ASR::expr_t *shift, ASR::expr_t *) {
+            return tiles_of(kernel_range(across), shift);
+        }));
+        assign(loop_var(across), by_width([&](ASR::expr_t *shift,
+                ASR::expr_t *) {
+            return int_binop(int_binop(
+                int_binop(int_mod(remain_var, tiles),
+                    ASR::binopType::BitLShift, shift),
+                ASR::binopType::Add, int_binop(thread_idx,
+                    ASR::binopType::BitAnd, low_mask(shift))),
+                ASR::binopType::Add, kernel_starts[across]);
+        }));
+        assign(remain_var, int_binop(remain_var, ASR::binopType::Div, tiles));
+        if (n_dims > 2) {
+            // The tiles of the first two dimensions repeat over the others.
+            assign(tiles, by_width([&](ASR::expr_t *,
+                    ASR::expr_t *row_shift) {
+                return tiles_of(kernel_range(down), row_shift);
+            }));
+        }
+        assign(loop_var(down), by_width([&](ASR::expr_t *shift,
+                ASR::expr_t *row_shift) {
+            ASR::expr_t *row_tile = n_dims > 2
+                ? int_mod(remain_var, tiles) : remain_var;
+            return int_binop(int_binop(
+                int_binop(row_tile, ASR::binopType::BitLShift, row_shift),
+                ASR::binopType::Add, int_binop(thread_idx,
+                    ASR::binopType::BitRShift, shift)),
+                ASR::binopType::Add, kernel_starts[down]);
+        }));
+        if (n_dims > 2) {
+            assign(remain_var, int_binop(remain_var, ASR::binopType::Div,
+                tiles));
+        }
+        // A partial tile at the end of either dimension.
+        for (size_t d : {across, down}) {
+            return_if(ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+                loop_var(d), ASR::cmpopType::Gt, kernel_ends[d],
+                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
+        }
+        first_flat_position = 2;
+    } else {
+        // __flat_idx = flat_idx (the raw thread index)
+        assign(remain_var, flat_idx);
+    }
 
     // The loop indices below are recovered by dividing __flat_idx down,
     // which destroys it, so the thread keeps its own number separately.
     // Every slot starts at the identity, so a thread whose body never
     // reaches the accumulator still leaves something the fold can use.
     if (slot_index != nullptr) {
-        kernel_body.push_back(al, ASRUtils::STMT(
-            ASR::make_Assignment_t(al, loc,
-                ASRUtils::EXPR(ASR::make_Var_t(al, loc,
-                    kernel_scope->get_symbol("__gpu_slot"))),
-                remain_var, nullptr, false, false, false)));
+        assign(ASRUtils::EXPR(ASR::make_Var_t(al, loc,
+            kernel_scope->get_symbol("__gpu_slot"))), remain_var);
         for (auto &r : pending_reductions) {
             if (!r.host_buf_sym) continue;
             ASR::symbol_t *param = kernel_scope->get_symbol(r.orig_name);
             if (!param) continue;
-            kernel_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc,
-                    gpu_reduction_slot(al, loc, param, slot_index,
-                        r.scalar_type),
-                    gpu_reduction_identity(al, loc, r.op, r.scalar_type),
-                    nullptr, false, false, false)));
+            assign(gpu_reduction_slot(al, loc, param, slot_index,
+                    r.scalar_type),
+                gpu_reduction_identity(al, loc, r.op, r.scalar_type));
         }
     }
 
-    for (size_t position = 0; position < n_dims; position++) {
-        size_t d = position == 0 ? fastest_dimension
-            : (position <= fastest_dimension ? position - 1 : position);
-        ASR::expr_t *dim_range = ASRUtils::EXPR(
-            ASR::make_IntegerBinOp_t(al, loc,
-                ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                    kernel_ends[d], ASR::binopType::Sub,
-                    kernel_starts[d], int_type, nullptr)),
-                ASR::binopType::Add, one_const, int_type, nullptr));
-
-        ASR::symbol_t *kvar = kernel_scope->get_symbol(loop_var_names[d]);
-        ASR::expr_t *kvar_expr = ASRUtils::EXPR(
-            ASR::make_Var_t(al, loc, kvar));
-
+    for (size_t position = first_flat_position; position < n_dims;
+            position++) {
+        size_t d = dimension_at(position);
         if (position < n_dims - 1) {
             // loop_var = __flat_idx % dim_range + start
-            // Since ASR has no Mod binop, compute as: a - (a/b)*b
-            ASR::expr_t *div_part = ASRUtils::EXPR(
-                ASR::make_IntegerBinOp_t(al, loc,
-                    remain_var, ASR::binopType::Div,
-                    dim_range, int_type, nullptr));
-            ASR::expr_t *mul_part = ASRUtils::EXPR(
-                ASR::make_IntegerBinOp_t(al, loc,
-                    div_part, ASR::binopType::Mul,
-                    dim_range, int_type, nullptr));
-            ASR::expr_t *mod_val = ASRUtils::EXPR(
-                ASR::make_IntegerBinOp_t(al, loc,
-                    remain_var, ASR::binopType::Sub,
-                    mul_part, int_type, nullptr));
-            ASR::expr_t *val = ASRUtils::EXPR(
-                ASR::make_IntegerBinOp_t(al, loc,
-                    mod_val, ASR::binopType::Add,
-                    kernel_starts[d], int_type, nullptr));
-            kernel_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, kvar_expr, val, nullptr, false, false, false)));
-
+            assign(loop_var(d), int_binop(int_mod(remain_var,
+                kernel_range(d)), ASR::binopType::Add, kernel_starts[d]));
             // __flat_idx = __flat_idx / dim_range
-            ASR::expr_t *div_val = ASRUtils::EXPR(
-                ASR::make_IntegerBinOp_t(al, loc,
-                    remain_var, ASR::binopType::Div,
-                    dim_range, int_type, nullptr));
-            kernel_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, remain_var, div_val, nullptr, false, false, false)));
+            assign(remain_var, int_binop(remain_var, ASR::binopType::Div,
+                kernel_range(d)));
         } else {
             // Last dim: loop_var = __flat_idx + start
-            ASR::expr_t *val = ASRUtils::EXPR(
-                ASR::make_IntegerBinOp_t(al, loc,
-                    remain_var, ASR::binopType::Add,
-                    kernel_starts[d], int_type, nullptr));
-            kernel_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, kvar_expr, val, nullptr, false, false, false)));
+            assign(loop_var(d), int_binop(remain_var, ASR::binopType::Add,
+                kernel_starts[d]));
         }
     }
 
@@ -2672,6 +2781,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     plan.reductions = pending_reductions;
     plan.dim_info = dim_info;
     plan.optional_syms = optional_syms;
+    plan.tile_shift_arg = tile_shift_arg;
+    plan.tile_dims[0] = tiled ? dimension_at(0) : 0;
+    plan.tile_dims[1] = tiled ? dimension_at(1) : 0;
     build_kernel_launch(region, work, loc, plan);
 }
 

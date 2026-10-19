@@ -306,10 +306,76 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                 nullptr, nullptr, nullptr)));
     }
 
+    // The number of threads the launch runs: one per iteration, or whole
+    // tiles for a tiled launch. The accumulators above and the fold below
+    // keep the flat iteration count.
+    ASR::expr_t *launch_threads = thread_count;
+    if (plan.tile_shift_arg >= 0) {
+        // A tiled launch (gpu_offload.cpp): the width of a tile is the
+        // smallest power of two that covers the fastest dimension, up to
+        // the device's tile width, and the launch runs whole tiles.
+        ASR::ttype_t *int_type = plan.int_type;
+        auto constant = [&](int64_t value) {
+            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, value,
+                int_type, ASR::integerbozType::Decimal));
+        };
+        auto binop = [&](ASR::expr_t *left, ASR::binopType op,
+                ASR::expr_t *right) {
+            return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
+                left, op, right, int_type, nullptr));
+        };
+        auto extent = [&](size_t d) {
+            ASRUtils::ExprStmtDuplicator copy(al);
+            copy.success = true;
+            ASR::expr_t *start = copy.duplicate_expr(starts[d]);
+            ASR::expr_t *end = copy.duplicate_expr(ends[d]);
+            LCOMPILERS_ASSERT(copy.success && start && end);
+            return gpu_loop_extent(al, loc, start, end, int_type);
+        };
+        auto ceil_div = [&](ASR::expr_t *count, ASR::expr_t *size) {
+            return binop(binop(binop(count, ASR::binopType::Add, size),
+                ASR::binopType::Sub, constant(1)), ASR::binopType::Div,
+                size);
+        };
+        size_t across = plan.tile_dims[0], down = plan.tile_dims[1];
+        ASR::expr_t *shift_value = constant(0);
+        int64_t shift = 1;
+        for (int64_t width = 2; width <= device_caps.tile_width;
+                width *= 2, shift++) {
+            shift_value = ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+                    extent(across), ASR::cmpopType::Gt, constant(width / 2),
+                    ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)),
+                    nullptr)),
+                constant(shift), shift_value, int_type, nullptr));
+        }
+        ASR::symbol_t *shift_sym = gpu_new_variable(al, loc, current_scope,
+            current_scope->get_unique_name("__gpu_tile_shift"),
+            ASRUtils::duplicate_type(al, int_type));
+        auto shift_var = [&]() {
+            return ASRUtils::EXPR(ASR::make_Var_t(al, loc, shift_sym));
+        };
+        launch_stmts.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
+            al, loc, shift_var(), shift_value, nullptr, false, false,
+            false)));
+        plan.call_args.p[plan.tile_shift_arg].m_value = shift_var();
+        ASR::expr_t *width = binop(constant(1), ASR::binopType::BitLShift,
+            shift_var());
+        ASR::expr_t *rows = binop(constant(device_caps.threads_per_block),
+            ASR::binopType::Div, width);
+        launch_threads = binop(binop(ceil_div(extent(across), width),
+            ASR::binopType::Mul, ceil_div(extent(down), rows)),
+            ASR::binopType::Mul, constant(device_caps.threads_per_block));
+        for (size_t d = 0; d < plan.n_dims; d++) {
+            if (d == across || d == down) continue;
+            launch_threads = binop(launch_threads, ASR::binopType::Mul,
+                extent(d));
+        }
+    }
     launch_stmts.push_back(al, ASRUtils::STMT(
         ASR::make_GpuKernelLaunch_t(al, loc,
             ASR::down_cast<ASR::symbol_t>(plan.kernel_func),
-            thread_count, block_size_const,
+            launch_threads, block_size_const,
             plan.call_args.p, plan.call_args.n, component_fit, nullptr,
             0, nullptr, nullptr, 0)));
 

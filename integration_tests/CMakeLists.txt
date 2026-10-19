@@ -6450,6 +6450,8 @@ if (LFORTRAN_BACKEND STREQUAL "cuda")
     set_tests_properties(gpu_cuda_scratch_order_alias PROPERTIES
         LABELS cuda TIMEOUT 30)
 endif()
+# GFortran 13 in Quick does not support REDUCE.
+RUN(NAME gpu_metal_485 LABELS llvm metal cuda cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
