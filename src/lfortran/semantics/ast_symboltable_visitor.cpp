@@ -301,6 +301,13 @@ public:
 
     struct ContainedProcedureScope;
     ContainedProcedureScope *contained_procedure_scope = nullptr;
+    // Module functions whose signature was built before their turn, see
+    // `build_signature_early()`. Their turn builds the rest.
+    std::map<const AST::Function_t*, ASR::Function_t*> early_signatures;
+    // The module functions whose signature is being built early, innermost last.
+    std::vector<const AST::Function_t*> signatures_in_progress;
+    // The module functions whose early signature failed; their turn is skipped.
+    std::set<const AST::Function_t*> failed_signatures;
 
     // Record lexical procedure declarations without visiting their specification
     // parts before their host's declarations are complete.
@@ -315,6 +322,8 @@ public:
         bool is_module;
         AST::decl_stmt_t **module_items;
         size_t n_module_items;
+        // How many of `procedures` the host has visited.
+        size_t n_visited = 0;
 
         ContainedProcedureScope(SymbolTableVisitor &v_,
                 AST::program_unit_t **procedures_, size_t n_procedures_,
@@ -331,8 +340,8 @@ public:
             v.contained_procedure_scope = enclosing;
         }
 
-        AST::program_unit_t *find(const std::string &name) {
-            for (size_t i = 0; i < n_procedures; i++) {
+        AST::program_unit_t *find(const std::string &name, size_t first=0) {
+            for (size_t i = first; i < n_procedures; i++) {
                 AST::program_unit_t *p = procedures[i];
                 if (AST::is_a<AST::Function_t>(*p)) {
                     if (to_lower(AST::down_cast<AST::Function_t>(p)->m_name) == name) {
@@ -534,6 +543,8 @@ public:
     class ReferencedNames : public AST::BaseWalkVisitor<ReferencedNames> {
     public:
         std::set<std::string> names;
+        // The names called like a function, with the first such call.
+        std::map<std::string, Location> calls;
 
         void add(const char *name, const AST::struct_member_t *members,
                 size_t n_members) {
@@ -550,6 +561,7 @@ public:
 
         void visit_FuncCallOrArray(const AST::FuncCallOrArray_t &x) {
             add(x.m_func, x.m_member, x.n_member);
+            if (x.n_member == 0) calls.emplace(to_lower(x.m_func), x.base.base.loc);
             AST::BaseWalkVisitor<ReferencedNames>::visit_FuncCallOrArray(x);
         }
 
@@ -631,6 +643,14 @@ public:
         return names;
     }
 
+    static std::set<std::string> signature_names(const AST::Subroutine_t &x) {
+        std::set<std::string> names;
+        for (size_t i = 0; i < x.n_args; i++) {
+            if (x.m_args[i].m_arg) names.insert(to_lower(x.m_args[i].m_arg));
+        }
+        return names;
+    }
+
     // Marks in `signature` the declaration statements of `x` that its
     // signature needs: those that declare a dummy argument or the result, and
     // in turn those that declare a name such a statement references. Returns
@@ -676,6 +696,136 @@ public:
             }
         }
         return true;
+    }
+
+    // The module function `name` of `module_procedures` if the module has not
+    // visited it yet and nothing else of that name is declared there.
+    const AST::Function_t *later_module_function(const std::string &name,
+            ContainedProcedureScope &module_procedures) {
+        AST::program_unit_t *p = module_procedures.find(name,
+            module_procedures.n_visited);
+        if (p == nullptr || !AST::is_a<AST::Function_t>(*p)) return nullptr;
+        ASR::symbol_t *sym = module_procedures.scope->get_symbol(name);
+        if (sym != nullptr && !is_pending_proc_placeholder(sym)) return nullptr;
+        if (is_pending_generic_procedure(name, module_procedures.scope, false)) {
+            return nullptr;
+        }
+        return AST::down_cast<AST::Function_t>(p);
+    }
+
+    // Adds to `called` the module functions not visited yet that the
+    // declarations of `unit` call, each with the location of a call: those of
+    // its declarations that `signature` marks if it is given, else all of them
+    // and those of its internal procedures. `shadowed` has the names that the
+    // hosts of `unit` declare, which are not module functions there.
+    template <typename T>
+    void collect_later_function_calls(const T &unit, std::set<std::string> shadowed,
+            const std::vector<bool> *signature, ContainedProcedureScope &module_procedures,
+            std::vector<std::pair<const AST::Function_t*, Location>> &called) {
+        std::set<std::string> own = signature_names(unit);
+        shadowed.insert(own.begin(), own.end());
+        ReferencedNames referenced;
+        for (size_t i = 0; i < unit.n_items; i++) {
+            if (!AST::is_kind(*unit.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+            std::set<std::string> declared = declared_names(*unit.m_items[i]);
+            shadowed.insert(declared.begin(), declared.end());
+            if (signature == nullptr || (*signature)[i]) {
+                referenced.visit_decl_stmt(*unit.m_items[i]);
+            }
+        }
+        for (size_t i = 0; i < unit.n_contains; i++) {
+            if (AST::is_a<AST::Function_t>(*unit.m_contains[i])) {
+                shadowed.insert(to_lower(AST::down_cast<AST::Function_t>(
+                    unit.m_contains[i])->m_name));
+            } else if (AST::is_a<AST::Subroutine_t>(*unit.m_contains[i])) {
+                shadowed.insert(to_lower(AST::down_cast<AST::Subroutine_t>(
+                    unit.m_contains[i])->m_name));
+            }
+        }
+        for (auto &call : referenced.calls) {
+            if (shadowed.count(call.first) > 0) continue;
+            if (const AST::Function_t *f = later_module_function(call.first,
+                    module_procedures)) {
+                called.push_back({f, call.second});
+            }
+        }
+        if (signature != nullptr) return;
+        for (size_t i = 0; i < unit.n_contains; i++) {
+            if (AST::is_a<AST::Function_t>(*unit.m_contains[i])) {
+                collect_later_function_calls(*AST::down_cast<AST::Function_t>(
+                    unit.m_contains[i]), shadowed, nullptr, module_procedures, called);
+            } else if (AST::is_a<AST::Subroutine_t>(*unit.m_contains[i])) {
+                collect_later_function_calls(*AST::down_cast<AST::Subroutine_t>(
+                    unit.m_contains[i]), shadowed, nullptr, module_procedures, called);
+            }
+        }
+    }
+
+    // Builds the signature of the module function `f`, called at `loc`,
+    // before its turn, after the signatures of the module functions that its
+    // signature calls. Its turn builds the rest. A specification expression
+    // cannot call the procedure it belongs to, not even through another
+    // procedure (Fortran 2023 10.1.11), so a loop of such calls is an error.
+    void build_signature_early(const AST::Function_t &f, const Location &loc,
+            ContainedProcedureScope &module_procedures) {
+        if (early_signatures.count(&f) > 0 || failed_signatures.count(&f) > 0) return;
+        auto in_progress = std::find(signatures_in_progress.begin(),
+            signatures_in_progress.end(), &f);
+        if (in_progress != signatures_in_progress.end()) {
+            std::string calls;
+            for (auto it = in_progress; it != signatures_in_progress.end(); ++it) {
+                const AST::Function_t *callee = it + 1 != signatures_in_progress.end()
+                    ? *(it + 1) : &f;
+                if (!calls.empty()) calls += ", ";
+                calls += "'" + to_lower((*it)->m_name) + "' calls '"
+                    + to_lower(callee->m_name) + "'";
+            }
+            diag.add(diag::Diagnostic("a specification expression calls the "
+                "function it belongs to: " + calls,
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
+        }
+        std::vector<bool> signature;
+        if (!signature_statements(f, signature)) return;
+        signatures_in_progress.push_back(&f);
+        SymbolTable *host_scope = current_scope;
+        try {
+            std::vector<std::pair<const AST::Function_t*, Location>> called;
+            collect_later_function_calls(f, {}, &signature, module_procedures, called);
+            for (auto &call : called) {
+                build_signature_early(*call.first, call.second, module_procedures);
+            }
+            early_signatures[&f] = visit_function_part(f, ProcedurePart::Signature);
+        } catch (SemanticAbort &e) {
+            signatures_in_progress.pop_back();
+            current_scope = host_scope;
+            failed_signatures.insert(&f);
+            throw e;
+        }
+        signatures_in_progress.pop_back();
+    }
+
+    // Builds the signatures of the module functions that the declarations of
+    // `unit`, the next procedure of the module, or of its internal procedures
+    // call before their turn.
+    void build_signatures_called_by(const AST::program_unit_t &unit,
+            ContainedProcedureScope &module_procedures) {
+        std::vector<std::pair<const AST::Function_t*, Location>> called;
+        if (AST::is_a<AST::Function_t>(unit)) {
+            collect_later_function_calls(*AST::down_cast<AST::Function_t>(&unit),
+                {}, nullptr, module_procedures, called);
+        } else if (AST::is_a<AST::Subroutine_t>(unit)) {
+            collect_later_function_calls(*AST::down_cast<AST::Subroutine_t>(&unit),
+                {}, nullptr, module_procedures, called);
+        }
+        for (auto &call : called) {
+            try {
+                build_signature_early(*call.first, call.second, module_procedures);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
     }
 
     // A module procedure, or a procedure of an interface body in the
@@ -1331,7 +1481,9 @@ public:
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
             SymbolTable *host_scope = current_scope;
+            contained_procedures.n_visited = i;
             try {
+                build_signatures_called_by(*x.m_contains[i], contained_procedures);
                 visit_program_unit(*x.m_contains[i]);
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
@@ -3534,6 +3686,22 @@ public:
     }
 
     void visit_Function(const AST::Function_t &x) {
+        if (failed_signatures.count(&x) > 0) return;
+        auto early = early_signatures.find(&x);
+        if (early == early_signatures.end()) {
+            visit_function_part(x, ProcedurePart::All);
+            return;
+        }
+        ASR::Function_t *func = early->second;
+        early_signatures.erase(early);
+        visit_function_part(x, ProcedurePart::Locals, func);
+    }
+
+    // Visits the function `x`. With `part` Signature, the visit stops once
+    // the function is added to its host. With Locals, `func` is the function
+    // that such a visit made, and the visit builds the rest of `x`.
+    ASR::Function_t *visit_function_part(const AST::Function_t &x,
+            ProcedurePart part, ASR::Function_t *func=nullptr) {
         // Restored on exit, as in visit_Subroutine, so that a templated
         // function does not leave the template context set for the program
         // units that follow it.
@@ -3550,7 +3718,7 @@ public:
         ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
         ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
         SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
+        current_scope = func ? func->m_symtab : al.make_new<SymbolTable>(parent_scope);
         ClassProcedureScope class_procedure_scope(*this);
         // The braces of a templated subprogram hold its deferred arguments;
         // an ordinary subprogram has none, and must not inherit the list of a
@@ -3583,6 +3751,18 @@ public:
         OperatorProcedureScope operator_procedure_scope(*this, x.n_temp_args > 0);
         std::set<std::string> deferred_ifaces = deferred_procedure_interfaces(
             x.m_items, x.n_items);
+        if (func) {
+            // Continue from where the visit of the signature stopped.
+            uint64_t hash = get_hash((ASR::asr_t*) func);
+            explicit_intrinsic_procedures = explicit_intrinsic_procedures_mapping[hash];
+            external_procedures = external_procedures_mapping[hash];
+            if (compiler_options.implicit_typing) {
+                implicit_dictionary = implicit_mapping[hash];
+            }
+            for (size_t i = 0; i < func->n_dependencies; i++) {
+                current_function_dependencies.push_back(al, func->m_dependencies[i]);
+            }
+        }
 
         if (x.n_temp_args > 0) {
             is_template = true;
@@ -3662,27 +3842,29 @@ public:
         bool is_global_save_enabled_copy = is_global_save_enabled;
         std::set<std::string> explicit_save_symbols_copy = explicit_save_symbols;
         check_if_global_save_is_enabled( x );
-        for (size_t i=0; i<x.n_items; i++) {
-            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
-            try {
-                visit_decl_stmt(*x.m_items[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-            }
-        }
-        if (compiler_options.implicit_typing) {
-            Location a_loc = x.base.base.loc;
-            populate_implicit_dictionary(a_loc, implicit_dictionary);
-            process_implicit_statements(x, implicit_dictionary);
-        } else {
+        if (!func) {
             for (size_t i=0; i<x.n_items; i++) {
-                if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Implicit)) continue;
-                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) {
-                    diag.add(diag::Diagnostic(
-                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.m_items[i]->base.loc})}));
-                    throw SemanticAbort();
+                if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
+                try {
+                    visit_decl_stmt(*x.m_items[i]);
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                }
+            }
+            if (compiler_options.implicit_typing) {
+                Location a_loc = x.base.base.loc;
+                populate_implicit_dictionary(a_loc, implicit_dictionary);
+                process_implicit_statements(x, implicit_dictionary);
+            } else {
+                for (size_t i=0; i<x.n_items; i++) {
+                    if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Implicit)) continue;
+                    if (!AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) {
+                        diag.add(diag::Diagnostic(
+                            "Implicit typing is not allowed, enable it by using --implicit-typing ",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {x.m_items[i]->base.loc})}));
+                        throw SemanticAbort();
+                    }
                 }
             }
         }
@@ -3697,11 +3879,17 @@ public:
         std::vector<bool> signature;
         bool split = !is_interface && !is_requirement && !in_template_definition
             && signature_statements(x, signature);
-        ASR::Function_t *func = build_function_symbol(x, sym_name, parent_scope,
-            deferred_ifaces, bindc_name, procedure_decl_indices,
-            split ? ProcedurePart::Signature : ProcedurePart::All, signature);
-        visit_function_locals(x, func, deferred_ifaces, procedure_decl_indices,
-            split, signature);
+        if (func) {
+            tmp = (ASR::asr_t*) func;
+        } else {
+            func = build_function_symbol(x, sym_name, parent_scope,
+                deferred_ifaces, bindc_name, procedure_decl_indices,
+                split ? ProcedurePart::Signature : ProcedurePart::All, signature);
+        }
+        if (part != ProcedurePart::Signature) {
+            visit_function_locals(x, func, deferred_ifaces, procedure_decl_indices,
+                split, signature);
+        }
         // populate the external_procedures_mapping
         uint64_t hash = get_hash(tmp);
         external_procedures_mapping[hash] = external_procedures;
@@ -3784,6 +3972,7 @@ public:
                 x.m_items, x.n_items, "function", x.base.base.loc);
             check_no_save_in_template(parent_scope);
         }
+        return func;
     }
 
     void visit_Declaration(const AST::Declaration_t& x) {
