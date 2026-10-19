@@ -185,6 +185,26 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
     # that knows nothing about LFortran.
     find_program(LFORTRAN_TEST_PYTHON NAMES python python3)
     if (LFORTRAN_TEST_PYTHON)
+        if (NOT WIN32 AND NOT EMSCRIPTEN)
+            add_test(
+                NAME test_gpu_launch_geometry_cpu
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_gpu_launch_geometry.py
+                    --backend cpu --cc ${CMAKE_C_COMPILER}
+                    --workdir ${PROJECT_BINARY_DIR}/gpu-launch-geometry-cpu
+            )
+            set_tests_properties(test_gpu_launch_geometry_cpu PROPERTIES TIMEOUT 180)
+            if (APPLE)
+                add_test(
+                    NAME test_gpu_launch_geometry_metal
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_CURRENT_SOURCE_DIR}/test_gpu_launch_geometry.py
+                        --backend metal --cc ${CMAKE_C_COMPILER}
+                        --workdir ${PROJECT_BINARY_DIR}/gpu-launch-geometry-metal
+                )
+                set_tests_properties(test_gpu_launch_geometry_metal PROPERTIES TIMEOUT 300)
+            endif()
+        endif()
         add_test(
             NAME test_dwarf_convert
             COMMAND ${LFORTRAN_TEST_PYTHON}

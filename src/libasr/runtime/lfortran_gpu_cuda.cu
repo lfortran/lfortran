@@ -341,11 +341,8 @@ void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3])
 {
+    lfortran_gpu_validate_launch(grid, block);
     if (!ctx || !k) return;
-    // A launch of no threads (an empty iteration space) runs nothing, and
-    // CUDA rejects a grid or a block with a zero extent: there is nothing
-    // to copy in or launch, and the host and device copies stay as they are.
-    if (lfortran_gpu_launch_is_empty(grid, block)) return;
 
     for (int i = 0; i < k->n_args; i++) {
         if (k->kind[i] == ARG_BUFFER

@@ -43,6 +43,15 @@ print *, starts, ends, size(t(1)%v), size(t(2)%v)
 if (starts /= 2 .or. ends /= 2) error stop 3
 if (size(t(1)%v) /= 2 .or. size(t(2)%v) /= 3) error stop 4
 if (any(t(2)%v /= c(1:3))) error stop 5
+
+! Even an empty loop evaluates both bounds once, but does not prepare or
+! copy back the components its body would write.
+do concurrent (i = first():last(0))
+    t(i) = f(c(1:i + 1))
+end do
+if (starts /= 3 .or. ends /= 3) error stop 6
+if (size(t(1)%v) /= 2 .or. size(t(2)%v) /= 3) error stop 7
+if (any(t(2)%v /= c(1:3))) error stop 8
 print *, "ok"
 contains
 pure function f(a) result(r)

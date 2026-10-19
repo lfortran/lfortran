@@ -26,15 +26,21 @@ static inline void lfortran_gpu_copy_kernel_name(char *dest, const char *name,
     dest[name_len] = '\0';
 }
 
-// Whether a launch has no threads: a grid or block extent that is not
-// positive, as an empty iteration space gives. Such a launch runs nothing.
-static inline int lfortran_gpu_launch_is_empty(const int grid[3],
+static inline void lfortran_gpu_validate_launch(const int grid[3],
     const int block[3])
 {
     for (int i = 0; i < 3; i++) {
-        if (grid[i] <= 0 || block[i] <= 0) return 1;
+        if (grid[i] <= 0) {
+            fprintf(stderr, "lfortran_gpu_launch: grid[%d] must be positive "
+                "(got %d)\n", i, grid[i]);
+            exit(1);
+        }
+        if (block[i] <= 0) {
+            fprintf(stderr, "lfortran_gpu_launch: block[%d] must be positive "
+                "(got %d)\n", i, block[i]);
+            exit(1);
+        }
     }
-    return 0;
 }
 
 // The size in bytes of the device heap of a launch that allocates on the
@@ -142,7 +148,11 @@ void lfortran_gpu_set_scratch_arg(lfortran_gpu_kernel* k, int idx,
 void lfortran_gpu_read_scratch_arg(lfortran_gpu_kernel* k, int idx,
     void* dst, size_t size);
 
-// Starts the kernel and returns without waiting for it.
+// Starts the kernel and returns without waiting for it. Every component of
+// grid and block must be positive; otherwise the program ends with an error
+// before any launch work or buffer residency changes. This contract is the
+// same for Metal, CUDA and CPU emulation. An empty kernel body is legal, but
+// zero-work Fortran loops must be skipped by compiler lowering, not launched.
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3]);
 // Waits for every launch made so far, and copies what the kernels wrote back

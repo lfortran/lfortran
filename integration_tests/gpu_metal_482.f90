@@ -5,6 +5,7 @@ program gpu_metal_482
   implicit none
   integer :: i, n, lo
   integer :: a(5)
+  integer, allocatable :: untouched(:)
   real :: x(100), s
   n = 3
   lo = 7
@@ -14,6 +15,12 @@ program gpu_metal_482
     a(i) = 0
   end do
   if (any(a /= -1)) error stop 1
+
+  ! No descriptor access or allocation is needed for an unused argument.
+  do concurrent (i = lo:n)
+    untouched(i) = 0
+  end do
+  if (allocated(untouched)) error stop 5
 
   do concurrent (i = 1:5)
     a(i) = i
