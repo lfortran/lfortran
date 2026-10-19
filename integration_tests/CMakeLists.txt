@@ -6412,7 +6412,12 @@ RUN(NAME gpu_metal_480 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_481 LABELS gfortran llvm metal cuda_cpu)
 # GFortran 13 in Quick does not support REDUCE.
 RUN(NAME gpu_metal_482 LABELS llvm metal cuda_cpu cuda)
-RUN(NAME gpu_metal_483 LABELS gfortran llvm metal cuda cuda_cpu)
+# GFortran 13 in Quick cannot compile these LOCAL locality fixtures.
+RUN(NAME gpu_metal_483 LABELS llvm metal cuda cuda_cpu)
+# GFortran 13 cannot compile this LOCAL fixture. cuda_cpu uses GPU lowering
+# and belongs here; ordinary LLVM is excluded for its pre-existing LOCAL
+# preservation gap (#14622).
+RUN(NAME gpu_local_preservation_01 LABELS metal cuda cuda_cpu)
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for
@@ -6463,9 +6468,10 @@ RUN(NAME gpu_decline_13 LABELS gfortran)
 RUN(NAME gpu_decline_14 LABELS gfortran llvm)
 RUN(NAME gpu_decline_15 LABELS gfortran llvm)
 RUN(NAME gpu_decline_16 LABELS gfortran llvm)
-RUN(NAME gpu_decline_17 LABELS gfortran llvm)
-RUN(NAME gpu_decline_18 LABELS gfortran llvm)
-RUN(NAME gpu_decline_19 LABELS gfortran llvm)
+# GFortran 13 in Quick cannot compile these LOCAL locality fixtures.
+RUN(NAME gpu_decline_17 LABELS llvm)
+RUN(NAME gpu_decline_18 LABELS llvm)
+RUN(NAME gpu_decline_19 LABELS llvm)
 
 # One program per entry of the GPU unsupported list. Each runs on the CPU with
 # --gpu-allow-cpu-fallback where its loop is on the list, and the error
@@ -6492,7 +6498,8 @@ RUN(NAME gpu_kernel_source_10 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_kernel_source_11 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_kernel_source_12 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_kernel_source_13 LABELS gfortran llvm metal cuda_cpu)
-RUN(NAME gpu_kernel_source_14 LABELS gfortran llvm metal cuda cuda_cpu)
+# GFortran 13 in Quick cannot compile these LOCAL locality fixtures.
+RUN(NAME gpu_kernel_source_14 LABELS llvm metal cuda cuda_cpu)
 RUN(NAME gpu_kernel_source_16 LABELS gfortran llvm metal cuda cuda_cpu)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
