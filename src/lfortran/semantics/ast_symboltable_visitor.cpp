@@ -2792,168 +2792,17 @@ public:
         return r;
     }
 
-    void visit_Function(const AST::Function_t &x) {
-        // Restored on exit, as in visit_Subroutine, so that a templated
-        // function does not leave the template context set for the program
-        // units that follow it.
-        bool is_template_copy = is_template;
-        in_Subroutine = true;
-        SetChar current_function_dependencies_copy = current_function_dependencies;
-        current_function_dependencies.clear(al);
-        simd_variables.clear();
-        // Extract local (including dummy) variables first
-        current_symbol = (int64_t) ASR::symbolType::Function;
+    // Visits the declarations of `x`, then makes its function symbol from its
+    // dummy arguments and result and adds it to `parent_scope`. `sym_name`
+    // gets the generic procedure suffix if the function shares the name of a
+    // generic interface.
+    ASR::Function_t *build_function_symbol(const AST::Function_t &x,
+            std::string &sym_name, SymbolTable *parent_scope,
+            const std::set<std::string> &deferred_ifaces, char *bindc_name,
+            Vec<size_t> &procedure_decl_indices) {
         ASR::accessType s_access = dflt_access;
         ASR::deftypeType deftype = ASR::deftypeType::Implementation;
-        std::string sym_name = to_lower(x.m_name);
-
-        SymbolTable *grandparent_scope = current_scope;
-        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
-        ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
-        SymbolTable *parent_scope = current_scope;
-        current_scope = al.make_new<SymbolTable>(parent_scope);
-        ClassProcedureScope class_procedure_scope(*this);
-        // The braces of a templated subprogram hold its deferred arguments;
-        // an ordinary subprogram has none, and must not inherit the list of a
-        // host template (C1613).
-        std::vector<std::string> function_temp_args;
-        for (size_t i=0; i<x.n_temp_args; i++) {
-            function_temp_args.push_back(to_lower(x.m_temp_args[i]));
-        }
-        DeferredArgScope deferred_arg_scope(*this, sym_name, function_temp_args,
-            x.n_temp_args > 0);
-        TemplateDefinitionScope template_definition_scope(*this, x.n_temp_args > 0);
-        check_global_procedure_and_enable_separate_compilation(parent_scope);
-
-        // Handle templated functions
-        std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
-        explicit_intrinsic_procedures.clear();
-        // Save the externals accumulated by the enclosing scope so they are
-        // restored (not discarded) once this function has been processed.
-        // Without this, a bare `external foo` declared inside this function
-        // would leak into a sibling program unit processed afterwards and
-        // wrongly mark a later same-named declaration there as an external
-        // procedure (dropping its explicitly declared type). This mirrors the
-        // handling in visit_Subroutine.
-        std::vector<std::string> saved_external_procedures = external_procedures;
-        // Pending `optional` statements apply only to the scoping unit in
-        // which they appear: start empty and restore the host's entries once
-        // this procedure (possibly an interface body) has been processed.
-        std::map<std::string, ASR::presenceType> saved_assgnd_presence = assgnd_presence;
-        assgnd_presence.clear();
-        OperatorProcedureScope operator_procedure_scope(*this, x.n_temp_args > 0);
-        std::set<std::string> deferred_ifaces = deferred_procedure_interfaces(
-            x.m_items, x.n_items);
-
-        if (x.n_temp_args > 0) {
-            is_template = true;
-
-            SetChar temp_args;
-            temp_args.reserve(al, x.n_temp_args);
-            for (size_t i=0; i < x.n_temp_args; i++) {
-                current_procedure_args.push_back(to_lower(x.m_temp_args[i]));
-                temp_args.push_back(al, s2c(al, to_lower(x.m_temp_args[i])));
-            }
-
-            Vec<ASR::require_instantiation_t*> reqs;
-            reqs.reserve(al, x.n_items);
-            for (size_t i=0; i<x.n_items; i++) {
-                if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
-                if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
-                    AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_items[i]);
-                    for (size_t i=0; i<r->n_reqs; i++) {
-                        visit_unit_require(*r->m_reqs[i]);
-                        reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
-                        tmp = nullptr;
-                    }
-                }
-                if (AST::is_a<AST::DerivedType_t>(*x.m_items[i])) {
-                    AST::DerivedType_t *dt = AST::down_cast<AST::DerivedType_t>(x.m_items[i]);
-                    if (std::find(current_procedure_args.begin(),
-                                  current_procedure_args.end(),
-                                  to_lower(dt->m_name)) != current_procedure_args.end()) {
-                        visit_decl_stmt(*x.m_items[i]);
-                    }
-                }
-
-                // Deferred constants and procedures belong to the Template,
-                // exactly like a `deferred type` statement.
-                if (AST::decl_stmt_t *deferred_part = deferred_argument_part(
-                        al, x.m_items[i], x.m_temp_args, x.n_temp_args,
-                        deferred_ifaces, true)) {
-                    visit_decl_stmt(*deferred_part);
-                }
-            }
-
-            ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
-                current_scope, s2c(al, sym_name), temp_args.p, temp_args.size(), reqs.p, reqs.size());
-            parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(temp));
-            parent_scope = current_scope;
-            current_scope = al.make_new<SymbolTable>(parent_scope);
-            current_procedure_args.clear();
-        }
-
-        record_procedure_references(current_scope, x.m_items, x.n_items);
-        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
-        for (size_t i=0; i<x.n_args; i++) {
-            char *arg=x.m_args[i].m_arg;
-            current_procedure_args.push_back(to_lower(arg));
-        }
-        std::string current_procedure_result_copy = current_procedure_result;
-        SymbolTable *current_procedure_result_scope_copy = current_procedure_result_scope;
-        current_procedure_result_scope = current_scope;
-        if (x.m_return_var == nullptr) {
-            current_procedure_result = sym_name;
-        } else if (AST::is_a<AST::Name_t>(*x.m_return_var)) {
-            current_procedure_result = to_lower(
-                AST::down_cast<AST::Name_t>(x.m_return_var)->m_id);
-        } else {
-            current_procedure_result.clear();
-        }
-
-        // Determine the ABI (Source or BindC for now). Restored on exit: the
-        // enclosing procedure (the host of an internal procedure or of an
-        // interface body) keeps its own ABI.
-        ASR::abiType current_procedure_abi_type_copy = current_procedure_abi_type;
-        current_procedure_abi_type = ASR::abiType::Source;
-        char *bindc_name=nullptr;
-        extract_bind(x, current_procedure_abi_type, bindc_name, diag);
-
-        // iterate over declarations and check if global save is present
-        bool is_global_save_enabled_copy = is_global_save_enabled;
-        std::set<std::string> explicit_save_symbols_copy = explicit_save_symbols;
-        check_if_global_save_is_enabled( x );
-        for (size_t i=0; i<x.n_items; i++) {
-            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
-            try {
-                visit_decl_stmt(*x.m_items[i]);
-            } catch (SemanticAbort &e) {
-                if ( !compiler_options.continue_compilation ) throw e;
-            }
-        }
-        if (compiler_options.implicit_typing) {
-            Location a_loc = x.base.base.loc;
-            populate_implicit_dictionary(a_loc, implicit_dictionary);
-            process_implicit_statements(x, implicit_dictionary);
-        } else {
-            for (size_t i=0; i<x.n_items; i++) {
-                if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Implicit)) continue;
-                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) {
-                    diag.add(diag::Diagnostic(
-                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {x.m_items[i]->base.loc})}));
-                    throw SemanticAbort();
-                }
-            }
-        }
-        Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
         Vec<AST::decl_stmt_t*> later_interface_decls; later_interface_decls.reserve(al, 0);
-        // The COMMON statements below are visited only after the other
-        // declarations, so what they place in a common block is collected
-        // here, while an array bound or a character length of this
-        // specification part may still name one of those objects.
-        CommonBlockObjectsScope common_block_objects(*this, x.m_items, x.n_items);
         // The internal procedures are visited only after the dummy
         // arguments are complete, so here only a later interface body
         // can be waited for.
@@ -3484,6 +3333,170 @@ public:
         tmp = complete_instantiation_procedure(tmp, parent_scope, x.base);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        return func;
+    }
+
+    void visit_Function(const AST::Function_t &x) {
+        // Restored on exit, as in visit_Subroutine, so that a templated
+        // function does not leave the template context set for the program
+        // units that follow it.
+        bool is_template_copy = is_template;
+        in_Subroutine = true;
+        SetChar current_function_dependencies_copy = current_function_dependencies;
+        current_function_dependencies.clear(al);
+        simd_variables.clear();
+        // Extract local (including dummy) variables first
+        current_symbol = (int64_t) ASR::symbolType::Function;
+        std::string sym_name = to_lower(x.m_name);
+
+        SymbolTable *grandparent_scope = current_scope;
+        ScopingUnitScope scoping_unit_scope(*this, ScopingUnitKind::Other);
+        ImplicitNoneScope implicit_none_scope(*this, x.m_items, x.n_items);
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        ClassProcedureScope class_procedure_scope(*this);
+        // The braces of a templated subprogram hold its deferred arguments;
+        // an ordinary subprogram has none, and must not inherit the list of a
+        // host template (C1613).
+        std::vector<std::string> function_temp_args;
+        for (size_t i=0; i<x.n_temp_args; i++) {
+            function_temp_args.push_back(to_lower(x.m_temp_args[i]));
+        }
+        DeferredArgScope deferred_arg_scope(*this, sym_name, function_temp_args,
+            x.n_temp_args > 0);
+        TemplateDefinitionScope template_definition_scope(*this, x.n_temp_args > 0);
+        check_global_procedure_and_enable_separate_compilation(parent_scope);
+
+        // Handle templated functions
+        std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
+        explicit_intrinsic_procedures.clear();
+        // Save the externals accumulated by the enclosing scope so they are
+        // restored (not discarded) once this function has been processed.
+        // Without this, a bare `external foo` declared inside this function
+        // would leak into a sibling program unit processed afterwards and
+        // wrongly mark a later same-named declaration there as an external
+        // procedure (dropping its explicitly declared type). This mirrors the
+        // handling in visit_Subroutine.
+        std::vector<std::string> saved_external_procedures = external_procedures;
+        // Pending `optional` statements apply only to the scoping unit in
+        // which they appear: start empty and restore the host's entries once
+        // this procedure (possibly an interface body) has been processed.
+        std::map<std::string, ASR::presenceType> saved_assgnd_presence = assgnd_presence;
+        assgnd_presence.clear();
+        OperatorProcedureScope operator_procedure_scope(*this, x.n_temp_args > 0);
+        std::set<std::string> deferred_ifaces = deferred_procedure_interfaces(
+            x.m_items, x.n_items);
+
+        if (x.n_temp_args > 0) {
+            is_template = true;
+
+            SetChar temp_args;
+            temp_args.reserve(al, x.n_temp_args);
+            for (size_t i=0; i < x.n_temp_args; i++) {
+                current_procedure_args.push_back(to_lower(x.m_temp_args[i]));
+                temp_args.push_back(al, s2c(al, to_lower(x.m_temp_args[i])));
+            }
+
+            Vec<ASR::require_instantiation_t*> reqs;
+            reqs.reserve(al, x.n_items);
+            for (size_t i=0; i<x.n_items; i++) {
+                if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
+                if (AST::is_a<AST::Require_t>(*x.m_items[i])) {
+                    AST::Require_t *r = AST::down_cast<AST::Require_t>(x.m_items[i]);
+                    for (size_t i=0; i<r->n_reqs; i++) {
+                        visit_unit_require(*r->m_reqs[i]);
+                        reqs.push_back(al, ASR::down_cast<ASR::require_instantiation_t>(tmp));
+                        tmp = nullptr;
+                    }
+                }
+                if (AST::is_a<AST::DerivedType_t>(*x.m_items[i])) {
+                    AST::DerivedType_t *dt = AST::down_cast<AST::DerivedType_t>(x.m_items[i]);
+                    if (std::find(current_procedure_args.begin(),
+                                  current_procedure_args.end(),
+                                  to_lower(dt->m_name)) != current_procedure_args.end()) {
+                        visit_decl_stmt(*x.m_items[i]);
+                    }
+                }
+
+                // Deferred constants and procedures belong to the Template,
+                // exactly like a `deferred type` statement.
+                if (AST::decl_stmt_t *deferred_part = deferred_argument_part(
+                        al, x.m_items[i], x.m_temp_args, x.n_temp_args,
+                        deferred_ifaces, true)) {
+                    visit_decl_stmt(*deferred_part);
+                }
+            }
+
+            ASR::asr_t *temp = ASR::make_Template_t(al, x.base.base.loc,
+                current_scope, s2c(al, sym_name), temp_args.p, temp_args.size(), reqs.p, reqs.size());
+            parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(temp));
+            parent_scope = current_scope;
+            current_scope = al.make_new<SymbolTable>(parent_scope);
+            current_procedure_args.clear();
+        }
+
+        record_procedure_references(current_scope, x.m_items, x.n_items);
+        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
+        for (size_t i=0; i<x.n_args; i++) {
+            char *arg=x.m_args[i].m_arg;
+            current_procedure_args.push_back(to_lower(arg));
+        }
+        std::string current_procedure_result_copy = current_procedure_result;
+        SymbolTable *current_procedure_result_scope_copy = current_procedure_result_scope;
+        current_procedure_result_scope = current_scope;
+        if (x.m_return_var == nullptr) {
+            current_procedure_result = sym_name;
+        } else if (AST::is_a<AST::Name_t>(*x.m_return_var)) {
+            current_procedure_result = to_lower(
+                AST::down_cast<AST::Name_t>(x.m_return_var)->m_id);
+        } else {
+            current_procedure_result.clear();
+        }
+
+        // Determine the ABI (Source or BindC for now). Restored on exit: the
+        // enclosing procedure (the host of an internal procedure or of an
+        // interface body) keeps its own ABI.
+        ASR::abiType current_procedure_abi_type_copy = current_procedure_abi_type;
+        current_procedure_abi_type = ASR::abiType::Source;
+        char *bindc_name=nullptr;
+        extract_bind(x, current_procedure_abi_type, bindc_name, diag);
+
+        // iterate over declarations and check if global save is present
+        bool is_global_save_enabled_copy = is_global_save_enabled;
+        std::set<std::string> explicit_save_symbols_copy = explicit_save_symbols;
+        check_if_global_save_is_enabled( x );
+        for (size_t i=0; i<x.n_items; i++) {
+            if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Use)) continue;
+            try {
+                visit_decl_stmt(*x.m_items[i]);
+            } catch (SemanticAbort &e) {
+                if ( !compiler_options.continue_compilation ) throw e;
+            }
+        }
+        if (compiler_options.implicit_typing) {
+            Location a_loc = x.base.base.loc;
+            populate_implicit_dictionary(a_loc, implicit_dictionary);
+            process_implicit_statements(x, implicit_dictionary);
+        } else {
+            for (size_t i=0; i<x.n_items; i++) {
+                if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Implicit)) continue;
+                if (!AST::is_a<AST::ImplicitNone_t>(*x.m_items[i])) {
+                    diag.add(diag::Diagnostic(
+                        "Implicit typing is not allowed, enable it by using --implicit-typing ",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {x.m_items[i]->base.loc})}));
+                    throw SemanticAbort();
+                }
+            }
+        }
+        Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
+        // The COMMON statements below are visited only after the other
+        // declarations, so what they place in a common block is collected
+        // here, while an array bound or a character length of this
+        // specification part may still name one of those objects.
+        CommonBlockObjectsScope common_block_objects(*this, x.m_items, x.n_items);
+        ASR::Function_t *func = build_function_symbol(x, sym_name, parent_scope,
+            deferred_ifaces, bindc_name, procedure_decl_indices);
 
         // Self referencing procedure declarations
         for (size_t i : procedure_decl_indices) {
