@@ -14,7 +14,8 @@ namespace LCompilers {
 
 /*
  * Affine integer arithmetic over the subscripts and conditions of a loop
- * nest, for the loop transformations of gpu_loop_fusion.cpp.
+ * nest, for the loop transformations of gpu_loop_fusion.cpp and
+ * gpu_index_set_split.cpp.
  *
  * An integer expression is affine when it is a sum of constant multiples of
  * *atoms* plus a constant. An atom is an integer expression the analysis

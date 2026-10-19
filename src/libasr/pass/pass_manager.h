@@ -70,6 +70,7 @@
 #include <libasr/pass/device_launch_expand.h>
 #include <libasr/pass/gpu_launch_sync.h>
 #include <libasr/pass/gpu_loop_fusion.h>
+#include <libasr/pass/gpu_index_set_split.h>
 #include <libasr/pass/gpu_array_statements.h>
 #include <libasr/pass/dead_array_store.h>
 #include <libasr/pass/gpu_vector_lanes.h>
@@ -150,6 +151,7 @@ namespace LCompilers {
             {"device_partition", &pass_device_partition},
             {"gpu_launch_sync", &pass_gpu_launch_sync},
             {"gpu_loop_fusion", &pass_gpu_loop_fusion},
+            {"gpu_index_set_split", &pass_gpu_index_set_split},
             {"device_launch_expand", &pass_device_launch_expand},
             {"gpu_device_workspace", &pass_gpu_device_workspace},
             {"gpu_struct_component_args", &pass_gpu_struct_component_args},
@@ -312,9 +314,11 @@ namespace LCompilers {
                 // A whole-array assignment that is assigned again before
                 // anything reads it goes, before it can cost a launch.
                 "dead_array_store",
-                // Parallel loops assigned to the device are fused while
-                // they are still loops of the source (gpu_loop_fusion.cpp).
+                // Parallel loops assigned to the device are fused and split
+                // while they are still loops of the source
+                // (gpu_loop_fusion.cpp, gpu_index_set_split.cpp).
                 "gpu_loop_fusion",
+                "gpu_index_set_split",
                 // A whole-array assignment in a host loop that launches
                 // kernels, on the data they use, runs on the device too.
                 "gpu_array_statements",

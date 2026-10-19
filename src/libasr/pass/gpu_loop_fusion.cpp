@@ -993,6 +993,11 @@ public:
         // the bounds of the array lie within the loop bounds and the tests
         // on single indices of the producer (`box`).
         std::map<std::string, GpuConstraints> box;
+        // Equalities of the lower bounds of the intermediate arrays with
+        // the first index the producer writes, and the value of each
+        // pinned bound (by its atom key).
+        std::map<std::string, GpuConstraints> pins;
+        std::map<std::string, GpuAffine> pinned;
         GpuAffineBuilder ab = cb_builder;
         ab.bindings.clear();
         auto bound_atom = [&](ASR::expr_t *des, size_t d, bool upper,
@@ -1048,6 +1053,7 @@ public:
                     }
                 }
             }
+            GpuConstraints pn;
             for (size_t d = 0; d < w.loop_of_subscript.size(); d++) {
                 GpuAffine lb, ub;
                 if (!bound_atom(w.target->m_v, d, false, lb)
@@ -1056,10 +1062,16 @@ public:
                 }
                 for (auto &l : lowers[d]) bx.push_back(lb.plus(l, -1));
                 for (auto &u : uppers[d]) bx.push_back(u.plus(ub, -1));
+                // The lower bound pinned to the producer's first index.
+                GpuAffine eq = lb.plus(plo[w.loop_of_subscript[d]], -1);
+                pn.push_back(eq);
+                pn.push_back(eq.scaled(-1));
+                pinned[lb.terms.begin()->first] = plo[w.loop_of_subscript[d]];
             }
             box[w.key] = bx;
+            pins[w.key] = pn;
         }
-        auto prove_reads = [&](bool assume) -> bool {
+        auto prove_reads = [&](bool assume, bool pin) -> bool {
             for (auto &r : reads) {
                 const ProducerWrite *w = nullptr;
                 for (auto &x : writes) if (x.key == r.key) w = &x;
@@ -1079,6 +1091,12 @@ public:
                 }
                 if (assume) {
                     for (auto &bk : box) {
+                        extra.insert(extra.end(), bk.second.begin(),
+                            bk.second.end());
+                    }
+                }
+                if (pin) {
+                    for (auto &bk : pins) {
                         extra.insert(extra.end(), bk.second.begin(),
                             bk.second.end());
                     }
@@ -1113,23 +1131,44 @@ public:
             }
             return true;
         };
-        bool assume = false;
-        if (!prove_reads(false)) {
-            if (!prove_reads(true)) return fail();
-            assume = true;
-        }
-        // The run-time check of the assumed bounds.
-        std::vector<ASR::expr_t*> checks;
-        if (assume) {
-            for (auto &bk : box) {
-                for (auto &c : bk.second) {
-                    ASR::expr_t *e = gpu_affine_to_expr(al,
-                        cin->base.base.loc, c, ab.atoms);
-                    if (e == nullptr) return fail();
-                    checks.push_back(e);
+        // Pinning the lower bounds makes the subscripts of the inlined
+        // bodies constant offsets of the indices, which the passes after
+        // this one can reason about; it is checked at run time like the
+        // bounds (an array allocated otherwise runs the original loops).
+        for (auto &kv : pb.atoms) ab.atoms.insert(kv);
+        bool shifted = false;
+        for (auto &r : reads) {
+            for (auto &e : r.subscripts) {
+                for (auto &t : e.terms) {
+                    if (pinned.count(t.first)) shifted = true;
                 }
             }
         }
+        bool assume = true, pin = shifted;
+        if (!(pin && prove_reads(true, true))) {
+            pin = false;
+            if (prove_reads(false, false)) {
+                assume = false;
+            } else if (!prove_reads(true, false)) {
+                return fail();
+            }
+        }
+        // The run-time check of the assumed bounds.
+        std::vector<ASR::expr_t*> checks;
+        auto add_checks = [&](std::map<std::string, GpuConstraints> &cs) {
+            for (auto &bk : cs) {
+                for (auto &c : bk.second) {
+                    ASR::expr_t *e = gpu_affine_to_expr(al,
+                        cin->base.base.loc, c, ab.atoms);
+                    if (e == nullptr) return false;
+                    checks.push_back(e);
+                }
+            }
+            return true;
+        };
+        if (assume && !add_checks(box)) return fail();
+        if (pin && !add_checks(pins)) return fail();
+        if (!pin) pinned.clear();
 
         // The cost model.
         int64_t extra_ops = 0, saved_bytes = 0;
@@ -1565,7 +1604,18 @@ public:
                     *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
                         e->base.loc, it->second));
                 }
+                const std::map<std::string, GpuAffine> *pinned;
+                const std::map<std::string, ASR::expr_t*> *atoms;
                 void replace_ArrayBound(ASR::ArrayBound_t *x) {
+                    auto it = pinned->find(gpu_affine_key(&x->base));
+                    if (it != pinned->end()) {
+                        ASR::expr_t *v = gpu_affine_to_expr(al,
+                            x->base.base.loc, it->second, *atoms);
+                        if (v) {
+                            *current_expr = v;
+                            return;
+                        }
+                    }
                     hoist(&x->base, x->m_v);
                 }
                 void replace_ArraySize(ASR::ArraySize_t *x) {
@@ -1575,6 +1625,8 @@ public:
             h.fn_scope = fn_scope;
             h.xkeys = &xkeys;
             h.reads = &bound_reads;
+            h.pinned = &pinned;
+            h.atoms = &ab.atoms;
             struct Walk2 : public ASRUtils::BlockBodyWalkVisitor<Walk2> {
                 Hoist *h;
                 void expr(ASR::expr_t *&e) {
