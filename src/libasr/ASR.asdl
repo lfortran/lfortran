@@ -305,7 +305,9 @@ attribute = Attribute(identifier name, attribute_arg *args)
 attribute_arg = (identifier arg)
 call_arg = (expr? value)
 gpu_argument_kind = GpuArray | GpuStruct | GpuClass | GpuMemberData | GpuMemberOffsets | GpuMemberSizes | GpuScalar | GpuArrayExtent | GpuPackedOffset
-gpu_kernel_argument = (symbol variable, symbol? member, ttype type, gpu_argument_kind kind, int argument_index, int dimension, bool written)
+-- `noalias`: no other buffer of any launch of the kernel shares storage with
+-- this buffer where either of them is written (gpu_kernel_abi.cpp).
+gpu_kernel_argument = (symbol variable, symbol? member, ttype type, gpu_argument_kind kind, int argument_index, int dimension, bool written, bool noalias)
 gpu_workspace_dimension = (expr extent, symbol? parameter)
 gpu_workspace = (symbol variable, gpu_workspace_dimension* dims, int buffer_index, int element_size)
 gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)

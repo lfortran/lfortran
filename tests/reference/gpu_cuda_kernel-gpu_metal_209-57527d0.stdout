@@ -6,7 +6,7 @@ struct label_t {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* a,
+    float* __restrict__ a,
     label_t& m)
 {
     int __flat_idx;

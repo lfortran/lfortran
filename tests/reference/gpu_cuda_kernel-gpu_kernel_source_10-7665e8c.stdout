@@ -7,9 +7,9 @@ __device__ inline float multiply_add_gpu_7(float a, float b) {
 }
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* x,
-    float* y,
-    float* z)
+    float* __restrict__ x,
+    float* __restrict__ y,
+    float* __restrict__ z)
 {
     int __flat_idx;
     int i;
