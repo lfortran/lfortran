@@ -1,4 +1,4 @@
-semantic error: m, n is/are used as dimensions but not declared
+semantic error: Dummy argument 'n' not defined
  --> tests/implicit8.f90:1:1 - 6:12
   |
 1 |    integer function a(n,m)

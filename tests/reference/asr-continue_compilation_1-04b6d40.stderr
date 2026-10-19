@@ -1041,10 +1041,10 @@ semantic error: a pointer or an allocatable variable cannot be an equivalence ob
      |                  ^ not allowed in EQUIVALENCE
 
 semantic error: function result 'r' cannot be in a common block
-    --> tests/errors/continue_compilation_1.f90:2307:16
+    --> tests/errors/continue_compilation_1.f90:2308:29
      |
-2307 |     integer :: r
-     |                ^ 
+2308 |     common /cc1_result_blk/ r  ! {Error} function result 'r' cannot be in a common block
+     |                             ^ 
 
 semantic error: 'cc1_eu_cnt' is use-associated and cannot appear in an EQUIVALENCE statement
     --> tests/errors/continue_compilation_1.f90:2326:18
