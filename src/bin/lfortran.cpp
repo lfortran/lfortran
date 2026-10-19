@@ -2282,6 +2282,17 @@ int link_executable(const std::vector<std::string> &infiles,
                 std::string runtime_include = " -I" + runtime_library_dir
                     + "/../libasr/runtime";
                 std::string device_cc = compiler_options.device_compiler;
+                if (!emulate_cpu) {
+                    // Without an architecture nvcc builds for its oldest
+                    // default one, which a newer GPU can run only by JIT
+                    // compiling the embedded PTX at startup. `native` builds
+                    // for the GPUs present, and falls back to the default
+                    // with a warning on a machine that has none. Kernel,
+                    // runtime and link all go through device_cc, so they
+                    // agree on it.
+                    device_cc += " -arch=" + (compiler_options.gpu_arch.empty()
+                        ? std::string("native") : compiler_options.gpu_arch);
+                }
                 std::vector<std::string> cuda_kernel_objs;
                 std::set<std::string> seen_cuda_fragments;
                 size_t cuda_kernel_index = 0;
