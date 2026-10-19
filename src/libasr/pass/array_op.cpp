@@ -105,6 +105,11 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
         ASR::BaseExprReplacer<ArrayVarAddressReplacer>::replace_FunctionCall(x);
     }
 
+    void replace_TraitFunctionCall(ASR::TraitFunctionCall_t* /*x*/) {
+        // A call through a runtime trait slot is never elemental: its array
+        // arguments are passed whole.
+    }
+
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* /*x*/) {
         // Do not descend into intrinsic array functions (reductions like
         // MaxVal, MinVal, Sum, etc.) because they operate on whole arrays
@@ -595,6 +600,9 @@ public:
                 ASR::BaseWalkVisitor<CollectComponentsFromElementalExpr>::visit_FunctionCall(x);
             }
         }
+
+        // A call through a runtime trait slot is never elemental.
+        void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t&) {}
 };
 
 // Replaces BitCast (transfer) nodes that return arrays with temporary variables

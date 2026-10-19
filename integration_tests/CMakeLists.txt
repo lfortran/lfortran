@@ -4357,6 +4357,7 @@ RUN(NAME traits_runtime_solver_separate_01 LABELS llvm llvm2 NO_STD_F23 ISOLATE_
         traits_runtime_solver_separate_01_consumer.f90
         traits_runtime_solver_separate_01_provider.f90)
 RUN(NAME traits_runtime_explicit_shape_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_array_expression_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME class_nominal_separate_01 LABELS gfortran llvm llvm2
     EXTRAFILES class_nominal_separate_01_a.f90 class_nominal_separate_01_b.f90)
 RUN(NAME traits_static_01_oracle LABELS gfortran llvm)
