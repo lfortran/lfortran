@@ -949,6 +949,16 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                                         Allocator& al_) {
             int index_kind = get_index_kind();
             ASR::ttype_t* array_type = ASRUtils::expr_type(array);
+            // A physical cast's type is a copy of its argument's declared
+            // type, which earlier passes do not update; for example, its
+            // extent can still be the specification expression `count(x > 0)`.
+            // Take the extents from the argument itself.
+            ASR::ttype_t* storage_type = ASRUtils::expr_type(
+                ASRUtils::get_past_array_physical_cast(array));
+            if( ASRUtils::extract_n_dims_from_ttype(storage_type) ==
+                    ASRUtils::extract_n_dims_from_ttype(array_type) ) {
+                array_type = storage_type;
+            }
             ASR::dimension_t* compile_time_dims = nullptr;
             int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(array_type, compile_time_dims));
             if( n_dims == 0 ) {

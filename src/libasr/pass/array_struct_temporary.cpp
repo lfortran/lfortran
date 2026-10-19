@@ -1670,6 +1670,26 @@ ASR::Variable_t* designator_root_variable(ASR::expr_t* value) {
     return nullptr;
 }
 
+// The passed-object actual of a type-bound call is the same expression as the
+// dispatch expression `m_dt`, e.g. `mk(3.)` in `mk(3.) - mk(1.)` with a
+// type-bound operator. Once the actual `original` has been replaced by
+// `prepared`, the dispatch uses `prepared` too, so that the operand is
+// evaluated only once. A designator has no side effects and is kept.
+ASR::expr_t* passed_object_dispatch(ASR::expr_t* dt, ASR::expr_t* original,
+        ASR::expr_t* prepared) {
+    if( dt == nullptr || dt != original || prepared == original ) {
+        return dt;
+    }
+    ASR::expr_t* value = ASRUtils::get_past_array_physical_cast(dt);
+    if( ASR::is_a<ASR::Var_t>(*value) ||
+        ASR::is_a<ASR::ArrayItem_t>(*value) ||
+        ASR::is_a<ASR::ArraySection_t>(*value) ||
+        ASR::is_a<ASR::StructInstanceMember_t>(*value) ) {
+        return dt;
+    }
+    return prepared;
+}
+
 // A component of an array of derived type, such as `ps%x` or `ps(1::2)%y`, is
 // a strided section of `ps`: its elements are one struct apart, not one
 // element apart. It therefore has to be gathered into a contiguous temporary
@@ -3291,7 +3311,12 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 ASR::Array_t* declared_array = ASR::down_cast<ASR::Array_t>(declared_type);
                 LCOMPILERS_ASSERT(array->n_dims == declared_array->n_dims);
                 for (size_t i = 0; i < array->n_dims; i++) {
-                    if (array->m_dims[i].m_start && declared_array->m_dims[i].m_start) {
+                    // Only a bound that depends on the actuals needs
+                    // rebinding. A constant one, such as the lower bound of
+                    // one of a function reference, is kept as is.
+                    if (array->m_dims[i].m_start && declared_array->m_dims[i].m_start &&
+                            !ASRUtils::is_value_constant(
+                                ASRUtils::expr_value(array->m_dims[i].m_start))) {
                         array->m_dims[i].m_start = replacer.replace_FunctionParam_with_arg(
                             declared_array->m_dims[i].m_start);
                     }
@@ -3536,6 +3561,10 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
             }
         }
         current_expr = saved_expr;
+        for (size_t i = 0; i < x->n_args; i++) {
+            x->m_dt = passed_object_dispatch(x->m_dt, original_args[i],
+                x->m_args[i].m_value);
+        }
         if (ASRUtils::is_elemental(x->m_name)) {
             for (size_t i = 0; i < x->n_args; i++) {
                 if (x->m_args[i].m_value && ASRUtils::is_array(

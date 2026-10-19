@@ -161,6 +161,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 b)
@@ -201,6 +202,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (ArrayItem
@@ -218,6 +220,7 @@
                                         )
                                         (IntegerConstant 2 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -340,7 +343,7 @@
                             Any
                             [(ArrayPhysicalCast
                                 (ArrayConstant
-                                    12
+                                    3
                                     [.true., .true., .true.]
                                     (Array
                                         (Logical 4)
@@ -370,6 +373,7 @@
                             )
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )

@@ -2086,7 +2086,7 @@ public:
                     ASR::string_physical_typeType::DescriptorString));
                 ASR::expr_t* empty_str = b.StringConstant("", empty_str_type);
                 ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(
-                    al, a_fmt->base.loc, fmt_string_var, empty_str, nullptr, true, false));
+                    al, a_fmt->base.loc, fmt_string_var, empty_str, nullptr, true, false, false));
                 tmp_vec.push_back((ASR::asr_t*)assign_stmt);
 
                 std::string loop_var = current_scope->get_unique_name("i");
@@ -2122,7 +2122,7 @@ public:
 
                 ASR::expr_t* concat = b.StringConcat(fmt_string_var, array_elem, ASRUtils::type_get_past_allocatable(str_type));
                 ASR::stmt_t* body_assign = ASRUtils::STMT(ASR::make_Assignment_t(
-                    al, a_fmt->base.loc, fmt_string_var, concat, nullptr, true, false));
+                    al, a_fmt->base.loc, fmt_string_var, concat, nullptr, true, false, false));
                 
                 Vec<ASR::stmt_t*> body; body.reserve(al, 1);
                 body.push_back(al, body_assign);
@@ -2663,6 +2663,9 @@ public:
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
             check_io_item_not_function(expr);
+            if (_type == AST::decl_stmtType::Write && formatted) {
+                expr = cast_assumed_rank_output_item(expr, loc, "write");
+            }
             // For READ: expand implied-do loops to individual elements or array section
             if (_type == AST::decl_stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
                 expand_implied_do_for_read(
@@ -4222,8 +4225,8 @@ public:
         // 7.5.6.3 p5) is left in place when every object is a scalar, since
         // it is then not duplicated: assigning it to a temporary would
         // finalize the undefined temporary, and the result and the temporary
-        // would both be finalized. An array object is also assigned the
-        // source below, so the temporary is kept for it.
+        // would both be finalized. The array_op pass copies the source into
+        // an array object separately, so the temporary is kept for it.
         bool source_used_once = source_cond && source != nullptr &&
             ASRUtils::is_finalizable_function_reference(source);
         for (size_t i = 0; source_used_once && i < alloc_args_vec.size(); i++) {
@@ -4600,14 +4603,15 @@ public:
             // Pushing assignment statements to source
             if (source_cond) {
                 for (size_t i = 0; i < alloc_args_vec.n ; i++) {
-                    // Create assignment statement only for non-struct types
+                    // Create assignment statement only for scalars that are
+                    // not of derived type. The backend copies the source into
+                    // a scalar of derived type, and the array_op pass into
+                    // the elements of an array.
                     // All validation was already done above before creating the Allocate ASR node
-                    if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(alloc_args_vec[i].m_a)))) {
-                        ASR::ttype_t* tgt_t = ASRUtils::type_get_past_allocatable_pointer(
-                            ASRUtils::expr_type(alloc_args_vec[i].m_a));
-                        if (ASRUtils::is_assumed_rank_array(tgt_t)) {
-                            continue;
-                        }
+                    ASR::ttype_t* tgt_t = ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(alloc_args_vec[i].m_a));
+                    if (!ASR::is_a<ASR::StructType_t>(*tgt_t) &&
+                            !ASRUtils::is_array(tgt_t)) {
                         ASRUtils::ExprStmtDuplicator expr_duplicator(al);
                         ASR::expr_t* source_copy = expr_duplicator.duplicate_expr(source);
                         ASR::stmt_t* assign_stmt = ASRUtils::STMT(
@@ -4733,7 +4737,7 @@ public:
                 ASR::ttype_t *int_type = ASRUtils::expr_type(alt_ret_var);
                 ret_val = CastingUtil::perform_casting(ret_val, int_type, al, x.base.base.loc);
                 ASR::stmt_t *assign = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
-                    alt_ret_var, ret_val, nullptr, false, false));
+                    alt_ret_var, ret_val, nullptr, false, false, false));
                 tmp_vec.push_back(reinterpret_cast<ASR::asr_t*>(assign));
                 tmp_vec.push_back(ASR::make_Return_t(al, x.base.base.loc));
                 tmp = nullptr;
@@ -5819,6 +5823,7 @@ public:
         }
         ASR::Program_t *v = ASR::down_cast<ASR::Program_t>(t);
         current_scope = v->m_symtab;
+        record_procedure_references(current_scope, x.m_items, x.n_items);
         starting_m_body = x.m_items;
         starting_n_body = x.n_items;
         collect_labels();
@@ -5883,6 +5888,7 @@ public:
         std::map<size_t, std::string> func_type_args; // index -> arg name
         for (size_t i = 1; i < master_func->n_args; i++) {
             ASR::Var_t* master_var = ASR::down_cast<ASR::Var_t>(master_func->m_args[i]);
+            if (!ASR::is_a<ASR::Variable_t>(*master_var->m_v)) continue;
             ASR::Variable_t* master_variable = ASR::down_cast<ASR::Variable_t>(master_var->m_v);
             if (ASR::is_a<ASR::FunctionType_t>(*master_variable->m_type)) {
                 func_type_args[i] = ASRUtils::symbol_name(master_var->m_v);
@@ -6084,7 +6090,19 @@ public:
                     ASR::Var_t* mvar = ASR::down_cast<ASR::Var_t>(master_function_arg);
                     std::string sym_name = ASRUtils::symbol_name(mvar->m_v);
                     ASR::symbol_t* sym = entry_function->m_symtab->resolve_symbol(sym_name);
-                    if (sym == nullptr) {
+                    if (ASR::is_a<ASR::Function_t>(*mvar->m_v)) {
+                        // Pass an unset procedure variable, not the global procedure that has the dummy's name.
+                        std::string var_name = entry_function->m_symtab->get_unique_name(sym_name + "~absent");
+                        ASR::asr_t* var_asr = ASRUtils::make_Variable_t_util(al, loc,
+                            entry_function->m_symtab, s2c(al, var_name), nullptr, 0,
+                            ASR::intentType::Local, nullptr, nullptr,
+                            ASR::storage_typeType::Default, type,
+                            entry_function->m_symtab->get_symbol(sym_name),
+                            ASR::abiType::Source, ASR::accessType::Public,
+                            ASR::presenceType::Required, false);
+                        sym = ASR::down_cast<ASR::symbol_t>(var_asr);
+                        entry_function->m_symtab->add_symbol(var_name, sym);
+                    } else if (sym == nullptr) {
                         // Create a variable of the correct FunctionType in the entry function scope
                         ASR::Variable_t* master_var = ASR::down_cast<ASR::Variable_t>(mvar->m_v);
                         // The interface lives in the master procedure's scope,
@@ -6383,14 +6401,30 @@ public:
         SymbolTable* old_scope = current_scope;
         current_scope = master_function->m_symtab;
         current_body_scope = current_scope;
+        record_procedure_references(current_scope, x.m_items, x.n_items);
+        // The master function implements the procedure and its ENTRY points,
+        // so its statements access their names like the procedure's own.
+        std::set<std::string> &own_names =
+            procedure_references[current_scope->counter];
+        own_names.insert(original_function_name);
+        for (auto &it: entry_functions[original_function_name]) {
+            own_names.insert(it.first);
+        }
         // Record where each copy of the body starts and ends, so that statement
         // labels repeated across copies can be told apart afterwards.
         std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> copies;
+        // End each copy with a RETURN, so that it does not fall into the next copy.
+        auto end_copy = [&]() {
+            if (!ASR::is_a<ASR::Return_t>(*stmt_vector.back())) {
+                stmt_vector.push_back(ASRUtils::STMT(ASR::make_Return_t(al, loc)));
+            }
+        };
         size_t stmt_start = stmt_vector.size();
         size_t trailing_start = after_return_stmt_entry_function.size();
         visit_stmts_helper(subroutine_stmt_vector, stmt_vector, after_return_stmt_entry_function, false, true);
         copies.push_back({{stmt_start, stmt_vector.size()},
             {trailing_start, after_return_stmt_entry_function.size()}});
+        end_copy();
 
         // handle entry functions
         for (auto &it: entry_functions[original_function_name]) {
@@ -6403,6 +6437,7 @@ public:
             visit_stmts_helper(it.second, stmt_vector, after_return_stmt_entry_function, is_last);
             copies.push_back({{stmt_start, stmt_vector.size()},
                 {trailing_start, after_return_stmt_entry_function.size()}});
+            end_copy();
         }
         renumber_repeated_entry_labels(stmt_vector, after_return_stmt_entry_function, copies);
         for (auto &it: stmt_vector) {
@@ -6436,6 +6471,7 @@ public:
 
         ASR::Function_t* v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
+        record_procedure_references(current_scope, x.m_items, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             is_Function = true;
@@ -6521,6 +6557,7 @@ public:
 
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
+        record_procedure_references(current_scope, x.m_items, x.n_items);
         for (size_t i=0; i<x.n_items; i++) {
             if (!AST::is_kind(*x.m_items[i], AST::DeclStmtKind::Declaration)) continue;
             is_Function = true;
@@ -6629,6 +6666,7 @@ public:
 
         ASR::Function_t *v = ASR::down_cast<ASR::Function_t>(t);
         current_scope = v->m_symtab;
+        record_procedure_references(current_scope, x.m_items, x.n_items);
         if (entry_functions.find(to_lower(v->m_name)) != entry_functions.end()) {
             /*
                 Subroutine is parent of entry function.
@@ -9388,6 +9426,46 @@ public:
         throw SemanticAbort();
     }
 
+    // Inside a `rank (n)` block of `select rank`, an assumed-rank output
+    // item is the selector viewed as a rank n descriptor (a scalar for
+    // `rank (0)`).
+    ASR::expr_t* cast_assumed_rank_output_item(ASR::expr_t* expr,
+            const Location& loc, const std::string& statement) {
+        if (!ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
+            return expr;
+        }
+        ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(expr);
+        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(v->m_v);
+        std::string var_name = var->m_name;
+        if (assumed_rank_arrays.find(var_name) == assumed_rank_arrays.end()) {
+            diag.add(diag::Diagnostic(
+                "Assumed-rank arrays are not supported in " + statement + " statements",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {expr->base.loc})
+                }));
+            throw SemanticAbort();
+        }
+        int rank = assumed_rank_arrays[var_name];
+        Vec<ASR::dimension_t> dims; dims.reserve(al, rank);
+        for (int r = 0; r < rank; r++) {
+            ASR::dimension_t dim;
+            dim.loc = loc;
+            dim.m_start = nullptr;
+            dim.m_length = nullptr;
+            dims.push_back(al, dim);
+        }
+        ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(expr));
+        ASR::ttype_t* desc_type = ASRUtils::make_Array_t_util(al, loc,
+            elem_type, dims.p, dims.size(), ASR::abiType::Source, false,
+            ASR::array_physical_typeType::DescriptorArray, false, false, true
+        );
+        ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(
+            al, expr->base.loc, expr, ASR::array_physical_typeType::AssumedRankArray,
+            ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr
+        );
+        return ASRUtils::EXPR(array_cast);
+    }
+
     void visit_Print(const AST::Print_t &x) {
         mark_IO_side_effect();
         Vec<ASR::expr_t*> body;
@@ -9442,39 +9520,7 @@ public:
             this->visit_expr(*x.m_values[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             check_io_item_not_function(expr);
-            if (ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
-                ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(expr);
-                ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(v->m_v);
-                std::string var_name = var->m_name;
-                if (assumed_rank_arrays.find(var_name) == assumed_rank_arrays.end()) {
-                    diag.add(diag::Diagnostic(
-                        "Assumed-rank arrays are not supported in print statements",
-                        diag::Level::Error, diag::Stage::Semantic, {
-                            diag::Label("", {expr->base.loc})
-                        }));
-                    throw SemanticAbort();
-                } else {
-                    int rank = assumed_rank_arrays[var_name];
-                    Vec<ASR::dimension_t> dims; dims.reserve(al, rank);
-                    for (int r = 0; r < rank; r++) {
-                        ASR::dimension_t dim;
-                        dim.loc = x.base.base.loc;
-                        dim.m_start = nullptr;
-                        dim.m_length = nullptr;
-                        dims.push_back(al, dim);
-                    }
-                    ASR::ttype_t* elem_type = ASRUtils::extract_type(ASRUtils::expr_type(expr));
-                    ASR::ttype_t* desc_type = ASRUtils::make_Array_t_util(al, x.base.base.loc,
-                        elem_type, dims.p, dims.size(), ASR::abiType::Source, false,
-                        ASR::array_physical_typeType::DescriptorArray, false, false, true
-                    );
-                    ASR::asr_t* array_cast = ASRUtils::make_ArrayPhysicalCast_t_util(
-                        al, expr->base.loc, expr, ASR::array_physical_typeType::AssumedRankArray,
-                        ASR::array_physical_typeType::DescriptorArray, desc_type, nullptr
-                    );
-                    expr = ASRUtils::EXPR(array_cast);
-                }
-            }
+            expr = cast_assumed_rank_output_item(expr, x.base.base.loc, "print");
             body.push_back(al, expr);
         }
         if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {

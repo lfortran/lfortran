@@ -1923,35 +1923,6 @@ namespace LCompilers {
             return data_buffer;
         }
 
-        llvm::Value* SimpleCMODescriptor::create_contiguous_string_copy_from_descriptor(
-            llvm::Type* source_llvm_type, llvm::Value* source_desc,
-            ASR::String_t* string_type, int rank, llvm::Module* module) {
-            llvm::Type* string_desc_type = llvm_utils->get_StringType(&string_type->base);
-            llvm::Value* source_string = llvm_utils->CreateLoad2(
-                string_desc_type->getPointerTo(),
-                get_pointer_to_data(source_llvm_type, source_desc));
-            llvm::Value* length = llvm_utils->get_string_length(string_type, source_string);
-            llvm::Value* element_bytes = length;
-            if (string_type->m_kind > 1) {
-                element_bytes = builder->CreateMul(element_bytes,
-                    llvm::ConstantInt::get(element_bytes->getType(), string_type->m_kind));
-            }
-            llvm::Value* num_elements = get_array_size(source_llvm_type, source_desc, nullptr, 8);
-            llvm::Value* data_buffer = lfortran_malloc(context, *module, *builder,
-                builder->CreateMul(num_elements, element_bytes));
-            for_each_element_of_descriptor(source_llvm_type, source_desc,
-                string_desc_type, rank, "copy_string_array",
-                [&](llvm::Value* iter, llvm::Value* element) {
-                    llvm::Value* dest = builder->CreateGEP(llvm::Type::getInt8Ty(context),
-                        data_buffer, builder->CreateMul(builder->CreateSExtOrTrunc(
-                            iter, element_bytes->getType()), element_bytes));
-                    builder->CreateMemCpy(dest, llvm::MaybeAlign(),
-                        element, llvm::MaybeAlign(), element_bytes);
-                }, string_type);
-            return llvm_utils->create_string_descriptor(data_buffer, length,
-                "contiguous_string_copy");
-        }
-
         void SimpleCMODescriptor::copy_contiguous_data_to_descriptor(
             llvm::Value* source_data,
             llvm::Type* dest_llvm_type, llvm::Value* dest_desc,
@@ -1972,8 +1943,7 @@ namespace LCompilers {
         void SimpleCMODescriptor::for_each_element_of_descriptor(
             llvm::Type* desc_llvm_type, llvm::Value* desc,
             llvm::Type* elem_type, int rank, const std::string& loop_name,
-            const std::function<void(llvm::Value*, llvm::Value*)>& body,
-            ASR::String_t* string_type) {
+            const std::function<void(llvm::Value*, llvm::Value*)>& body) {
             unsigned index_bit_width = index_type->getIntegerBitWidth();
 
             llvm::Value* dim_des_array = get_pointer_to_dimension_descriptor_array(
@@ -2026,11 +1996,8 @@ namespace LCompilers {
                     llvm::Value* base_offset = get_offset(desc_llvm_type, desc);
                     linear_offset = builder->CreateAdd(linear_offset, base_offset);
 
-                    body(iter, string_type
-                        ? llvm_utils->get_string_element_in_array_(
-                            string_type, data, linear_offset)
-                        : llvm_utils->create_ptr_gep2(
-                            elem_type, data, linear_offset));
+                    body(iter, llvm_utils->create_ptr_gep2(
+                        elem_type, data, linear_offset));
 
                     llvm::Value* new_iter = builder->CreateAdd(iter,
                         llvm::ConstantInt::get(context, llvm::APInt(index_bit_width, 1)));

@@ -58,6 +58,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )]
                     ()
                 ),
@@ -209,6 +210,7 @@
                                                         ()
                                                         .false.
                                                         .false.
+                                                        .false.
                                                     )]
                                                     (Var 4 c)
                                                     Public
@@ -319,11 +321,13 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 y)
                                         (Var 3 x)
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -344,6 +348,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )]

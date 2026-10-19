@@ -311,6 +311,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 __libasr_section_first_element_)
@@ -336,6 +337,7 @@
                                         ()
                                         .false.
                                         .false.
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 __libasr_index_0_1)
@@ -347,6 +349,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )
@@ -395,6 +398,7 @@
                                             ()
                                             .false.
                                             .false.
+                                            .false.
                                         )
                                         (Assignment
                                             (Var 3 __libasr_index_0_1)
@@ -406,6 +410,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                             .false.
                                             .false.
                                         )]
