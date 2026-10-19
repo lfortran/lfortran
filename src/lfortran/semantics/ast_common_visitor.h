@@ -4027,6 +4027,7 @@ public:
                 && start_int == 1)) {
             return end;
         }
+        ASRUtils::cast_to_wider_kind(al, start, end);
         const Location &loc = end->base.loc;
         ASR::ttype_t* type = ASRUtils::expr_type(end);
         auto make_binop = [&](ASR::expr_t* left, ASR::binopType op,
