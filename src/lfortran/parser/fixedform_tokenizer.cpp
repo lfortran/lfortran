@@ -1288,7 +1288,7 @@ struct FixedFormRecursiveDescent {
         }
 
         if (is_block_construct(cur)) {
-            lex_block(cur);
+            lex_block(cur, continue_compilation);
             return true;
         }
 
@@ -1926,11 +1926,11 @@ struct FixedFormRecursiveDescent {
         tokenize_line(cur);
     }
 
-    void lex_block(unsigned char *&cur) {
+    void lex_block(unsigned char *&cur, bool continue_compilation = false) {
         push_token_advance(cur, "block");
         tokenize_line(cur);
         while (!is_construct_stmt(cur, "endblock")) {
-            if (!lex_body_statement(cur)) {
+            if (!lex_body_statement(cur, continue_compilation)) {
                 Location loc;
                 loc.first = source_offset(cur - string_start);
                 loc.last = source_offset(cur - string_start);
