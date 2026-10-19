@@ -5077,6 +5077,11 @@ filename = "errors/implicit_typing6.f90"
 asr_implicit_typing = true
 
 [[test]]
+filename = "errors/implicit_typing7.f90"
+semantics_only_cc = true
+options = "--implicit-typing --implicit-interface"
+
+[[test]]
 filename = "external2.f90"
 asr_implicit_interface_and_typing = true
 
