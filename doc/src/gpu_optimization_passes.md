@@ -243,7 +243,11 @@ to reload). The interior's rows are a multiple of the factor, and the rows
 left over join the frame.
 
 The factor is three when the body reads some array at two or more offsets
-along the outer dimension, and one otherwise. With the fourth-order stencil
+along the outer dimension, and one otherwise. The outer dimension must not be
+the contiguous one: every array element the body stores must have the inner
+index as its first subscript, so that the offload makes the inner index
+contiguous across the threads of a launch (jamming the contiguous index would
+spread the accesses of neighbouring threads apart). With the fourth-order stencil
 three rows compute 6 instead of 12 y faces; two and four rows were slower
 (more instructions per cell with two, register pressure with four).
 

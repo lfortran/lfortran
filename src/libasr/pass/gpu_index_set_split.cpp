@@ -261,17 +261,66 @@ public:
         return folded;
     }
 
+    // Whether every array element the body stores has `v` as its
+    // contiguous subscript (the first, in column-major order): the offload
+    // then makes `v` the index contiguous across the threads of a launch
+    // (contiguous_store_dimension in gpu_offload.cpp).
+    static bool stores_contiguous_along(ASR::stmt_t **body, size_t n,
+            ASR::symbol_t *v) {
+        struct Stores : public ASRUtils::BlockBodyWalkVisitor<Stores> {
+            ASR::symbol_t *v;
+            bool all = true, any = false;
+            void visit_Assignment(const ASR::Assignment_t &x) {
+                ASR::ttype_t *type = ASRUtils::expr_type(x.m_target);
+                if (ASR::is_a<ASR::Var_t>(*x.m_target)
+                        && !ASRUtils::is_array(type)
+                        && !ASRUtils::is_pointer(type)
+                        && !ASR::is_a<ASR::StructType_t>(
+                            *ASRUtils::extract_type(type))) {
+                    return;
+                }
+                any = true;
+                if (!ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) {
+                    all = false;
+                    return;
+                }
+                ASR::ArrayItem_t *item = ASR::down_cast<ASR::ArrayItem_t>(
+                    x.m_target);
+                if (item->n_args == 0) {
+                    all = false;
+                    return;
+                }
+                size_t d = item->m_storage_format
+                    == ASR::arraystorageType::ColMajor ? 0 : item->n_args - 1;
+                ASR::expr_t *index = item->m_args[d].m_right;
+                if (!index || !ASR::is_a<ASR::Var_t>(*index)
+                        || ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::Var_t>(index)->m_v) != v) {
+                    all = false;
+                }
+            }
+        } st;
+        st.v = v;
+        for (size_t i = 0; i < n; i++) st.visit_stmt(*body[i]);
+        return st.any && st.all;
+    }
+
     // How many iterations of the outer dimension of a nest of two
     // dimensions one thread of the interior runs (unroll-and-jam): three
     // when the body reads some array at two or more offsets along that
     // dimension, so that neighbouring iterations read and compute the same
     // values (the fluxes of a face between two cells), and one otherwise.
+    // Only when the inner dimension is the one the stores make contiguous:
+    // jamming the contiguous dimension would spread the accesses of
+    // neighbouring threads apart.
     // Three rows share half of what they would each compute along that
     // dimension with a fourth-order stencil while keeping the registers of
     // the copies below spilling (measured: 2 and 4 rows are slower).
     int64_t jam_factor(ASR::stmt_t **body, size_t n,
             const GpuLoopNest &nest, GpuAffineBuilder &b) {
-        if (!jam_enabled) return 1;
+        if (!jam_enabled || !stores_contiguous_along(body, n, nest.vars[1])) {
+            return 1;
+        }
         std::string v0 = var_key(nest.vars[0]);
         std::map<std::string, std::set<std::string>> offsets;
         struct Reads : public ASRUtils::BlockBodyWalkVisitor<Reads> {

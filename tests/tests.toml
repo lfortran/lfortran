@@ -4930,6 +4930,10 @@ filename = "../integration_tests/gpu_kernel_source_18.f90"
 gpu_cuda_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_kernel_source_23.f90"
+gpu_cuda_kernel = true
+
+[[test]]
 filename = "../integration_tests/gpu_kernel_source_16.f90"
 gpu_metal_kernel = true
 gpu_cuda_kernel = true
