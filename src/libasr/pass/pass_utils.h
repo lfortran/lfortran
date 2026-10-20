@@ -489,9 +489,21 @@ namespace LCompilers {
                     || ASR::is_a<ASR::SymbolicExpression_t>(*type));
         }
 
-        static inline bool is_aggregate_or_array_or_nonPrimitive_type(ASR::expr_t* var) {
-            return  is_aggregate_or_array_type(var) ||
-                    is_non_primitive_return_type(ASRUtils::expr_type(var));
+        // Whether a function result of type `type` is returned through a
+        // dummy argument, the subroutine_from_function pass making the
+        // function a subroutine: array, derived type, polymorphic, string
+        // and every allocatable result, including an allocatable scalar of
+        // an intrinsic type. The caller gets an allocatable result in an
+        // allocatable variable, whose value it can reference or assign like
+        // that of any other variable, and which it deallocates.
+        static inline bool is_result_returned_through_argument(ASR::ttype_t* type) {
+            return is_non_primitive_return_type(type) ||
+                is_aggregate_or_array_type(type) ||
+                ASRUtils::is_allocatable(type);
+        }
+
+        static inline bool is_result_returned_through_argument(ASR::expr_t* result) {
+            return is_result_returned_through_argument(ASRUtils::expr_type(result));
         }
 
 

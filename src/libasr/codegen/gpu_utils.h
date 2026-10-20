@@ -4,6 +4,7 @@
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
 
+#include <cctype>
 #include <functional>
 #include <set>
 #include <string>
@@ -360,6 +361,66 @@ struct GpuKernelParam {
     std::string name;
     GpuKernelParamKind kind;
 };
+
+// A declaration a kernel, a device function or a block makes ahead of its
+// body: a scalar unpacked from the scalar argument struct, a buffer unpacked
+// from the packed arrays, or a local variable. It declares the names in
+// `names`; one that declares none is always written.
+struct GpuDeclaration {
+    std::vector<std::string> names;
+    std::string text;
+};
+
+// Adds the identifiers the generated source `code` refers to to `result`.
+// A member name, which follows `.` or `->`, refers to no variable.
+inline void gpu_referenced_identifiers(const std::string &code,
+        std::set<std::string> &result) {
+    auto is_word = [](char c) {
+        return std::isalnum(static_cast<unsigned char>(c)) || c == '_';
+    };
+    size_t i = 0;
+    while (i < code.size()) {
+        if (!is_word(code[i])) {
+            i++;
+            continue;
+        }
+        size_t start = i;
+        while (i < code.size() && is_word(code[i])) i++;
+        if (std::isdigit(static_cast<unsigned char>(code[start]))) continue;
+        bool member = (start >= 1 && code[start - 1] == '.') ||
+            (start >= 2 && code[start - 2] == '-' && code[start - 1] == '>');
+        if (!member) result.insert(code.substr(start, i - start));
+    }
+}
+
+// The declarations of `declarations` that `body`, or another declaration
+// written, refers to, in order. The device compilers warn about a variable
+// that is declared and never referred to, so a scope does not unpack the
+// scalars or declare the locals it has no use for. Dropping one changes no
+// behavior: none has side effects, and the scalar argument struct the host
+// fills keeps every field, so the launch is laid out as before.
+inline std::string gpu_referenced_declarations(
+        const std::vector<GpuDeclaration> &declarations,
+        const std::string &body) {
+    std::set<std::string> referenced;
+    gpu_referenced_identifiers(body, referenced);
+    // A declaration refers only to names declared ahead of it, so walking
+    // them backwards sees every use of a name before its declaration.
+    std::vector<bool> keep(declarations.size());
+    for (size_t i = declarations.size(); i-- > 0;) {
+        const GpuDeclaration &declaration = declarations[i];
+        keep[i] = declaration.names.empty();
+        for (const std::string &name : declaration.names) {
+            keep[i] = keep[i] || referenced.count(name) > 0;
+        }
+        if (keep[i]) gpu_referenced_identifiers(declaration.text, referenced);
+    }
+    std::string result;
+    for (size_t i = 0; i < declarations.size(); i++) {
+        if (keep[i]) result += declarations[i].text;
+    }
+    return result;
+}
 
 // An allocatable array component of a kernel argument that is an array of a
 // derived type reaches the device as three buffers: the elements' data laid

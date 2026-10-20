@@ -60,7 +60,8 @@ public:
             ASR::ttype_t* const return_type = ASRUtils::get_FunctionType(x_ptr)->m_return_var_type;
             
             /* Transform This Function Into Subroutine IF NEEDED */
-            bool transform_success = PassUtils::handle_fn_return_var(al, x_ptr, PassUtils::is_aggregate_or_array_or_nonPrimitive_type);
+            bool transform_success = PassUtils::handle_fn_return_var(al, x_ptr,
+                PassUtils::is_result_returned_through_argument);
             if(transform_success) {
                 Function__TO__ReturnType_MAP_[x_ptr] = return_type;
                 handle_finalizable_result(*x_ptr);
@@ -720,8 +721,7 @@ public :
             pass_result.push_back(al, assign);
             return;
         }
-        if(PassUtils::is_non_primitive_return_type(x->m_type)
-            || PassUtils::is_aggregate_or_array_type(x->m_type)){
+        if (PassUtils::is_result_returned_through_argument(x->m_type)) {
 
             // Create variable in current_scope to be holding the return.
             // For converted functions (structs/arrays), pass the last arg as

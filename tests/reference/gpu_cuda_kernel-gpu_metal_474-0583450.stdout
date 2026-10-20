@@ -15,7 +15,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int j;
     int k;
     const int m = 64;
-    const int n = 10000;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
@@ -57,7 +56,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     int __gpu_sec_i;
     int j;
     const int m = 64;
-    const int n = 10000;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
@@ -104,7 +102,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     int j;
-    const int n = 10000;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
@@ -114,40 +111,42 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
 }
 
 extern "C" __global__ void __lfortran_gpu_kernel_3(
-    float* __libasr__created__var__0__array_constant_,
     float* u,
     float* y)
 {
     int __1_k;
     int __flat_idx;
     int __gpu_elem_i1;
-    int __gpu_sum_k;
-    float __gpu_sum_res;
     int j;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 1)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
     j = (__flat_idx + 1);
-    __1_k = 1;
-    __libasr__created__var__0__array_constant_[((int)(__1_k) - (1))] =   1.00000000000000000e+00f;
-    __1_k = 2;
-    __libasr__created__var__0__array_constant_[((int)(__1_k) - (1))] =   2.00000000000000000e+00f;
-    __1_k = 3;
-    __libasr__created__var__0__array_constant_[((int)(__1_k) - (1))] =   3.00000000000000000e+00f;
-    __1_k = 4;
-    __libasr__created__var__0__array_constant_[((int)(__1_k) - (1))] =   4.00000000000000000e+00f;
-    __gpu_elem_i1 = (1 - 1);
-    while (((__gpu_elem_i1 + 1) <= 4)) {
-        __gpu_elem_i1 = (__gpu_elem_i1 + 1);
-        u[((int)(__gpu_elem_i1) - (1))] = (__libasr__created__var__0__array_constant_[((int)(__gpu_elem_i1) - (1))] * ((float)j));
+    {
+        int __gpu_sum_k;
+        float __gpu_sum_res;
+        float __libasr__created__var__0__array_constant_[4];
+        __1_k = 1;
+        __libasr__created__var__0__array_constant_[((int)(__1_k) - (1))] =   1.00000000000000000e+00f;
+        __1_k = 2;
+        __libasr__created__var__0__array_constant_[((int)(__1_k) - (1))] =   2.00000000000000000e+00f;
+        __1_k = 3;
+        __libasr__created__var__0__array_constant_[((int)(__1_k) - (1))] =   3.00000000000000000e+00f;
+        __1_k = 4;
+        __libasr__created__var__0__array_constant_[((int)(__1_k) - (1))] =   4.00000000000000000e+00f;
+        __gpu_elem_i1 = (1 - 1);
+        while (((__gpu_elem_i1 + 1) <= 4)) {
+            __gpu_elem_i1 = (__gpu_elem_i1 + 1);
+            u[((int)(__gpu_elem_i1) - (1))] = (__libasr__created__var__0__array_constant_[((int)(__gpu_elem_i1) - (1))] * ((float)j));
+        }
+        __gpu_sum_res =   0.00000000000000000e+00f;
+        __gpu_sum_k = (1 - 1);
+        while (((__gpu_sum_k + 1) <= 4)) {
+            __gpu_sum_k = (__gpu_sum_k + 1);
+            __gpu_sum_res = (__gpu_sum_res + u[((int)(__gpu_sum_k) - (1))]);
+        }
+        y[((int)(j) - (1))] = __gpu_sum_res;
     }
-    __gpu_sum_res =   0.00000000000000000e+00f;
-    __gpu_sum_k = (1 - 1);
-    while (((__gpu_sum_k + 1) <= 4)) {
-        __gpu_sum_k = (__gpu_sum_k + 1);
-        __gpu_sum_res = (__gpu_sum_res + u[((int)(__gpu_sum_k) - (1))]);
-    }
-    y[((int)(j) - (1))] = __gpu_sum_res;
 }
 

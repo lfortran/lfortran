@@ -22,7 +22,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* __workspace_6,
     float* __workspace_7)
 {
-    int mbs = __scalar_args.mbs;
     int n = __scalar_args.n;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;

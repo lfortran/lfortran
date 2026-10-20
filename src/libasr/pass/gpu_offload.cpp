@@ -212,8 +212,10 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     resolve_enclosing_associates(work, n_dims, enclosing_assoc_map);
     Vec<ASR::stmt_t*> private_shapes;
     private_shapes.reserve(al, 4);
-    privatize_iteration_arrays(region, work,
-        enclosing_assoc_map, private_shapes);
+    if (!privatize_iteration_arrays(region, work,
+            enclosing_assoc_map, private_shapes)) {
+        return;
+    }
 
     // Detect if the do concurrent is inside a Block scope. If so,
     // block-local variables need to be collected as kernel parameters

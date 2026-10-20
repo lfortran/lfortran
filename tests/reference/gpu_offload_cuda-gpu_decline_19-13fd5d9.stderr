@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: array 't' of local locality cannot be given a copy per gpu thread: the loop body has an associate construct the gpu kernel cannot inline
+  --> tests/../integration_tests/gpu_decline_19.f90:14:1 - 22:6
+   |
+14 |    do concurrent (j = 1:n) local(t)
+   |    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+22 |    end do
+   | ...^^^^^^ array 't' of local locality cannot be given a copy per gpu thread: the loop body has an associate construct the gpu kernel cannot inline

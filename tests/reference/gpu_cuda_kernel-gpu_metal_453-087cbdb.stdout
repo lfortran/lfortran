@@ -37,7 +37,6 @@ __device__ inline void twice_gpu_44(float* x, int __size_x_dim1, int __stride_x_
 }
 
 __device__ inline void points_device_t_gpu_62(int p, int n, point_t* r) {
-    int __1_intent_out_dealloc_idx_;
     int __do_loop_end;
     int i;
     __do_loop_end = n;
@@ -108,7 +107,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __gpu_sec_i1;
     int __gpu_sec_i2;
     const int n = 3;
-    const int np = 2;
     int p;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
