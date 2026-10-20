@@ -95,6 +95,9 @@ struct PassOptions {
     // after it): "all", "none", or a comma separated list of `fuse`, `swap`,
     // `split` and `jam`.
     std::string gpu_loop_transforms = "all";
+    // The size in bytes of the device's last-level cache that the loop
+    // transformations assume, or -1 to ask the device at run time.
+    int64_t gpu_cache_bytes = -1;
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
     bool bounds_checking = true;

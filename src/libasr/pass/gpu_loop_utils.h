@@ -50,6 +50,12 @@ void gpu_rarely_run_clear();
 void gpu_mark_rarely_run(ASR::stmt_t *loop);
 bool gpu_rarely_run(ASR::stmt_t *loop);
 
+// The size in bytes of the device's last-level cache, as an integer(8)
+// expression: the --gpu-cache-bytes option, or a call of the runtime's
+// lfortran_gpu_cache_bytes() (declared in `unit_scope` if needed).
+ASR::expr_t *gpu_cache_bytes(Allocator &al, SymbolTable *unit_scope,
+    const PassOptions &pass_options, const Location &loc);
+
 // A `do concurrent` nest (or an offloaded `!$omp parallel do`) that the
 // dispatch assigned to the device: a ParallelDo OMPRegion whose body is
 // `collapse` perfectly nested DO loops of unit step.

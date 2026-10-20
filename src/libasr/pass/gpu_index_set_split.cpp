@@ -64,8 +64,11 @@ public:
     int splits = 0;
     bool jam_enabled;
     SymbolTable *unit_scope;
-    Split(Allocator &al_, bool jam_enabled_, SymbolTable *unit_scope_)
-        : al(al_), jam_enabled(jam_enabled_), unit_scope(unit_scope_) {}
+    const PassOptions &pass_options;
+    Split(Allocator &al_, bool jam_enabled_, SymbolTable *unit_scope_,
+            const PassOptions &pass_options_)
+        : al(al_), jam_enabled(jam_enabled_), unit_scope(unit_scope_),
+          pass_options(pass_options_) {}
 
     // Walks a statement list in order, keeping the affine values of the
     // integer scalars assigned once, and calls `on_if` for every IF.
@@ -740,7 +743,8 @@ public:
                 bytes = d == 0 ? x : bld.Mul(bytes, x);
             }
             bytes = bld.Mul(bytes, bld.i64(bytes_per_iteration(bp, bn)));
-            ASR::expr_t *cache = gpu_cache_bytes_call(loc);
+            ASR::expr_t *cache = gpu_cache_bytes(al, unit_scope,
+                pass_options, loc);
             split_nest = bld.If(bld.And(has_interior(jam),
                 bld.LtE(bytes, cache)), {jammed}, {split_nest});
         }
@@ -766,33 +770,6 @@ public:
         int64_t total = 0;
         for (auto &kv : a.sizes) total += kv.second;
         return total;
-    }
-
-    // A call of the runtime's lfortran_gpu_cache_bytes(): the size of the
-    // device's last-level cache.
-    ASR::expr_t *gpu_cache_bytes_call(const Location &loc) {
-        ASRUtils::ASRBuilder b(al, loc);
-        const std::string name = "lfortran_gpu_cache_bytes";
-        ASR::symbol_t *sym = unit_scope->get_symbol(name);
-        ASR::ttype_t *i64 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
-        if (sym == nullptr) {
-            SymbolTable *fn_symtab = al.make_new<SymbolTable>(unit_scope);
-            ASR::expr_t *return_var = b.Variable(fn_symtab, name,
-                ASRUtils::duplicate_type(al, i64),
-                ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC,
-                false);
-            ASR::asr_t *fn = ASRUtils::make_Function_t_util(al, loc,
-                fn_symtab, s2c(al, name), nullptr, 0, nullptr, 0, nullptr, 0,
-                return_var, ASR::abiType::BindC, ASR::accessType::Public,
-                ASR::deftypeType::Interface, s2c(al, name), false, false,
-                false, false, false, nullptr, 0, false, false, false,
-                nullptr);
-            sym = ASR::down_cast<ASR::symbol_t>(fn);
-            unit_scope->add_symbol(name, sym);
-        }
-        Vec<ASR::call_arg_t> args;
-        args.reserve(al, 1);
-        return b.Call(sym, args, ASRUtils::duplicate_type(al, i64));
     }
 
     void visit_body(SymbolTable *scope, ASR::stmt_t **&body, size_t &n) {
@@ -862,7 +839,7 @@ void pass_gpu_index_set_split(Allocator &al, ASR::TranslationUnit_t &unit,
         return;
     }
     Split s(al, gpu_loop_transform_enabled(pass_options, GpuLoopJam),
-        unit.m_symtab);
+        unit.m_symtab, pass_options);
     std::function<void(SymbolTable*)> visit_scope = [&](SymbolTable *st) {
         for (auto &item : st->get_scope()) {
             ASR::symbol_t *sym = item.second;
