@@ -630,13 +630,18 @@ void check_launch_geometry(
     }
 }
 
+// The WASM test binary runs under node without the source tree, so it
+// cannot read the integration tests.
+#ifndef HAVE_BUILD_TO_WASM
 std::string read_project_file(const std::string &path) {
     std::ifstream in(std::string(LFORTRAN_PROJECT_SOURCE_DIR) + "/" + path);
+    INFO(path);
     REQUIRE(in.good());
     std::stringstream contents;
     contents << in.rdbuf();
     return contents.str();
 }
+#endif
 
 } // namespace
 
@@ -683,6 +688,7 @@ end program
     check_launch_geometry(launches, expected);
 }
 
+#ifndef HAVE_BUILD_TO_WASM
 TEST_CASE("GPU tiled launch tests run tiled nests") {
     // gpu_metal_485, gpu_metal_490 and gpu_metal_491 check the tiled index
     // computation only if their nests do tile; pin which ones do, so that a
@@ -721,3 +727,4 @@ TEST_CASE("GPU tiled launch tests run tiled nests") {
         read_project_file("integration_tests/gpu_metal_490.f90"),
         "gpu_metal_490.f90", "gpu_metal_490"), expected);
 }
+#endif
