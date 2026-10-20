@@ -40,14 +40,17 @@ launch holds per thread -- a workspace slice -- by `thread_count`, not by the
 threads it starts.
 
 On a device that asks for tiles (CUDA), a nest of two or more dimensions
-without a reduction is launched in tiles: a block covers a tile of up to 32
+without a reduction can be launched in tiles: a block covers a tile of 32
 iterations of the dimension its stores are contiguous in by the rest of the
-block along the next one, the block index numbers the tiles, and
-`thread_count` counts whole tiles. Padding to whole tiles can take that count
-past the kind of the loop indices, so it is an `integer(8)`. The kernel sends a thread whose place
-falls outside the nest back before its body as well. The host picks the
-width of a tile from the extent of the fastest dimension and passes it to
-the kernel. [GpuSync](GpuSync.md) is what waits; the `gpu_launch_sync`
+block along a second dimension, the one the stores step through next in
+memory (or, if they do not agree on one, the next one in loop order). The
+block index numbers the tiles, and `thread_count` counts whole tiles. Where
+whole tiles would pad the nest by more than a quarter, as a short dimension
+does, the host tells the kernel to number the iterations flat instead, and
+`thread_count` counts iterations. Padding to whole tiles can take
+`thread_count` past the kind of the loop indices, so it is an `integer(8)`.
+The kernel sends a thread whose place falls outside the nest back before its
+body as well. [GpuSync](GpuSync.md) is what waits; the `gpu_launch_sync`
 pass places it where the host next needs what a kernel wrote (see
 [GPU offloading](../../../gpu_offloading.md)).
 

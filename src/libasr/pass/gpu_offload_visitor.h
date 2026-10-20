@@ -534,12 +534,11 @@ public:
         std::vector<GpuReductionInfo> reductions;
         std::vector<DimInfo> dim_info;
         std::vector<ASR::symbol_t*> optional_syms;
-        // A tiled launch (GpuDeviceCapabilities::tile_width): the call
-        // argument that carries the base 2 logarithm of the width of a
-        // tile, and the dimensions its width and its height run along. The
-        // argument is -1 when the launch numbers the iterations in one flat
-        // range.
-        int tile_shift_arg = -1;
+        // A launch that can run in tiles (GpuDeviceCapabilities::
+        // tile_width): the call argument that tells the kernel whether it
+        // does (-1 when the kernel always numbers the iterations flat), and
+        // the dimensions the width and the height of a tile run along.
+        int tiled_arg = -1;
         size_t tile_dims[2] = {0, 0};
     };
 

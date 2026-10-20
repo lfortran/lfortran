@@ -34,14 +34,17 @@ static int gpu_kernel_counter = 0;
 
 class GpuContiguousStoreFinder : public ASR::BaseWalkVisitor<GpuContiguousStoreFinder> {
     const std::set<ASR::symbol_t*> &loop_variables;
+    // Which subscript of a store, counted from the contiguous one.
+    size_t subscript;
     std::set<ASR::symbol_t*> visited_blocks;
 
 public:
     std::set<ASR::symbol_t*> candidates;
     bool has_unrecognized_store = false;
 
-    GpuContiguousStoreFinder(const std::set<ASR::symbol_t*> &variables)
-        : loop_variables(variables) {}
+    GpuContiguousStoreFinder(const std::set<ASR::symbol_t*> &variables,
+            size_t subscript) : loop_variables(variables),
+            subscript(subscript) {}
 
     void note_store(ASR::expr_t *target) {
         ASR::ttype_t *type = ASRUtils::expr_type(target);
@@ -55,12 +58,12 @@ public:
             return;
         }
         const auto &item = *ASR::down_cast<ASR::ArrayItem_t>(target);
-        if (item.n_args == 0) {
+        if (item.n_args <= subscript) {
             has_unrecognized_store = true;
             return;
         }
         size_t dimension = item.m_storage_format == ASR::arraystorageType::ColMajor
-            ? 0 : item.n_args - 1;
+            ? subscript : item.n_args - 1 - subscript;
         ASR::expr_t *index = item.m_args[dimension].m_right;
         if (index && ASR::is_a<ASR::Var_t>(*index)) {
             ASR::symbol_t *variable = ASRUtils::symbol_get_past_external(
@@ -106,8 +109,11 @@ public:
     }
 };
 
-static size_t contiguous_store_dimension(const ParallelLoopNest &nest) {
-    if (nest.n_heads() < 2) return 0;
+// The dimension of the nest that every store indexes with its subscript
+// at `subscript` (0 is the contiguous one), or `otherwise`.
+static size_t store_dimension(const ParallelLoopNest &nest, size_t subscript,
+        size_t otherwise) {
+    if (nest.n_heads() < 2) return otherwise;
     std::vector<ASR::symbol_t*> variables;
     std::set<ASR::symbol_t*> variable_set;
     for (size_t d = 0; d < nest.n_heads(); d++) {
@@ -116,7 +122,7 @@ static size_t contiguous_store_dimension(const ParallelLoopNest &nest) {
         variables.push_back(variable);
         variable_set.insert(variable);
     }
-    GpuContiguousStoreFinder finder(variable_set);
+    GpuContiguousStoreFinder finder(variable_set, subscript);
     for (size_t i = 0; i < nest.n_body; i++) finder.visit_stmt(*nest.body[i]);
     // Conflicting or unrecognized store layouts retain the original mapping.
     if (!finder.has_unrecognized_store && finder.candidates.size() == 1) {
@@ -124,7 +130,7 @@ static size_t contiguous_store_dimension(const ParallelLoopNest &nest) {
             if (finder.candidates.count(variables[d])) return d;
         }
     }
-    return 0;
+    return otherwise;
 }
 
 // The loop was assigned to the device by the unsupported-construct check,
@@ -325,7 +331,11 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     }
 
     rewrite_loop_body_for_kernel(work, enclosing_assoc_map);
-    size_t fastest_dimension = contiguous_store_dimension(work);
+    size_t fastest_dimension = store_dimension(work, 0, 0);
+    // The dimension the stores step through next in memory, if they agree
+    // on one: a tiled launch (below) runs the height of its tiles along it.
+    size_t next_store_dimension = store_dimension(work, 1,
+        fastest_dimension);
 
     // 1. Collect all symbols from body AND head expressions
     std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_syms;
@@ -2157,28 +2167,25 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         return int_binop(int_binop(kernel_ends[d], ASR::binopType::Sub,
             kernel_starts[d]), ASR::binopType::Add, one_const);
     };
-    // The dimension the iterations are numbered along at a position: the
-    // fastest first, then the others in the order the loop names them.
-    auto dimension_at = [&](size_t position) {
-        return position == 0 ? fastest_dimension
-            : (position <= fastest_dimension ? position - 1 : position);
-    };
     auto loop_var = [&](size_t d) {
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc,
             kernel_scope->get_symbol(loop_var_names[d])));
     };
 
-    // A nest of two or more dimensions is launched in tiles where the
+    // A nest of two or more dimensions can be launched in tiles where the
     // device asks for them (GpuDeviceCapabilities::tile_width): a block
-    // covers 2**__tile_shift iterations of the fastest dimension by the rest
-    // of its threads along the next one, and the block index numbers the
-    // tiles. The host picks the width from the extent of the fastest
-    // dimension, so a short one does not leave most threads of a tile idle
-    // (gpu_offload_launch.cpp), and launches whole tiles: a thread of a
-    // partial tile that falls outside the nest returns. Widths and block
-    // sizes are powers of two, so a thread finds its place in a tile with
-    // shifts and masks, and one division of the block index finds the tile.
-    // A reduction keeps the flat numbering, which gives every thread an
+    // covers tile_width iterations of the fastest dimension by the rest of
+    // its threads along a second one, the dimension the stores step through
+    // next in memory (or else the next one in loop order), and the block
+    // index numbers the tiles. The launch runs whole tiles, and a thread of
+    // a partial tile that falls outside the nest returns. Where whole tiles
+    // would pad the nest by more than a quarter, as a short dimension
+    // does, the launch passes __tiled = 0 instead and the kernel numbers
+    // the iterations flat, one thread each (gpu_offload_launch.cpp). Tile
+    // widths and block sizes are powers of two, so a thread finds its place
+    // in a tile with constant shifts and masks, which a device compiler
+    // folds, and one division of the block index finds the tile. A
+    // reduction keeps the flat numbering, which gives every thread an
     // accumulator slot.
     auto is_power_of_two = [](int64_t value) {
         return value > 0 && (value & (value - 1)) == 0;
@@ -2188,26 +2195,40 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         && is_power_of_two(device_caps.tile_width)
         && is_power_of_two(device_caps.threads_per_block)
         && device_caps.threads_per_block % device_caps.tile_width == 0;
-    ASR::expr_t *tile_shift = nullptr;
-    int tile_shift_arg = -1;
+    ASR::expr_t *tiled_flag = nullptr;
+    int tiled_arg = -1;
     if (tiled) {
         ASR::symbol_t *param = gpu_new_variable(al, loc, kernel_scope,
-            "__tile_shift", ASRUtils::duplicate_type(al, int_type),
+            "__tiled", ASRUtils::duplicate_type(al, int_type),
             ASR::intentType::InOut);
-        tile_shift = ASRUtils::EXPR(ASR::make_Var_t(al, loc, param));
-        kernel_args.push_back(al, tile_shift);
-        // The launch replaces this with the width it picks.
+        tiled_flag = ASRUtils::EXPR(ASR::make_Var_t(al, loc, param));
+        kernel_args.push_back(al, tiled_flag);
+        // The launch replaces this with the numbering it picks.
         ASR::call_arg_t carg;
         carg.loc = loc;
         carg.m_value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
             0, int_type, ASR::integerbozType::Decimal));
         call_args.push_back(al, carg);
-        tile_shift_arg = static_cast<int>(call_args.n) - 1;
+        tiled_arg = static_cast<int>(call_args.n) - 1;
+    }
+    // The dimensions in the order the iterations are numbered along: the
+    // fastest first, then the one a tile's height runs along, then the
+    // others in the order the loop names them.
+    std::vector<size_t> order;
+    order.push_back(fastest_dimension);
+    if (n_dims >= 2) {
+        order.push_back(tiled && next_store_dimension != fastest_dimension
+            ? next_store_dimension : (fastest_dimension == 0 ? 1 : 0));
+    }
+    for (size_t d = 0; d < n_dims; d++) {
+        if (std::find(order.begin(), order.end(), d) == order.end()) {
+            order.push_back(d);
+        }
     }
 
-    if (!tiled) {
-        // Compute total flat size for guard. Every thread past it returns,
-        // so the per-dim ranges below are only computed when none is empty.
+    // Every thread past the number of iterations returns, so the per-dim
+    // ranges below are only computed when none is empty.
+    auto return_past_iterations = [&]() {
         ASR::expr_t *total_size_kernel = nullptr;
         for (size_t d = 0; d < n_dims; d++) {
             // dim_range = max(0, kernel_end - kernel_start + 1)
@@ -2222,89 +2243,85 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         return_if(ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
             flat_idx, ASR::cmpopType::GtE, total_size_kernel,
             ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
-    }
+    };
 
     // Compute per-dim loop variable from flat_idx
     // We need a "remaining" variable in kernel scope
     ASR::expr_t *remain_var = kernel_local("__flat_idx");
+    // The loop indices at positions [first, last) of the order, recovered
+    // by dividing __flat_idx down.
+    auto number_flat = [&](size_t first, size_t last) {
+        for (size_t position = first; position < last; position++) {
+            size_t d = order[position];
+            if (position < n_dims - 1) {
+                // loop_var = __flat_idx % dim_range + start
+                assign(loop_var(d), int_binop(int_mod(remain_var,
+                    kernel_range(d)), ASR::binopType::Add,
+                    kernel_starts[d]));
+                // __flat_idx = __flat_idx / dim_range
+                assign(remain_var, int_binop(remain_var,
+                    ASR::binopType::Div, kernel_range(d)));
+            } else {
+                // Last dim: loop_var = __flat_idx + start
+                assign(loop_var(d), int_binop(remain_var,
+                    ASR::binopType::Add, kernel_starts[d]));
+            }
+        }
+    };
 
     size_t first_flat_position = 0;
     if (tiled) {
+        // __tiled = 0: one thread per iteration, numbered flat.
+        Vec<ASR::stmt_t*> enclosing_body = kernel_body;
+        kernel_body.reserve(al, 8);
+        return_past_iterations();
+        assign(remain_var, flat_idx);
+        number_flat(0, 2);
+        Vec<ASR::stmt_t*> flat_body = kernel_body;
+        kernel_body.reserve(al, 16);
         // The tile, then the thread's place in it: its width runs along the
-        // fastest dimension, its height along the next one.
-        size_t across = dimension_at(0), down = dimension_at(1);
-        int64_t block_shift = 0;
+        // fastest dimension, its height along the second one.
+        size_t across = order[0], down = order[1];
+        int64_t width_shift = 0, block_shift = 0;
+        while ((int64_t(1) << width_shift) < device_caps.tile_width) {
+            width_shift++;
+        }
         while ((int64_t(1) << block_shift) < device_caps.threads_per_block) {
             block_shift++;
         }
+        int64_t height_shift = block_shift - width_shift;
         auto constant = [&](int64_t value) {
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, value,
                 int_type, ASR::integerbozType::Decimal));
         };
-        // 2**shift - 1, the mask of a place within 2**shift.
-        auto low_mask = [&](ASR::expr_t *shift) {
-            return int_binop(int_binop(one_const, ASR::binopType::BitLShift,
-                shift), ASR::binopType::Sub, one_const);
-        };
         // ceil(range / 2**shift)
-        auto tiles_of = [&](ASR::expr_t *range, ASR::expr_t *shift) {
+        auto tiles_of = [&](ASR::expr_t *range, int64_t shift) {
             return int_binop(int_binop(range, ASR::binopType::Add,
-                low_mask(shift)), ASR::binopType::BitRShift, shift);
-        };
-        // Every value below is written once for the device's full tile
-        // width, as constants, and once for the width the launch passes,
-        // and the kernel picks one: the launch picks the full width for
-        // every nest whose fastest dimension is not short, and a device
-        // compiler only folds the arithmetic of a tile, and what it knows
-        // of the indices that come out of it, when the width is constant.
-        int64_t full_shift = 0;
-        while ((int64_t(1) << full_shift) < device_caps.tile_width) {
-            full_shift++;
-        }
-        ASR::expr_t *full_width = ASRUtils::EXPR(ASR::make_IntegerCompare_t(
-            al, loc, tile_shift, ASR::cmpopType::Eq, constant(full_shift),
-            ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
-        auto by_width = [&](const std::function<ASR::expr_t*(ASR::expr_t*,
-                ASR::expr_t*)> &value) {
-            return ASRUtils::EXPR(ASR::make_IfExp_t(al, loc, full_width,
-                value(constant(full_shift),
-                    constant(block_shift - full_shift)),
-                value(tile_shift, int_binop(constant(block_shift),
-                    ASR::binopType::Sub, tile_shift)),
-                int_type, nullptr));
+                constant((int64_t(1) << shift) - 1)), ASR::binopType::BitRShift,
+                constant(shift));
         };
         ASR::expr_t *tiles = kernel_local("__tiles");
         assign(remain_var, block_idx);
-        assign(tiles, by_width([&](ASR::expr_t *shift, ASR::expr_t *) {
-            return tiles_of(kernel_range(across), shift);
-        }));
-        assign(loop_var(across), by_width([&](ASR::expr_t *shift,
-                ASR::expr_t *) {
-            return int_binop(int_binop(
-                int_binop(int_mod(remain_var, tiles),
-                    ASR::binopType::BitLShift, shift),
-                ASR::binopType::Add, int_binop(thread_idx,
-                    ASR::binopType::BitAnd, low_mask(shift))),
-                ASR::binopType::Add, kernel_starts[across]);
-        }));
+        assign(tiles, tiles_of(kernel_range(across), width_shift));
+        assign(loop_var(across), int_binop(int_binop(
+            int_binop(int_mod(remain_var, tiles), ASR::binopType::BitLShift,
+                constant(width_shift)),
+            ASR::binopType::Add, int_binop(thread_idx, ASR::binopType::BitAnd,
+                constant(device_caps.tile_width - 1))),
+            ASR::binopType::Add, kernel_starts[across]));
         assign(remain_var, int_binop(remain_var, ASR::binopType::Div, tiles));
+        ASR::expr_t *row_tile = remain_var;
         if (n_dims > 2) {
             // The tiles of the first two dimensions repeat over the others.
-            assign(tiles, by_width([&](ASR::expr_t *,
-                    ASR::expr_t *row_shift) {
-                return tiles_of(kernel_range(down), row_shift);
-            }));
+            assign(tiles, tiles_of(kernel_range(down), height_shift));
+            row_tile = int_mod(remain_var, tiles);
         }
-        assign(loop_var(down), by_width([&](ASR::expr_t *shift,
-                ASR::expr_t *row_shift) {
-            ASR::expr_t *row_tile = n_dims > 2
-                ? int_mod(remain_var, tiles) : remain_var;
-            return int_binop(int_binop(
-                int_binop(row_tile, ASR::binopType::BitLShift, row_shift),
-                ASR::binopType::Add, int_binop(thread_idx,
-                    ASR::binopType::BitRShift, shift)),
-                ASR::binopType::Add, kernel_starts[down]);
-        }));
+        assign(loop_var(down), int_binop(int_binop(
+            int_binop(row_tile, ASR::binopType::BitLShift,
+                constant(height_shift)),
+            ASR::binopType::Add, int_binop(thread_idx,
+                ASR::binopType::BitRShift, constant(width_shift))),
+            ASR::binopType::Add, kernel_starts[down]));
         if (n_dims > 2) {
             assign(remain_var, int_binop(remain_var, ASR::binopType::Div,
                 tiles));
@@ -2315,8 +2332,16 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                 loop_var(d), ASR::cmpopType::Gt, kernel_ends[d],
                 ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
         }
+        Vec<ASR::stmt_t*> tiled_body = kernel_body;
+        kernel_body = enclosing_body;
+        kernel_body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc,
+            nullptr, ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
+                tiled_flag, ASR::cmpopType::Eq, constant(0),
+                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)),
+            flat_body.p, flat_body.n, tiled_body.p, tiled_body.n)));
         first_flat_position = 2;
     } else {
+        return_past_iterations();
         // __flat_idx = flat_idx (the raw thread index)
         assign(remain_var, flat_idx);
     }
@@ -2338,22 +2363,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
     }
 
-    for (size_t position = first_flat_position; position < n_dims;
-            position++) {
-        size_t d = dimension_at(position);
-        if (position < n_dims - 1) {
-            // loop_var = __flat_idx % dim_range + start
-            assign(loop_var(d), int_binop(int_mod(remain_var,
-                kernel_range(d)), ASR::binopType::Add, kernel_starts[d]));
-            // __flat_idx = __flat_idx / dim_range
-            assign(remain_var, int_binop(remain_var, ASR::binopType::Div,
-                kernel_range(d)));
-        } else {
-            // Last dim: loop_var = __flat_idx + start
-            assign(loop_var(d), int_binop(remain_var, ASR::binopType::Add,
-                kernel_starts[d]));
-        }
-    }
+    number_flat(first_flat_position, n_dims);
 
     // This helper processes a block and recursively handles any nested
     // BlockCall statements, since GpuReplaceSymbolsVisitor does not
@@ -2781,9 +2791,9 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     plan.reductions = pending_reductions;
     plan.dim_info = dim_info;
     plan.optional_syms = optional_syms;
-    plan.tile_shift_arg = tile_shift_arg;
-    plan.tile_dims[0] = tiled ? dimension_at(0) : 0;
-    plan.tile_dims[1] = tiled ? dimension_at(1) : 0;
+    plan.tiled_arg = tiled_arg;
+    plan.tile_dims[0] = tiled ? order[0] : 0;
+    plan.tile_dims[1] = tiled ? order[1] : 0;
     build_kernel_launch(region, work, loc, plan);
 }
 

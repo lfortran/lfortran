@@ -388,6 +388,95 @@ public:
     }
 };
 
+// Runs the integer assignments the host makes before each launch, as far
+// as they are made of constants and earlier ones, and records each launch's
+// thread count and the value of its argument that selects tiles.
+class GpuLaunchGeometry : public ASR::BaseWalkVisitor<GpuLaunchGeometry> {
+public:
+    std::map<ASR::symbol_t*, int64_t> values;
+    std::vector<std::pair<int64_t, int64_t>> launches;
+
+    bool evaluate(ASR::expr_t *x, int64_t &result) {
+        if (ASRUtils::extract_value(ASRUtils::expr_value(x), result)) {
+            return true;
+        }
+        int64_t left = 0, right = 0;
+        switch (x->type) {
+            case ASR::exprType::Var: {
+                auto found = values.find(ASR::down_cast<ASR::Var_t>(x)->m_v);
+                if (found == values.end()) return false;
+                result = found->second;
+                return true;
+            }
+            case ASR::exprType::Cast: {
+                auto &cast = *ASR::down_cast<ASR::Cast_t>(x);
+                return cast.m_kind == ASR::cast_kindType::IntegerToInteger
+                    && evaluate(cast.m_arg, result);
+            }
+            case ASR::exprType::IntegerBinOp: {
+                auto &op = *ASR::down_cast<ASR::IntegerBinOp_t>(x);
+                if (!evaluate(op.m_left, left)
+                        || !evaluate(op.m_right, right)) return false;
+                switch (op.m_op) {
+                    case ASR::binopType::Add: result = left + right; break;
+                    case ASR::binopType::Sub: result = left - right; break;
+                    case ASR::binopType::Mul: result = left * right; break;
+                    case ASR::binopType::Div:
+                        if (right == 0) return false;
+                        result = left / right;
+                        break;
+                    default: return false;
+                }
+                return true;
+            }
+            case ASR::exprType::IntegerCompare: {
+                auto &compare = *ASR::down_cast<ASR::IntegerCompare_t>(x);
+                if (!evaluate(compare.m_left, left)
+                        || !evaluate(compare.m_right, right)) return false;
+                switch (compare.m_op) {
+                    case ASR::cmpopType::Eq: result = left == right; break;
+                    case ASR::cmpopType::NotEq: result = left != right; break;
+                    case ASR::cmpopType::Lt: result = left < right; break;
+                    case ASR::cmpopType::LtE: result = left <= right; break;
+                    case ASR::cmpopType::Gt: result = left > right; break;
+                    case ASR::cmpopType::GtE: result = left >= right; break;
+                }
+                return true;
+            }
+            case ASR::exprType::IfExp: {
+                auto &choice = *ASR::down_cast<ASR::IfExp_t>(x);
+                int64_t test = 0;
+                return evaluate(choice.m_test, test) && evaluate(
+                    test ? choice.m_body : choice.m_orelse, result);
+            }
+            default: return false;
+        }
+    }
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        int64_t value = 0;
+        if (ASR::is_a<ASR::Var_t>(*x.m_target)
+                && ASRUtils::is_integer(*ASRUtils::expr_type(x.m_target))
+                && evaluate(x.m_value, value)) {
+            values[ASR::down_cast<ASR::Var_t>(x.m_target)->m_v] = value;
+        }
+    }
+
+    void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+        int64_t count = -1, tiled = -1;
+        CHECK(evaluate(x.m_thread_count, count));
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::expr_t *arg = x.m_args[i].m_value;
+            if (arg && ASR::is_a<ASR::Var_t>(*arg)
+                    && startswith(ASRUtils::symbol_name(
+                        ASR::down_cast<ASR::Var_t>(arg)->m_v), "__gpu_tiled")) {
+                CHECK(evaluate(arg, tiled));
+            }
+        }
+        launches.push_back({tiled, count});
+    }
+};
+
 } // namespace
 
 TEST_CASE("GPU zero work guards setup and effective launch geometry") {
@@ -486,4 +575,74 @@ end program
         CHECK(expanded.source_allocations == 1);
         CHECK(expanded.empty_lane_guards == (metal ? 1 : 0));
     }
+}
+
+TEST_CASE("GPU tiled launches pad a nest by at most a quarter") {
+    // CI has no GPU to time a launch, so pin the geometry the host picks:
+    // whether a nest runs in tiles of 32 by 8, and how many threads.
+    const std::string source = R"(
+program p
+    implicit none
+    real :: a(4096,1), b(3,2,100), c(64,64,1), d(64,64), e(33,64)
+    integer :: i, j, k
+    do concurrent (j = 1:1, i = 1:4096)
+        a(i,j) = 1
+    end do
+    do concurrent (i = 1:3, j = 1:2, k = 1:100)
+        b(i,j,k) = 1
+    end do
+    do concurrent (k = 1:1, j = 1:64, i = 1:64)
+        c(i,j,k) = 1
+    end do
+    do concurrent (j = 2:63, i = 2:63)
+        d(i,j) = 1
+    end do
+    do concurrent (j = 1:64, i = 1:33)
+        e(i,j) = 1
+    end do
+end program
+)";
+    CompilerOptions options;
+    options.gpu_backend = "cuda";
+    options.po.gpu_offload_cuda = true;
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = "gpu_tile_geometry.f90";
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LFortran::source_offset(source.size()));
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    ASR::TranslationUnit_t &unit = *parsed.result;
+    Allocator allocator(32 * 1024 * 1024);
+    PassManager passes;
+    std::string pass = "gpu_vector_lanes", skip;
+    passes.parse_pass_arg(pass, skip);
+    options.po.pass_cumulative = true;
+    passes.apply_passes(allocator, &unit, options.po, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE_FALSE(diagnostics.has_error());
+    auto *program = ASR::down_cast<ASR::Program_t>(
+        unit.m_symtab->get_symbol("p"));
+    GpuLaunchGeometry geometry;
+    for (size_t i = 0; i < program->n_body; i++) {
+        geometry.visit_stmt(*program->m_body[i]);
+    }
+    std::vector<std::pair<int64_t, int64_t>> expected = {
+        // A second dimension of one would pad 8 times: flat.
+        {0, 4096},
+        // Both tiled dimensions short (3 by 2): flat.
+        {0, 600},
+        // The tile's height runs along j, the dimension the store steps
+        // through next, not along k, the next in loop order.
+        {1, 4096},
+        // A stencil whose extents are not whole tiles: 2 by 8 tiles.
+        {1, 4096},
+        // 33 is padded to 64: flat.
+        {0, 33 * 64},
+    };
+    CHECK(geometry.launches == expected);
 }

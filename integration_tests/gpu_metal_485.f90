@@ -6,6 +6,7 @@ program gpu_metal_485
     integer, parameter :: n1 = 37, n2 = 13
     real :: a(0:n1 + 1, 0:n2 + 1), lap(n1, n2)
     integer :: b(3, 1000), c(0:4, -1:5, 2:9), d(70, 5), e(5, 4)
+    integer :: f(300, 1), g(300, 2), h(40, 37, 1), p(3, 2, 500)
     integer :: i, j, k
     real :: expected
 
@@ -73,5 +74,47 @@ program gpu_metal_485
         e(i, j + 1) = 0
     end do
     if (any(e /= 7)) error stop 8
+    ! A second dimension of one or two.
+    f = -1
+    do concurrent (j = 1:1, i = 1:300)
+        f(i, j) = i
+    end do
+    do i = 1, 300
+        if (f(i, 1) /= i) error stop 9
+    end do
+    g = -1
+    do concurrent (j = 1:2, i = 1:300)
+        g(i, j) = i + 1000 * j
+    end do
+    do j = 1, 2
+        do i = 1, 300
+            if (g(i, j) /= i + 1000 * j) error stop 10
+        end do
+    end do
+
+    ! A two-dimensional problem stored in three dimensions, the loop
+    ! naming the dimension of one first.
+    h = -1
+    do concurrent (k = 1:1, j = 1:37, i = 1:40)
+        h(i, j, k) = i + 100 * j
+    end do
+    do j = 1, 37
+        do i = 1, 40
+            if (h(i, j, 1) /= i + 100 * j) error stop 11
+        end do
+    end do
+
+    ! Two short dimensions in front of a long one.
+    p = -1
+    do concurrent (i = 1:3, j = 1:2, k = 1:500)
+        p(i, j, k) = i + 10 * j + 100 * k
+    end do
+    do k = 1, 500
+        do j = 1, 2
+            do i = 1, 3
+                if (p(i, j, k) /= i + 10 * j + 100 * k) error stop 12
+            end do
+        end do
+    end do
     print *, "ok"
 end program

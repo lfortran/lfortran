@@ -76,7 +76,7 @@ struct GpuDeviceCapabilities {
 
     // The widest tile of iterations the threads of one block of a loop nest
     // of two or more dimensions cover along the dimension its stores are
-    // contiguous in; the block's other threads cover the next dimension.
+    // contiguous in; the block's other threads cover a second dimension.
     // A block then reads a two-dimensional neighbourhood of an array
     // instead of a single run of one of its columns, so a stencil reuses
     // what its neighbours in the other dimension loaded. Zero numbers the
