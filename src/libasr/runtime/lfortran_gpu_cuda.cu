@@ -69,6 +69,7 @@ static resident entries[MAX_RESIDENT];
 static int n_entries = 0;
 static void *deferred_free[MAX_DEFERRED];
 static int n_deferred = 0;
+static uint64_t n_syncs = 0;
 
 extern "C" void lfortran_gpu_register_kernel(const char *name, kernel_func_t func) {
     if (n_registered >= MAX_KERNELS) {
@@ -145,6 +146,7 @@ static void remove_entry(int i) {
 }
 
 static void sync_all(void) {
+    n_syncs++;
     check(cudaDeviceSynchronize(), "cudaDeviceSynchronize");
     for (int i = 0; i < n_entries; i++) {
         if (!entries[i].used || !entries[i].dirty) continue;
@@ -358,35 +360,41 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
             break;
         }
     }
-    // The ranges the kernel may write first, so that one it is also handed
-    // to read is read from the same memory.
-    for (int i = 0; i < k->n_args; i++) {
-        if (k->kind[i] != ARG_BUFFER || k->access[i] != LFORTRAN_GPU_WRITE)
-            continue;
-        k->buffer_device_ptrs[i] = k->buffer_sizes[i] == 0 ? NULL
-            : resident_for_write(k->buffer_host_ptrs[i], k->buffer_sizes[i]);
-    }
-    for (int i = 0; i < k->n_args; i++) {
-        if (k->kind[i] != ARG_BUFFER || k->access[i] == LFORTRAN_GPU_WRITE)
-            continue;
-        size_t size = k->buffer_sizes[i];
-        void *host = k->buffer_host_ptrs[i];
-        void *d_ptr = NULL;
-        if (size > 0) {
-            d_ptr = dirty_resident(host, size);
-            if (!d_ptr) {
-                d_ptr = slot_buffer(k->cache, i, size);
-                check(cudaMemcpyAsync(d_ptr, host, size,
-                    cudaMemcpyHostToDevice, 0), "cudaMemcpyAsync H2D");
-            }
+    // Preparing any argument may sync to retire allocations or evict residents.
+    // That clears dirty flags and can invalidate earlier bindings: prepare them
+    // again before dispatch, as in the Metal runtime.
+    uint64_t syncs;
+    do {
+        syncs = n_syncs;
+        // Writable ranges first, so a read of the same range uses their memory.
+        for (int i = 0; i < k->n_args; i++) {
+            if (k->kind[i] != ARG_BUFFER || k->access[i] != LFORTRAN_GPU_WRITE)
+                continue;
+            k->buffer_device_ptrs[i] = k->buffer_sizes[i] == 0 ? NULL
+                : resident_for_write(k->buffer_host_ptrs[i], k->buffer_sizes[i]);
         }
-        k->buffer_device_ptrs[i] = d_ptr;
-    }
-    for (int i = 0; i < k->n_args; i++) {
-        if (k->kind[i] != ARG_SCRATCH) continue;
-        k->buffer_device_ptrs[i] = k->buffer_sizes[i] == 0 ? NULL
-            : slot_buffer(k->cache, i, k->buffer_sizes[i]);
-    }
+        for (int i = 0; i < k->n_args; i++) {
+            if (k->kind[i] != ARG_BUFFER || k->access[i] == LFORTRAN_GPU_WRITE)
+                continue;
+            size_t size = k->buffer_sizes[i];
+            void *host = k->buffer_host_ptrs[i];
+            void *d_ptr = NULL;
+            if (size > 0) {
+                d_ptr = dirty_resident(host, size);
+                if (!d_ptr) {
+                    d_ptr = slot_buffer(k->cache, i, size);
+                    check(cudaMemcpyAsync(d_ptr, host, size,
+                        cudaMemcpyHostToDevice, 0), "cudaMemcpyAsync H2D");
+                }
+            }
+            k->buffer_device_ptrs[i] = d_ptr;
+        }
+        for (int i = 0; i < k->n_args; i++) {
+            if (k->kind[i] != ARG_SCRATCH) continue;
+            k->buffer_device_ptrs[i] = k->buffer_sizes[i] == 0 ? NULL
+                : slot_buffer(k->cache, i, k->buffer_sizes[i]);
+        }
+    } while (syncs != n_syncs);
 
     // Build the kernel argument array for cudaLaunchKernel: a device
     // pointer for a buffer, the value for a scalar.
