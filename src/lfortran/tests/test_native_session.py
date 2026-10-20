@@ -474,7 +474,16 @@ def malformed(server):
     rejected(raw=struct.pack("!I", 16*1024*1024+1))
     rejected(raw=struct.pack("!I", 1) + b"\xff")
     rejected(raw=struct.pack("!I", 1) + b"{")
-    rejected(lambda m: m["header"].update(version="5.5"))
+    rejected(lambda m: m["header"].update(version="6.0"))
+    rejected(lambda m: m["header"].update(version="5.invalid"))
+    for version in ("5.3", "5.5"):
+        with server.peer() as peer:
+            message = peer.make("kernel_info_request")
+            message["header"]["version"] = version
+            peer.write(frame(message))
+            reply = peer.wait("kernel_info_reply", message["header"]["msg_id"])
+            assert reply["parent_header"]["version"] == version
+            assert reply["content"]["protocol_version"] == "5.4"
     rejected(lambda m: m["header"].update(session="wrong"))
     rejected(lambda m: m.update(channel="bogus"))
     rejected(lambda m: m.update(parent_header={"msg_id": "wrong"}))

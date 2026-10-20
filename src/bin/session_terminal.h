@@ -2,11 +2,33 @@
 #define LFORTRAN_SESSION_TERMINAL_H
 #include <lfortran/native_session.h>
 #include <cpp-terminal/prompt0.h>
+#include <chrono>
 #include <iostream>
 #include <set>
 
 namespace LCompilers::LFortran {
 namespace {
+#ifndef _WIN32
+class InputEcho {
+    termios original{};
+    bool changed = false;
+public:
+    explicit InputEcho(bool password) {
+        if (password && isatty(STDIN_FILENO)) {
+            if (tcgetattr(STDIN_FILENO, &original))
+                throw std::runtime_error("cannot read password terminal mode");
+            auto mode = original;
+            mode.c_lflag &= ~ECHO;
+            if (tcsetattr(STDIN_FILENO, TCSANOW, &mode))
+                throw std::runtime_error("cannot disable password echo");
+            changed = true;
+        }
+    }
+    ~InputEcho() {
+        if (changed) tcsetattr(STDIN_FILENO, TCSANOW, &original);
+    }
+};
+#endif
 class SafeTerminalText {
     enum class State { text, escape, csi, osc, osc_escape } state = State::text;
 public:
@@ -44,6 +66,8 @@ class TerminalSession {
     std::string waiting, completeness, info, banner;
     bool reply = false, idle = false, complete_ready = false, is_complete = true;
     bool info_ready = false;
+    bool completeness_notice = false, published_error = false;
+    std::string reply_error;
     std::string rendered;
     std::vector<std::pair<bool, std::string>> rendered_parts;
 
@@ -56,8 +80,11 @@ class TerminalSession {
     void input(const ClientEvent &event) {
         // Editing's raw-mode scope has ended before execution starts. READ
         // uses canonical terminal input, including EOF, without code history.
-        std::cout << safe.filter(event.prompt) << std::flush;
         Terminal terminal(false);
+#ifndef _WIN32
+        InputEcho echo(event.password);
+#endif
+        std::cout << safe.filter(event.prompt) << std::flush;
         std::string record;
         bool eof = false;
 #ifdef _WIN32
@@ -131,6 +158,7 @@ class TerminalSession {
                 flush();
             }
         }
+        if (event.password) std::cout << '\n' << std::flush;
         client.input_reply(event, record, eof);
     }
     void dispatch(const ClientEvent &event) {
@@ -139,7 +167,12 @@ class TerminalSession {
             banner = safe.filter(event.text);
             info_ready = true;
         }
-        if (own && event.parent_id == waiting && event.type == "execute_reply") reply = true;
+        if (own && event.parent_id == waiting && event.type == "execute_reply") {
+            reply = true;
+            reply_error = event.text;
+        }
+        if (own && event.parent_id == waiting && event.type == "error")
+            published_error = true;
         if (own && event.parent_id == waiting && event.type == "status" &&
                 event.status == "idle") idle = true;
         if (own && event.parent_id == completeness && event.type == "is_complete_reply") {
@@ -195,7 +228,18 @@ public:
             complete_ready = false;
             completeness = client.request("is_complete_request",
                 "{\"code\":" + json_string(code) + "}");
-            while (!complete_ready) pump(100);
+            auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(1);
+            while (!complete_ready && std::chrono::steady_clock::now() < deadline) pump(100);
+            // is_complete is optional in classic Jupyter. Missing assistance
+            // must not prevent submission or invoke a local language parser.
+            if (!complete_ready) {
+                if (!completeness_notice) {
+                    append("kernel did not answer is_complete; submitting without "
+                        "completeness assistance\n", true);
+                    completeness_notice = true;
+                }
+                return true;
+            }
             return is_complete;
         };
         for (;;) {
@@ -213,11 +257,17 @@ public:
                 return 0;
             }
             reply = idle = false;
+            published_error = false;
+            reply_error.clear();
             waiting = client.request("execute_request", "{\"code\":" + json_string(code) +
                 ",\"silent\":false,\"store_history\":true,\"allow_stdin\":true,"
                 "\"stop_on_error\":true,\"user_expressions\":{},\"lfortran_verbose\":" +
                 (verbose ? "true" : "false") + "}");
             while (!reply || !idle) { pump(100); flush(); }
+            if (!published_error && !reply_error.empty()) {
+                append(safe.filter(reply_error) + "\n", true);
+                flush();
+            }
             waiting.clear();
         }
     }

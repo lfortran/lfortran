@@ -333,6 +333,15 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
             )
             set_tests_properties(test_kernel_evaluation PROPERTIES TIMEOUT 180)
         endif()
+        if (WITH_JUPYTER_ZMQ)
+            foreach(mode native foreign wire)
+                add_test(NAME test_jupyter_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_CURRENT_SOURCE_DIR}/test_jupyter_zmq.py
+                        --lfortran $<TARGET_FILE:lfortran> --mode ${mode})
+                set_tests_properties(test_jupyter_${mode} PROPERTIES TIMEOUT 180)
+            endforeach()
+        endif()
     endif()
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"

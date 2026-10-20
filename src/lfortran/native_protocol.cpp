@@ -70,8 +70,10 @@ void validate_message(const Object &value) {
                 std::string(field) != "username"))
             throw std::runtime_error("invalid local header");
     }
-    if (string(h, "version") != "5.4")
-        throw std::runtime_error("local binding requires Jupyter protocol 5.4");
+    auto version = string(h, "version");
+    if (version.size() < 3 || version.substr(0, 2) != "5." ||
+            version.find_first_not_of("0123456789", 2) != std::string::npos)
+        throw std::runtime_error("local binding requires Jupyter protocol 5.x");
     member(value, "parent_header");
     member(value, "metadata");
     member(value, "content");
@@ -114,7 +116,12 @@ ClientEvent client_event(const std::string &envelope) {
             result.text = optional_string(*data, "text/plain");
     }
     if (result.type == "error")
-        result.text = optional_string(c, "evalue");
+        result.text = optional_string(c, "ename") + ": " + optional_string(c, "evalue");
+    if (result.type == "execute_reply") {
+        result.text.clear();
+        if (optional_string(c, "status") == "error")
+            result.text = optional_string(c, "ename") + ": " + optional_string(c, "evalue");
+    }
     if (result.type == "kernel_info_reply")
         result.text = optional_string(c, "banner");
     return result;

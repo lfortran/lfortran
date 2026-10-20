@@ -1,6 +1,6 @@
 # Native interactive sessions
 
-The native local binding carries **Jupyter 5.4 logical messages**, not the
+The native local binding carries **Jupyter logical messages** (5.4 behavior), not the
 ZeroMQ multipart wire protocol. It needs no Python, Xeus, JSON library package,
 or ZeroMQ dependency. LLVM Support's JSON implementation is used privately in
 native LLVM builds. This binding is unavailable in no-LLVM and WASM builds;
@@ -119,7 +119,9 @@ Example execution:
 `channel` is `shell`, `control`, `stdin`, or `iopub`. Clients send executions on
 shell, input replies on stdin, and shutdown/info on shell or control.
 Header fields are strings; IDs/session/type/date/version are nonempty,
-header strings have bounded length, and version is `5.4`.
+header strings have bounded length. The native kernel advertises `5.4`;
+compatible `5.x` header versions are accepted without rewriting their parents.
+This does not enable newer subshell/registration/encryption capabilities.
 `header`, `parent_header`, `metadata`, and `content` are objects.
 `buffers` is an ordered array of **individually base64-encoded binary frames**,
 including empty strings for zero-byte frames. It is not a list of JSON values
@@ -243,13 +245,235 @@ Native compiled programs outside sessions retain the ordinary stdio fallback.
 
 Native session/transport sources are compiled only in native LLVM builds.
 No compiler backend contains protocol, routing, capture or terminal logic.
-The optional standard-Jupyter transport/bridge is not implemented by this
-binding. Real ZeroMQ/HMAC, heartbeat sockets, external-kernel interoperability
-and ZMQ/local simultaneous-client verification are separate adapter work, not
-claims implied by successful native-local tests.
+The optional standard-Jupyter transport below implements a separate wire
+binding around these same interfaces; native-local tests alone are not evidence
+of external interoperability.
 
 The registered stdlib Python `test_native_session` and existing `test_repl`,
 `test_evaluation`, and `test_runtime_input` cover local behavior. The Python
 protocol harness includes a Windows non-PTY path; POSIX PTY and slow-socket
 checks are platform-specific. A passing macOS run is not Windows, WASM or
 external-Jupyter interoperability evidence.
+
+## Optional classic Jupyter ZeroMQ adapter
+
+`WITH_JUPYTER_ZMQ` is **OFF by default**. It directly links libzmq's C API and
+OpenSSL libcrypto, not Xeus, cppzmq, nlohmann, RapidJSON or the language server.
+It requires a native LLVM build, and is explicitly rejected for no-LLVM/WASM.
+The `llvm11-jupyter` Pixi environment declares the transport and real-test
+dependencies (`zeromq`, `openssl`, `jupyter_client`, `ipykernel`, `pyzmq`).
+Its build directory is separate from the default `build/llvm11`:
+
+```bash
+CMAKE_BUILD_PARALLEL_LEVEL=6 pixi run -e llvm11-jupyter build \
+  -DWITH_JUPYTER_ZMQ=yes -DWITH_XEUS=no -DWITH_JSON=no \
+  '-DCMAKE_CXX_FLAGS_DEBUG=-g -O2' '-DCMAKE_C_FLAGS_DEBUG=-g -O2' \
+  > jupyter-build.log 2>&1
+# After ordinary source edits:
+CMAKE_BUILD_PARALLEL_LEVEL=6 pixi run -e llvm11-jupyter rebuild \
+  > jupyter-rebuild.log 2>&1
+pixi run -e llvm11-jupyter ctest -R '^test_jupyter_' -V \
+  > jupyter-tests.log 2>&1
+```
+
+Reference tests and reference updates still use **`-e llvm11`**, not this
+optional environment. Development environments currently also provision
+optional Xeus packages for other build configurations; package presence does
+not make them default-binary dependencies.
+
+### Native kernel with both bindings
+
+Create a classic connection file in an owner-private directory. For example,
+on POSIX (choose a new filename; do not overwrite another kernel's file):
+
+```bash
+mkdir -p "$HOME/.lfortran/jupyter"
+chmod 700 "$HOME/.lfortran/jupyter"
+pixi run -e llvm11-jupyter python -c \
+  'import os,secrets; from jupyter_client.connect import write_connection_file; write_connection_file(os.path.expanduser("~/.lfortran/jupyter/classic.json"), ip="127.0.0.1", key=secrets.token_hex(32).encode())'
+pixi run -e llvm11-jupyter start --serve \
+  --connection-file "$HOME/.lfortran/jupyter/native.json" \
+  --jupyter-connection-file "$HOME/.lfortran/jupyter/classic.json"
+```
+
+`native.json` is the native discovery/hello binding, **not** a Jupyter
+connection file. `classic.json` is the ordinary Jupyter five-port connection
+file. A `BlockingKernelClient`/Jupyter frontend uses the latter, and local
+clients/terminals use the former. Both reach **one** serialized native session,
+one evaluator, one shared variable namespace and one execution/history count.
+This command does not launch the legacy Xeus kernel as a second evaluator.
+The caller owns the supplied classic file; server cleanup removes only its
+native descriptor/IPC artifacts, never that supplied file.
+
+The supported classic schema has `transport:"tcp"`, `ip`, five distinct integer
+`shell_port`, `control_port`, `stdin_port`, `iopub_port`, `hb_port` in 1..65535,
+`signature_scheme:"hmac-sha256"` and a string `key`. Empty `ip` defaults to
+loopback. Use loopback unless you deliberately arrange external transport
+security. IPC, registration files, other signature schemes and Curve/encryption
+fields are rejected explicitly, including empty Curve fields; they are never
+silently ignored or downgraded to plaintext.
+
+Kernel sockets are shell/control/stdin ROUTER, IOPub PUB (protocol 5.4), and
+heartbeat REP. Client sockets are DEALER/SUB/REQ; shell and stdin have the same
+binary routing identity for each origin. All socket access is on its owning
+reactor thread, not the evaluation/capture worker. Actual runtime READ demand
+goes only to its transport origin. Standard clients may omit input_reply's
+parent: the authenticated route and its one pending prompt supply correlation.
+Other clients' code or input cannot answer that prompt. TCP disconnects are
+tracked through libzmq socket monitors/source descriptors; disconnect of the
+input origin releases the native runtime waiter.
+
+The wire codec preserves full binary identity stacks, separate original JSON
+frames for signature verification, and separate raw buffers (including empty
+and NUL-containing frames). HMAC-SHA256 covers **exactly the four posted JSON
+frame bytes**, before parsing; validation uses constant-time comparison.
+Nonempty keys are always enforced. Empty keys deliberately select unsigned
+messaging. Standard Jupyter HMAC does **not** cover routing/buffer frames and
+does **not encrypt traffic**. A key/file grants code-execution access, not a
+safe read-only feed. Keep both connection files private (0600 in a private
+directory, or owner-only Windows ACLs).
+
+Malformed frames and invalid/replayed signatures are discarded without
+executing code. Multipart work, frame sizes, JSON depth, peer/output/request
+queues and replay state are bounded. Signature history retains 4096 recent
+digests; native request-ID history additionally retains outstanding IDs.
+This is bounded replay protection, not indefinite replay persistence.
+Each ROUTER peer has separate bounded outbound queues, so a blocked client
+does not head-of-line block others. IOPub remains a live PUB subscription, not
+reliable historical replay or a slow-consumer archive.
+
+Use a real `kernel_info` plus IOPub/status readiness handshake, such as
+`BlockingKernelClient.wait_for_ready()`. Heartbeat alone does not establish an
+IOPub subscription, and a fixed startup sleep is not readiness. Heartbeat and
+control remain serviced during READ and busy native code. Shutdown drains with
+a deadline/bounded linger, cleans owned IPC, and terminates a still-blocked
+native process rather than asynchronously unwinding through generated code.
+
+### Connect a terminal to an external kernel
+
+```bash
+pixi run -e llvm11-jupyter start --connect /private/python-connection.json
+```
+
+`--connect` detects a native descriptor versus a classic connection file.
+Without the optional feature, classic files and adapter options receive an
+actionable build-option diagnostic; no JSON file is compiled as Fortran.
+The terminal owns no evaluator and obtains kernel info and completeness from
+the remote kernel, including Python multiline input. Execute flags, parent
+correlation, streams/stderr, errors, rich text/plain, clear notices and input
+use the same terminal implementation as local sessions. Password prompts
+suppress terminal echo and restore it on return/error.
+`is_complete` is optional in classic Jupyter: if it does not reply within one
+second, the terminal reports that completeness assistance is unavailable and
+allows submission without running a local language parser. Optional queries
+do not consume long-lived bridge execution slots. Errors present only in a
+private execute_reply are rendered after the reply/idle fence; a corresponding
+IOPub error is not rendered twice.
+
+The optional client establishes kernel_info/IOPub readiness by bounded protocol
+retries, not sleeps. It checks heartbeat independently of execution duration:
+quiet or slow cells are not dead merely because they produce no output.
+Heartbeat loss (10 seconds without a valid echo) or a changed upstream kernel
+session reports an unknown execution outcome. Execute requests are never
+automatically resubmitted.
+
+**Standard Jupyter input has no EOF/cancel representation.** Ctrl-D at a remote
+input prompt reports this explicitly and sends no fake empty string, sentinel,
+or local EOF metadata upstream. The external kernel may remain waiting; only
+its owner/manager can safely interrupt or terminate it. Closing a client or
+bridge does not invent successful execution or input cancellation.
+
+### Evaluator-free local bridge (including pi-repl integrations)
+
+```bash
+pixi run -e llvm11-jupyter start --bridge /private/python-connection.json \
+  --connection-file "$HOME/.lfortran/jupyter/native-proxy.json"
+# A terminal can use the same local binding as a pi-repl connection adapter:
+pixi run -e llvm11-jupyter start --connect "$HOME/.lfortran/jupyter/native-proxy.json"
+```
+
+The bridge contains **no EvaluationService/FortranEvaluator**. Every local peer
+gets separate upstream shell/control/stdin sockets with matching identities.
+One IOPub subscription fans out once to ready local peers, preserving upstream
+kernel session, request parents, arbitrary metadata/MIME/unknown fields and
+base64/raw buffer boundaries. Shell/control replies and input remain private
+to their transport origin, including with several clients sharing the same
+remote variable namespace. The descriptor and hello expose the real upstream
+kernel session, not an invented Fortran kernel identity.
+
+Bridge hello advertises `stdin` and `rich_output`, **not** `stdin_eof`.
+EOF/cancel or an input-origin disconnect is reported as unsupported upstream
+cancellation; no fabricated value is sent. Pending work is not replayed on
+disconnect/restart. A local `shutdown_request` stops only the bridge and returns
+`metadata.lfortran_bridge_local:true`; it never shuts down a foreign-owned
+kernel. Restart is rejected. To stop/interrupt the external kernel, use its
+own manager. Normal bridge termination cleans only its own descriptor/IPC.
+
+pi-repl need not link ZeroMQ or embed a Fortran evaluator: its connection
+adapter can implement the local framing/hello above, point it at
+`native-proxy.json`, and retain complete logical envelopes when rendering or
+forwarding events. No pi-repl source changes or unsupported pi-repl CLI flags
+are prescribed here. For example, this minimal POSIX stdlib client submits
+through either native descriptor (use Python code when bridging Python):
+
+```python
+import datetime, json, socket, struct, sys, uuid
+descriptor = json.load(open(sys.argv[1]))
+connection = socket.socket(socket.AF_UNIX)
+connection.connect(descriptor["socket"])
+def receive():
+    def read(n):
+        data = b""
+        while len(data) < n:
+            part = connection.recv(n-len(data))
+            if not part:
+                raise EOFError("kernel connection lost; outcome unknown")
+            data += part
+        return data
+    size, = struct.unpack("!I", read(4))
+    if not 0 < size <= 16777216:
+        raise ValueError("invalid frame length")
+    return json.loads(read(size))
+def send(message):
+    data = json.dumps(message).encode()
+    connection.sendall(struct.pack("!I", len(data)) + data)
+session, request = uuid.uuid4().hex, uuid.uuid4().hex
+send(dict(lfortran_local_protocol=1, client_session=session, features=[]))
+hello = receive()  # Subscription barrier; inspect advertised features.
+header = dict(msg_id=request, session=session, username="pi-repl-adapter",
+    date=datetime.datetime.now(datetime.timezone.utc).isoformat(),
+    msg_type="execute_request", version="5.4")
+send(dict(channel="shell", header=header, parent_header={}, metadata={},
+    content=dict(code="1+1", silent=False, store_history=True,
+                 allow_stdin=False, stop_on_error=True, user_expressions={}),
+    buffers=[]))
+reply = idle = False
+while not (reply and idle):
+    event = receive()
+    if "connection_error" in event:
+        raise RuntimeError(event["connection_error"])
+    print(event)  # Keep full envelopes, including metadata/MIME/buffers.
+    if event.get("parent_header", {}).get("msg_id") != request:
+        continue
+    kind = event["header"]["msg_type"]
+    reply |= kind == "execute_reply"
+    idle |= kind == "status" and event["content"]["execution_state"] == "idle"
+connection.close()
+```
+
+### Compatibility and coverage
+
+`lfortran kernel -f classic.json` and the existing `Fortran` kernelspec remain
+the optional legacy Xeus adapter. Shared evaluation/magics/display ABI remain
+common, but this new transport does not claim to repair Xeus's pre-existing
+buffering/native-input limitations. xeus-lite/WASM remains separate.
+
+The registered optional `test_jupyter_native`, `test_jupyter_foreign`, and
+`test_jupyter_wire` run in the existing Linux LLVM 11 platform Quick job
+(same required job name/ruleset). They use independent real jupyter_client
+signed/unsigned clients, simultaneous local peers, an actual ipykernel, and an
+independent Session/pyzmq fixture for exact signatures, routing, raw buffers,
+unknown fields and both reply/idle arrival orders. They are not ordinary
+default-suite imports. The tests establish those surfaces, not universal
+interoperability with every kernel/version or locally unrun Windows/WASM
+platforms. No Exhaustive run is needed for these optional capability tests.

@@ -56,6 +56,9 @@
 #include <libasr/modfile.h>
 #include <libasr/config.h>
 #include <lfortran/fortran_kernel.h>
+#ifdef HAVE_LFORTRAN_JUPYTER_ZMQ
+#include <lfortran/jupyter_zmq.h>
+#endif
 #include <libasr/string_utils.h>
 #ifdef HAVE_LFORTRAN_LLVM
 #include <llvm/Object/Archive.h>
@@ -2531,6 +2534,10 @@ int main_app(int argc, char *argv[]) {
             opts.arg_backend != "llvm" ||
             (opts.session_serve && !opts.session_connect.empty()) ||
             (!opts.session_connect.empty() && !opts.session_file.empty()) ||
+            (!opts.session_jupyter.empty() && (!opts.session_serve ||
+                !opts.session_bridge.empty())) ||
+            (!opts.session_bridge.empty() && (opts.session_serve ||
+                !opts.session_connect.empty() || opts.session_file.empty())) ||
             (opts.session_managed && !opts.session_serve) ||
             (opts.session_ready != -1 && !opts.session_serve)
 #ifdef WITH_LSP
@@ -2543,11 +2550,19 @@ int main_app(int argc, char *argv[]) {
     if (session_mode || ordinary_prompt) {
 #if defined(HAVE_LFORTRAN_LLVM) && !defined(__EMSCRIPTEN__) && !defined(HAVE_BUILD_TO_WASM)
         using namespace LCompilers::LFortran;
+#ifndef HAVE_LFORTRAN_JUPYTER_ZMQ
         if (!opts.session_jupyter.empty() || !opts.session_bridge.empty()) {
             std::cerr << "error: standard Jupyter transport/bridge requires the optional "
                 "ZeroMQ adapter (WITH_JUPYTER_ZMQ); native local sessions are available\n";
             return 1;
         }
+#else
+        if (!opts.session_bridge.empty()) {
+            auto bridge = jupyter_bridge(opts.session_bridge);
+            return serve_local_endpoint(*bridge, opts.session_file, false, -1,
+                bridge.get());
+        }
+#endif
         if (opts.session_serve) {
             if (!opts.session_managed && opts.session_file.empty()) {
                 std::cerr << "error: --serve requires --connection-file PATH\n";
@@ -2558,8 +2573,12 @@ int main_app(int argc, char *argv[]) {
                     !compiler_options.mcpu.empty() || !compiler_options.mtune.empty() ||
                     compiler_options.po.fast)
                 LCompilers::resolve_llvm_target_config(compiler_options);
+            std::unique_ptr<SessionAdapter> adapter;
+#ifdef HAVE_LFORTRAN_JUPYTER_ZMQ
+            if (!opts.session_jupyter.empty()) adapter = jupyter_server(opts.session_jupyter);
+#endif
             return serve_local_session(compiler_options, opts.session_file,
-                opts.session_managed, opts.session_ready);
+                opts.session_managed, opts.session_ready, adapter.get());
         }
         std::string file = opts.session_connect;
         if (file.empty()) {
@@ -2571,7 +2590,12 @@ int main_app(int argc, char *argv[]) {
             file = launch_local_session(arguments, opts.session_file);
         }
         LCompilers::initialize();
-        auto client = connect_local_session(file);
+        std::unique_ptr<SessionClient> client;
+#ifdef HAVE_LFORTRAN_JUPYTER_ZMQ
+        if (!is_local_connection_file(file)) client = connect_jupyter_session(file);
+        else
+#endif
+            client = connect_local_session(file);
         return session_terminal(*client, opts.arg_v);
 #else
         std::cerr << "Interactive sessions require a native LLVM build "

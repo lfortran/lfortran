@@ -420,6 +420,7 @@ struct Listener {
 class LocalClient : public SessionClient {
     std::unique_ptr<Connection> connection;
     std::string session = new_session_id(), kernel;
+    bool eof_supported = false;
 public:
     explicit LocalClient(const std::string &file) {
         auto value = parse(read_descriptor(file));
@@ -478,6 +479,10 @@ public:
                 optional_string(h, "kernel_session") != kernel ||
                 optional_string(h, "jupyter_protocol") != "5.4")
             throw std::runtime_error("local kernel hello/descriptor mismatch");
+        if (auto features = h.getArray("features"))
+            for (const auto &feature : *features)
+                if (feature.getAsString().getValueOr("") == "stdin_eof")
+                    eof_supported = true;
     }
     const std::string &session_id() const override { return session; }
     void send_envelope(const std::string &envelope) override {
@@ -505,9 +510,15 @@ public:
     }
     void input_reply(const ClientEvent &prompt, const std::string &record,
             bool eof) override {
+        if (eof && !eof_supported)
+            throw std::runtime_error("this session does not support stdin EOF/cancel; "
+                "no fake input value was sent (the external kernel may still be waiting)");
+        auto original = parse(prompt.envelope);
+        Object metadata;
+        if (eof) metadata["lfortran_stdin_eof"] = true;
         auto value = message("stdin", "input_reply", session,
-            Object{{"msg_id", prompt.id}, {"session", prompt.session}},
-            Object{{"value", record}}, Object{{"lfortran_stdin_eof", eof}});
+            Object(member(object(original), "header")),
+            Object{{"value", record}}, std::move(metadata));
         connection->send(encode(value));
         if (!connection->pump()) throw std::runtime_error("kernel connection lost");
     }
@@ -552,6 +563,9 @@ bool session_input_available() {
 }
 std::unique_ptr<SessionClient> connect_local_session(const std::string &file) {
     return std::unique_ptr<SessionClient>(new LocalClient(file));
+}
+std::string read_private_connection_file(const std::string &file) {
+    return read_descriptor(file);
 }
 int serve_local_endpoint(SessionEndpoint &session, const std::string &file,
         bool managed, intptr_t ready, SessionAdapter *adapter) {
