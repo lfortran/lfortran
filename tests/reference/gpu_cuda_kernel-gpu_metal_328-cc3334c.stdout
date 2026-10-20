@@ -1,7 +1,6 @@
 #include <stdint.h>
 
 __device__ inline void fixed_result_device_t_gpu_54(int n, float* r) {
-    const int width = 2;
     int __1__libasr_index_;
     int __do_loop_end;
     int __do_loop_end1;
