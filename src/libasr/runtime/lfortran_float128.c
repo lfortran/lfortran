@@ -669,7 +669,13 @@ lf_float128 __divtf3_lf_impl(lf_float128 a, lf_float128 b) {
      * After one shift: (mant_a << 112) / mant_b gives a 112-bit or 113-bit quotient.
      */
 
-    /* Method: 113-step binary restoring division */
+    /* Method: 113-step binary restoring division.
+     * It needs mant_a < mant_b; otherwise halve the ratio by doubling
+     * mant_b and compensate in the exponent. */
+    if (u128_gte(mant_a, mant_b)) {
+        mant_b = u128_shl1(mant_b);
+        exp_b--;
+    }
     u128 remainder = mant_a;
     u128 quotient  = u128_zero();
     /* We want quotient = floor(mant_a * 2^113 / mant_b), giving 113 bits */
