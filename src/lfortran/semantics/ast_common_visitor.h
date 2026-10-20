@@ -27192,7 +27192,8 @@ public:
         auto *signature = ASRUtils::get_FunctionType(adapter);
         signature->m_is_restriction = false;
         signature->m_deftype = ASR::deftypeType::Implementation;
-        ASR::Function_t *implementation = ASRUtils::trait_method_function(binding.m_procedure);
+        [[maybe_unused]] ASR::Function_t *implementation =
+            ASRUtils::trait_method_function(binding.m_procedure);
         LCOMPILERS_ASSERT(implementation && implementation->n_args == adapter->n_args);
         Vec<ASR::call_arg_t> args;
         args.reserve(al, adapter->n_args);
