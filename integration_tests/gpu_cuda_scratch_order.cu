@@ -16,7 +16,33 @@ __global__ void write_sequence(int *output, int sequence,
     *output = sequence;
 }
 
-int main()
+__global__ void write_aliases(int32_t *wide, int32_t *narrow)
 {
+    wide[0] = 201;
+    if (narrow) narrow[0] += 1;
+}
+
+__global__ void write_aliases_reversed(int32_t *narrow, int32_t *wide)
+{
+    wide[0] = 201;
+    narrow[0] += 1;
+    wide[1] = 83;
+}
+
+__global__ void read_aliases(int32_t *wide, int32_t *narrow,
+    const int32_t *reader)
+{
+    wide[0] = 201;
+    narrow[0] += 1;
+    wide[1] = reader[0];
+}
+
+int main(int argc, char **argv)
+{
+    if (argc == 2 && strcmp(argv[1], "aliases") == 0) {
+        return gpu_cuda_alias_order((void (*)(void))write_aliases,
+            (void (*)(void))write_aliases_reversed,
+            (void (*)(void))read_aliases);
+    }
     return gpu_cuda_scratch_order((void (*)(void))write_sequence);
 }

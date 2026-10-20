@@ -352,10 +352,25 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     lfortran_gpu_validate_launch(grid, block);
     if (!ctx || !k) return;
 
+    // Same-address writable aliases need one covering size for this launch,
+    // not alternating sizes of the same dirty resident. Nonempty reads within
+    // that range must use its shared binding too. Keep the original byte counts.
+    size_t resident_sizes[MAX_ARGS] = {0};
+    for (int i = 0; i < k->n_args; i++) {
+        if (k->kind[i] != ARG_BUFFER || k->buffer_sizes[i] == 0) continue;
+        resident_sizes[i] = k->buffer_sizes[i];
+        for (int j = 0; j < k->n_args; j++) {
+            if (k->kind[j] == ARG_BUFFER && k->access[j] == LFORTRAN_GPU_WRITE
+                    && k->buffer_host_ptrs[j] == k->buffer_host_ptrs[i]
+                    && k->buffer_sizes[j] > resident_sizes[i]) {
+                resident_sizes[i] = k->buffer_sizes[j];
+            }
+        }
+    }
     for (int i = 0; i < k->n_args; i++) {
         if (k->kind[i] == ARG_BUFFER
                 && overlaps_dirty(k->buffer_host_ptrs[i],
-                    k->buffer_sizes[i])) {
+                    resident_sizes[i])) {
             sync_all();
             break;
         }
@@ -371,7 +386,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
             if (k->kind[i] != ARG_BUFFER || k->access[i] != LFORTRAN_GPU_WRITE)
                 continue;
             k->buffer_device_ptrs[i] = k->buffer_sizes[i] == 0 ? NULL
-                : resident_for_write(k->buffer_host_ptrs[i], k->buffer_sizes[i]);
+                : resident_for_write(k->buffer_host_ptrs[i], resident_sizes[i]);
         }
         for (int i = 0; i < k->n_args; i++) {
             if (k->kind[i] != ARG_BUFFER || k->access[i] == LFORTRAN_GPU_WRITE)
@@ -380,7 +395,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
             void *host = k->buffer_host_ptrs[i];
             void *d_ptr = NULL;
             if (size > 0) {
-                d_ptr = dirty_resident(host, size);
+                d_ptr = dirty_resident(host, resident_sizes[i]);
                 if (!d_ptr) {
                     d_ptr = slot_buffer(k->cache, i, size);
                     check(cudaMemcpyAsync(d_ptr, host, size,

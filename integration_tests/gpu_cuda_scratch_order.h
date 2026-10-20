@@ -59,3 +59,66 @@ static int gpu_cuda_scratch_order(void (*entry)(void), bool scratch = true)
     lfortran_gpu_shutdown(ctx);
     return result;
 }
+
+static int gpu_cuda_alias_order(void (*write_entry)(void),
+    void (*reverse_entry)(void), void (*read_entry)(void),
+    const char *selected = NULL)
+{
+    lfortran_gpu_ctx *ctx = lfortran_gpu_init();
+    if (!ctx) return 1;
+    const size_t wide = 2 * sizeof(int32_t), narrow = sizeof(int32_t);
+    const struct {
+        const char *name;
+        void (*entry)(void);
+        size_t sizes[2];
+        bool separate;
+        size_t read_size;
+        int32_t expected[2];
+        int dispatches = 1;
+    } cases[] = {
+        {"wide-first", write_entry, {wide, narrow}, false, 0, {202, 17}},
+        {"narrow-first", reverse_entry, {narrow, wide}, false, 0, {202, 83}},
+        {"same-size", write_entry, {wide, wide}, false, 0, {202, 17}},
+        {"nonalias", write_entry, {wide, narrow}, true, 0, {201, 17}},
+        {"read-prefix", read_entry, {wide, narrow}, false, narrow, {202, 202}},
+        {"read-same", read_entry, {wide, wide}, false, wide, {202, 202}},
+        {"zero-size", write_entry, {wide, 0}, false, 0, {201, 17}},
+        {"repeat", write_entry, {wide, narrow}, false, 0, {202, 17}, 2}
+    };
+    int result = 0, checked = 0;
+    int grid[3] = {1, 1, 1}, block[3] = {1, 1, 1};
+    for (const auto &test : cases) {
+        if (selected && strcmp(selected, test.name) != 0) continue;
+        lfortran_gpu_register_kernel(test.name, test.entry);
+        auto *k = lfortran_gpu_load_kernel(ctx, test.name,
+            (int)strlen(test.name));
+        int32_t host[2] = {0, 17}, other[2] = {1, 19};
+        lfortran_gpu_set_buffer_arg(k, 0, host, test.sizes[0],
+            LFORTRAN_GPU_WRITE);
+        lfortran_gpu_set_buffer_arg(k, 1, test.separate ? other : host,
+            test.sizes[1], LFORTRAN_GPU_WRITE);
+        if (test.read_size) {
+            lfortran_gpu_set_buffer_arg(k, 2, host, test.read_size,
+                LFORTRAN_GPU_READ);
+        }
+        printf("alias %s: initial={0,17}, expected={%d,%d}, dispatches=%d\n",
+            test.name, test.expected[0], test.expected[1], test.dispatches);
+        fflush(stdout);
+        for (int i = 0; i < test.dispatches; i++) {
+            lfortran_gpu_launch(ctx, k, grid, block);
+        }
+        lfortran_gpu_sync(ctx);
+        printf("alias %s: host={%d,%d}, other={%d,%d}\n",
+            test.name, host[0], host[1], other[0], other[1]);
+        if (host[0] != test.expected[0] || host[1] != test.expected[1]
+                || other[0] != (test.separate ? 2 : 1) || other[1] != 19) {
+            result = 1;
+        }
+        lfortran_gpu_release_kernel(k);
+        lfortran_gpu_discard(ctx, host, sizeof(host));
+        lfortran_gpu_discard(ctx, other, sizeof(other));
+        ++checked;
+    }
+    lfortran_gpu_shutdown(ctx);
+    return checked ? result : 1;
+}

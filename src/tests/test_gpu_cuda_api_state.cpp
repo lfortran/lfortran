@@ -63,6 +63,11 @@ cudaError_t cudaFree(void *ptr)
 
 cudaError_t cudaDeviceSynchronize()
 {
+    if (sync_launches.size() == 16) {
+        fprintf(stderr, "API-state sync guard: 16 synchronizations, %d launches\n",
+            launches);
+        require(false, "argument preparation must converge");
+    }
     sync_launches.push_back(launches);
     drain();
     return cudaSuccess;
@@ -101,15 +106,47 @@ cudaError_t cudaMemcpy(void *dst, const void *src, size_t size,
 }
 
 static void device_entry() {}
+static void alias_entry() {}
+static void alias_reverse_entry() {}
+static void alias_read_entry() {}
 
 cudaError_t cudaLaunchKernel(const void *entry, dim3 grid, dim3 block,
     void **args, size_t shared, cudaStream_t stream)
 {
-    require(entry == (const void *)device_entry, "registered device entry");
+    require(entry == (const void *)device_entry
+        || entry == (const void *)alias_entry
+        || entry == (const void *)alias_reverse_entry
+        || entry == (const void *)alias_read_entry, "registered device entry");
     require(grid.x == 1 && grid.y == 1 && grid.z == 1
         && block.x == 1 && block.y == 1 && block.z == 1,
         "positive unit launch geometry");
     require(shared == 0 && stream == nullptr, "default stream, no shared memory");
+    if (entry != (const void *)device_entry) {
+        int32_t *first, *second, *reader = nullptr;
+        memcpy(&first, args[0], sizeof(first));
+        memcpy(&second, args[1], sizeof(second));
+        bool reverse = entry == (const void *)alias_reverse_entry;
+        if (entry == (const void *)alias_read_entry) {
+            memcpy(&reader, args[2], sizeof(reader));
+        }
+        pending.push_back([first, second, reader, reverse]() {
+            int32_t *wide = reverse ? second : first;
+            int32_t *narrow = reverse ? first : second;
+            live(wide, 2 * sizeof(int32_t));
+            wide[0] = 201;
+            if (narrow) {
+                live(narrow, sizeof(int32_t));
+                narrow[0] += 1;
+            }
+            if (reverse) wide[1] = 83;
+            if (reader) {
+                live(reader, sizeof(int32_t));
+                wide[1] = reader[0];
+            }
+        });
+        ++launches;
+        return cudaSuccess;
+    }
     // CUDA copies argument values before returning; the launch handle and
     // its scalar storage can be released while this operation is pending.
     std::array<int *, 31> buffers;
@@ -177,6 +214,20 @@ static int resident_table_order()
 
 int main(int argc, char **argv)
 {
+    if (argc == 3 && strcmp(argv[1], "alias") == 0) {
+        int result = gpu_cuda_alias_order(alias_entry, alias_reverse_entry,
+            alias_read_entry, argv[2]);
+        int expected_launches = strcmp(argv[2], "repeat") == 0 ? 2 : 1;
+        printf("API-state aliases: launches=%d, synchronizations=%zu\n",
+            launches, sync_launches.size());
+        require(launches == expected_launches, "each requested dispatch runs once");
+        require(sync_launches.size() == 2
+            && sync_launches[0] == expected_launches
+            && sync_launches[1] == expected_launches,
+            "no synchronization during stable alias preparation");
+        require(allocations.empty(), "shutdown releases alias memory");
+        return result;
+    }
     if (argc == 2 && strcmp(argv[1], "resident") == 0) {
         return resident_table_order();
     }

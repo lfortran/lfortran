@@ -9,3 +9,11 @@ add_test(NAME test_gpu_cuda_api_state_read_only
     COMMAND test_gpu_cuda_api_state read-only)
 add_test(NAME test_gpu_cuda_api_state_resident
     COMMAND test_gpu_cuda_api_state resident)
+foreach(case IN ITEMS wide-first narrow-first same-size nonalias read-prefix
+        read-same zero-size repeat)
+    string(REPLACE "-" "_" suffix "${case}")
+    add_test(NAME test_gpu_cuda_api_state_alias_${suffix}
+        COMMAND test_gpu_cuda_api_state alias ${case})
+    set_tests_properties(test_gpu_cuda_api_state_alias_${suffix}
+        PROPERTIES TIMEOUT 30)
+endforeach()
