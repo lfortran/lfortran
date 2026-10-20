@@ -7168,6 +7168,36 @@ public:
         return false;
     }
 
+    // Whether `outer` is `scope` or one of its enclosing scopes.
+    static bool is_enclosing_scope(SymbolTable *outer, SymbolTable *scope) {
+        for (SymbolTable *t = scope; t != nullptr; t = t->parent) {
+            if (t == outer) return true;
+        }
+        return false;
+    }
+
+    // An external procedure has no explicit interface outside its own
+    // subprogram. `use` ends the error message, saying what needs one.
+    bool check_explicit_interface(ASR::symbol_t *proc,
+            const std::string &name, const std::string &use,
+            const Location &loc) {
+        if (!ASR::is_a<ASR::Function_t>(*proc)) return true;
+        ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(proc);
+        if (!ASRUtils::is_tu_scope(ASRUtils::symbol_parent_symtab(proc))
+                || is_enclosing_scope(f->m_symtab, current_scope)) {
+            return true;
+        }
+        diag.add(Diagnostic(
+            "external procedure '" + name + "' needs an explicit interface "
+            + use,
+            Level::Error, Stage::Semantic, {
+                Label("add an interface body for '" + name
+                    + "', or define it in a module", {loc})
+            }));
+        if (!compiler_options.continue_compilation) throw SemanticAbort();
+        return false;
+    }
+
     // Whether the initializer `init_expr`, of type `init_type` before any
     // conversion, can initialize an entity of type `type`; reports the
     // mismatch otherwise.
