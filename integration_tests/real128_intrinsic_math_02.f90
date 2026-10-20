@@ -4,14 +4,15 @@ program real128_intrinsic_math_02
     ! computed in quad precision. Not labelled gfortran: GFortran accepts
     ! sinpi etc. for real(128), but its libquadmath has no sinpiq, so the
     ! program does not link, and exp2 is not a GFortran intrinsic.
-    use, intrinsic :: iso_fortran_env, only: real128
+    use, intrinsic :: iso_fortran_env, only: real128, int64
     implicit none
     integer, parameter :: qp = real128
-    real(qp) :: zero, one, two, half
-    integer :: i
+    real(qp) :: zero, one, two, half, x
+    integer :: i, n
 
     ! Zero known only at run time, so that nothing is constant-folded.
-    zero = command_argument_count()
+    n = command_argument_count()
+    zero = n
     one = 1 + zero
     two = 2 + zero
     half = one / 2
@@ -44,6 +45,14 @@ program real128_intrinsic_math_02
     do i = -16, 16
         call check(exp2(zero + i), pow2(i), 30)
     end do
+
+    ! (-1)**y is 1 for every even y, also for |y| > 2**16000. Raising a
+    ! negative real to a real power is not standard Fortran (processor
+    ! dependent); this checks the runtime's C99 pow semantics for |x| == 1.
+    x = transfer([0_int64, 9115285645797883904_int64 + n], x)   ! 2**16001
+    call check((zero - 1) ** x, one, 40)
+    call check((zero - 1) ** (-x), one, 41)
+    call check((zero - 1) ** huge(x), one, 42)
 
 contains
 

@@ -78,11 +78,6 @@ program real128_intrinsic_math_01
     x = zero - 30.5_qp
     call check((zero + 10) ** x, 3.1622776601683793319988935444327185951e-31_qp, 73)
     call check(hypot(zero + 3, zero + 4.5_qp), 5.4083269131959839396788319012057436171_qp, 74)
-    ! (-1)**y is 1 for every even y, also for |y| > 2**16000
-    x = transfer([0_int64, 9115285645797883904_int64 + n], x)   ! 2**16001
-    call check((zero - 1) ** x, one, 75)
-    call check((zero - 1) ** (-x), one, 76)
-    call check((zero - 1) ** huge(x), one, 77)
 
     x = 30 + zero
     call check(sind(x), 1/two, 80)
