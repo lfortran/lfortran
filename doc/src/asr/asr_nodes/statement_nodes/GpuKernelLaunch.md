@@ -43,7 +43,8 @@ On a device that asks for tiles (CUDA), a nest of two or more dimensions
 without a reduction is launched in tiles: a block covers a tile of up to 32
 iterations of the dimension its stores are contiguous in by the rest of the
 block along the next one, the block index numbers the tiles, and
-`thread_count` counts whole tiles. The kernel sends a thread whose place
+`thread_count` counts whole tiles. Padding to whole tiles can take that count
+past the kind of the loop indices, so it is an `integer(8)`. The kernel sends a thread whose place
 falls outside the nest back before its body as well. The host picks the
 width of a tile from the extent of the fastest dimension and passes it to
 the kernel. [GpuSync](GpuSync.md) is what waits; the `gpu_launch_sync`

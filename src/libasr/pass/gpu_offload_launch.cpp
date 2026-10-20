@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <string>
 #include <vector>
 
@@ -204,20 +205,92 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             ends.push_back(plan.dim_info[d].host_end);
         }
     }
-    // Normalize each range before taking the product, and evaluate the
-    // count once. Bounds are still evaluated for a zero-trip loop, but
-    // gathers, allocations and readbacks belong only to actual offload work.
-    ASR::expr_t *host_total = nullptr;
-    for (size_t d = 0; d < plan.n_dims; d++) {
-        ASR::expr_t *dim_range = gpu_loop_extent(al, loc,
-            plan.dim_info[d].host_start, plan.dim_info[d].host_end,
-            plan.int_type);
-        host_total = host_total ? b.Mul(host_total, dim_range) : dim_range;
+    // The number of threads the launch runs, evaluated once into the
+    // variable that guards the launch below. Bounds are still evaluated for
+    // a zero-trip loop, but gathers, allocations and readbacks belong only
+    // to actual offload work.
+    ASR::expr_t *thread_count = nullptr;
+    if (plan.tile_shift_arg >= 0) {
+        // A tiled launch (gpu_offload.cpp) runs whole tiles: the width of
+        // a tile is the smallest power of two that covers the fastest
+        // dimension, up to the device's tile width. Padding a dimension to
+        // whole tiles can nearly double it, so a nest whose iterations fit
+        // the kind of its indices may need more threads than that kind
+        // holds: the count is computed in integer(8). It is positive
+        // exactly when every dimension is non-empty. A tiled nest has no
+        // reduction (that keeps the flat numbering), so nothing below needs
+        // the iteration count.
+        ASR::ttype_t *int_type = plan.int_type;
+        ASR::ttype_t *count_type = ASRUtils::TYPE(
+            ASR::make_Integer_t(al, loc, 8));
+        auto widen = [&](ASR::expr_t *limit) {
+            ASRUtils::ExprStmtDuplicator copy(al);
+            copy.success = true;
+            ASR::expr_t *value = copy.duplicate_expr(limit);
+            LCOMPILERS_ASSERT(copy.success && value);
+            return ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(value)) == 8
+                ? value : b.i2i_t(value, count_type);
+        };
+        auto extent = [&](size_t d) {
+            return gpu_loop_extent(al, loc, widen(starts[d]),
+                widen(ends[d]), count_type);
+        };
+        auto count = [&](int64_t value) {
+            return b.i_t(value, count_type);
+        };
+        auto ceil_div = [&](ASR::expr_t *n, ASR::expr_t *size) {
+            return b.Div(b.Sub(b.Add(n, size), count(1)), size);
+        };
+        size_t across = plan.tile_dims[0], down = plan.tile_dims[1];
+        ASR::expr_t *shift_value = b.i_t(0, int_type);
+        int64_t shift = 1;
+        for (int64_t width = 2; width <= device_caps.tile_width;
+                width *= 2, shift++) {
+            shift_value = ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
+                b.Gt(extent(across), count(width / 2)),
+                b.i_t(shift, int_type), shift_value, int_type, nullptr));
+        }
+        ASR::expr_t *shift_var = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_tile_shift"),
+            ASRUtils::duplicate_type(al, int_type), ASR::intentType::Local);
+        prelude.push_back(al, b.Assignment(shift_var, shift_value));
+        plan.call_args.p[plan.tile_shift_arg].m_value = shift_var;
+        ASR::expr_t *width = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al,
+            loc, count(1), ASR::binopType::BitLShift,
+            b.i2i_t(shift_var, count_type), count_type, nullptr));
+        ASR::expr_t *rows = b.Div(count(device_caps.threads_per_block),
+            width);
+        ASR::expr_t *launch_threads = b.Mul(b.Mul(
+            ceil_div(extent(across), width), ceil_div(extent(down), rows)),
+            count(device_caps.threads_per_block));
+        for (size_t d = 0; d < plan.n_dims; d++) {
+            if (d == across || d == down) continue;
+            launch_threads = b.Mul(launch_threads, extent(d));
+        }
+        LCOMPILERS_ASSERT(std::none_of(plan.reductions.begin(),
+            plan.reductions.end(), [](const auto &r) {
+                return r.host_buf_sym != nullptr; }));
+        thread_count = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_launch_threads"),
+            count_type, ASR::intentType::Local);
+        prelude.push_back(al, b.Assignment(thread_count, launch_threads));
+    } else {
+        // One thread per iteration: normalize each range before taking
+        // the product.
+        ASR::expr_t *host_total = nullptr;
+        for (size_t d = 0; d < plan.n_dims; d++) {
+            ASR::expr_t *dim_range = gpu_loop_extent(al, loc,
+                plan.dim_info[d].host_start, plan.dim_info[d].host_end,
+                plan.int_type);
+            host_total = host_total ? b.Mul(host_total, dim_range)
+                : dim_range;
+        }
+        thread_count = b.Variable(current_scope,
+            current_scope->get_unique_name("__gpu_iteration_count"),
+            plan.int_type, ASR::intentType::Local);
+        prelude.push_back(al, b.Assignment(thread_count, host_total));
     }
-    ASR::expr_t *thread_count = b.Variable(current_scope,
-        current_scope->get_unique_name("__gpu_iteration_count"),
-        plan.int_type, ASR::intentType::Local);
-    prelude.push_back(al, b.Assignment(thread_count, host_total));
     for (size_t i = 0; i < plan.private_shapes.n; i++) {
         launch_stmts.push_back(al, plan.private_shapes[i]);
     }
@@ -306,76 +379,10 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
                 nullptr, nullptr, nullptr)));
     }
 
-    // The number of threads the launch runs: one per iteration, or whole
-    // tiles for a tiled launch. The accumulators above and the fold below
-    // keep the flat iteration count.
-    ASR::expr_t *launch_threads = thread_count;
-    if (plan.tile_shift_arg >= 0) {
-        // A tiled launch (gpu_offload.cpp): the width of a tile is the
-        // smallest power of two that covers the fastest dimension, up to
-        // the device's tile width, and the launch runs whole tiles.
-        ASR::ttype_t *int_type = plan.int_type;
-        auto constant = [&](int64_t value) {
-            return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, value,
-                int_type, ASR::integerbozType::Decimal));
-        };
-        auto binop = [&](ASR::expr_t *left, ASR::binopType op,
-                ASR::expr_t *right) {
-            return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-                left, op, right, int_type, nullptr));
-        };
-        auto extent = [&](size_t d) {
-            ASRUtils::ExprStmtDuplicator copy(al);
-            copy.success = true;
-            ASR::expr_t *start = copy.duplicate_expr(starts[d]);
-            ASR::expr_t *end = copy.duplicate_expr(ends[d]);
-            LCOMPILERS_ASSERT(copy.success && start && end);
-            return gpu_loop_extent(al, loc, start, end, int_type);
-        };
-        auto ceil_div = [&](ASR::expr_t *count, ASR::expr_t *size) {
-            return binop(binop(binop(count, ASR::binopType::Add, size),
-                ASR::binopType::Sub, constant(1)), ASR::binopType::Div,
-                size);
-        };
-        size_t across = plan.tile_dims[0], down = plan.tile_dims[1];
-        ASR::expr_t *shift_value = constant(0);
-        int64_t shift = 1;
-        for (int64_t width = 2; width <= device_caps.tile_width;
-                width *= 2, shift++) {
-            shift_value = ASRUtils::EXPR(ASR::make_IfExp_t(al, loc,
-                ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
-                    extent(across), ASR::cmpopType::Gt, constant(width / 2),
-                    ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)),
-                    nullptr)),
-                constant(shift), shift_value, int_type, nullptr));
-        }
-        ASR::symbol_t *shift_sym = gpu_new_variable(al, loc, current_scope,
-            current_scope->get_unique_name("__gpu_tile_shift"),
-            ASRUtils::duplicate_type(al, int_type));
-        auto shift_var = [&]() {
-            return ASRUtils::EXPR(ASR::make_Var_t(al, loc, shift_sym));
-        };
-        launch_stmts.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-            al, loc, shift_var(), shift_value, nullptr, false, false,
-            false)));
-        plan.call_args.p[plan.tile_shift_arg].m_value = shift_var();
-        ASR::expr_t *width = binop(constant(1), ASR::binopType::BitLShift,
-            shift_var());
-        ASR::expr_t *rows = binop(constant(device_caps.threads_per_block),
-            ASR::binopType::Div, width);
-        launch_threads = binop(binop(ceil_div(extent(across), width),
-            ASR::binopType::Mul, ceil_div(extent(down), rows)),
-            ASR::binopType::Mul, constant(device_caps.threads_per_block));
-        for (size_t d = 0; d < plan.n_dims; d++) {
-            if (d == across || d == down) continue;
-            launch_threads = binop(launch_threads, ASR::binopType::Mul,
-                extent(d));
-        }
-    }
     launch_stmts.push_back(al, ASRUtils::STMT(
         ASR::make_GpuKernelLaunch_t(al, loc,
             ASR::down_cast<ASR::symbol_t>(plan.kernel_func),
-            launch_threads, block_size_const,
+            thread_count, block_size_const,
             plan.call_args.p, plan.call_args.n, component_fit, nullptr,
             0, nullptr, nullptr, 0)));
 
@@ -482,7 +489,7 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     }
 
     prelude.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr,
-        b.Gt(thread_count, b.i_t(0, plan.int_type)),
+        b.Gt(thread_count, b.i_t(0, ASRUtils::expr_type(thread_count))),
         launch_stmts.p, launch_stmts.n, nullptr, 0)));
 
     // If any involved variable is optional, wrap the whole kernel

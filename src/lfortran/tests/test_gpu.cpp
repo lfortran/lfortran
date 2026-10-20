@@ -394,15 +394,18 @@ TEST_CASE("GPU zero work guards setup and effective launch geometry") {
     const std::string source = R"(
 program p
     implicit none
-    real :: a(32,4), s
+    real :: a(32,4), s, g(5,7)
     real, allocatable :: outside(:)
-    integer :: lo, hi, i
+    integer :: lo, hi, i, j
     lo = 1
     hi = 3
     allocate(outside(0))
     a = 0
     do concurrent (i = lo:hi)
         a(:,i) = a(:,i) + 1
+    end do
+    do concurrent (j = lo:7, i = 1:hi)
+        g(i,j) = real(i + j)
     end do
     lo = 3
     hi = 1
@@ -443,11 +446,18 @@ end program
         for (size_t i = 0; i < program->n_body; i++) {
             work.visit_stmt(*program->m_body[i]);
         }
-        REQUIRE(work.launches.size() == 2);
+        REQUIRE(work.launches.size() == 3);
         CHECK(work.source_allocations == 1);
         CHECK(work.guarded_allocations >= 1);
         bool has_lanes = false;
+        size_t wide_counts = 0;
         for (auto *launch : work.launches) {
+            // CUDA launches the two-dimensional nest in whole tiles, whose
+            // count can exceed the kind of the loop indices.
+            if (ASRUtils::extract_kind_from_ttype_t(
+                    ASRUtils::expr_type(launch->m_thread_count)) == 8) {
+                wide_counts++;
+            }
             auto *kernel = ASR::down_cast<ASR::Function_t>(launch->m_kernel);
             if (kernel->m_gpu->m_lanes) {
                 has_lanes = true;
@@ -462,6 +472,7 @@ end program
             }
         }
         CHECK(has_lanes == metal);
+        CHECK(wide_counts == (metal ? 0 : 1));
         pass_gpu_launch_sync(allocator, unit, options.po);
         pass_device_launch_expand(allocator, unit, options.po);
         REQUIRE(asr_verify(unit, true, diagnostics));
@@ -470,8 +481,8 @@ end program
             expanded.visit_stmt(*program->m_body[i]);
         }
         CHECK(expanded.launches.empty());
-        CHECK(expanded.runtime_launches == 2);
-        CHECK(expanded.runtime_releases == 2);
+        CHECK(expanded.runtime_launches == 3);
+        CHECK(expanded.runtime_releases == 3);
         CHECK(expanded.source_allocations == 1);
         CHECK(expanded.empty_lane_guards == (metal ? 1 : 0));
     }
