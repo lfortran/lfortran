@@ -19,7 +19,6 @@
 // list.
 
 #define MAX_ARGS 32
-#define MAX_KERNELS 64
 
 // Built-in thread coordinates, written once per emulated thread.
 __thread uint3 threadIdx = {0, 0, 0};
@@ -29,16 +28,27 @@ __thread dim3 gridDim = {1, 1, 1};
 
 typedef void (*lfortran_gpu_thunk_t)(void **);
 
-static struct {
+// One entry for each kernel a translation unit registers, however many
+// there are.
+typedef struct kernel_entry {
     const char *name;
     lfortran_gpu_thunk_t func;
-} kernel_registry[MAX_KERNELS];
+} kernel_entry;
+static kernel_entry *kernel_registry = NULL;
 static int n_registered = 0;
+static int registry_capacity = 0;
 
 void lfortran_gpu_register_kernel(const char *name, lfortran_gpu_thunk_t func) {
-    if (n_registered >= MAX_KERNELS) {
-        fprintf(stderr, "lfortran_gpu_register_kernel: too many kernels\n");
-        exit(1);
+    if (n_registered == registry_capacity) {
+        int capacity = registry_capacity ? 2 * registry_capacity : 64;
+        kernel_entry *grown = (kernel_entry*)realloc(kernel_registry,
+            capacity * sizeof(kernel_entry));
+        if (!grown) {
+            fprintf(stderr, "lfortran_gpu_register_kernel: out of memory\n");
+            exit(1);
+        }
+        kernel_registry = grown;
+        registry_capacity = capacity;
     }
     kernel_registry[n_registered].name = name;
     kernel_registry[n_registered].func = func;
