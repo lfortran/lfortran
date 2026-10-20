@@ -87,8 +87,21 @@ program real128_intrinsic_math_01
     call check(acosd(1/two), 2 * x, 84)
     call check(atand(one), 1.5_qp * x, 85)
     call check(atan2d(one, one), 1.5_qp * x, 86)
+    ! The cosine of an odd multiple of 90 degrees is +0, not -0
+    call check_positive_zero(cosd(3 * x), 87)
+    call check_positive_zero(cosd(-3 * x), 88)
+    call check_positive_zero(cosd(15 * x), 89)
 
 contains
+
+    subroutine check_positive_zero(x, code)
+        real(qp), intent(in) :: x
+        integer, intent(in) :: code
+        if (any(transfer(x, [0_int64, 0_int64]) /= 0)) then
+            print *, code, x
+            error stop code
+        end if
+    end subroutine
 
     subroutine check(x, ref, code)
         real(qp), intent(in) :: x, ref

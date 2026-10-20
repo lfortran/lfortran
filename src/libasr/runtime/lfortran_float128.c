@@ -1976,6 +1976,8 @@ lf_float128 lf_f128_cosd(lf_float128 a) {
     if (p.is_nan || p.is_inf) return f128_make_nan();
     lf_float128 rd;
     int n = f128_rem_90(a, &rd);
+    /* cos(90 + 180k degrees) is exactly +0 (IEEE 754 cosPi(k + 1/2)). */
+    if ((n & 1) && f128_is_zero(rd)) return f128_make_zero(0);
     f128_dw r = f128_deg_to_rad(rd);
     switch (n) {
         case 0:  return f128_cos_kernel(r);
