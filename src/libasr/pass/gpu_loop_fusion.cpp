@@ -4,6 +4,7 @@
 #include <libasr/pass/gpu_decline.h>
 #include <libasr/pass/gpu_loop_fusion.h>
 #include <libasr/pass/gpu_loop_utils.h>
+#include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 
 #include <map>
@@ -78,21 +79,24 @@ namespace LCompilers {
  *   assignment, as actual arguments of functions (for dummies that are not
  *   INTENT(IN)) or as internal files (not by input, IOSTAT=, ALLOCATE,
  *   ...), and assign neither the loop's variable or end nor a variable the
- *   producer's bounds or tests read. The producer's
- *   bounds and tests must not read the loop's variable, and the bounds of
- *   the DO loops nested in it must read neither its variable nor anything
- *   assigned in it, so that they run the same iterations in each of its
- *   iterations. Then only the last iteration of those DO loops writes the
- *   values the program sees later, and the other iterations write values
- *   the next iteration overwrites unread. The original two loops therefore
- *   run in the last iteration and the fused nest in every other one.
- *   Without such loops nothing is fused.
+ *   producer's bounds or tests read. The producer's bounds and tests must
+ *   not read the loop's variable, and the bounds of the DO loops nested in
+ *   it must read neither its variable nor anything assigned in it, so that
+ *   they run the same iterations in each of its iterations. Neither these
+ *   bounds and tests nor the loop's end read a variable that may change
+ *   through another name of its storage (a pointer, a TARGET, a variable in
+ *   EQUIVALENCE or a common block), which the assignments do not name. Then
+ *   only the last iteration of those DO loops writes the values the program
+ *   sees later, and the other iterations write values the next iteration
+ *   overwrites unread. The original two loops therefore run in the last
+ *   iteration and the fused nest in every other one. Without such loops
+ *   nothing is fused.
  * * A renamed array takes turns with its copy (ping-pong, `swap`) instead
  *   of being copied back when, in addition, no other statement of those DO
  *   loops reads or writes it and the consumer's bounds read neither their
- *   variables nor anything assigned in them, so that the consumer writes
- *   the same elements in every execution and the array and its copy agree
- *   on all the others.
+ *   variables nor anything assigned in them or reached through another
+ *   name, so that the consumer writes the same elements in every execution
+ *   and the array and its copy agree on all the others.
  *
  * Cost model: every element of an intermediate array is computed by each
  * iteration that reads it instead of once. The fusion is made when the
@@ -206,10 +210,27 @@ bool may_be_pointer_target(ASR::expr_t *des) {
     return v->m_target_attr || ASRUtils::is_pointer(v->m_type);
 }
 
+// Whether a variable may change through another name of its storage,
+// which the analyses of a statement list do not see: a pointer, a variable
+// with the TARGET attribute or whose address is taken otherwise
+// (`address_taken`, as for EQUIVALENCE), a variable of a common block, or
+// a volatile one. Named constants never change.
+bool may_be_aliased(ASR::symbol_t *s,
+        const std::set<ASR::symbol_t*> &address_taken) {
+    s = ASRUtils::symbol_get_past_external(s);
+    if (!ASR::is_a<ASR::Variable_t>(*s)) return false;
+    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+    if (v->m_storage == ASR::storage_typeType::Parameter) return false;
+    return v->m_target_attr || ASRUtils::is_pointer(v->m_type)
+        || v->m_common_block || v->m_is_volatile || address_taken.count(s);
+}
+
 class LoopFusion {
 public:
     Allocator &al;
     const PassOptions &po;
+    // The variables whose address the program takes (GetPointer).
+    std::set<ASR::symbol_t*> address_taken;
 
     // Statements to put before and after a statement of the list being
     // rebuilt: the allocation of a renamed array's copy goes before the
@@ -1265,6 +1286,16 @@ public:
                 // the next: the producer's bounds and tests must not read
                 // it.
                 if (bound_syms.count(lv)) touched = true;
+                // Nor a variable that may change through another name.
+                for (ASR::symbol_t *s : bound_syms) {
+                    if (p.position(s) < 0
+                            && may_be_aliased(s, address_taken)) {
+                        touched = true;
+                    }
+                }
+                for (ASR::symbol_t *s : end_syms) {
+                    if (may_be_aliased(s, address_taken)) touched = true;
+                }
                 // The DO loops nested in it run the same iterations in
                 // each of its iterations, so that its last iteration runs
                 // theirs: their bounds read neither its variable nor
@@ -1280,7 +1311,10 @@ public:
                             head_vals);
                     }
                     for (ASR::symbol_t *s : head_syms) {
-                        if (s == lv || sc_all.count(s)) touched = true;
+                        if (s == lv || sc_all.count(s)
+                                || may_be_aliased(s, address_taken)) {
+                            touched = true;
+                        }
                     }
                     for (ASR::symbol_t *s : head_vals) {
                         if (ba_all.count(s)) touched = true;
@@ -1358,7 +1392,9 @@ public:
             }
             bool bounds_fixed = true;
             for (ASR::symbol_t *x : c_bound_syms) {
-                if (assigned_in_loops.count(x) && c.position(x) < 0) {
+                if ((assigned_in_loops.count(x)
+                        || may_be_aliased(x, address_taken))
+                        && c.position(x) < 0) {
                     bounds_fixed = false;
                 }
             }
@@ -1738,6 +1774,23 @@ void pass_gpu_loop_fusion(Allocator &al, ASR::TranslationUnit_t &unit,
         return;
     }
     LoopFusion f(al, pass_options);
+    {
+        struct AddressTaken : public ASR::BaseWalkVisitor<AddressTaken> {
+            std::set<ASR::symbol_t*> *syms;
+            void visit_GetPointer(const ASR::GetPointer_t &x) {
+                if (ASR::is_a<ASR::Var_t>(*x.m_arg)) {
+                    syms->insert(ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(x.m_arg)->m_v));
+                } else {
+                    ASR::symbol_t *root = gpu_designator_base(x.m_arg).root;
+                    if (root) syms->insert(root);
+                }
+                ASR::BaseWalkVisitor<AddressTaken>::visit_GetPointer(x);
+            }
+        } t;
+        t.syms = &f.address_taken;
+        t.visit_TranslationUnit(unit);
+    }
     std::function<void(SymbolTable*)> visit_scope = [&](SymbolTable *st) {
         for (auto &item : st->get_scope()) {
             ASR::symbol_t *s = item.second;
