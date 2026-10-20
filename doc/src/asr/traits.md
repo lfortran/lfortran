@@ -2125,8 +2125,26 @@ allocatable target of an assignment, of the same character length if its
 elements are characters, takes the result over with its shape and lower
 bounds of one, as a move; the variable is otherwise deallocated when its
 scope ends, so no result is leaked. `array_op` and `implied_do_loops` keep a
-trait call whole, so array arguments of a message are never indexed element
-by element, also when its result is scalar.
+call of a message that is not elemental whole, so its array arguments are
+never indexed element by element, also when its result is scalar.
+
+An ELEMENTAL message applied to array arguments, such as
+`p(:) = obj%pfloor(p(:))` or `call v%raise(x)`, is expanded element by element
+exactly like an elemental type-bound procedure: semantics gives the
+`TraitFunctionCall` the shape of its first array argument, and
+`array_struct_temporary` and `array_op` treat it as an elemental
+`FunctionCall` (a `TraitSubroutineCall` as an elemental `SubroutineCall`), so
+the slot is called once per element with the receiver fixed; the result is
+neither an array result nor a scalar evaluated once, and every call that
+`subroutine_from_function` sees is scalar. A target that overlaps an argument is assigned from a temporary that
+holds the whole result. `traits_runtime_elemental_01` and
+`traits_runtime_elemental_02` are a user's program with and without a generic
+constructor interface; `traits_runtime_elemental_03` covers elemental
+functions and subroutines, several array arguments and scalar-array mixes,
+ranks one and two, strided sections, overlapping targets, expressions,
+reductions, WHERE, explicit-shape dummies and every kind of receiver, each
+with a standard oracle; `traits_runtime_elemental_separate_01` compiles a
+contract-only consumer separately.
 
 `traits_runtime_array_result_01` returns an allocatable `real(8)` array of
 data-dependent size through borrowed views, owners, a component owner, a trait

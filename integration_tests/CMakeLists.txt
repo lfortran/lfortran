@@ -4401,6 +4401,17 @@ RUN(NAME traits_runtime_polymorphic_result_separate_01 LABELS llvm llvm2 NO_STD_
     EXTRAFILES traits_runtime_polymorphic_result_separate_01_contracts.f90
         traits_runtime_polymorphic_result_separate_01_provider.f90
         traits_runtime_polymorphic_result_separate_01_consumer.f90)
+RUN(NAME traits_runtime_elemental_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_elemental_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_elemental_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_elemental_01_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_elemental_02_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_elemental_03_oracle LABELS gfortran llvm)
+RUN(NAME traits_runtime_elemental_separate_01 LABELS llvm llvm2 NO_STD_F23
+    EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_elemental_separate_01_contracts.f90
+        traits_runtime_elemental_separate_01_provider.f90
+        traits_runtime_elemental_separate_01_consumer.f90)
 RUN(NAME traits_runtime_constructor_component_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_constructor_component_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_constructor_component_01_oracle LABELS gfortran)

@@ -19,6 +19,9 @@ bool is_vectorise_able(ASR::expr_t* x) {
         case ASR::exprType::FunctionCall: {
             return ASRUtils::is_elemental(ASR::down_cast<ASR::FunctionCall_t>(x)->m_name);
         }
+        case ASR::exprType::TraitFunctionCall: {
+            return ASRUtils::is_elemental(ASR::down_cast<ASR::TraitFunctionCall_t>(x)->m_name);
+        }
         case ASR::exprType::IntrinsicElementalFunction: {
             return true;
         }
@@ -408,7 +411,8 @@ ASR::expr_t* get_first_array_function_args(T* func) {
     }
     for (int64_t i = 0; i < (int64_t)func->n_args; i++) {
         ASR::ttype_t* func_arg_type;
-        if constexpr (std::is_same_v<T, ASR::FunctionCall_t>) {
+        if constexpr (std::is_same_v<T, ASR::FunctionCall_t> ||
+                std::is_same_v<T, ASR::TraitFunctionCall_t>) {
             func_arg_type = ASRUtils::expr_type(func->m_args[i].m_value);
         } else {
             func_arg_type = ASRUtils::expr_type(func->m_args[i]);
@@ -419,7 +423,8 @@ ASR::expr_t* get_first_array_function_args(T* func) {
         }
     }
     LCOMPILERS_ASSERT(first_array_arg_idx != -1)
-    if constexpr (std::is_same_v<T, ASR::FunctionCall_t>) {
+    if constexpr (std::is_same_v<T, ASR::FunctionCall_t> ||
+            std::is_same_v<T, ASR::TraitFunctionCall_t>) {
         first_array_arg = func->m_args[first_array_arg_idx].m_value;
     } else {
         first_array_arg = func->m_args[first_array_arg_idx];
@@ -509,7 +514,7 @@ bool set_allocation_size(
         case ASR::exprType::FunctionCall:
         case ASR::exprType::TraitFunctionCall: {
             // A call through a runtime trait slot has the shape of an
-            // ordinary call of its message: never elemental.
+            // ordinary call of its message.
             ASR::ttype_t* type = ASRUtils::expr_type(value);
             if( ASRUtils::is_allocatable(type) || ASRUtils::is_pointer(type) ) {
                 return false;
@@ -518,6 +523,13 @@ bool set_allocation_size(
                     ASRUtils::is_elemental(ASR::down_cast<ASR::FunctionCall_t>(value)->m_name)) {
                 set_allocation_size_elemental_function(al, loc,
                     ASR::down_cast<ASR::FunctionCall_t>(value), allocate_dims,
+                    len_allocte_expr);
+                break;
+            }
+            if (ASR::is_a<ASR::TraitFunctionCall_t>(*value) &&
+                    ASRUtils::is_elemental(ASR::down_cast<ASR::TraitFunctionCall_t>(value)->m_name)) {
+                set_allocation_size_elemental_function(al, loc,
+                    ASR::down_cast<ASR::TraitFunctionCall_t>(value), allocate_dims,
                     len_allocte_expr);
                 break;
             }
@@ -2210,7 +2222,9 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
             !(ASR::is_a<ASR::FunctionCall_t>(*value) &&
               !ASRUtils::is_elemental(
                   ASR::down_cast<ASR::FunctionCall_t>(value)->m_name)) &&
-            !ASR::is_a<ASR::TraitFunctionCall_t>(*value) &&
+            !(ASR::is_a<ASR::TraitFunctionCall_t>(*value) &&
+              !ASRUtils::is_elemental(
+                  ASR::down_cast<ASR::TraitFunctionCall_t>(value)->m_name)) &&
             can_rhs_refer_to_lhs(al, xx.m_target, xx.m_value)) {
             xx.m_value = create_and_allocate_temporary_variable_for_array(
                 value, "_assignment_", al, current_body, current_scope,
@@ -3042,6 +3056,13 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     // Its temporary is named like that of a function result, whose lower
     // bounds an allocatable target does not take (see array_op).
     void replace_TraitFunctionCall(ASR::TraitFunctionCall_t* x) {
+        if( ASRUtils::is_elemental(x->m_name) && ASRUtils::is_array(x->m_type) ) {
+            // An elemental message applied to arrays is sent once per
+            // element, as an elemental function is invoked (see
+            // replace_FunctionCall).
+            replace_elemental_call_args(x->m_args, x->n_args);
+            return ;
+        }
         std::string name_hint = std::string("_function_call_") +
             ASRUtils::symbol_name(x->m_name);
         if( replace_scalar_call_sharing_target(x->m_type, name_hint) ) {
@@ -3074,25 +3095,29 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
         return true;
     }
 
+    // The function is invoked once per element: see replace_expr.
+    void replace_elemental_call_args(ASR::call_arg_t* args, size_t n_args) {
+        for (size_t i = 0; i < n_args; i++) {
+            if (ASRUtils::contains_finalizable_function_reference(
+                    args[i].m_value) ||
+                (evaluate_function_references_once &&
+                    contains_function_reference(args[i].m_value) &&
+                    !ASRUtils::is_array(ASRUtils::expr_type(
+                        args[i].m_value)))) {
+                ASR::expr_t** current_expr_copy = current_expr;
+                current_expr = &args[i].m_value;
+                replace_expr(args[i].m_value);
+                current_expr = current_expr_copy;
+            }
+        }
+    }
+
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         if( ASRUtils::is_elemental(x->m_name) && !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
             // ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x->m_name);
             // std::cout << f << "\n";
             if (ASRUtils::is_array(x->m_type)) {
-                // The function is invoked once per element: see replace_expr.
-                for (size_t i = 0; i < x->n_args; i++) {
-                    if (ASRUtils::contains_finalizable_function_reference(
-                            x->m_args[i].m_value) ||
-                        (evaluate_function_references_once &&
-                            contains_function_reference(x->m_args[i].m_value) &&
-                            !ASRUtils::is_array(ASRUtils::expr_type(
-                                x->m_args[i].m_value)))) {
-                        ASR::expr_t** current_expr_copy = current_expr;
-                        current_expr = &x->m_args[i].m_value;
-                        replace_expr(x->m_args[i].m_value);
-                        current_expr = current_expr_copy;
-                    }
-                }
+                replace_elemental_call_args(x->m_args, x->n_args);
             }
             return ;
         }
@@ -3733,6 +3758,22 @@ class ReplaceExprWithTemporaryVisitor:
         }
         replacer.in_array_context = elemental_array_call;
         ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_SubroutineCall(x);
+        replacer.in_array_context = false;
+    }
+
+    // So is an elemental message.
+    void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t& x) {
+        bool elemental_array_call = false;
+        if (ASRUtils::is_elemental(x.m_name)) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i].m_value && ASRUtils::is_array(
+                        ASRUtils::expr_type(x.m_args[i].m_value))) {
+                    elemental_array_call = true;
+                }
+            }
+        }
+        replacer.in_array_context = elemental_array_call;
+        ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_TraitSubroutineCall(x);
         replacer.in_array_context = false;
     }
 

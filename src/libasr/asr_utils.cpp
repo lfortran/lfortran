@@ -5407,14 +5407,17 @@ ASR::asr_t* make_ArraySize_t_util(
                 return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
             }
         }
-    } else if( ASR::is_a<ASR::FunctionCall_t>(*a_v) && for_type ) {
-        ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(a_v);
+    } else if( (ASR::is_a<ASR::FunctionCall_t>(*a_v) ||
+                ASR::is_a<ASR::TraitFunctionCall_t>(*a_v)) && for_type ) {
+        // The shape of a call through a runtime trait slot is that of an
+        // ordinary call of its message.
+        ASR::ttype_t* call_type = ASRUtils::expr_type(a_v);
         ASR::dimension_t* m_dims = nullptr;
-        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(function_call->m_type, m_dims);
-        if( ASRUtils::is_fixed_size_array(function_call->m_type) ) {
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(call_type, m_dims);
+        if( ASRUtils::is_fixed_size_array(call_type) ) {
             if( a_dim == nullptr ) {
                 return ASR::make_IntegerConstant_t(al, a_loc,
-                    ASRUtils::get_fixed_size_of_array(function_call->m_type), a_type);
+                    ASRUtils::get_fixed_size_of_array(call_type), a_type);
             } else if( is_dimension_constant ) {
                 return &(m_dims[dim - 1].m_length->base);
             }

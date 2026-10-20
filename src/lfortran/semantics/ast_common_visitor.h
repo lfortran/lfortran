@@ -29554,6 +29554,18 @@ public:
                     loc, args, function);
             }
             if (is_function) {
+                // An elemental message with array arguments is an array of
+                // the shape of the first of them, as an ordinary elemental
+                // reference; the passes call the slot once per element.
+                if (ASR::expr_t *first_array =
+                        ASRUtils::find_first_array_arg_if_elemental(function, args)) {
+                    ASR::dimension_t *array_dims = nullptr;
+                    size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::expr_type(first_array), array_dims);
+                    Vec<ASR::dimension_t> new_dims;
+                    new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+                    result = ASRUtils::duplicate_type(al, result, &new_dims);
+                }
                 auto *call = ASR::down_cast2<ASR::FunctionCall_t>(
                     ASRUtils::make_FunctionCall_t_util(al, loc, callee, nullptr,
                         args.p, args.size(), result,

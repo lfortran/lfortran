@@ -105,9 +105,14 @@ class ArrayVarAddressReplacer: public ASR::BaseExprReplacer<ArrayVarAddressRepla
         ASR::BaseExprReplacer<ArrayVarAddressReplacer>::replace_FunctionCall(x);
     }
 
-    void replace_TraitFunctionCall(ASR::TraitFunctionCall_t* /*x*/) {
-        // A call through a runtime trait slot is never elemental: its array
-        // arguments are passed whole.
+    void replace_TraitFunctionCall(ASR::TraitFunctionCall_t* x) {
+        // The array arguments of a message that is not elemental are passed
+        // whole; an elemental message is applied element by element.
+        if( !ASRUtils::is_elemental(x->m_name) ) {
+            return ;
+        }
+
+        ASR::BaseExprReplacer<ArrayVarAddressReplacer>::replace_TraitFunctionCall(x);
     }
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* /*x*/) {
@@ -191,6 +196,17 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
         if (ASRUtils::is_array(xx.m_type)) {
             xx.m_type = ASRUtils::extract_type(xx.m_type);
             xx.m_value = nullptr;
+        }
+    }
+
+    void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_TraitFunctionCall(x);
+        if( !ASRUtils::is_elemental(x.m_name) ) {
+            return ;
+        }
+        ASR::TraitFunctionCall_t& xx = const_cast<ASR::TraitFunctionCall_t&>(x);
+        if (ASRUtils::is_array(xx.m_type)) {
+            xx.m_type = ASRUtils::extract_type(xx.m_type);
         }
     }
 
@@ -601,8 +617,12 @@ public:
             }
         }
 
-        // A call through a runtime trait slot is never elemental.
-        void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t&) {}
+        // Likewise only inside an elemental message.
+        void visit_TraitFunctionCall(const ASR::TraitFunctionCall_t& x) {
+            if (ASRUtils::is_elemental(x.m_name)) {
+                ASR::BaseWalkVisitor<CollectComponentsFromElementalExpr>::visit_TraitFunctionCall(x);
+            }
+        }
 };
 
 // Replaces BitCast (transfer) nodes that return arrays with temporary variables
@@ -2684,6 +2704,32 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         fix_type_args.reserve(al, 1);
 
         generate_loop(x, vars, fix_type_args, loc);
+    }
+
+    // An elemental message applied to arrays is sent once per element, with
+    // the receiver fixed.
+    void visit_TraitSubroutineCall(const ASR::TraitSubroutineCall_t& x) {
+        if( !ASRUtils::is_elemental(x.m_name) ) {
+            return ;
+        }
+
+        Vec<ASR::expr_t**> vars;
+        vars.reserve(al, 1);
+        for( size_t i = 0; i < x.n_args; i++ ) {
+            if( x.m_args[i].m_value != nullptr &&
+                ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value)) ) {
+                vars.push_back(al, &(x.m_args[i].m_value));
+            }
+        }
+
+        if( vars.size() == 0 ) {
+            return ;
+        }
+
+        Vec<ASR::expr_t**> fix_type_args;
+        fix_type_args.reserve(al, 1);
+
+        generate_loop(x, vars, fix_type_args, x.base.base.loc);
     }
 
     void visit_If(const ASR::If_t& x) {
