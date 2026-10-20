@@ -1,5 +1,8 @@
 #include <tests/doctest.h>
 
+#include <fstream>
+#include <sstream>
+
 #include <libasr/asr_text.h>
 #include <libasr/asr_verify.h>
 #include <libasr/pass/pass_manager.h>
@@ -577,6 +580,66 @@ end program
     }
 }
 
+namespace {
+
+// The (tiled, thread count) pair of every CUDA launch of the program
+// `name` in `source`, from the host's launch prelude.
+std::vector<std::pair<int64_t, int64_t>> cuda_launch_geometry(
+        const std::string &source, const std::string &filename,
+        const std::string &name) {
+    CompilerOptions options;
+    options.gpu_backend = "cuda";
+    options.po.gpu_offload_cuda = true;
+    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+    FortranEvaluator evaluator(options);
+    LocationManager lm;
+    LocationManager::FileLocations file;
+    file.in_filename = filename;
+    lm.files.push_back(file);
+    lm.file_ends.push_back(LFortran::source_offset(source.size()));
+    diag::Diagnostics diagnostics;
+    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE(parsed.ok);
+    ASR::TranslationUnit_t &unit = *parsed.result;
+    Allocator allocator(32 * 1024 * 1024);
+    PassManager passes;
+    std::string pass = "gpu_vector_lanes", skip;
+    passes.parse_pass_arg(pass, skip);
+    options.po.pass_cumulative = true;
+    passes.apply_passes(allocator, &unit, options.po, diagnostics);
+    INFO(diagnostics.render2());
+    REQUIRE_FALSE(diagnostics.has_error());
+    auto *program = ASR::down_cast<ASR::Program_t>(
+        unit.m_symtab->get_symbol(name));
+    GpuLaunchGeometry geometry;
+    for (size_t i = 0; i < program->n_body; i++) {
+        geometry.visit_stmt(*program->m_body[i]);
+    }
+    return geometry.launches;
+}
+
+void check_launch_geometry(
+        const std::vector<std::pair<int64_t, int64_t>> &launches,
+        const std::vector<std::pair<int64_t, int64_t>> &expected) {
+    REQUIRE(launches.size() == expected.size());
+    for (size_t i = 0; i < launches.size(); i++) {
+        INFO("launch " << i);
+        CHECK(launches[i].first == expected[i].first);
+        CHECK(launches[i].second == expected[i].second);
+    }
+}
+
+std::string read_project_file(const std::string &path) {
+    std::ifstream in(std::string(LFORTRAN_PROJECT_SOURCE_DIR) + "/" + path);
+    REQUIRE(in.good());
+    std::stringstream contents;
+    contents << in.rdbuf();
+    return contents.str();
+}
+
+} // namespace
+
 TEST_CASE("GPU tiled launches pad a nest by at most a quarter") {
     // CI has no GPU to time a launch, so pin the geometry the host picks:
     // whether a nest runs in tiles of 32 by 8, and how many threads.
@@ -602,35 +665,8 @@ program p
     end do
 end program
 )";
-    CompilerOptions options;
-    options.gpu_backend = "cuda";
-    options.po.gpu_offload_cuda = true;
-    options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
-    FortranEvaluator evaluator(options);
-    LocationManager lm;
-    LocationManager::FileLocations file;
-    file.in_filename = "gpu_tile_geometry.f90";
-    lm.files.push_back(file);
-    lm.file_ends.push_back(LFortran::source_offset(source.size()));
-    diag::Diagnostics diagnostics;
-    auto parsed = evaluator.get_asr2(source, lm, diagnostics);
-    INFO(diagnostics.render2());
-    REQUIRE(parsed.ok);
-    ASR::TranslationUnit_t &unit = *parsed.result;
-    Allocator allocator(32 * 1024 * 1024);
-    PassManager passes;
-    std::string pass = "gpu_vector_lanes", skip;
-    passes.parse_pass_arg(pass, skip);
-    options.po.pass_cumulative = true;
-    passes.apply_passes(allocator, &unit, options.po, diagnostics);
-    INFO(diagnostics.render2());
-    REQUIRE_FALSE(diagnostics.has_error());
-    auto *program = ASR::down_cast<ASR::Program_t>(
-        unit.m_symtab->get_symbol("p"));
-    GpuLaunchGeometry geometry;
-    for (size_t i = 0; i < program->n_body; i++) {
-        geometry.visit_stmt(*program->m_body[i]);
-    }
+    std::vector<std::pair<int64_t, int64_t>> launches =
+        cuda_launch_geometry(source, "gpu_tile_geometry.f90", "p");
     std::vector<std::pair<int64_t, int64_t>> expected = {
         // A second dimension of one would pad 8 times: flat.
         {0, 4096},
@@ -644,5 +680,44 @@ end program
         // 33 is padded to 64: flat.
         {0, 33 * 64},
     };
-    CHECK(geometry.launches == expected);
+    check_launch_geometry(launches, expected);
+}
+
+TEST_CASE("GPU tiled launch tests run tiled nests") {
+    // gpu_metal_485, gpu_metal_490 and gpu_metal_491 check the tiled index
+    // computation only if their nests do tile; pin which ones do, so that a
+    // change of the padding threshold cannot silently move them to flat
+    // numbering.
+    std::vector<std::pair<int64_t, int64_t>> expected = {
+        {1, 64 * 64},           // stencil 62 x 62
+        {0, 3 * 1000},          // b(3, 1000)
+        {1, 64 * 32 * 4},       // c: -3:56, 0:29, 3:6
+        {1, 64 * 32},           // d: 3:64 x 3:33
+        {1, 0},                 // empty nest
+        {0, 300},               // f(300, 1)
+        {0, 600},               // g(300, 2)
+        {0, 40 * 37},           // h(40, 37, 1)
+        {0, 3 * 2 * 500},       // p(3, 2, 500)
+        {1, 64 * 32 * 4},       // contiguous dimension in the middle
+        {1, 64 * 32 * 4},       // stores disagree: k, not j (4), down
+        {1, 32 * 64},           // transposed store
+        {1, 0},                 // empty dimension outside the tile
+    };
+    check_launch_geometry(cuda_launch_geometry(
+        read_project_file("integration_tests/gpu_metal_485.f90"),
+        "gpu_metal_485.f90", "gpu_metal_485"), expected);
+    expected = {
+        {1, 256 * 32},          // integer(8) indices, -5:250 x 1:31
+    };
+    check_launch_geometry(cuda_launch_geometry(
+        read_project_file("integration_tests/gpu_metal_491.f90"),
+        "gpu_metal_491.f90", "gpu_metal_491"), expected);
+    expected = {
+        {1, 64 * 64},           // workspace, 62 x 62
+        {1, 64 * 32 * 3},       // workspace, 60 x 30 x 3
+        {0, 37 * 11},           // workspace, 37 x 11
+    };
+    check_launch_geometry(cuda_launch_geometry(
+        read_project_file("integration_tests/gpu_metal_490.f90"),
+        "gpu_metal_490.f90", "gpu_metal_490"), expected);
 }
