@@ -399,16 +399,17 @@ struct Listener {
     ~Listener() { close_handle(fd); }
     Handle accept() {
 #ifdef _WIN32
-        if (!ConnectNamedPipe(fd, nullptr)) {
-            DWORD error = GetLastError();
-            if (error == ERROR_NO_DATA) {
-                DisconnectNamedPipe(fd);
-                return invalid;
-            }
-            if (error != ERROR_PIPE_CONNECTED) {
-                if (error == ERROR_PIPE_LISTENING) return invalid;
-                throw std::runtime_error("cannot accept local named-pipe connection");
-            }
+        // In PIPE_NOWAIT mode, success can only rearm a disconnected instance.
+        // A client is attached only when the call reports ERROR_PIPE_CONNECTED.
+        if (ConnectNamedPipe(fd, nullptr)) return invalid;
+        DWORD error = GetLastError();
+        if (error == ERROR_NO_DATA) {
+            DisconnectNamedPipe(fd);
+            return invalid;
+        }
+        if (error != ERROR_PIPE_CONNECTED) {
+            if (error == ERROR_PIPE_LISTENING) return invalid;
+            throw std::runtime_error("cannot accept local named-pipe connection");
         }
         Handle result = fd;
         fd = invalid;

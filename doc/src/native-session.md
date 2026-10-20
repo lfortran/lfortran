@@ -37,6 +37,15 @@ On Windows, `transport` is `named_pipe` and `pipe` replaces `socket`, for
 example `"pipe":"\\\\.\\pipe\\lfortran-unique-kernel-id"`. Descriptors and
 messages are UTF-8 on both transports.
 
+Windows clients must allow writes while waiting for incoming events. In
+particular, Python's unbuffered `open(pipe, "r+b")` still uses a CRT descriptor
+lock: a blocking read on that descriptor prevents another thread from sending
+the hello, requests or input replies. The stdlib fixture in
+`src/lfortran/tests/test_native_session.py` uses `CreateFileW` and nonblocking
+Win32 byte-pipe operations with partial-write handling, bounded write waits and
+explicit disconnect/error reporting. It uses the same framing as the native
+C++ client and adds no Python package dependency.
+
 A managed kernel stays alive while any authenticated client is attached and
 stops on final detach, including when the original terminal goes away first.
 A managed child that receives no client exits after a bounded startup grace

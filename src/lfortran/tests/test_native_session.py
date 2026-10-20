@@ -81,6 +81,116 @@ def header(session, kind):
         msg_type=kind, version="5.4")
 
 
+class WindowsPipe:
+    """A byte-pipe fixture without the CRT's shared read/write descriptor lock."""
+    def __init__(self, path):
+        from ctypes import wintypes as w
+        self.kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        self.kernel.CreateFileW.argtypes = [
+            w.LPCWSTR, w.DWORD, w.DWORD, ctypes.c_void_p,
+            w.DWORD, w.DWORD, w.HANDLE]
+        self.kernel.CreateFileW.restype = w.HANDLE
+        self.kernel.WaitNamedPipeW.argtypes = [w.LPCWSTR, w.DWORD]
+        self.kernel.WaitNamedPipeW.restype = w.BOOL
+        self.kernel.SetNamedPipeHandleState.argtypes = [
+            w.HANDLE, ctypes.POINTER(w.DWORD),
+            ctypes.POINTER(w.DWORD), ctypes.POINTER(w.DWORD)]
+        self.kernel.SetNamedPipeHandleState.restype = w.BOOL
+        self.kernel.PeekNamedPipe.argtypes = [
+            w.HANDLE, ctypes.c_void_p, w.DWORD, ctypes.POINTER(w.DWORD),
+            ctypes.POINTER(w.DWORD), ctypes.POINTER(w.DWORD)]
+        self.kernel.PeekNamedPipe.restype = w.BOOL
+        for operation in (self.kernel.ReadFile, self.kernel.WriteFile):
+            operation.argtypes = [
+                w.HANDLE, ctypes.c_void_p, w.DWORD,
+                ctypes.POINTER(w.DWORD), ctypes.c_void_p]
+            operation.restype = w.BOOL
+        self.kernel.CloseHandle.argtypes = [w.HANDLE]
+        self.kernel.CloseHandle.restype = w.BOOL
+        self.lock = threading.Lock()
+        self.closed = threading.Event()
+        deadline = time.monotonic() + 15
+        while True:
+            self.handle = self.kernel.CreateFileW(
+                path, 0x80000000 | 0x40000000, 0, None, 3, 0, None)
+            if self.handle != ctypes.c_void_p(-1).value:
+                break
+            error = ctypes.get_last_error()
+            if error != 231:  # ERROR_PIPE_BUSY
+                raise ctypes.WinError(error)
+            if time.monotonic() >= deadline:
+                raise TimeoutError("timed out attaching to kernel pipe") from ctypes.WinError(error)
+            if not self.kernel.WaitNamedPipeW(path, 100):
+                error = ctypes.get_last_error()
+                if error != 121:  # ERROR_SEM_TIMEOUT
+                    raise ctypes.WinError(error)
+        # PIPE_NOWAIT bounds every operation, including writes under pressure.
+        # No read may block while holding either our ownership lock or a CRT lock.
+        mode = w.DWORD(1)
+        if not self.kernel.SetNamedPipeHandleState(
+                self.handle, ctypes.byref(mode), None, None):
+            error = ctypes.get_last_error()
+            self.close()
+            raise ctypes.WinError(error)
+
+    def read(self, size):
+        from ctypes import wintypes as w
+        if not size:
+            return b""
+        while not self.closed.is_set():
+            with self.lock:
+                if self.closed.is_set():
+                    break
+                available, count = w.DWORD(), w.DWORD()
+                if not self.kernel.PeekNamedPipe(
+                        self.handle, None, 0, None, ctypes.byref(available), None):
+                    error = ctypes.get_last_error()
+                    if error in (109, 232, 233):  # broken/closing/disconnected pipe
+                        return b""
+                    raise ctypes.WinError(error)
+                if available.value:
+                    buffer = ctypes.create_string_buffer(min(size, available.value, 65536))
+                    if not self.kernel.ReadFile(self.handle, buffer, len(buffer),
+                            ctypes.byref(count), None):
+                        error = ctypes.get_last_error()
+                        if error in (109, 233):
+                            return b""
+                        if error != 232:  # Recheck an empty pipe for disconnect.
+                            raise ctypes.WinError(error)
+                    elif count.value:
+                        return buffer.raw[:count.value]
+            self.closed.wait(0.005)
+        return b""
+
+    def write(self, data):
+        from ctypes import wintypes as w
+        if not data:
+            return 0
+        buffer = ctypes.create_string_buffer(bytes(data[:65536]), min(len(data), 65536))
+        deadline = time.monotonic() + 20
+        while True:
+            with self.lock:
+                if self.closed.is_set():
+                    raise EOFError("kernel pipe is closed")
+                count = w.DWORD()
+                if not self.kernel.WriteFile(
+                        self.handle, buffer, len(buffer), ctypes.byref(count), None):
+                    raise ctypes.WinError(ctypes.get_last_error())
+                if count.value:
+                    return count.value
+            if time.monotonic() >= deadline:
+                raise TimeoutError("timed out writing to kernel pipe")
+            self.closed.wait(0.005)
+
+    def close(self):
+        with self.lock:
+            if self.closed.is_set():
+                return
+            self.closed.set()
+            if not self.kernel.CloseHandle(self.handle):
+                raise ctypes.WinError(ctypes.get_last_error())
+
+
 class Peer:
     def __init__(self, descriptor, fragmented=False, features=("stdin_eof",)):
         self.session = uuid.uuid4().hex
@@ -89,7 +199,7 @@ class Peer:
         self.log = []
         self.closed = False
         if os.name == "nt":
-            self.file = open(descriptor["pipe"], "r+b", buffering=0)
+            self.file = WindowsPipe(descriptor["pipe"])
             self.socket = None
         else:
             self.socket = socket.socket(socket.AF_UNIX)
@@ -99,16 +209,20 @@ class Peer:
         self.reader.start()
         hello = frame(dict(lfortran_local_protocol=1,
             client_session=self.session, features=list(features)))
-        if fragmented:
-            for byte in hello:
-                self.write(bytes([byte]))
-        else:
-            self.write(hello)
-        ack = self.next()
-        assert ack["lfortran_local_protocol"] == 1, ack
-        assert ack["kernel_session"] == descriptor["kernel_session"], ack
-        assert ack["jupyter_protocol"] == "5.4", ack
-        self.kernel = ack["kernel_session"]
+        try:
+            if fragmented:
+                for byte in hello:
+                    self.write(bytes([byte]))
+            else:
+                self.write(hello)
+            ack = self.next()
+            assert ack["lfortran_local_protocol"] == 1, ack
+            assert ack["kernel_session"] == descriptor["kernel_session"], ack
+            assert ack["jupyter_protocol"] == "5.4", ack
+            self.kernel = ack["kernel_session"]
+        except BaseException:
+            self.close()
+            raise
 
     def read_exactly(self, size):
         data = b""
@@ -198,6 +312,7 @@ class Peer:
         if self.socket:
             self.socket.close()
         self.reader.join(timeout=2)
+        assert not self.reader.is_alive(), "peer reader did not stop"
 
     def __enter__(self):
         return self
@@ -476,6 +591,14 @@ end block""")
 
 
 def malformed(server):
+    if os.name == "nt":
+        # Close before hello, including before the listener accepts the handle.
+        # Its nonblocking reconnect/rearm state must not become a phantom peer.
+        for _ in range(8):
+            WindowsPipe(server.descriptor["pipe"]).close()
+        with server.peer(fragmented=True) as peer:
+            peer.wait("kernel_info_reply", peer.send("kernel_info_request"))
+
     def rejected(edit=None, raw=None, disconnect=False, correlated=False):
         with server.peer() as peer:
             message = None
