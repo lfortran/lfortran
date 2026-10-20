@@ -884,38 +884,57 @@ int64_t __fixtfdi_lf_impl(lf_float128 a) {
  * J. Math: sqrt, floor, ceiling, mod
  * ======================================================================== */
 
+/* Correctly rounded square root (round to nearest, ties to even).
+ * The significand is normalised to m in [2^112, 2^113), with a = m * 2^(e-112).
+ * Then N = m * 2^(114 + (e & 1)) and a = N * 2^(2E - 226), E = (e - (e & 1))/2,
+ * so sqrt(a) = sqrt(N) * 2^(E - 113). The integer square root q = isqrt(N)
+ * lies in [2^113, 2^114): its top 113 bits are the result significand, its
+ * lowest bit the round bit, and a nonzero remainder N - q^2 the sticky bit. */
 lf_float128 lf_f128_sqrt(lf_float128 a) {
     f128_parts p = f128_unpack(a);
-    if (p.is_nan || p.sign) return f128_make_nan();
-    if (p.is_zero) return a;
+    if (p.is_nan) {
+        a.bytes[13] |= 0x80;  /* quiet the NaN */
+        return a;
+    }
+    if (p.is_zero) return a;  /* sqrt(+-0) = +-0 */
+    if (p.sign) return f128_make_nan();
     if (p.is_inf) return a;
 
-    /* Newton-Raphson: x_{n+1} = (x_n + a/x_n) / 2
-     * Start from double sqrt, then refine. */
+    /* Normalise subnormal significands so that bit 112 is set. */
+    int shift = u128_clz(p.mant) - (127 - 112);
+    u128 m = u128_shl(p.mant, shift);
+    int32_t e = p.exp - shift;
+    int odd = (int)(e & 1);
+    int nshift = 114 + odd;
 
-    /* Initial guess from double */
-    double da = __trunctfdf2_lf_impl(a);
-    double dsqrt;
-    /* Use __builtin_sqrt if available, else manual Newton in double */
-    {
-        /* 2 Newton steps in double to get ~53 bits */
-        dsqrt = da;
-        /* rough initial: just use the double approximation */
-        /* We'll use the fp128 Newton-Raphson from here */
+    /* Bit-by-bit integer square root of N = m << nshift (at most 228 bits),
+     * taking two bits of N per step. The remainder stays below 2^116. */
+    u128 q = u128_zero(), rem = u128_zero();
+    for (int j = 113; j >= 0; j--) {
+        int k = 2 * j - nshift;
+        uint64_t two = 0;
+        if (k + 1 >= 0) two |= (uint64_t)u128_bit(m, k + 1) << 1;
+        if (k >= 0)     two |= (uint64_t)u128_bit(m, k);
+        rem = u128_or(u128_shl(rem, 2), u128_from_u64(two));
+        u128 t = u128_or(u128_shl(q, 2), u128_one());
+        q = u128_shl1(q);
+        if (u128_gte(rem, t)) {
+            rem = u128_sub(rem, t);
+            q = u128_or(q, u128_one());
+        }
     }
-    /* Better: start from exponent midpoint */
-    int32_t half_exp = (p.exp >> 1);
-    u128 half_mant   = u128_shl(u128_one(), 112);  /* 1.0 */
-    lf_float128 x    = f128_pack_parts(0, half_exp, half_mant);
 
-    /* Refine with Newton: x = (x + a/x) / 2, 7 iterations for 113+ bits */
-    lf_float128 two = f128_two();
-    for (int i = 0; i < 7; i++) {
-        lf_float128 ax = __divtf3_lf_impl(a, x);
-        lf_float128 s  = __addtf3_lf_impl(x, ax);
-        x = __divtf3_lf_impl(s, two);
+    int32_t res_exp = (e - odd) / 2;
+    int round_bit = (int)(u128_lo(q) & 1);
+    u128 mant = u128_shr1(q);
+    if (round_bit && (!u128_is_zero(rem) || (u128_lo(mant) & 1))) {
+        mant = u128_inc(mant);
+        if (u128_bit(mant, 113)) {
+            mant = u128_shr1(mant);
+            res_exp++;
+        }
     }
-    return x;
+    return f128_const(0, res_exp + 16383, u128_hi(mant), u128_lo(mant));
 }
 
 lf_float128 lf_f128_floor(lf_float128 a) {
