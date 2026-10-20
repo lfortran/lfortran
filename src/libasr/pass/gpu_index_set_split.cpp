@@ -74,6 +74,19 @@ public:
 
     // Walks a statement list in order, keeping the affine values of the
     // integer scalars assigned once, and calls `on_if` for every IF.
+    // A value is known only after its assignment on the same path: the
+    // values bound in a branch of an IF or a SELECT are forgotten when the
+    // branch ends, since the branch may not run (a LOCAL_INIT variable
+    // keeps its value from outside there) and the other branches do not
+    // see them.
+    void walk_branch(ASR::stmt_t **body, size_t n, GpuAffineBuilder &b,
+            const std::set<ASR::symbol_t*> &single,
+            const std::function<void(ASR::If_t*, GpuAffineBuilder&)> &on_if) {
+        std::map<ASR::symbol_t*, GpuAffine> outside = b.bindings;
+        walk(body, n, b, single, on_if);
+        b.bindings = outside;
+    }
+
     void walk(ASR::stmt_t **body, size_t n, GpuAffineBuilder &b,
             const std::set<ASR::symbol_t*> &single,
             const std::function<void(ASR::If_t*, GpuAffineBuilder&)> &on_if) {
@@ -95,8 +108,8 @@ public:
                 case ASR::stmtType::If: {
                     ASR::If_t *x = ASR::down_cast<ASR::If_t>(s);
                     on_if(x, b);
-                    walk(x->m_body, x->n_body, b, single, on_if);
-                    walk(x->m_orelse, x->n_orelse, b, single, on_if);
+                    walk_branch(x->m_body, x->n_body, b, single, on_if);
+                    walk_branch(x->m_orelse, x->n_orelse, b, single, on_if);
                     break;
                 }
                 case ASR::stmtType::Select: {
@@ -105,15 +118,17 @@ public:
                         if (ASR::is_a<ASR::CaseStmt_t>(*x->m_body[k])) {
                             ASR::CaseStmt_t *c = ASR::down_cast<ASR::CaseStmt_t>(
                                 x->m_body[k]);
-                            walk(c->m_body, c->n_body, b, single, on_if);
+                            walk_branch(c->m_body, c->n_body, b, single,
+                                on_if);
                         } else {
                             ASR::CaseStmt_Range_t *c =
                                 ASR::down_cast<ASR::CaseStmt_Range_t>(
                                     x->m_body[k]);
-                            walk(c->m_body, c->n_body, b, single, on_if);
+                            walk_branch(c->m_body, c->n_body, b, single,
+                                on_if);
                         }
                     }
-                    walk(x->m_default, x->n_default, b, single, on_if);
+                    walk_branch(x->m_default, x->n_default, b, single, on_if);
                     break;
                 }
                 case ASR::stmtType::BlockCall: {
@@ -174,7 +189,18 @@ public:
     }
 
     // Replaces each IF whose test has one value on the facts by the
-    // statements of the branch it takes.
+    // statements of the branch it takes. As in `walk`, the values bound in
+    // a branch are forgotten when it ends, except in the branch an IF
+    // always takes on the facts, which then runs on every path.
+    int fold_branch(ASR::stmt_t **&body, size_t &n, GpuAffineBuilder &b,
+            const std::set<ASR::symbol_t*> &single,
+            const GpuConstraints &facts, bool apply) {
+        std::map<ASR::symbol_t*, GpuAffine> outside = b.bindings;
+        int folded = fold(body, n, b, single, facts, apply);
+        b.bindings = outside;
+        return folded;
+    }
+
     int fold(ASR::stmt_t **&body, size_t &n, GpuAffineBuilder &b,
             const std::set<ASR::symbol_t*> &single,
             const GpuConstraints &facts, bool apply) {
@@ -201,10 +227,10 @@ public:
                     ASR::If_t *x = ASR::down_cast<ASR::If_t>(s);
                     int v = constant_value(x->m_test, b, facts);
                     if (v == -1) {
-                        folded += fold(x->m_body, x->n_body, b, single, facts,
-                            apply);
-                        folded += fold(x->m_orelse, x->n_orelse, b, single,
+                        folded += fold_branch(x->m_body, x->n_body, b, single,
                             facts, apply);
+                        folded += fold_branch(x->m_orelse, x->n_orelse, b,
+                            single, facts, apply);
                         out.push_back(al, s);
                         break;
                     }
@@ -225,18 +251,18 @@ public:
                         if (ASR::is_a<ASR::CaseStmt_t>(*x->m_body[k])) {
                             ASR::CaseStmt_t *c = ASR::down_cast<ASR::CaseStmt_t>(
                                 x->m_body[k]);
-                            folded += fold(c->m_body, c->n_body, b, single,
-                                facts, apply);
+                            folded += fold_branch(c->m_body, c->n_body, b,
+                                single, facts, apply);
                         } else {
                             ASR::CaseStmt_Range_t *c =
                                 ASR::down_cast<ASR::CaseStmt_Range_t>(
                                     x->m_body[k]);
-                            folded += fold(c->m_body, c->n_body, b, single,
-                                facts, apply);
+                            folded += fold_branch(c->m_body, c->n_body, b,
+                                single, facts, apply);
                         }
                     }
-                    folded += fold(x->m_default, x->n_default, b, single, facts,
-                        apply);
+                    folded += fold_branch(x->m_default, x->n_default, b, single,
+                        facts, apply);
                     out.push_back(al, s);
                     break;
                 }
