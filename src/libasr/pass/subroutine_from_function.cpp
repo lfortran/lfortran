@@ -425,7 +425,10 @@ public :
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t *x){
-        x->m_name = get_resolved_symbol(x->m_name);
+        ASR::symbol_t* actual = ASRUtils::get_actual_procedure(
+            ASRUtils::get_function(f_call_->m_name), f_call_->m_args,
+            f_call_->n_args, x->m_name);
+        x->m_name = actual ? actual : get_resolved_symbol(x->m_name);
         if(x->m_original_name) x->m_original_name = get_resolved_symbol(x->m_original_name);
         ASR::BaseExprReplacer<AllocateVarBasedOnFuncCall>::replace_FunctionCall(x);
     }
