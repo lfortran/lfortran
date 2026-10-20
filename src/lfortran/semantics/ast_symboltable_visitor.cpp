@@ -438,6 +438,16 @@ public:
         return ProcedureDeclaredLater::No;
     }
 
+    // Whether an interface body of a scoping unit being visited declares the
+    // procedure `name`, maybe after the statement being visited.
+    bool has_interface_body(const std::string &name) {
+        for (ContainedProcedureScope *procedures = contained_procedure_scope;
+                procedures; procedures = procedures->enclosing) {
+            if (procedures->has_interface_body(name)) return true;
+        }
+        return false;
+    }
+
     bool host_contains_procedure(SymbolTable *scope, const std::string &name) {
         for (ContainedProcedureScope *procedures = contained_procedure_scope;
                 procedures; procedures = procedures->enclosing) {

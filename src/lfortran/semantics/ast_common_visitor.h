@@ -7059,6 +7059,12 @@ public:
         return ProcedureDeclaredLater::No;
     }
 
+    // Whether an interface body of a scoping unit being visited declares the
+    // procedure `name`. Only the symbol table visitor overrides this, as above.
+    bool has_interface_body(const std::string &/*name*/) {
+        return false;
+    }
+
     // Whether `scope`, whose main program or procedure is not created yet,
     // is the scope of a host being visited that contains the procedure
     // `name`. Only the symbol table visitor overrides this, as above.
@@ -14185,6 +14191,17 @@ public:
                 type_declaration = existing;
             } else {
                 ASR::symbol_t *v = current_scope->resolve_symbol(func_name);
+                // Only a procedure defined in the file, if no unit declares the name later.
+                if (v && ASR::is_a<ASR::Function_t>(*v)
+                        && ASRUtils::get_FunctionType(v)->m_deftype
+                            == ASR::deftypeType::Implementation
+                        && static_cast<Derived&>(*this).procedure_declared_later(
+                            func_name) == ProcedureDeclaredLater::No
+                        && !static_cast<Derived&>(*this).has_interface_body(func_name)) {
+                    check_explicit_interface(v, func_name,
+                        "to be named in procedure(" + func_name + ")",
+                        sym_type->base.base.loc);
+                }
                 // A module procedure or an internal procedure may be defined
                 // after it is used as an interface. Then the name is not the
                 // specific intrinsic function, unless it has the INTRINSIC
