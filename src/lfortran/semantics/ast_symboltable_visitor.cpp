@@ -4456,6 +4456,23 @@ public:
             nullptr, nullptr, AST::None));
     }
 
+    // The declared type of a dummy argument in a conformance diagnostic; a
+    // dummy procedure is named by its interface, as it is declared.
+    static std::string trait_argument_type_spelling(const ASR::Variable_t &argument,
+            ASR::expr_t *expr) {
+        if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_pointer(argument.m_type))) {
+            std::string result = "procedure(";
+            if (argument.m_type_declaration) {
+                result += ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(argument.m_type_declaration));
+            }
+            result += ")";
+            if (ASRUtils::is_pointer(argument.m_type)) result += ", pointer";
+            return result;
+        }
+        return ASRUtils::type_to_str_with_kind(argument.m_type, expr);
+    }
+
     void check_trait_methods(ASR::Trait_t &trait, const Location &loc) {
         std::map<std::string, ASR::Function_t*> methods;
         for (ASR::symbol_t *member : checked_trait_hierarchy(trait, loc).members) {
@@ -5698,10 +5715,9 @@ public:
                     parameters, *requirement, binding, associated, loc)) {
                 trait_error("argument '" + std::string(required->m_name)
                     + "' does not match trait method '" + requirement->m_name
-                    + "': expected " + ASRUtils::type_to_str_with_kind(
-                        required->m_type, required_arg)
-                    + ", got " + ASRUtils::type_to_str_with_kind(
-                        actual->m_type, procedure->m_args[i]), loc);
+                    + "': expected " + trait_argument_type_spelling(*required, required_arg)
+                    + ", got " + trait_argument_type_spelling(*actual,
+                        procedure->m_args[i]), loc);
             }
             if (required->m_intent != actual->m_intent
                     || required->m_presence != actual->m_presence

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-continue_compilation_traits_procedure_argument-859ae0e",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/continue_compilation_traits_procedure_argument.f90",
+    "infile_hash": "8c11df92e404f0e18b3759acba6d2e774f3e8fa524db98ea8e7c8c8b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-continue_compilation_traits_procedure_argument-859ae0e.stderr",
+    "stderr_hash": "8b264d8926c94e23e4db8f4c519cf6a4f3034deb4fb1b6ed116af376",
+    "returncode": 1
+}

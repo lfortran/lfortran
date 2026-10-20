@@ -6063,6 +6063,10 @@ filename = "errors/continue_compilation_traits_kind_sets_internal_name.f90"
 semantics_only_cc = true
 
 [[test]]
+filename = "errors/continue_compilation_traits_procedure_argument.f90"
+semantics_only_cc = true
+
+[[test]]
 filename = "../integration_tests/traits_generic_requirement_01.f90"
 ast = true
 ast_f90 = true
