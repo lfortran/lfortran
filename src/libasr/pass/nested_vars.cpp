@@ -1500,6 +1500,12 @@ public:
         stmts.push_back(assign);
     }
 
+    void hoist_loop_bounds(ASR::do_loop_head_t &head, std::vector<ASR::stmt_t*> &stmts) {
+        hoist_loop_bound(head.m_start, stmts);
+        hoist_loop_bound(head.m_end, stmts);
+        hoist_loop_bound(head.m_increment, stmts);
+    }
+
     // do while (.true.); tmp = test; if (.not. tmp) exit; body; end do
     void move_test_into_body(ASR::WhileLoop_t &loop) {
         // The exit would skip an else part
@@ -1533,10 +1539,12 @@ public:
     void split_loop_header(ASR::stmt_t **&m_body, size_t &n_body, size_t i) {
         std::vector<ASR::stmt_t*> stmts;
         if (ASR::is_a<ASR::DoLoop_t>(*m_body[i])) {
-            ASR::do_loop_head_t &head = ASR::down_cast<ASR::DoLoop_t>(m_body[i])->m_head;
-            hoist_loop_bound(head.m_start, stmts);
-            hoist_loop_bound(head.m_end, stmts);
-            hoist_loop_bound(head.m_increment, stmts);
+            hoist_loop_bounds(ASR::down_cast<ASR::DoLoop_t>(m_body[i])->m_head, stmts);
+        } else if (ASR::is_a<ASR::DoConcurrentLoop_t>(*m_body[i])) {
+            ASR::DoConcurrentLoop_t *loop = ASR::down_cast<ASR::DoConcurrentLoop_t>(m_body[i]);
+            for (size_t j=0; j<loop->n_head; j++) {
+                hoist_loop_bounds(loop->m_head[j], stmts);
+            }
         } else if (ASR::is_a<ASR::WhileLoop_t>(*m_body[i])) {
             move_test_into_body(*ASR::down_cast<ASR::WhileLoop_t>(m_body[i]));
         }
