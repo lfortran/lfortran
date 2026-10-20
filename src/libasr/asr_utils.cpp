@@ -2960,6 +2960,13 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
                 matched_subrout_name = mangled_name;
             }
             ASR::symbol_t *a_name = curr_scope->get_symbol(matched_subrout_name);
+            // When another procedure took the name, use a numbered name that is free or refers to `proc`.
+            std::string taken_name = matched_subrout_name;
+            for( int i = 1; a_name != nullptr &&
+                    ASRUtils::symbol_get_past_external(a_name) != proc; i++ ) {
+                matched_subrout_name = taken_name + std::to_string(i);
+                a_name = curr_scope->get_symbol(matched_subrout_name);
+            }
             ASR::symbol_t *proc_owner = ASRUtils::get_asr_owner(proc);
             if( a_name == nullptr && matched_subrout_name == subrout_name &&
                     !(proc_owner && (ASR::is_a<ASR::Module_t>(*proc_owner) ||
