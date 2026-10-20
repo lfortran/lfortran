@@ -23,6 +23,7 @@ const GpuLoopTransformName gpu_loop_transform_names[] = {
     {"swap", GpuLoopSwap},
     {"split", GpuLoopSplit},
     {"jam", GpuLoopJam},
+    {"skew", GpuLoopSkew},
 };
 
 // The transformations a value of `--gpu-loop-transforms` selects, or
@@ -556,6 +557,15 @@ ASR::asr_t* GpuDuplicator::duplicate_BlockCall(ASR::BlockCall_t *x) {
     outer->add_symbol(name, nbs);
     if (added) added->push_back({outer, name});
     return ASR::make_BlockCall_t(al, x->base.base.loc, x->m_label, nbs);
+}
+
+ASR::asr_t* GpuDuplicator::duplicate_OMPRegion(ASR::OMPRegion_t *x) {
+    ASR::asr_t *r = ASR::BaseExprStmtDuplicator<GpuDuplicator>::
+        duplicate_OMPRegion(x);
+    if (rarely_run && rarely_run->count(&x->base)) {
+        rarely_run->insert(ASR::down_cast<ASR::stmt_t>(r));
+    }
+    return r;
 }
 
 void GpuDuplicator::duplicate_body(ASR::stmt_t **body, size_t n,
