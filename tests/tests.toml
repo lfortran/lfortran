@@ -4134,6 +4134,27 @@ options = "--fixed-form"
 ast_json = true
 
 [[test]]
+filename = "json_loc_if.f90"
+ast_json = true
+
+[[test]]
+filename = "json_loc_where.f90"
+ast_json = true
+
+[[test]]
+filename = "json_loc_else_where.f90"
+ast_json = true
+
+[[test]]
+filename = "json_loc_if_where_asr.f90"
+asr_json = true
+
+[[test]]
+filename = "json_loc_if_where_fixed.f"
+options = "--fixed-form"
+ast_json = true
+
+[[test]]
 filename = "redeclaration1.f90"
 asr_implicit_typing = true
 

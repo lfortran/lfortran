@@ -1,0 +1,466 @@
+{
+    "node": "TranslationUnit",
+    "fields": {
+        "items": [
+            {
+                "node": "Program",
+                "fields": {
+                    "name": "p",
+                    "trivia": [],
+                    "items": [
+                        {
+                            "node": "If",
+                            "fields": {
+                                "label": 0,
+                                "stmt_name": [],
+                                "test": {
+                                    "node": "Name",
+                                    "fields": {
+                                        "id": "a",
+                                        "member": []
+                                    },
+                                    "loc": {
+                                        "first": 14,
+                                        "last": 14,
+                                        "first_filename": "tests/json_loc_if.f90",
+                                        "first_line": 2,
+                                        "first_column": 5,
+                                        "last_filename": "tests/json_loc_if.f90",
+                                        "last_line": 2,
+                                        "last_column": 5
+                                    }
+                                },
+                                "body": [
+                                    {
+                                        "node": "Continue",
+                                        "fields": {
+                                            "label": 0,
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 24,
+                                            "last": 31,
+                                            "first_filename": "tests/json_loc_if.f90",
+                                            "first_line": 3,
+                                            "first_column": 3,
+                                            "last_filename": "tests/json_loc_if.f90",
+                                            "last_line": 3,
+                                            "last_column": 10
+                                        }
+                                    }
+                                ],
+                                "orelse": [
+                                    {
+                                        "node": "If",
+                                        "fields": {
+                                            "label": 0,
+                                            "stmt_name": [],
+                                            "test": {
+                                                "node": "Name",
+                                                "fields": {
+                                                    "id": "b",
+                                                    "member": []
+                                                },
+                                                "loc": {
+                                                    "first": 42,
+                                                    "last": 42,
+                                                    "first_filename": "tests/json_loc_if.f90",
+                                                    "first_line": 4,
+                                                    "first_column": 10,
+                                                    "last_filename": "tests/json_loc_if.f90",
+                                                    "last_line": 4,
+                                                    "last_column": 10
+                                                }
+                                            },
+                                            "body": [
+                                                {
+                                                    "node": "Continue",
+                                                    "fields": {
+                                                        "label": 0,
+                                                        "trivia": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 52,
+                                                        "last": 59,
+                                                        "first_filename": "tests/json_loc_if.f90",
+                                                        "first_line": 5,
+                                                        "first_column": 3,
+                                                        "last_filename": "tests/json_loc_if.f90",
+                                                        "last_line": 5,
+                                                        "last_column": 10
+                                                    }
+                                                }
+                                            ],
+                                            "orelse": [
+                                                {
+                                                    "node": "If",
+                                                    "fields": {
+                                                        "label": 0,
+                                                        "stmt_name": [],
+                                                        "test": {
+                                                            "node": "Name",
+                                                            "fields": {
+                                                                "id": "c",
+                                                                "member": []
+                                                            },
+                                                            "loc": {
+                                                                "first": 69,
+                                                                "last": 69,
+                                                                "first_filename": "tests/json_loc_if.f90",
+                                                                "first_line": 6,
+                                                                "first_column": 9,
+                                                                "last_filename": "tests/json_loc_if.f90",
+                                                                "last_line": 6,
+                                                                "last_column": 9
+                                                            }
+                                                        },
+                                                        "body": [
+                                                            {
+                                                                "node": "Continue",
+                                                                "fields": {
+                                                                    "label": 0,
+                                                                    "trivia": []
+                                                                },
+                                                                "loc": {
+                                                                    "first": 79,
+                                                                    "last": 86,
+                                                                    "first_filename": "tests/json_loc_if.f90",
+                                                                    "first_line": 7,
+                                                                    "first_column": 3,
+                                                                    "last_filename": "tests/json_loc_if.f90",
+                                                                    "last_line": 7,
+                                                                    "last_column": 10
+                                                                }
+                                                            }
+                                                        ],
+                                                        "orelse": [
+                                                            {
+                                                                "node": "If",
+                                                                "fields": {
+                                                                    "label": 0,
+                                                                    "stmt_name": [],
+                                                                    "test": {
+                                                                        "node": "Name",
+                                                                        "fields": {
+                                                                            "id": "d",
+                                                                            "member": []
+                                                                        },
+                                                                        "loc": {
+                                                                            "first": 97,
+                                                                            "last": 97,
+                                                                            "first_filename": "tests/json_loc_if.f90",
+                                                                            "first_line": 8,
+                                                                            "first_column": 10,
+                                                                            "last_filename": "tests/json_loc_if.f90",
+                                                                            "last_line": 8,
+                                                                            "last_column": 10
+                                                                        }
+                                                                    },
+                                                                    "body": [
+                                                                        {
+                                                                            "node": "Continue",
+                                                                            "fields": {
+                                                                                "label": 0,
+                                                                                "trivia": []
+                                                                            },
+                                                                            "loc": {
+                                                                                "first": 107,
+                                                                                "last": 114,
+                                                                                "first_filename": "tests/json_loc_if.f90",
+                                                                                "first_line": 9,
+                                                                                "first_column": 3,
+                                                                                "last_filename": "tests/json_loc_if.f90",
+                                                                                "last_line": 9,
+                                                                                "last_column": 10
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "orelse": [
+                                                                        {
+                                                                            "node": "Continue",
+                                                                            "fields": {
+                                                                                "label": 0,
+                                                                                "trivia": []
+                                                                            },
+                                                                            "loc": {
+                                                                                "first": 123,
+                                                                                "last": 130,
+                                                                                "first_filename": "tests/json_loc_if.f90",
+                                                                                "first_line": 11,
+                                                                                "first_column": 3,
+                                                                                "last_filename": "tests/json_loc_if.f90",
+                                                                                "last_line": 11,
+                                                                                "last_column": 10
+                                                                            }
+                                                                        }
+                                                                    ],
+                                                                    "single": false,
+                                                                    "if_trivia": [],
+                                                                    "else_trivia": [],
+                                                                    "trivia": []
+                                                                },
+                                                                "loc": {
+                                                                    "first": 93,
+                                                                    "last": 137,
+                                                                    "first_filename": "tests/json_loc_if.f90",
+                                                                    "first_line": 8,
+                                                                    "first_column": 6,
+                                                                    "last_filename": "tests/json_loc_if.f90",
+                                                                    "last_line": 12,
+                                                                    "last_column": 6
+                                                                }
+                                                            }
+                                                        ],
+                                                        "single": false,
+                                                        "if_trivia": [],
+                                                        "else_trivia": [],
+                                                        "trivia": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 61,
+                                                        "last": 137,
+                                                        "first_filename": "tests/json_loc_if.f90",
+                                                        "first_line": 6,
+                                                        "first_column": 1,
+                                                        "last_filename": "tests/json_loc_if.f90",
+                                                        "last_line": 12,
+                                                        "last_column": 6
+                                                    }
+                                                }
+                                            ],
+                                            "single": false,
+                                            "if_trivia": [],
+                                            "else_trivia": [],
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 38,
+                                            "last": 137,
+                                            "first_filename": "tests/json_loc_if.f90",
+                                            "first_line": 4,
+                                            "first_column": 6,
+                                            "last_filename": "tests/json_loc_if.f90",
+                                            "last_line": 12,
+                                            "last_column": 6
+                                        }
+                                    }
+                                ],
+                                "single": false,
+                                "if_trivia": [],
+                                "else_trivia": [],
+                                "trivia": []
+                            },
+                            "loc": {
+                                "first": 10,
+                                "last": 137,
+                                "first_filename": "tests/json_loc_if.f90",
+                                "first_line": 2,
+                                "first_column": 1,
+                                "last_filename": "tests/json_loc_if.f90",
+                                "last_line": 12,
+                                "last_column": 6
+                            }
+                        },
+                        {
+                            "node": "If",
+                            "fields": {
+                                "label": 0,
+                                "stmt_name": [],
+                                "test": {
+                                    "node": "Name",
+                                    "fields": {
+                                        "id": "a",
+                                        "member": []
+                                    },
+                                    "loc": {
+                                        "first": 143,
+                                        "last": 143,
+                                        "first_filename": "tests/json_loc_if.f90",
+                                        "first_line": 13,
+                                        "first_column": 5,
+                                        "last_filename": "tests/json_loc_if.f90",
+                                        "last_line": 13,
+                                        "last_column": 5
+                                    }
+                                },
+                                "body": [
+                                    {
+                                        "node": "Continue",
+                                        "fields": {
+                                            "label": 0,
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 153,
+                                            "last": 160,
+                                            "first_filename": "tests/json_loc_if.f90",
+                                            "first_line": 14,
+                                            "first_column": 3,
+                                            "last_filename": "tests/json_loc_if.f90",
+                                            "last_line": 14,
+                                            "last_column": 10
+                                        }
+                                    }
+                                ],
+                                "orelse": [
+                                    {
+                                        "node": "If",
+                                        "fields": {
+                                            "label": 0,
+                                            "stmt_name": [],
+                                            "test": {
+                                                "node": "Name",
+                                                "fields": {
+                                                    "id": "b",
+                                                    "member": []
+                                                },
+                                                "loc": {
+                                                    "first": 170,
+                                                    "last": 170,
+                                                    "first_filename": "tests/json_loc_if.f90",
+                                                    "first_line": 15,
+                                                    "first_column": 9,
+                                                    "last_filename": "tests/json_loc_if.f90",
+                                                    "last_line": 15,
+                                                    "last_column": 9
+                                                }
+                                            },
+                                            "body": [
+                                                {
+                                                    "node": "Continue",
+                                                    "fields": {
+                                                        "label": 0,
+                                                        "trivia": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 180,
+                                                        "last": 187,
+                                                        "first_filename": "tests/json_loc_if.f90",
+                                                        "first_line": 16,
+                                                        "first_column": 3,
+                                                        "last_filename": "tests/json_loc_if.f90",
+                                                        "last_line": 16,
+                                                        "last_column": 10
+                                                    }
+                                                }
+                                            ],
+                                            "orelse": [
+                                                {
+                                                    "node": "If",
+                                                    "fields": {
+                                                        "label": 0,
+                                                        "stmt_name": [],
+                                                        "test": {
+                                                            "node": "Name",
+                                                            "fields": {
+                                                                "id": "c",
+                                                                "member": []
+                                                            },
+                                                            "loc": {
+                                                                "first": 197,
+                                                                "last": 197,
+                                                                "first_filename": "tests/json_loc_if.f90",
+                                                                "first_line": 17,
+                                                                "first_column": 9,
+                                                                "last_filename": "tests/json_loc_if.f90",
+                                                                "last_line": 17,
+                                                                "last_column": 9
+                                                            }
+                                                        },
+                                                        "body": [
+                                                            {
+                                                                "node": "Continue",
+                                                                "fields": {
+                                                                    "label": 0,
+                                                                    "trivia": []
+                                                                },
+                                                                "loc": {
+                                                                    "first": 207,
+                                                                    "last": 214,
+                                                                    "first_filename": "tests/json_loc_if.f90",
+                                                                    "first_line": 18,
+                                                                    "first_column": 3,
+                                                                    "last_filename": "tests/json_loc_if.f90",
+                                                                    "last_line": 18,
+                                                                    "last_column": 10
+                                                                }
+                                                            }
+                                                        ],
+                                                        "orelse": [],
+                                                        "single": false,
+                                                        "if_trivia": [],
+                                                        "else_trivia": [],
+                                                        "trivia": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 189,
+                                                        "last": 221,
+                                                        "first_filename": "tests/json_loc_if.f90",
+                                                        "first_line": 17,
+                                                        "first_column": 1,
+                                                        "last_filename": "tests/json_loc_if.f90",
+                                                        "last_line": 19,
+                                                        "last_column": 6
+                                                    }
+                                                }
+                                            ],
+                                            "single": false,
+                                            "if_trivia": [],
+                                            "else_trivia": [],
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 162,
+                                            "last": 221,
+                                            "first_filename": "tests/json_loc_if.f90",
+                                            "first_line": 15,
+                                            "first_column": 1,
+                                            "last_filename": "tests/json_loc_if.f90",
+                                            "last_line": 19,
+                                            "last_column": 6
+                                        }
+                                    }
+                                ],
+                                "single": false,
+                                "if_trivia": [],
+                                "else_trivia": [],
+                                "trivia": []
+                            },
+                            "loc": {
+                                "first": 139,
+                                "last": 221,
+                                "first_filename": "tests/json_loc_if.f90",
+                                "first_line": 13,
+                                "first_column": 1,
+                                "last_filename": "tests/json_loc_if.f90",
+                                "last_line": 19,
+                                "last_column": 6
+                            }
+                        }
+                    ],
+                    "contains": []
+                },
+                "loc": {
+                    "first": 0,
+                    "last": 233,
+                    "first_filename": "tests/json_loc_if.f90",
+                    "first_line": 1,
+                    "first_column": 1,
+                    "last_filename": "tests/json_loc_if.f90",
+                    "last_line": 20,
+                    "last_column": 11
+                }
+            }
+        ]
+    },
+    "loc": {
+        "first": 0,
+        "last": 233,
+        "first_filename": "tests/json_loc_if.f90",
+        "first_line": 1,
+        "first_column": 1,
+        "last_filename": "tests/json_loc_if.f90",
+        "last_line": 20,
+        "last_column": 11
+    }
+}
