@@ -691,17 +691,26 @@ class RawKernel:
                         status("busy", message)
                         code = message["content"]["code"].strip()
                         error = code == "reply-error-only"
-                        if not error:
+                        explicit_status = {
+                            "reply-aborted": "aborted", "idle-aborted": "aborted",
+                            "unknown-status": "surprise", "invalid-status": 42,
+                            "missing-status": None,
+                        }
+                        if not error and code not in explicit_status:
                             send("iopub", "execute_result", {"execution_count": 1,
                                 "data": {"text/plain": "901"}, "metadata": {}}, message, [b"result"])
                         content = {"status": "error", "execution_count": 1,
                             "ename": "FixtureError", "evalue": "shell-only failure",
                             "traceback": []} if error else {
                                 "status": "ok", "execution_count": 1, "user_expressions": {}}
+                        if code in explicit_status:
+                            content = {"execution_count": 1}
+                            if code != "missing-status":
+                                content["status"] = explicit_status[code]
                         reply = lambda message=message, route=route, content=content: send("shell", "execute_reply",
                             content, message, route)
                         idle = lambda message=message: status("idle", message)
-                        if code == "reply-first":
+                        if code in ("reply-first", "reply-aborted"):
                             reply()
                             callback = idle
                         else:
@@ -740,6 +749,12 @@ def wire_bridge(executable, root):
         terminal(executable, fixture.path, "reply-first\nidle-first\nreply-error-only\n",
             ["901", "Independent wire fixture", "FixtureError: shell-only failure",
              "submitting without completeness assistance"], root)
+        result = terminal(executable, fixture.path,
+            "reply-aborted\nidle-aborted\nunknown-status\ninvalid-status\nmissing-status\n",
+            ["cell aborted; not executed", "execution outcome unknown"], root)
+        assert result.stderr.count("cell aborted; not executed") == 2, result.stderr
+        assert result.stderr.count("invalid execute reply status; execution outcome unknown") == 3, (
+            result.stderr)
         process, output, descriptor = bridge_start(executable, fixture.path, root)
         local = json.loads(descriptor.read_text())
         a, b = Peer(local), Peer(local)

@@ -157,6 +157,11 @@ that fence makes the outcome unknown/dead, including fatal `STOP`, runtime
 termination, signal or nonrecoverable JIT failure. Never fabricate success or
 automatically resend such an execution.
 
+Completion is not necessarily success: the terminal interprets the explicit
+reply status, reports `aborted` as a cell not executed, and reports an invalid
+or missing status as an unknown outcome. No-output cells are not assumed
+successful merely because idle arrived.
+
 ### Supported request policies
 
 * `execute_request`: `silent`, `store_history`, `allow_stdin`, and `stop_on_error`

@@ -119,7 +119,8 @@ ClientEvent client_event(const std::string &envelope) {
         result.text = optional_string(c, "ename") + ": " + optional_string(c, "evalue");
     if (result.type == "execute_reply") {
         result.text.clear();
-        if (optional_string(c, "status") == "error")
+        result.status = optional_string(c, "status");
+        if (result.status == "error")
             result.text = optional_string(c, "ename") + ": " + optional_string(c, "evalue");
     }
     if (result.type == "kernel_info_reply")

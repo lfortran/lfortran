@@ -67,7 +67,7 @@ class TerminalSession {
     bool reply = false, idle = false, complete_ready = false, is_complete = true;
     bool info_ready = false;
     bool completeness_notice = false, published_error = false;
-    std::string reply_error;
+    std::string reply_error, reply_status;
     std::string rendered;
     std::vector<std::pair<bool, std::string>> rendered_parts;
 
@@ -170,6 +170,7 @@ class TerminalSession {
         if (own && event.parent_id == waiting && event.type == "execute_reply") {
             reply = true;
             reply_error = event.text;
+            reply_status = event.status;
         }
         if (own && event.parent_id == waiting && event.type == "error")
             published_error = true;
@@ -259,15 +260,20 @@ public:
             reply = idle = false;
             published_error = false;
             reply_error.clear();
+            reply_status.clear();
             waiting = client.request("execute_request", "{\"code\":" + json_string(code) +
                 ",\"silent\":false,\"store_history\":true,\"allow_stdin\":true,"
                 "\"stop_on_error\":true,\"user_expressions\":{},\"lfortran_verbose\":" +
                 (verbose ? "true" : "false") + "}");
             while (!reply || !idle) { pump(100); flush(); }
-            if (!published_error && !reply_error.empty()) {
-                append(safe.filter(reply_error) + "\n", true);
-                flush();
-            }
+            if (reply_status == "aborted")
+                append("cell aborted; not executed\n", true);
+            else if (reply_status != "ok" && reply_status != "error")
+                append("invalid execute reply status; execution outcome unknown\n", true);
+            else if (reply_status == "error" && !published_error)
+                append(reply_error.empty() ? "cell failed\n" :
+                    safe.filter(reply_error) + "\n", true);
+            flush();
             waiting.clear();
         }
     }
