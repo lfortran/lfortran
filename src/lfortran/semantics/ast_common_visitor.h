@@ -17085,6 +17085,28 @@ public:
         return nullptr;
     }
 
+    // A function reference cannot resolve to a specific subroutine: fall back to the intrinsic (-1) or report it.
+    int check_function_specific(int idx, const ASR::GenericProcedure_t &g,
+            const AST::FuncCallOrArray_t &x) {
+        if (idx == -1) {
+            return idx;
+        }
+        ASR::Function_t *specific = ASRUtils::get_function(g.m_procs[idx]);
+        if (specific == nullptr || specific->m_return_var != nullptr) {
+            return idx;
+        }
+        std::string name = to_lower(x.m_func);
+        if (x.n_member == 0 && (intrinsic_procedures.is_intrinsic(name)
+                || is_intrinsic_registry_function(name))) {
+            return -1;
+        }
+        diag.add(Diagnostic("the generic '" + name + "' is referenced as a function, "
+            "but its specific procedure '" + std::string(specific->m_name)
+            + "' is a subroutine", Level::Error, Stage::Semantic,
+            {Label("a subroutine must be called with a CALL statement", {x.base.base.loc})}));
+        throw SemanticAbort();
+    }
+
     ASR::asr_t* symbol_resolve_external_generic_procedure_util(const Location &loc,
         int idx, ASR::symbol_t *v, Vec<ASR::call_arg_t>& args,
         ASR::GenericProcedure_t *g, ASR::ExternalSymbol_t *p) {
@@ -17190,6 +17212,7 @@ public:
                         throw SemanticAbort();
                     },
                     false);
+        idx = check_function_specific(idx, *g, x);
         if( idx == -1 ) {
             // if no GenericProcedure matches, we try matching it with
             // StructConstructor first, we do this before trying an intrinsic
@@ -17350,6 +17373,7 @@ public:
                             throw SemanticAbort();
                         },
                     false, is_dt_present);
+            idx = check_function_specific(idx, *p, x);
             if( idx == -1 ) {
                 ASR::symbol_t* tmp_v = current_scope->resolve_symbol(to_lower(x.m_func));
                 if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
