@@ -325,7 +325,9 @@ public:
 
     ASR::stmt_t *try_split(SymbolTable *scope, ASR::stmt_t *stmt) {
         GpuLoopNest nest;
-        if (!gpu_loop_nest(stmt, nest)) return nullptr;
+        if (gpu_rarely_run(stmt) || !gpu_loop_nest(stmt, nest)) {
+            return nullptr;
+        }
         size_t rank = nest.rank();
         if (rank < 1 || rank > 2) return nullptr;
         ASR::DoLoop_t *inner = nest.innermost();

@@ -1775,6 +1775,8 @@ public:
         for (ASR::expr_t *e : checks) {
             cond = b.And(cond, b.GtE(e, gpu_i32(al, loc, 0)));
         }
+        gpu_mark_rarely_run(body[i]);
+        gpu_mark_rarely_run(body[i + 1]);
         ASR::stmt_t *result = b.If(cond, fused_stmts, original);
         if (!hoisted_before.empty()) {
             ASR::stmt_t *outer = loop_stmts.back();
@@ -1791,6 +1793,7 @@ public:
 
 void pass_gpu_loop_fusion(Allocator &al, ASR::TranslationUnit_t &unit,
         const PassOptions &pass_options) {
+    gpu_rarely_run_clear();
     if (!gpu_loop_transforms_apply(pass_options)
             || !gpu_loop_transform_enabled(pass_options, GpuLoopFuse)) {
         return;

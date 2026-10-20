@@ -40,6 +40,16 @@ bool gpu_loop_transforms_valid(const std::string &value,
 // loops as written.
 bool gpu_loop_transforms_apply(const PassOptions &pass_options);
 
+// The parallel loops a transformation keeps for an execution that rarely
+// happens (the original loops of a fusion, which run in the last iteration
+// of the DO loops around them only): the transformations after it leave
+// them as written, so that the offload pipeline still recognizes, for
+// example, that they assign an array whole and need not copy it to the
+// device first. The fusion pass, which runs first, starts the list afresh.
+void gpu_rarely_run_clear();
+void gpu_mark_rarely_run(ASR::stmt_t *loop);
+bool gpu_rarely_run(ASR::stmt_t *loop);
+
 // A `do concurrent` nest (or an offloaded `!$omp parallel do`) that the
 // dispatch assigned to the device: a ParallelDo OMPRegion whose body is
 // `collapse` perfectly nested DO loops of unit step.
