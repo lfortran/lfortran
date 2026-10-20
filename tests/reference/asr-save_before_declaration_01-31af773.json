@@ -1,0 +1,13 @@
+{
+    "basename": "asr-save_before_declaration_01-31af773",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/save_before_declaration_01.f90",
+    "infile_hash": "d8eb10bdd5c5d3e42ecbe6d6130a583d0397a89d01961e1dcb2edccd",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-save_before_declaration_01-31af773.stderr",
+    "stderr_hash": "aef6fa7f75e170694f1631953e478e8d1c32413a3562cd4d61979ec8",
+    "returncode": 1
+}
