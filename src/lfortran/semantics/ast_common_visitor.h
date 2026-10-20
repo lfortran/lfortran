@@ -3843,8 +3843,15 @@ public:
             void visit_StringLen(const ASR::StringLen_t &/*x*/) {
             }
 
-            // An inquiry that folds to a constant, such as `kind`, `huge` or
-            // `len` of a fixed-length string, reads nothing at run time.
+            void visit_ArrayRank(const ASR::ArrayRank_t &/*x*/) {
+            }
+
+            // Only the value is evaluated: a constant, or the address for `loc`.
+            void visit_TypeInquiry(const ASR::TypeInquiry_t &x) {
+                this->visit_expr(*x.m_value);
+            }
+
+            // An intrinsic that folds to a constant reads nothing at run time.
             void visit_IntrinsicElementalFunction(
                     const ASR::IntrinsicElementalFunction_t &x) {
                 if (x.m_value == nullptr) {
