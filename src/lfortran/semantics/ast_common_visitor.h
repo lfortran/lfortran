@@ -3708,8 +3708,8 @@ public:
 	}
     }
 
-    // `e` without the parentheses around it. The parser keeps them only
-    // around a designator, where they make it an expression.
+    // `e` without the parentheses around it. The parser keeps them around a
+    // name, an array element or section and a function reference.
     static AST::expr_t* skip_parentheses(AST::expr_t* e) {
         while (AST::is_a<AST::Parenthesis_t>(*e)) {
             e = AST::down_cast<AST::Parenthesis_t>(e)->m_operand;
