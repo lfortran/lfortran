@@ -167,7 +167,10 @@ bool gpu_expr_duplicable(ASR::expr_t *e);
 // BLOCKs, keyed by gpu_array_key for arrays. `bases`, when given, also
 // receives the variable each assigned designator starts from (`x` for
 // `x`, `x(k)`, `x%c` or `x%a(k)%c`): an expression reading that variable
-// may evaluate differently afterwards.
+// may evaluate differently afterwards. The actual arguments of a function
+// whose dummies are not INTENT(IN) and an internal file written count as
+// assigned; any statement that may define a variable otherwise (a
+// subroutine call, input, an allocation, IOSTAT=, ...) sets `unknown`.
 void gpu_collect_assigned(ASR::stmt_t **body, size_t n,
     std::set<ASR::symbol_t*> &scalars, std::set<std::string> &arrays,
     bool &unknown, std::set<ASR::symbol_t*> *bases = nullptr);

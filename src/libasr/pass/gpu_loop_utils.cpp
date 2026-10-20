@@ -565,35 +565,92 @@ public:
         if (x.m_head.m_v) target(x.m_head.m_v);
         ASRUtils::BlockBodyWalkVisitor<AssignedCollector>::visit_DoLoop(x);
     }
-    void visit_SubroutineCall(const ASR::SubroutineCall_t &) {
-        unknown = true;
+    // Statements are an allow-list: a kind not modeled here (a subroutine
+    // call, input, an allocation, a pointer association, an inquiry, an
+    // intrinsic subroutine, ...) may define variables that no assignment
+    // target names.
+    void visit_stmt(const ASR::stmt_t &x) {
+        switch (x.type) {
+            case ASR::stmtType::Assignment:
+            case ASR::stmtType::DoLoop:
+            case ASR::stmtType::WhileLoop:
+            case ASR::stmtType::If:
+            case ASR::stmtType::Select:
+            case ASR::stmtType::BlockCall:
+            case ASR::stmtType::OMPRegion:
+            case ASR::stmtType::Exit:
+            case ASR::stmtType::Cycle:
+            case ASR::stmtType::Return:
+            case ASR::stmtType::GoTo:
+            case ASR::stmtType::GoToTarget:
+            case ASR::stmtType::Stop:
+            case ASR::stmtType::ErrorStop:
+            case ASR::stmtType::Assert:
+            case ASR::stmtType::Print:
+                break;
+            case ASR::stmtType::FileWrite: {
+                const ASR::FileWrite_t &w =
+                    *ASR::down_cast<const ASR::FileWrite_t>(&x);
+                // IOSTAT=, IOMSG= and ID= are defined by the statement.
+                if (w.m_iostat || w.m_iomsg || w.m_id) {
+                    unknown = true;
+                    return;
+                }
+                // An internal file is assigned.
+                if (w.m_unit && ASRUtils::is_character(
+                        *ASRUtils::expr_type(w.m_unit))) {
+                    target(w.m_unit);
+                }
+                break;
+            }
+            default:
+                unknown = true;
+                return;
+        }
+        ASRUtils::BlockBodyWalkVisitor<AssignedCollector>::visit_stmt(x);
     }
-    void visit_Allocate(const ASR::Allocate_t &) { unknown = true; }
-    void visit_ExplicitDeallocate(const ASR::ExplicitDeallocate_t &) {
-        unknown = true;
-    }
-    void visit_ImplicitDeallocate(const ASR::ImplicitDeallocate_t &) {
-        unknown = true;
-    }
-    void visit_IntrinsicImpureSubroutine(
-            const ASR::IntrinsicImpureSubroutine_t &) {
-        unknown = true;
-    }
-    void visit_FileRead(const ASR::FileRead_t &) { unknown = true; }
-    // A pointer associated here makes later writes through it change its
-    // target, which the targets of those writes do not name.
-    void visit_Associate(const ASR::Associate_t &) { unknown = true; }
-    void visit_OMPRegion(const ASR::OMPRegion_t &x) {
-        ASRUtils::BlockBodyWalkVisitor<AssignedCollector>::visit_OMPRegion(x);
-    }
+    // A function may define each actual argument whose dummy is not
+    // INTENT(IN) (pure functions have none). A pointer dummy may define
+    // its target, which the actual does not name.
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         ASR::symbol_t *f = ASRUtils::symbol_get_past_external(x.m_name);
-        if (ASR::is_a<ASR::Function_t>(*f)) {
+        if (!ASR::is_a<ASR::Function_t>(*f) || x.m_dt) {
+            unknown = true;
+        } else {
             ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(f);
             ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(fn);
             if (!ft->m_pure && !fn->m_side_effect_free) unknown = true;
-        } else {
-            unknown = true;
+            for (size_t k = 0; k < x.n_args; k++) {
+                ASR::expr_t *a = x.m_args[k].m_value;
+                if (a == nullptr) continue;
+                if (k >= fn->n_args || !ASR::is_a<ASR::Var_t>(*fn->m_args[k])) {
+                    unknown = true;
+                    continue;
+                }
+                ASR::symbol_t *ds = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(fn->m_args[k])->m_v);
+                if (!ASR::is_a<ASR::Variable_t>(*ds)) {
+                    unknown = true;
+                    continue;
+                }
+                ASR::Variable_t *dv = ASR::down_cast<ASR::Variable_t>(ds);
+                if (ASRUtils::is_pointer(dv->m_type)) {
+                    unknown = true;
+                    continue;
+                }
+                if (dv->m_intent == ASR::intentType::In || dv->m_value_attr) {
+                    continue;
+                }
+                while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*a)) {
+                    a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a)->m_arg;
+                }
+                // Any other actual is a value, passed in a temporary.
+                if (ASR::is_a<ASR::Var_t>(*a) || ASR::is_a<ASR::ArrayItem_t>(*a)
+                        || ASR::is_a<ASR::ArraySection_t>(*a)
+                        || ASR::is_a<ASR::StructInstanceMember_t>(*a)) {
+                    target(a);
+                }
+            }
         }
         ASRUtils::BlockBodyWalkVisitor<AssignedCollector>::visit_FunctionCall(
             x);

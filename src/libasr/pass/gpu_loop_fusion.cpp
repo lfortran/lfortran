@@ -73,9 +73,12 @@ namespace LCompilers {
  *   while each has a unit step, bounds without function calls, and no
  *   statement that leaves it early, and while the other statements of its
  *   body neither read nor write the producer's arrays, call nothing whose
- *   effects are unknown (a subroutine, an impure function, a function that
- *   is not self-contained), and assign neither the loop's variable or end
- *   nor a variable the producer's bounds or tests read. The producer's
+ *   effects are unknown (a subroutine, a function that is not
+ *   self-contained or may do input/output), define variables only by
+ *   assignment, as actual arguments of functions (for dummies that are not
+ *   INTENT(IN)) or as internal files (not by input, IOSTAT=, ALLOCATE,
+ *   ...), and assign neither the loop's variable or end nor a variable the
+ *   producer's bounds or tests read. The producer's
  *   bounds and tests must not read the loop's variable, and the bounds of
  *   the DO loops nested in it must read neither its variable nor anything
  *   assigned in it, so that they run the same iterations in each of its
