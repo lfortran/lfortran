@@ -14,7 +14,8 @@ the dispatch has assigned the loops (`gpu_loop_fusion`, before
 ordinary `do concurrent` nests and host code that the rest of the offload
 pipeline lowers as it lowers any other; Metal keeps its loops as written.
 `--gpu-loop-transforms` selects them: `all` (the default), `none`, or a
-comma separated list of `fuse` and `swap`.
+comma separated list of `fuse` and `swap` (`swap` only applies to loops
+that are fused); any other value is an error.
 
 The measurements quoted below are of Formal's 2D advection-diffusion
 example (`--solver workspace --order 4`, the `split` kernel: per Runge-Kutta
@@ -56,29 +57,53 @@ arrays are then neither stored nor loaded, and the producer's launch goes.
 
 Legality:
 
-* The producer assigns each array once, at its own iteration, possibly under
-  `if` tests that are affine in its indices; its expressions call only pure
-  functions and read neither its own arrays nor what the consumer assigns
-  (except arrays that are renamed, below).
-* The consumer only reads the intermediate arrays, element by element; pure
-  functions it passes them to are inlined first.
+* The producer assigns each array once, element by element at its own
+  iteration, possibly under `if` tests (without `else`); its expressions
+  read neither its own arrays nor what the consumer assigns (except arrays
+  that are renamed, below), nor its private variables.
+* The intermediate and renamed arrays are not pointers, nor variables (or
+  components of variables) with the `target` or `pointer` attribute, since
+  reads through a pointer would not be seen.
+* Every function the producer calls is pure and *self-contained*: it names
+  no variable but its own dummy arguments and locals (named constants
+  aside), and calls only functions that are self-contained too, so it reads
+  nothing but what its actual arguments name. The consumer only reads the
+  intermediate arrays, element by element at affine subscripts; pure
+  functions it passes them to are inlined first, and any other function it
+  calls must be self-contained.
 * Every element the consumer reads is one the producer writes: on every
   path through the consumer (its loop bounds and the `if` tests around the
   read) the subscripts lie in the producer's loop bounds and satisfy its
-  tests. A read is inside the bounds of the array, as in any valid program;
-  when coverage depends on how an intermediate array was allocated, the
-  fused loop runs only when a run-time check finds the array's bounds within
-  what the producer writes.
+  tests, which must be expressible exactly (a test whose normal form has
+  more than 64 alternatives is not). A read is inside the bounds of the
+  array, as in any valid program; when coverage depends on how an
+  intermediate array was allocated, the fused loop runs only when a
+  run-time check finds the array's bounds within the producer's loop bounds
+  and the bounds its tests put on single indices.
 * An array the consumer writes and the producer reads (the stage update of a
   field whose fluxes are computed from it) would be read and written by
   different iterations of the fused loop. The consumer writes a copy of it
-  instead; it may read the element it writes before writing it.
+  instead, which is copied back after the fused loop. The consumer must
+  write the same element, at its own iteration, on every path, and may read
+  that element only before writing it. The array is allocatable, and the
+  `do` loops below hold nothing that may change its allocation (the copy is
+  allocated once, before them).
 * The intermediate arrays keep the values the producer gave them, which the
-  program may read later. When the two loops are the body of `do` loops
-  (time steps, stages) that touch those arrays nowhere else, have unit steps
-  and are not left early, only the last iteration's values can be read
-  later: the original loops run in that iteration and the fused loop in all
-  others. Without such loops nothing is fused.
+  program may read later. The two loops must be the body of `do` loops (time
+  steps, stages), taken from the innermost outwards while each has a unit
+  step and bounds without function calls, is not left early (`exit`,
+  `cycle`, `return`, `go to`), and its other statements neither read nor
+  write the intermediate arrays, call nothing whose effects are unknown (a
+  subroutine, an impure function or a function that is not
+  self-contained), and assign neither the loop's variable or end nor what
+  the producer's bounds and tests read. The producer's bounds and tests must
+  not read the loop's variable, and the bounds of the `do` loops nested in
+  it must read neither its variable nor anything assigned in it, so that
+  they run the same iterations in each of its iterations (in particular, at
+  least one in its last iteration whenever they do in any). Then only the
+  last iteration's values can be read later: the original loops run in that
+  iteration and the fused loop in all others. Without such loops nothing is
+  fused.
 
 Cost model: an element is computed by every iteration that reads it. The
 fusion is made when that extra arithmetic, the producer's expression with
@@ -98,10 +123,12 @@ can take turns with the array: the fused loop then reads one of the two and
 writes the other, which one alternating from one execution to the next (a
 host flag picks between two copies of the fused loop), and nothing is copied.
 This is valid when the copy starts equal to the array (a device loop copies
-it once, before the `do` loops the fusion relies on) and the two keep
-agreeing on every element the consumer does not write: no other statement in
-those loops writes the array, the consumer writes the same elements in every
-execution (its bounds do not change), and the array is not a target. The
+it once, before the `do` loops the fusion relies on), the two keep agreeing
+on every element the consumer does not write, and nothing looks at the array
+between two fused executions: no other statement in those loops reads or
+writes the array, and the consumer writes the same elements in every
+execution (its bounds read neither the variables of those loops nor
+anything assigned in them). The
 original loops, run in the last iteration, first copy back what the latest
 execution left in the copy, if it is there. Exchanging the allocations with
 `move_alloc` would do the same, but the host statements around a move make

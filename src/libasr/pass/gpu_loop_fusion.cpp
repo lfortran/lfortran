@@ -34,37 +34,62 @@ namespace LCompilers {
  *
  * Legality (anything not proven leaves the loops as they are):
  *
- * * The producer only assigns elements `f(i, j)` of arrays at its own
- *   iteration (the subscripts are its indices), each array once, possibly
- *   under IF tests on affine conditions of its indices; the expressions
- *   read neither these arrays nor anything the consumer assigns, except
- *   arrays that are renamed (below), and call only pure functions.
- * * The consumer reads the producer's arrays only element by element; a
- *   pure function the consumer passes such an array to is inlined first
- *   (gpu_loop_utils.h), so its subscripts are visible. The consumer never
- *   writes them.
+ * * The producer only assigns elements `f(i, j)` of real or integer arrays
+ *   at its own iteration (the subscripts are its indices), each array once,
+ *   possibly under IF tests (without ELSE); its expressions read neither
+ *   these arrays nor anything the consumer assigns, except arrays that are
+ *   renamed (below), nor its private variables.
+ * * Neither an intermediate array nor a renamed one is a pointer, nor a
+ *   variable (or a component of one) with the TARGET or POINTER attribute:
+ *   reads through a pointer would not be seen.
+ * * Every function the producer's expressions and tests call is pure and
+ *   self-contained: it names no variable but its own dummies and locals
+ *   (gpu_function_self_contained), so its reads are those of its actual
+ *   arguments. The consumer reads the producer's arrays only element by
+ *   element at affine subscripts; a pure function the consumer passes such
+ *   an array to is inlined first (gpu_loop_utils.h), and any other function
+ *   it calls is self-contained. The consumer never writes those arrays.
  * * Every element the consumer reads is one the producer writes: on every
  *   path through the consumer's body (its loop bounds and the IF tests
  *   around the read, as affine constraints) the subscripts lie inside the
- *   producer's loop bounds and satisfy the producer's IF tests
- *   (gpu_affine.h). Bounds of the arrays that inlining introduces are
- *   assumed to be one and checked at run time: the fused nest only runs
- *   when they are.
+ *   producer's loop bounds and satisfy the producer's IF tests, which must
+ *   be expressible exactly (gpu_affine.h). Every read is also inside the
+ *   bounds of its array; when that is needed for the proof, the fused nest
+ *   runs only when a run-time check finds the bounds of each intermediate
+ *   array within the producer's loop bounds and the bounds its IF tests
+ *   put on single indices.
  * * An array the consumer writes and the producer reads (the stage update
  *   `q(i, j) = ...` of a time step whose fluxes read q) would be read and
  *   written by different iterations of the fused nest. The consumer writes
  *   a copy of it instead, which is copied back after the nest, or which
  *   takes turns with the array (below). The consumer must write the array
  *   only at its own iteration, the same element on every path through its
- *   body, and not read it.
+ *   body, and read it only at that element before writing it. The array is
+ *   allocatable; its copy is allocated before the outermost DO loop below,
+ *   which must hold nothing that may change the array's allocation.
  * * The producer's arrays keep the values the producer gave them, which the
- *   program may read after the loops. When the two loops are the body of
- *   DO loops (a time step and its stages) that touch these arrays nowhere
- *   else, have unit steps, and are not left early, only the last iteration
- *   of those DO loops writes the values the program sees later, and the
- *   other iterations write values the next iteration overwrites unread.
- *   The original two loops therefore run in the last iteration and the
- *   fused nest in every other one. Without such loops nothing is fused.
+ *   program may read after the loops. The two loops must be the body of DO
+ *   loops (a time step and its stages), taken from the innermost outwards
+ *   while each has a unit step, bounds without function calls, and no
+ *   statement that leaves it early, and while the other statements of its
+ *   body neither read nor write the producer's arrays, call nothing whose
+ *   effects are unknown (a subroutine, an impure function, a function that
+ *   is not self-contained), and assign neither the loop's variable or end
+ *   nor a variable the producer's bounds or tests read. The producer's
+ *   bounds and tests must not read the loop's variable, and the bounds of
+ *   the DO loops nested in it must read neither its variable nor anything
+ *   assigned in it, so that they run the same iterations in each of its
+ *   iterations. Then only the last iteration of those DO loops writes the
+ *   values the program sees later, and the other iterations write values
+ *   the next iteration overwrites unread. The original two loops therefore
+ *   run in the last iteration and the fused nest in every other one.
+ *   Without such loops nothing is fused.
+ * * A renamed array takes turns with its copy (ping-pong, `swap`) instead
+ *   of being copied back when, in addition, no other statement of those DO
+ *   loops reads or writes it and the consumer's bounds read neither their
+ *   variables nor anything assigned in them, so that the consumer writes
+ *   the same elements in every execution and the array and its copy agree
+ *   on all the others.
  *
  * Cost model: every element of an intermediate array is computed by each
  * iteration that reads it instead of once. The fusion is made when the
