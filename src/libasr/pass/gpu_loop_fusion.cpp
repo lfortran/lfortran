@@ -78,19 +78,21 @@ namespace LCompilers {
  *   self-contained or may do input/output), define variables only by
  *   assignment, as actual arguments of functions (for dummies that are not
  *   INTENT(IN)) or as internal files (not by input, IOSTAT=, ALLOCATE,
- *   ...), and assign neither the loop's variable or end nor a variable the
+ *   ...), and assign neither the loop's variable nor a variable the
  *   producer's bounds or tests read. The producer's bounds and tests must
  *   not read the loop's variable, and the bounds of the DO loops nested in
  *   it must read neither its variable nor anything assigned in it, so that
- *   they run the same iterations in each of its iterations. Neither these
- *   bounds and tests nor the loop's end read a variable that may change
- *   through another name of its storage (a pointer, a TARGET, a variable in
- *   EQUIVALENCE or a common block), which the assignments do not name. Then
- *   only the last iteration of those DO loops writes the values the program
- *   sees later, and the other iterations write values the next iteration
- *   overwrites unread. The original two loops therefore run in the last
- *   iteration and the fused nest in every other one. Without such loops
- *   nothing is fused.
+ *   they run the same iterations in each of its iterations. These bounds
+ *   and tests read no variable that may change through another name of its
+ *   storage (a pointer, a TARGET, a variable in EQUIVALENCE or a common
+ *   block), which the assignments do not name. Then only the last iteration
+ *   of those DO loops writes the values the program sees later, and the
+ *   other iterations write values the next iteration overwrites unread. The
+ *   original two loops therefore run in the last iteration and the fused
+ *   nest in every other one. The last iteration is recognized by the loop's
+ *   end, evaluated into a variable right before the loop, as the loop
+ *   itself evaluates it once, when it starts: the statements of the loop
+ *   may change what the end reads. Without such loops nothing is fused.
  * * A renamed array takes turns with its copy (ping-pong, `swap`) instead
  *   of being copied back when, in addition, no other statement of those DO
  *   loops reads or writes it and the consumer's bounds read neither their
@@ -1216,7 +1218,7 @@ public:
                 if (has_early_exit(list, list_n)) break;
                 // Nothing else in the loop's body touches the intermediate
                 // arrays, the variables the producer's bounds and tests
-                // read, the loop's variable or its end.
+                // read or the loop's variable.
                 std::set<ASR::symbol_t*> sc, ba;
                 std::set<std::string> wa;
                 std::set<std::string> ra;
@@ -1265,19 +1267,15 @@ public:
                         gpu_collect_value_symbols(g, bound_vals);
                     }
                 }
-                std::set<ASR::symbol_t*> end_syms, end_vals;
-                gpu_collect_symbols(l->m_head.m_end, end_syms);
-                gpu_collect_value_symbols(l->m_head.m_end, end_vals);
                 ASR::symbol_t *lv = ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(l->m_head.m_v)->m_v);
                 for (ASR::symbol_t *s : sc_all) {
-                    if (end_syms.count(s) || s == lv) touched = true;
+                    if (s == lv) touched = true;
                     if (bound_syms.count(s) && p.position(s) < 0) {
                         touched = true;
                     }
                 }
                 for (ASR::symbol_t *s : ba_all) {
-                    if (end_vals.count(s)) touched = true;
                     if (bound_vals.count(s) && p.position(s) < 0) {
                         touched = true;
                     }
@@ -1292,9 +1290,6 @@ public:
                             && may_be_aliased(s, address_taken)) {
                         touched = true;
                     }
-                }
-                for (ASR::symbol_t *s : end_syms) {
-                    if (may_be_aliased(s, address_taken)) touched = true;
                 }
                 // The DO loops nested in it run the same iterations in
                 // each of its iterations, so that its last iteration runs
@@ -1742,11 +1737,23 @@ public:
         }
 
         // The condition: not the last iteration of the DO loops, and the
-        // assumed lower bounds hold.
+        // assumed lower bounds hold. A DO loop evaluates its end once, when
+        // it starts, and the statements of its body may change what the
+        // expression reads: the end is copied into a variable right before
+        // the loop, which the last iteration's variable equals.
         ASR::expr_t *last = nullptr;
-        for (ASR::DoLoop_t *l : loops) {
+        for (size_t k = 0; k < loops.size(); k++) {
+            ASR::DoLoop_t *l = loops[k];
+            ASR::symbol_t *end = ASR::down_cast<ASR::Var_t>(b.Variable(
+                fn_scope, fn_scope->get_unique_name("__gpu_end", false),
+                ASRUtils::duplicate_type(al,
+                    ASRUtils::type_get_past_allocatable_pointer(
+                        ASRUtils::expr_type(l->m_head.m_end))),
+                ASR::intentType::Local))->m_v;
+            before[loop_stmts[k]].push_back(b.Assignment(b.Var(end),
+                d.duplicate_expr(l->m_head.m_end)));
             ASR::expr_t *t = b.Eq(d.duplicate_expr(l->m_head.m_v),
-                d.duplicate_expr(l->m_head.m_end));
+                b.Var(end));
             last = last ? b.And(last, t) : t;
         }
         ASR::expr_t *cond = b.Not(last);
