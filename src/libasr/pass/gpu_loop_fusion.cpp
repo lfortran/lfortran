@@ -1076,8 +1076,9 @@ public:
         // arrays stored.
         std::vector<ASR::DoLoop_t*> loops;
         std::vector<ASR::stmt_t*> loop_stmts;
-        // What the statements of those loops other than the two assign.
-        std::set<std::string> other_writes;
+        // What the statements of those loops other than the two assign and
+        // read.
+        std::set<std::string> other_writes, other_reads;
         std::set<ASR::symbol_t*> assigned_in_loops;
         bool other_unknown = false;
         {
@@ -1171,6 +1172,7 @@ public:
                 }
                 if (touched) break;
                 other_writes.insert(wa.begin(), wa.end());
+                other_reads.insert(ra.begin(), ra.end());
                 assigned_in_loops.insert(sc_all.begin(), sc_all.end());
                 // The consumer's bounds are fixed only when they do not
                 // read the loop's variable either.
@@ -1226,7 +1228,9 @@ public:
         // write. The fused nest then reads one and writes the other, which
         // one alternating from one execution to the next; the original
         // loops, in the last iteration, first copy back what the latest
-        // execution left in the copies.
+        // execution left in the copies. Between two executions the array
+        // may hold the older values, so no other statement of the loops
+        // may read it either.
         std::map<std::string, bool> swap;
         {
             std::set<ASR::symbol_t*> c_bound_syms;
@@ -1257,7 +1261,7 @@ public:
                 }
                 swap[k] = gpu_loop_transform_enabled(po, GpuLoopSwap)
                     && bounds_fixed && !target && !other_unknown
-                    && !other_writes.count(k);
+                    && !other_writes.count(k) && !other_reads.count(k);
             }
         }
         bool ping_pong = !renamed.empty();
