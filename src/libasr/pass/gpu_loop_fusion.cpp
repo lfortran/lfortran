@@ -42,7 +42,7 @@ namespace LCompilers {
  *   renamed (below), nor its private variables.
  * * Neither an intermediate array nor a renamed one is a pointer, nor a
  *   component reached through a pointer, nor a variable that may be read
- *   or written through another name (may_be_aliased: TARGET, POINTER,
+ *   or written through another name (gpu_may_be_aliased: TARGET, POINTER,
  *   EQUIVALENCE, a common block, ...): such reads would not be seen.
  * * Every function the producer's expressions and tests call is pure and
  *   self-contained: it names no variable but its own dummies and locals
@@ -154,27 +154,12 @@ bool has_early_exit(ASR::stmt_t **body, size_t n) {
     return f.found;
 }
 
-// Whether a variable may change through another name of its storage,
-// which the analyses of a statement list do not see: a pointer, a variable
-// with the TARGET attribute, a variable named where an address is taken or
-// a pointer associated, on either side (`address_taken`; EQUIVALENCE is
-// lowered so), a variable of a common block, or a volatile one. Named
-// constants never change.
-bool may_be_aliased(ASR::symbol_t *s,
-        const std::set<ASR::symbol_t*> &address_taken) {
-    s = ASRUtils::symbol_get_past_external(s);
-    if (!ASR::is_a<ASR::Variable_t>(*s)) return false;
-    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
-    if (v->m_storage == ASR::storage_typeType::Parameter) return false;
-    return v->m_target_attr || ASRUtils::is_pointer(v->m_type)
-        || v->m_common_block || v->m_is_volatile || address_taken.count(s);
-}
-
 // Whether the array a designator names (a variable, or a component of one)
 // may be read or written through another name, which the analyses do not
-// see: a pointer component on the way, or a variable that may_be_aliased
-// (a pointer, a TARGET, EQUIVALENCE, a common block, ...). A designator of
-// another form (an element on the way, ...) is not analyzed and may be.
+// see: a pointer component on the way, or a variable that
+// gpu_may_be_aliased (a pointer, a TARGET, EQUIVALENCE, a common block,
+// ...). A designator of another form (an element on the way, ...) is not
+// analyzed and may be.
 bool designator_may_be_aliased(ASR::expr_t *des,
         const std::set<ASR::symbol_t*> &address_taken) {
     while (ASR::is_a<ASR::StructInstanceMember_t>(*des)) {
@@ -185,7 +170,7 @@ bool designator_may_be_aliased(ASR::expr_t *des,
     ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
         ASR::down_cast<ASR::Var_t>(des)->m_v);
     if (!ASR::is_a<ASR::Variable_t>(*s)) return true;
-    return may_be_aliased(s, address_taken);
+    return gpu_may_be_aliased(s, address_taken);
 }
 
 class LoopFusion {
@@ -193,7 +178,7 @@ public:
     Allocator &al;
     const PassOptions &po;
     // The variables involved in taking an address or associating a
-    // pointer anywhere in the program (see pass_gpu_loop_fusion).
+    // pointer anywhere in the program (gpu_collect_address_taken).
     std::set<ASR::symbol_t*> address_taken;
     GpuRarelyRun &rarely_run;
 
@@ -1299,7 +1284,7 @@ public:
                 // Nor a variable that may change through another name.
                 for (ASR::symbol_t *s : bound_syms) {
                     if (p.position(s) < 0
-                            && may_be_aliased(s, address_taken)) {
+                            && gpu_may_be_aliased(s, address_taken)) {
                         touched = true;
                     }
                 }
@@ -1319,7 +1304,7 @@ public:
                     }
                     for (ASR::symbol_t *s : head_syms) {
                         if (s == lv || sc_all.count(s)
-                                || may_be_aliased(s, address_taken)) {
+                                || gpu_may_be_aliased(s, address_taken)) {
                             touched = true;
                         }
                     }
@@ -1405,7 +1390,7 @@ public:
             bool bounds_fixed = true;
             for (ASR::symbol_t *x : c_bound_syms) {
                 if ((assigned_in_loops.count(x)
-                        || may_be_aliased(x, address_taken))
+                        || gpu_may_be_aliased(x, address_taken))
                         && c.position(x) < 0) {
                     bounds_fixed = false;
                 }
@@ -1813,68 +1798,7 @@ void gpu_loop_fusion(Allocator &al, ASR::TranslationUnit_t &unit,
         return;
     }
     LoopFusion f(al, pass_options, rarely_run);
-    {
-        // Every variable named in a statement, or in the declaration of
-        // a variable (its initializer), that takes an address
-        // (`GetPointer`, `c_loc`) or associates a pointer, and the
-        // variable declared: on either side of such an association. That
-        // is how EQUIVALENCE is lowered, in a procedure as a pointer set
-        // from the address of the other variable, in a module as a
-        // variable whose initializer is that address.
-        struct AddressTaken : public ASR::BaseWalkVisitor<AddressTaken> {
-            using Base = ASR::BaseWalkVisitor<AddressTaken>;
-            std::set<ASR::symbol_t*> *syms;
-            struct Frame {
-                bool takes_address = false;
-                std::set<ASR::symbol_t*> vars;
-            };
-            // The statement or declaration being visited, innermost last.
-            std::vector<Frame> frames;
-            void framed(ASR::symbol_t *declared,
-                    const std::function<void()> &visit) {
-                frames.emplace_back();
-                if (declared) frames.back().vars.insert(declared);
-                visit();
-                Frame fr = std::move(frames.back());
-                frames.pop_back();
-                if (fr.takes_address) {
-                    syms->insert(fr.vars.begin(), fr.vars.end());
-                }
-            }
-            void taken(ASR::expr_t *arg) {
-                if (!frames.empty()) frames.back().takes_address = true;
-                // Also outside a statement or declaration.
-                gpu_collect_symbols(arg, *syms);
-            }
-            void visit_stmt(const ASR::stmt_t &x) {
-                framed(nullptr, [&]() { Base::visit_stmt(x); });
-            }
-            void visit_Variable(const ASR::Variable_t &x) {
-                framed(const_cast<ASR::symbol_t*>(&x.base),
-                    [&]() { Base::visit_Variable(x); });
-            }
-            void visit_Var(const ASR::Var_t &x) {
-                if (!frames.empty()) {
-                    frames.back().vars.insert(
-                        ASRUtils::symbol_get_past_external(x.m_v));
-                }
-            }
-            void visit_GetPointer(const ASR::GetPointer_t &x) {
-                taken(x.m_arg);
-                Base::visit_GetPointer(x);
-            }
-            void visit_CLoc(const ASR::CLoc_t &x) {
-                taken(x.m_arg);
-                Base::visit_CLoc(x);
-            }
-            void visit_Associate(const ASR::Associate_t &x) {
-                taken(x.m_value);
-                Base::visit_Associate(x);
-            }
-        } t;
-        t.syms = &f.address_taken;
-        t.visit_TranslationUnit(unit);
-    }
+    gpu_collect_address_taken(unit, f.address_taken);
     std::function<void(SymbolTable*)> visit_scope = [&](SymbolTable *st) {
         for (auto &item : st->get_scope()) {
             ASR::symbol_t *s = item.second;

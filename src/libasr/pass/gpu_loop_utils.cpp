@@ -1903,4 +1903,83 @@ void GpuInliner::rollback() {
     added.clear();
 }
 
+namespace {
+
+// Every variable named in a statement, or in the declaration of a variable
+// (its initializer), that takes an address (`GetPointer`, `c_loc`) or
+// associates a pointer, and the variable declared: on either side of such
+// an association. That is how EQUIVALENCE is lowered, in a procedure as a
+// pointer set from the address of the other variable, in a module as a
+// variable whose initializer is that address.
+struct AddressTaken : public ASR::BaseWalkVisitor<AddressTaken> {
+    using Base = ASR::BaseWalkVisitor<AddressTaken>;
+    std::set<ASR::symbol_t*> *syms;
+    struct Frame {
+        bool takes_address = false;
+        std::set<ASR::symbol_t*> vars;
+    };
+    // The statement or declaration being visited, innermost last.
+    std::vector<Frame> frames;
+    void framed(ASR::symbol_t *declared,
+            const std::function<void()> &visit) {
+        frames.emplace_back();
+        if (declared) frames.back().vars.insert(declared);
+        visit();
+        Frame fr = std::move(frames.back());
+        frames.pop_back();
+        if (fr.takes_address) {
+            syms->insert(fr.vars.begin(), fr.vars.end());
+        }
+    }
+    void taken(ASR::expr_t *arg) {
+        if (!frames.empty()) frames.back().takes_address = true;
+        // Also outside a statement or declaration.
+        gpu_collect_symbols(arg, *syms);
+    }
+    void visit_stmt(const ASR::stmt_t &x) {
+        framed(nullptr, [&]() { Base::visit_stmt(x); });
+    }
+    void visit_Variable(const ASR::Variable_t &x) {
+        framed(const_cast<ASR::symbol_t*>(&x.base),
+            [&]() { Base::visit_Variable(x); });
+    }
+    void visit_Var(const ASR::Var_t &x) {
+        if (!frames.empty()) {
+            frames.back().vars.insert(
+                ASRUtils::symbol_get_past_external(x.m_v));
+        }
+    }
+    void visit_GetPointer(const ASR::GetPointer_t &x) {
+        taken(x.m_arg);
+        Base::visit_GetPointer(x);
+    }
+    void visit_CLoc(const ASR::CLoc_t &x) {
+        taken(x.m_arg);
+        Base::visit_CLoc(x);
+    }
+    void visit_Associate(const ASR::Associate_t &x) {
+        taken(x.m_value);
+        Base::visit_Associate(x);
+    }
+};
+
+} // namespace
+
+void gpu_collect_address_taken(ASR::TranslationUnit_t &unit,
+        std::set<ASR::symbol_t*> &syms) {
+    AddressTaken t;
+    t.syms = &syms;
+    t.visit_TranslationUnit(unit);
+}
+
+bool gpu_may_be_aliased(ASR::symbol_t *s,
+        const std::set<ASR::symbol_t*> &address_taken) {
+    s = ASRUtils::symbol_get_past_external(s);
+    if (!ASR::is_a<ASR::Variable_t>(*s)) return false;
+    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+    if (v->m_storage == ASR::storage_typeType::Parameter) return false;
+    return v->m_target_attr || ASRUtils::is_pointer(v->m_type)
+        || v->m_common_block || v->m_is_volatile || address_taken.count(s);
+}
+
 } // namespace LCompilers

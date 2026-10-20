@@ -275,6 +275,18 @@ void gpu_collect_blocks(ASR::stmt_t **body, size_t n,
 void gpu_collect_symbols(ASR::expr_t *e, std::set<ASR::symbol_t*> &syms);
 void gpu_collect_symbols(ASR::stmt_t **body, size_t n,
     std::set<ASR::symbol_t*> &syms);
+
+// The variables involved in taking an address or associating a pointer
+// anywhere in the program, on either side (EQUIVALENCE is lowered so).
+void gpu_collect_address_taken(ASR::TranslationUnit_t &unit,
+    std::set<ASR::symbol_t*> &syms);
+// Whether a variable may change through another name of its storage,
+// which the analyses of a statement list do not see: a pointer, a variable
+// with the TARGET attribute, one in `address_taken`
+// (gpu_collect_address_taken), a variable of a common block, or a volatile
+// one. Named constants never change.
+bool gpu_may_be_aliased(ASR::symbol_t *s,
+    const std::set<ASR::symbol_t*> &address_taken);
 // Every variable whose value an expression reads: as gpu_collect_symbols,
 // but without the arrays of which it takes only bounds or the size
 // (`size(x)`, `ubound(x%a, 1)`), which writes to their elements do not
