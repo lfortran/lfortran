@@ -3719,7 +3719,9 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                    ASRUtils::is_array(x->m_type)) &&
                    is_common_symbol_present_in_lhs_and_rhs(al, target, *current_expr))) ) ||
                  target_Type == targetType::GeneratedTargetPointerForArraySection ||
-                (!ASRUtils::is_allocatable(target) && ASRUtils::is_allocatable(x->m_type)) ) {
+                (!ASRUtils::is_allocatable(target) && ASRUtils::is_allocatable(x->m_type)) ||
+                // The call associates its pointer result; the assignment copies from it.
+                ASRUtils::is_pointer(x->m_type) ) {
                 force_replace_current_expr_for_array(current_expr, std::string("_function_call_") +
                                            ASRUtils::symbol_name(x->m_name), al, current_body, current_scope,
                                            exprs_with_target, is_assignment_target_array_section_item);
