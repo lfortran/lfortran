@@ -206,8 +206,8 @@ static int input_scan(FILE *file, const char *format, ...)
             return status == 0 ? EOF : 0;
         }
         *comma = *end = '\0';
-        snprintf(va_arg(args, char *), 100, "%s", expression + 1);
-        snprintf(va_arg(args, char *), 100, "%s", comma + 1);
+        snprintf(va_arg(args, char *), 100, "%.99s", expression + 1);
+        snprintf(va_arg(args, char *), 100, "%.99s", comma + 1);
         skip_trailing_comma(file, ',');
         va_end(args);
         return 2;

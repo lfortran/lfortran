@@ -425,7 +425,8 @@ public:
     explicit LocalClient(const std::string &file) {
         auto value = parse(read_descriptor(file));
         const auto &descriptor = object(value);
-        if (descriptor.getInteger("lfortran_local_protocol").getValueOr(-1) != 1)
+        auto version = descriptor.getInteger("lfortran_local_protocol");
+        if (!version || *version != 1)
             throw std::runtime_error("standard Jupyter connections require the optional "
                 "ZeroMQ adapter (WITH_JUPYTER_ZMQ); this build supports native descriptors");
         kernel = string(descriptor, "kernel_session");
@@ -475,14 +476,17 @@ public:
         if (response.empty()) throw std::runtime_error("local kernel hello timed out");
         auto hello = parse(response);
         const auto &h = object(hello);
-        if (h.getInteger("lfortran_local_protocol").getValueOr(-1) != 1 ||
+        version = h.getInteger("lfortran_local_protocol");
+        if (!version || *version != 1 ||
                 optional_string(h, "kernel_session") != kernel ||
                 optional_string(h, "jupyter_protocol") != "5.4")
             throw std::runtime_error("local kernel hello/descriptor mismatch");
         if (auto features = h.getArray("features"))
-            for (const auto &feature : *features)
-                if (feature.getAsString().getValueOr("") == "stdin_eof")
+            for (const auto &feature : *features) {
+                auto name = feature.getAsString();
+                if (name && *name == "stdin_eof")
                     eof_supported = true;
+            }
     }
     const std::string &session_id() const override { return session; }
     void send_envelope(const std::string &envelope) override {

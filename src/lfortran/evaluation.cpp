@@ -42,12 +42,7 @@ private:
 }
 
 // Keep these exports available to native JIT and WASM side modules alike.
-#ifdef _WIN32
-extern "C" __declspec(dllexport)
-#else
-extern "C" __attribute__((visibility("default")))
-#endif
-void lfortran_display_data(const char *mime_type, const char *data) {
+extern "C" void lfortran_display_data(const char *mime_type, const char *data) {
     if (current_events && mime_type && data) {
         try {
             current_events->display(mime_type, data);
@@ -57,12 +52,7 @@ void lfortran_display_data(const char *mime_type, const char *data) {
     }
 }
 
-#ifdef _WIN32
-extern "C" __declspec(dllexport)
-#else
-extern "C" __attribute__((visibility("default")))
-#endif
-void lfortran_clear_output() {
+extern "C" void lfortran_clear_output() {
     if (current_events) {
         try {
             current_events->clear_output();

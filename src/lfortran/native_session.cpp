@@ -376,7 +376,8 @@ struct NativeSession::Impl {
             auto &p = peers.at(peer);
             if (p.session.empty()) {
                 if (!p.output.empty()) return;
-                if (m.getInteger("lfortran_local_protocol").getValueOr(-1) != 1)
+                auto version = m.getInteger("lfortran_local_protocol");
+                if (!version || *version != 1)
                     throw std::runtime_error("unsupported local protocol version");
                 p.session = string(m, "client_session");
                 if (p.session.empty() || p.session.size() > 1024)

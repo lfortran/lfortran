@@ -75,7 +75,7 @@ inline const Object &member(const Object &value, llvm::StringRef name) {
 Object header(const std::string &type, const std::string &session);
 Value message(const std::string &channel, const std::string &type,
     const std::string &session, const Object &parent, Object content,
-    Object metadata = {});
+    Object metadata = Object{});
 void validate_message(const Object &message);
 ClientEvent client_event(const std::string &envelope);
 

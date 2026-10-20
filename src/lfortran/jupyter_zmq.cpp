@@ -702,8 +702,9 @@ public:
             auto value = parse(envelope);
             const auto &m = object(value);
             if (!peers.count(peer)) {
+                auto version = m.getInteger("lfortran_local_protocol");
                 if (peers.size() >= max_peers ||
-                        m.getInteger("lfortran_local_protocol").getValueOr(-1) != 1)
+                        !version || *version != 1)
                     throw std::runtime_error("unsupported bridge hello or peer limit");
                 auto session = string(m, "client_session");
                 if (session.empty() || session.size() > 1024)

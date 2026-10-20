@@ -49,7 +49,15 @@ public:
 
 } // namespace LCompilers::LFortran
 
-extern "C" void lfortran_display_data(const char *mime_type, const char *data);
-extern "C" void lfortran_clear_output();
+extern "C" {
+#ifdef _WIN32
+__declspec(dllexport) void lfortran_display_data(const char *mime_type, const char *data);
+__declspec(dllexport) void lfortran_clear_output();
+#else
+__attribute__((visibility("default"))) void lfortran_display_data(
+    const char *mime_type, const char *data);
+__attribute__((visibility("default"))) void lfortran_clear_output();
+#endif
+}
 
 #endif

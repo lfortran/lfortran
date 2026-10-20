@@ -1,5 +1,4 @@
 #include <lfortran/evaluation.h>
-#include <libasr/runtime/lfortran_intrinsics.h>
 #include <iostream>
 #include <fstream>
 #include <sstream>
