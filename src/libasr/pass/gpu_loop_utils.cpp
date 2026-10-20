@@ -507,33 +507,151 @@ bool is_scalar_struct(ASR::ttype_t *t) {
         && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(t));
 }
 
-class AssignedCollector : public ASRUtils::BlockBodyWalkVisitor<
-        AssignedCollector> {
-public:
-    std::set<ASR::symbol_t*> &scalars;
-    std::set<std::string> &arrays;
-    bool &unknown;
-    std::set<ASR::symbol_t*> *bases;
-    AssignedCollector(std::set<ASR::symbol_t*> &s, std::set<std::string> &a,
-        bool &u, std::set<ASR::symbol_t*> *b)
-        : scalars(s), arrays(a), unknown(u), bases(b) {}
+// How an expression of a given kind may define a variable. The kinds are
+// listed explicitly: one this does not know may define anything.
+enum class ExprEffect {
+    None,       // computes a value from its operands
+    Call,       // a function call: through its actual arguments
+    ImpliedDo,  // an implied DO loop: its variable
+    Unknown,
+};
 
-    void target(ASR::expr_t *t) {
-        if (bases) {
-            ASR::symbol_t *root = gpu_designator_base(t).root;
-            if (root) {
-                bases->insert(root);
-            } else {
-                unknown = true;
-            }
+ExprEffect expr_effect(const ASR::expr_t &x) {
+    switch (x.type) {
+        case ASR::exprType::FunctionCall:
+            return ExprEffect::Call;
+        case ASR::exprType::ImpliedDoLoop:
+            return ExprEffect::ImpliedDo;
+        case ASR::exprType::IfExp:
+        case ASR::exprType::ComplexConstructor:
+        case ASR::exprType::IntrinsicElementalFunction:
+        case ASR::exprType::IntrinsicArrayFunction:
+        case ASR::exprType::TypeInquiry:
+        case ASR::exprType::StructConstructor:
+        case ASR::exprType::StructConstant:
+        case ASR::exprType::EnumConstructor:
+        case ASR::exprType::UnionConstructor:
+        case ASR::exprType::IntegerConstant:
+        case ASR::exprType::IntegerBitNot:
+        case ASR::exprType::IntegerUnaryMinus:
+        case ASR::exprType::IntegerCompare:
+        case ASR::exprType::IntegerBinOp:
+        case ASR::exprType::UnsignedIntegerConstant:
+        case ASR::exprType::UnsignedIntegerUnaryMinus:
+        case ASR::exprType::UnsignedIntegerBitNot:
+        case ASR::exprType::UnsignedIntegerCompare:
+        case ASR::exprType::UnsignedIntegerBinOp:
+        case ASR::exprType::RealConstant:
+        case ASR::exprType::RealUnaryMinus:
+        case ASR::exprType::RealCompare:
+        case ASR::exprType::RealBinOp:
+        case ASR::exprType::RealCopySign:
+        case ASR::exprType::RealSqrt:
+        case ASR::exprType::ComplexConstant:
+        case ASR::exprType::ComplexUnaryMinus:
+        case ASR::exprType::ComplexCompare:
+        case ASR::exprType::ComplexBinOp:
+        case ASR::exprType::ComplexRe:
+        case ASR::exprType::ComplexIm:
+        case ASR::exprType::LogicalConstant:
+        case ASR::exprType::LogicalNot:
+        case ASR::exprType::LogicalCompare:
+        case ASR::exprType::LogicalBinOp:
+        case ASR::exprType::StringConstant:
+        case ASR::exprType::StringConcat:
+        case ASR::exprType::StringRepeat:
+        case ASR::exprType::StringLen:
+        case ASR::exprType::StringItem:
+        case ASR::exprType::StringSection:
+        case ASR::exprType::StringCompare:
+        case ASR::exprType::StringContains:
+        case ASR::exprType::StringOrd:
+        case ASR::exprType::StringChr:
+        case ASR::exprType::StringFormat:
+        case ASR::exprType::StringPhysicalCast:
+        case ASR::exprType::CompilerOptions:
+        case ASR::exprType::Var:
+        case ASR::exprType::ArrayConstructor:
+        case ASR::exprType::ArrayConstant:
+        case ASR::exprType::ArrayItem:
+        case ASR::exprType::ArraySection:
+        case ASR::exprType::ArraySize:
+        case ASR::exprType::ArrayRank:
+        case ASR::exprType::ArrayBound:
+        case ASR::exprType::ArrayTranspose:
+        case ASR::exprType::ArrayPack:
+        case ASR::exprType::ArrayReshape:
+        case ASR::exprType::ArrayBroadcast:
+        case ASR::exprType::ArrayIsContiguous:
+        case ASR::exprType::ArrayPhysicalCast:
+        case ASR::exprType::BitCast:
+        case ASR::exprType::Cast:
+        case ASR::exprType::StructInstanceMember:
+        case ASR::exprType::StructStaticMember:
+        case ASR::exprType::EnumStaticMember:
+        case ASR::exprType::UnionInstanceMember:
+        case ASR::exprType::EnumName:
+        case ASR::exprType::EnumValue:
+        // An overloaded operator reads its operands; the function it calls
+        // is a FunctionCall operand of its own.
+        case ASR::exprType::OverloadedCompare:
+        case ASR::exprType::OverloadedBinOp:
+        case ASR::exprType::OverloadedBoolOp:
+        case ASR::exprType::OverloadedUnaryMinus:
+        case ASR::exprType::OverloadedStringConcat:
+        case ASR::exprType::IntegerBitLen:
+        case ASR::exprType::Ichar:
+        case ASR::exprType::Iachar:
+        case ASR::exprType::SizeOfType:
+        case ASR::exprType::PointerNullConstant:
+        case ASR::exprType::PointerAssociated:
+        case ASR::exprType::CPtrCompare:
+        case ASR::exprType::CLoc:
+        case ASR::exprType::PointerToCPtr:
+        case ASR::exprType::GetPointer:
+            return ExprEffect::None;
+        default:
+            return ExprEffect::Unknown;
+    }
+}
+
+// Computes GpuEffects. Every statement, those nested in DO, DO WHILE, IF,
+// SELECT CASE, BLOCK and OpenMP constructs included, passes through
+// visit_stmt, and every expression through visit_expr: each classifies the
+// node by its kind, and a kind not modeled there makes the effects
+// unknown. The generated walker reaches the nested statements and
+// expressions through these two; a BLOCK's body, which it does not reach,
+// is walked here.
+class EffectsWalker : public ASR::BaseWalkVisitor<EffectsWalker> {
+    using Base = ASR::BaseWalkVisitor<EffectsWalker>;
+public:
+    GpuEffects &e;
+    // Inside the items of an output statement.
+    int output = 0;
+    explicit EffectsWalker(GpuEffects &e_) : e(e_) {}
+
+    // A designator the code defines, `times` times as a whole if it is a
+    // variable.
+    void define(ASR::expr_t *t, int times = 1) {
+        ASR::symbol_t *root = gpu_designator_base(t).root;
+        if (root) {
+            e.bases.insert(root);
+        } else {
+            e.unknown = true;
         }
         if (ASR::is_a<ASR::Var_t>(*t)) {
             ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(t)->m_v);
-            scalars.insert(s);
+            e.scalars.insert(s);
+            e.definitions[s] += times;
             if (ASRUtils::is_array(ASRUtils::expr_type(t))
                     || is_scalar_struct(ASRUtils::expr_type(t))) {
-                arrays.insert(gpu_array_key(t));
+                std::string k = gpu_array_key(t);
+                if (k.empty()) {
+                    e.unknown = true;
+                } else {
+                    e.arrays.insert(k);
+                }
             }
             return;
         }
@@ -541,8 +659,7 @@ public:
         // bounds: count it as a change of the variable it belongs to.
         if (ASR::is_a<ASR::StructInstanceMember_t>(*t)
                 && ASRUtils::is_array(ASRUtils::expr_type(t))) {
-            ASR::symbol_t *root = gpu_designator_base(t).root;
-            if (root) scalars.insert(root);
+            if (root) e.scalars.insert(root);
         }
         ASR::expr_t *base = t;
         if (ASR::is_a<ASR::ArrayItem_t>(*t)) {
@@ -552,31 +669,90 @@ public:
         }
         std::string k = gpu_array_key(base);
         if (k.empty()) {
-            unknown = true;
+            e.unknown = true;
         } else {
-            arrays.insert(k);
+            e.arrays.insert(k);
         }
     }
-    void visit_Assignment(const ASR::Assignment_t &x) {
-        target(x.m_target);
-        ASRUtils::BlockBodyWalkVisitor<AssignedCollector>::visit_Assignment(x);
+
+    // A call of a procedure. A pure procedure defines nothing but the
+    // actual arguments of its dummies that are not INTENT(IN) or VALUE; so
+    // does a self-contained one without input/output. A pointer dummy may
+    // define its target, which the actual does not name. Any other call is
+    // unknown.
+    void call(ASR::symbol_t *name, ASR::call_arg_t *args, size_t n_args,
+            ASR::expr_t *dt) {
+        ASR::symbol_t *f = ASRUtils::symbol_get_past_external(name);
+        if (!ASR::is_a<ASR::Function_t>(*f) || dt) {
+            e.unknown = true;
+            return;
+        }
+        ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(f);
+        ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(fn);
+        if (!ft->m_pure && !(fn->m_side_effect_free
+                && gpu_function_self_contained(fn))) {
+            e.unknown = true;
+            return;
+        }
+        for (size_t k = 0; k < n_args; k++) {
+            ASR::expr_t *a = args[k].m_value;
+            if (a == nullptr) continue;
+            if (k >= fn->n_args || !ASR::is_a<ASR::Var_t>(*fn->m_args[k])) {
+                e.unknown = true;
+                continue;
+            }
+            ASR::symbol_t *ds = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(fn->m_args[k])->m_v);
+            if (!ASR::is_a<ASR::Variable_t>(*ds)) {
+                e.unknown = true;
+                continue;
+            }
+            ASR::Variable_t *dv = ASR::down_cast<ASR::Variable_t>(ds);
+            if (ASRUtils::is_pointer(dv->m_type)) {
+                e.unknown = true;
+                continue;
+            }
+            if (dv->m_intent == ASR::intentType::In || dv->m_value_attr) {
+                continue;
+            }
+            while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*a)) {
+                a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a)->m_arg;
+            }
+            // Any other actual is a value, passed in a temporary.
+            if (is_designator(a)) define(a);
+        }
     }
-    void visit_DoLoop(const ASR::DoLoop_t &x) {
-        if (x.m_head.m_v) target(x.m_head.m_v);
-        ASRUtils::BlockBodyWalkVisitor<AssignedCollector>::visit_DoLoop(x);
+
+    static bool is_designator(ASR::expr_t *a) {
+        return ASR::is_a<ASR::Var_t>(*a) || ASR::is_a<ASR::ArrayItem_t>(*a)
+            || ASR::is_a<ASR::ArraySection_t>(*a)
+            || ASR::is_a<ASR::StructInstanceMember_t>(*a);
     }
-    // Statements are an allow-list: a kind not modeled here (a subroutine
-    // call, input, an allocation, a pointer association, an inquiry, an
-    // intrinsic subroutine, ...) may define variables that no assignment
-    // target names.
+
     void visit_stmt(const ASR::stmt_t &x) {
         switch (x.type) {
-            case ASR::stmtType::Assignment:
-            case ASR::stmtType::DoLoop:
+            case ASR::stmtType::Assignment: {
+                const ASR::Assignment_t &a =
+                    *ASR::down_cast<const ASR::Assignment_t>(&x);
+                define(a.m_target);
+                // The allocation moves from the value, which becomes
+                // unallocated.
+                if (a.m_move_allocation && is_designator(a.m_value)) {
+                    define(a.m_value);
+                }
+                // A defined assignment is visited as the subroutine call
+                // it is.
+                break;
+            }
+            case ASR::stmtType::DoLoop: {
+                const ASR::DoLoop_t &l =
+                    *ASR::down_cast<const ASR::DoLoop_t>(&x);
+                if (l.m_head.m_v) define(l.m_head.m_v, 2);
+                break;
+            }
             case ASR::stmtType::WhileLoop:
             case ASR::stmtType::If:
             case ASR::stmtType::Select:
-            case ASR::stmtType::BlockCall:
             case ASR::stmtType::OMPRegion:
             case ASR::stmtType::Exit:
             case ASR::stmtType::Cycle:
@@ -586,74 +762,88 @@ public:
             case ASR::stmtType::Stop:
             case ASR::stmtType::ErrorStop:
             case ASR::stmtType::Assert:
-            case ASR::stmtType::Print:
                 break;
+            case ASR::stmtType::BlockCall: {
+                ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<const ASR::BlockCall_t>(&x)->m_m);
+                if (!ASR::is_a<ASR::Block_t>(*s)) {
+                    e.unknown = true;
+                    return;
+                }
+                ASR::Block_t *b = ASR::down_cast<ASR::Block_t>(s);
+                for (size_t i = 0; i < b->n_body; i++) {
+                    visit_stmt(*b->m_body[i]);
+                }
+                return;
+            }
+            case ASR::stmtType::SubroutineCall: {
+                const ASR::SubroutineCall_t &c =
+                    *ASR::down_cast<const ASR::SubroutineCall_t>(&x);
+                call(c.m_name, c.m_args, c.n_args, c.m_dt);
+                break;
+            }
+            case ASR::stmtType::Print:
+                output++;
+                Base::visit_stmt(x);
+                output--;
+                return;
             case ASR::stmtType::FileWrite: {
                 const ASR::FileWrite_t &w =
                     *ASR::down_cast<const ASR::FileWrite_t>(&x);
-                // IOSTAT=, IOMSG= and ID= are defined by the statement.
-                if (w.m_iostat || w.m_iomsg || w.m_id) {
-                    unknown = true;
+                // IOSTAT=, IOMSG= and ID= are defined by the statement; a
+                // namelist and a user-defined procedure for the output are
+                // not modeled, nor asynchronous output.
+                if (w.m_iostat || w.m_iomsg || w.m_id || w.m_nml
+                        || w.m_overloaded || w.m_asynchronous) {
+                    e.unknown = true;
                     return;
                 }
-                // An internal file is assigned.
+                // An internal file is defined.
                 if (w.m_unit && ASRUtils::is_character(
                         *ASRUtils::expr_type(w.m_unit))) {
-                    target(w.m_unit);
+                    define(w.m_unit);
                 }
-                break;
+                output++;
+                Base::visit_stmt(x);
+                output--;
+                return;
             }
             default:
-                unknown = true;
+                // Input, an allocation, a pointer association, an inquiry,
+                // an intrinsic subroutine, an ASSOCIATE construct, ...
+                e.unknown = true;
                 return;
         }
-        ASRUtils::BlockBodyWalkVisitor<AssignedCollector>::visit_stmt(x);
+        Base::visit_stmt(x);
     }
-    // A function may define each actual argument whose dummy is not
-    // INTENT(IN) (pure functions have none). A pointer dummy may define
-    // its target, which the actual does not name.
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        ASR::symbol_t *f = ASRUtils::symbol_get_past_external(x.m_name);
-        if (!ASR::is_a<ASR::Function_t>(*f) || x.m_dt) {
-            unknown = true;
-        } else {
-            ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(f);
-            ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(fn);
-            if (!ft->m_pure && !fn->m_side_effect_free) unknown = true;
-            for (size_t k = 0; k < x.n_args; k++) {
-                ASR::expr_t *a = x.m_args[k].m_value;
-                if (a == nullptr) continue;
-                if (k >= fn->n_args || !ASR::is_a<ASR::Var_t>(*fn->m_args[k])) {
-                    unknown = true;
-                    continue;
+
+    void visit_expr(const ASR::expr_t &x) {
+        switch (expr_effect(x)) {
+            case ExprEffect::None:
+            case ExprEffect::Call:
+                break;
+            case ExprEffect::ImpliedDo:
+                // An implied DO of an output statement defines its
+                // variable, which then keeps its final value; that of an
+                // array constructor has a variable of its own, counted as
+                // defined all the same.
+                if (output) {
+                    e.unknown = true;
+                    return;
                 }
-                ASR::symbol_t *ds = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(fn->m_args[k])->m_v);
-                if (!ASR::is_a<ASR::Variable_t>(*ds)) {
-                    unknown = true;
-                    continue;
-                }
-                ASR::Variable_t *dv = ASR::down_cast<ASR::Variable_t>(ds);
-                if (ASRUtils::is_pointer(dv->m_type)) {
-                    unknown = true;
-                    continue;
-                }
-                if (dv->m_intent == ASR::intentType::In || dv->m_value_attr) {
-                    continue;
-                }
-                while (ASR::is_a<ASR::ArrayPhysicalCast_t>(*a)) {
-                    a = ASR::down_cast<ASR::ArrayPhysicalCast_t>(a)->m_arg;
-                }
-                // Any other actual is a value, passed in a temporary.
-                if (ASR::is_a<ASR::Var_t>(*a) || ASR::is_a<ASR::ArrayItem_t>(*a)
-                        || ASR::is_a<ASR::ArraySection_t>(*a)
-                        || ASR::is_a<ASR::StructInstanceMember_t>(*a)) {
-                    target(a);
-                }
-            }
+                define(ASR::down_cast<const ASR::ImpliedDoLoop_t>(&x)->m_var,
+                    2);
+                break;
+            case ExprEffect::Unknown:
+                e.unknown = true;
+                return;
         }
-        ASRUtils::BlockBodyWalkVisitor<AssignedCollector>::visit_FunctionCall(
-            x);
+        Base::visit_expr(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        call(x.m_name, x.m_args, x.n_args, x.m_dt);
+        Base::visit_FunctionCall(x);
     }
 };
 
@@ -733,11 +923,9 @@ public:
 
 } // namespace
 
-void gpu_collect_assigned(ASR::stmt_t **body, size_t n,
-        std::set<ASR::symbol_t*> &scalars, std::set<std::string> &arrays,
-        bool &unknown, std::set<ASR::symbol_t*> *bases) {
-    AssignedCollector c(scalars, arrays, unknown, bases);
-    for (size_t i = 0; i < n; i++) c.visit_stmt(*body[i]);
+void gpu_collect_effects(ASR::stmt_t **body, size_t n, GpuEffects &effects) {
+    EffectsWalker w(effects);
+    for (size_t i = 0; i < n; i++) w.visit_stmt(*body[i]);
 }
 
 bool gpu_key_touched_whole(const std::set<std::string> &keys,
@@ -776,10 +964,15 @@ bool intrinsic_scalar(ASR::ttype_t *t) {
         || ASR::is_a<ASR::Logical_t>(*t);
 }
 
-class SimpleBody : public ASRUtils::BlockBodyWalkVisitor<SimpleBody> {
+// Every statement, those nested in DO, IF, SELECT CASE and BLOCK
+// constructs included, passes through visit_stmt, and every expression
+// through visit_expr, which accept only the kinds listed.
+class SimpleBody : public ASR::BaseWalkVisitor<SimpleBody> {
+    using Base = ASR::BaseWalkVisitor<SimpleBody>;
 public:
     bool ok = true;
     void visit_stmt(const ASR::stmt_t &x) {
+        if (!ok) return;
         switch (x.type) {
             case ASR::stmtType::Assignment: {
                 const ASR::Assignment_t &a =
@@ -804,8 +997,8 @@ public:
                     ok = false;
                     return;
                 }
-                for (auto &item : ASR::down_cast<ASR::Block_t>(b)
-                        ->m_symtab->get_scope()) {
+                ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+                for (auto &item : blk->m_symtab->get_scope()) {
                     if (ASR::is_a<ASR::Block_t>(*item.second)) continue;
                     if (!ASR::is_a<ASR::Variable_t>(*item.second)
                             || !intrinsic_scalar(ASR::down_cast<
@@ -814,13 +1007,34 @@ public:
                         return;
                     }
                 }
-                break;
+                for (size_t i = 0; i < blk->n_body; i++) {
+                    visit_stmt(*blk->m_body[i]);
+                }
+                return;
             }
             default:
                 ok = false;
                 return;
         }
-        ASRUtils::BlockBodyWalkVisitor<SimpleBody>::visit_stmt(x);
+        Base::visit_stmt(x);
+    }
+    void visit_expr(const ASR::expr_t &x) {
+        if (!ok) return;
+        switch (x.type) {
+            case ASR::exprType::ArraySection:
+            case ASR::exprType::StructConstructor:
+            case ASR::exprType::IntrinsicArrayFunction:
+                ok = false;
+                return;
+            default:
+                break;
+        }
+        ExprEffect k = expr_effect(x);
+        if (k != ExprEffect::None && k != ExprEffect::Call) {
+            ok = false;
+            return;
+        }
+        Base::visit_expr(x);
     }
     void visit_FunctionCall(const ASR::FunctionCall_t &x) {
         ASR::symbol_t *f = ASRUtils::symbol_get_past_external(x.m_name);
@@ -835,14 +1049,7 @@ public:
             ok = false;
             return;
         }
-        ASRUtils::BlockBodyWalkVisitor<SimpleBody>::visit_FunctionCall(x);
-    }
-    void visit_ArraySection(const ASR::ArraySection_t &) { ok = false; }
-    void visit_StructConstructor(const ASR::StructConstructor_t &) {
-        ok = false;
-    }
-    void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t &) {
-        ok = false;
+        Base::visit_FunctionCall(x);
     }
 };
 
@@ -1196,13 +1403,11 @@ bool gpu_function_inlinable(ASR::Function_t *fn) {
 
 namespace {
 
-// Whether a variable of the callee is assigned in its body.
+// Whether a variable of the callee may be assigned in its body.
 bool assigned_in(ASR::Function_t *fn, ASR::symbol_t *s) {
-    std::set<ASR::symbol_t*> scalars;
-    std::set<std::string> arrays;
-    bool unknown = false;
-    gpu_collect_assigned(fn->m_body, fn->n_body, scalars, arrays, unknown);
-    return scalars.count(s) > 0;
+    GpuEffects e;
+    gpu_collect_effects(fn->m_body, fn->n_body, e);
+    return e.unknown || e.scalars.count(s) > 0;
 }
 
 } // namespace

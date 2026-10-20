@@ -73,12 +73,15 @@ namespace LCompilers {
  *   loops (a time step and its stages), taken from the innermost outwards
  *   while each has a unit step, bounds without function calls, and no
  *   statement that leaves it early, and while the other statements of its
- *   body neither read nor write the producer's arrays, call nothing whose
- *   effects are unknown (a subroutine, a function that is not
- *   self-contained or may do input/output), define variables only by
- *   assignment, as actual arguments of functions (for dummies that are not
- *   INTENT(IN)) or as internal files (not by input, IOSTAT=, ALLOCATE,
- *   ...), and assign neither the loop's variable nor a variable the
+ *   body neither read nor write the producer's arrays, call only
+ *   self-contained procedures, have effects gpu_collect_effects models
+ *   (gpu_loop_utils.h), statements nested in BLOCKs included: they define
+ *   variables only by assignment, as DO variables, as actual arguments of
+ *   pure procedures (or of self-contained functions without input/output)
+ *   for dummies that are not INTENT(IN), or as internal files; any other
+ *   kind of statement or expression (input, IOSTAT=, ALLOCATE, a call of
+ *   another procedure, an implied DO in input/output, ...) ends the chain.
+ *   And they assign neither the loop's variable nor a variable the
  *   producer's bounds or tests read. The producer's bounds and tests must
  *   not read the loop's variable, and the bounds of the DO loops nested in
  *   it must read neither its variable nor anything assigned in it, so that
@@ -129,29 +132,6 @@ struct Read {
     GpuDnf path;
     bool affine_ok = true;
 };
-
-// The scalars of a statement list assigned exactly once.
-void count_assignments(ASR::stmt_t **body, size_t n,
-        std::map<ASR::symbol_t*, int> &count) {
-    struct Count : public ASRUtils::BlockBodyWalkVisitor<Count> {
-        std::map<ASR::symbol_t*, int> *count;
-        void visit_Assignment(const ASR::Assignment_t &x) {
-            if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
-                (*count)[ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(x.m_target)->m_v)]++;
-            }
-        }
-        void visit_DoLoop(const ASR::DoLoop_t &x) {
-            if (x.m_head.m_v && ASR::is_a<ASR::Var_t>(*x.m_head.m_v)) {
-                (*count)[ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(x.m_head.m_v)->m_v)] += 2;
-            }
-            ASRUtils::BlockBodyWalkVisitor<Count>::visit_DoLoop(x);
-        }
-    } c;
-    c.count = &count;
-    for (size_t i = 0; i < n; i++) c.visit_stmt(*body[i]);
-}
 
 // Whether a statement list holds a statement that leaves a loop or the
 // procedure early.
@@ -674,12 +654,10 @@ public:
             } else {
                 std::set<std::string> r;
                 gpu_collect_array_reads(&s, 1, r);
-                std::set<ASR::symbol_t*> sc;
-                std::set<std::string> w;
-                bool unknown = false;
-                gpu_collect_assigned(&s, 1, sc, w, unknown);
-                if (gpu_key_touched(r, key) || gpu_key_touched(w, key)
-                        || unknown) {
+                GpuEffects e;
+                gpu_collect_effects(&s, 1, e);
+                if (gpu_key_touched(r, key) || gpu_key_touched(e.arrays, key)
+                        || e.unknown) {
                     ws.consistent = false;
                 }
             }
@@ -932,11 +910,11 @@ public:
         // so that the reads of the intermediate arrays are all visible.
         if (!gpu_calls_self_contained(cb, cn)) return fail();
         // What the consumer assigns.
-        std::set<ASR::symbol_t*> c_scalars;
-        std::set<std::string> c_arrays;
-        bool unknown = false;
-        gpu_collect_assigned(cb, cn, c_scalars, c_arrays, unknown);
-        if (unknown) return fail();
+        GpuEffects c_effects;
+        gpu_collect_effects(cb, cn, c_effects);
+        if (c_effects.unknown) return fail();
+        const std::set<ASR::symbol_t*> &c_scalars = c_effects.scalars;
+        const std::set<std::string> &c_arrays = c_effects.arrays;
         for (auto &k : xkeys) if (c_arrays.count(k)) return fail();
         for (ASR::symbol_t *s : producer_syms) {
             if (c_scalars.count(s)) return fail();
@@ -981,10 +959,10 @@ public:
         }
 
         // The affine facts: the consumer's loop bounds.
-        std::map<ASR::symbol_t*, int> count;
-        count_assignments(cb, cn, count);
         std::set<ASR::symbol_t*> single;
-        for (auto &kv : count) if (kv.second == 1) single.insert(kv.first);
+        for (auto &kv : c_effects.definitions) {
+            if (kv.second == 1) single.insert(kv.first);
+        }
         auto invariant = [&](ASR::symbol_t *s) {
             if (c.position(s) >= 0) return true;
             return c_scalars.count(s) == 0 && ASR::is_a<ASR::Variable_t>(*s);
@@ -1219,33 +1197,30 @@ public:
                 // Nothing else in the loop's body touches the intermediate
                 // arrays, the variables the producer's bounds and tests
                 // read or the loop's variable.
-                std::set<ASR::symbol_t*> sc, ba;
-                std::set<std::string> wa;
+                GpuEffects other;
                 std::set<std::string> ra;
-                bool unk = false;
                 for (size_t m = 0; m < list_n; m++) {
                     if (list[m] == child_a || list[m] == child_b) continue;
-                    gpu_collect_assigned(&list[m], 1, sc, wa, unk, &ba);
+                    gpu_collect_effects(&list[m], 1, other);
                     gpu_collect_array_reads(&list[m], 1, ra);
                     // What a call reads beyond its arguments is not seen.
-                    if (!gpu_calls_self_contained(&list[m], 1)) unk = true;
-                }
-                // What the loops nested in it, which hold the fused pair,
-                // assign.
-                std::set<ASR::symbol_t*> sc_all = sc, ba_all = ba;
-                {
-                    std::set<std::string> w2;
-                    bool u2 = false;
-                    gpu_collect_assigned(&child_a, 1, sc_all, w2, u2,
-                        &ba_all);
-                    if (child_b != child_a) {
-                        gpu_collect_assigned(&child_b, 1, sc_all, w2, u2,
-                            &ba_all);
+                    if (!gpu_calls_self_contained(&list[m], 1)) {
+                        other.unknown = true;
                     }
                 }
+                const std::set<std::string> &wa = other.arrays;
+                // What the loops nested in it, which hold the fused pair,
+                // assign.
+                GpuEffects all = other;
+                gpu_collect_effects(&child_a, 1, all);
+                if (child_b != child_a) {
+                    gpu_collect_effects(&child_b, 1, all);
+                }
+                const std::set<ASR::symbol_t*> &sc_all = all.scalars;
+                const std::set<ASR::symbol_t*> &ba_all = all.bases;
                 // A statement with effects the collections do not see
-                // (unk) ends the chain, so that the levels kept have none.
-                bool touched = unk;
+                // ends the chain, so that the levels kept have none.
+                bool touched = all.unknown;
                 for (auto &k2 : xkeys) {
                     if (gpu_key_touched(wa, k2) || gpu_key_touched(ra, k2)) {
                         touched = true;

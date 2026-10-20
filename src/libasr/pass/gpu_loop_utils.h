@@ -162,18 +162,39 @@ bool gpu_calls_self_contained(ASR::stmt_t **body, size_t n);
 // what the program does.
 bool gpu_expr_duplicable(ASR::expr_t *e);
 
-// Every variable a statement list assigns (scalars, and arrays through
-// their elements or as a whole), descending into nested statements and
-// BLOCKs, keyed by gpu_array_key for arrays. `bases`, when given, also
-// receives the variable each assigned designator starts from (`x` for
-// `x`, `x(k)`, `x%c` or `x%a(k)%c`): an expression reading that variable
-// may evaluate differently afterwards. The actual arguments of a function
-// whose dummies are not INTENT(IN) and an internal file written count as
-// assigned; any statement that may define a variable otherwise (a
-// subroutine call, input, an allocation, IOSTAT=, ...) sets `unknown`.
-void gpu_collect_assigned(ASR::stmt_t **body, size_t n,
-    std::set<ASR::symbol_t*> &scalars, std::set<std::string> &arrays,
-    bool &unknown, std::set<ASR::symbol_t*> *bases = nullptr);
+// What a statement list may define, as computed by gpu_collect_effects.
+struct GpuEffects {
+    // The variables defined as a whole (a scalar, a whole array, a
+    // derived-type object), and the variable a whole array component that
+    // is defined belongs to (its allocation may change).
+    std::set<ASR::symbol_t*> scalars;
+    // The gpu_array_key of every array or derived-type object defined in
+    // part or as a whole.
+    std::set<std::string> arrays;
+    // The variable each defined designator starts from (`x` for `x`,
+    // `x(k)`, `x%c` or `x%a(k)%c`): an expression reading that variable may
+    // evaluate differently afterwards.
+    std::set<ASR::symbol_t*> bases;
+    // How many times each variable is defined as a whole, a DO variable
+    // counting twice.
+    std::map<ASR::symbol_t*, int> definitions;
+    // Whether the statements may define something else: the sets above
+    // are then incomplete.
+    bool unknown = false;
+};
+
+// Adds to `effects` what a statement list may define, descending into the
+// statements nested in it and the BLOCKs it runs. Every statement and every
+// expression is classified by its kind in one place: assignments, DO
+// variables, the actual arguments of procedures whose dummies are not
+// INTENT(IN), internal files written and the variables of implied DO loops
+// outside input/output are definitions. A pure procedure (or a
+// self-contained one without input/output) is modeled by its dummies; the
+// control constructs and output statements without specifiers that define
+// anything define nothing themselves. Any other kind (a call of another
+// procedure, input, an allocation, a pointer association, IOSTAT=, an
+// implied DO in input/output, a namelist, ...) sets `unknown`.
+void gpu_collect_effects(ASR::stmt_t **body, size_t n, GpuEffects &effects);
 
 // Every array designator key an expression or statement list reads (as an
 // element, a whole array or an actual argument), and the key of every
