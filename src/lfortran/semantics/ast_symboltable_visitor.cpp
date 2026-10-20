@@ -1945,6 +1945,7 @@ public:
         }
         in_Subroutine = old_in_Subroutine;
         is_Function = false;
+        report_saved_automatic_objects();
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
             default_storage_save = false;
@@ -2618,6 +2619,7 @@ public:
             nullptr, 0,
             is_requirement, init_deterministic, init_side_effect_free);
         tmp = complete_instantiation_procedure(tmp, parent_scope, x.base);
+        report_saved_automatic_objects();
         handle_save();
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
@@ -3542,6 +3544,7 @@ public:
             }
         }
         tmp = complete_instantiation_procedure(tmp, parent_scope, x.base);
+        report_saved_automatic_objects();
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 

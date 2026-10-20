@@ -3703,6 +3703,66 @@ public:
         return false;
     }
 
+    static bool is_nonconstant(ASR::expr_t *e) {
+        return e != nullptr && ASRUtils::expr_value(e) == nullptr;
+    }
+
+    // Whether an array bound of `type` is not a constant expression
+    bool has_nonconstant_bound(ASR::ttype_t *type) {
+        ASR::dimension_t *dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
+        for (size_t i = 0; i < n_dims; i++) {
+            if (has_postponed_bound(dims[i]) || is_nonconstant(dims[i].m_start)
+                    || is_nonconstant(dims[i].m_length)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Whether the character length of `type` is not a constant expression
+    static bool has_nonconstant_length(ASR::ttype_t *type) {
+        if (!ASRUtils::is_character(*type)) {
+            return false;
+        }
+        ASR::String_t *str = ASRUtils::get_string_type(type);
+        return str->m_len_kind == ASR::string_length_kindType::ExpressionLength
+            && is_nonconstant(str->m_len);
+    }
+
+    // Fortran 2023 C814. Runs before handle_save(), so a bare SAVE does not count.
+    void report_saved_automatic_objects() {
+        for (auto &item : current_scope->get_scope()) {
+            if (!ASR::is_a<ASR::Variable_t>(*item.second)) {
+                continue;
+            }
+            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(item.second);
+            // An initializer gives Save storage too, and is a different error.
+            if (v->m_intent != ASR::intentType::Local
+                    || v->m_storage != ASR::storage_typeType::Save
+                    || v->m_symbolic_value != nullptr) {
+                continue;
+            }
+            bool length = has_nonconstant_length(v->m_type);
+            if (!length && !has_nonconstant_bound(v->m_type)) {
+                continue;
+            }
+            std::string name = v->m_name;
+            std::string part = length ? "the character length" : "an array bound";
+            std::string keep = length
+                ? "a deferred length, character(len=:)" : "a deferred shape";
+            diag.add(Diagnostic(
+                "automatic object '" + name + "' cannot have the save attribute",
+                Level::Error, Stage::Semantic, {
+                    Label(part + " of '" + name + "' is not a constant expression",
+                        {v->base.base.loc}),
+                    Label("help: Fortran 2023 C814 forbids the save attribute "
+                        "here; remove it, or make '" + name + "' allocatable "
+                        "with " + keep + ", to keep its value between calls",
+                        {v->base.base.loc}, false)}));
+        }
+    }
+
     // The objects that a scoping unit's COMMON statements place in a common
     // block, lower cased. A specification expression may read one of them
     // (Fortran 2023 10.1.11), and the COMMON statements of a specification

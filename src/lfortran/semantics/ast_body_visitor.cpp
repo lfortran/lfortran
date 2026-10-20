@@ -539,6 +539,7 @@ public:
             current_scope = current_scope_copy;
         }
         postponed_genericProcedure_calls_vec.clear();
+        report_saved_automatic_objects();
 
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_items);
