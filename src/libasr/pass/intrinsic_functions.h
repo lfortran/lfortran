@@ -878,7 +878,7 @@ namespace math_func {                                                           
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,                                   \
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/)  {             \
         ASR::ttype_t* arg_type = arg_types[0];                                                          \
-        std::string c_func_name = real_c_func_name(c_name, arg_type);                                  \
+        std::string c_func_name = real_c_func_name(c_name, arg_type);                                   \
         std::string new_name = "_lcompilers_" + std::string(lcompilers_name) + "_" +                    \
             type_to_str_python_expr(arg_type, new_args[0].m_value);                                     \
         declare_basic_variables(new_name);                                                              \
@@ -926,7 +926,7 @@ namespace math_func {                                                           
             Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,                                   \
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/, int /*index_kind*/)  {             \
         ASR::ttype_t* arg_type = arg_types[0];                                                          \
-        std::string c_func_name = real_c_func_name(c_name, arg_type);                                  \
+        std::string c_func_name = real_c_func_name(c_name, arg_type);                                   \
         std::string new_name = "_lcompilers_" + std::string(lcompilers_name) + "_" +                    \
             type_to_str_python_expr(arg_type, new_args[0].m_value);                                     \
         declare_basic_variables(new_name);                                                              \
