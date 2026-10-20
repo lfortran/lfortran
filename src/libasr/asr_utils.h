@@ -4397,6 +4397,19 @@ static inline bool expr_references_symbol(ASR::expr_t* expr, ASR::symbol_t* sym)
     return visitor.found;
 }
 
+// The actual procedure for `sym` when it is a dummy procedure of `func`, or nullptr
+static inline ASR::symbol_t* get_actual_procedure(ASR::Function_t* func,
+        ASR::call_arg_t* args, size_t n_args, ASR::symbol_t* sym) {
+    for (size_t i = 0; i < func->n_args && i < n_args; i++) {
+        if (!ASR::is_a<ASR::Var_t>(*func->m_args[i])) continue;
+        if (ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v != sym) continue;
+        ASR::expr_t* actual = args[i].m_value;
+        if (actual == nullptr || !ASR::is_a<ASR::Var_t>(*actual)) return nullptr;
+        return ASR::down_cast<ASR::Var_t>(actual)->m_v;
+    }
+    return nullptr;
+}
+
 // This replacer is used for replacing FunctionParam in expressions by the arguments which are passed in.
 // To be used when creating FunctionCall or SubroutineCall.
 class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionParamWithArg> {
@@ -7061,6 +7074,9 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
     {}
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        ASR::symbol_t* actual = get_actual_procedure(orig_func,
+            orig_args.p, orig_args.size(), x->m_name);
+        if (actual) x->m_name = actual;
         ASR::symbol_t* f = ASRUtils::symbol_get_past_external(x->m_name);
         ASR::symbol_t* owner = f ? ASRUtils::get_asr_owner(f) : nullptr;
         if (owner && ASR::is_a<ASR::Function_t>(*f)) {
