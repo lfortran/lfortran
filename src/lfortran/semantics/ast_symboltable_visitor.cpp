@@ -5824,6 +5824,28 @@ public:
         check_scope(clss->m_symtab->parent);
     }
 
+    // F2018 19.3.1: a binding may not have the name of a component.
+    bool binding_named_like_component(ASR::Struct_t *clss,
+            const std::string &name, const Location &loc) {
+        ASR::symbol_t *sym = resolve_type_bound_proc_in_parent_chain(clss, name);
+        if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) {
+            return false;
+        }
+        SymbolTable *owner = ASR::down_cast<ASR::Variable_t>(sym)->m_parent_symtab;
+        std::string owner_name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::symbol_t>(owner->asr_owner));
+        std::string msg = owner == clss->m_symtab
+            ? "type-bound procedure '" + name + "' has the same name as a "
+                "component of '" + owner_name + "'; rename one of them"
+            : "type-bound procedure '" + name + "' of '"
+                + std::string(clss->m_name) + "' has the same name as a "
+                "component inherited from '" + owner_name
+                + "'; rename the binding";
+        diag.add(diag::Diagnostic(msg, diag::Level::Error,
+            diag::Stage::Semantic, {diag::Label("", {loc})}));
+        return true;
+    }
+
     void add_class_procedures() {
         for (auto &proc : class_procedures) {
             ASR::symbol_t* clss_sym = ASRUtils::symbol_get_past_external(
@@ -5832,6 +5854,12 @@ public:
             SymbolTable* proc_scope = ASRUtils::symbol_parent_symtab(clss_sym);
             for (auto &pname : proc.second) {
                 auto &loc = pname.second["procedure"].loc;
+                if (binding_named_like_component(clss, pname.first, loc)) {
+                    if (!compiler_options.continue_compilation) {
+                        throw SemanticAbort();
+                    }
+                    continue;
+                }
                 auto& cdf = class_deferred_procedures;
                 bool is_pass = pname.second.count("pass");
                 bool is_deferred = check_is_deferred(pname.first, clss);
