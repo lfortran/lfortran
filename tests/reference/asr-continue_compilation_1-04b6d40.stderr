@@ -6425,6 +6425,33 @@ semantic error: Result of `int` overflows its kind(2)
 5223 |     cc1_ero_i2 = int(-40000.5_16, 2)  ! {Error} Result of `int` overflows its kind(2)
      |                  ^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: the argument of the `rank` intrinsic must be a data object
+    --> tests/errors/continue_compilation_1.f90:5237:23
+     |
+5237 |         print *, rank(a(1, :) + cc1_rdo_f())  ! {Error} the argument of the `rank` intrinsic must be a data object
+     |                       ^^^^^^^^^^^^^^^^^^^^^ this expression is not a variable or a constant
+     |
+5237 |         print *, rank(a(1, :) + cc1_rdo_f())  ! {Error} the argument of the `rank` intrinsic must be a data object
+     |                       ~~~~~~~~~~~~~~~~~~~~~ help: assign the value to a variable and pass the variable instead
+
+semantic error: the argument of the `rank` intrinsic must be a data object
+    --> tests/errors/continue_compilation_1.f90:5238:23
+     |
+5238 |         print *, rank(-(a * 2.0))  ! {Error} the argument of the `rank` intrinsic must be a data object
+     |                       ^^^^^^^^^^ this expression is not a variable or a constant
+     |
+5238 |         print *, rank(-(a * 2.0))  ! {Error} the argument of the `rank` intrinsic must be a data object
+     |                       ~~~~~~~~~~ help: assign the value to a variable and pass the variable instead
+
+semantic error: the argument of the `rank` intrinsic must be a data object
+    --> tests/errors/continue_compilation_1.f90:5239:23
+     |
+5239 |         print *, rank(merge(a, a, .true.))  ! {Error} the argument of the `rank` intrinsic must be a data object
+     |                       ^^^^^^^^^^^^^^^^^^^ this expression is not a variable or a constant
+     |
+5239 |         print *, rank(merge(a, a, .true.))  ! {Error} the argument of the `rank` intrinsic must be a data object
+     |                       ~~~~~~~~~~~~~~~~~~~ help: assign the value to a variable and pass the variable instead
+
 semantic error: branch to label 20 enters a DO loop from outside it
     --> tests/errors/continue_compilation_1.f90:4024:9
      |
