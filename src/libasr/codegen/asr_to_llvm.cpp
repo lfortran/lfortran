@@ -29536,7 +29536,7 @@ public:
                         if( x.m_bound == ASR::arrayboundType::LBound ) {
                             llvm::Value *lbound = nullptr;
                             if (m_dims[i].m_start) {
-                                this->visit_expr_wrapper(m_dims[i].m_start, true);
+                                visit_expr_load_wrapper(m_dims[i].m_start, 2, true);
                                 lbound = tmp;
                             } else {
                                 lbound = llvm::ConstantInt::get(target_type, 1);
@@ -29553,7 +29553,7 @@ public:
                         } else if( x.m_bound == ASR::arrayboundType::UBound ) {
                             llvm::Value *lbound = nullptr;
                             if (m_dims[i].m_start) {
-                                this->visit_expr_wrapper(m_dims[i].m_start, true);
+                                visit_expr_load_wrapper(m_dims[i].m_start, 2, true);
                                 lbound = tmp;
                             } else {
                                 lbound = llvm::ConstantInt::get(target_type, 1);
