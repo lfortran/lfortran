@@ -720,6 +720,107 @@ void gpu_collect_symbols(ASR::stmt_t **body, size_t n,
 }
 
 // ---------------------------------------------------------------------------
+// Self-contained functions
+
+namespace {
+
+bool self_contained(ASR::Function_t *fn, std::set<ASR::Function_t*> &active);
+
+// Whether the procedure a call names is a function that is
+// self-contained.
+bool callee_self_contained(ASR::symbol_t *name,
+        std::set<ASR::Function_t*> &active) {
+    ASR::symbol_t *f = ASRUtils::symbol_get_past_external(name);
+    if (!ASR::is_a<ASR::Function_t>(*f)) return false;
+    return self_contained(ASR::down_cast<ASR::Function_t>(f), active);
+}
+
+class SelfContainedCheck : public ASR::BaseWalkVisitor<SelfContainedCheck> {
+public:
+    // The scope of the function checked, or null for the calls of a loop
+    // body, where any variable may be named.
+    SymbolTable *scope = nullptr;
+    std::set<ASR::Function_t*> *active;
+    bool ok = true;
+
+    void visit_Var(const ASR::Var_t &x) {
+        if (scope == nullptr) return;
+        ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_v);
+        if (!ASR::is_a<ASR::Variable_t>(*s)) {
+            // A procedure passed as an actual argument.
+            ok = false;
+            return;
+        }
+        if (ASR::down_cast<ASR::Variable_t>(s)->m_storage
+                == ASR::storage_typeType::Parameter) {
+            return;
+        }
+        for (SymbolTable *t = ASRUtils::symbol_parent_symtab(s); t;
+                t = t->parent) {
+            if (t == scope) return;
+        }
+        ok = false;
+    }
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        if (!callee_self_contained(x.m_name, *active)) ok = false;
+        ASR::BaseWalkVisitor<SelfContainedCheck>::visit_FunctionCall(x);
+    }
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        if (!callee_self_contained(x.m_name, *active)) ok = false;
+        ASR::BaseWalkVisitor<SelfContainedCheck>::visit_SubroutineCall(x);
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        // The BLOCKs of a function are in its scope; those of a loop body
+        // are visited here.
+        if (scope != nullptr) return;
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!ASR::is_a<ASR::Block_t>(*b)) {
+            ok = false;
+            return;
+        }
+        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) visit_stmt(*blk->m_body[i]);
+    }
+};
+
+bool self_contained(ASR::Function_t *fn, std::set<ASR::Function_t*> &active) {
+    ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(fn);
+    if (ft->m_deftype != ASR::deftypeType::Implementation) return false;
+    // A recursive call is checked where it started.
+    if (active.count(fn)) return true;
+    active.insert(fn);
+    SelfContainedCheck c;
+    c.scope = fn->m_symtab;
+    c.active = &active;
+    c.visit_Function(*fn);
+    active.erase(fn);
+    return c.ok;
+}
+
+} // namespace
+
+bool gpu_function_self_contained(ASR::Function_t *fn) {
+    std::set<ASR::Function_t*> active;
+    return self_contained(fn, active);
+}
+
+bool gpu_calls_self_contained(ASR::expr_t *e) {
+    std::set<ASR::Function_t*> active;
+    SelfContainedCheck c;
+    c.active = &active;
+    c.visit_expr(*e);
+    return c.ok;
+}
+
+bool gpu_calls_self_contained(ASR::stmt_t **body, size_t n) {
+    std::set<ASR::Function_t*> active;
+    SelfContainedCheck c;
+    c.active = &active;
+    for (size_t i = 0; i < n && c.ok; i++) c.visit_stmt(*body[i]);
+    return c.ok;
+}
+
+// ---------------------------------------------------------------------------
 // Cost
 
 int64_t gpu_expr_cost(ASR::expr_t *e, int depth) {

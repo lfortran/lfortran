@@ -774,8 +774,14 @@ public:
             gpu_collect_array_reads(w.value, producer_reads);
             gpu_collect_symbols(w.value, producer_syms);
             for (auto *g : w.guards) gpu_collect_symbols(g, producer_syms);
-            // An impure call, or a call that is not inlined but takes an
-            // intermediate array.
+            // A call of a function that names variables other than its
+            // arguments and locals reads what the collections above do not
+            // see.
+            if (!gpu_calls_self_contained(w.value)) return nullptr;
+            for (auto *g : w.guards) {
+                if (!gpu_calls_self_contained(g)) return nullptr;
+            }
+            // An impure call.
             struct Calls : public ASR::BaseWalkVisitor<Calls> {
                 bool ok = true;
                 void visit_FunctionCall(const ASR::FunctionCall_t &x) {
@@ -838,6 +844,9 @@ public:
             return nullptr;
         };
 
+        // A call left in the consumer reads only what its arguments name,
+        // so that the reads of the intermediate arrays are all visible.
+        if (!gpu_calls_self_contained(cb, cn)) return fail();
         // What the consumer assigns.
         std::set<ASR::symbol_t*> c_scalars;
         std::set<std::string> c_arrays;
@@ -1117,6 +1126,8 @@ public:
                     if (list[m] == child_a || list[m] == child_b) continue;
                     gpu_collect_assigned(&list[m], 1, sc, wa, unk);
                     gpu_collect_array_reads(&list[m], 1, ra);
+                    // What a call reads beyond its arguments is not seen.
+                    if (!gpu_calls_self_contained(&list[m], 1)) unk = true;
                 }
                 // What the loops nested in it, which hold the fused pair,
                 // assign.

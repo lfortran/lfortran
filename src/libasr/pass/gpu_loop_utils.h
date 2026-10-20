@@ -149,6 +149,16 @@ private:
 // subroutine call.
 bool gpu_function_inlinable(ASR::Function_t *fn);
 
+// Whether a function names no variable but its own dummy arguments and
+// locals (named constants aside) and calls only procedures that do the
+// same: a call of it then reads and writes nothing but what its actual
+// arguments name, which the analyses of a loop body see.
+bool gpu_function_self_contained(ASR::Function_t *fn);
+// Whether every procedure an expression or a statement list (with the
+// BLOCKs it runs) calls is self-contained.
+bool gpu_calls_self_contained(ASR::expr_t *e);
+bool gpu_calls_self_contained(ASR::stmt_t **body, size_t n);
+
 // Whether `e` reads no function result: duplicating it does not change
 // what the program does.
 bool gpu_expr_duplicable(ASR::expr_t *e);
