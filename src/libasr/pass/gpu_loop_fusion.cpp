@@ -53,8 +53,8 @@ namespace LCompilers {
  * * An array the consumer writes and the producer reads (the stage update
  *   `q(i, j) = ...` of a time step whose fluxes read q) would be read and
  *   written by different iterations of the fused nest. The consumer writes
- *   a copy of it instead, which is copied back after the nest (or swapped
- *   with it, see gpu_loop_swap below). The consumer must write the array
+ *   a copy of it instead, which is copied back after the nest, or which
+ *   takes turns with the array (below). The consumer must write the array
  *   only at its own iteration, the same element on every path through its
  *   body, and not read it.
  * * The producer's arrays keep the values the producer gave them, which the
@@ -1070,6 +1070,10 @@ public:
         // arrays stored.
         std::vector<ASR::DoLoop_t*> loops;
         std::vector<ASR::stmt_t*> loop_stmts;
+        // What the statements of those loops other than the two assign.
+        std::set<std::string> other_writes;
+        std::set<ASR::symbol_t*> assigned_in_loops;
+        bool other_unknown = false;
         {
             ASR::stmt_t *child_a = body[i], *child_b = body[i + 1];
             ASR::stmt_t **list = body;
@@ -1137,6 +1141,9 @@ public:
                     }
                 }
                 if (touched) break;
+                other_writes.insert(wa.begin(), wa.end());
+                assigned_in_loops.insert(sc_all.begin(), sc_all.end());
+                other_unknown = other_unknown || unk;
                 loops.push_back(l);
                 loop_stmts.push_back(an.stmt);
                 // One level up the loop itself is the child.
@@ -1180,6 +1187,59 @@ public:
             }
             designators[k] = des;
         }
+        // Renamed arrays whose copies can take turns with them instead of
+        // being copied back (ping-pong buffers): a copy starts equal to its
+        // array, and only the consumer writes either, always the same
+        // elements, so the two agree on every element the consumer does not
+        // write. The fused nest then reads one and writes the other, which
+        // one alternating from one execution to the next; the original
+        // loops, in the last iteration, first copy back what the latest
+        // execution left in the copies.
+        std::map<std::string, bool> swap;
+        {
+            std::set<ASR::symbol_t*> c_bound_syms;
+            for (size_t d2 = 0; d2 < c.rank(); d2++) {
+                gpu_collect_symbols(c.starts[d2], c_bound_syms);
+                gpu_collect_symbols(c.ends[d2], c_bound_syms);
+            }
+            bool bounds_fixed = true;
+            for (ASR::symbol_t *x : c_bound_syms) {
+                if (assigned_in_loops.count(x) && c.position(x) < 0) {
+                    bounds_fixed = false;
+                }
+            }
+            for (auto &k : renamed) {
+                ASR::expr_t *base = designators[k];
+                while (ASR::is_a<ASR::StructInstanceMember_t>(*base)) {
+                    base = ASR::down_cast<ASR::StructInstanceMember_t>(
+                        base)->m_v;
+                }
+                bool target = true;
+                if (ASR::is_a<ASR::Var_t>(*base)) {
+                    ASR::symbol_t *bs = ASRUtils::symbol_get_past_external(
+                        ASR::down_cast<ASR::Var_t>(base)->m_v);
+                    if (ASR::is_a<ASR::Variable_t>(*bs)) {
+                        target = ASR::down_cast<ASR::Variable_t>(bs)
+                            ->m_target_attr;
+                    }
+                }
+                swap[k] = gpu_loop_transform_enabled(po, GpuLoopSwap)
+                    && bounds_fixed && !target && !other_unknown
+                    && !other_writes.count(k);
+            }
+        }
+        bool ping_pong = !renamed.empty();
+        for (auto &k : renamed) if (!swap[k]) ping_pong = false;
+        ASR::symbol_t *parity = nullptr;
+        if (ping_pong) {
+            parity = ASR::down_cast<ASR::Var_t>(b.Variable(fn_scope,
+                fn_scope->get_unique_name("__gpu_parity", false),
+                ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)),
+                ASR::intentType::Local))->m_v;
+            hoisted_before.push_back(b.Assignment(b.Var(parity),
+                b.bool_t(false, ASRUtils::TYPE(ASR::make_Logical_t(al, loc,
+                    4)))));
+        }
         for (auto &k : renamed) {
             ASR::expr_t *des = designators[k];
             ASR::ttype_t *t = ASRUtils::expr_type(des);
@@ -1218,8 +1278,15 @@ public:
                     static_cast<int64_t>(
                         ASRUtils::IntrinsicImpureFunctions::Allocated),
                     aargs.p, aargs.n, 0, logical_type, nullptr));
-            hoisted_before.push_back(b.If(is_alloc,
-                {b.Allocate(b.Var(copy), dims)}, {}));
+            if (ping_pong) {
+                hoisted_before.push_back(b.If(is_alloc,
+                    {b.Allocate(b.Var(copy), dims),
+                     gpu_device_copy_nest(al, loc, fn_scope, b.Var(copy),
+                        des)}, {}));
+            } else {
+                hoisted_before.push_back(b.If(is_alloc,
+                    {b.Allocate(b.Var(copy), dims)}, {}));
+            }
             Vec<ASR::expr_t*> cargs;
             cargs.reserve(al, 1);
             cargs.push_back(al, b.Var(copy));
@@ -1405,21 +1472,22 @@ public:
         std::vector<ASR::stmt_t*> fused_stmts = bound_reads;
         fused_stmts.push_back(gpu_loop_nest_with_body(al, c, cs, ce,
             fused_body));
-        // Copy back what the fused nest wrote into the copies.
-        for (auto &k : renamed) {
+        // The nests that copy back what the fused nest wrote into the
+        // copies.
+        auto copy_back = [&](const std::string &k) {
             const WriteShape &ws = shapes[k];
             Vec<ASR::array_index_t> idx;
             idx.reserve(al, ws.subscripts.size());
             Vec<ASR::array_index_t> idx2;
             idx2.reserve(al, ws.subscripts.size());
-            for (ASR::symbol_t *s : ws.subscripts) {
+            for (ASR::symbol_t *sub : ws.subscripts) {
                 ASR::array_index_t ai;
                 ai.loc = loc;
                 ai.m_left = nullptr;
                 ai.m_step = nullptr;
-                ai.m_right = b.Var(s);
+                ai.m_right = b.Var(sub);
                 idx.push_back(al, ai);
-                ai.m_right = b.Var(s);
+                ai.m_right = b.Var(sub);
                 idx2.push_back(al, ai);
             }
             ASR::ttype_t *et = ASRUtils::duplicate_type(al,
@@ -1439,9 +1507,56 @@ public:
                 cs2.push_back(d.duplicate_expr(c.starts[m]));
                 ce2.push_back(d.duplicate_expr(c.ends[m]));
             }
-            GpuLoopNest plain = c;
-            fused_stmts.push_back(gpu_loop_nest_with_body(al, plain, cs2,
-                ce2, cbody2));
+            return gpu_loop_nest_with_body(al, c, cs2, ce2, cbody2);
+        };
+        std::vector<ASR::stmt_t*> original = {body[i], body[i + 1]};
+        if (ping_pong) {
+            // The second fused nest reads the copies and writes the arrays.
+            GpuDuplicator d2(al, scope);
+            Vec<ASR::stmt_t*> other;
+            d2.duplicate_body(fused_body.p, fused_body.n, other);
+            if (!d2.ok) return fail();
+            std::map<std::string, ASR::symbol_t*> copy_of;
+            std::map<ASR::symbol_t*, std::string> array_of;
+            for (auto &k : renamed) {
+                copy_of[k] = copies[k];
+                array_of[copies[k]] = k;
+            }
+            gpu_replace_exprs(other.p, other.n, [&](ASR::expr_t *e)
+                    -> ASR::expr_t* {
+                if (ASR::is_a<ASR::Var_t>(*e)) {
+                    auto it = array_of.find(ASR::down_cast<ASR::Var_t>(e)->m_v);
+                    if (it != array_of.end()) {
+                        return d.duplicate_expr(designators[it->second]);
+                    }
+                }
+                std::string k = gpu_array_key(e);
+                auto it = copy_of.find(k);
+                if (!k.empty() && it != copy_of.end()) {
+                    return b.Var(it->second);
+                }
+                return nullptr;
+            });
+            std::vector<ASR::expr_t*> cs3, ce3;
+            for (size_t m = 0; m < c.rank(); m++) {
+                cs3.push_back(d.duplicate_expr(c.starts[m]));
+                ce3.push_back(d.duplicate_expr(c.ends[m]));
+            }
+            ASR::stmt_t *second = gpu_loop_nest_with_body(al, c, cs3, ce3,
+                other);
+            ASR::stmt_t *first = fused_stmts.back();
+            fused_stmts.pop_back();
+            fused_stmts.push_back(b.If(b.Var(parity), {second}, {first}));
+            fused_stmts.push_back(b.Assignment(b.Var(parity),
+                b.Not(b.Var(parity))));
+            std::vector<ASR::stmt_t*> back;
+            for (auto &k : renamed) back.push_back(copy_back(k));
+            back.push_back(b.Assignment(b.Var(parity),
+                b.bool_t(false, ASRUtils::TYPE(ASR::make_Logical_t(al, loc,
+                    4)))));
+            original.insert(original.begin(), b.If(b.Var(parity), back, {}));
+        } else {
+            for (auto &k : renamed) fused_stmts.push_back(copy_back(k));
         }
 
         // The condition: not the last iteration of the DO loops, and the
@@ -1456,7 +1571,7 @@ public:
         for (ASR::expr_t *e : checks) {
             cond = b.And(cond, b.GtE(e, gpu_i32(al, loc, 0)));
         }
-        ASR::stmt_t *result = b.If(cond, fused_stmts, {body[i], body[i + 1]});
+        ASR::stmt_t *result = b.If(cond, fused_stmts, original);
         if (!hoisted_before.empty()) {
             ASR::stmt_t *outer = loop_stmts.back();
             auto &bv = before[outer];

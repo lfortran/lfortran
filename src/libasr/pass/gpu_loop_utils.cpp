@@ -17,7 +17,8 @@ bool gpu_loop_transform_enabled(const PassOptions &pass_options,
     std::stringstream ss(s);
     std::string item;
     while (std::getline(ss, item, ',')) {
-        if (item == "fuse" && t == GpuLoopFuse) {
+        if ((item == "fuse" && t == GpuLoopFuse)
+                || (item == "swap" && t == GpuLoopSwap)) {
             return true;
         }
     }
@@ -179,6 +180,69 @@ ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
     return ASRUtils::STMT(ASR::make_OMPRegion_t(al,
         nest.region->base.base.loc, nest.region->m_region, clauses.p,
         clauses.n, cur_body, cur_n, nest.region->m_exec_target));
+}
+
+ASR::stmt_t *gpu_device_copy_nest(Allocator &al, const Location &loc,
+        SymbolTable *scope, ASR::expr_t *dest, ASR::expr_t *src) {
+    ASRUtils::ASRBuilder b(al, loc);
+    ASRUtils::ExprStmtDuplicator d(al);
+    size_t rank = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(src));
+    ASR::ttype_t *it = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+    std::vector<ASR::symbol_t*> vars;
+    for (size_t r = 0; r < rank; r++) {
+        vars.push_back(ASR::down_cast<ASR::Var_t>(b.Variable(scope,
+            scope->get_unique_name("__gpu_copy_i", false),
+            ASRUtils::duplicate_type(al, it), ASR::intentType::Local))->m_v);
+    }
+    auto item = [&](ASR::expr_t *a) {
+        Vec<ASR::array_index_t> idx;
+        idx.reserve(al, rank);
+        for (size_t r = 0; r < rank; r++) {
+            ASR::array_index_t ai;
+            ai.loc = loc;
+            ai.m_left = nullptr;
+            ai.m_step = nullptr;
+            ai.m_right = b.Var(vars[r]);
+            idx.push_back(al, ai);
+        }
+        return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
+            d.duplicate_expr(a), idx.p, idx.n, ASRUtils::duplicate_type(al,
+                ASRUtils::extract_type(ASRUtils::expr_type(a))),
+            ASR::arraystorageType::ColMajor, nullptr, false));
+    };
+    Vec<ASR::stmt_t*> body;
+    body.reserve(al, 1);
+    body.push_back(al, b.Assignment(item(dest), item(src)));
+    // The first dimension is the innermost loop.
+    for (size_t r = 0; r < rank; r++) {
+        ASR::do_loop_head_t head;
+        head.loc = loc;
+        head.m_v = b.Var(vars[r]);
+        head.m_start = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
+            d.duplicate_expr(src), gpu_i32(al, loc, r + 1),
+            ASRUtils::duplicate_type(al, it), ASR::arrayboundType::LBound,
+            nullptr));
+        head.m_end = ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc,
+            d.duplicate_expr(src), gpu_i32(al, loc, r + 1),
+            ASRUtils::duplicate_type(al, it), ASR::arrayboundType::UBound,
+            nullptr));
+        head.m_increment = nullptr;
+        ASR::stmt_t *loop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc,
+            nullptr, head, body.p, body.n, nullptr, 0));
+        Vec<ASR::stmt_t*> one;
+        one.reserve(al, 1);
+        one.push_back(al, loop);
+        body = one;
+    }
+    Vec<ASR::omp_clause_t*> clauses;
+    clauses.reserve(al, 2);
+    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+        ASR::make_OMPIndependent_t(al, loc)));
+    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+        ASR::make_OMPCollapse_t(al, loc, gpu_i32(al, loc, rank))));
+    return ASRUtils::STMT(ASR::make_OMPRegion_t(al, loc,
+        ASR::omp_region_typeType::ParallelDo, clauses.p, clauses.n, body.p,
+        body.n, ASR::exec_targetType::ExecDevice));
 }
 
 std::string gpu_array_key(ASR::expr_t *e) {
@@ -613,6 +677,35 @@ bool gpu_simple_body(ASR::stmt_t **body, size_t n) {
     SimpleBody c;
     for (size_t i = 0; i < n && c.ok; i++) c.visit_stmt(*body[i]);
     return c.ok;
+}
+
+namespace {
+
+class ExprReplaceAll : public ASR::CallReplacerOnExpressionsVisitor<
+        ExprReplaceAll> {
+public:
+    const std::function<ASR::expr_t*(ASR::expr_t*)> *f;
+    void call_replacer() {
+        if (current_expr && *current_expr) {
+            ASR::expr_t *r = (*f)(*current_expr);
+            if (r) *current_expr = r;
+        }
+    }
+    void visit_BlockCall(const ASR::BlockCall_t &x) {
+        ASR::symbol_t *b = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!ASR::is_a<ASR::Block_t>(*b)) return;
+        ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(b);
+        for (size_t i = 0; i < blk->n_body; i++) visit_stmt(*blk->m_body[i]);
+    }
+};
+
+} // namespace
+
+void gpu_replace_exprs(ASR::stmt_t **body, size_t n,
+        const std::function<ASR::expr_t*(ASR::expr_t*)> &f) {
+    ExprReplaceAll r;
+    r.f = &f;
+    for (size_t i = 0; i < n; i++) r.visit_stmt(*body[i]);
 }
 
 void gpu_collect_symbols(ASR::expr_t *e, std::set<ASR::symbol_t*> &syms) {

@@ -24,6 +24,7 @@ namespace LCompilers {
 // Which of the transformations run (`--gpu-loop-transforms`).
 enum GpuLoopTransform {
     GpuLoopFuse = 1,
+    GpuLoopSwap = 2,
 };
 bool gpu_loop_transform_enabled(const PassOptions &pass_options,
     GpuLoopTransform t);
@@ -57,6 +58,12 @@ ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
     const std::vector<ASR::expr_t*> &starts,
     const std::vector<ASR::expr_t*> &ends, Vec<ASR::stmt_t*> &body,
     const std::vector<ASR::symbol_t*> &extra_privates = {});
+
+// A parallel loop nest assigned to the device that copies every element of
+// the array `src` into the array `dest` of the same bounds, with index
+// variables of its own in `scope`.
+ASR::stmt_t *gpu_device_copy_nest(Allocator &al, const Location &loc,
+    SymbolTable *scope, ASR::expr_t *dest, ASR::expr_t *src);
 
 // The designator an array is named by (a variable or a chain of
 // non-pointer components of one), as a key, or "".
@@ -166,6 +173,11 @@ void gpu_collect_array_reads(ASR::stmt_t **body, size_t n,
 // since the offload pipeline analyses some constructs (allocatable
 // components, derived-type assignments) on the loop as written.
 bool gpu_simple_body(ASR::stmt_t **body, size_t n);
+
+// Replaces, in every expression of a statement list and of the BLOCKs it
+// runs, each subexpression for which `f` returns an expression.
+void gpu_replace_exprs(ASR::stmt_t **body, size_t n,
+    const std::function<ASR::expr_t*(ASR::expr_t*)> &f);
 
 // Every variable referenced.
 void gpu_collect_symbols(ASR::expr_t *e, std::set<ASR::symbol_t*> &syms);

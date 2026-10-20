@@ -106,6 +106,27 @@ contains
         end do
     end subroutine
 
+    ! The time loop also sets a boundary value of the field: the update's
+    ! copy of the field cannot take turns with it, and is copied back.
+    subroutine advance_boundary(q, flux, n, m, steps, dt)
+        real, allocatable, intent(inout) :: q(:,:)
+        real, allocatable, intent(inout) :: flux(:,:)
+        integer, intent(in) :: n, m, steps
+        real, intent(in) :: dt
+        integer :: step, i, j
+        do step = 1, steps
+            do concurrent (j = 1:m, i = 1:n)
+                flux(i, j) = 0.5 * face_flux(q, n, i, j)
+            end do
+            do concurrent (j = 1:m, i = 2:n - 1)
+                q(i, j) = q(i, j) - dt * divergence(flux, n, i, j)
+            end do
+            do concurrent (j = 1:m)
+                q(1, j) = q(2, j)
+            end do
+        end do
+    end subroutine
+
     ! A loop that can end early: the last step that runs is not known
     ! before it runs.
     subroutine advance_until(q, flux, n, m, steps, dt, limit)
@@ -174,6 +195,18 @@ program gpu_metal_510
     end do
     call check(q, qh, 6)
     call check(flux, fh, 7)
+
+    q = q0
+    flux = -7
+    call advance_boundary(q, flux, n, m, steps, 0.1)
+    qh = q0
+    fh = -7
+    do i = 1, steps
+        call advance_host(qh, fh, n, m, 1, 0.1)
+        qh(1, :) = qh(2, :)
+    end do
+    call check(q, qh, 11)
+    call check(flux, fh, 12)
 
     ! A flux array with an element the flux loop does not write: the run
     ! time check of its bounds keeps the loops apart, and that element
