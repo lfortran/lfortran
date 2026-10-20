@@ -72,6 +72,9 @@ struct GpuDeviceCapabilities {
     // iteration runs on one thread (see gpu_vector_lanes.cpp).
     int lanes_per_iteration = 1;
 
+    int threads_per_block = 256;
+    int sequential_loop_unroll_factor = 1;
+
     // How many bytes of stack a thread of a kernel has. Late kernel storage
     // placement spills private arrays that do not fit to per-thread slices
     // of global workspace buffers; it never changes their locality.
@@ -128,6 +131,14 @@ enum class GpuDeclineReason {
     // --- what the pass's own lowering cannot yet do to the body ---
     StructElementGather,
     UnsizedLocalArray,
+    // An array of LOCAL locality that a thread cannot hold a copy of its
+    // own of: its type is not one a thread holds as a local, it is a
+    // coarray, an ASSOCIATE around the loop names it, or the body has an
+    // ASSOCIATE the kernel cannot inline.
+    LocalityElementType,
+    LocalityCoarray,
+    LocalityNamedByAssociate,
+    LocalityAssociateNotInlined,
     AliasTemporaryRuntimeSized,
     UngatherableStridedSection,
     // A section passed to a procedure has to be copied into a contiguous
@@ -259,6 +270,9 @@ struct GpuDecline {
     // The element type the decline is about, when the reason is about a
     // type, which the message names.
     ASR::ttype_t *type = nullptr;
+    // The declared type of the variable as the source spells it, for a
+    // type `type` cannot name by itself (a derived type).
+    std::string type_name;
     // Where the section is evaluated, when the reason is about a section,
     // and why no copy placed before the statement serves it.
     GpuSectionSite site = GpuSectionSite::Statement;

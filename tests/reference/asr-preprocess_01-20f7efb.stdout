@@ -53,11 +53,13 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
                         (IntegerConstant 18 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -71,6 +73,7 @@
                         (Var 2 x)
                         (IntegerConstant 30 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -89,6 +92,7 @@
                         (Var 2 x)
                         (IntegerConstant 10000 (Integer 4) Decimal)
                         ()
+                        .false.
                         .false.
                         .false.
                     )]

@@ -2,6 +2,7 @@
 #define LFORTRAN_CONTAINERS_H
 
 #include <cstring>
+#include <type_traits>
 #include <libasr/alloc.h>
 
 namespace LCompilers {

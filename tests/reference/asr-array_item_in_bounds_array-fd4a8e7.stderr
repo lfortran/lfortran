@@ -1,5 +1,5 @@
 ASR verify pass error [asr.verify.array_item.in_bounds_array]: only a reference to a single element can be known to be in bounds
-   --> tests/asr/verify/array_item_in_bounds_array.asr:152:18
+   --> tests/asr/verify/array_item_in_bounds_array.asr:153:18
     |
-152 |                 (ArrayItem
+153 |                 (ArrayItem
     |                  ^^^^^^^^^ failed here

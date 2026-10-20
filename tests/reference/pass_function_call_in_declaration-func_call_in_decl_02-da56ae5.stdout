@@ -99,6 +99,7 @@
                         ()
                         .false.
                         .false.
+                        .false.
                     )
                     (Assignment
                         (Var 4 b)
@@ -139,6 +140,7 @@
                             ()
                         )
                         ()
+                        .false.
                         .false.
                         .false.
                     )
@@ -405,6 +407,7 @@
                                         (Var 3 yy)
                                         (Var 3 xx)
                                         ()
+                                        .false.
                                         .false.
                                         .false.
                                     )]

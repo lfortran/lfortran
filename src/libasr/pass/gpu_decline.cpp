@@ -45,6 +45,8 @@ GpuDeviceCapabilities gpu_device_capabilities(GpuDevice device) {
             caps.device_function_runtime_sized_locals = false;
             // Every Apple GPU runs SIMD-groups of 32 threads.
             caps.lanes_per_iteration = 32;
+            caps.threads_per_block = 64;
+            caps.sequential_loop_unroll_factor = 16;
             // A kernel is compiled for the GPU that runs it, so this is the
             // smallest stack of a device Metal runs on. An Apple silicon Mac
             // gives a thread 256 KiB (a local array of 65,500 `float`s is
@@ -165,6 +167,20 @@ std::string gpu_decline_message(const GpuDecline &decline) {
         case GpuDeclineReason::UnsizedLocalArray:
             return "local array '" + decline.name +
                 "' has no extent the gpu can use";
+        case GpuDeclineReason::LocalityElementType:
+            return "array '" + decline.name + "' of local locality is of "
+                "type " + decline.type_name + ", which a gpu thread cannot "
+                "hold a copy of";
+        case GpuDeclineReason::LocalityCoarray:
+            return "array '" + decline.name + "' of local locality is a "
+                "coarray, which a gpu thread cannot hold a copy of";
+        case GpuDeclineReason::LocalityNamedByAssociate:
+            return "array '" + decline.name + "' of local locality is "
+                "named by an associate construct around the loop";
+        case GpuDeclineReason::LocalityAssociateNotInlined:
+            return "array '" + decline.name + "' of local locality cannot "
+                "be given a copy per gpu thread: the loop body has an "
+                "associate construct the gpu kernel cannot inline";
         case GpuDeclineReason::AliasTemporaryRuntimeSized:
             return "an aliased assignment needs a run-time sized temporary";
         case GpuDeclineReason::UngatherableStridedSection:

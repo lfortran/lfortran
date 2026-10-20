@@ -2091,7 +2091,7 @@ subroutine parameter_nonconstant_init()
 end subroutine
 
 subroutine allocate_func_target_01()
-    allocate(character(len=5) :: FUNC_ALLOC_TARGET_01)
+    allocate(character(len=5) :: ALLOCATE_FUNC_TARGET_01)
 end subroutine allocate_func_target_01
 
 function func_alloc_target_01() result(res) bind(c)
@@ -3379,3 +3379,89 @@ end function
 function cc1_bindc_explicit_result() result(c) bind(c)
     character(len=5) :: c  ! {Error} character function result `c` must have constant length one in a BIND(C) procedure
 end function
+
+! Unsupported complex*N and logical*N kinds get no style suggestion,
+! only the semantic error.
+module cc1_complex_star
+implicit none
+    complex*32 :: cc1_cs_z32  ! {Error} Kind 16 is not supported for Complex
+    complex*20 :: cc1_cs_z20  ! {Error} Kind 10 is not supported for Complex
+    complex*7 :: cc1_cs_z7  ! {Error} Kind 3 is not supported for Complex
+    logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
+end module cc1_complex_star
+
+! FILE= is required when STATUS is NEW or REPLACE. Omitted STATUS, OLD,
+! UNKNOWN, and SCRATCH do not require it; SCRATCH forbids FILE=.
+subroutine cc1_open_status_new_replace_no_file()
+    character(len=7) :: cc1_open_status
+    open(1, status='new')  ! {Error} open with status 'new' requires a file specifier
+    open(2, status='replace')  ! {Error} open with status 'replace' requires a file specifier
+    open(3, status='NEW')  ! {Error} open with status 'NEW' requires a file specifier
+    open(4, status='REPLACE')  ! {Error} open with status 'REPLACE' requires a file specifier
+    open(5, file='cc1_open_new.dat', status='new')
+    open(6, file='cc1_open_replace.dat', status='replace')
+    open(7, status='scratch')
+    open(8, status='old')
+    open(9, status='unknown')
+    open(10)
+    cc1_open_status = 'new'
+    open(11, status=cc1_open_status)
+end subroutine cc1_open_status_new_replace_no_file
+
+! An array element passed to an assumed-shape dummy is never sequence
+! associated, so the error does not suggest --legacy-array-sections.
+module cc1_element_assumed_shape
+implicit none
+contains
+    subroutine cc1_eas_dummy(x)
+        integer, intent(in) :: x(:)
+    end subroutine cc1_eas_dummy
+    subroutine cc1_eas_use()
+        integer :: c(5)
+        c = 1
+        call cc1_eas_dummy(c(2))  ! {Error} Passing a scalar argument to an array dummy argument is not allowed
+    end subroutine cc1_eas_use
+end module cc1_element_assumed_shape
+
+! An element of a pointer array may not be contiguous with the elements that
+! follow it, so it is never sequence associated with an array dummy.
+module cc1_element_pointer_array
+implicit none
+contains
+    subroutine cc1_epa_dummy(x)
+        integer, intent(inout) :: x(2,2)
+    end subroutine cc1_epa_dummy
+    subroutine cc1_epa_use()
+        integer, pointer :: p(:,:)
+        allocate(p(2,3))
+        call cc1_epa_dummy(p(2,1))  ! {Error} Passing an element of a pointer array to an array dummy argument is not allowed
+    end subroutine cc1_epa_use
+end module cc1_element_pointer_array
+
+! An external procedure is not accessible by host association, so a name used
+! as a variable in another scoping unit is not the external procedure.
+subroutine cc1_external_name_sub()
+end subroutine cc1_external_name_sub
+
+real function cc1_external_name_fn()
+    cc1_external_name_fn = 1.0
+end function cc1_external_name_fn
+
+subroutine cc1_external_name_user()
+    cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
+    print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
+end subroutine cc1_external_name_user
+
+! Reading into the real or imaginary part of a complex variable is not
+! supported yet.
+module cc1_read_complex_part
+implicit none
+contains
+    subroutine cc1_rcp_use()
+        complex :: z, w(3)
+        character(len=20) :: s
+        s = '1 2 3'
+        read(s, *) z%re  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
+        read(s, *) w(1:3:2)%im  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
+    end subroutine cc1_rcp_use
+end module cc1_read_complex_part

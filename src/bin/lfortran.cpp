@@ -4,11 +4,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <filesystem>
+#include <set>
 #include <random>
+#include <vector>
 #ifndef CLI11_HAS_FILESYSTEM
 #define CLI11_HAS_FILESYSTEM 0
 #endif // CLI11_HAS_FILESYSTEM
 #include <bin/CLI11.hpp>
+#include "cuda_link_helpers.h"
 
 #include <libasr/stacktrace.h>
 #include <lfortran/parser/parser.h>
@@ -53,6 +56,13 @@
 #include <libasr/config.h>
 #include <lfortran/fortran_kernel.h>
 #include <libasr/string_utils.h>
+#ifdef HAVE_LFORTRAN_LLVM
+#include <llvm/Object/Archive.h>
+#include <llvm/Object/Binary.h>
+#include <llvm/Object/ObjectFile.h>
+#include <llvm/Support/Casting.h>
+#include <llvm/Support/Error.h>
+#endif
 #include <lfortran/utils.h>
 #include <lfortran/parser/parser.tab.hh>
 #include <string>
@@ -91,6 +101,7 @@ namespace {
 
 using LCompilers::endswith;
 using LCompilers::CompilerOptions;
+using LCompilers::read_file;
 using LCompilers::read_file_ok;
 
 namespace lcli = LCompilers::CommandLineInterface;
@@ -117,8 +128,6 @@ std::string get_system_temp_dir()
 }
 
 std::string LFORTRAN_TEMP_DIR = get_system_temp_dir();
-
-
 
 // The unique compilation ID for this invocation of the compiler.
 // Used in naming unique intermediate object files during both compilation modes.
@@ -1267,14 +1276,13 @@ int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
     }
 }
 
-int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
+int emit_asm(const std::string &infile, LCompilers::PassManager& pass_manager,
+             CompilerOptions &compiler_options)
 {
     std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
-    // TODO: Remove this and accept pass manager in emit_asm
-    LCompilers::PassManager lpm;
     LCompilers::diag::Diagnostics diagnostics;
     {
         LCompilers::LocationManager::FileLocations fl;
@@ -1282,7 +1290,8 @@ int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
         lm.files.push_back(fl);
         lm.file_ends.push_back(LCompilers::LFortran::source_offset(input.size()));
     }
-    LCompilers::Result<std::string> r = fe.get_asm(input, lm, lpm, diagnostics);
+    LCompilers::Result<std::string> r = fe.get_asm(input, lm, pass_manager,
+        diagnostics);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (r.ok) {
         std::cout << r.result;
@@ -2112,6 +2121,10 @@ int link_executable(const std::vector<std::string> &infiles,
         std::cout << "Cannot use static_executable and shared_executable together" << std::endl;
         return 10;
     }
+    const bool static_library_search = static_executable
+        && compiler_options.platform != LCompilers::Platform::macOS_Intel
+        && compiler_options.platform != LCompilers::Platform::macOS_ARM
+        && compiler_options.platform != LCompilers::Platform::macOS_PowerPC;
     if (backend == Backend::llvm || backend == Backend::mlir) {
         std::string run_cmd = "", compile_cmd = "";
         if (t == "x86_64-pc-windows-msvc") {
@@ -2207,7 +2220,7 @@ int link_executable(const std::vector<std::string> &infiles,
             if(!extra_library_flags.empty()) {
                 compile_cmd += extra_library_flags + " ";
             }
-            compile_cmd += + " -L"
+            compile_cmd += " -L"
                 + base_path + " -Wl,-rpath," + base_path;
             if (!extra_linker_flags.empty()) {
                 compile_cmd += extra_linker_flags;
@@ -2239,57 +2252,77 @@ int link_executable(const std::vector<std::string> &infiles,
                     + " -framework Metal -framework Foundation";
             }
             if (compiler_options.gpu_backend == "cuda") {
-                // Collect CUDA kernel source. Every object file carries the
-                // device source of its own translation unit in a sidecar, so
-                // reading all of them is what picks up a kernel that lives in
-                // a module compiled separately. Only a link that finds no
-                // sidecar at all falls back to the source this invocation
-                // generated.
-                std::string cuda_source;
+                // Collect CUDA kernel source from embedded object metadata.
+                // Each object contributes its own translation unit, and
+                // legacy sidecars remain as a fallback for older builds.
+                std::vector<std::string> cuda_sources;
+                std::set<std::string> seen_cuda_sidecars;
                 for (auto &s : infiles) {
-                    std::string sidecar = s + ".cuda.cu";
-                    std::ifstream f(sidecar);
-                    if (f.good()) {
-                        std::string content(
-                            (std::istreambuf_iterator<char>(f)),
-                            std::istreambuf_iterator<char>());
-                        cuda_source += content;
+                    if (!append_cuda_source_from_input(
+                            s, seen_cuda_sidecars, cuda_sources)) {
+                        return 10;
                     }
                 }
-                if (cuda_source.empty()) {
-                    cuda_source = compiler_options.gpu_cuda_source;
+                for (auto &library_name : libraries) {
+                    if (!append_cuda_source_from_library(library_name, lib_dirs,
+                            compiler_options.platform, static_library_search,
+                            seen_cuda_sidecars, cuda_sources)) {
+                        return 10;
+                    }
+                }
+                if (cuda_sources.empty()) {
+                    cuda_sources.push_back(compiler_options.gpu_cuda_source);
                 }
 
-                // Write CUDA kernel source to a temp .cu file
-                std::string cuda_kernel_src = LFORTRAN_TEMP_DIR
-                    + "/lfortran_gpu_kernel_" + LCOMPILERS_UNIQUE_ID + ".cu";
-                std::string cuda_kernel_obj = LFORTRAN_TEMP_DIR
-                    + "/lfortran_gpu_kernel_" + LCOMPILERS_UNIQUE_ID + ".o";
-                {
-                    std::ofstream cu_out(cuda_kernel_src);
-                    cu_out << cuda_source;
-                    cu_out.close();
-                }
-                // Compile the kernel .cu with the device compiler. When
-                // emulating, the device code is ordinary host C++, and the
-                // language has to be named explicitly because no host
-                // compiler knows the .cu suffix. The emulation is built
-                // without OpenMP, so the threads of a block run one after
-                // another and a __syncthreads() reports that it cannot be
-                // honoured; the device code and the runtime below have to
-                // agree on that, so neither is given -fopenmp.
+                // Write every unique CUDA fragment to a temp .cu file. Each
+                // translation unit compiles separately so its local
+                // declarations stay local and identical definitions do not
+                // collide when archive members are aggregated at link time.
                 bool emulate_cpu = compiler_options.gpu_cpu_emulation;
                 std::string runtime_include = " -I" + runtime_library_dir
                     + "/../libasr/runtime";
-                std::string device_cc = compiler_options.device_compiler;
-                std::string cuda_kernel_cmd = device_cc + " -c -O2"
-                    + (emulate_cpu ? runtime_include + " -x c++" : "")
-                    + " -o " + cuda_kernel_obj + " " + cuda_kernel_src;
-                int cuda_err = system(cuda_kernel_cmd.c_str());
-                if (cuda_err) {
-                    std::cerr << "Failed to compile CUDA kernel: "
-                        << cuda_kernel_cmd << std::endl;
-                    return 10;
+                // Every fragment, the runtime and the native link share this
+                // architecture; the CPU-emulation driver must not receive it.
+                std::string device_cc = cuda_device_compiler_command(
+                    compiler_options.device_compiler, emulate_cpu,
+                    compiler_options.gpu_arch);
+                std::vector<std::string> cuda_kernel_objs;
+                std::set<std::string> seen_cuda_fragments;
+                size_t cuda_kernel_index = 0;
+                for (const auto &cuda_source : cuda_sources) {
+                    if (!seen_cuda_fragments.insert(cuda_source).second) {
+                        continue;
+                    }
+                    std::string cuda_kernel_src = LFORTRAN_TEMP_DIR
+                        + "/lfortran_gpu_kernel_" + LCOMPILERS_UNIQUE_ID
+                        + "_" + std::to_string(cuda_kernel_index) + ".cu";
+                    std::string cuda_kernel_obj = LFORTRAN_TEMP_DIR
+                        + "/lfortran_gpu_kernel_" + LCOMPILERS_UNIQUE_ID
+                        + "_" + std::to_string(cuda_kernel_index) + ".o";
+                    {
+                        std::ofstream cu_out(cuda_kernel_src);
+                        cu_out << cuda_source;
+                        cu_out.close();
+                    }
+                    // Compile the kernel .cu with the device compiler. When
+                    // emulating, the device code is ordinary host C++, and
+                    // the language has to be named explicitly because no host
+                    // compiler knows the .cu suffix. The emulation is built
+                    // without OpenMP, so the threads of a block run one after
+                    // another and a __syncthreads() reports that it cannot be
+                    // honoured; the device code and the runtime below have to
+                    // agree on that, so neither is given -fopenmp.
+                    std::string cuda_kernel_cmd = device_cc + " -c -O2"
+                        + (emulate_cpu ? runtime_include + " -x c++" : "")
+                        + " -o " + cuda_kernel_obj + " " + cuda_kernel_src;
+                    int cuda_err = system(cuda_kernel_cmd.c_str());
+                    if (cuda_err) {
+                        std::cerr << "Failed to compile CUDA kernel: "
+                            << cuda_kernel_cmd << std::endl;
+                        return 10;
+                    }
+                    cuda_kernel_objs.push_back(std::move(cuda_kernel_obj));
+                    cuda_kernel_index++;
                 }
 
                 // Compile the GPU runtime. The CPU emulation uses its own
@@ -2307,7 +2340,7 @@ int link_executable(const std::vector<std::string> &infiles,
                     + (emulate_cpu ? " -x c" : "")
                     + " -o " + cuda_runtime_obj
                     + " " + cuda_runtime_src;
-                cuda_err = system(cuda_rt_cmd.c_str());
+                int cuda_err = system(cuda_rt_cmd.c_str());
                 if (cuda_err) {
                     std::cerr << "Failed to compile CUDA runtime: "
                         << cuda_rt_cmd << std::endl;
@@ -2328,17 +2361,25 @@ int link_executable(const std::vector<std::string> &infiles,
                             == LCompilers::Platform::macOS_ARM
                         || compiler_options.platform
                             == LCompilers::Platform::macOS_PowerPC;
-                    compile_cmd += " " + cuda_kernel_obj
-                        + " " + cuda_runtime_obj
+                    for (auto &cuda_kernel_obj : cuda_kernel_objs) {
+                        compile_cmd += " " + cuda_kernel_obj;
+                    }
+                    compile_cmd += " " + cuda_runtime_obj
                         + (is_macos ? " -lc++" : " -lstdc++") + " -lm";
                 } else {
                     // The device compiler also drives the link, since it knows
                     // where its own device runtime lives.
-                    compile_cmd = device_cc + " -o " + outfile + " ";
+                    compile_cmd = device_cc
+                        + (static_library_search ? " -Xcompiler=-static" : "")
+                        + " -o " + outfile + " ";
                     for (auto &s : infiles) {
                         compile_cmd += s + " ";
                     }
-                    compile_cmd += cuda_kernel_obj + " " + cuda_runtime_obj;
+                    for (auto &cuda_kernel_obj : cuda_kernel_objs) {
+                        compile_cmd += cuda_kernel_obj + " ";
+                    }
+                    compile_cmd += cuda_runtime_obj;
+                    compile_cmd += extra_library_flags;
                     compile_cmd += " -L" + base_path
                         + " -Xlinker -rpath -Xlinker " + base_path
                         + " -l" + runtime_lib + " -lm";
@@ -3015,7 +3056,8 @@ int main_app(int argc, char *argv[]) {
     }
     if (opts.show_asm) {
 #ifdef HAVE_LFORTRAN_LLVM
-        return emit_asm(opts.arg_file, compiler_options);
+        return emit_asm(opts.arg_file, lfortran_pass_manager,
+                        compiler_options);
 #else
         std::cerr << "The --show-asm option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;

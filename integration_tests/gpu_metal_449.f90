@@ -62,5 +62,24 @@ program gpu_metal_449
   end do
   if (sum(a) /= 9) error stop 8
   if (any(a(2:4, 3:5) /= 1)) error stop 9
+
+  ! A strided argument needs a contiguous copy only for a nonempty launch.
+  ! On Metal the column update also distributes an iteration across lanes.
+  call columns(a(1:9:2, :), 0)
+  if (sum(a) /= 9) error stop 10
+  call columns(a(1:9:2, :), 2)
+  if (sum(a) /= 19) error stop 11
+  if (any(a(1:9:2, 1:2) /= 1)) error stop 12
+  call columns(a(1:9:2, :), -2)
+  if (sum(a) /= 19) error stop 13
   print *, sum(a), sum(b), sum(c)
+contains
+  subroutine columns(values, n)
+    real, intent(inout) :: values(:, :)
+    integer, intent(in) :: n
+    integer :: j
+    do concurrent (j = 1:n)
+      values(:, j) = values(:, j) + 1
+    end do
+  end subroutine
 end program

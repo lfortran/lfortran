@@ -61,6 +61,7 @@
 #include <libasr/pass/replace_function_call_in_declaration.h>
 #include <libasr/pass/replace_array_passed_in_function_call.h>
 #include <libasr/pass/string_length_arguments.h>
+#include <libasr/pass/string_format_array_args.h>
 #include <libasr/pass/replace_openmp.h>
 #include <libasr/pass/parallel_canonicalize.h>
 #include <libasr/pass/parallel_dispatch.h>
@@ -86,6 +87,7 @@
 #include <vector>
 #include <algorithm>
 #include <fstream>
+#include <chrono>
 
 namespace LCompilers {
 
@@ -136,6 +138,7 @@ namespace LCompilers {
             {"function_call_in_declaration", &pass_replace_function_call_in_declaration},
             {"array_passed_in_function_call", &pass_replace_array_passed_in_function_call},
             {"string_length_arguments", &pass_string_length_arguments},
+            {"string_format_array_args", &pass_string_format_array_args},
             {"openmp", &pass_replace_openmp},
             {"parallel_canonicalize", &pass_parallel_canonicalize},
             {"parallel_dispatch", &pass_parallel_dispatch},
@@ -392,6 +395,15 @@ namespace LCompilers {
                 // where it next needs what a kernel wrote.
                 "gpu_launch_sync",
                 "device_launch_expand",
+                // Every array a StringFormat formats or a WRITE statement
+                // transfers, and every internal file, is passed to the
+                // runtime as its contiguous data. An array item of a READ is
+                // passed so only when it is contiguous by construction;
+                // otherwise the backend reads it in place through its
+                // descriptor. This runs after every pass above that can
+                // change the physical type of an array, and before its copy
+                // loops are lowered.
+                "string_format_array_args",
                 "do_loops",
                 "while_else",
                 // Every call the passes above can create is in place, so each
@@ -427,7 +439,11 @@ namespace LCompilers {
                 "print_list_tuple",
                 "do_loops",
                 "select_case",
-                "inline_function_calls"
+                "inline_function_calls",
+                // Only the LLVM backend formats and transfers arrays
+                // through their contiguous data; the C backend expands or
+                // rejects them itself.
+                "string_format_array_args"
             };
             _user_defined_passes.clear();
         }

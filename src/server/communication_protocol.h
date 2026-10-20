@@ -4,6 +4,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <exception>
 
 #include <server/language_server.h>
 #include <server/logger.h>

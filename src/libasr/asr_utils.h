@@ -4594,7 +4594,8 @@ ASR::expr_t* get_ArrayConstructor_size(Allocator& al, ASR::ArrayConstructor_t* x
 
 ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_target, ASR::expr_t* a_value,
-    ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move);
+    ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move,
+    bool a_new_target = false);
 
 ASR::asr_t* make_ArraySize_t_util(
     Allocator &al, const Location &a_loc, ASR::expr_t* a_v,
@@ -7087,6 +7088,10 @@ class ReplaceArgVisitor: public ASR::BaseExprReplacer<ReplaceArgVisitor> {
                     ASRUtils::insert_module_dependency(x->m_original_name,
                         al, current_module_dependencies);
                 }
+            } else {
+                // A function of a program or procedure: nothing to import
+                ASR::BaseExprReplacer<ReplaceArgVisitor>::replace_FunctionCall(x);
+                ADD_ASR_DEPENDENCIES(current_scope, x->m_name, current_function_dependencies);
             }
             return;
         }
@@ -9652,6 +9657,10 @@ inline int64_t get_ArrayConstant_data_size(size_t n_args, ASR::ttype_t* a_type) 
     if (ASR::is_a<ASR::CPtr_t>(*a_type)) {
         return n_args * sizeof(void*);
     }
+    // Logical data is stored as one `bool` per element, whatever the kind.
+    if (ASR::is_a<ASR::Logical_t>(*a_type)) {
+        return n_args * sizeof(bool);
+    }
     return n_args * ASRUtils::extract_kind_from_ttype_t(a_type);
 }
 
@@ -10339,6 +10348,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 Vec<ASR::dimension_t> dimension_;
                 dimension_.from_pointer_n_copy(al, orig_arg_array_t->m_dims, orig_arg_array_t->n_dims);
                 ASR::ttype_t* physical_cast_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arg));
+                // An assumed-rank dummy receives a descriptor of the actual
+                // argument's rank. The dummy's own type is shared by every
+                // call, so the target physical type is kept separately.
+                ASR::array_physical_typeType cast_physical_type = orig_arg_array_t->m_physical_type;
 
                 if (ASRUtils::is_pointer(physical_cast_type) &&
                     orig_arg_array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
@@ -10347,7 +10360,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     // callee reads the rank field — no need for 15-slot descriptors.
                     dimension_.from_pointer_n_copy(al, arg_array_t->m_dims, arg_array_t->n_dims);
                     dimensions = &dimension_;
-                    orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::DescriptorArray;
+                    cast_physical_type = ASR::array_physical_typeType::DescriptorArray;
                 } else if (ASRUtils::is_pointer(physical_cast_type) &&
                            orig_arg_array_t->m_physical_type != ASR::array_physical_typeType::FixedSizeArray) {
                     dimensions = nullptr;
@@ -10359,7 +10372,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                     // callee reads the rank field — no need for 15-slot descriptors.
                     dimension_.from_pointer_n_copy(al, arg_array_t->m_dims, arg_array_t->n_dims);
                     dimensions = &dimension_;
-                    orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::DescriptorArray;
+                    cast_physical_type = ASR::array_physical_typeType::DescriptorArray;
                 } else if (arg_array_t->m_physical_type == ASR::array_physical_typeType::AssumedRankArray) {
                     // Assumed-rank actual argument (0 compile-time dims) passed
                     // to a known-rank formal parameter (e.g. inside select rank).
@@ -10423,7 +10436,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 ASR::ttype_t* cast_target_type = ASRUtils::duplicate_type(al,
                                                                             physical_cast_type,
                                                                             dimensions,
-                                                                            orig_arg_array_t->m_physical_type,
+                                                                            cast_physical_type,
                                                                             true);
                 // For assumed-rank allocatable/pointer parameters, preserve the
                 // Allocatable/Pointer wrapper so the LLVM backend knows to use
@@ -10453,13 +10466,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                                                     arg->base.loc,
                                                     arg,
                                                     arg_array_t->m_physical_type,
-                                                    orig_arg_array_t->m_physical_type,
+                                                    cast_physical_type,
                                                     cast_target_type,
                                                     nullptr));
                 a_args[i] = physical_cast_arg;
-                if (is_orig_assumed_rank) {
-                    orig_arg_array_t->m_physical_type = ASR::array_physical_typeType::AssumedRankArray;
-                }
             }
         }
         if(is_stringToArray_cast_needed(arg_type, orig_arg_type)){
@@ -10942,8 +10952,16 @@ inline ASR::ttype_t* make_Pointer_t_util(Allocator& al, const Location& loc, ASR
     if( ASRUtils::is_array(type) && !ASRUtils::is_assumed_rank_array(type) ) {
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);
-        if( !ASRUtils::is_dimension_empty(m_dims, n_dims) ) {
-            type = ASRUtils::duplicate_type_with_empty_dims(al, type);
+        // A pointer to an array must have deferred shape, so drop the
+        // dimensions if any of them still carries a length. Checking only
+        // whether some dimension is empty is not enough: an assumed-size
+        // array such as `a(1, *)` has an empty last dimension but an
+        // explicit first one.
+        for( size_t i = 0; i < n_dims; i++ ) {
+            if( m_dims[i].m_length != nullptr ) {
+                type = ASRUtils::duplicate_type_with_empty_dims(al, type);
+                break;
+            }
         }
     }
 

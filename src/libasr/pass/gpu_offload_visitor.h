@@ -88,9 +88,8 @@ public:
     void find_array_section_all_bounds(ASR::expr_t *e,
             std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> &dim_bounds);
 
-    ASR::expr_t* elementize_mask_multi(ASR::expr_t *e,
-            std::vector<ASR::expr_t*> &loop_vars,
-            ASR::ttype_t *logical_type, const Location &loc);
+    ASR::expr_t* elementize_array_expr(ASR::expr_t *e,
+            std::vector<ASR::expr_t*> &loop_vars, const Location &loc);
 
     ASR::expr_t* inline_single_all(ASR::IntrinsicArrayFunction_t *iaf,
             const Location &loc, Vec<ASR::stmt_t*> &preamble);
@@ -549,14 +548,25 @@ public:
     void resolve_enclosing_associates(ParallelLoopNest &work, size_t n_dims,
             std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map);
 
-    // Gives each iteration its own copy of an array of unspecified
-    // locality that the iteration defines whole before it references it,
-    // by making it a local of a BLOCK around the body (see
-    // gpu_offload_privatize.cpp).
-    void privatize_iteration_arrays(const ASR::OMPRegion_t &region,
+    // Gives each iteration its own copy of a variable of LOCAL
+    // locality, and of an array of unspecified locality that
+    // the iteration defines whole before it references it, by making it a
+    // local of a BLOCK around the body (see gpu_offload_privatize.cpp).
+    // False when the loop has been reported as one the kernel cannot run.
+    bool privatize_iteration_arrays(const ASR::OMPRegion_t &region,
             ParallelLoopNest &work,
             const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map,
             Vec<ASR::stmt_t*> &private_shapes);
+
+    // Appends to `local` the variables of LOCAL locality that the body
+    // names and a thread can hold a copy of its own of. A scalar it
+    // cannot is left alone. An array it cannot makes it return false,
+    // with `rejected` set to the decline that names the array and why;
+    // the caller reports it, and the loop is not offloaded.
+    bool locality_spec_variables(const ASR::OMPRegion_t &region,
+            ParallelLoopNest &work,
+            const std::map<ASR::symbol_t*, ASR::expr_t*> &enclosing_assoc_map,
+            std::vector<ASR::symbol_t*> &local, GpuDecline &rejected);
 
     // The arrays privatize_iteration_arrays may make local.
     std::vector<ASR::symbol_t*> iteration_array_candidates(

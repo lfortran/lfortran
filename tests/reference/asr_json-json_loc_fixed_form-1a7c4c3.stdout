@@ -1,0 +1,461 @@
+{
+    "node": "TranslationUnit",
+    "fields": {
+        "symtab": {
+            "node": "SymbolTable1",
+            "fields": {
+                "json_loc_fixed_form": {
+                    "node": "Module",
+                    "fields": {
+                        "symtab": {
+                            "node": "SymbolTable2",
+                            "fields": {
+                                "c": {
+                                    "node": "Function",
+                                    "fields": {
+                                        "symtab": {
+                                            "node": "SymbolTable3",
+                                            "fields": {
+                                                "n": {
+                                                    "node": "Variable",
+                                                    "fields": {
+                                                        "parent_symtab": 3,
+                                                        "name": "n",
+                                                        "dependencies": [],
+                                                        "intent": "Unspecified",
+                                                        "symbolic_value": [],
+                                                        "value": [],
+                                                        "storage": "Default",
+                                                        "type": {
+                                                            "node": "Integer",
+                                                            "fields": {
+                                                                "kind": 4
+                                                            },
+                                                            "loc": {
+                                                                "first": 52,
+                                                                "last": 59,
+                                                                "first_filename": "tests/json_loc_fixed_form.f",
+                                                                "first_line": 6,
+                                                                "first_column": 7,
+                                                                "last_filename": "tests/json_loc_fixed_form.f",
+                                                                "last_line": 6,
+                                                                "last_column": 15
+                                                            }
+                                                        },
+                                                        "type_declaration": [],
+                                                        "abi": "Source",
+                                                        "access": "Public",
+                                                        "presence": "Required",
+                                                        "value_attr": false,
+                                                        "target_attr": false,
+                                                        "contiguous_attr": false,
+                                                        "bindc_name": [],
+                                                        "is_volatile": false,
+                                                        "is_protected": false,
+                                                        "pass_attr": "NotMethod",
+                                                        "self_argument": [],
+                                                        "codims": [],
+                                                        "common_block": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 59,
+                                                        "last": 59,
+                                                        "first_filename": "tests/json_loc_fixed_form.f",
+                                                        "first_line": 6,
+                                                        "first_column": 15,
+                                                        "last_filename": "tests/json_loc_fixed_form.f",
+                                                        "last_line": 6,
+                                                        "last_column": 15
+                                                    }
+                                                },
+                                                "x": {
+                                                    "node": "Variable",
+                                                    "fields": {
+                                                        "parent_symtab": 3,
+                                                        "name": "x",
+                                                        "dependencies": [
+                                                            "n"
+                                                        ],
+                                                        "intent": "Unspecified",
+                                                        "symbolic_value": [],
+                                                        "value": [],
+                                                        "storage": "Default",
+                                                        "type": {
+                                                            "node": "Array",
+                                                            "fields": {
+                                                                "type": {
+                                                                    "node": "Real",
+                                                                    "fields": {
+                                                                        "kind": 4
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 61,
+                                                                        "last": 68,
+                                                                        "first_filename": "tests/json_loc_fixed_form.f",
+                                                                        "first_line": 7,
+                                                                        "first_column": 7,
+                                                                        "last_filename": "tests/json_loc_fixed_form.f",
+                                                                        "last_line": 8,
+                                                                        "last_column": 14
+                                                                    }
+                                                                },
+                                                                "dims": [
+                                                                    {
+                                                                        "node": "dimension",
+                                                                        "fields": {
+                                                                            "start": {
+                                                                                "node": "IntegerConstant",
+                                                                                "fields": {
+                                                                                    "n": 1,
+                                                                                    "type": {
+                                                                                        "node": "Integer",
+                                                                                        "fields": {
+                                                                                            "kind": 4
+                                                                                        },
+                                                                                        "loc": {
+                                                                                            "first": 67,
+                                                                                            "last": 67,
+                                                                                            "first_filename": "tests/json_loc_fixed_form.f",
+                                                                                            "first_line": 8,
+                                                                                            "first_column": 13,
+                                                                                            "last_filename": "tests/json_loc_fixed_form.f",
+                                                                                            "last_line": 8,
+                                                                                            "last_column": 13
+                                                                                        }
+                                                                                    },
+                                                                                    "intboz_type": "Decimal"
+                                                                                },
+                                                                                "loc": {
+                                                                                    "first": 67,
+                                                                                    "last": 67,
+                                                                                    "first_filename": "tests/json_loc_fixed_form.f",
+                                                                                    "first_line": 8,
+                                                                                    "first_column": 13,
+                                                                                    "last_filename": "tests/json_loc_fixed_form.f",
+                                                                                    "last_line": 8,
+                                                                                    "last_column": 13
+                                                                                }
+                                                                            },
+                                                                            "length": {
+                                                                                "node": "Var",
+                                                                                "fields": {
+                                                                                    "v": "n (SymbolTable3)"
+                                                                                },
+                                                                                "loc": {
+                                                                                    "first": 67,
+                                                                                    "last": 67,
+                                                                                    "first_filename": "tests/json_loc_fixed_form.f",
+                                                                                    "first_line": 8,
+                                                                                    "first_column": 13,
+                                                                                    "last_filename": "tests/json_loc_fixed_form.f",
+                                                                                    "last_line": 8,
+                                                                                    "last_column": 13
+                                                                                }
+                                                                            }
+                                                                        },
+                                                                        "loc": {
+                                                                            "first": 67,
+                                                                            "last": 67,
+                                                                            "first_filename": "tests/json_loc_fixed_form.f",
+                                                                            "first_line": 8,
+                                                                            "first_column": 13,
+                                                                            "last_filename": "tests/json_loc_fixed_form.f",
+                                                                            "last_line": 8,
+                                                                            "last_column": 13
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "physical_type": "PointerArray",
+                                                                "memory_space": "Global"
+                                                            },
+                                                            "loc": {
+                                                                "first": 61,
+                                                                "last": 68,
+                                                                "first_filename": "tests/json_loc_fixed_form.f",
+                                                                "first_line": 7,
+                                                                "first_column": 7,
+                                                                "last_filename": "tests/json_loc_fixed_form.f",
+                                                                "last_line": 8,
+                                                                "last_column": 14
+                                                            }
+                                                        },
+                                                        "type_declaration": [],
+                                                        "abi": "Source",
+                                                        "access": "Public",
+                                                        "presence": "Required",
+                                                        "value_attr": false,
+                                                        "target_attr": false,
+                                                        "contiguous_attr": false,
+                                                        "bindc_name": [],
+                                                        "is_volatile": false,
+                                                        "is_protected": false,
+                                                        "pass_attr": "NotMethod",
+                                                        "self_argument": [],
+                                                        "codims": [],
+                                                        "common_block": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 65,
+                                                        "last": 68,
+                                                        "first_filename": "tests/json_loc_fixed_form.f",
+                                                        "first_line": 7,
+                                                        "first_column": 12,
+                                                        "last_filename": "tests/json_loc_fixed_form.f",
+                                                        "last_line": 8,
+                                                        "last_column": 14
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "name": "c",
+                                        "function_signature": {
+                                            "node": "FunctionType",
+                                            "fields": {
+                                                "arg_types": [
+                                                    {
+                                                        "node": "Integer",
+                                                        "fields": {
+                                                            "kind": 4
+                                                        },
+                                                        "loc": {
+                                                            "first": 52,
+                                                            "last": 59,
+                                                            "first_filename": "tests/json_loc_fixed_form.f",
+                                                            "first_line": 6,
+                                                            "first_column": 7,
+                                                            "last_filename": "tests/json_loc_fixed_form.f",
+                                                            "last_line": 6,
+                                                            "last_column": 15
+                                                        }
+                                                    },
+                                                    {
+                                                        "node": "Array",
+                                                        "fields": {
+                                                            "type": {
+                                                                "node": "Real",
+                                                                "fields": {
+                                                                    "kind": 4
+                                                                },
+                                                                "loc": {
+                                                                    "first": 61,
+                                                                    "last": 68,
+                                                                    "first_filename": "tests/json_loc_fixed_form.f",
+                                                                    "first_line": 7,
+                                                                    "first_column": 7,
+                                                                    "last_filename": "tests/json_loc_fixed_form.f",
+                                                                    "last_line": 8,
+                                                                    "last_column": 14
+                                                                }
+                                                            },
+                                                            "dims": [
+                                                                {
+                                                                    "node": "dimension",
+                                                                    "fields": {
+                                                                        "start": {
+                                                                            "node": "IntegerConstant",
+                                                                            "fields": {
+                                                                                "n": 1,
+                                                                                "type": {
+                                                                                    "node": "Integer",
+                                                                                    "fields": {
+                                                                                        "kind": 4
+                                                                                    },
+                                                                                    "loc": {
+                                                                                        "first": 67,
+                                                                                        "last": 67,
+                                                                                        "first_filename": "tests/json_loc_fixed_form.f",
+                                                                                        "first_line": 8,
+                                                                                        "first_column": 13,
+                                                                                        "last_filename": "tests/json_loc_fixed_form.f",
+                                                                                        "last_line": 8,
+                                                                                        "last_column": 13
+                                                                                    }
+                                                                                },
+                                                                                "intboz_type": "Decimal"
+                                                                            },
+                                                                            "loc": {
+                                                                                "first": 67,
+                                                                                "last": 67,
+                                                                                "first_filename": "tests/json_loc_fixed_form.f",
+                                                                                "first_line": 8,
+                                                                                "first_column": 13,
+                                                                                "last_filename": "tests/json_loc_fixed_form.f",
+                                                                                "last_line": 8,
+                                                                                "last_column": 13
+                                                                            }
+                                                                        },
+                                                                        "length": {
+                                                                            "node": "FunctionParam",
+                                                                            "fields": {
+                                                                                "param_number": 0,
+                                                                                "type": {
+                                                                                    "node": "Integer",
+                                                                                    "fields": {
+                                                                                        "kind": 4
+                                                                                    },
+                                                                                    "loc": {
+                                                                                        "first": 52,
+                                                                                        "last": 59,
+                                                                                        "first_filename": "tests/json_loc_fixed_form.f",
+                                                                                        "first_line": 6,
+                                                                                        "first_column": 7,
+                                                                                        "last_filename": "tests/json_loc_fixed_form.f",
+                                                                                        "last_line": 6,
+                                                                                        "last_column": 15
+                                                                                    }
+                                                                                },
+                                                                                "value": []
+                                                                            },
+                                                                            "loc": {
+                                                                                "first": 35,
+                                                                                "last": 82,
+                                                                                "first_filename": "tests/json_loc_fixed_form.f",
+                                                                                "first_line": 5,
+                                                                                "first_column": 7,
+                                                                                "last_filename": "tests/json_loc_fixed_form.f",
+                                                                                "last_line": 9,
+                                                                                "last_column": 20
+                                                                            }
+                                                                        }
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 67,
+                                                                        "last": 67,
+                                                                        "first_filename": "tests/json_loc_fixed_form.f",
+                                                                        "first_line": 8,
+                                                                        "first_column": 13,
+                                                                        "last_filename": "tests/json_loc_fixed_form.f",
+                                                                        "last_line": 8,
+                                                                        "last_column": 13
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "physical_type": "PointerArray",
+                                                            "memory_space": "Global"
+                                                        },
+                                                        "loc": {
+                                                            "first": 61,
+                                                            "last": 68,
+                                                            "first_filename": "tests/json_loc_fixed_form.f",
+                                                            "first_line": 7,
+                                                            "first_column": 7,
+                                                            "last_filename": "tests/json_loc_fixed_form.f",
+                                                            "last_line": 8,
+                                                            "last_column": 14
+                                                        }
+                                                    }
+                                                ],
+                                                "return_var_type": [],
+                                                "abi": "Source",
+                                                "deftype": "Implementation",
+                                                "bindc_name": [],
+                                                "elemental": false,
+                                                "pure": false,
+                                                "module": false,
+                                                "inline": false,
+                                                "static": false,
+                                                "restrictions": [],
+                                                "is_restriction": false,
+                                                "exec_space": "Host"
+                                            },
+                                            "loc": {
+                                                "first": 35,
+                                                "last": 82,
+                                                "first_filename": "tests/json_loc_fixed_form.f",
+                                                "first_line": 5,
+                                                "first_column": 7,
+                                                "last_filename": "tests/json_loc_fixed_form.f",
+                                                "last_line": 9,
+                                                "last_column": 20
+                                            }
+                                        },
+                                        "dependencies": [],
+                                        "args": [
+                                            {
+                                                "node": "Var",
+                                                "fields": {
+                                                    "v": "n (SymbolTable3)"
+                                                },
+                                                "loc": {
+                                                    "first": 35,
+                                                    "last": 82,
+                                                    "first_filename": "tests/json_loc_fixed_form.f",
+                                                    "first_line": 5,
+                                                    "first_column": 7,
+                                                    "last_filename": "tests/json_loc_fixed_form.f",
+                                                    "last_line": 9,
+                                                    "last_column": 20
+                                                }
+                                            },
+                                            {
+                                                "node": "Var",
+                                                "fields": {
+                                                    "v": "x (SymbolTable3)"
+                                                },
+                                                "loc": {
+                                                    "first": 35,
+                                                    "last": 82,
+                                                    "first_filename": "tests/json_loc_fixed_form.f",
+                                                    "first_line": 5,
+                                                    "first_column": 7,
+                                                    "last_filename": "tests/json_loc_fixed_form.f",
+                                                    "last_line": 9,
+                                                    "last_column": 20
+                                                }
+                                            }
+                                        ],
+                                        "body": [],
+                                        "return_var": [],
+                                        "access": "Public",
+                                        "deterministic": true,
+                                        "side_effect_free": true,
+                                        "module_file": []
+                                    },
+                                    "loc": {
+                                        "first": 35,
+                                        "last": 82,
+                                        "first_filename": "tests/json_loc_fixed_form.f",
+                                        "first_line": 5,
+                                        "first_column": 7,
+                                        "last_filename": "tests/json_loc_fixed_form.f",
+                                        "last_line": 9,
+                                        "last_column": 20
+                                    }
+                                }
+                            }
+                        },
+                        "name": "json_loc_fixed_form",
+                        "parent_module": [],
+                        "dependencies": [],
+                        "loaded_from_mod": false,
+                        "intrinsic": false,
+                        "has_submodules": false,
+                        "global_init": []
+                    },
+                    "loc": {
+                        "first": 0,
+                        "last": 92,
+                        "first_filename": "tests/json_loc_fixed_form.f",
+                        "first_line": 3,
+                        "first_column": 7,
+                        "last_filename": "tests/json_loc_fixed_form.f",
+                        "last_line": 10,
+                        "last_column": 16
+                    }
+                }
+            }
+        },
+        "items": [],
+        "global_init": []
+    },
+    "loc": {
+        "first": 0,
+        "last": 92,
+        "first_filename": "tests/json_loc_fixed_form.f",
+        "first_line": 3,
+        "first_column": 7,
+        "last_filename": "tests/json_loc_fixed_form.f",
+        "last_line": 10,
+        "last_column": 16
+    }
+}

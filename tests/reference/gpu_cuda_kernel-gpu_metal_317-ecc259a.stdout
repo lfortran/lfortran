@@ -29,11 +29,9 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
 {
     int __dim___gpu_gather_ops___upper__0 = __scalar_args.__dim___gpu_gather_ops___upper__0;
     int __lb___gpu_gather_ops___upper__0 = __scalar_args.__lb___gpu_gather_ops___upper__0;
-    int __dim___gpu_gather_ops___upper__1 = __scalar_args.__dim___gpu_gather_ops___upper__1;
     int __lb___gpu_gather_ops___upper__1 = __scalar_args.__lb___gpu_gather_ops___upper__1;
     int __dim___gpu_gather_ops_1__upper__0 = __scalar_args.__dim___gpu_gather_ops_1__upper__0;
     int __lb___gpu_gather_ops_1__upper__0 = __scalar_args.__lb___gpu_gather_ops_1__upper__0;
-    int __dim___gpu_gather_ops_1__upper__1 = __scalar_args.__dim___gpu_gather_ops_1__upper__1;
     int __lb___gpu_gather_ops_1__upper__1 = __scalar_args.__lb___gpu_gather_ops_1__upper__1;
     int __flat_idx;
     int i;

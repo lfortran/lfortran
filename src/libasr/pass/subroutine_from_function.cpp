@@ -60,7 +60,8 @@ public:
             ASR::ttype_t* const return_type = ASRUtils::get_FunctionType(x_ptr)->m_return_var_type;
             
             /* Transform This Function Into Subroutine IF NEEDED */
-            bool transform_success = PassUtils::handle_fn_return_var(al, x_ptr, PassUtils::is_aggregate_or_array_or_nonPrimitive_type);
+            bool transform_success = PassUtils::handle_fn_return_var(al, x_ptr,
+                PassUtils::is_result_returned_through_argument);
             if(transform_success) {
                 Function__TO__ReturnType_MAP_[x_ptr] = return_type;
                 handle_finalizable_result(*x_ptr);
@@ -245,6 +246,22 @@ class UpdateFunctionPointerCastTypes: public ASR::ASRPassBaseWalkVisitor<UpdateF
             const_cast<ASR::FunctionPointerCast_t&>(x).m_type = to_fn->m_function_signature;
         }
 
+        void visit_PointerNullConstant(const ASR::PointerNullConstant_t &x) {
+            ASR::ASRPassBaseWalkVisitor<UpdateFunctionPointerCastTypes>::visit_PointerNullConstant(x);
+            if (x.m_var_expr == nullptr) {
+                return;
+            }
+            ASR::ttype_t* type = ASRUtils::expr_type(x.m_var_expr);
+            if (ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(type))) {
+                // A modfile stores the null constant's signature separately
+                // from its procedure variable, whose interface was lowered.
+                // Its specification expressions must be visible here, not
+                // just in the procedure variable's declaration scope.
+                const_cast<ASR::PointerNullConstant_t&>(x).m_type =
+                    ASRUtils::import_procedure_type(al, type, current_scope);
+            }
+        }
+
         // The type of the procedure variable `x` declared by a transformed
         // interface, or null.
         ASR::ttype_t* transformed_procedure_variable_type(const ASR::Variable_t &x) {
@@ -393,7 +410,7 @@ public :
             }
 
             /* Create Assignment ---> `funcCall_temp_var = f()` --- Push Assignment Statement */
-            ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al_, f_call_->base.base.loc,temp_var, fnCall_argument, nullptr, false, false));
+            ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al_, f_call_->base.base.loc,temp_var, fnCall_argument, nullptr, false, false, false));
             pass_result_.push_back(al_, assignment_stmt);                            
 
             /* Replace Current FuncParam With `temp_var` */
@@ -502,6 +519,39 @@ static void finalize_result_argument(Allocator &al, ASR::expr_t* result,
         is_allocated, finalization.p, finalization.n, nullptr, 0)));
 }
 
+static void prepare_allocatable_character_result(Allocator& al,
+        ASR::expr_t* result, ASR::expr_t* value, Vec<ASR::stmt_t*>& body) {
+    ASR::ttype_t* type = ASRUtils::expr_type(value);
+    ASR::ttype_t* result_type = ASRUtils::expr_type(result);
+    if (!ASRUtils::is_allocatable(type) || !ASRUtils::is_character(*type) ||
+            !ASRUtils::is_allocatable(result_type) ||
+            ASRUtils::get_string_type(result_type)->m_len_kind != ASR::DeferredLength) {
+        return;
+    }
+    ASR::String_t* string = ASRUtils::get_string_type(type);
+    if (string->m_len_kind != ASR::ExpressionLength || !string->m_len) {
+        return;
+    }
+    // The explicit result length is an entry-time value; an array result's
+    // shape is owned by the callee. Establish the length here, not in a declaration
+    // evaluated before the call's metadata assignments. INTENT(OUT) releases
+    // the allocation before the original function body executes.
+    const Location& loc = value->base.loc;
+    ASRUtils::ASRBuilder b(al, loc);
+    Vec<ASR::dimension_t> dims;
+    size_t rank = ASRUtils::extract_n_dims_from_ttype(type);
+    dims.reserve(al, rank);
+    for (size_t i = 0; i < rank; i++) {
+        ASR::dimension_t dim;
+        dim.loc = loc;
+        dim.m_start = b.i32(1);
+        dim.m_length = b.i32(0);
+        dims.push_back(al, dim);
+    }
+    body.push_back(al, b.Deallocate(result));
+    body.push_back(al, b.Allocate(result, dims.p, dims.size(), string->m_len));
+}
+
 class ReplaceFunctionCallWithSubroutineCall : public ASR::BaseExprReplacer<ReplaceFunctionCallWithSubroutineCall> {
 
 
@@ -578,51 +628,8 @@ private :
     /// This function is creating the proper type for return slot variable
     /// WHY? Some return slot variables can't be of the exact type as their function return type.
     ASR::ttype_t* create_type_for_return_slot_var(ASR::ttype_t* function_return_t){
-        /* Initially Create Exactly The Same Type */
-        ASR::ttype_t* new_type = ASRUtils::duplicate_type(al, function_return_t);
-
-        /* Now Start To Modify Type If Needed */
-
-        /* ================ STRING TYPE ================ */
-
-        /* Handle The Case Of DeferredLength + Non Allocatable (some functions have that return type) */
-        {
-            const bool allocatable_needed = ASRUtils::is_deferredLength_string(new_type)
-                                            && !ASRUtils::is_allocatable(new_type)
-                                            && !ASRUtils::is_pointer(new_type);
-
-            if(allocatable_needed) new_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, new_type->base.loc, new_type));
-        }
-        /* Handle Case `character(n) :: str` --  Create `character(:), alloactable :: str` */
-        {
-            const bool allocatable_needed = ASRUtils::is_string_only(new_type)
-                                            && !ASRUtils::is_value_constant(ASRUtils::get_string_type(new_type)->m_len)
-                                            && ASRUtils::get_string_type(new_type)->m_len_kind == ASR::ExpressionLength
-                                            && !ASRUtils::is_allocatable(new_type)
-                                            && !ASRUtils::is_pointer(new_type);
-            if(allocatable_needed){ 
-                ASR::String_t* const str = ASRUtils::get_string_type(new_type);
-                str->m_len = nullptr;
-                str->m_len_kind = ASR::DeferredLength;
-                str->m_physical_type = ASR::DescriptorString;
-                new_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, new_type->base.loc, new_type));
-            }
-        }
-        /* Handle Case `character(*) :: str` (AssumedLength) -- Create `character(:), allocatable :: str` */
-        {
-            const bool allocatable_needed = ASRUtils::is_string_only(new_type)
-                                            && ASRUtils::get_string_type(new_type)->m_len_kind == ASR::AssumedLength
-                                            && !ASRUtils::is_allocatable(new_type)
-                                            && !ASRUtils::is_pointer(new_type);
-            if(allocatable_needed){
-                ASR::String_t* const str = ASRUtils::get_string_type(new_type);
-                str->m_len = nullptr;
-                str->m_len_kind = ASR::DeferredLength;
-                str->m_physical_type = ASR::DescriptorString;
-                new_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, new_type->base.loc, new_type));
-            }
-        }
-        return new_type;
+        return normalize_string_temporary_type(al, function_return_t->base.loc,
+            ASRUtils::duplicate_type(al, function_return_t), true);
     }
 
 public :
@@ -677,8 +684,17 @@ public :
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x){
+        std::vector<ASR::expr_t*> original_args;
+        for (size_t i = 0; i < x->n_args; i++) {
+            original_args.push_back(x->m_args[i].m_value);
+        }
         traverse_functionCall_args(x->m_args, x->n_args);
-        if (x->m_dt) {
+        ASR::expr_t* dt = x->m_dt;
+        for (size_t i = 0; i < x->n_args; i++) {
+            x->m_dt = passed_object_dispatch(x->m_dt, original_args[i],
+                x->m_args[i].m_value);
+        }
+        if (x->m_dt && x->m_dt == dt) {
             ASR::expr_t** current_expr_copy = current_expr;
             current_expr = &(x->m_dt);
             replace_expr(x->m_dt);
@@ -700,13 +716,12 @@ public :
                 current_scope, nullptr);
             ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(
                 al, x->base.base.loc, result_var,
-                ASRUtils::EXPR((ASR::asr_t*)x), nullptr, false, false));
+                ASRUtils::EXPR((ASR::asr_t*)x), nullptr, false, false, false));
             *current_expr = result_var;
             pass_result.push_back(al, assign);
             return;
         }
-        if(PassUtils::is_non_primitive_return_type(x->m_type)
-            || PassUtils::is_aggregate_or_array_type(x->m_type)){
+        if (PassUtils::is_result_returned_through_argument(x->m_type)) {
 
             // Create variable in current_scope to be holding the return.
             // For converted functions (structs/arrays), pass the last arg as
@@ -749,6 +764,8 @@ public :
                 AllocateVarBasedOnFuncCall::Allocate(
                     al, x, ASR::down_cast<ASR::Var_t>(result_var),current_scope, pass_result, alloc_type);
             }
+            prepare_allocatable_character_result(al, result_var,
+                ASRUtils::EXPR((ASR::asr_t*)x), pass_result);
             // Create new call args with `result_var` as last argument capturing return + Create a `subroutineCall`.
             Vec<ASR::call_arg_t> new_call_args;
             new_call_args.reserve(al,1);
@@ -1233,13 +1250,20 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 
             // We skip the generic expression visitor on this statement, so
             // ensure nested calls inside the function call arguments are still replaced.
+            std::vector<ASR::expr_t*> original_args;
             for (size_t i = 0; i < fc->n_args; i++) {
+                original_args.push_back(fc->m_args[i].m_value);
                 ASR::expr_t** current_expr_copy = current_expr;
                 current_expr = &fc->m_args[i].m_value;
                 call_replacer();
                 current_expr = current_expr_copy;
             }
-            if (fc->m_dt) {
+            ASR::expr_t* dt = fc->m_dt;
+            for (size_t i = 0; i < fc->n_args; i++) {
+                fc->m_dt = passed_object_dispatch(fc->m_dt, original_args[i],
+                    fc->m_args[i].m_value);
+            }
+            if (fc->m_dt && fc->m_dt == dt) {
                 ASR::expr_t** current_expr_copy = current_expr;
                 current_expr = &fc->m_dt;
                 call_replacer();
@@ -1311,7 +1335,9 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                 if (class_to_type_mismatch || type_to_class_mismatch ||
                         allocatable_result_to_non_allocatable || attribute_mismatch ||
                         finalizable_allocatable_result) {
-                    ASR::ttype_t* var_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(value));
+                    ASR::ttype_t* var_type = normalize_string_temporary_type(al,
+                        value->base.loc, ASRUtils::duplicate_type(al,
+                            ASRUtils::expr_type(value)), true);
                     std::string var_name = current_scope->get_unique_name(
                         "__libasr_created__subroutine_from_function_");
                     ASR::symbol_t* struct_sym = nullptr;
@@ -1362,6 +1388,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     to_be_deallocated.p, to_be_deallocated.size())));
             }
             ASR::call_arg_t result_arg;
+            prepare_allocatable_character_result(al, target, value, pass_result);
             result_arg.loc = target->base.loc;
             result_arg.m_value = target;
             s_args.push_back(al, result_arg);

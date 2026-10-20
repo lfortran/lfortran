@@ -299,18 +299,25 @@ TEST_CASE("checked integer conversions") {
     CHECK(!integer_fits<int8_t>(uint8_t{128}));
 
     CHECK(checked_integer_cast<int>(size_t{42}) == 42);
+    CHECK(checked_bit_pattern_cast<uint8_t>(int64_t{-1}) == 255);
+    CHECK(checked_bit_pattern_cast<int8_t>(int64_t{255}) == -1);
+    CHECK(checked_bit_pattern_cast<int8_t>(int64_t{-128}) == -128);
+
+    // The range checks are assertions: without WITH_LFORTRAN_ASSERT the
+    // conversions are plain static_casts.
+#if defined(WITH_LFORTRAN_ASSERT)
     CHECK_THROWS_AS(checked_integer_cast<int>(int64_t{2147483648}),
         LCompilers::LCompilersException);
     CHECK_THROWS_AS(checked_integer_cast<uint32_t>(int64_t{-1}),
         LCompilers::LCompilersException);
-
-    CHECK(checked_bit_pattern_cast<uint8_t>(int64_t{-1}) == 255);
-    CHECK(checked_bit_pattern_cast<int8_t>(int64_t{255}) == -1);
-    CHECK(checked_bit_pattern_cast<int8_t>(int64_t{-128}) == -128);
     CHECK_THROWS_AS(checked_bit_pattern_cast<int8_t>(int64_t{256}),
         LCompilers::LCompilersException);
     CHECK_THROWS_AS(checked_bit_pattern_cast<uint16_t>(int64_t{-32769}),
         LCompilers::LCompilersException);
+#else
+    CHECK(checked_integer_cast<uint32_t>(int64_t{-1}) == 4294967295u);
+    CHECK(checked_bit_pattern_cast<uint8_t>(int64_t{256}) == 0);
+#endif
 }
 
 TEST_CASE("location sizes must fit 32 bits") {

@@ -1,0 +1,178 @@
+#include <metal_stdlib>
+using namespace metal;
+
+inline int _lcompilers_optimization_modulo_i32_gpu_19(int a, int p) {
+    int _lcompilers_optimization_modulo_i32;
+    _lcompilers_optimization_modulo_i32 = ((a) % (((int)p)));
+    if (((int)((_lcompilers_optimization_modulo_i32 != 0) && ((int)(((int)((_lcompilers_optimization_modulo_i32 < 0) && (((int)p) > 0))) || ((int)((_lcompilers_optimization_modulo_i32 > 0) && (((int)p) < 0)))))))) {
+        _lcompilers_optimization_modulo_i32 = (_lcompilers_optimization_modulo_i32 + ((int)p));
+    }
+    return _lcompilers_optimization_modulo_i32;
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __loop_end_0;
+    int __gpu_lanes;
+};
+
+kernel void __lfortran_gpu_kernel_0(
+    device int* limits [[buffer(0)]],
+    device float* result [[buffer(1)]],
+    constant __ScalarArgs___lfortran_gpu_kernel_0& __scalar_args [[buffer(2)]],
+    uint __gpu_grid_thread [[thread_position_in_grid]],
+    uint __gpu_simd_lane [[thread_index_in_simdgroup]])
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __gpu_lanes = __scalar_args.__gpu_lanes;
+    uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes;
+    int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes);
+    int __flat_idx;
+    int i;
+    if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((0 * 0) + __thread_id);
+    i = (__flat_idx + 1);
+    {
+        int __gpu_loop_end;
+        int __gpu_loop_end1;
+        int __gpu_loop_group;
+        int __gpu_loop_group1;
+        int j;
+        int n;
+        float value;
+        float x;
+        n = limits[((int)(i) - (1))];
+        value = ((float)0);
+        if ((__gpu_lane == 0)) {
+            __gpu_loop_end = n;
+            j = 1;
+            if ((__gpu_loop_end >= 1)) {
+                for (__gpu_loop_group = 1; __gpu_loop_group <= (__gpu_loop_end - 15); __gpu_loop_group += 16) {
+                    j = __gpu_loop_group;
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                    j = (__gpu_loop_group + 1);
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                    j = (__gpu_loop_group + 2);
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                    j = (__gpu_loop_group + 3);
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                    j = (__gpu_loop_group + 4);
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                    j = (__gpu_loop_group + 5);
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                    j = (__gpu_loop_group + 6);
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                    j = (__gpu_loop_group + 7);
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                    j = (__gpu_loop_group + 8);
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                    j = (__gpu_loop_group + 9);
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                    j = (__gpu_loop_group + 10);
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                    j = (__gpu_loop_group + 11);
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                    j = (__gpu_loop_group + 12);
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                    j = (__gpu_loop_group + 13);
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                    j = (__gpu_loop_group + 14);
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                    j = (__gpu_loop_group + 15);
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                }
+                for (j = __gpu_loop_group; j <= __gpu_loop_end; j++) {
+                    x = ((float)j);
+                    value = ((value + sqrt(((x * x) +   1.00000000000000000e+00))) + (x *   2.50000000000000000e-01));
+                    n = (n - 1);
+                }
+            }
+            __gpu_loop_end1 = (_lcompilers_optimization_modulo_i32_gpu_19(i, 23) - 1);
+            j = 0;
+            if ((__gpu_loop_end1 >= 0)) {
+                for (__gpu_loop_group1 = 0; __gpu_loop_group1 <= (__gpu_loop_end1 - 15); __gpu_loop_group1 += 16) {
+                    j = __gpu_loop_group1;
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                    j = (__gpu_loop_group1 + 1);
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                    j = (__gpu_loop_group1 + 2);
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                    j = (__gpu_loop_group1 + 3);
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                    j = (__gpu_loop_group1 + 4);
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                    j = (__gpu_loop_group1 + 5);
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                    j = (__gpu_loop_group1 + 6);
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                    j = (__gpu_loop_group1 + 7);
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                    j = (__gpu_loop_group1 + 8);
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                    j = (__gpu_loop_group1 + 9);
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                    j = (__gpu_loop_group1 + 10);
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                    j = (__gpu_loop_group1 + 11);
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                    j = (__gpu_loop_group1 + 12);
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                    j = (__gpu_loop_group1 + 13);
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                    j = (__gpu_loop_group1 + 14);
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                    j = (__gpu_loop_group1 + 15);
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                }
+                for (j = __gpu_loop_group1; j <= __gpu_loop_end1; j++) {
+                    value = (value + (((float)j) *   5.00000000000000000e-01));
+                }
+            }
+            j = (10 - (-(2)));
+            while (((j + (-(2))) >= 2)) {
+                j = (j + (-(2)));
+                value = (value + (((float)j) *   1.25000000000000000e-01));
+            }
+            result[((int)(i) - (1))] = value;
+        }
+        if (__gpu_lanes > 1) simdgroup_barrier(mem_flags::mem_device | mem_flags::mem_threadgroup);
+        j = simd_shuffle(j, (ushort)(__gpu_simd_lane - (uint)__gpu_lane));
+        n = simd_shuffle(n, (ushort)(__gpu_simd_lane - (uint)__gpu_lane));
+        value = simd_shuffle(value, (ushort)(__gpu_simd_lane - (uint)__gpu_lane));
+        x = simd_shuffle(x, (ushort)(__gpu_simd_lane - (uint)__gpu_lane));
+    }
+}
+

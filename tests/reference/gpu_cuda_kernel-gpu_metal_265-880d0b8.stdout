@@ -13,9 +13,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* b,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
-    int __dim_a_0 = __scalar_args.__dim_a_0;
     int __lb_a_0 = __scalar_args.__lb_a_0;
-    int __dim_b_0 = __scalar_args.__dim_b_0;
     int __lb_b_0 = __scalar_args.__lb_b_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
@@ -57,18 +55,15 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     float* __workspace_5,
     float* __workspace_6)
 {
-    int n = __scalar_args.n;
     int __dim_op_0 = __scalar_args.__dim_op_0;
     int __lb_op_0 = __scalar_args.__lb_op_0;
     int __dim_op_1 = __scalar_args.__dim_op_1;
     int __lb_op_1 = __scalar_args.__lb_op_1;
     int __dim_out_0 = __scalar_args.__dim_out_0;
     int __lb_out_0 = __scalar_args.__lb_out_0;
-    int __dim_out_1 = __scalar_args.__dim_out_1;
     int __lb_out_1 = __scalar_args.__lb_out_1;
     int __dim_v_0 = __scalar_args.__dim_v_0;
     int __lb_v_0 = __scalar_args.__lb_v_0;
-    int __dim_v_1 = __scalar_args.__dim_v_1;
     int __lb_v_1 = __scalar_args.__lb_v_1;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;
@@ -103,7 +98,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         __gpu_bc_i = (1 - 1);
         while (((__gpu_bc_i + 1) <= __do_loop_end)) {
             __gpu_bc_i = (__gpu_bc_i + 1);
-            tail[((int)(__gpu_bc_i) - (1))] =   5.00000000000000000e+00f;
+            tail[((int)((1 + (__gpu_bc_i - 1))) - (1))] =   5.00000000000000000e+00f;
         }
         __do_loop_end1 = ((((int)__dim_op_0) + ((int)__lb_op_0)) - 1);
         __gpu_mm_i = (((int)__lb_op_0) - 1);
@@ -137,7 +132,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
         __gpu_sec_i = (1 - 1);
         while (((__gpu_sec_i + 1) <= __do_loop_end4)) {
             __gpu_sec_i = (__gpu_sec_i + 1);
-            out[((int)((((int)__lb_out_0) + (__gpu_sec_i - 1))) - (__lb_out_0)) + (__dim_out_0 * ((int)(j) - (__lb_out_1)))] = r[((int)(__gpu_sec_i) - (1))];
+            out[((int)((((int)__lb_out_0) + (__gpu_sec_i - 1))) - (__lb_out_0)) + (__dim_out_0 * ((int)(j) - (__lb_out_1)))] = r[((int)((1 + (__gpu_sec_i - 1))) - (1))];
         }
     }
 }
@@ -159,9 +154,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     float* __workspace_3)
 {
     int n = __scalar_args.n;
-    int __dim_a_0 = __scalar_args.__dim_a_0;
     int __lb_a_0 = __scalar_args.__lb_a_0;
-    int __dim_b_0 = __scalar_args.__dim_b_0;
     int __lb_b_0 = __scalar_args.__lb_b_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;
@@ -186,7 +179,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
             t[((int)(k) - (1))] = (a[((int)(j) - (__lb_a_0))] * ((float)k));
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
-        __do_loop_end1 = __workspace_extent;
+        __do_loop_end1 = (((n) % (3)) + 2);
         __gpu_sum_k = (1 - 1);
         while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
             __gpu_sum_k = (__gpu_sum_k + 1);

@@ -1731,7 +1731,8 @@ void load_dependent_submodules(Allocator &al, SymbolTable *symtab,
 
 ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     ASR::expr_t* a_target, ASR::expr_t* a_value,
-    ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move) {
+    ASR::stmt_t* a_overloaded, bool a_realloc_lhs, bool a_move,
+    bool a_new_target) {
     bool is_allocatable = ASRUtils::is_allocatable(a_target);
     if ( !is_allocatable && ASR::is_a<ASR::ArrayPhysicalCast_t>(*a_target) ) {
         is_allocatable = ASRUtils::is_allocatable(
@@ -1743,7 +1744,7 @@ ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
     }
     a_realloc_lhs = a_realloc_lhs && is_allocatable;
     return ASR::make_Assignment_t(al, a_loc, a_target, a_value,
-        a_overloaded, a_realloc_lhs, a_move);
+        a_overloaded, a_realloc_lhs, a_move, a_new_target);
 }
 
 void set_intrinsic(ASR::symbol_t* sym) {
@@ -4792,9 +4793,10 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
     dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc,
         1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
     dims.push_back(al, dim);
-    ASR::ttype_t* dest_shape_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
-        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size(),
-        is_value_character_array && !is_value_constant(expr2) ? ASR::array_physical_typeType::StringArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray, ASR::memory_spaceType::Global));
+    // The shape is a constant-size array of integers, whatever the type of
+    // the broadcast value is.
+    ASR::ttype_t* dest_shape_type = ASRUtils::make_Array_t_util(al, loc,
+        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), dims.p, dims.size());
 
     ASR::expr_t* dest_shape = nullptr;
     ASR::expr_t* value = nullptr;
@@ -5592,11 +5594,13 @@ ASR::asr_t* make_ArraySize_t_util(
     if( is_binop_expr(a_v) && for_type ) {
         ASR::expr_t* lhs = extract_member_from_binop(a_v, 0);
         ASR::expr_t* rhs = extract_member_from_binop(a_v, 1);
-        // ArrayBroadcast wraps a scalar broadcast to the shape of the other
-        // operand; take the size from the non-broadcast side.
-        if( ASR::is_a<ASR::ArrayBroadcast_t>(*rhs) ) {
+        // A scalar operand, either bare (e.g. `x > t`) or wrapped in an
+        // ArrayBroadcast, has no shape; take the size from the other side.
+        if( ASR::is_a<ASR::ArrayBroadcast_t>(*rhs) ||
+                !ASRUtils::is_array(ASRUtils::expr_type(rhs)) ) {
             return make_ArraySize_t_util(al, a_loc, lhs, a_dim, a_type, a_value, for_type);
-        } else if( ASR::is_a<ASR::ArrayBroadcast_t>(*lhs) ) {
+        } else if( ASR::is_a<ASR::ArrayBroadcast_t>(*lhs) ||
+                !ASRUtils::is_array(ASRUtils::expr_type(lhs)) ) {
             return make_ArraySize_t_util(al, a_loc, rhs, a_dim, a_type, a_value, for_type);
         } else if( ASR::is_a<ASR::Var_t>(*rhs) ||
                    ASR::is_a<ASR::ArraySection_t>(*rhs) ) {

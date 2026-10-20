@@ -34,7 +34,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             tmp[((int)(k) - (1))] = 2;
         }
         __gpu_sum_res = 0;
-        __do_loop_end1 = 4;
+        __do_loop_end1 = n;
         __gpu_sum_k = (1 - 1);
         while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
             __gpu_sum_k = (__gpu_sum_k + 1);
@@ -63,7 +63,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     int i;
-    const int n = 4;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
@@ -91,7 +90,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     int __flat_idx;
     int __gpu_elem_i;
     int i;
-    const int n = 4;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
@@ -135,7 +133,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     int i;
-    const int n = 4;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
@@ -163,7 +160,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_4(
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
     int i;
-    const int n = 4;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }

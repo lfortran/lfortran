@@ -4,6 +4,7 @@
 #include <limits>
 #include <type_traits>
 
+#include <libasr/config.h>
 #include <libasr/exception.h>
 
 namespace LCompilers {
@@ -29,26 +30,34 @@ constexpr bool integer_fits(From value) {
     }
 }
 
-// Converts an integer to a (possibly narrower) integer type, raising an
-// internal compiler error instead of silently truncating or changing sign.
+// Converts an integer to a (possibly narrower) integer type. With
+// WITH_LFORTRAN_ASSERT (the Debug default), a value that does not fit raises
+// an internal compiler error instead of silently truncating or changing sign.
+// Otherwise this is a plain static_cast. Use integer_fits directly for values
+// that must be validated in every build, such as user input.
 template <typename To, typename From>
 inline To checked_integer_cast(From value) {
+#if defined(WITH_LFORTRAN_ASSERT)
     if (!integer_fits<To>(value)) {
         throw LCompilersException("integer value out of range in conversion");
     }
+#endif
     return static_cast<To>(value);
 }
 
 // Converts an integer to the bit pattern of the integer type `To`. Values
 // representable in either the signed or the unsigned type of that width are
-// accepted (e.g. both -1 and 255 for an 8-bit target); anything wider raises
-// an internal compiler error instead of being silently truncated.
+// accepted (e.g. both -1 and 255 for an 8-bit target). As in
+// checked_integer_cast, anything wider raises an internal compiler error only
+// with WITH_LFORTRAN_ASSERT and is otherwise truncated by static_cast.
 template <typename To, typename From>
 inline To checked_bit_pattern_cast(From value) {
+#if defined(WITH_LFORTRAN_ASSERT)
     if (!integer_fits<std::make_signed_t<To>>(value)
             && !integer_fits<std::make_unsigned_t<To>>(value)) {
         throw LCompilersException("integer value does not fit the target bit width");
     }
+#endif
     return static_cast<To>(value);
 }
 

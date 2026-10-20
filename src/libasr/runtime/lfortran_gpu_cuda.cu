@@ -341,6 +341,7 @@ void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3])
 {
+    lfortran_gpu_validate_launch(grid, block);
     if (!ctx || !k) return;
 
     for (int i = 0; i < k->n_args; i++) {
@@ -413,4 +414,19 @@ void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
 
 extern "C" long long lfortran_gpu_heap_size(void) {
     return lfortran_gpu_parse_heap_size();
+}
+
+extern "C" void lfortran_gpu_metal_telemetry_snapshot(lfortran_gpu_ctx* ctx,
+    lfortran_gpu_metal_telemetry *out)
+{
+    (void)ctx;
+    if (!out) return;
+    memset(out, 0, sizeof(*out));
+}
+
+extern "C" void lfortran_gpu_metal_telemetry_snapshot_sync(lfortran_gpu_ctx* ctx,
+    lfortran_gpu_metal_telemetry *out)
+{
+    if (ctx) lfortran_gpu_sync(ctx);
+    lfortran_gpu_metal_telemetry_snapshot(ctx, out);
 }
