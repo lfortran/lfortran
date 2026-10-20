@@ -1830,7 +1830,6 @@ public:
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>> &explicit_intrinsic_procedures_mapping,
-        std::map<uint64_t, std::vector<std::string>> &intrinsic_attribute_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
@@ -2390,11 +2389,6 @@ public:
     std::map<uint64_t, std::vector<std::string>> &external_procedures_mapping;
     // mapping of hash int's of scope to 'explicit_intrinsic_procedures'
     std::map<uint64_t, std::vector<std::string>> &explicit_intrinsic_procedures_mapping;
-    // mapping of hash int's of a scope whose ASR node exists while its
-    // specification part is visited (a module, submodule or BLOCK) to the
-    // names given the INTRINSIC attribute there; only used by
-    // has_intrinsic_attribute
-    std::map<uint64_t, std::vector<std::string>> &intrinsic_attribute_mapping;
     std::map<std::string, std::vector<AST::decl_stmt_t*>> entry_point_mapping;
     std::vector<std::string> external_procedures;
 
@@ -2561,7 +2555,6 @@ public:
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
-        std::map<uint64_t, std::vector<std::string>>& intrinsic_attribute_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
@@ -2572,7 +2565,6 @@ public:
           current_scope{symbol_table}, implicit_mapping{implicit_mapping},
           external_procedures_mapping{external_procedures_mapping},
           explicit_intrinsic_procedures_mapping{explicit_intrinsic_procedures_mapping},
-          intrinsic_attribute_mapping{intrinsic_attribute_mapping},
           entry_functions{entry_functions},entry_function_arguments_mapping{entry_function_arguments_mapping},
           current_variable_type_{nullptr}, instantiate_types{instantiate_types},
           instantiate_symbols{instantiate_symbols}, data_structure{data_structure}, lm{lm}
@@ -8238,13 +8230,12 @@ public:
                                     }
                                 } else if(sa->m_attr == AST::simple_attributeType
                                         ::AttrIntrinsic) {
-                                    explicit_intrinsic_procedures.push_back(sym);
-                                    if (current_scope->asr_owner) {
-                                        intrinsic_attribute_mapping[
-                                            get_hash(current_scope->asr_owner)].push_back(sym);
-                                    }
-                                    if (compiler_options.implicit_interface) {
-                                        create_intrinsic_function_wrapper(sym, x.m_syms[i].loc);
+                                    if (!reject_non_fortran_intrinsic_attribute(
+                                            sym, x.m_syms[i].loc)) {
+                                        explicit_intrinsic_procedures.push_back(sym);
+                                        if (compiler_options.implicit_interface) {
+                                            create_intrinsic_function_wrapper(sym, x.m_syms[i].loc);
+                                        }
                                     }
                                 } else if (sa->m_attr == AST::simple_attributeType
                                         ::AttrExternal) {
@@ -9850,7 +9841,9 @@ public:
                                 value_attr = true;
                             } else if(sa->m_attr == AST::simple_attributeType
                                     ::AttrIntrinsic) {
-                                excluded_from_symtab.push_back(sym);
+                                if (!reject_non_fortran_intrinsic_attribute(sym, s.loc)) {
+                                    excluded_from_symtab.push_back(sym);
+                                }
                             } else if(sa->m_attr == AST::simple_attributeType
                                     ::AttrExternal) {
                                 is_attr_external = true;
@@ -20949,68 +20942,31 @@ public:
         return names.find(name) != names.end();
     }
 
-    // The module or submodule that owns `scope`, if any.
-    static ASR::Module_t *scope_module(SymbolTable *scope) {
-        ASR::asr_t *owner = scope->asr_owner;
-        if (owner && ASR::is_a<ASR::symbol_t>(*owner)
-                && ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(owner))) {
-            return ASR::down_cast2<ASR::Module_t>(owner);
+    // With implicit interfaces, the names above are not intrinsic
+    // procedures, so they cannot have the INTRINSIC attribute. Reports an
+    // error and returns true for such a name.
+    bool reject_non_fortran_intrinsic_attribute(const std::string &name,
+            const Location &loc) {
+        if (!compiler_options.implicit_interface ||
+                !is_non_fortran_registry_intrinsic(name)) {
+            return false;
         }
-        return nullptr;
-    }
-
-    // Whether `name` has the INTRINSIC attribute in the current scope or, by
-    // host association, in an enclosing one: the host of a BLOCK or of an
-    // internal procedure, the module of a module procedure, or the ancestors
-    // of a submodule. An entity of that name declared in an inner scope
-    // hides the attribute of the scopes enclosing it. Unlike check_is_explicit_intrinsic, it does not modify
-    // `explicit_intrinsic_procedures`, which holds the INTRINSIC names of the
-    // scoping unit whose specification part is being processed, before they
-    // are stored in `explicit_intrinsic_procedures_mapping`.
-    bool has_intrinsic_attribute(const std::string &name) {
-        auto contains = [&](const std::vector<std::string> &names) {
-            return std::find(names.begin(), names.end(), name) != names.end();
-        };
-        auto listed = [&](const std::map<uint64_t, std::vector<std::string>> &mapping,
-                SymbolTable *s) {
-            auto it = mapping.find(get_hash(s->asr_owner));
-            return it != mapping.end() && contains(it->second);
-        };
-        bool current_unit_stored = current_scope && current_scope->asr_owner
-            && explicit_intrinsic_procedures_mapping.count(
-                get_hash(current_scope->asr_owner)) > 0;
-        if (!current_unit_stored && contains(explicit_intrinsic_procedures)) {
-            return true;
+        diag.add(Diagnostic("'" + name + "' is not an intrinsic procedure",
+            Level::Error, Stage::Semantic, {
+                Label("", {loc})
+            }));
+        if (!compiler_options.continue_compilation) {
+            throw SemanticAbort();
         }
-        SymbolTable *s = current_scope;
-        while (s) {
-            if (s->asr_owner && (listed(explicit_intrinsic_procedures_mapping, s)
-                    || listed(intrinsic_attribute_mapping, s))) {
-                return true;
-            }
-            if (s->get_symbol(name)) {
-                return false;
-            }
-            ASR::Module_t *m = scope_module(s);
-            if (m && m->m_parent_module && s->parent) {
-                // The host of a submodule is its parent module or submodule.
-                ASR::symbol_t *parent = s->parent->get_symbol(m->m_parent_module);
-                s = parent && ASR::is_a<ASR::Module_t>(*parent)
-                    ? ASR::down_cast<ASR::Module_t>(parent)->m_symtab : nullptr;
-            } else {
-                s = s->parent;
-            }
-        }
-        return false;
+        return true;
     }
 
     bool is_intrinsic_registry_function(std::string var_name) {
         if (compiler_options.implicit_interface &&
-                is_non_fortran_registry_intrinsic(var_name) &&
-                !has_intrinsic_attribute(var_name)) {
-            // Unless declared INTRINSIC, a reference to such a name is a
-            // reference to an external procedure with an implicit interface,
-            // as for any other name that is not an intrinsic procedure.
+                is_non_fortran_registry_intrinsic(var_name)) {
+            // A reference to such a name is a reference to an external
+            // procedure with an implicit interface, as for any other name
+            // that is not an intrinsic procedure.
             return false;
         }
         bool is_specific_type_intrinsic = intrinsic_mapping.count(var_name);

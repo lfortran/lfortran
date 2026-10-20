@@ -2553,8 +2553,6 @@ RUN(NAME implicit_interface_108 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EX
 RUN(NAME implicit_interface_109 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME implicit_interface_110 LABELS gfortran llvm EXTRA_ARGS --implicit-interface EXTRAFILES implicit_interface_110b.f90)
 RUN(NAME implicit_interface_111 LABELS gfortran llvm EXTRA_ARGS --fixed-form --implicit-typing --implicit-interface GFORTRAN_ARGS -ffixed-form EXTRAFILES implicit_interface_111b.f90)
-# LFortran-specific intrinsics: GFortran rejects their INTRINSIC statements
-RUN(NAME implicit_interface_112 LABELS llvm EXTRA_ARGS --implicit-interface)
 
 RUN(NAME implicit_typing_01 LABELS gfortran llvmImplicit)
 RUN(NAME implicit_typing_02 LABELS gfortran llvmImplicit)
@@ -5522,7 +5520,6 @@ RUN(NAME array_concat LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # array pas
 RUN(NAME multiple_objects_args LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME module_array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_intrinsic LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME attr_intrinsic_02 LABELS gfortran llvm)
 
 RUN(NAME separate_compilation_01 LABELS gfortran llvm EXTRAFILES separate_compilation_01b.f90)
 RUN(NAME separate_compilation_02 LABELS gfortran llvm EXTRAFILES separate_compilation_02b.f90)

@@ -208,7 +208,6 @@ public:
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> &implicit_mapping,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
-        std::map<uint64_t, std::vector<std::string>>& intrinsic_attribute_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
@@ -218,8 +217,7 @@ public:
     ) : CommonVisitor(
             al, nullptr, diagnostics, compiler_options, implicit_mapping,
             external_procedures_mapping,
-            explicit_intrinsic_procedures_mapping,
-            intrinsic_attribute_mapping, instantiate_types,
+            explicit_intrinsic_procedures_mapping, instantiate_types,
             instantiate_symbols, entry_functions, entry_function_arguments_mapping,
             data_structure, lm
         ), asr{unit}, from_block{false} {}
@@ -437,8 +435,7 @@ public:
             block_interfaces = std::make_unique<BlockInterfaceVisitor>(al,
                 current_scope, diag, compiler_options, implicit_mapping,
                 external_procedures_mapping,
-                explicit_intrinsic_procedures_mapping,
-                intrinsic_attribute_mapping, instantiate_types,
+                explicit_intrinsic_procedures_mapping, instantiate_types,
                 instantiate_symbols, entry_functions,
                 entry_function_arguments_mapping, data_structure, lm);
         }
@@ -11383,7 +11380,6 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
-        std::map<uint64_t, std::vector<std::string>>& intrinsic_attribute_mapping,
         std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::decl_stmt_t*>>> &entry_functions,
@@ -11394,7 +11390,6 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
     BodyVisitor b(al, unit, diagnostics, compiler_options, implicit_mapping,
         external_procedures_mapping,
         explicit_intrinsic_procedures_mapping,
-        intrinsic_attribute_mapping,
         instantiate_types, instantiate_symbols, entry_functions,
         entry_function_arguments_mapping, data_structure, lm
     );

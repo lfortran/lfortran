@@ -1,0 +1,13 @@
+{
+    "basename": "asr-implicit_interface_intrinsic_non_fortran-94e0ba3",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/implicit_interface_intrinsic_non_fortran.f90",
+    "infile_hash": "26505df1d5dc6f7e384ebb27ded631622c61836e9678757613bf5861",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-implicit_interface_intrinsic_non_fortran-94e0ba3.stderr",
+    "stderr_hash": "d43a78cbe8d1e5c504d4154c4642b4f0ecb85a0aa5afd67e707a5752",
+    "returncode": 1
+}
