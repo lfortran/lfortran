@@ -19,14 +19,6 @@ void GpuAffine::add(const GpuAffine &other, int64_t scale) {
     }
 }
 
-std::string GpuAffine::str() const {
-    std::string s;
-    for (auto &t : terms) {
-        s += std::to_string(t.second) + "*[" + t.first + "] + ";
-    }
-    return s + std::to_string(constant);
-}
-
 namespace {
 
 bool is_integer_expr(ASR::expr_t *e) {

@@ -312,9 +312,8 @@ namespace LCompilers {
                 // A whole-array assignment that is assigned again before
                 // anything reads it goes, before it can cost a launch.
                 "dead_array_store",
-                // Parallel loops assigned to the device are fused, split
-                // and blocked while they are still loops of the source
-                // (see gpu_loop_fusion.cpp and the passes after it).
+                // Parallel loops assigned to the device are fused while
+                // they are still loops of the source (gpu_loop_fusion.cpp).
                 "gpu_loop_fusion",
                 // A whole-array assignment in a host loop that launches
                 // kernels, on the data they use, runs on the device too.

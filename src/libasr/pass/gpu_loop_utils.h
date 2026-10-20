@@ -15,10 +15,9 @@ namespace LCompilers {
 
 /*
  * Shared pieces of the loop transformations that run on parallel loops
- * assigned to the device before they are offloaded (gpu_loop_fusion.cpp,
- * gpu_index_set_split.cpp, gpu_unroll_jam.cpp): recognizing a loop nest,
- * copying statements while substituting variables, and inlining calls of
- * pure functions into a loop body.
+ * assigned to the device before they are offloaded (gpu_loop_fusion.cpp):
+ * recognizing a loop nest, copying statements while substituting
+ * variables, and inlining calls of pure functions into a loop body.
  */
 
 // Which of the transformations run (`--gpu-loop-transforms`).
@@ -61,8 +60,7 @@ bool gpu_loop_nest(ASR::stmt_t *s, GpuLoopNest &nest);
 // innermost body.
 ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
     const std::vector<ASR::expr_t*> &starts,
-    const std::vector<ASR::expr_t*> &ends, Vec<ASR::stmt_t*> &body,
-    const std::vector<ASR::symbol_t*> &extra_privates = {});
+    const std::vector<ASR::expr_t*> &ends, Vec<ASR::stmt_t*> &body);
 
 // A parallel loop nest assigned to the device that copies every element of
 // the array `src` into the array `dest` of the same bounds, with index
@@ -78,8 +76,7 @@ std::string gpu_array_key(ASR::expr_t *e);
 // * `symbol_map`: a variable for another one,
 // * `value_map`: an expression for a scalar variable,
 // * `array_map`: an array designator for an assumed-shape array dummy,
-//   whose subscripts are shifted by the difference of the lower bounds,
-// * `item_hook`: anything for an array element, when it returns non-null.
+//   whose subscripts are shifted by the difference of the lower bounds.
 // A BLOCK the copied statements run is copied too, with variables of its
 // own, in `scope`. Anything it cannot copy faithfully clears `ok`.
 class GpuDuplicator : public ASR::BaseExprStmtDuplicator<GpuDuplicator> {
@@ -95,7 +92,6 @@ public:
     std::map<ASR::symbol_t*, ASR::symbol_t*> symbol_map;
     std::map<ASR::symbol_t*, ASR::expr_t*> value_map;
     std::map<ASR::symbol_t*, ArrayActual> array_map;
-    std::function<ASR::expr_t*(ASR::ArrayItem_t*, GpuDuplicator&)> item_hook;
     SymbolTable *scope;
     bool ok = true;
     std::vector<std::pair<SymbolTable*, std::string>> *added = nullptr;
@@ -133,7 +129,6 @@ public:
     // Removes every symbol `run` added (after a failure).
     void rollback();
     std::vector<std::pair<SymbolTable*, std::string>> added;
-    int inlined = 0;
 
 private:
     Allocator &al;

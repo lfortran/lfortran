@@ -182,7 +182,6 @@ class LoopFusion {
 public:
     Allocator &al;
     const PassOptions &po;
-    int fused = 0;
 
     // Statements to put before and after a statement of the list being
     // rebuilt: the allocation of a renamed array's copy goes before the
@@ -949,7 +948,6 @@ public:
         // checks at run time when the reads cannot be proven otherwise:
         // the bounds of the array lie within the loop bounds and the tests
         // on single indices of the producer (`box`).
-        std::map<std::string, GpuConstraints> inbounds_by_read_key;
         std::map<std::string, GpuConstraints> box;
         GpuAffineBuilder ab = cb_builder;
         ab.bindings.clear();
@@ -1222,10 +1220,9 @@ public:
         if (loops.empty()) return fail();
         // A renamed array's copy is allocated once, before the outermost of
         // these loops, which must not change its allocation.
-        for (auto &k : renamed) {
-            ASR::DoLoop_t *outer = loops.back();
-            if (may_reallocate(outer->m_body, outer->n_body)) return fail();
-            (void)k;
+        if (!renamed.empty() && may_reallocate(loops.back()->m_body,
+                loops.back()->n_body)) {
+            return fail();
         }
 
         Location loc = body[i + 1]->base.loc;
@@ -1632,7 +1629,6 @@ public:
             auto &av = after[outer];
             av.insert(av.end(), hoisted_after.begin(), hoisted_after.end());
         }
-        fused++;
         return result;
     }
 };
