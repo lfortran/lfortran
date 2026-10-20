@@ -10,8 +10,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* __gpu_next_q,
-    float* q,
+    float* __restrict__ __gpu_next_q,
+    float* __restrict__ q,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
     int __lb___gpu_next_q_0 = __scalar_args.__lb___gpu_next_q_0;
@@ -37,8 +37,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
-    float* __gpu_next_q,
-    float* q,
+    float* __restrict__ __gpu_next_q,
+    float* __restrict__ q,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
 {
     int __lb___gpu_next_q_0 = __scalar_args.__lb___gpu_next_q_0;
@@ -63,8 +63,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_2 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_2(
-    float* __gpu_next_q,
-    float* q,
+    float* __restrict__ __gpu_next_q,
+    float* __restrict__ q,
     __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
 {
     int __lb___gpu_next_q_0 = __scalar_args.__lb___gpu_next_q_0;
@@ -89,8 +89,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_3 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_3(
-    float* __gpu_next_q,
-    float* q,
+    float* __restrict__ __gpu_next_q,
+    float* __restrict__ q,
     __ScalarArgs___lfortran_gpu_kernel_3 __scalar_args)
 {
     int __lb___gpu_next_q_0 = __scalar_args.__lb___gpu_next_q_0;
@@ -115,8 +115,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_4 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_4(
-    float* flux,
-    float* q,
+    float* __restrict__ flux,
+    float* __restrict__ q,
     __ScalarArgs___lfortran_gpu_kernel_4 __scalar_args)
 {
     int __lb_flux_0 = __scalar_args.__lb_flux_0;
@@ -144,8 +144,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_5 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_5(
-    float* flux,
-    float* q,
+    float* __restrict__ flux,
+    float* __restrict__ q,
     __ScalarArgs___lfortran_gpu_kernel_5 __scalar_args)
 {
     int __lb_flux_0 = __scalar_args.__lb_flux_0;

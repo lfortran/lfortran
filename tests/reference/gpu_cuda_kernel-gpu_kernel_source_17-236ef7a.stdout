@@ -6,8 +6,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* a,
-    float* d,
+    float* __restrict__ a,
+    float* __restrict__ d,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
     int __loop_start_0 = __scalar_args.__loop_start_0;
@@ -52,8 +52,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
-    float* a,
-    float* d,
+    float* __restrict__ a,
+    float* __restrict__ d,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
