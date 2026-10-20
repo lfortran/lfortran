@@ -340,10 +340,21 @@ public:
                 || !has_test(inner->m_body, inner->n_body, 0)) {
             return nullptr;
         }
+        // The constants and the frame's arithmetic are built in the kind
+        // of the indices, which must then be one for the whole nest.
+        ASR::ttype_t *index_type = ASRUtils::expr_type(nest.starts[0]);
+        int index_kind = ASRUtils::extract_kind_from_ttype_t(index_type);
         for (size_t d = 0; d < rank; d++) {
             if (!gpu_expr_duplicable(nest.starts[d])
                     || !gpu_expr_duplicable(nest.ends[d])) {
                 return nullptr;
+            }
+            for (ASR::ttype_t *t : {ASRUtils::expr_type(nest.starts[d]),
+                    ASRUtils::expr_type(nest.ends[d]),
+                    ASRUtils::symbol_type(nest.vars[d])}) {
+                if (ASRUtils::extract_kind_from_ttype_t(t) != index_kind) {
+                    return nullptr;
+                }
             }
         }
 
@@ -526,7 +537,9 @@ public:
         Location loc = stmt->base.loc;
         ASRUtils::ASRBuilder bld(al, loc);
         ASRUtils::ExprStmtDuplicator ed(al);
-        auto c = [&](int64_t x) { return gpu_i32(al, loc, x); };
+        auto c = [&](int64_t x) {
+            return bld.i_t(x, ASRUtils::duplicate_type(al, index_type));
+        };
         auto add = [&](ASR::expr_t *x, ASR::expr_t *y) {
             return gpu_int_add(al, x, y);
         };
@@ -739,7 +752,8 @@ public:
             if (jammed == nullptr) return rollback();
             ASR::expr_t *bytes = c(0);
             for (size_t d = 0; d < rank; d++) {
-                ASR::expr_t *x = bld.i2i_t(extent(d), bld.int_type(8));
+                ASR::expr_t *x = extent(d);
+                if (index_kind != 8) x = bld.i2i_t(x, bld.int_type(8));
                 bytes = d == 0 ? x : bld.Mul(bytes, x);
             }
             bytes = bld.Mul(bytes, bld.i64(bytes_per_iteration(bp, bn)));
