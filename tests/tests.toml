@@ -5495,6 +5495,11 @@ semantics_only_cc = true
 options = "--implicit-interface"
 
 [[test]]
+filename = "errors/implicit_interface_intrinsic_non_fortran.f90"
+semantics_only_cc = true
+options = "--implicit-interface"
+
+[[test]]
 filename = "optional_argument_subroutine_in_type.f90"
 asr = true
 
