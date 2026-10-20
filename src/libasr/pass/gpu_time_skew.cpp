@@ -355,6 +355,10 @@ public:
             v)));
     }
 
+    // How each variable in `assigned` is named in the time loop: a
+    // variable of a module through its external symbol in this scope.
+    std::map<ASR::symbol_t*, ASR::symbol_t*> assigned_names;
+
     // Whether the statements of the time loop's body can be replayed:
     // scalar assignments, IF and SELECT CASE on host values, and parallel
     // loops assigned to the device, collected in `loops`.
@@ -431,6 +435,8 @@ public:
                         return false;
                     }
                     assigned.insert(v);
+                    assigned_names[v] = ASR::down_cast<ASR::Var_t>(
+                        a->m_target)->m_v;
                     break;
                 }
                 default:
@@ -851,6 +857,7 @@ public:
         ASR::DoLoop_t *inner = loops.back();
         std::vector<ASR::stmt_t*> dev;
         std::set<ASR::symbol_t*> assigned;
+        assigned_names.clear();
         if (!host_body(inner->m_body, inner->n_body, dev, assigned)
                 || dev.empty()) {
             return false;
@@ -867,12 +874,16 @@ public:
                     || assigned.count(v)) {
                 return false;
             }
-            vars.push_back(v);
+            // As the loop names it: a variable of a module through its
+            // external symbol.
+            vars.push_back(ASR::down_cast<ASR::Var_t>(l->m_head.m_v)->m_v);
         }
         // The bounds: the inner loops' and the parallel loops' rows do not
         // change while the time loop runs.
         std::set<ASR::symbol_t*> changing = assigned;
-        changing.insert(vars.begin(), vars.end());
+        for (ASR::symbol_t *x : vars) {
+            changing.insert(ASRUtils::symbol_get_past_external(x));
+        }
         auto invariant = [&](ASR::expr_t *e) {
             if (!host_expr(e) || !gpu_expr_duplicable(e)) return false;
             std::set<ASR::symbol_t*> syms;
@@ -1031,10 +1042,13 @@ public:
         ASR::symbol_t *kn = new_var("__gpu_skew_count", it);
         ASR::symbol_t *t = new_var("__gpu_skew_t", it);
         ASR::symbol_t *q = new_var("__gpu_skew_q", it);
-        std::vector<ASR::symbol_t*> saved_vars(assigned.begin(),
-            assigned.end());
+        std::vector<ASR::symbol_t*> saved_vars;
+        for (ASR::symbol_t *s : assigned) {
+            saved_vars.push_back(assigned_names.at(s));
+        }
         std::vector<ASR::symbol_t*> saves;
         for (ASR::symbol_t *s : saved_vars) {
+            s = ASRUtils::symbol_get_past_external(s);
             saves.push_back(new_var(std::string("__gpu_skew_saved_")
                 + ASRUtils::symbol_name(s), ASRUtils::symbol_type(s)));
         }
