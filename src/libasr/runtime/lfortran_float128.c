@@ -994,8 +994,12 @@ lf_float128 lf_f128_mod(lf_float128 a, lf_float128 b) {
  *
  * The constants and tables are correctly rounded binary128 values, given as
  * {high word, low word} bit patterns; the low part of a {hi, lo} pair is the
- * rounded remainder of the exact value minus the high part. They were
- * generated with exact rational arithmetic.
+ * rounded remainder of the exact value minus the high part. The block from
+ * F128_PIO2_1 through F128_TWO_OVER_PI_BITS is printed by
+ * gen_float128_consts.py (next to this file; Python standard library only,
+ * exact rational arithmetic, not run by the build):
+ *     python src/libasr/runtime/gen_float128_consts.py > tables.txt
+ * To change a table, edit the script and paste its output over the block.
  * ======================================================================== */
 
 /* pi/2 = PIO2_1 + PIO2_2 + PIO2_3 to 339 bits */
