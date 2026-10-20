@@ -7,6 +7,7 @@
 #include <lfortran/parser/parser.tab.hh>
 #include <condition_variable>
 #include <algorithm>
+#include <atomic>
 #include <deque>
 #include <map>
 #include <mutex>
@@ -99,13 +100,35 @@ Object expression_errors(const Object &content) {
 }
 }
 struct NativeSession::Impl {
+    struct Budget {
+        std::atomic<size_t> count{0}, bytes{0};
+    };
+    struct Reservation {
+        std::shared_ptr<Budget> budget;
+        size_t bytes;
+        Reservation(std::shared_ptr<Budget> budget, size_t bytes)
+            : budget(std::move(budget)), bytes(bytes) {
+            ++this->budget->count;
+            this->budget->bytes += bytes;
+        }
+        ~Reservation() {
+            budget->bytes -= bytes;
+            --budget->count;
+        }
+    };
     struct Peer {
         std::string session;
         bool eof = false;
         std::deque<SessionDelivery> output;
         size_t bytes = 0;
+        std::shared_ptr<Budget> budget = std::make_shared<Budget>();
     };
-    struct Request { uint64_t peer; Value message; size_t bytes = 0; };
+    struct Request {
+        uint64_t peer;
+        Value message;
+        size_t bytes = 0;
+        std::shared_ptr<void> retention;
+    };
     CompilerOptions options;
     const std::string session = new_session_id();
     mutable std::mutex mutex;
@@ -151,26 +174,41 @@ struct NativeSession::Impl {
             changed.notify_all();
         }
     }
-    void send(uint64_t peer, const Value &value) {
+    std::shared_ptr<void> reserve(uint64_t peer, size_t bytes) {
+        auto p = peers.find(peer);
+        if (p == peers.end() || bytes > max_output) return {};
+        auto budget = p->second.budget;
+        if (budget->count >= 2 * max_requests ||
+                budget->bytes + bytes > max_output) return {};
+        return std::make_shared<Reservation>(std::move(budget), bytes);
+    }
+    void send(uint64_t peer, const Value &value,
+            std::shared_ptr<void> retention = {}) {
         const auto text = encode(value);
         auto p = peers.find(peer);
         if (p == peers.end() || p->second.session.empty()) return;
-        if (text.size() > max_frame || p->second.bytes + text.size() > max_output ||
-                p->second.output.size() >= 4096) {
-            fail_peer(peer, "slow peer or oversized outgoing message");
-            return;
-        }
-        p->second.output.push_back({peer, text, false});
+        // Live output is best effort for a slow observer. Reserved outcomes
+        // never compete with it or with unadmitted rejection traffic.
+        if (text.size() > max_frame) return;
+        if (!retention && (p->second.bytes + text.size() > max_output ||
+                p->second.output.size() >= 4096)) return;
+        bool best_effort = !retention;
+        p->second.output.push_back({peer, text, false, std::move(retention), best_effort});
         p->second.bytes += text.size();
     }
-    void publish(const std::string &type, const Object &parent, Object content) {
+    void publish(const std::string &type, const Object &parent, Object content,
+            uint64_t origin = 0, std::shared_ptr<void> retention = {}) {
         auto value = message("iopub", type, session, parent, std::move(content));
-        for (auto &p : peers) send(p.first, value);
+        for (auto &p : peers)
+            send(p.first, value, p.first == origin ? retention : nullptr);
     }
     void reply(const Request &request, const std::string &type, Object content) {
         const auto &m = object(request.message);
-        send(request.peer, message(string(m, "channel"), type, session,
-            member(m, "header"), std::move(content)));
+        auto value = message(string(m, "channel"), type, session,
+            member(m, "header"), std::move(content));
+        auto retention = request.retention;
+        if (!retention) retention = reserve(request.peer, encode(value).size());
+        if (retention) send(request.peer, value, std::move(retention));
         if (type == "execute_reply") {
             auto id = string(member(m, "header"), "msg_id");
             outstanding_ids.erase(id);
@@ -194,17 +232,25 @@ struct NativeSession::Impl {
             publish("status", h, Object{{"execution_state", "busy"}});
             reply(aborted, "execute_reply",
                 Object{{"status", "aborted"}, {"execution_count", count}});
-            idle(h);
+            idle(h, aborted.peer, aborted.retention);
         }
     }
-    void idle(const Object &parent) {
-        publish("status", parent, Object{{"execution_state", "idle"}});
+    void idle(const Object &parent, uint64_t origin = 0,
+            std::shared_ptr<void> retention = {}) {
+        publish("status", parent, Object{{"execution_state", "idle"}},
+            origin, std::move(retention));
     }
-    void immediate_reply(const Request &request, const std::string &type, Object content) {
+    void immediate_reply(Request &request, const std::string &type, Object content) {
         const auto &parent = member(object(request.message), "header");
+        auto size = encode(message(string(object(request.message), "channel"),
+            type, session, parent, Object(content))).size();
+        if (size > max_frame) return;
+        request.retention = reserve(request.peer,
+            size + 2 * encode(Object(parent)).size() + 8192);
+        if (!request.retention) return;
         publish("status", parent, Object{{"execution_state", "busy"}});
         reply(request, type, std::move(content));
-        idle(parent);
+        idle(parent, request.peer, request.retention);
     }
     struct Events : EvaluationEvents {
         Impl &owner;
@@ -262,7 +308,7 @@ struct NativeSession::Impl {
             owner.input_peer = request.peer;
             owner.input_ready = false;
             owner.input_waiting = true;
-            owner.send(request.peer, prompt);
+            owner.send(request.peer, prompt, request.retention);
             owner.changed.wait(lock, [&] {
                 return owner.input_ready || owner.stopping;
             });
@@ -348,11 +394,19 @@ struct NativeSession::Impl {
                     Object error{{"ename", outcome.error_name}, {"evalue", text},
                         {"traceback", Array{text}}};
                     if (!silent) publish("error", parent, Object(error));
+                    // Full diagnostics are live IOPub output; terminal replies
+                    // have a finite, pre-reserved size even for huge errors.
+                    if (text.size() > 4096)
+                        text = llvm::json::fixUTF8(text.substr(0, 4096)) +
+                            "\n[diagnostic truncated; see live error output]";
+                    error["ename"] = outcome.error_name.substr(0, 1024);
+                    error["evalue"] = text;
+                    error["traceback"] = Array{text};
                     error["status"] = "error";
                     error["execution_count"] = execution_count;
                     reply(request, "execute_reply", std::move(error));
                 }
-                idle(parent);
+                idle(parent, request.peer, request.retention);
                 active = false;
                 if (!outcome.ok && boolean(content, "stop_on_error", true)) {
                     // Abort the snapshot queued at this failure, across peers;
@@ -369,9 +423,11 @@ struct NativeSession::Impl {
                 throw std::runtime_error("local peer limit reached");
             peers.emplace(peer, Peer{});
         }
+        Value value = nullptr;
+        const bool handshaking = peers.at(peer).session.empty();
         try {
             if (stopping) throw std::runtime_error("kernel is shutting down");
-            auto value = parse(envelope);
+            value = parse(envelope);
             const auto &m = object(value);
             auto &p = peers.at(peer);
             if (p.session.empty()) {
@@ -408,9 +464,9 @@ struct NativeSession::Impl {
             if (string(h, "session") != p.session)
                 throw std::runtime_error("header session disagrees with hello");
             if (known_ids.count(id) || outstanding_ids.count(id))
-                throw std::runtime_error("duplicate known request msg_id");
+                return; // Never invent a second outcome for accepted work.
             remember(id);
-            Request request{peer, std::move(value), envelope.size()};
+            Request request{peer, value, envelope.size()};
             // References into the moved Value remain valid, but obtain them
             // from its new owner for clarity and portability.
             const auto &request_m = object(request.message);
@@ -474,6 +530,11 @@ struct NativeSession::Impl {
             } else if (type == "inspect_request") {
                 immediate_reply(request, "inspect_reply", Object{{"status", "ok"}, {"found", false},
                     {"data", Object{}}, {"metadata", Object{}}});
+            } else if (type == "comm_info_request") {
+                immediate_reply(request, "comm_info_reply",
+                    Object{{"status", "ok"}, {"comms", Object{}}});
+            } else if (type == "comm_open" || type == "comm_msg" || type == "comm_close") {
+                return; // No comm targets are implemented.
             } else if (type == "history_request") {
                 Array entries;
                 auto n = request_c.getInteger("n");
@@ -504,6 +565,18 @@ struct NativeSession::Impl {
                         {"traceback", Array{}}, {"execution_count", count}});
                     return;
                 }
+                const size_t retained = 128 * 1024 +
+                    3 * encode(Object(h)).size() +
+                    encode(expression_errors(request_c)).size();
+                if (retained > max_frame) {
+                    immediate_reply(request, "execute_reply", Object{
+                        {"status", "error"}, {"ename", "RequestTooLarge"},
+                        {"evalue", "completion exceeds delivery budget; cell not executed"},
+                        {"traceback", Array{}}, {"execution_count", count}});
+                    return;
+                }
+                request.retention = reserve(peer, retained);
+                if (!request.retention) return; // Unadmitted flood: no mutation.
                 queue_bytes += envelope.size();
                 outstanding_ids.insert(id);
                 queue.push_back(std::move(request));
@@ -512,7 +585,29 @@ struct NativeSession::Impl {
                 throw std::runtime_error("unsupported request type: " + type);
             }
         } catch (const std::exception &error) {
-            fail_peer(peer, error.what());
+            if (handshaking) {
+                fail_peer(peer, error.what());
+                return;
+            }
+            try {
+                const auto &m = object(value);
+                const auto &h = member(m, "header");
+                auto type = string(h, "msg_type");
+                auto channel = string(m, "channel");
+                if (string(h, "session") == peers.at(peer).session &&
+                        (channel == "shell" || channel == "control") &&
+                        type.size() >= 8 && type.substr(type.size()-8) == "_request") {
+                    Object routable{{"channel", channel}, {"header", Object(h)},
+                        {"parent_header", Object{}}, {"metadata", Object{}},
+                        {"content", Object{}}, {"buffers", Array{}}};
+                    validate_message(routable);
+                    Request rejected{peer, std::move(routable)};
+                    immediate_reply(rejected, type.substr(0, type.size()-8) + "_reply",
+                        Object{{"status", "error"}, {"ename", "InvalidRequest"},
+                            {"evalue", error.what()}, {"traceback", Array{}},
+                            {"execution_count", count}});
+                }
+            } catch (const std::exception &) {} // No trustworthy reply header.
         }
     }
 };
@@ -526,6 +621,14 @@ void NativeSession::receive(uint64_t peer, const std::string &value) {
 void NativeSession::disconnect(uint64_t peer) {
     std::lock_guard<std::mutex> lock(impl->mutex);
     impl->fail_peer(peer, "peer disconnected");
+    for (auto i = impl->queue.begin(); i != impl->queue.end();) {
+        if (i->peer != peer) { ++i; continue; }
+        impl->queue_bytes -= i->bytes;
+        const auto id = string(member(object(i->message), "header"), "msg_id");
+        impl->outstanding_ids.erase(id);
+        impl->remember(id);
+        i = impl->queue.erase(i);
+    }
     impl->peers.erase(peer);
 }
 std::vector<SessionDelivery> NativeSession::take_deliveries() {

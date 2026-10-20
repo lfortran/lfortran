@@ -311,12 +311,16 @@ class Server final : public SessionAdapter {
     std::array<std::unique_ptr<MonitoredRouter>, 3> routers;
     std::unique_ptr<Socket> iopub, heartbeat;
     struct Peer {
+        struct Output {
+            Parts parts;
+            std::shared_ptr<void> retention;
+        };
         uint64_t id;
         std::string session;
         Parts route;
         std::array<int, 3> sources{-1, -1, -1};
         std::string input;
-        std::array<std::deque<Parts>, 3> output;
+        std::array<std::deque<Output>, 3> output;
         size_t bytes = 0;
     };
     std::map<std::string, Peer> peers;
@@ -396,7 +400,9 @@ public:
                         auto &metadata = *m.getObject("metadata");
                         if (boolean(metadata, "lfortran_stdin_eof", false))
                             throw std::runtime_error("standard Jupyter input has no EOF extension");
-                        peer.input.clear();
+                        // Keep correlation until the next prompt replaces it.
+                        // A rejected reply must not strand a valid READ; the
+                        // endpoint checks whether this prompt is still pending.
                     }
                     session.receive(peer.id, encode(value));
                 } catch (const std::exception &) {
@@ -409,13 +415,13 @@ public:
                 auto &peer = entry.second;
                 auto &output = peer.output[i];
                 for (size_t n = 0; n < 32 && !output.empty(); ++n) {
-                    auto result = router.socket.send(output.front());
+                    auto result = router.socket.send(output.front().parts);
                     if (result == Socket::Sent::blocked) break;
                     if (result == Socket::Sent::disconnected) {
                         gone.push_back(peer.id);
                         break;
                     }
-                    for (const auto &frame : output.front()) peer.bytes -= frame.size();
+                    for (const auto &frame : output.front().parts) peer.bytes -= frame.size();
                     output.pop_front();
                 }
             }
@@ -426,11 +432,9 @@ public:
     bool deliver(const SessionDelivery &delivery) override {
         bool routed = delivery.peer >= first_adapter_peer;
         if (delivery.disconnect) {
-            // ROUTER cannot disconnect one bound TCP route. Erasing its
-            // logical peer would silently strand accepted requests while
-            // heartbeat still advertises a live kernel.
-            if (routed) throw std::runtime_error(
-                "Jupyter peer failed; terminating kernel with unknown execution outcomes");
+            // Only a failed initial hello can produce a logical disconnect.
+            // Established requests are rejected without destroying their route.
+            if (routed) remove(delivery.peer);
             return routed;
         }
         auto value = parse(delivery.envelope);
@@ -445,8 +449,14 @@ public:
                     publications.erase(publication_order.front());
                     publication_order.pop_front();
                 }
-                iopub->queue(codec.encode_message(delivery.envelope,
-                    Parts{string(member(m, "header"), "msg_type")}));
+                auto parts = codec.encode_message(delivery.envelope,
+                    Parts{string(member(m, "header"), "msg_type")});
+                size_t bytes = 0;
+                for (const auto &part : parts) bytes += part.size();
+                // PUB is live delivery, never an accepted-outcome archive.
+                if (iopub->output.size() < max_requests &&
+                        iopub->output_bytes + bytes <= max_output)
+                    iopub->queue(std::move(parts));
             }
         } else if (routed && !channel.empty()) {
             auto found = std::find_if(peers.begin(), peers.end(),
@@ -458,12 +468,10 @@ public:
             auto parts = codec.encode_message(delivery.envelope, peer.route);
             size_t bytes = 0;
             for (const auto &part : parts) bytes += part.size();
-            if (peer.bytes + bytes > max_output || peer.output[i].size() >= max_requests) {
-                throw std::runtime_error(
-                    "slow Jupyter peer; terminating kernel with unknown execution outcomes");
-            }
+            if (!delivery.retention && (peer.bytes + bytes > max_output ||
+                    peer.output[i].size() >= max_requests)) return true;
             peer.bytes += bytes;
-            peer.output[i].push_back(std::move(parts));
+            peer.output[i].push_back({std::move(parts), delivery.retention});
         }
         return routed;
     }

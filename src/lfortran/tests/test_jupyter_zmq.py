@@ -138,53 +138,115 @@ def overflow(a, b, path):
         flush=True)
 
 
-def failed_native_peer(executable, root, slow=False):
-    path = connection(root, b"failed-route")
+def isolated_native_peers(executable, root, key):
+    path = connection(root, key)
     server = Native(executable, root, path)
     a = b = None
     slow_socket = context = None
     try:
-        a, b = client(path), client(path)
-        done(a, a.execute("integer :: failed_gate, failed_ios, failed_count=0"))
-        if slow:
-            done(a, a.execute("!" + "history-padding-" * 2048))
-        gate = a.execute("read(*,*,iostat=failed_ios) failed_gate")
-        wait(a, "stdin", "input_request", gate)
-        b.execute("failed_count=failed_count+1")
+        a, b = Peer(server.descriptor), client(path)
+        a.done(a.execute("integer :: isolation_gate, isolation_ios, isolation_state=41, "
+            "isolation_slow=0"))
+        request = b.comm_info()
+        reply = wait(b, "shell", "comm_info_reply", request)
+        assert reply["content"] == {"status": "ok", "comms": {}}, reply
+        request = a.execute("isolation_state")
+        assert a.wait("execute_result", request)["content"]["data"]["text/plain"] == "41"
+        a.done(request)
+        gate = a.execute("read(*,*,iostat=isolation_ios) isolation_gate")
+        prompt = a.wait("input_request", gate)
+        queued = b.execute("isolation_state=isolation_state+1")
         wait(b, "shell", "kernel_info_reply", b.kernel_info())
-        # Unlike a real TCP disconnect, an application-only peer deletion is
-        # not observable to a standard client. Require actual kernel loss.
-        if slow:
-            config = json.loads(path.read_text())
-            context = zmq.Context()
-            slow_socket = context.socket(zmq.DEALER)
-            slow_socket.setsockopt(zmq.RCVHWM, 1)
-            slow_socket.setsockopt(zmq.SNDHWM, 2048)
-            slow_socket.connect("tcp://127.0.0.1:%d" % config["shell_port"])
-            session = Session(key=b"failed-route")
-            for _ in range(1024):
-                session.send(slow_socket, "history_request",
-                    {"hist_access_type": "tail", "n": 100, "output": False})
-        else:
-            b.shell_channel.send(b.session.msg("unsupported_request", {}))
-        assert server.process.wait(timeout=8) == 1
-        assert not server.local.exists()
-        heartbeat_context = zmq.Context()
-        heartbeat = heartbeat_context.socket(zmq.REQ)
-        try:
-            config = json.loads(path.read_text())
-            heartbeat.connect("tcp://127.0.0.1:%d" % config["hb_port"])
-            heartbeat.send(b"must-not-advertise-a-live-kernel")
-            assert not heartbeat.poll(500)
-        finally:
-            heartbeat.close(linger=0)
-            heartbeat_context.term()
-        print("%s peer with accepted work: observable kernel/heartbeat loss PASS" %
-            ("slow" if slow else "invalid logical"), flush=True)
+        malformed = b.session.msg("execute_request", dict(code="isolation_state=-999",
+            silent="false", store_history=True, allow_stdin=True, stop_on_error=True,
+            user_expressions={}))
+        b.shell_channel.send(malformed)
+        reply = wait(b, "shell", "execute_reply", malformed["header"]["msg_id"])
+        assert reply["content"]["status"] == "error", reply
+        assert reply["content"]["ename"] == "InvalidRequest", reply
+        unknown = b.session.msg("unsupported_request", {})
+        b.shell_channel.send(unknown)
+        assert wait(b, "shell", "unsupported_reply", unknown["header"]["msg_id"])[
+            "content"]["status"] == "error"
+        heartbeat_echo(path)
+        a.input(prompt, "7")
+        a.done(gate)
+        done(b, queued)
+        value(b, "isolation_state", "42")
+        reading = b.execute("read(*,*,iostat=isolation_ios) isolation_gate")
+        wait(b, "stdin", "input_request", reading)
+        b.stdin_channel.send(b.session.msg("input_reply", {"value": 123}))
+        info = b.session.msg("kernel_info_request", {})
+        b.control_channel.send(info)
+        wait(b, "control", "kernel_info_reply", info["header"]["msg_id"])
+        b.input("9")
+        done(b, reading)
+        value(b, "isolation_gate", "9")
+
+        # A separate nonreading shell origin already has accepted mutations
+        # before its bounded query/outcome budget fills.
+        a.done(a.execute("!" + "history-padding-" * 4096))
+        gate = a.execute("read(*,*,iostat=isolation_ios) isolation_gate")
+        prompt = a.wait("input_request", gate)
+        config = json.loads(path.read_text())
+        context = zmq.Context()
+        slow_socket = context.socket(zmq.DEALER)
+        slow_socket.setsockopt(zmq.RCVHWM, 1)
+        slow_socket.setsockopt(zmq.SNDHWM, 2048)
+        slow_socket.connect("tcp://127.0.0.1:%d" % config["shell_port"])
+        session = Session(key=key)
+        def send(kind, content):
+            return session.send(slow_socket, kind, content)["header"]["msg_id"]
+        def receive(kind, parent):
+            while True:
+                assert slow_socket.poll(20000), (kind, parent)
+                message = session.recv(slow_socket)[1]
+                if (message["msg_type"] == kind and
+                        message["parent_header"].get("msg_id") == parent):
+                    return message
+                assert message["msg_type"] != "execute_reply", message
+        flags = dict(silent=False, store_history=True, allow_stdin=True,
+            stop_on_error=True, user_expressions={})
+        accepted = [send("execute_request",
+            dict(flags, code="isolation_slow=isolation_slow+1")) for _ in range(2)]
+        receive("kernel_info_reply", send("kernel_info_request", {}))
+        for _ in range(1024):
+            send("history_request", dict(hist_access_type="tail", n=100, output=False))
+        for _ in range(512):
+            send("execute_request", dict(flags, code="isolation_slow=-999"))
+        queued = b.execute("isolation_state=isolation_state+1")
+        # Synchronous control barriers keep the reactor progressing through
+        # more than the bounded 32 shell packets per poll, without a sleep.
+        for _ in range(64):
+            info = b.session.msg("kernel_info_request", {})
+            b.control_channel.send(info)
+            wait(b, "control", "kernel_info_reply", info["header"]["msg_id"])
+        heartbeat_echo(path)
+        a.input(prompt, "8")
+        a.done(gate)
+        done(b, queued)
+        value(b, "isolation_state", "43")
+        value(b, "isolation_slow", "2")
+        # Resume consumption: both pre-admitted outcomes are still retained,
+        # and admission recovers without retrying any old cell.
+        for request in accepted:
+            reply = receive("execute_reply", request)
+            assert reply["content"]["status"] == "ok", reply
+            while a.wait("status", request)["content"]["execution_state"] != "idle":
+                pass
+        recovered = send("execute_request",
+            dict(flags, code="isolation_slow=isolation_slow+1"))
+        assert receive("execute_reply", recovered)["content"]["status"] == "ok"
+        value(b, "isolation_slow", "3")
+        heartbeat_echo(path)
+        assert server.process.poll() is None and server.local.exists()
+        print("signed=%s: optional/malformed/slow origin isolation, retained outcomes, "
+            "unadmitted flood and recovery PASS" % bool(key), flush=True)
     finally:
-        for peer in (a, b):
-            if peer:
-                peer.stop_channels()
+        if a:
+            a.close()
+        if b:
+            b.stop_channels()
         if slow_socket:
             slow_socket.close(linger=0)
         if context:
@@ -371,8 +433,8 @@ def native(executable, root):
             if local:
                 local.close()
             server.close()
-    failed_native_peer(executable, root)
-    failed_native_peer(executable, root, slow=True)
+    for key in (b"isolated-signed-route", b""):
+        isolated_native_peers(executable, root, key)
 
 
 def bridge_start(executable, path, root):

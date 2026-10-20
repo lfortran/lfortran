@@ -221,6 +221,7 @@ struct Connection {
     Handle fd = invalid;
     Frames frames;
     std::deque<std::string> output;
+    std::deque<std::shared_ptr<void>> retention;
     size_t offset = 0, bytes = 0;
     bool closing = false, remote_closed = false, received = false;
     Clock::time_point opened = Clock::now();
@@ -228,12 +229,16 @@ struct Connection {
     ~Connection() { close_handle(fd); }
     Connection(const Connection &) = delete;
     Connection &operator=(const Connection &) = delete;
-    void send(const std::string &text) {
+    void send(const std::string &text, std::shared_ptr<void> reservation = {},
+            bool live = false) {
         auto frame = Frames::pack(text);
-        if (bytes + frame.size() > max_output || output.size() >= 4096)
+        if (!reservation && (bytes + frame.size() > max_output || output.size() >= 4096)) {
+            if (live) return;
             throw std::runtime_error("slow local peer");
+        }
         bytes += frame.size();
         output.push_back(std::move(frame));
+        retention.push_back(std::move(reservation));
     }
     bool pump() {
         if (remote_closed) return !frames.ready.empty();
@@ -250,7 +255,11 @@ struct Connection {
             offset += n;
             bytes -= n;
             budget -= n;
-            if (offset == front.size()) { output.pop_front(); offset = 0; }
+            if (offset == front.size()) {
+                output.pop_front();
+                retention.pop_front();
+                offset = 0;
+            }
         }
         if (closing) return !output.empty();
         char buffer[8192];
@@ -675,7 +684,8 @@ int serve_local_endpoint(SessionEndpoint &session, const std::string &file,
                 auto p = peers.find(delivery.peer);
                 if (p == peers.end()) continue;
                 try {
-                    p->second->send(delivery.envelope);
+                    p->second->send(delivery.envelope, delivery.retention,
+                        delivery.best_effort);
                     p->second->closing = delivery.disconnect;
                 } catch (const std::exception &) {
                     session.disconnect(p->first);

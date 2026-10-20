@@ -91,17 +91,60 @@ only subsequent events. The first attachment can see unparented
 `status(starting)` and `status(idle)`. Later attachments do not invent another
 kernel startup. The hello session must match subsequent request headers.
 
-Malformed peers receive a best-effort `{"connection_error":"reason"}` frame
-and are disconnected. Framing errors can close the stream immediately.
+Invalid initial hellos receive a best-effort `{"connection_error":"reason"}`
+and close only that connection; framing errors can close it immediately.
+After hello, malformed supported requests with a valid, matching header
+receive bounded, parented error replies. Uncorrelatable malformed messages,
+wrong/late input replies and duplicate request IDs are ignored, not executed.
+Neither case resets other clients' state or destroys accepted completion routes.
+Peers that send no complete hello have a bounded admission timeout.
+
 Limits include 64 peers, 128 queued executions, 32 MiB of queued request bytes,
-32 MiB/4096 events per peer in each output queue, and 4096 recent request IDs
-globally plus all outstanding IDs (including across reconnects). When the
-execution queue is full, a valid new execution receives a private
+and 4096 recent request IDs globally plus all outstanding IDs (including
+across reconnects). When the execution queue is full and the origin still has
+delivery capacity, a valid new execution receives a private
 `execute_reply(status="error", ename="QueueFull")` and parented busy/idle;
 that cell is not executed and the route remains available for accepted work.
-Oversized, malformed or slow local peers are disconnected, not silently
-truncated and not allowed to stall evaluation/control for others.
-Peers that send no complete hello have a bounded admission timeout.
+
+### Bounded per-origin admission and delivery
+
+Before accepting an execution, the kernel reserves its origin's completion
+capacity. Each origin has at most 256 outstanding delivery reservations and
+32 MiB of reserved bytes, shared across the evaluator and transport queues.
+An execution reserves 128 KiB plus its encoded user-expression errors and
+three copies of the parent header; requests requiring more than one frame
+of reservation are rejected before evaluation. Immediate replies (including
+queries and rejections) reserve their encoded size plus status/header space.
+Execution error replies retain at most 4096 diagnostic bytes, with an explicit
+truncation notice; full diagnostics remain live error output.
+
+Reservations stay attached to accepted cells and their completion/input
+messages through the local or ZeroMQ outbound queues. Taking a message from
+the evaluator queue does **not** free admission capacity. Capacity is released
+when the transport sends the retained messages, or on actual disconnect.
+Already accepted queued/running executions keep their private destinations
+and outcomes even if later traffic exhausts that origin's budget.
+
+When a delivery budget is full, further traffic from that origin is
+**unadmitted**: no additional cell executes, and there is no guarantee of an
+individual rejection reply to an unlimited flood. Sending is not acceptance.
+Resume reading retained replies to release capacity, then submit new work
+with fresh IDs; the server never automatically replays dropped or accepted
+cells. There is no eventual-progress guarantee for a client that never reads,
+and a successful transport send is not an application acknowledgment.
+Ordinary clients should bound their outstanding work and await matching
+reply/idle before retry decisions.
+
+Live output is separate: each peer's evaluator/transport live-output queue
+is bounded by 32 MiB/4096 events. A slow observer may miss stream/result/
+display events rather than block others; its own reserved terminal reply
+and local idle do not compete with that output. Standard Jupyter PUB/IOPub
+is likewise live delivery, not retained historical replay. Healthy routes,
+READ completion, heartbeat and control continue while another origin is
+throttled. An actual disconnected origin's queued cells are cancelled before
+evaluation; an already running cell may have an unknown outcome and its input
+waiter is released. Fatal evaluator/process or whole-transport failure remains
+a kernel-wide failure, not a policy for a malformed or non-consuming peer.
 
 ## Logical messages
 
@@ -350,15 +393,13 @@ Each ROUTER peer has separate bounded outbound queues, so a blocked client
 does not head-of-line block others. IOPub remains a live PUB subscription, not
 reliable historical replay or a slow-consumer archive.
 
-Queue-full execution rejection preserves the route and resolves the rejected
-request explicitly, as on the local binding. If a logical peer fails validation
-after wire decoding, or its bounded outbound queue overflows, the server
-terminates the native kernel and closes all channels, including heartbeat.
-libzmq cannot disconnect an individual route on a bound ROUTER socket; removing
-only its application entry would silently lose replies for accepted work on a
-still-live connection. This conservative failure boundary may affect all
-clients, with unknown outstanding execution outcomes, rather than advertise
-false liveness. Actual TCP disconnects still remove only the disconnected peer.
+The same per-origin admission/reservation policy applies to the ZeroMQ
+adapter, including its outbound ROUTER queues. A blocked route retains its
+accepted outcomes while other routes continue; it does not terminate the
+kernel or erase evaluator state. Routable malformed supported requests get
+bounded correlated errors; optional `comm_info_request` returns an empty valid
+`comm_info_reply` because no comm targets are implemented. Comm notifications
+are ignored. Actual TCP disconnects still remove only that disconnected peer.
 
 Use a real `kernel_info` plus IOPub/status readiness handshake, such as
 `BlockingKernelClient.wait_for_ready()`. Heartbeat alone does not establish an

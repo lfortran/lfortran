@@ -359,14 +359,21 @@ def io_and_queue(server, a, b):
             assert int(stream.strip()) > 0, stream
         else:
             assert "0" in stream, stream
-    # A peer disconnect releases only its input waiter; queued code still runs.
+    # An actual disconnect releases its input waiter and cancels that origin's
+    # queued cells, but does not cancel healthy peers' queued work.
     origin = server.peer()
     request = origin.execute("read(*,*,iostat=read_ios) read_n")
     origin.wait("input_request", request)
+    origin.execute("shared_n = -999")
+    # Same-route query proves the origin's assignment reached the queue.
+    origin.wait("kernel_info_reply", origin.send("kernel_info_request"))
     next_request = b.execute("100 + 23")
     origin.close()
     assert b.wait("execute_result", next_request)["content"]["data"]["text/plain"] == "123"
     b.done(next_request)
+    request = b.execute("shared_n")
+    assert b.wait("execute_result", request)["content"]["data"]["text/plain"] == "41"
+    b.done(request)
     # C stdio output much larger than a pipe, kept separate from stderr.
     request = a.execute("block\ninteger :: i\n"
         "do i=1,3000\nprint *, 'large-output-record-abcdefghijklmnopqrstuvwxyz'\nend do\n"
@@ -455,14 +462,23 @@ end block""")
 
 
 def malformed(server):
-    def rejected(edit=None, raw=None):
+    def rejected(edit=None, raw=None, disconnect=False, correlated=False):
         with server.peer() as peer:
+            message = None
             if raw is not None:
                 peer.write(raw)
             else:
                 message = peer.make("kernel_info_request")
                 edit(message)
                 peer.write(frame(message))
+            if not disconnect:
+                if correlated:
+                    reply = peer.wait(message["header"]["msg_type"].replace("_request", "_reply"),
+                        message["header"]["msg_id"])
+                    assert reply["content"]["status"] == "error", reply
+                barrier = peer.send("kernel_info_request")
+                peer.wait("kernel_info_reply", barrier)
+                return
             while True:
                 try:
                     result = peer.next()
@@ -471,7 +487,7 @@ def malformed(server):
                 if "connection_error" in result:
                     break
                 raise AssertionError(result)
-    rejected(raw=struct.pack("!I", 16*1024*1024+1))
+    rejected(raw=struct.pack("!I", 16*1024*1024+1), disconnect=True)
     rejected(raw=struct.pack("!I", 1) + b"\xff")
     rejected(raw=struct.pack("!I", 1) + b"{")
     rejected(lambda m: m["header"].update(version="6.0"))
@@ -486,12 +502,14 @@ def malformed(server):
             assert reply["content"]["protocol_version"] == "5.4"
     rejected(lambda m: m["header"].update(session="wrong"))
     rejected(lambda m: m.update(channel="bogus"))
-    rejected(lambda m: m.update(parent_header={"msg_id": "wrong"}))
+    rejected(lambda m: m.update(parent_header={"msg_id": "wrong"}), correlated=True)
     rejected(lambda m: m.update(buffers=["?"]))
+    rejected(lambda m: m.pop("content"), correlated=True)
+    rejected(lambda m: m.update(content=[]), correlated=True)
     rejected(lambda m: m.update(header=header(m["header"]["session"], "execute_request"),
-        content={"code": "42", "lfortran_verbose": 1}))
+        content={"code": "42", "lfortran_verbose": 1}), correlated=True)
     rejected(lambda m: m.update(header=header(m["header"]["session"], "execute_request"),
-        content={"code": "42", "user_expressions": {"x": 1}}))
+        content={"code": "42", "user_expressions": {"x": 1}}), correlated=True)
     nested = b"["*70+b"]"*70
     rejected(raw=struct.pack("!I", len(nested)) + nested)
     # Valid opaque binary buffers and unknown fields are accepted, not treated
@@ -505,10 +523,10 @@ def malformed(server):
         peer.wait("kernel_info_reply", first["header"]["msg_id"])
         peer.wait("is_complete_reply", second["header"]["msg_id"])
         peer.write(frame(first))
-        result = peer.next()
-        while result.get("header", {}).get("msg_type") == "status":
-            result = peer.next()
-        assert "duplicate" in result.get("connection_error", ""), result
+        peer.wait("kernel_info_reply", peer.send("kernel_info_request"))
+        assert sum(m.get("header", {}).get("msg_type") == "kernel_info_reply"
+            and m.get("parent_header", {}).get("msg_id") == first["header"]["msg_id"]
+            for m in peer.log) == 1
     # Retain the bounded duplicate cache across attachment and session changes.
     with server.peer() as peer:
         reused = peer.make("kernel_info_request")
@@ -517,24 +535,20 @@ def malformed(server):
     with server.peer() as peer:
         reused["header"]["session"] = peer.session
         peer.write(frame(reused))
-        result = peer.next()
-        assert "duplicate" in result.get("connection_error", ""), result
-    # Wrong and late input replies disconnect that peer, without consuming the
-    # origin's pending input.
+        peer.wait("kernel_info_reply", peer.send("kernel_info_request"))
+        assert not any(m.get("parent_header", {}).get("msg_id") ==
+            reused["header"]["msg_id"] for m in peer.log)
+    # Wrong and late input replies cannot consume another origin's input, or
+    # destroy a valid completion route.
     with server.peer() as a, server.peer() as b:
         request = a.execute("read(*,*,iostat=read_ios) read_n")
         prompt = a.wait("input_request", request)
         b.input(prompt, "1234")
-        result = b.next()
-        while "connection_error" not in result:
-            result = b.next()
+        b.wait("kernel_info_reply", b.send("kernel_info_request"))
         a.input(prompt, "2")
         a.done(request)
         a.input(prompt, "3")
-        result = a.next()
-        while result.get("header", {}).get("msg_type") == "status":
-            result = a.next()
-        assert "connection_error" in result
+        a.wait("kernel_info_reply", a.send("kernel_info_request"))
     # Closing partway through a valid frame does not run its source.
     peer = server.peer()
     packet = frame(peer.make("execute_request", {"code": "shared_n = -999"}))
@@ -548,10 +562,9 @@ def malformed(server):
         request = peer.execute("read(*,*,iostat=read_ios) read_n")
         prompt = peer.wait("input_request", request)
         peer.input(prompt, eof=True)
-        result = peer.next()
-        while result.get("header", {}).get("msg_type") == "status":
-            result = peer.next()
-        assert "not negotiated" in result.get("connection_error", ""), result
+        peer.wait("kernel_info_reply", peer.send("kernel_info_request"))
+        peer.input(prompt, "3")
+        peer.done(request)
 
 
 def observer_editor(executable, root, server):
@@ -622,8 +635,9 @@ def slow_peer(server):
     connection = socket.socket(socket.AF_UNIX)
     connection.settimeout(20)
     connection.connect(server.descriptor["socket"])
+    session = uuid.uuid4().hex
     connection.sendall(frame(dict(lfortran_local_protocol=1,
-        client_session=uuid.uuid4().hex, features=[])))
+        client_session=session, features=[])))
     # Read only the ready barrier, then deliberately stop consuming.
     def exactly(size):
         data = b""
@@ -644,21 +658,23 @@ def slow_peer(server):
                 good.done(request)
                 good.log.clear()
                 good.saved.clear()
-            disconnected = False
+            query = dict(channel="shell", header=header(session, "kernel_info_request"),
+                parent_header={}, metadata={}, content={}, buffers=[])
+            connection.sendall(frame(query))
+            received = 0
             while True:
                 prefix = exactly(4)
-                if not prefix:
-                    disconnected = True
-                    break
+                assert prefix, "slow observer lost its route"
                 size, = struct.unpack("!I", prefix)
                 payload = exactly(size)
-                if len(payload) != size:
-                    disconnected = True
+                assert len(payload) == size
+                message = json.loads(payload)
+                assert "connection_error" not in message, message
+                received += size
+                if (message.get("header", {}).get("msg_type") == "kernel_info_reply" and
+                        message["parent_header"]["msg_id"] == query["header"]["msg_id"]):
                     break
-                if "connection_error" in json.loads(payload):
-                    disconnected = True
-                    break
-            assert disconnected
+            assert received < 38 * 1024 * 1024, "unbounded live-output retention"
     finally:
         connection.close()
 

@@ -16,6 +16,10 @@ struct SessionDelivery {
     uint64_t peer;
     std::string envelope;
     bool disconnect = false;
+    // An origin's admission reservation follows its completion through every
+    // transport queue, and is released only after sending (or real disconnect).
+    std::shared_ptr<void> retention;
+    bool best_effort = false;
 };
 
 class SessionEndpoint {
