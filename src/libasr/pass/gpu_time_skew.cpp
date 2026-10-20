@@ -342,6 +342,9 @@ public:
     const PassOptions &pass_options;
     GpuRarelyRun &rarely_run;
     GpuWindows &windows;
+    // The variables involved in taking an address or associating a
+    // pointer anywhere in the program (gpu_collect_address_taken).
+    std::set<ASR::symbol_t*> address_taken;
     int skews = 0;
 
     Skew(Allocator &al_, SymbolTable *unit_scope_,
@@ -862,6 +865,22 @@ public:
                 || dev.empty()) {
             return false;
         }
+        // The analyses below see every scalar the nest reads or assigns
+        // by its name: one that may change through another name (as the
+        // end of an inner loop in EQUIVALENCE with a scalar the body
+        // assigns) is not seen to change.
+        {
+            std::set<ASR::symbol_t*> named;
+            gpu_collect_symbols(&stmt, 1, named);
+            for (ASR::symbol_t *x : named) {
+                ASR::symbol_t *r = ASRUtils::symbol_get_past_external(x);
+                if (ASR::is_a<ASR::Variable_t>(*r)
+                        && !ASRUtils::is_array(ASRUtils::symbol_type(r))
+                        && gpu_may_be_aliased(r, address_taken)) {
+                    return false;
+                }
+            }
+        }
         std::vector<ASR::symbol_t*> vars;
         ASR::ttype_t *it = ASRUtils::expr_type(loops[0]->m_head.m_v);
         for (auto l : loops) {
@@ -1205,6 +1224,7 @@ void gpu_time_skew(Allocator &al, ASR::TranslationUnit_t &unit,
         return;
     }
     Skew s(al, unit.m_symtab, pass_options, rarely_run, windows);
+    gpu_collect_address_taken(unit, s.address_taken);
     std::function<void(SymbolTable*)> visit_scope = [&](SymbolTable *st) {
         for (auto &item : st->get_scope()) {
             ASR::symbol_t *sym = item.second;
