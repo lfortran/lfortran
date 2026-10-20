@@ -1416,6 +1416,11 @@ public:
                 expr = ASRUtils::get_past_array_physical_cast(expr);
                 continue;
             }
+            if (ASR::is_a<ASR::StringSection_t>(*expr)) {
+                expr = ASR::down_cast<ASR::StringSection_t>(expr)->m_arg;
+                expr = ASRUtils::get_past_array_physical_cast(expr);
+                continue;
+            }
             if (ASR::is_a<ASR::Var_t>(*expr)) {
                 return ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(expr)->m_v);
