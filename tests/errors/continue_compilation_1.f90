@@ -3493,3 +3493,19 @@ contains
         y = t%sin(1.0)  ! {Error} the generic 'sin' is referenced as a function, but its specific procedure 'cc1_gen_binding_spec' is a subroutine
     end subroutine cc1_gen_binding_use
 end module cc1_generic_binding_m
+
+! A CALL of a generic cannot resolve to a specific function.
+module cc1_generic_function_m
+implicit none
+interface cc1_gen_fn
+    module procedure cc1_gen_fn_spec
+end interface
+contains
+    integer function cc1_gen_fn_spec(i)
+        integer, intent(in) :: i
+        cc1_gen_fn_spec = i
+    end function cc1_gen_fn_spec
+    subroutine cc1_gen_fn_call()
+        call cc1_gen_fn(1)  ! {Error} the generic 'cc1_gen_fn' is called as a subroutine, but its specific procedure 'cc1_gen_fn_spec' is a function
+    end subroutine cc1_gen_fn_call
+end module cc1_generic_function_m

@@ -4315,3 +4315,9 @@ semantic error: the generic 'sin' is referenced as a function, but its specific 
      |
 3493 |         y = t%sin(1.0)  ! {Error} the generic 'sin' is referenced as a function, but its specific procedure 'cc1_gen_binding_spec' is a subroutine
      |             ^^^^^^^^^^ a subroutine must be called with a CALL statement
+
+semantic error: the generic 'cc1_gen_fn' is called as a subroutine, but its specific procedure 'cc1_gen_fn_spec' is a function
+    --> tests/errors/continue_compilation_1.f90:3509:9
+     |
+3509 |         call cc1_gen_fn(1)  ! {Error} the generic 'cc1_gen_fn' is called as a subroutine, but its specific procedure 'cc1_gen_fn_spec' is a function
+     |         ^^^^^^^^^^^^^^^^^^ a function must be referenced in an expression, not called with CALL
