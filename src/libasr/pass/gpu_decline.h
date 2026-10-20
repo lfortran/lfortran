@@ -74,7 +74,7 @@ struct GpuDeviceCapabilities {
 
     int threads_per_block = 256;
 
-    // The widest tile of iterations the threads of one block of a loop nest
+    // The number of iterations the threads of one block of a loop nest
     // of two or more dimensions cover along the dimension its stores are
     // contiguous in; the block's other threads cover a second dimension.
     // A block then reads a two-dimensional neighbourhood of an array
