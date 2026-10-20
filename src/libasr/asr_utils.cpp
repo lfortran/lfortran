@@ -7054,7 +7054,8 @@ static bool runtime_trait_character(ASR::ttype_t *type)
 // allocatable array descriptors. Their results may also be allocatable or
 // explicit-shape arrays of those types, and allocatable scalars, derived
 // types and polymorphic objects, within the limits of
-// runtime_trait_unsupported_derived_result.
+// runtime_trait_unsupported_derived_result. They may also take dummy
+// procedures and procedure pointer dummies of any interface.
 static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
         const std::map<std::string, ASR::ttype_t*> &members)
 {
@@ -7099,6 +7100,16 @@ static bool runtime_trait_concrete_signature(const ASR::Function_t &method,
                     arg->m_presence != ASR::presenceType::Required ||
                     arg->m_value_attr || arg->m_target_attr || arg->m_is_volatile ||
                     arg->n_codims) return false;
+            continue;
+        }
+        // A dummy procedure or a procedure pointer dummy keeps its ordinary
+        // calling convention: the slot passes the procedure, or the pointer
+        // by reference, on unchanged.
+        if (ASR::is_a<ASR::FunctionType_t>(*type_get_past_pointer(arg->m_type))) {
+            if (trait_method_template(method) || arg->m_value_attr ||
+                    arg->m_target_attr || arg->m_is_volatile || arg->n_codims) {
+                return false;
+            }
             continue;
         }
         auto *array_type = type_get_past_allocatable(arg->m_type);

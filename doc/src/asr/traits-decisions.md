@@ -185,6 +185,7 @@ gating are listed separately in "Questions that do not affect the language".
 | 2026-10-19 | Supplied modules whose trait messages return allocatable `real(8)` arrays, used through a view and through an allocatable trait component, which the prototype rejected, and asked for runtime dispatch of messages with allocatable and explicit-shape array results of intrinsic types, with a specific diagnostic for results that remain unsupported. | TD-39 |
 | 2026-10-19 | Supplied a module whose trait message takes a `character(*)` argument and returns `class(*), allocatable`, which the prototype rejected, and asked for runtime dispatch of such results of any dynamic type through every kind of receiver, also under separate compilation, and, as far as the same mechanism allows, of allocatable scalar, derived-type and `class(Base)` results, with a specific diagnostic for results that remain unsupported. | TD-40 |
 | 2026-10-19 | Reported that trait objects cannot be passed to the default structure constructor of a type with an allocatable trait component, although a user-defined constructor assigning its `class(ITrait)` argument to the component works, and asked for default constructor values with the Fortran semantics of allocatable components, for every kind of trait object, concrete and polymorphic value, in every usage context and under separate compilation, behaving like the equivalent user-defined constructor. | TD-41 |
+| 2026-10-20 | Supplied the interface module of a dependency-injection container, whose `register` message takes a procedure pointer to a factory that receives a view of the container's parent trait, and which the prototype rejected once a view of the container was the argument of another trait's message, and asked for runtime dispatch of messages with procedure-pointer and dummy-procedure arguments, checked with a complete program and under separate compilation. | TD-42 |
 
 ## Entries
 
@@ -1307,6 +1308,51 @@ specification action, that is, what the paper should say.
 - **Specification action.** State that a trait component in a structure
   constructor takes its value as by intrinsic assignment to an owner, so that
   the rules of F2018 7.5.10 for allocatable components apply unchanged.
+
+#### TD-42: Dummy procedures and procedure pointers of runtime messages
+
+- **Status:** Implementation choice (the scope was requested by the
+  maintainer; the lowering was not asked).
+- **What the paper says.** Calls through trait objects use dynamic binding
+  (`sect:trait_objects`, lines 1607-1650), and a trait's methods are ordinary
+  procedure interfaces, whose dummy arguments the paper does not restrict.
+- **Why it is not tight.** The paper does not say whether a dummy procedure
+  crosses dynamic binding. The prototype's runtime slot surface admitted only
+  data arguments, so a trait with a message such as
+  `register(self, key, factory)`, whose `factory` is a
+  `procedure(ifactory), pointer`, had no runtime contract, and every
+  `class(IContainer)` view of it was rejected with "runtime dispatch for this
+  trait method signature is not implemented yet". The static checks already
+  accepted such messages, so the error appeared only once a view was formed,
+  for example as the argument of another trait's message.
+- **Options presented.** Not asked.
+- **Choice.** A message that is not generic may take dummy procedures
+  (`procedure(iface) :: f`, also OPTIONAL) and procedure pointer dummies
+  (`procedure(iface), pointer`, with any INTENT), whose interfaces may
+  themselves take trait views and return any result an ordinary procedure
+  may, such as `class(*), allocatable`. They keep the calling convention of
+  ordinary dummy procedures: the slot and the witness adapter pass the
+  procedure, or the pointer by reference, on unchanged, so an implementation
+  can call the procedure, store or reassociate the pointer and test it with
+  `ASSOCIATED`, and a disassociated pointer arrives disassociated.
+  An implementation declares the dummy with the message's characteristics,
+  which conformance compares structurally (two interfaces with equal
+  characteristics agree); a mismatch names both dummies by their interfaces,
+  as in "expected procedure(iunary), pointer, got procedure(ireal), pointer".
+  Dummy procedures of generic messages, and implicit-interface (`external`)
+  dummies, which trait messages do not admit at all, remain unsupported.
+- **Consequences.** The results are those of the equivalent program in which
+  the trait is an abstract type with deferred bindings. Nothing is copied or
+  wrapped, so a procedure pointer stored by the implementation keeps pointing
+  at the caller's target after the call.
+- **Implementation status.** Implemented for borrowed views, owners, pointers
+  and allocatable trait components, with subroutine and function messages,
+  procedure-pointer dummies of INTENT(IN), INTENT(OUT) and INTENT(INOUT),
+  required and optional dummy procedures and interfaces of functions and
+  subroutines, also under separate compilation with factories that only the
+  consumer declares.
+- **Specification action.** None identified: ordinary Fortran dummy-procedure
+  semantics apply.
 
 ### D. Generic procedures, methods and type sets
 

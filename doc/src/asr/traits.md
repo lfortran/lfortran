@@ -2247,6 +2247,63 @@ Results that remain outside the slot surface are diagnosed by name, as
   not implemented yet", and "... with an allocatable result ..." for a generic
   message.
 
+### Procedure arguments
+
+A message that is not generic may take dummy procedures and procedure
+pointers, whose interfaces may take trait views themselves (TD-42). A
+dependency-injection container registers factories that receive the
+container as a view of its parent trait:
+
+```fortran
+abstract interface :: IResolver
+   function resolve(self, key) result(res)
+      type(itself), pass, intent(in) :: self
+      character(*), intent(in) :: key
+      class(*), allocatable :: res
+   end function resolve
+end interface
+
+abstract interface
+   function ifactory(c) result(res)
+      import; implicit none
+      class(IResolver), intent(in) :: c
+      class(*), allocatable :: res
+   end function ifactory
+end interface
+
+abstract interface, extends(IResolver) :: IContainer
+   subroutine register(self, key, factory)
+      type(itself), pass, intent(inout) :: self
+      character(*), intent(in) :: key
+      procedure(ifactory), pointer, intent(in) :: factory
+   end subroutine register
+end interface
+```
+
+The `register` slot of `class(IContainer)` takes the pointer after its
+receiver and the key, and the witness adapter passes it on unchanged, with
+the calling convention of an ordinary procedure pointer dummy, so the
+implementation stores it, calls it as `factory(self)` from inside `resolve`
+and finds a disassociated pointer disassociated. Dummy procedures
+(`procedure(iface) :: f`, also OPTIONAL) and procedure pointers with
+INTENT(OUT) or INTENT(INOUT), which the implementation sets or swaps, are
+passed in the same way. Generic messages do not take dummy procedures yet.
+
+`traits_runtime_procedure_argument_01` is a complete container: a `Problem`
+registers factories through a `class(IContainer)` argument of its own
+trait's message, the factories return integers, reals, characters and a
+derived type, one of them resolves other keys through the view it receives,
+and the container is used as an owner, a borrowed view and a trait pointer.
+`traits_runtime_procedure_argument_02` covers function and subroutine
+messages with dummy procedures, an optional dummy procedure and procedure
+pointers set and swapped by the implementation.
+`traits_runtime_procedure_argument_separate_01` compiles the contracts, the
+provider of the container and of the problem and a contract-only consumer,
+which registers its own factory and keeps the container in an allocatable
+trait component, separately. Each has a standard inheritance oracle, and
+`continue_compilation_traits_procedure_argument` checks the conformance
+diagnostics.
+
 ## Scalar allocatable ownership, slots and results (R2)
 
 A local, module, saved local, or BLOCK entity can own one scalar value:

@@ -4401,6 +4401,22 @@ RUN(NAME traits_runtime_polymorphic_result_separate_01 LABELS llvm llvm2 NO_STD_
     EXTRAFILES traits_runtime_polymorphic_result_separate_01_contracts.f90
         traits_runtime_polymorphic_result_separate_01_provider.f90
         traits_runtime_polymorphic_result_separate_01_consumer.f90)
+RUN(NAME traits_runtime_procedure_argument_01 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_procedure_argument_02 LABELS llvm NO_STD_F23 ISOLATE_MODULES
+    EXTRA_ARGS --verify-all-passes)
+RUN(NAME traits_runtime_procedure_argument_01_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_runtime_procedure_argument_02_oracle LABELS gfortran llvm ISOLATE_MODULES)
+RUN(NAME traits_runtime_procedure_argument_separate_01 LABELS llvm llvm2 NO_STD_F23
+    ISOLATE_MODULES EXTRA_ARGS --verify-all-passes --separate-compilation
+    EXTRAFILES traits_runtime_procedure_argument_separate_01_contracts.f90
+        traits_runtime_procedure_argument_separate_01_provider.f90
+        traits_runtime_procedure_argument_separate_01_consumer.f90)
+RUN(NAME traits_runtime_procedure_argument_separate_01_oracle LABELS gfortran llvm
+    ISOLATE_MODULES EXTRA_ARGS --separate-compilation
+    EXTRAFILES traits_runtime_procedure_argument_separate_01_oracle_contracts.f90
+        traits_runtime_procedure_argument_separate_01_oracle_provider.f90
+        traits_runtime_procedure_argument_separate_01_oracle_consumer.f90)
 RUN(NAME traits_runtime_elemental_01 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_elemental_02 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
 RUN(NAME traits_runtime_elemental_03 LABELS llvm NO_STD_F23 EXTRA_ARGS --verify-all-passes)
