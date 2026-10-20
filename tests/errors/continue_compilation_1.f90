@@ -3451,3 +3451,11 @@ subroutine cc1_external_name_user()
     cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
 end subroutine cc1_external_name_user
+
+! An assumed-size array has no size, so c_sizeof and sizeof reject it.
+subroutine cc1_c_sizeof_assumed_size(a)
+    use iso_c_binding, only: c_sizeof
+    integer :: a(*)
+    print *, c_sizeof(a)  ! {Error} the argument of `c_sizeof` cannot be an assumed-size array
+    print *, sizeof(a)  ! {Error} the argument of `sizeof` cannot be an assumed-size array
+end subroutine cc1_c_sizeof_assumed_size

@@ -4297,3 +4297,21 @@ semantic error: Variable 'cc1_external_name_fn' is not declared
      |
 3452 |     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
      |              ^^^^^^^^^^^^^^^^^^^^ 'cc1_external_name_fn' is undeclared
+
+semantic error: the argument of `c_sizeof` cannot be an assumed-size array
+    --> tests/errors/continue_compilation_1.f90:3459:23
+     |
+3459 |     print *, c_sizeof(a)  ! {Error} the argument of `c_sizeof` cannot be an assumed-size array
+     |                       ^ an assumed-size array has no known size; give the dummy explicit bounds, for example `a(n)`
+
+warning: `sizeof` is an LFortran extension
+    --> tests/errors/continue_compilation_1.f90:3460:14
+     |
+3460 |     print *, sizeof(a)  ! {Error} the argument of `sizeof` cannot be an assumed-size array
+     |              ^^^^^^^^^ use the `storage_size` intrinsic function. Alternatively, use `c_sizeof` from `iso_c_binding` for `bind(c)` types
+
+semantic error: the argument of `sizeof` cannot be an assumed-size array
+    --> tests/errors/continue_compilation_1.f90:3460:21
+     |
+3460 |     print *, sizeof(a)  ! {Error} the argument of `sizeof` cannot be an assumed-size array
+     |                     ^ an assumed-size array has no known size; give the dummy explicit bounds, for example `a(n)`
