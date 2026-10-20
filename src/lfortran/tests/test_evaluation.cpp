@@ -79,7 +79,9 @@ static void results_and_cells() {
     };
     for (auto &example : examples) {
         auto outcome = run(service, example.first, events);
-        require(outcome.has_value && outcome.text == example.second, example.first);
+        require(outcome.has_value && outcome.text == example.second,
+            example.first + ": expected " + example.second + ", got " +
+            (outcome.has_value ? outcome.text : "no value"));
     }
     require(!run(service, "integer :: n\nn = 41", events).has_value, "statement result");
     require(run(service, "n+1", events).text == "42", "persistent symbols");
