@@ -173,10 +173,21 @@ void gpu_collect_assigned(ASR::stmt_t **body, size_t n,
     bool &unknown, std::set<ASR::symbol_t*> *bases = nullptr);
 
 // Every array designator key an expression or statement list reads (as an
-// element, a whole array or an actual argument).
+// element, a whole array or an actual argument), and the key of every
+// derived-type object it reads as a whole (an actual argument, the value
+// of an assignment), which reads all its components.
 void gpu_collect_array_reads(ASR::expr_t *e, std::set<std::string> &arrays);
 void gpu_collect_array_reads(ASR::stmt_t **body, size_t n,
     std::set<std::string> &arrays);
+
+// Whether a set of keys from the collections above touches the array of
+// `key`: it holds `key`, or the key of a derived-type object the array is
+// a component of (`x` or `x%c` for `x%c%a`), which is read or assigned as
+// a whole. gpu_key_touched_whole only checks the second.
+bool gpu_key_touched(const std::set<std::string> &keys,
+    const std::string &key);
+bool gpu_key_touched_whole(const std::set<std::string> &keys,
+    const std::string &key);
 
 // Whether a loop body only computes values of intrinsic scalar types:
 // assignments of such scalars and array elements, IF, SELECT CASE, DO and

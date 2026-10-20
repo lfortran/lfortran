@@ -428,6 +428,12 @@ public:
         };
         auto scan = [&](ASR::expr_t *e) -> bool {
             if (e == nullptr) return true;
+            // A derived-type object read as a whole reads its components.
+            std::set<std::string> objects;
+            gpu_collect_array_reads(e, objects);
+            for (auto &k : keys) {
+                if (gpu_key_touched_whole(objects, k)) return false;
+            }
             Items it;
             it.keys = &keys;
             it.visit_expr(*e);
@@ -540,7 +546,9 @@ public:
                     // Any other statement must not read the arrays.
                     std::set<std::string> r;
                     gpu_collect_array_reads(&s, 1, r);
-                    for (auto &k : keys) if (r.count(k)) return false;
+                    for (auto &k : keys) {
+                        if (gpu_key_touched(r, k)) return false;
+                    }
                     break;
                 }
             }
@@ -586,17 +594,17 @@ public:
                     written = true;
                     std::set<std::string> r;
                     gpu_collect_array_reads(a->m_value, r);
-                    if (r.count(key)) ws.read = true;
+                    if (gpu_key_touched(r, key)) ws.read = true;
                     continue;
                 }
                 std::set<std::string> r;
                 gpu_collect_array_reads(&s, 1, r);
-                if (r.count(key)) ws.read = true;
+                if (gpu_key_touched(r, key)) ws.read = true;
             } else if (ASR::is_a<ASR::If_t>(*s)) {
                 ASR::If_t *x = ASR::down_cast<ASR::If_t>(s);
                 std::set<std::string> r;
                 gpu_collect_array_reads(x->m_test, r);
-                if (r.count(key)) ws.read = true;
+                if (gpu_key_touched(r, key)) ws.read = true;
                 bool a = must_write(x->m_body, x->n_body, key, ws);
                 bool b = must_write(x->m_orelse, x->n_orelse, key, ws);
                 if (a && b) written = true;
@@ -604,7 +612,7 @@ public:
                 ASR::Select_t *x = ASR::down_cast<ASR::Select_t>(s);
                 std::set<std::string> r;
                 gpu_collect_array_reads(x->m_test, r);
-                if (r.count(key)) ws.read = true;
+                if (gpu_key_touched(r, key)) ws.read = true;
                 bool all = x->n_default > 0;
                 for (size_t k = 0; k < x->n_body; k++) {
                     ASR::stmt_t **cb;
@@ -644,7 +652,8 @@ public:
                 std::set<std::string> w;
                 bool unknown = false;
                 gpu_collect_assigned(&s, 1, sc, w, unknown);
-                if (r.count(key) || w.count(key) || unknown) {
+                if (gpu_key_touched(r, key) || gpu_key_touched(w, key)
+                        || unknown) {
                     ws.consistent = false;
                 }
             }
@@ -677,6 +686,10 @@ public:
         };
         auto reads = [&](ASR::expr_t *e, bool written) {
             if (e == nullptr) return;
+            // A derived-type object read as a whole reads the array.
+            std::set<std::string> objects;
+            gpu_collect_array_reads(e, objects);
+            if (gpu_key_touched_whole(objects, key)) ok = false;
             struct R : public ASR::BaseWalkVisitor<R> {
                 const std::string *key;
                 std::vector<ASR::ArrayItem_t*> items;
@@ -768,7 +781,7 @@ public:
                 } else {
                     std::set<std::string> r;
                     gpu_collect_array_reads(&s, 1, r);
-                    if (r.count(key)) ok = false;
+                    if (gpu_key_touched(r, key)) ok = false;
                 }
             }
             return written;
@@ -843,7 +856,9 @@ public:
             calls.visit_expr(*w.value);
             if (!calls.ok) return nullptr;
         }
-        for (auto &k : xkeys) if (producer_reads.count(k)) return nullptr;
+        for (auto &k : xkeys) {
+            if (gpu_key_touched(producer_reads, k)) return nullptr;
+        }
         for (ASR::symbol_t *s : p.privates) {
             if (producer_syms.count(s)) return nullptr;
         }
@@ -907,6 +922,8 @@ public:
         std::vector<std::string> renamed;
         for (auto &k : c_arrays) {
             if (producer_reads.count(k)) renamed.push_back(k);
+            // The copy would replace only the reads of the array itself.
+            if (gpu_key_touched_whole(producer_reads, k)) return fail();
         }
         std::map<std::string, WriteShape> shapes;
         for (auto &k : renamed) {
@@ -1188,7 +1205,9 @@ public:
                 }
                 bool touched = unk;
                 for (auto &k2 : xkeys) {
-                    if (wa.count(k2) || ra.count(k2)) touched = true;
+                    if (gpu_key_touched(wa, k2) || gpu_key_touched(ra, k2)) {
+                        touched = true;
+                    }
                 }
                 // An expression changes when it reads a variable these
                 // statements assign (`_syms`), or the value of one they
@@ -1333,7 +1352,8 @@ public:
             for (auto &k : renamed) {
                 swap[k] = gpu_loop_transform_enabled(po, GpuLoopSwap)
                     && bounds_fixed && !other_unknown
-                    && !other_writes.count(k) && !other_reads.count(k);
+                    && !gpu_key_touched(other_writes, k)
+                    && !gpu_key_touched(other_reads, k);
             }
         }
         bool ping_pong = !renamed.empty();

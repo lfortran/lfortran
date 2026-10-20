@@ -499,6 +499,14 @@ void GpuDuplicator::duplicate_body(ASR::stmt_t **body, size_t n,
 
 namespace {
 
+// Whether a designator of this type is a derived-type object (not an
+// array of them): reading or assigning it as a whole reads or assigns
+// every component.
+bool is_scalar_struct(ASR::ttype_t *t) {
+    return !ASRUtils::is_array(t)
+        && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(t));
+}
+
 class AssignedCollector : public ASRUtils::BlockBodyWalkVisitor<
         AssignedCollector> {
 public:
@@ -523,7 +531,8 @@ public:
             ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(t)->m_v);
             scalars.insert(s);
-            if (ASRUtils::is_array(ASRUtils::expr_type(t))) {
+            if (ASRUtils::is_array(ASRUtils::expr_type(t))
+                    || is_scalar_struct(ASRUtils::expr_type(t))) {
                 arrays.insert(gpu_array_key(t));
             }
             return;
@@ -595,20 +604,40 @@ class ReadCollector : public ASRUtils::BlockBodyWalkVisitor<ReadCollector> {
 public:
     std::set<std::string> &arrays;
     explicit ReadCollector(std::set<std::string> &a) : arrays(a) {}
+    void insert(ASR::expr_t *e) {
+        std::string k = gpu_array_key(e);
+        if (!k.empty()) arrays.insert(k);
+    }
     void visit_Var(const ASR::Var_t &x) {
         ASR::expr_t *e = const_cast<ASR::expr_t*>(&x.base);
-        if (ASRUtils::is_array(ASRUtils::expr_type(e))) {
+        ASR::ttype_t *t = ASRUtils::expr_type(e);
+        if (ASRUtils::is_array(t)) {
             arrays.insert(gpu_array_key(e));
+        } else if (is_scalar_struct(t)) {
+            insert(e);
         }
+    }
+    // The object a component is selected from is read only in part: walk
+    // its subscripts, but do not count it as read as a whole.
+    void visit_component_base(ASR::expr_t *e) {
+        while (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+        }
+        if (ASR::is_a<ASR::Var_t>(*e) && !ASRUtils::is_array(
+                ASRUtils::expr_type(e))) {
+            return;
+        }
+        visit_expr(*e);
     }
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
         ASR::expr_t *e = const_cast<ASR::expr_t*>(&x.base);
-        if (ASRUtils::is_array(ASRUtils::expr_type(e))) {
+        ASR::ttype_t *t = ASRUtils::expr_type(e);
+        if (ASRUtils::is_array(t)) {
             arrays.insert(gpu_array_key(e));
             return;
         }
-        ASRUtils::BlockBodyWalkVisitor<ReadCollector>::
-            visit_StructInstanceMember(x);
+        if (is_scalar_struct(t)) insert(e);
+        visit_component_base(x.m_v);
     }
 };
 
@@ -652,6 +681,20 @@ void gpu_collect_assigned(ASR::stmt_t **body, size_t n,
         bool &unknown, std::set<ASR::symbol_t*> *bases) {
     AssignedCollector c(scalars, arrays, unknown, bases);
     for (size_t i = 0; i < n; i++) c.visit_stmt(*body[i]);
+}
+
+bool gpu_key_touched_whole(const std::set<std::string> &keys,
+        const std::string &key) {
+    for (size_t pos = key.find('%'); pos != std::string::npos;
+            pos = key.find('%', pos + 1)) {
+        if (keys.count(key.substr(0, pos))) return true;
+    }
+    return false;
+}
+
+bool gpu_key_touched(const std::set<std::string> &keys,
+        const std::string &key) {
+    return keys.count(key) || gpu_key_touched_whole(keys, key);
 }
 
 void gpu_collect_array_reads(ASR::expr_t *e, std::set<std::string> &arrays) {
