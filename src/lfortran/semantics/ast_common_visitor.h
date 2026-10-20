@@ -6519,14 +6519,35 @@ public:
         return nullptr;
     }
 
-    // Fortran 2023 8.10.1.1: the name of an equivalence object shall not be
-    // made accessible by use association, as the module of the entity
-    // provides its storage. Checked for each EQUIVALENCE statement before
-    // any of its sets is lowered.
+    // The first object of the EQUIVALENCE set `set` that is in parentheses,
+    // or nullptr. Such a set is neither placed in a common block nor
+    // lowered: check_equivalence_objects rejects it.
+    static const AST::expr_t* parenthesized_equivalence_object(
+            const AST::equi_t &set) {
+        for (size_t m = 0; m < set.n_set_list; m++) {
+            if (AST::is_a<AST::Parenthesis_t>(*set.m_set_list[m])) {
+                return set.m_set_list[m];
+            }
+        }
+        return nullptr;
+    }
+
+    // Fortran 2023 8.10.1.1: an equivalence object is a variable name, an
+    // array element or a substring, which a parenthesized one is not, and
+    // its name shall not be made accessible by use association, as the
+    // module of the entity provides its storage. Checked for each
+    // EQUIVALENCE statement before any of its sets is lowered.
     void check_equivalence_objects(const AST::AttrEquivalence_t &eq) {
         for (size_t i = 0; i < eq.n_args; i++) {
-            const AST::expr_t *object = use_associated_equivalence_object(
+            const AST::expr_t *object = parenthesized_equivalence_object(
                 eq.m_args[i]);
+            if (object != nullptr) {
+                diag.semantic_error_label("an equivalence object must be a "
+                    "variable, an array element or a substring",
+                    {object->base.loc}, "not allowed in EQUIVALENCE");
+                throw SemanticAbort();
+            }
+            object = use_associated_equivalence_object(eq.m_args[i]);
             if (object != nullptr) {
                 diag.semantic_error_label("'" + equivalence_object_name(*object)
                     + "' is use-associated and cannot appear in an "
@@ -6612,6 +6633,8 @@ public:
                 for (size_t k = 0; k < eq->n_args; k++) {
                     if (eq->m_args[k].n_set_list >= 2 &&
                             use_associated_equivalence_object(
+                                eq->m_args[k]) == nullptr &&
+                            parenthesized_equivalence_object(
                                 eq->m_args[k]) == nullptr) {
                         sets.push_back(&eq->m_args[k]);
                     }
