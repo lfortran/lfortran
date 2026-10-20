@@ -23,7 +23,13 @@ extern "C" {
 typedef int (*lfortran_stdin_provider)(void *context,
     const char **record, size_t *length);
 
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
 void _lfortran_stdin_install(lfortran_stdin_provider provider, void *context);
+#ifdef _WIN32
+__declspec(dllexport)
+#endif
 void _lfortran_stdin_reset(void);
 
 #ifdef __cplusplus

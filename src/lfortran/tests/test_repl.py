@@ -209,7 +209,7 @@ def check_compiled_read_from_terminal(lfortran):
     with tempfile.TemporaryDirectory(dir=".") as cwd:
         with open(os.path.join(cwd, "read_terminal.f90"), "w") as f:
             f.write(READ_TERMINAL_SOURCE)
-        exe = os.path.join(cwd, "read_terminal")
+        exe = os.path.abspath(os.path.join(cwd, "read_terminal"))
         p = subprocess.run([lfortran, "--no-color", "read_terminal.f90",
             "-o", exe], cwd=cwd, stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT)
