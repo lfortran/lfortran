@@ -1130,7 +1130,9 @@ public:
         // What the statements of those loops other than the two assign and
         // read.
         std::set<std::string> other_writes, other_reads;
-        std::set<ASR::symbol_t*> assigned_in_loops;
+        // The variables they assign, and those that designators they assign
+        // start from (`x` for `x(k) = ...` or `x%c = ...`).
+        std::set<ASR::symbol_t*> assigned_in_loops, based_in_loops;
         bool other_unknown = false;
         {
             ASR::stmt_t *child_a = body[i], *child_b = body[i + 1];
@@ -1160,47 +1162,64 @@ public:
                 // Nothing else in the loop's body touches the intermediate
                 // arrays, the variables the producer's bounds and tests
                 // read, the loop's variable or its end.
-                std::set<ASR::symbol_t*> sc;
+                std::set<ASR::symbol_t*> sc, ba;
                 std::set<std::string> wa;
                 std::set<std::string> ra;
                 bool unk = false;
                 for (size_t m = 0; m < list_n; m++) {
                     if (list[m] == child_a || list[m] == child_b) continue;
-                    gpu_collect_assigned(&list[m], 1, sc, wa, unk);
+                    gpu_collect_assigned(&list[m], 1, sc, wa, unk, &ba);
                     gpu_collect_array_reads(&list[m], 1, ra);
                     // What a call reads beyond its arguments is not seen.
                     if (!gpu_calls_self_contained(&list[m], 1)) unk = true;
                 }
                 // What the loops nested in it, which hold the fused pair,
                 // assign.
-                std::set<ASR::symbol_t*> sc_all = sc;
+                std::set<ASR::symbol_t*> sc_all = sc, ba_all = ba;
                 {
                     std::set<std::string> w2;
                     bool u2 = false;
-                    gpu_collect_assigned(&child_a, 1, sc_all, w2, u2);
+                    gpu_collect_assigned(&child_a, 1, sc_all, w2, u2,
+                        &ba_all);
                     if (child_b != child_a) {
-                        gpu_collect_assigned(&child_b, 1, sc_all, w2, u2);
+                        gpu_collect_assigned(&child_b, 1, sc_all, w2, u2,
+                            &ba_all);
                     }
                 }
                 bool touched = unk;
                 for (auto &k2 : xkeys) {
                     if (wa.count(k2) || ra.count(k2)) touched = true;
                 }
-                std::set<ASR::symbol_t*> bound_syms;
+                // An expression changes when it reads a variable these
+                // statements assign (`_syms`), or the value of one they
+                // assign a part of (`_vals`).
+                std::set<ASR::symbol_t*> bound_syms, bound_vals;
                 for (size_t d = 0; d < p.rank(); d++) {
                     gpu_collect_symbols(p.starts[d], bound_syms);
                     gpu_collect_symbols(p.ends[d], bound_syms);
+                    gpu_collect_value_symbols(p.starts[d], bound_vals);
+                    gpu_collect_value_symbols(p.ends[d], bound_vals);
                 }
                 for (auto &w : writes) {
-                    for (auto *g : w.guards) gpu_collect_symbols(g, bound_syms);
+                    for (auto *g : w.guards) {
+                        gpu_collect_symbols(g, bound_syms);
+                        gpu_collect_value_symbols(g, bound_vals);
+                    }
                 }
-                std::set<ASR::symbol_t*> end_syms;
+                std::set<ASR::symbol_t*> end_syms, end_vals;
                 gpu_collect_symbols(l->m_head.m_end, end_syms);
+                gpu_collect_value_symbols(l->m_head.m_end, end_vals);
                 ASR::symbol_t *lv = ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::Var_t>(l->m_head.m_v)->m_v);
                 for (ASR::symbol_t *s : sc_all) {
                     if (end_syms.count(s) || s == lv) touched = true;
                     if (bound_syms.count(s) && p.position(s) < 0) {
+                        touched = true;
+                    }
+                }
+                for (ASR::symbol_t *s : ba_all) {
+                    if (end_vals.count(s)) touched = true;
+                    if (bound_vals.count(s) && p.position(s) < 0) {
                         touched = true;
                     }
                 }
@@ -1214,19 +1233,26 @@ public:
                 // anything assigned in it. Otherwise an inner loop may run
                 // no iteration at all in the last one.
                 for (ASR::DoLoop_t *inner : loops) {
-                    std::set<ASR::symbol_t*> head_syms;
+                    std::set<ASR::symbol_t*> head_syms, head_vals;
                     gpu_collect_symbols(inner->m_head.m_end, head_syms);
+                    gpu_collect_value_symbols(inner->m_head.m_end, head_vals);
                     if (inner->m_head.m_start) {
                         gpu_collect_symbols(inner->m_head.m_start, head_syms);
+                        gpu_collect_value_symbols(inner->m_head.m_start,
+                            head_vals);
                     }
                     for (ASR::symbol_t *s : head_syms) {
                         if (s == lv || sc_all.count(s)) touched = true;
+                    }
+                    for (ASR::symbol_t *s : head_vals) {
+                        if (ba_all.count(s)) touched = true;
                     }
                 }
                 if (touched) break;
                 other_writes.insert(wa.begin(), wa.end());
                 other_reads.insert(ra.begin(), ra.end());
                 assigned_in_loops.insert(sc_all.begin(), sc_all.end());
+                based_in_loops.insert(ba_all.begin(), ba_all.end());
                 // The consumer's bounds are fixed only when they do not
                 // read the loop's variable either.
                 assigned_in_loops.insert(lv);
@@ -1286,14 +1312,21 @@ public:
         // may read it either.
         std::map<std::string, bool> swap;
         {
-            std::set<ASR::symbol_t*> c_bound_syms;
+            std::set<ASR::symbol_t*> c_bound_syms, c_bound_vals;
             for (size_t d2 = 0; d2 < c.rank(); d2++) {
                 gpu_collect_symbols(c.starts[d2], c_bound_syms);
                 gpu_collect_symbols(c.ends[d2], c_bound_syms);
+                gpu_collect_value_symbols(c.starts[d2], c_bound_vals);
+                gpu_collect_value_symbols(c.ends[d2], c_bound_vals);
             }
             bool bounds_fixed = true;
             for (ASR::symbol_t *x : c_bound_syms) {
                 if (assigned_in_loops.count(x) && c.position(x) < 0) {
+                    bounds_fixed = false;
+                }
+            }
+            for (ASR::symbol_t *x : c_bound_vals) {
+                if (based_in_loops.count(x) && c.position(x) < 0) {
                     bounds_fixed = false;
                 }
             }

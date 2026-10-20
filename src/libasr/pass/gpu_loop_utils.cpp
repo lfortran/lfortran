@@ -3,6 +3,7 @@
 #include <libasr/pass/gpu_loop_utils.h>
 #include <libasr/pass/gpu_affine.h>
 #include <libasr/pass/gpu_decline.h>
+#include <libasr/pass/gpu_offload_designator.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 
 #include <sstream>
@@ -504,10 +505,20 @@ public:
     std::set<ASR::symbol_t*> &scalars;
     std::set<std::string> &arrays;
     bool &unknown;
+    std::set<ASR::symbol_t*> *bases;
     AssignedCollector(std::set<ASR::symbol_t*> &s, std::set<std::string> &a,
-        bool &u) : scalars(s), arrays(a), unknown(u) {}
+        bool &u, std::set<ASR::symbol_t*> *b)
+        : scalars(s), arrays(a), unknown(u), bases(b) {}
 
     void target(ASR::expr_t *t) {
+        if (bases) {
+            ASR::symbol_t *root = gpu_designator_base(t).root;
+            if (root) {
+                bases->insert(root);
+            } else {
+                unknown = true;
+            }
+        }
         if (ASR::is_a<ASR::Var_t>(*t)) {
             ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
                 ASR::down_cast<ASR::Var_t>(t)->m_v);
@@ -516,6 +527,13 @@ public:
                 arrays.insert(gpu_array_key(t));
             }
             return;
+        }
+        // A whole array component may be reallocated, which changes its
+        // bounds: count it as a change of the variable it belongs to.
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*t)
+                && ASRUtils::is_array(ASRUtils::expr_type(t))) {
+            ASR::symbol_t *root = gpu_designator_base(t).root;
+            if (root) scalars.insert(root);
         }
         ASR::expr_t *base = t;
         if (ASR::is_a<ASR::ArrayItem_t>(*t)) {
@@ -553,6 +571,9 @@ public:
         unknown = true;
     }
     void visit_FileRead(const ASR::FileRead_t &) { unknown = true; }
+    // A pointer associated here makes later writes through it change its
+    // target, which the targets of those writes do not name.
+    void visit_Associate(const ASR::Associate_t &) { unknown = true; }
     void visit_OMPRegion(const ASR::OMPRegion_t &x) {
         ASRUtils::BlockBodyWalkVisitor<AssignedCollector>::visit_OMPRegion(x);
     }
@@ -595,9 +616,32 @@ class SymbolCollector : public ASRUtils::BlockBodyWalkVisitor<
         SymbolCollector> {
 public:
     std::set<ASR::symbol_t*> &syms;
-    explicit SymbolCollector(std::set<ASR::symbol_t*> &s) : syms(s) {}
+    // Whether to leave out the array an inquiry of bounds or size names.
+    bool values_only;
+    SymbolCollector(std::set<ASR::symbol_t*> &s, bool v)
+        : syms(s), values_only(v) {}
     void visit_Var(const ASR::Var_t &x) {
         syms.insert(ASRUtils::symbol_get_past_external(x.m_v));
+    }
+    static bool is_designator(ASR::expr_t *e) {
+        while (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+            e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+        }
+        return ASR::is_a<ASR::Var_t>(*e);
+    }
+    void visit_ArraySize(const ASR::ArraySize_t &x) {
+        if (values_only && is_designator(x.m_v)) {
+            if (x.m_dim) visit_expr(*x.m_dim);
+            return;
+        }
+        ASRUtils::BlockBodyWalkVisitor<SymbolCollector>::visit_ArraySize(x);
+    }
+    void visit_ArrayBound(const ASR::ArrayBound_t &x) {
+        if (values_only && is_designator(x.m_v)) {
+            if (x.m_dim) visit_expr(*x.m_dim);
+            return;
+        }
+        ASRUtils::BlockBodyWalkVisitor<SymbolCollector>::visit_ArrayBound(x);
     }
 };
 
@@ -605,8 +649,8 @@ public:
 
 void gpu_collect_assigned(ASR::stmt_t **body, size_t n,
         std::set<ASR::symbol_t*> &scalars, std::set<std::string> &arrays,
-        bool &unknown) {
-    AssignedCollector c(scalars, arrays, unknown);
+        bool &unknown, std::set<ASR::symbol_t*> *bases) {
+    AssignedCollector c(scalars, arrays, unknown, bases);
     for (size_t i = 0; i < n; i++) c.visit_stmt(*body[i]);
 }
 
@@ -740,14 +784,20 @@ void gpu_replace_exprs(ASR::stmt_t **body, size_t n,
 }
 
 void gpu_collect_symbols(ASR::expr_t *e, std::set<ASR::symbol_t*> &syms) {
-    SymbolCollector c(syms);
+    SymbolCollector c(syms, false);
     c.visit_expr(*e);
 }
 
 void gpu_collect_symbols(ASR::stmt_t **body, size_t n,
         std::set<ASR::symbol_t*> &syms) {
-    SymbolCollector c(syms);
+    SymbolCollector c(syms, false);
     for (size_t i = 0; i < n; i++) c.visit_stmt(*body[i]);
+}
+
+void gpu_collect_value_symbols(ASR::expr_t *e,
+        std::set<ASR::symbol_t*> &syms) {
+    SymbolCollector c(syms, true);
+    c.visit_expr(*e);
 }
 
 // ---------------------------------------------------------------------------

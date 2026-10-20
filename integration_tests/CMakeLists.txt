@@ -6443,6 +6443,9 @@ RUN(NAME gpu_metal_520 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_metal_521 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_metal_522 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_metal_523 LABELS gfortran llvm metal cuda_cpu cuda)
+RUN(NAME gpu_metal_540 LABELS gfortran llvm metal cuda_cpu cuda)
+RUN(NAME gpu_metal_541 LABELS gfortran llvm metal cuda_cpu cuda)
+RUN(NAME gpu_metal_542 LABELS gfortran llvm metal cuda_cpu cuda)
 # GFortran 13 cannot compile this LOCAL fixture. cuda_cpu uses GPU lowering
 # and belongs here; ordinary LLVM is excluded for its pre-existing LOCAL
 # preservation gap (#14622).

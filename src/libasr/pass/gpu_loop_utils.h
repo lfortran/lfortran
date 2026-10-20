@@ -164,10 +164,13 @@ bool gpu_expr_duplicable(ASR::expr_t *e);
 
 // Every variable a statement list assigns (scalars, and arrays through
 // their elements or as a whole), descending into nested statements and
-// BLOCKs, keyed by gpu_array_key for arrays.
+// BLOCKs, keyed by gpu_array_key for arrays. `bases`, when given, also
+// receives the variable each assigned designator starts from (`x` for
+// `x`, `x(k)`, `x%c` or `x%a(k)%c`): an expression reading that variable
+// may evaluate differently afterwards.
 void gpu_collect_assigned(ASR::stmt_t **body, size_t n,
     std::set<ASR::symbol_t*> &scalars, std::set<std::string> &arrays,
-    bool &unknown);
+    bool &unknown, std::set<ASR::symbol_t*> *bases = nullptr);
 
 // Every array designator key an expression or statement list reads (as an
 // element, a whole array or an actual argument).
@@ -191,6 +194,12 @@ void gpu_replace_exprs(ASR::stmt_t **body, size_t n,
 // Every variable referenced.
 void gpu_collect_symbols(ASR::expr_t *e, std::set<ASR::symbol_t*> &syms);
 void gpu_collect_symbols(ASR::stmt_t **body, size_t n,
+    std::set<ASR::symbol_t*> &syms);
+// Every variable whose value an expression reads: as gpu_collect_symbols,
+// but without the arrays of which it takes only bounds or the size
+// (`size(x)`, `ubound(x%a, 1)`), which writes to their elements do not
+// change.
+void gpu_collect_value_symbols(ASR::expr_t *e,
     std::set<ASR::symbol_t*> &syms);
 
 // The number of arithmetic operations and loads of an expression,
