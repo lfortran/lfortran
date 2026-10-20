@@ -53,10 +53,10 @@ them, before they are copied back. A run-time sized local of the kernel (a
 workspace) is a scratch buffer.
 
 A scratch buffer of the launch (GpuKernelLaunch.scratch), which only the
-device holds, is set with lfortran_gpu_set_scratch_arg instead, read back
-after the launch with lfortran_gpu_read_scratch_arg when the launch says so,
-and freed with the kernel by lfortran_gpu_release_kernel. So is every
-per-thread workspace of the kernel, which is never read back.
+device holds, is set with lfortran_gpu_set_scratch_arg and read back
+after the launch with lfortran_gpu_read_scratch_arg when the launch says so.
+Per-thread workspaces use the same interface but are never read back. The
+runtime owns this storage and may reuse it across launches.
 
 The finalized Function.gpu layout fixes the buffer order, scalar fields and
 workspace bindings. This pass expands that contract without deciding whether
@@ -1202,10 +1202,9 @@ class DeviceLaunchExpandVisitor :
                     {b.CPtr(), int32, b.CPtr(), int64},
                     {true, true, true, true}), args));
             }
-            // The kernel object holds what this launch set up -- the
-            // scalar arguments, the scratch buffers, which are read back
-            // above, and on a discrete GPU the device buffers -- so every
-            // launch releases its own.
+            // Release this launch's handle after any requested scratch
+            // readback. The runtime manages buffer lifetimes, including
+            // storage cached for later launches.
             Vec<ASR::call_arg_t> release_args;
             release_args.reserve(al, 1);
             release_args.push_back(al, call_arg(loc, gpu_kernel));

@@ -6434,6 +6434,21 @@ RUN(NAME gpu_metal_483 LABELS llvm metal cuda cuda_cpu)
 # and belongs here; ordinary LLVM is excluded for its pre-existing LOCAL
 # preservation gap (#14622).
 RUN(NAME gpu_local_preservation_01 LABELS metal cuda cuda_cpu)
+RUN(NAME gpu_metal_484 LABELS gfortran llvm metal cuda cuda_cpu)
+if (LFORTRAN_BACKEND STREQUAL "cuda")
+    enable_language(CUDA)
+    add_executable(gpu_cuda_scratch_order gpu_cuda_scratch_order.cu
+        ../src/libasr/runtime/lfortran_gpu_cuda.cu)
+    set_target_properties(gpu_cuda_scratch_order PROPERTIES
+        CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON)
+    add_test(NAME gpu_cuda_scratch_order COMMAND gpu_cuda_scratch_order)
+    add_custom_target(gpu_cuda_scratch_order_alias DEPENDS gpu_cuda_scratch_order)
+    add_test(NAME gpu_cuda_scratch_order_alias
+        COMMAND gpu_cuda_scratch_order aliases)
+    set_tests_properties(gpu_cuda_scratch_order PROPERTIES LABELS cuda)
+    set_tests_properties(gpu_cuda_scratch_order_alias PROPERTIES
+        LABELS cuda TIMEOUT 30)
+endif()
 # gfortran evaluates a `do concurrent` limit twice, so gpu_metal_369 has no
 # gfortran label. The llvm backend and gfortran evaluate the limits of an
 # inner index again for every value of the outer one, so gpu_metal_370 is for

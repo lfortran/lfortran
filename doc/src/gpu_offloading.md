@@ -688,7 +688,13 @@ an `intent(in)` dummy -- and *written* otherwise.
 On the CPU emulation (`--gpu=cuda_cpu`) a launch runs the kernel on the
 host's memory before it returns, so there is never anything to copy or wait
 for. The CUDA runtime keeps the same table and orders copies and launches
-on one stream.
+on one stream. It keeps scratch and read-only upload buffers per kernel and
+argument slot, reusing their capacity and deferring replaced allocations until
+a synchronization. Preparing arguments can itself synchronize when the deferred
+queue or residency table fills. After such a synchronization, CUDA prepares all
+bindings again before dispatch: writable residents must still be present and
+dirty for the new launch, and reads must use their current bindings. This does
+not add a synchronization to each launch.
 
 The Metal runtime encodes the launches one after another into one compute
 encoder and commits its command buffer every 64 launches and at every wait:
@@ -870,6 +876,27 @@ with a `stop` before that.
   wrong values. Integration tests therefore check their results in the program,
   and third-party codes whose test suites check values (Formal, Fiats) are run
   with `--gpu=metal` in CI.
+
+The `test_gpu_cuda_api_state*` unit tests compile the production CUDA runtime
+against a small host CUDA API test double. They exercise deferred-queue saturation
+for scratch and read-only buffers, and residency-table eviction. Copies and
+launches are queued in order, and the tests check readback and allocation lifetime.
+These are API-state tests, not CUDA_CPU emulation, native GPU execution, or
+performance evidence:
+
+```bash
+pixi run -e llvm11 ctest -R '^test_gpu_cuda_api_state' -V > cuda-api-state.log 2>&1
+```
+
+The same scratch saturation sequence is registered as `gpu_cuda_scratch_order`
+in the native `cuda` integration backend. It needs NVCC and an NVIDIA device:
+64 kernel caches with 30 small scratch buffers reach the 4096-entry deferred
+queue boundary before dispatch 201, whose output and scratch readback must both
+be 201. Run it on native CUDA even when the host API-state tests pass:
+
+```bash
+pixi run -e llvm11 integration_tests -b cuda -t '^gpu_cuda_scratch_order$' -j6 > cuda-scratch-order.log 2>&1
+```
 
 ## Open questions
 
