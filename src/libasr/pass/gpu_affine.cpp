@@ -255,19 +255,40 @@ GpuDnf gpu_dnf_and(const GpuDnf &a, const GpuDnf &b) {
             r.push_back(c);
         }
     }
-    // Too many alternatives: forget them (no constraint is always sound).
-    if (r.size() > 64) return gpu_dnf_true();
+    // Too many alternatives: forget them (no constraint is sound for a
+    // fact, never for a goal; see GpuAffineBuilder::exact_condition).
+    if (r.size() > gpu_dnf_max_alternatives) return gpu_dnf_true();
     return r;
 }
 
 GpuDnf gpu_dnf_or(const GpuDnf &a, const GpuDnf &b) {
     GpuDnf r = a;
     r.insert(r.end(), b.begin(), b.end());
-    if (r.size() > 64) return gpu_dnf_true();
+    if (r.size() > gpu_dnf_max_alternatives) return gpu_dnf_true();
     return r;
 }
 
 bool GpuAffineBuilder::exact_condition(ASR::expr_t *cond) {
+    if (!exact_structure(cond)) return false;
+    // A normal form with too many alternatives is replaced by "true",
+    // which is no longer the condition.
+    truncated = false;
+    condition(cond, true);
+    condition(cond, false);
+    return !truncated;
+}
+
+GpuDnf GpuAffineBuilder::dnf_and(const GpuDnf &a, const GpuDnf &b) {
+    if (a.size() * b.size() > gpu_dnf_max_alternatives) truncated = true;
+    return gpu_dnf_and(a, b);
+}
+
+GpuDnf GpuAffineBuilder::dnf_or(const GpuDnf &a, const GpuDnf &b) {
+    if (a.size() + b.size() > gpu_dnf_max_alternatives) truncated = true;
+    return gpu_dnf_or(a, b);
+}
+
+bool GpuAffineBuilder::exact_structure(ASR::expr_t *cond) {
     if (ASR::is_a<ASR::LogicalConstant_t>(*cond)) return true;
     if (ASR::is_a<ASR::IntegerCompare_t>(*cond)) {
         ASR::IntegerCompare_t *c = ASR::down_cast<ASR::IntegerCompare_t>(cond);
@@ -275,13 +296,13 @@ bool GpuAffineBuilder::exact_condition(ASR::expr_t *cond) {
         return affine(c->m_left, l) && affine(c->m_right, r);
     }
     if (ASR::is_a<ASR::LogicalNot_t>(*cond)) {
-        return exact_condition(ASR::down_cast<ASR::LogicalNot_t>(cond)->m_arg);
+        return exact_structure(ASR::down_cast<ASR::LogicalNot_t>(cond)->m_arg);
     }
     if (ASR::is_a<ASR::LogicalBinOp_t>(*cond)) {
         ASR::LogicalBinOp_t *b = ASR::down_cast<ASR::LogicalBinOp_t>(cond);
         return (b->m_op == ASR::logicalbinopType::And
                 || b->m_op == ASR::logicalbinopType::Or)
-            && exact_condition(b->m_left) && exact_condition(b->m_right);
+            && exact_structure(b->m_left) && exact_structure(b->m_right);
     }
     return false;
 }
@@ -303,8 +324,8 @@ GpuDnf GpuAffineBuilder::condition(ASR::expr_t *cond, bool truth) {
         GpuDnf l = condition(b->m_left, truth);
         GpuDnf r = condition(b->m_right, truth);
         // a .and. b is true where both are; false where either is false.
-        if (is_and == truth) return gpu_dnf_and(l, r);
-        return gpu_dnf_or(l, r);
+        if (is_and == truth) return dnf_and(l, r);
+        return dnf_or(l, r);
     }
     if (!ASR::is_a<ASR::IntegerCompare_t>(*cond)) return gpu_dnf_true();
     ASR::IntegerCompare_t *c = ASR::down_cast<ASR::IntegerCompare_t>(cond);

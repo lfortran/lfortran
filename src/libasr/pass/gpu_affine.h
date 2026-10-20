@@ -3,6 +3,7 @@
 
 #include <libasr/asr.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <map>
@@ -95,14 +96,27 @@ public:
     // The affine form of an integer expression, or false.
     bool affine(ASR::expr_t *e, GpuAffine &out);
     // The constraints that hold where `cond` has the value `truth`. A
-    // condition that cannot be expressed gives "true" (no constraint).
+    // condition that cannot be expressed gives "true" (no constraint), as
+    // does one whose normal form has more than gpu_dnf_max_alternatives
+    // alternatives: usable as a fact, not as a goal.
     GpuDnf condition(ASR::expr_t *cond, bool truth);
-    // Whether `cond` can be expressed exactly (both its values).
+    // Whether `cond` can be expressed exactly (both its values, within
+    // gpu_dnf_max_alternatives alternatives), so that `condition` can be
+    // used as a goal to prove.
     bool exact_condition(ASR::expr_t *cond);
 
 private:
+    bool truncated = false;
     bool is_atom_expression(ASR::expr_t *e);
+    bool exact_structure(ASR::expr_t *cond);
+    // gpu_dnf_and and gpu_dnf_or that record a truncation in `truncated`.
+    GpuDnf dnf_and(const GpuDnf &a, const GpuDnf &b);
+    GpuDnf dnf_or(const GpuDnf &a, const GpuDnf &b);
 };
+
+// The most alternatives a normal form keeps; one with more is replaced by
+// "true".
+constexpr size_t gpu_dnf_max_alternatives = 64;
 
 GpuDnf gpu_dnf_and(const GpuDnf &a, const GpuDnf &b);
 GpuDnf gpu_dnf_or(const GpuDnf &a, const GpuDnf &b);
