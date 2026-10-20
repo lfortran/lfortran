@@ -2303,12 +2303,11 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         ASR::expr_t *tiles = kernel_local("__tiles");
         assign(remain_var, block_idx);
         assign(tiles, tiles_of(kernel_range(across), width_shift));
-        assign(loop_var(across), int_binop(int_binop(
+        assign(loop_var(across), int_binop(
             int_binop(int_mod(remain_var, tiles), ASR::binopType::BitLShift,
                 constant(width_shift)),
             ASR::binopType::Add, int_binop(thread_idx, ASR::binopType::BitAnd,
-                constant(device_caps.tile_width - 1))),
-            ASR::binopType::Add, kernel_starts[across]));
+                constant(device_caps.tile_width - 1))));
         assign(remain_var, int_binop(remain_var, ASR::binopType::Div, tiles));
         ASR::expr_t *row_tile = remain_var;
         if (n_dims > 2) {
@@ -2316,21 +2315,25 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
             assign(tiles, tiles_of(kernel_range(down), height_shift));
             row_tile = int_mod(remain_var, tiles);
         }
-        assign(loop_var(down), int_binop(int_binop(
+        assign(loop_var(down), int_binop(
             int_binop(row_tile, ASR::binopType::BitLShift,
                 constant(height_shift)),
             ASR::binopType::Add, int_binop(thread_idx,
-                ASR::binopType::BitRShift, constant(width_shift))),
-            ASR::binopType::Add, kernel_starts[down]));
+                ASR::binopType::BitRShift, constant(width_shift))));
         if (n_dims > 2) {
             assign(remain_var, int_binop(remain_var, ASR::binopType::Div,
                 tiles));
         }
-        // A partial tile at the end of either dimension.
+        // Reject padded ordinals before adding the lower bounds: a padded
+        // source index could overflow even when every valid index fits.
         for (size_t d : {across, down}) {
             return_if(ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
-                loop_var(d), ASR::cmpopType::Gt, kernel_ends[d],
+                loop_var(d), ASR::cmpopType::GtE, kernel_range(d),
                 ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr)));
+        }
+        for (size_t d : {across, down}) {
+            assign(loop_var(d), int_binop(loop_var(d), ASR::binopType::Add,
+                kernel_starts[d]));
         }
         Vec<ASR::stmt_t*> tiled_body = kernel_body;
         kernel_body = enclosing_body;

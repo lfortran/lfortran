@@ -726,5 +726,17 @@ TEST_CASE("GPU tiled launch tests run tiled nests") {
     check_launch_geometry(cuda_launch_geometry(
         read_project_file("integration_tests/gpu_metal_490.f90"),
         "gpu_metal_490.f90", "gpu_metal_490"), expected);
+    expected = {
+        {1, 64 * 64},           // high lower bound along the tile width
+        {1, 64 * 64},           // high lower bound along the tile height
+        {1, 64 * 32},           // negative lower bounds, partial tiles
+        {0, 33 * 31},           // high lower bound, flat fallback
+    };
+    for (const std::string kind : {"i4", "i8"}) {
+        std::string name = "gpu_tile_high_bounds_" + kind;
+        check_launch_geometry(cuda_launch_geometry(
+            read_project_file("integration_tests/" + name + ".f90"),
+            name + ".f90", name), expected);
+    }
 }
 #endif

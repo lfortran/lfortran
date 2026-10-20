@@ -49,8 +49,10 @@ whole tiles would pad the nest by more than a quarter, as a short dimension
 does, the host tells the kernel to number the iterations flat instead, and
 `thread_count` counts iterations. Padding to whole tiles can take
 `thread_count` past the kind of the loop indices, so it is an `integer(8)`.
-The kernel sends a thread whose place falls outside the nest back before its
-body as well. [GpuSync](GpuSync.md) is what waits; the `gpu_launch_sync`
+The kernel checks the zero-based tile coordinates against the extents before
+adding the loop lower bounds. A padded thread returns before constructing a
+source index that could overflow even when every valid index is representable.
+[GpuSync](GpuSync.md) is what waits; the `gpu_launch_sync`
 pass places it where the host next needs what a kernel wrote (see
 [GPU offloading](../../../gpu_offloading.md)).
 
