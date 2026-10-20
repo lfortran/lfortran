@@ -130,7 +130,53 @@ declares, but `:=` makes the intent explicit.
 ## Interactive Compiler
 
 LFortran supports an interactive mode; just run the `lfortran` command
-to start it.
+to start it. A native LLVM build launches a private kernel process and attaches
+the terminal to it. Compiler options (for example `--infer`, `--fast`, and
+`--no-color`) and the working directory are retained. No submitted source,
+socket, or connection file is written to the current directory.
+
+Use Enter to submit, Alt-Enter or Ctrl-N for another line, arrows/Home/End to
+edit, and Up/Down for local code history. Ctrl-D at an empty prompt detaches.
+Runtime `READ` requests input from the terminal that submitted the cell, in
+normal terminal line mode; Ctrl-D during `READ` means EOF, not a blank record.
+Input records do not enter code history. Other attached clients' submissions
+and output appear live without discarding the code being edited.
+
+To share a session, choose a **new** connection file in a private directory:
+
+```console
+$ mkdir -m 700 "$HOME/fortran-session"
+$ lfortran --connection-file "$HOME/fortran-session/native.json"
+```
+
+Attach another terminal to the same persistent Fortran state:
+
+```console
+$ lfortran --connect "$HOME/fortran-session/native.json"
+```
+
+This managed kernel survives the original terminal detaching while another
+client remains, and stops when its last client disconnects. For an explicitly
+managed, terminal-independent server, use:
+
+```console
+$ lfortran --serve --connection-file "$HOME/fortran-session/native.json"
+```
+
+An explicit server stays alive with zero clients until a protocol
+`shutdown_request` or process termination. Connection files are never
+overwritten. POSIX directories/files must be owned by the current user and
+private (0700/0600); Windows uses a user-only ACL and a local named pipe.
+Treat access to a session as permission to execute arbitrary code as you.
+There is no sandbox or state rollback.
+
+The native descriptor is **not** a standard Jupyter connection file. The
+existing `lfortran kernel -f FILE` interface still uses the optional Xeus
+kernel. Standard Jupyter transport and bridging are not provided by the native
+local binding; `--jupyter-connection-file` and `--bridge` currently report an
+actionable unavailable-adapter error. See [Native session protocol](native-session.md)
+for message schemas, input routing, lifecycle, client integration and limitations.
+Compilation of source files and compiler `--json` output are unchanged.
 
 ## Invoking LFortran
 

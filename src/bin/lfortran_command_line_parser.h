@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <cstdint>
 
 #include <libasr/utils.h>
 
@@ -59,6 +60,13 @@ namespace LCompilers::CommandLineInterface {
         std::string skip_pass;
         std::string arg_backend = "llvm";
         std::string arg_kernel_f;
+        bool session_serve = false;
+        bool session_managed = false;
+        intptr_t session_ready = -1;
+        std::string session_file;
+        std::string session_connect;
+        std::string session_jupyter;
+        std::string session_bridge;
         std::string linker{""};
         std::string linker_path{""};
         bool print_targets = false;

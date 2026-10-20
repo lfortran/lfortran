@@ -42,7 +42,7 @@ def check_keeps_files_in_cwd(lfortran):
     # The prompt must not write the submitted text to a file in the user's
     # directory, here one named `input` (#13189).
     sentinel = b"KEEP THIS FILE\n"
-    with tempfile.TemporaryDirectory() as cwd:
+    with tempfile.TemporaryDirectory(dir=".") as cwd:
         path = os.path.join(cwd, "input")
         with open(path, "wb") as f:
             f.write(sentinel)
@@ -75,13 +75,13 @@ def check_keeps_files_in_cwd(lfortran):
 class PtyRepl:
     """The prompt on a pseudo-terminal, typed at as by a user."""
 
-    def __init__(self, pty, termios, lfortran, cwd, timeout):
+    def __init__(self, pty, termios, lfortran, cwd, timeout, arguments=()):
         self.termios = termios
         self.pid, self.fd = pty.fork()
         if self.pid == 0:
             try:
                 os.chdir(cwd)
-                os.execv(lfortran, [lfortran, "--no-color"])
+                os.execv(lfortran, [lfortran, "--no-color", *arguments])
             finally:
                 os._exit(127)
         self.deadline = time.monotonic() + timeout
@@ -147,7 +147,7 @@ def check_read_from_terminal(lfortran):
     except ImportError:
         print("skipped: no pseudo-terminals")
         return
-    with tempfile.TemporaryDirectory() as cwd:
+    with tempfile.TemporaryDirectory(dir=".") as cwd:
         repl = PtyRepl(pty, termios, lfortran, cwd, timeout=60)
         code = None
         try:
@@ -161,6 +161,10 @@ def check_read_from_terminal(lfortran):
             repl.cell("print *, ios")
             repl.cell("read(*,*) n", b"7" + ENTER)
             repl.cell("print *, 3 * n")
+            # Up twice recalls READ, not the input record "7". Reading again
+            # must retain canonical terminal mode and avoid code-history input.
+            repl.cell("\x1b[A\x1b[A", b"8" + ENTER)
+            repl.cell("print *, 3 * n")
             code = repl.exit()
         finally:
             if code is None:
@@ -172,7 +176,7 @@ def check_read_from_terminal(lfortran):
         sys.exit("the prompt did not exit cleanly (code %d):\n%s"
             % (code, out))
     for expected in [r"^\s*43\r?$", r"^\s*\[hello world\]\r?$",
-            r"^\s*-1\r?$", r"^\s*21\r?$"]:
+            r"^\s*-1\r?$", r"^\s*21\r?$", r"^\s*24\r?$"]:
         if not re.search(expected, out, re.M):
             sys.exit("expected %r in the prompt output:\n%s"
                 % (expected, out))
@@ -202,7 +206,7 @@ def check_compiled_read_from_terminal(lfortran):
     except ImportError:
         print("skipped: no pseudo-terminals")
         return
-    with tempfile.TemporaryDirectory() as cwd:
+    with tempfile.TemporaryDirectory(dir=".") as cwd:
         with open(os.path.join(cwd, "read_terminal.f90"), "w") as f:
             f.write(READ_TERMINAL_SOURCE)
         exe = os.path.join(cwd, "read_terminal")

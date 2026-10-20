@@ -315,6 +315,14 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
                     --lfortran $<TARGET_FILE:lfortran>
             )
+            set_tests_properties(test_repl PROPERTIES TIMEOUT 180)
+        endif()
+        if (NOT EMSCRIPTEN AND NOT LFORTRAN_BUILD_TO_WASM)
+            add_test(NAME test_native_session
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_native_session.py
+                    --lfortran $<TARGET_FILE:lfortran>)
+            set_tests_properties(test_native_session PROPERTIES TIMEOUT 180)
         endif()
         if (WITH_XEUS)
             add_test(
