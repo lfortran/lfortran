@@ -27,7 +27,6 @@ kernel void __lfortran_gpu_kernel_0(
     uint __thread_id = __gpu_grid_thread / (uint)__gpu_lanes;
     int __gpu_lane = (int)(__gpu_grid_thread % (uint)__gpu_lanes);
     int __flat_idx;
-    const int count = 65;
     int i;
     if ((((0 * 0) + __thread_id) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;

@@ -11135,7 +11135,12 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(
                         llvm::Value* dest_member_ptr = dest_member;
                         // The member is finalized with `dest`, unless it is
                         // an unallocated allocatable component, which the
-                        // copy allocates.
+                        // copy allocates. An allocated `class` component is
+                        // an exception: the VTable allocate call below
+                        // replaces it with a new, zeroed object without
+                        // freeing or finalizing the old one, so the old
+                        // object leaks and the copy function finalizes the
+                        // new one instead (#15431).
                         llvm::Value* finalize_member = finalize_dest;
                         if (ASRUtils::is_allocatable(member_type)) {
                             dest_member = llvm_utils->CreateLoad2(mem_type, dest_member);

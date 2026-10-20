@@ -50,6 +50,21 @@ struct OwnedDirectory {
 
 } // namespace
 
+TEST_CASE("CUDA architecture selection configures only the native device compiler")
+{
+    CHECK(cuda_device_compiler_command("nvcc", false, "")
+        == "nvcc -arch=native");
+    CHECK(cuda_device_compiler_command("nvcc", false, "native")
+        == "nvcc -arch=native");
+    CHECK(cuda_device_compiler_command("nvcc", false, "sm_120")
+        == "nvcc -arch=sm_120");
+    CHECK(cuda_device_compiler_command("nvcc -ccbin=g++", false, "sm_90")
+        == "nvcc -ccbin=g++ -arch=sm_90");
+    CHECK(cuda_device_compiler_command("clang++", true, "") == "clang++");
+    CHECK(cuda_device_compiler_command("clang++", true, "native") == "clang++");
+    CHECK(cuda_device_compiler_command("clang++", true, "sm_120") == "clang++");
+}
+
 TEST_CASE("CUDA library resolution prefers shared libraries unless static is effective")
 {
     OwnedDirectory workdir(fs::path(cuda_link_helpers_fixture::plain_archive).parent_path(),

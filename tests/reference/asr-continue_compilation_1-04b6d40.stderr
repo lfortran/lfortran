@@ -4298,8 +4298,20 @@ semantic error: Variable 'cc1_external_name_fn' is not declared
 3452 |     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
      |              ^^^^^^^^^^^^^^^^^^^^ 'cc1_external_name_fn' is undeclared
 
-semantic error: Cannot call 'i' as a procedure; it is a variable. Use --implicit-interface to enable implicit procedure interfaces.
-    --> tests/errors/continue_compilation_1.f90:3458:5
+semantic error: reading into the real or imaginary part of a complex variable is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3464:20
      |
-3458 |     call i(a=1)  ! {Error} Cannot call 'i' as a procedure; it is a variable. Use --implicit-interface to enable implicit procedure interfaces.
+3464 |         read(s, *) z%re  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
+     |                    ^^^^ 
+
+semantic error: reading into the real or imaginary part of a complex variable is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3465:20
+     |
+3465 |         read(s, *) w(1:3:2)%im  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
+     |                    ^^^^^^^^^^^ 
+
+semantic error: Cannot call 'i' as a procedure; it is a variable. Use --implicit-interface to enable implicit procedure interfaces.
+    --> tests/errors/continue_compilation_1.f90:3472:5
+     |
+3472 |     call i(a=1)  ! {Error} Cannot call 'i' as a procedure; it is a variable. Use --implicit-interface to enable implicit procedure interfaces.
      |     ^^^^^^^^^^^ 

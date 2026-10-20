@@ -17,6 +17,18 @@
 #include <llvm/Support/Error.h>
 #endif
 
+std::string cuda_device_compiler_command(
+    const std::string &device_compiler,
+    bool emulate_cpu,
+    const std::string &gpu_arch)
+{
+    if (emulate_cpu) {
+        return device_compiler;
+    }
+    return device_compiler + " -arch="
+        + (gpu_arch.empty() ? "native" : gpu_arch);
+}
+
 namespace {
 
 bool append_cuda_sidecar(

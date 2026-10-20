@@ -1,0 +1,1283 @@
+{
+    "node": "TranslationUnit",
+    "fields": {
+        "items": [
+            {
+                "node": "Subroutine",
+                "fields": {
+                    "name": "s",
+                    "args": [
+                        {
+                            "node": "arg",
+                            "fields": {
+                                "arg": "n"
+                            },
+                            "loc": {
+                                "first": 12,
+                                "last": 12,
+                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "first_line": 3,
+                                "first_column": 20,
+                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "last_line": 3,
+                                "last_column": 20
+                            }
+                        },
+                        {
+                            "node": "arg",
+                            "fields": {
+                                "arg": "x"
+                            },
+                            "loc": {
+                                "first": 14,
+                                "last": 14,
+                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "first_line": 3,
+                                "first_column": 23,
+                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "last_line": 3,
+                                "last_column": 23
+                            }
+                        }
+                    ],
+                    "attributes": [],
+                    "bind": [],
+                    "trivia": [],
+                    "items": [
+                        {
+                            "node": "Declaration",
+                            "fields": {
+                                "vartype": {
+                                    "node": "AttrType",
+                                    "fields": {
+                                        "type": "TypeInteger",
+                                        "kind": [],
+                                        "attr": [],
+                                        "name": [],
+                                        "sym": "None"
+                                    },
+                                    "loc": {
+                                        "first": 17,
+                                        "last": 23,
+                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "first_line": 4,
+                                        "first_column": 7,
+                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "last_line": 4,
+                                        "last_column": 13
+                                    }
+                                },
+                                "attributes": [],
+                                "syms": [
+                                    {
+                                        "node": "var_sym",
+                                        "fields": {
+                                            "name": "n",
+                                            "dim": [],
+                                            "codim": [],
+                                            "length": [],
+                                            "initializer": [],
+                                            "sym": "None",
+                                            "spec": []
+                                        },
+                                        "loc": {
+                                            "first": 24,
+                                            "last": 24,
+                                            "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "first_line": 4,
+                                            "first_column": 15,
+                                            "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "last_line": 4,
+                                            "last_column": 15
+                                        }
+                                    },
+                                    {
+                                        "node": "var_sym",
+                                        "fields": {
+                                            "name": "i",
+                                            "dim": [],
+                                            "codim": [],
+                                            "length": [],
+                                            "initializer": [],
+                                            "sym": "None",
+                                            "spec": []
+                                        },
+                                        "loc": {
+                                            "first": 26,
+                                            "last": 26,
+                                            "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "first_line": 4,
+                                            "first_column": 18,
+                                            "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "last_line": 4,
+                                            "last_column": 18
+                                        }
+                                    },
+                                    {
+                                        "node": "var_sym",
+                                        "fields": {
+                                            "name": "j",
+                                            "dim": [],
+                                            "codim": [],
+                                            "length": [],
+                                            "initializer": [],
+                                            "sym": "None",
+                                            "spec": []
+                                        },
+                                        "loc": {
+                                            "first": 28,
+                                            "last": 28,
+                                            "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "first_line": 4,
+                                            "first_column": 21,
+                                            "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "last_line": 4,
+                                            "last_column": 21
+                                        }
+                                    }
+                                ],
+                                "trivia": []
+                            },
+                            "loc": {
+                                "first": 17,
+                                "last": 28,
+                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "first_line": 4,
+                                "first_column": 7,
+                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "last_line": 4,
+                                "last_column": 21
+                            }
+                        },
+                        {
+                            "node": "Declaration",
+                            "fields": {
+                                "vartype": {
+                                    "node": "AttrType",
+                                    "fields": {
+                                        "type": "TypeReal",
+                                        "kind": [],
+                                        "attr": [],
+                                        "name": [],
+                                        "sym": "None"
+                                    },
+                                    "loc": {
+                                        "first": 30,
+                                        "last": 33,
+                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "first_line": 5,
+                                        "first_column": 7,
+                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "last_line": 5,
+                                        "last_column": 10
+                                    }
+                                },
+                                "attributes": [],
+                                "syms": [
+                                    {
+                                        "node": "var_sym",
+                                        "fields": {
+                                            "name": "x",
+                                            "dim": [
+                                                {
+                                                    "node": "dimension",
+                                                    "fields": {
+                                                        "start": {
+                                                            "node": "Num",
+                                                            "fields": {
+                                                                "n": 1,
+                                                                "kind": []
+                                                            },
+                                                            "loc": {
+                                                                "first": 36,
+                                                                "last": 36,
+                                                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "first_line": 5,
+                                                                "first_column": 14,
+                                                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "last_line": 5,
+                                                                "last_column": 14
+                                                            }
+                                                        },
+                                                        "end": {
+                                                            "node": "Name",
+                                                            "fields": {
+                                                                "id": "n",
+                                                                "member": []
+                                                            },
+                                                            "loc": {
+                                                                "first": 36,
+                                                                "last": 36,
+                                                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "first_line": 5,
+                                                                "first_column": 14,
+                                                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "last_line": 5,
+                                                                "last_column": 14
+                                                            }
+                                                        },
+                                                        "end_star": "DimensionExpr"
+                                                    },
+                                                    "loc": {
+                                                        "first": 36,
+                                                        "last": 36,
+                                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                        "first_line": 5,
+                                                        "first_column": 14,
+                                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                        "last_line": 5,
+                                                        "last_column": 14
+                                                    }
+                                                }
+                                            ],
+                                            "codim": [],
+                                            "length": [],
+                                            "initializer": [],
+                                            "sym": "None",
+                                            "spec": []
+                                        },
+                                        "loc": {
+                                            "first": 34,
+                                            "last": 37,
+                                            "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "first_line": 5,
+                                            "first_column": 12,
+                                            "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "last_line": 5,
+                                            "last_column": 15
+                                        }
+                                    }
+                                ],
+                                "trivia": []
+                            },
+                            "loc": {
+                                "first": 30,
+                                "last": 37,
+                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "first_line": 5,
+                                "first_column": 7,
+                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "last_line": 5,
+                                "last_column": 15
+                            }
+                        },
+                        {
+                            "node": "DoLoop",
+                            "fields": {
+                                "label": 0,
+                                "stmt_name": [],
+                                "do_label": 10,
+                                "var": "i",
+                                "start": {
+                                    "node": "Num",
+                                    "fields": {
+                                        "n": 1,
+                                        "kind": []
+                                    },
+                                    "loc": {
+                                        "first": 45,
+                                        "last": 45,
+                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "first_line": 6,
+                                        "first_column": 17,
+                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "last_line": 6,
+                                        "last_column": 17
+                                    }
+                                },
+                                "end": {
+                                    "node": "Name",
+                                    "fields": {
+                                        "id": "n",
+                                        "member": []
+                                    },
+                                    "loc": {
+                                        "first": 47,
+                                        "last": 47,
+                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "first_line": 6,
+                                        "first_column": 20,
+                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "last_line": 6,
+                                        "last_column": 20
+                                    }
+                                },
+                                "increment": [],
+                                "body": [
+                                    {
+                                        "node": "Assignment",
+                                        "fields": {
+                                            "label": 0,
+                                            "target": {
+                                                "node": "FuncCallOrArray",
+                                                "fields": {
+                                                    "func": "x",
+                                                    "member": [],
+                                                    "args": [
+                                                        {
+                                                            "node": "fnarg",
+                                                            "fields": {
+                                                                "start": [],
+                                                                "end": {
+                                                                    "node": "Name",
+                                                                    "fields": {
+                                                                        "id": "i",
+                                                                        "member": []
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 51,
+                                                                        "last": 51,
+                                                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                        "first_line": 7,
+                                                                        "first_column": 11,
+                                                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                        "last_line": 7,
+                                                                        "last_column": 11
+                                                                    }
+                                                                },
+                                                                "step": [],
+                                                                "label": 0
+                                                            },
+                                                            "loc": {
+                                                                "first": 51,
+                                                                "last": 51,
+                                                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "first_line": 7,
+                                                                "first_column": 11,
+                                                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "last_line": 7,
+                                                                "last_column": 11
+                                                            }
+                                                        }
+                                                    ],
+                                                    "keywords": [],
+                                                    "subargs": [],
+                                                    "temp_args": []
+                                                },
+                                                "loc": {
+                                                    "first": 49,
+                                                    "last": 52,
+                                                    "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "first_line": 7,
+                                                    "first_column": 9,
+                                                    "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "last_line": 7,
+                                                    "last_column": 12
+                                                }
+                                            },
+                                            "value": {
+                                                "node": "Real",
+                                                "fields": {
+                                                    "n": "0.0"
+                                                },
+                                                "loc": {
+                                                    "first": 54,
+                                                    "last": 56,
+                                                    "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "first_line": 7,
+                                                    "first_column": 16,
+                                                    "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "last_line": 7,
+                                                    "last_column": 18
+                                                }
+                                            },
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 49,
+                                            "last": 56,
+                                            "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "first_line": 7,
+                                            "first_column": 9,
+                                            "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "last_line": 7,
+                                            "last_column": 18
+                                        }
+                                    }
+                                ],
+                                "t_inside": [],
+                                "trivia": []
+                            },
+                            "loc": {
+                                "first": 39,
+                                "last": 70,
+                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "first_line": 6,
+                                "first_column": 7,
+                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "last_line": 8,
+                                "last_column": 14
+                            }
+                        },
+                        {
+                            "node": "DoLoop",
+                            "fields": {
+                                "label": 0,
+                                "stmt_name": [],
+                                "do_label": 20,
+                                "var": "i",
+                                "start": {
+                                    "node": "Num",
+                                    "fields": {
+                                        "n": 1,
+                                        "kind": []
+                                    },
+                                    "loc": {
+                                        "first": 78,
+                                        "last": 78,
+                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "first_line": 9,
+                                        "first_column": 17,
+                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "last_line": 9,
+                                        "last_column": 17
+                                    }
+                                },
+                                "end": {
+                                    "node": "Name",
+                                    "fields": {
+                                        "id": "n",
+                                        "member": []
+                                    },
+                                    "loc": {
+                                        "first": 80,
+                                        "last": 80,
+                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "first_line": 9,
+                                        "first_column": 20,
+                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "last_line": 9,
+                                        "last_column": 20
+                                    }
+                                },
+                                "increment": [],
+                                "body": [
+                                    {
+                                        "node": "Assignment",
+                                        "fields": {
+                                            "label": 20,
+                                            "target": {
+                                                "node": "FuncCallOrArray",
+                                                "fields": {
+                                                    "func": "x",
+                                                    "member": [],
+                                                    "args": [
+                                                        {
+                                                            "node": "fnarg",
+                                                            "fields": {
+                                                                "start": [],
+                                                                "end": {
+                                                                    "node": "Name",
+                                                                    "fields": {
+                                                                        "id": "i",
+                                                                        "member": []
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 89,
+                                                                        "last": 89,
+                                                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                        "first_line": 10,
+                                                                        "first_column": 9,
+                                                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                        "last_line": 10,
+                                                                        "last_column": 9
+                                                                    }
+                                                                },
+                                                                "step": [],
+                                                                "label": 0
+                                                            },
+                                                            "loc": {
+                                                                "first": 89,
+                                                                "last": 89,
+                                                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "first_line": 10,
+                                                                "first_column": 9,
+                                                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "last_line": 10,
+                                                                "last_column": 9
+                                                            }
+                                                        }
+                                                    ],
+                                                    "keywords": [],
+                                                    "subargs": [],
+                                                    "temp_args": []
+                                                },
+                                                "loc": {
+                                                    "first": 87,
+                                                    "last": 90,
+                                                    "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "first_line": 10,
+                                                    "first_column": 7,
+                                                    "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "last_line": 10,
+                                                    "last_column": 10
+                                                }
+                                            },
+                                            "value": {
+                                                "node": "Real",
+                                                "fields": {
+                                                    "n": "1.0"
+                                                },
+                                                "loc": {
+                                                    "first": 92,
+                                                    "last": 94,
+                                                    "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "first_line": 10,
+                                                    "first_column": 14,
+                                                    "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "last_line": 10,
+                                                    "last_column": 16
+                                                }
+                                            },
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 87,
+                                            "last": 94,
+                                            "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "first_line": 10,
+                                            "first_column": 7,
+                                            "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "last_line": 10,
+                                            "last_column": 16
+                                        }
+                                    }
+                                ],
+                                "t_inside": [],
+                                "trivia": []
+                            },
+                            "loc": {
+                                "first": 72,
+                                "last": 94,
+                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "first_line": 9,
+                                "first_column": 7,
+                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "last_line": 10,
+                                "last_column": 16
+                            }
+                        },
+                        {
+                            "node": "DoLoop",
+                            "fields": {
+                                "label": 0,
+                                "stmt_name": [],
+                                "do_label": 30,
+                                "var": "i",
+                                "start": {
+                                    "node": "Num",
+                                    "fields": {
+                                        "n": 1,
+                                        "kind": []
+                                    },
+                                    "loc": {
+                                        "first": 102,
+                                        "last": 102,
+                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "first_line": 11,
+                                        "first_column": 17,
+                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "last_line": 11,
+                                        "last_column": 17
+                                    }
+                                },
+                                "end": {
+                                    "node": "Name",
+                                    "fields": {
+                                        "id": "n",
+                                        "member": []
+                                    },
+                                    "loc": {
+                                        "first": 104,
+                                        "last": 104,
+                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "first_line": 11,
+                                        "first_column": 20,
+                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "last_line": 11,
+                                        "last_column": 20
+                                    }
+                                },
+                                "increment": [],
+                                "body": [
+                                    {
+                                        "node": "DoLoop",
+                                        "fields": {
+                                            "label": 0,
+                                            "stmt_name": [],
+                                            "do_label": 30,
+                                            "var": "j",
+                                            "start": {
+                                                "node": "Num",
+                                                "fields": {
+                                                    "n": 1,
+                                                    "kind": []
+                                                },
+                                                "loc": {
+                                                    "first": 112,
+                                                    "last": 112,
+                                                    "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "first_line": 12,
+                                                    "first_column": 17,
+                                                    "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "last_line": 12,
+                                                    "last_column": 17
+                                                }
+                                            },
+                                            "end": {
+                                                "node": "Num",
+                                                "fields": {
+                                                    "n": 2,
+                                                    "kind": []
+                                                },
+                                                "loc": {
+                                                    "first": 114,
+                                                    "last": 114,
+                                                    "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "first_line": 12,
+                                                    "first_column": 20,
+                                                    "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "last_line": 12,
+                                                    "last_column": 20
+                                                }
+                                            },
+                                            "increment": [],
+                                            "body": [
+                                                {
+                                                    "node": "Assignment",
+                                                    "fields": {
+                                                        "label": 0,
+                                                        "target": {
+                                                            "node": "FuncCallOrArray",
+                                                            "fields": {
+                                                                "func": "x",
+                                                                "member": [],
+                                                                "args": [
+                                                                    {
+                                                                        "node": "fnarg",
+                                                                        "fields": {
+                                                                            "start": [],
+                                                                            "end": {
+                                                                                "node": "Name",
+                                                                                "fields": {
+                                                                                    "id": "i",
+                                                                                    "member": []
+                                                                                },
+                                                                                "loc": {
+                                                                                    "first": 118,
+                                                                                    "last": 118,
+                                                                                    "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                                    "first_line": 13,
+                                                                                    "first_column": 11,
+                                                                                    "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                                    "last_line": 13,
+                                                                                    "last_column": 11
+                                                                                }
+                                                                            },
+                                                                            "step": [],
+                                                                            "label": 0
+                                                                        },
+                                                                        "loc": {
+                                                                            "first": 118,
+                                                                            "last": 118,
+                                                                            "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                            "first_line": 13,
+                                                                            "first_column": 11,
+                                                                            "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                            "last_line": 13,
+                                                                            "last_column": 11
+                                                                        }
+                                                                    }
+                                                                ],
+                                                                "keywords": [],
+                                                                "subargs": [],
+                                                                "temp_args": []
+                                                            },
+                                                            "loc": {
+                                                                "first": 116,
+                                                                "last": 119,
+                                                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "first_line": 13,
+                                                                "first_column": 9,
+                                                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "last_line": 13,
+                                                                "last_column": 12
+                                                            }
+                                                        },
+                                                        "value": {
+                                                            "node": "BinOp",
+                                                            "fields": {
+                                                                "left": {
+                                                                    "node": "FuncCallOrArray",
+                                                                    "fields": {
+                                                                        "func": "x",
+                                                                        "member": [],
+                                                                        "args": [
+                                                                            {
+                                                                                "node": "fnarg",
+                                                                                "fields": {
+                                                                                    "start": [],
+                                                                                    "end": {
+                                                                                        "node": "Name",
+                                                                                        "fields": {
+                                                                                            "id": "i",
+                                                                                            "member": []
+                                                                                        },
+                                                                                        "loc": {
+                                                                                            "first": 123,
+                                                                                            "last": 123,
+                                                                                            "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                                            "first_line": 13,
+                                                                                            "first_column": 18,
+                                                                                            "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                                            "last_line": 13,
+                                                                                            "last_column": 18
+                                                                                        }
+                                                                                    },
+                                                                                    "step": [],
+                                                                                    "label": 0
+                                                                                },
+                                                                                "loc": {
+                                                                                    "first": 123,
+                                                                                    "last": 123,
+                                                                                    "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                                    "first_line": 13,
+                                                                                    "first_column": 18,
+                                                                                    "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                                    "last_line": 13,
+                                                                                    "last_column": 18
+                                                                                }
+                                                                            }
+                                                                        ],
+                                                                        "keywords": [],
+                                                                        "subargs": [],
+                                                                        "temp_args": []
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 121,
+                                                                        "last": 124,
+                                                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                        "first_line": 13,
+                                                                        "first_column": 16,
+                                                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                        "last_line": 13,
+                                                                        "last_column": 19
+                                                                    }
+                                                                },
+                                                                "op": "Add",
+                                                                "right": {
+                                                                    "node": "Real",
+                                                                    "fields": {
+                                                                        "n": "2.0"
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 126,
+                                                                        "last": 128,
+                                                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                        "first_line": 13,
+                                                                        "first_column": 23,
+                                                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                        "last_line": 13,
+                                                                        "last_column": 25
+                                                                    }
+                                                                }
+                                                            },
+                                                            "loc": {
+                                                                "first": 121,
+                                                                "last": 128,
+                                                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "first_line": 13,
+                                                                "first_column": 16,
+                                                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "last_line": 13,
+                                                                "last_column": 25
+                                                            }
+                                                        },
+                                                        "trivia": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 116,
+                                                        "last": 128,
+                                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                        "first_line": 13,
+                                                        "first_column": 9,
+                                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                        "last_line": 13,
+                                                        "last_column": 25
+                                                    }
+                                                }
+                                            ],
+                                            "t_inside": [],
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 106,
+                                            "last": 142,
+                                            "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "first_line": 12,
+                                            "first_column": 7,
+                                            "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "last_line": 14,
+                                            "last_column": 14
+                                        }
+                                    }
+                                ],
+                                "t_inside": [],
+                                "trivia": []
+                            },
+                            "loc": {
+                                "first": 96,
+                                "last": 142,
+                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "first_line": 11,
+                                "first_column": 7,
+                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "last_line": 14,
+                                "last_column": 14
+                            }
+                        },
+                        {
+                            "node": "DoLoop",
+                            "fields": {
+                                "label": 0,
+                                "stmt_name": [],
+                                "do_label": 40,
+                                "var": "i",
+                                "start": {
+                                    "node": "Num",
+                                    "fields": {
+                                        "n": 1,
+                                        "kind": []
+                                    },
+                                    "loc": {
+                                        "first": 150,
+                                        "last": 150,
+                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "first_line": 15,
+                                        "first_column": 17,
+                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "last_line": 15,
+                                        "last_column": 17
+                                    }
+                                },
+                                "end": {
+                                    "node": "Name",
+                                    "fields": {
+                                        "id": "n",
+                                        "member": []
+                                    },
+                                    "loc": {
+                                        "first": 152,
+                                        "last": 152,
+                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "first_line": 15,
+                                        "first_column": 20,
+                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "last_line": 15,
+                                        "last_column": 20
+                                    }
+                                },
+                                "increment": [],
+                                "body": [
+                                    {
+                                        "node": "Assignment",
+                                        "fields": {
+                                            "label": 0,
+                                            "target": {
+                                                "node": "FuncCallOrArray",
+                                                "fields": {
+                                                    "func": "x",
+                                                    "member": [],
+                                                    "args": [
+                                                        {
+                                                            "node": "fnarg",
+                                                            "fields": {
+                                                                "start": [],
+                                                                "end": {
+                                                                    "node": "Name",
+                                                                    "fields": {
+                                                                        "id": "i",
+                                                                        "member": []
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 156,
+                                                                        "last": 156,
+                                                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                        "first_line": 16,
+                                                                        "first_column": 11,
+                                                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                        "last_line": 16,
+                                                                        "last_column": 11
+                                                                    }
+                                                                },
+                                                                "step": [],
+                                                                "label": 0
+                                                            },
+                                                            "loc": {
+                                                                "first": 156,
+                                                                "last": 156,
+                                                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "first_line": 16,
+                                                                "first_column": 11,
+                                                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "last_line": 16,
+                                                                "last_column": 11
+                                                            }
+                                                        }
+                                                    ],
+                                                    "keywords": [],
+                                                    "subargs": [],
+                                                    "temp_args": []
+                                                },
+                                                "loc": {
+                                                    "first": 154,
+                                                    "last": 157,
+                                                    "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "first_line": 16,
+                                                    "first_column": 9,
+                                                    "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "last_line": 16,
+                                                    "last_column": 12
+                                                }
+                                            },
+                                            "value": {
+                                                "node": "Real",
+                                                "fields": {
+                                                    "n": "3.0"
+                                                },
+                                                "loc": {
+                                                    "first": 159,
+                                                    "last": 161,
+                                                    "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "first_line": 16,
+                                                    "first_column": 16,
+                                                    "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "last_line": 16,
+                                                    "last_column": 18
+                                                }
+                                            },
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 154,
+                                            "last": 161,
+                                            "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "first_line": 16,
+                                            "first_column": 9,
+                                            "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "last_line": 16,
+                                            "last_column": 18
+                                        }
+                                    }
+                                ],
+                                "t_inside": [],
+                                "trivia": []
+                            },
+                            "loc": {
+                                "first": 144,
+                                "last": 172,
+                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "first_line": 15,
+                                "first_column": 7,
+                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "last_line": 17,
+                                "last_column": 12
+                            }
+                        },
+                        {
+                            "node": "DoLoop",
+                            "fields": {
+                                "label": 0,
+                                "stmt_name": [],
+                                "do_label": 50,
+                                "var": "i",
+                                "start": {
+                                    "node": "Num",
+                                    "fields": {
+                                        "n": 1,
+                                        "kind": []
+                                    },
+                                    "loc": {
+                                        "first": 180,
+                                        "last": 180,
+                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "first_line": 18,
+                                        "first_column": 17,
+                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "last_line": 18,
+                                        "last_column": 17
+                                    }
+                                },
+                                "end": {
+                                    "node": "Name",
+                                    "fields": {
+                                        "id": "n",
+                                        "member": []
+                                    },
+                                    "loc": {
+                                        "first": 182,
+                                        "last": 182,
+                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "first_line": 18,
+                                        "first_column": 20,
+                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "last_line": 18,
+                                        "last_column": 20
+                                    }
+                                },
+                                "increment": [],
+                                "body": [
+                                    {
+                                        "node": "Assignment",
+                                        "fields": {
+                                            "label": 50,
+                                            "target": {
+                                                "node": "FuncCallOrArray",
+                                                "fields": {
+                                                    "func": "x",
+                                                    "member": [],
+                                                    "args": [
+                                                        {
+                                                            "node": "fnarg",
+                                                            "fields": {
+                                                                "start": [],
+                                                                "end": {
+                                                                    "node": "Name",
+                                                                    "fields": {
+                                                                        "id": "i",
+                                                                        "member": []
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 191,
+                                                                        "last": 191,
+                                                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                        "first_line": 19,
+                                                                        "first_column": 9,
+                                                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                        "last_line": 19,
+                                                                        "last_column": 9
+                                                                    }
+                                                                },
+                                                                "step": [],
+                                                                "label": 0
+                                                            },
+                                                            "loc": {
+                                                                "first": 191,
+                                                                "last": 191,
+                                                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "first_line": 19,
+                                                                "first_column": 9,
+                                                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "last_line": 19,
+                                                                "last_column": 9
+                                                            }
+                                                        }
+                                                    ],
+                                                    "keywords": [],
+                                                    "subargs": [],
+                                                    "temp_args": []
+                                                },
+                                                "loc": {
+                                                    "first": 189,
+                                                    "last": 192,
+                                                    "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "first_line": 19,
+                                                    "first_column": 7,
+                                                    "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "last_line": 19,
+                                                    "last_column": 10
+                                                }
+                                            },
+                                            "value": {
+                                                "node": "Real",
+                                                "fields": {
+                                                    "n": "4.0"
+                                                },
+                                                "loc": {
+                                                    "first": 194,
+                                                    "last": 196,
+                                                    "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "first_line": 19,
+                                                    "first_column": 14,
+                                                    "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "last_line": 19,
+                                                    "last_column": 16
+                                                }
+                                            },
+                                            "trivia": {
+                                                "node": "TriviaNode",
+                                                "fields": {
+                                                    "inside": [],
+                                                    "after": [
+                                                        {
+                                                            "node": "Semicolon",
+                                                            "fields": {},
+                                                            "loc": {
+                                                                "first": 197,
+                                                                "last": 197,
+                                                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "first_line": 19,
+                                                                "first_column": 17,
+                                                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                                "last_line": 19,
+                                                                "last_column": 17
+                                                            }
+                                                        }
+                                                    ]
+                                                },
+                                                "loc": {
+                                                    "first": 184,
+                                                    "last": 197,
+                                                    "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "first_line": 19,
+                                                    "first_column": 1,
+                                                    "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "last_line": 19,
+                                                    "last_column": 17
+                                                }
+                                            }
+                                        },
+                                        "loc": {
+                                            "first": 189,
+                                            "last": 196,
+                                            "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "first_line": 19,
+                                            "first_column": 7,
+                                            "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                            "last_line": 19,
+                                            "last_column": 16
+                                        }
+                                    }
+                                ],
+                                "t_inside": [],
+                                "trivia": []
+                            },
+                            "loc": {
+                                "first": 174,
+                                "last": 196,
+                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "first_line": 18,
+                                "first_column": 7,
+                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "last_line": 19,
+                                "last_column": 16
+                            }
+                        },
+                        {
+                            "node": "Assignment",
+                            "fields": {
+                                "label": 0,
+                                "target": {
+                                    "node": "FuncCallOrArray",
+                                    "fields": {
+                                        "func": "x",
+                                        "member": [],
+                                        "args": [
+                                            {
+                                                "node": "fnarg",
+                                                "fields": {
+                                                    "start": [],
+                                                    "end": {
+                                                        "node": "Num",
+                                                        "fields": {
+                                                            "n": 1,
+                                                            "kind": []
+                                                        },
+                                                        "loc": {
+                                                            "first": 200,
+                                                            "last": 200,
+                                                            "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                            "first_line": 19,
+                                                            "first_column": 21,
+                                                            "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                            "last_line": 19,
+                                                            "last_column": 21
+                                                        }
+                                                    },
+                                                    "step": [],
+                                                    "label": 0
+                                                },
+                                                "loc": {
+                                                    "first": 200,
+                                                    "last": 200,
+                                                    "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "first_line": 19,
+                                                    "first_column": 21,
+                                                    "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                                    "last_line": 19,
+                                                    "last_column": 21
+                                                }
+                                            }
+                                        ],
+                                        "keywords": [],
+                                        "subargs": [],
+                                        "temp_args": []
+                                    },
+                                    "loc": {
+                                        "first": 198,
+                                        "last": 201,
+                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "first_line": 19,
+                                        "first_column": 19,
+                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "last_line": 19,
+                                        "last_column": 22
+                                    }
+                                },
+                                "value": {
+                                    "node": "Real",
+                                    "fields": {
+                                        "n": "5.0"
+                                    },
+                                    "loc": {
+                                        "first": 203,
+                                        "last": 205,
+                                        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "first_line": 19,
+                                        "first_column": 26,
+                                        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                        "last_line": 19,
+                                        "last_column": 28
+                                    }
+                                },
+                                "trivia": []
+                            },
+                            "loc": {
+                                "first": 198,
+                                "last": 205,
+                                "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "first_line": 19,
+                                "first_column": 19,
+                                "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                                "last_line": 19,
+                                "last_column": 28
+                            }
+                        }
+                    ],
+                    "contains": [],
+                    "temp_args": []
+                },
+                "loc": {
+                    "first": 0,
+                    "last": 219,
+                    "first_filename": "tests/json_loc_fixed_form_do_label.f",
+                    "first_line": 3,
+                    "first_column": 7,
+                    "last_filename": "tests/json_loc_fixed_form_do_label.f",
+                    "last_line": 20,
+                    "last_column": 20
+                }
+            }
+        ]
+    },
+    "loc": {
+        "first": 0,
+        "last": 219,
+        "first_filename": "tests/json_loc_fixed_form_do_label.f",
+        "first_line": 3,
+        "first_column": 7,
+        "last_filename": "tests/json_loc_fixed_form_do_label.f",
+        "last_line": 20,
+        "last_column": 20
+    }
+}

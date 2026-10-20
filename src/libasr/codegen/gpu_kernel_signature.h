@@ -82,18 +82,24 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
     }
     src << ")\n{\n";
     indent_level++;
+    // The declarations ahead of the body are collected rather than written,
+    // so that the kernel writes only those its body refers to.
+    kernel_declarations.clear();
     for (size_t i = 0; i < layout.n_scalars; i++) {
         const auto &arg = layout.m_scalars[i];
         if (arg.m_kind == ASR::gpu_argument_kindType::GpuPackedOffset) continue;
         std::string parameter = gpu_argument_name(arg, layout);
-        src << get_indent() << gpu_type(arg.m_type) << " " << parameter
-            << " = __scalar_args." << parameter << ";\n";
+        kernel_declarations.push_back({{parameter}, get_indent()
+            + gpu_type(arg.m_type) + " " + parameter
+            + " = __scalar_args." + parameter + ";\n"});
     }
     // Each iteration runs on `lanes` consecutive threads: the thread index
     // the body sees is the iteration's, and the lane tells them apart.
     if (layout.m_lanes) {
-        dialect.emit_lane_prologue(src, get_indent(),
+        std::stringstream prologue;
+        dialect.emit_lane_prologue(prologue, get_indent(),
             ASRUtils::symbol_name(layout.m_lanes));
+        kernel_declarations.push_back({{}, prologue.str()});
     }
     if (layout.m_packed) {
         for (size_t i = 0; i < layout.n_buffers; i++) {
@@ -101,11 +107,12 @@ void ASRToGpuCVisitor<D>::emit_kernel_signature(const ASR::Function_t &kernel) {
             std::string type = element_type(arg);
             std::string parameter = gpu_argument_name(arg, layout);
             bool reference = is_reference(arg);
-            src << get_indent() << global_prefix() << type
-                << (reference ? "& " : "* ") << parameter << " = "
-                << (reference ? "*" : "") << "(" << global_prefix()
-                << type << "*)(__packed_arrays + __scalar_args.__offset_"
-                << parameter << ");\n";
+            kernel_declarations.push_back({{parameter}, get_indent()
+                + global_prefix() + type + (reference ? "& " : "* ")
+                + parameter + " = " + (reference ? "*" : "") + "("
+                + global_prefix() + type
+                + "*)(__packed_arrays + __scalar_args.__offset_"
+                + parameter + ");\n"});
         }
     }
 }
