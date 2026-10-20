@@ -1099,7 +1099,11 @@ public:
                         break;
                     }
                 }
-                if (!gpu_expr_duplicable(l->m_head.m_end)) break;
+                if (!gpu_expr_duplicable(l->m_head.m_end)
+                        || (l->m_head.m_start
+                            && !gpu_expr_duplicable(l->m_head.m_start))) {
+                    break;
+                }
                 if (has_early_exit(list, list_n)) break;
                 // Nothing else in the loop's body touches the intermediate
                 // arrays, the variables the producer's bounds and tests
@@ -1144,6 +1148,21 @@ public:
                     if (end_syms.count(s) || s == lv) touched = true;
                     if (bound_syms.count(s) && p.position(s) < 0) {
                         touched = true;
+                    }
+                }
+                // The DO loops nested in it run the same iterations in
+                // each of its iterations, so that its last iteration runs
+                // theirs: their bounds read neither its variable nor
+                // anything assigned in it. Otherwise an inner loop may run
+                // no iteration at all in the last one.
+                for (ASR::DoLoop_t *inner : loops) {
+                    std::set<ASR::symbol_t*> head_syms;
+                    gpu_collect_symbols(inner->m_head.m_end, head_syms);
+                    if (inner->m_head.m_start) {
+                        gpu_collect_symbols(inner->m_head.m_start, head_syms);
+                    }
+                    for (ASR::symbol_t *s : head_syms) {
+                        if (s == lv || sc_all.count(s)) touched = true;
                     }
                 }
                 if (touched) break;
