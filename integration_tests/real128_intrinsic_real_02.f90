@@ -23,13 +23,18 @@ program real128_intrinsic_real_02
     print *, d
     if (d /= -4) error stop 2
 
-    ! The largest real(128) below huge(1._real64) * (1 + 2**-53) rounds to
-    ! huge(1._real64); huge(1._real64) * (1 + 2**-53) itself overflows.
+    ! huge(1._real64) * (1 + 2**-54) rounds down to huge(1._real64); the
+    ! halfway value huge(1._real64) * (1 + 2**-53) rounds to even, which
+    ! overflows to +Infinity.
     x = real(huge(d), real128) + zero
     x = x + scale(x, -54)
     d = real(x, real64)
     print *, d
     if (d /= huge(d)) error stop 3
+    x = real(huge(d), real128) + zero
+    x = x + scale(x, -53)
+    d = real(x, real64)
+    if (transfer(d, 0_int64) /= 9218868437227405312_int64) error stop 6
 
     ! A value below 1.5 must not become 1.5.
     x = 1.5_real128 - scale(1 + zero, -60)

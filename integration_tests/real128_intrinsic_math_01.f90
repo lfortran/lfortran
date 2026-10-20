@@ -108,10 +108,11 @@ contains
         end if
     end subroutine
 
+    ! Within 4 epsilon: the results are within 3 ulp of the exact values.
     subroutine check(x, ref, code)
         real(qp), intent(in) :: x, ref
         integer, intent(in) :: code
-        if (abs(x - ref) > 1e-32_qp * abs(ref)) then
+        if (abs(x - ref) > 4 * epsilon(ref) * abs(ref)) then
             print *, code, x, ref
             error stop code
         end if
