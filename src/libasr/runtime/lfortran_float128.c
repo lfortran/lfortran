@@ -490,29 +490,73 @@ lf_float128 lf_f128_abs(lf_float128 a) {
  * F. Addition / Subtraction
  * ======================================================================== */
 
-/* Add two values with the same sign. pa.exp >= pb.exp guaranteed. */
-static lf_float128 f128_add_same_sign(f128_parts pa, f128_parts pb) {
-    /* Align significands */
-    int shift = pa.exp - pb.exp;
-    u128 mb = (shift < 128) ? u128_shr(pb.mant, shift) : u128_zero();
-    u128 sum = u128_add(pa.mant, mb);
-    int32_t exp = pa.exp;
+/* Number of extra low bits (guard, round, sticky) carried by the
+ * significands while adding, so that the sum can be rounded correctly. */
+enum { F128_ADD_GRS = 3 };
 
-    /* Check carry out of bit 113 */
-    if (!u128_is_zero(u128_shr(sum, 113))) {
-        sum = u128_shr(sum, 1);
+/* Round and pack the result of an addition. `m` is the significand with
+ * F128_ADD_GRS extra low bits, the lowest of which is sticky; its value is
+ * m * 2^(exp - 112 - F128_ADD_GRS). exp >= -16382 and m < 2^117. */
+static lf_float128 f128_round_pack_grs(int sign, int32_t exp, u128 m) {
+    const int top = 112 + F128_ADD_GRS;
+    /* A carry out of the top bit: shift right by one, keeping the sticky. */
+    if (u128_bit(m, top + 1)) {
+        uint64_t sticky = u128_lo(m) & 1;
+        m = u128_shr1(m);
+        m.lo |= sticky;
         exp++;
     }
-    return f128_pack_parts(pa.sign, exp, sum);
+    /* After a cancellation, shift left up to the smallest normal exponent.
+     * This happens only when no bits were lost while aligning. */
+    int lsh = u128_clz(m) - (127 - top);
+    if (lsh > exp + 16382) lsh = exp + 16382;
+    if (lsh > 0) {
+        m = u128_shl(m, lsh);
+        exp -= lsh;
+    }
+    /* Round to nearest, ties to even. */
+    uint64_t rest = u128_lo(m) & ((1u << F128_ADD_GRS) - 1);
+    uint64_t half = (uint64_t)1 << (F128_ADD_GRS - 1);
+    u128 q = u128_shr(m, F128_ADD_GRS);
+    if (rest > half || (rest == half && (u128_lo(q) & 1))) {
+        q = u128_inc(q);
+        if (u128_bit(q, 113)) {
+            q = u128_shr1(q);
+            exp++;
+        }
+    }
+    if (exp > 16383) return f128_make_inf(sign);
+    if (!u128_bit(q, 112)) {
+        /* Subnormal (exp is -16382 here) or zero. */
+        return f128_const(sign, 0, u128_hi(q), u128_lo(q));
+    }
+    return f128_const(sign, exp + 16383, u128_hi(q), u128_lo(q));
 }
 
-/* Subtract smaller from larger (same sign but different magnitudes).
- * |pa| > |pb|, result sign = result_sign. */
-static lf_float128 f128_sub_mag(f128_parts pa, f128_parts pb, int result_sign) {
+/* Add the magnitudes of pa and pb (subtract them if `subtract`), with
+ * |pa| >= |pb|, giving the correctly rounded result with sign `sign`. */
+static lf_float128 f128_add_mag(f128_parts pa, f128_parts pb, int subtract,
+                                int sign) {
     int shift = pa.exp - pb.exp;
-    u128 mb = (shift < 128) ? u128_shr(pb.mant, shift) : u128_zero();
-    u128 diff = u128_sub(pa.mant, mb);
-    return f128_pack_parts(result_sign, pa.exp, diff);
+    u128 ma = u128_shl(pa.mant, F128_ADD_GRS);
+    u128 mb = u128_shl(pb.mant, F128_ADD_GRS);
+    if (shift > 0) {
+        /* Align, collecting the bits shifted out in the sticky bit. */
+        int sticky;
+        if (shift >= 128) {
+            sticky = !u128_is_zero(mb);
+            mb = u128_zero();
+        } else {
+            u128 lost = u128_and(mb, u128_sub(u128_shl(u128_one(), shift),
+                                              u128_one()));
+            sticky = !u128_is_zero(lost);
+            mb = u128_shr(mb, shift);
+        }
+        if (sticky) mb.lo |= 1;
+    }
+    u128 m = subtract ? u128_sub(ma, mb) : u128_add(ma, mb);
+    if (u128_is_zero(m)) return f128_make_zero(0);
+    return f128_round_pack_grs(sign, pa.exp, m);
 }
 
 lf_float128 __addtf3_lf_impl(lf_float128 a, lf_float128 b) {
@@ -530,21 +574,12 @@ lf_float128 __addtf3_lf_impl(lf_float128 a, lf_float128 b) {
     if (pa.is_zero) return b;
     if (pb.is_zero) return a;
 
-    /* Sort so pa has the larger (or equal) magnitude */
-    int swapped = 0;
+    /* Sort so pa has the larger (or equal) magnitude; the result takes its
+     * sign. */
     if (pa.exp < pb.exp || (pa.exp == pb.exp && u128_lt(pa.mant, pb.mant))) {
         f128_parts tmp = pa; pa = pb; pb = tmp;
-        swapped = 1;
     }
-
-    if (pa.sign == pb.sign) {
-        return f128_add_same_sign(pa, pb);
-    } else {
-        /* Subtraction: pa.mant >= pb.mant (by sort above) */
-        if (u128_eq(pa.mant, pb.mant) && pa.exp == pb.exp) return f128_make_zero(0);
-        int rsign = swapped ? pb.sign : pa.sign;
-        return f128_sub_mag(pa, pb, rsign);
-    }
+    return f128_add_mag(pa, pb, pa.sign != pb.sign, pa.sign);
 }
 
 lf_float128 __subtf3_lf_impl(lf_float128 a, lf_float128 b) {
