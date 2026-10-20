@@ -572,13 +572,16 @@ ASR::expr_t* gpu_bind_kernel_expression(Allocator &al,
     return binder.valid ? result : nullptr;
 }
 
-GpuKernelPrelude gpu_kernel_prelude(Allocator &al,
-        const ASR::Function_t &kernel) {
-    GpuKernelPrelude prelude;
-    std::map<ASR::symbol_t*, ASR::expr_t*> values;
+// Follows the statements of a kernel's prelude from `body` on, adding to
+// `values` and `exits` (see GpuKernelPrelude), and returns how many it
+// followed: it stops at the first statement that is not part of one.
+static size_t gpu_follow_prelude(Allocator &al, const ASR::Function_t &kernel,
+        ASR::stmt_t **body, size_t n_body,
+        std::map<ASR::symbol_t*, ASR::expr_t*> &values,
+        std::vector<ASR::expr_t*> &exits) {
     size_t n = 0;
-    for (; n < kernel.n_body; n++) {
-        ASR::stmt_t *stmt = kernel.m_body[n];
+    for (; n < n_body; n++) {
+        ASR::stmt_t *stmt = body[n];
         // Where a component of a derived-type local is stored says nothing
         // about the iteration (see gpu_device_struct_storage.h).
         ASR::StructInstanceMember_t *component = nullptr;
@@ -586,14 +589,62 @@ GpuKernelPrelude gpu_kernel_prelude(Allocator &al,
         if (gpu_struct_component_storage(stmt, component, storage)) continue;
         if (ASR::is_a<ASR::If_t>(*stmt)) {
             ASR::If_t *test = ASR::down_cast<ASR::If_t>(stmt);
-            if (test->n_body != 1 || test->n_orelse != 0 ||
-                    !ASR::is_a<ASR::Return_t>(*test->m_body[0])) {
+            GpuThreadExpressionWriter writer(al, kernel, values, false);
+            ASR::expr_t *condition = writer.write(test->m_test);
+            if (condition == nullptr) break;
+            if (test->n_body == 1 && test->n_orelse == 0 &&
+                    ASR::is_a<ASR::Return_t>(*test->m_body[0])) {
+                exits.push_back(condition);
+                continue;
+            }
+            // A choice the launch makes for every thread alike, such as
+            // the numbering of a tiled launch (gpu_offload.cpp): each
+            // branch has to be a prelude of its own. A scalar then has the
+            // value of the branch taken, and a branch's exit applies when
+            // that branch is taken.
+            std::map<ASR::symbol_t*, ASR::expr_t*> then_values = values,
+                else_values = values;
+            std::vector<ASR::expr_t*> then_exits, else_exits;
+            if (gpu_follow_prelude(al, kernel, test->m_body, test->n_body,
+                        then_values, then_exits) != test->n_body
+                    || gpu_follow_prelude(al, kernel, test->m_orelse,
+                        test->n_orelse, else_values, else_exits)
+                        != test->n_orelse) {
                 break;
             }
-            GpuThreadExpressionWriter writer(al, kernel, values, false);
-            ASR::expr_t *exit = writer.write(test->m_test);
-            if (exit == nullptr) break;
-            prelude.exits.push_back(exit);
+            const Location &loc = stmt->base.loc;
+            ASR::ttype_t *logical_type = ASRUtils::TYPE(
+                ASR::make_Logical_t(al, loc, 4));
+            ASR::expr_t *otherwise = ASRUtils::EXPR(ASR::make_LogicalNot_t(
+                al, loc, condition, logical_type, nullptr));
+            for (ASR::expr_t *exit : then_exits) {
+                exits.push_back(ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al,
+                    loc, condition, ASR::logicalbinopType::And, exit,
+                    logical_type, nullptr)));
+            }
+            for (ASR::expr_t *exit : else_exits) {
+                exits.push_back(ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al,
+                    loc, otherwise, ASR::logicalbinopType::And, exit,
+                    logical_type, nullptr)));
+            }
+            std::set<ASR::symbol_t*> symbols;
+            for (auto &value : then_values) symbols.insert(value.first);
+            for (auto &value : else_values) symbols.insert(value.first);
+            for (auto &value : values) symbols.insert(value.first);
+            for (ASR::symbol_t *symbol : symbols) {
+                auto in_then = then_values.find(symbol);
+                auto in_else = else_values.find(symbol);
+                if (in_then == then_values.end()
+                        || in_else == else_values.end()) {
+                    values.erase(symbol);
+                } else if (in_then->second == in_else->second) {
+                    values[symbol] = in_then->second;
+                } else {
+                    values[symbol] = ASRUtils::EXPR(ASR::make_IfExp_t(al,
+                        loc, condition, in_then->second, in_else->second,
+                        ASRUtils::expr_type(in_then->second), nullptr));
+                }
+            }
             continue;
         }
         if (!ASR::is_a<ASR::Assignment_t>(*stmt)) break;
@@ -612,6 +663,15 @@ GpuKernelPrelude gpu_kernel_prelude(Allocator &al,
         values.erase(target);
         if (value != nullptr) values[target] = value;
     }
+    return n;
+}
+
+GpuKernelPrelude gpu_kernel_prelude(Allocator &al,
+        const ASR::Function_t &kernel) {
+    GpuKernelPrelude prelude;
+    std::map<ASR::symbol_t*, ASR::expr_t*> values;
+    size_t n = gpu_follow_prelude(al, kernel, kernel.m_body, kernel.n_body,
+        values, prelude.exits);
     auto rest = gpu_symbols_changed_in(kernel.m_body + n, kernel.n_body - n);
     for (auto &value : values) {
         if (!gpu_writes_symbol(*rest, value.first)) {
