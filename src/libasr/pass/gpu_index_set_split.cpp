@@ -3,6 +3,7 @@
 #include <libasr/pass/gpu_affine.h>
 #include <libasr/pass/gpu_index_set_split.h>
 #include <libasr/pass/gpu_loop_utils.h>
+#include <libasr/pass/pass_utils.h>
 
 #include <map>
 #include <set>
@@ -62,8 +63,9 @@ public:
     Allocator &al;
     int splits = 0;
     bool jam_enabled;
-    Split(Allocator &al_, bool jam_enabled_) : al(al_),
-        jam_enabled(jam_enabled_) {}
+    SymbolTable *unit_scope;
+    Split(Allocator &al_, bool jam_enabled_, SymbolTable *unit_scope_)
+        : al(al_), jam_enabled(jam_enabled_), unit_scope(unit_scope_) {}
 
     // Walks a statement list in order, keeping the affine values of the
     // integer scalars assigned once, and calls `on_if` for every IF.
@@ -541,26 +543,25 @@ public:
         // extent(d) = hi - lo + 1
         auto extent = [&](size_t d) { return add(sub(hi_e(d), lo_e(d)), c(1)); };
         // Iterations of the interior's outer dimension one thread runs one
-        // after the other (unroll-and-jam, below): the interior's rows are
-        // a multiple of it, and the rows left over join the frame.
+        // after the other (unroll-and-jam, below).
         int64_t jam = 1;
         if (rank == 2) {
             GpuAffineBuilder jb = base;
             jam = jam_factor(bp, bn, nest, jb);
         }
-        // The number of frame rows at the upper end of the outer
-        // dimension: b[0], plus the rows the jam leaves over.
-        auto b0 = [&]() -> ASR::expr_t* {
-            if (jam == 1) return c(b[0]);
-            // rows = extent - a - b; rows - (rows / jam) * jam
+        // The interior: is(d) .. ie(d), with the rows the jam leaves over
+        // in the frame: b[0] plus (rows - (rows / jam) * jam) at the upper
+        // end of the outer dimension, rows = extent - a - b.
+        auto bd = [&](size_t d, int64_t jm) -> ASR::expr_t* {
+            if (d != 0 || jm == 1) return c(b[d]);
             ASR::expr_t *rows = sub(extent(0), c(a[0] + b[0]));
             return add(c(b[0]), sub(rows, mul(div(ed.duplicate_expr(rows),
-                c(jam)), c(jam))));
+                c(jm)), c(jm))));
         };
-        auto bd = [&](size_t d) { return d == 0 ? b0() : c(b[d]); };
-        // The interior: is(d) .. ie(d).
         auto is = [&](size_t d) { return add(lo_e(d), c(a[d])); };
-        auto ie = [&](size_t d) { return sub(hi_e(d), bd(d)); };
+        auto ie = [&](size_t d, int64_t jm) {
+            return sub(hi_e(d), bd(d, jm));
+        };
 
         // The frame: one index t over the iterations outside the interior,
         // mapped to indices of their own.
@@ -588,136 +589,210 @@ public:
         auto assign = [&](size_t d, ASR::expr_t *val) {
             return bld.Assignment(bld.Var(fvars[d]), val);
         };
-        std::vector<ASR::stmt_t*> decode;
-        ASR::expr_t *count_e;
-        if (rank == 1) {
-            // t < a: lo + t, else hi - b + 1 + (t - a)
-            count_e = c(a[0] + b[0]);
-            decode.push_back(bld.If(bld.Lt(t(), c(a[0])),
-                {assign(0, add(lo_e(0), t()))},
-                {assign(0, add(sub(add(hi_e(0), c(1)), c(b[0])),
-                    sub(t(), c(a[0]))))}));
-        } else {
-            // Bands of whole rows of the inner dimension at both ends of
-            // the outer one, then strips of the inner dimension.
-            ASR::expr_t *ni0 = sub(sub(extent(0), c(a[0])), b0());
-            count_e = add(mul(add(c(a[0]), b0()), extent(1)),
-                mul(sub(sub(extent(0), c(a[0])), b0()), c(a[1] + b[1])));
-            auto row_col = [&](ASR::expr_t *tt, ASR::expr_t *row0) {
-                // v0 = row0 + tt / w, v1 = lo1 + tt - (tt / w) * w
-                return std::vector<ASR::stmt_t*>{
-                    assign(0, add(row0, div(tt, extent(1)))),
-                    assign(1, add(lo_e(1), sub(ed.duplicate_expr(tt),
-                        mul(div(ed.duplicate_expr(tt), extent(1)),
-                            extent(1)))))};
-            };
-            ASR::expr_t *band0 = mul(c(a[0]), extent(1));
-            ASR::expr_t *bands = mul(add(c(a[0]), b0()), extent(1));
-            std::vector<ASR::stmt_t*> top = row_col(t(), lo_e(0));
-            ASR::expr_t *t2 = sub(t(), mul(c(a[0]), extent(1)));
-            std::vector<ASR::stmt_t*> bottom = row_col(t2,
-                add(sub(hi_e(0), b0()), c(1)));
-            // Strips: t3 = t - bands; v0 = lo0 + a0 + t3 mod ni0; the
-            // column c = t3 / ni0 is one of the a1 + b1 strips.
-            ASR::expr_t *t3 = sub(t(), ed.duplicate_expr(bands));
-            ASR::expr_t *col = div(ed.duplicate_expr(t3),
-                ed.duplicate_expr(ni0));
-            std::vector<ASR::stmt_t*> strips;
-            strips.push_back(assign(0, add(add(lo_e(0), c(a[0])),
-                sub(ed.duplicate_expr(t3), mul(ed.duplicate_expr(col),
-                    ed.duplicate_expr(ni0))))));
-            strips.push_back(bld.If(bld.Lt(ed.duplicate_expr(col), c(a[1])),
-                {assign(1, add(lo_e(1), ed.duplicate_expr(col)))},
-                {assign(1, add(add(sub(hi_e(1), c(b[1])), c(1)),
-                    sub(ed.duplicate_expr(col), c(a[1]))))}));
-            decode.push_back(bld.If(bld.Lt(t(), band0), top,
-                {bld.If(bld.Lt(t(), ed.duplicate_expr(bands)),
-                    bottom, strips)}));
-        }
-        // The frame runs the original body on its own indices.
-        std::vector<ASR::stmt_t*> run = decode;
-        {
-            GpuDuplicator d2(al, scope);
-            d2.added = &added;
-            for (size_t d = 0; d < rank; d++) {
-                d2.symbol_map[nest.vars[d]] = fvars[d];
-            }
-            Vec<ASR::stmt_t*> orig;
-            d2.duplicate_body(inner->m_body, inner->n_body, orig);
-            if (!d2.ok) return rollback();
-            for (size_t k = 0; k < orig.n; k++) run.push_back(orig[k]);
-        }
 
-        // One launch: the frame's iterations come first, as extra rows of
-        // the interior's outer dimension (whole rows of its inner one), so
-        // that they start first and run alongside the interior instead of
-        // after it. The nest keeps the original indices, which are those of
-        // the interior: they decide how the iterations map to threads.
-        auto width = [&]() {
-            return rank == 1 ? c(1) : add(sub(ie(1), is(1)), c(1));
-        };
-        // The rows of frame iterations: ceil(count / width).
-        auto first_row = [&]() {
-            return sub(is(0), div(add(ed.duplicate_expr(count_e),
-                sub(width(), c(1))), width()));
-        };
-        // With a jam, an interior iteration of the outer dimension stands
-        // for `jam` rows: the last one is is + rows / jam - 1.
-        std::vector<ASR::expr_t*> ms, me;
-        for (size_t d = 0; d < rank; d++) {
-            ms.push_back(d == 0 ? first_row() : is(d));
-            if (d == 0 && jam > 1) {
-                me.push_back(sub(add(is(0), div(add(sub(ie(0), is(0)), c(1)),
-                    c(jam))), c(1)));
+        // The nest, for a given jam; null when a copy fails.
+        auto build = [&](int64_t jm) -> ASR::stmt_t* {
+            auto b0 = [&]() { return bd(0, jm); };
+            std::vector<ASR::stmt_t*> decode;
+            ASR::expr_t *count_e;
+            if (rank == 1) {
+                // t < a: lo + t, else hi - b + 1 + (t - a)
+                count_e = c(a[0] + b[0]);
+                decode.push_back(bld.If(bld.Lt(t(), c(a[0])),
+                    {assign(0, add(lo_e(0), t()))},
+                    {assign(0, add(sub(add(hi_e(0), c(1)), c(b[0])),
+                        sub(t(), c(a[0]))))}));
             } else {
-                me.push_back(ie(d));
+                // Bands of whole rows of the inner dimension at both ends
+                // of the outer one, then strips of the inner dimension.
+                ASR::expr_t *ni0 = sub(sub(extent(0), c(a[0])), b0());
+                count_e = add(mul(add(c(a[0]), b0()), extent(1)),
+                    mul(sub(sub(extent(0), c(a[0])), b0()), c(a[1] + b[1])));
+                auto row_col = [&](ASR::expr_t *tt, ASR::expr_t *row0) {
+                    // v0 = row0 + tt / w, v1 = lo1 + tt - (tt / w) * w
+                    return std::vector<ASR::stmt_t*>{
+                        assign(0, add(row0, div(tt, extent(1)))),
+                        assign(1, add(lo_e(1), sub(ed.duplicate_expr(tt),
+                            mul(div(ed.duplicate_expr(tt), extent(1)),
+                                extent(1)))))};
+                };
+                ASR::expr_t *band0 = mul(c(a[0]), extent(1));
+                ASR::expr_t *bands = mul(add(c(a[0]), b0()), extent(1));
+                std::vector<ASR::stmt_t*> top = row_col(t(), lo_e(0));
+                ASR::expr_t *t2 = sub(t(), mul(c(a[0]), extent(1)));
+                std::vector<ASR::stmt_t*> bottom = row_col(t2,
+                    add(sub(hi_e(0), b0()), c(1)));
+                // Strips: t3 = t - bands; v0 = lo0 + a0 + t3 mod ni0; the
+                // column c = t3 / ni0 is one of the a1 + b1 strips.
+                ASR::expr_t *t3 = sub(t(), ed.duplicate_expr(bands));
+                ASR::expr_t *col = div(ed.duplicate_expr(t3),
+                    ed.duplicate_expr(ni0));
+                std::vector<ASR::stmt_t*> strips;
+                strips.push_back(assign(0, add(add(lo_e(0), c(a[0])),
+                    sub(ed.duplicate_expr(t3), mul(ed.duplicate_expr(col),
+                        ed.duplicate_expr(ni0))))));
+                strips.push_back(bld.If(bld.Lt(ed.duplicate_expr(col),
+                        c(a[1])),
+                    {assign(1, add(lo_e(1), ed.duplicate_expr(col)))},
+                    {assign(1, add(add(sub(hi_e(1), c(b[1])), c(1)),
+                        sub(ed.duplicate_expr(col), c(a[1]))))}));
+                decode.push_back(bld.If(bld.Lt(t(), band0), top,
+                    {bld.If(bld.Lt(t(), ed.duplicate_expr(bands)),
+                        bottom, strips)}));
             }
-        }
-        // t = (v0 - first row) * width + (v1 - interior start)
-        ASR::expr_t *tv = mul(sub(bld.Var(nest.vars[0]), first_row()),
-            width());
-        if (rank == 2) tv = add(tv, sub(bld.Var(nest.vars[1]), is(1)));
-        std::vector<ASR::stmt_t*> frame_part = {bld.Assignment(t(), tv),
-            bld.If(bld.Lt(t(), ed.duplicate_expr(count_e)), run, {})};
-        std::vector<ASR::stmt_t*> interior_part;
-        if (jam == 1) {
-            interior_part.insert(interior_part.end(), bp, bp + bn);
-        } else {
+            // The frame runs the original body on its own indices.
+            std::vector<ASR::stmt_t*> run = decode;
+            {
+                GpuDuplicator d2(al, scope);
+                d2.added = &added;
+                for (size_t d = 0; d < rank; d++) {
+                    d2.symbol_map[nest.vars[d]] = fvars[d];
+                }
+                Vec<ASR::stmt_t*> orig;
+                d2.duplicate_body(inner->m_body, inner->n_body, orig);
+                if (!d2.ok) return nullptr;
+                for (size_t k = 0; k < orig.n; k++) run.push_back(orig[k]);
+            }
+
+            // One launch: the frame's iterations come first, as extra rows
+            // of the interior's outer dimension (whole rows of its inner
+            // one), so that they start first and run alongside the
+            // interior instead of after it. The nest keeps the original
+            // indices, which are those of the interior: they decide how
+            // the iterations map to threads.
+            auto width = [&]() {
+                return rank == 1 ? c(1) : add(sub(ie(1, jm), is(1)), c(1));
+            };
+            // The rows of frame iterations: ceil(count / width).
+            auto first_row = [&]() {
+                return sub(is(0), div(add(ed.duplicate_expr(count_e),
+                    sub(width(), c(1))), width()));
+            };
+            // With a jam, an interior iteration of the outer dimension
+            // stands for `jam` rows: the last one is is + rows / jam - 1.
+            std::vector<ASR::expr_t*> ms, me;
+            for (size_t d = 0; d < rank; d++) {
+                ms.push_back(d == 0 ? first_row() : is(d));
+                if (d == 0 && jm > 1) {
+                    me.push_back(sub(add(is(0), div(add(sub(ie(0, jm), is(0)),
+                        c(1)), c(jm))), c(1)));
+                } else {
+                    me.push_back(ie(d, jm));
+                }
+            }
+            // t = (v0 - first row) * width + (v1 - interior start)
+            ASR::expr_t *tv = mul(sub(bld.Var(nest.vars[0]), first_row()),
+                width());
+            if (rank == 2) tv = add(tv, sub(bld.Var(nest.vars[1]), is(1)));
+            std::vector<ASR::stmt_t*> frame_part = {bld.Assignment(t(), tv),
+                bld.If(bld.Lt(t(), ed.duplicate_expr(count_e)), run, {})};
             // Copy r runs row is + (v0 - is) * jam + r. The rows are
             // independent iterations of the parallel loop, so one thread
             // may run them in any order; run one after the other, what
             // they read in common (the rows between them) is loaded and
             // computed once.
-            for (int64_t r = 0; r < jam; r++) {
+            std::vector<ASR::stmt_t*> interior_part;
+            for (int64_t r = 0; r < jm; r++) {
                 GpuDuplicator dr(al, scope);
                 dr.added = &added;
-                dr.value_map[nest.vars[0]] = add(add(is(0), mul(sub(
-                    bld.Var(nest.vars[0]), is(0)), c(jam))), c(r));
+                if (jm > 1) {
+                    dr.value_map[nest.vars[0]] = add(add(is(0), mul(sub(
+                        bld.Var(nest.vars[0]), is(0)), c(jm))), c(r));
+                }
                 Vec<ASR::stmt_t*> copy;
                 dr.duplicate_body(bp, bn, copy);
-                if (!dr.ok) return rollback();
+                if (!dr.ok) return nullptr;
                 interior_part.insert(interior_part.end(), copy.p,
                     copy.p + copy.n);
             }
-        }
-        Vec<ASR::stmt_t*> mbody;
-        mbody.reserve(al, 1);
-        mbody.push_back(al, bld.If(bld.Lt(bld.Var(nest.vars[0]), is(0)),
-            frame_part, interior_part));
-        std::vector<ASR::symbol_t*> privates(fvars.begin(), fvars.end());
-        privates.push_back(tsym);
-        ASR::stmt_t *merged = gpu_loop_nest_with_body(al, nest, ms, me,
-            mbody, privates);
-
+            Vec<ASR::stmt_t*> mbody;
+            mbody.reserve(al, 1);
+            mbody.push_back(al, bld.If(bld.Lt(bld.Var(nest.vars[0]), is(0)),
+                frame_part, interior_part));
+            std::vector<ASR::symbol_t*> privates(fvars.begin(), fvars.end());
+            privates.push_back(tsym);
+            return gpu_loop_nest_with_body(al, nest, ms, me, mbody,
+                privates);
+        };
         // Split only when the domain has an interior.
-        ASR::expr_t *has_interior = nullptr;
-        for (size_t d = 0; d < rank; d++) {
-            ASR::expr_t *t1 = bld.Gt(extent(d), c(a[d] + b[d]
-                + (d == 0 ? jam - 1 : 0)));
-            has_interior = has_interior ? bld.And(has_interior, t1) : t1;
+        auto has_interior = [&](int64_t jm) {
+            ASR::expr_t *cond = nullptr;
+            for (size_t d = 0; d < rank; d++) {
+                ASR::expr_t *t1 = bld.Gt(extent(d), c(a[d] + b[d]
+                    + (d == 0 ? jm - 1 : 0)));
+                cond = cond ? bld.And(cond, t1) : t1;
+            }
+            return cond;
+        };
+        ASR::stmt_t *plain = build(1);
+        if (plain == nullptr) return rollback();
+        ASR::stmt_t *split_nest = bld.If(has_interior(1), {plain}, {stmt});
+        if (jam > 1) {
+            // The jam pays when what the launch touches stays in the
+            // device's cache, where the copies share loads and arithmetic;
+            // when the data streams from memory it only costs registers,
+            // and so occupancy, which the memory throughput needs.
+            ASR::stmt_t *jammed = build(jam);
+            if (jammed == nullptr) return rollback();
+            ASR::expr_t *bytes = c(0);
+            for (size_t d = 0; d < rank; d++) {
+                ASR::expr_t *x = bld.i2i_t(extent(d), bld.int_type(8));
+                bytes = d == 0 ? x : bld.Mul(bytes, x);
+            }
+            bytes = bld.Mul(bytes, bld.i64(bytes_per_iteration(bp, bn)));
+            ASR::expr_t *cache = gpu_cache_bytes_call(loc);
+            split_nest = bld.If(bld.And(has_interior(jam),
+                bld.LtE(bytes, cache)), {jammed}, {split_nest});
         }
         splits++;
-        return bld.If(has_interior, {merged}, {stmt});
+        return split_nest;
+    }
+
+    // The bytes an iteration of a body loads and stores: one element of
+    // every array it names.
+    int64_t bytes_per_iteration(ASR::stmt_t **body, size_t n) {
+        struct Arrays : public ASRUtils::BlockBodyWalkVisitor<Arrays> {
+            std::map<std::string, int64_t> sizes;
+            void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+                std::string k = gpu_array_key(x.m_v);
+                if (!k.empty()) {
+                    sizes[k] = ASRUtils::extract_kind_from_ttype_t(
+                        ASRUtils::extract_type(ASRUtils::expr_type(x.m_v)));
+                }
+                ASRUtils::BlockBodyWalkVisitor<Arrays>::visit_ArrayItem(x);
+            }
+        } a;
+        for (size_t i = 0; i < n; i++) a.visit_stmt(*body[i]);
+        int64_t total = 0;
+        for (auto &kv : a.sizes) total += kv.second;
+        return total;
+    }
+
+    // A call of the runtime's lfortran_gpu_cache_bytes(): the size of the
+    // device's last-level cache.
+    ASR::expr_t *gpu_cache_bytes_call(const Location &loc) {
+        ASRUtils::ASRBuilder b(al, loc);
+        const std::string name = "lfortran_gpu_cache_bytes";
+        ASR::symbol_t *sym = unit_scope->get_symbol(name);
+        ASR::ttype_t *i64 = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
+        if (sym == nullptr) {
+            SymbolTable *fn_symtab = al.make_new<SymbolTable>(unit_scope);
+            ASR::expr_t *return_var = b.Variable(fn_symtab, name,
+                ASRUtils::duplicate_type(al, i64),
+                ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC,
+                false);
+            ASR::asr_t *fn = ASRUtils::make_Function_t_util(al, loc,
+                fn_symtab, s2c(al, name), nullptr, 0, nullptr, 0, nullptr, 0,
+                return_var, ASR::abiType::BindC, ASR::accessType::Public,
+                ASR::deftypeType::Interface, s2c(al, name), false, false,
+                false, false, false, nullptr, 0, false, false, false,
+                nullptr);
+            sym = ASR::down_cast<ASR::symbol_t>(fn);
+            unit_scope->add_symbol(name, sym);
+        }
+        Vec<ASR::call_arg_t> args;
+        args.reserve(al, 1);
+        return b.Call(sym, args, ASRUtils::duplicate_type(al, i64));
     }
 
     void visit_body(SymbolTable *scope, ASR::stmt_t **&body, size_t &n) {
@@ -786,7 +861,8 @@ void pass_gpu_index_set_split(Allocator &al, ASR::TranslationUnit_t &unit,
             || !gpu_loop_transform_enabled(pass_options, GpuLoopSplit)) {
         return;
     }
-    Split s(al, gpu_loop_transform_enabled(pass_options, GpuLoopJam));
+    Split s(al, gpu_loop_transform_enabled(pass_options, GpuLoopJam),
+        unit.m_symtab);
     std::function<void(SymbolTable*)> visit_scope = [&](SymbolTable *st) {
         for (auto &item : st->get_scope()) {
             ASR::symbol_t *sym = item.second;
@@ -804,6 +880,11 @@ void pass_gpu_index_set_split(Allocator &al, ASR::TranslationUnit_t &unit,
         }
     };
     visit_scope(unit.m_symtab);
+    if (s.splits > 0) {
+        // A split nest may call the runtime (lfortran_gpu_cache_bytes).
+        PassUtils::UpdateDependenciesVisitor u(al);
+        u.visit_TranslationUnit(unit);
+    }
 }
 
 } // namespace LCompilers
