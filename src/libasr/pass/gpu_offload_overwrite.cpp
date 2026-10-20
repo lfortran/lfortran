@@ -451,8 +451,8 @@ ASR::expr_t* gpu_overwrite_condition(Allocator &al, const Location &loc,
     if (!overwritable_array(array)) return nullptr;
     size_t n = loop.n_heads();
     if (n == 0 || starts.size() != n || ends.size() != n
-            || ASRUtils::extract_n_dims_from_ttype(
-                ASRUtils::expr_type(array)) != n) {
+            || static_cast<size_t>(ASRUtils::extract_n_dims_from_ttype(
+                ASRUtils::expr_type(array))) != n) {
         return nullptr;
     }
     OverwriteSearch search(al, loc, loop, array);
