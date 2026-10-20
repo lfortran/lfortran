@@ -49,13 +49,16 @@ def check_keeps_files_in_cwd(lfortran):
         # The incomplete cells make the prompt quote them in a diagnostic,
         # the unterminated string already when it checks for completeness.
         code, out = run_repl(lfortran, cwd, ["integer :: trial_seed = 41",
-            "trial_seed + 1", "integer :: x = ", 'x = "abc', "trial_seed"])
+            "trial_seed + 1", "integer :: x = ", 'x = "abc', "trial_seed",
+            "'shared evaluation'", ".true.", "1.2345678901234567_8"])
         if code != 0 or "Exiting." not in out:
             sys.exit("the prompt did not exit cleanly (code %d):\n%s"
                 % (code, out))
         # The prompt echoes every keystroke, so the results are matched as
         # whole lines and the cell as a line quoted by a diagnostic.
-        for expected in [r"^42\r?$", r"^41\r?$", r'^1 \| x = "abc\r?$']:
+        for expected in [r"^42\r?$", r"^41\r?$", r'^1 \| x = "abc\r?$',
+                r"^shared evaluation\r?$", r"^True\r?$",
+                r"^1\.2345678901234567\r?$"]:
             if not re.search(expected, out, re.M):
                 sys.exit("expected %r in the prompt output:\n%s"
                     % (expected, out))

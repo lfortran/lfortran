@@ -32,45 +32,12 @@
 #include <lfortran/parser/parser.h>
 #include <lfortran/semantics/ast_to_asr.h>
 #include <libasr/codegen/asr_to_llvm.h>
-#include <lfortran/fortran_evaluator.h>
+#include <lfortran/evaluation.h>
 #include <lfortran/utils.h>
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 
 namespace nl = nlohmann;
-
-// ── Jupyter display_data bridge ──────────────────────────────────────────────
-// These C-linkage symbols are called from JIT'd Fortran code via bind(C)
-// declarations provided by the lfortran_display runtime module.
-// Native (ORC JIT): resolved from the host process's exported symbol table.
-// WASM: defined in the MAIN_MODULE; side modules import via --allow-undefined
-// and RTLD_DEFAULT resolves them at dlopen time.
-
-#ifdef _WIN32
-#define LFORTRAN_KERNEL_API __declspec(dllexport)
-#else
-#define LFORTRAN_KERNEL_API __attribute__((visibility("default")))
-#endif
-
-extern "C" {
-
-// Generic display bridge: publish arbitrary MIME type + data to Jupyter.
-// Users can send HTML, SVG, LaTeX, Markdown, base64-encoded images, etc.
-// This is the extensibility point - all format-specific encoding (BMP, PNG, etc.)
-// should be done in Fortran user code, not hardcoded here.
-LFORTRAN_KERNEL_API void lfortran_display_data(const char* mime_type, const char* data) {
-    if (!mime_type || !data) return;
-    nl::json bundle = nl::json::object();
-    bundle[mime_type] = std::string(data);
-    xeus::get_interpreter().display_data(
-        std::move(bundle), nl::json::object(), nl::json::object());
-}
-
-LFORTRAN_KERNEL_API void lfortran_clear_output() {
-    xeus::get_interpreter().clear_output(false);
-}
-
-} // extern "C"
 
 namespace LCompilers::LFortran {
 
@@ -114,15 +81,10 @@ namespace LCompilers::LFortran {
     class custom_interpreter : public xeus::xinterpreter
     {
     private:
-        CompilerOptions compiler_options;
-        FortranEvaluator e;
+        EvaluationService service;
 
     public:
-        custom_interpreter() : compiler_options{}, e{compiler_options} {
-            e.compiler_options.interactive = true;
-            e.compiler_options.po.runtime_library_dir =
-                LCompilers::LFortran::get_runtime_library_dir();
-        }
+        custom_interpreter() = default;
         virtual ~custom_interpreter() = default;
 
     private:
@@ -157,262 +119,61 @@ namespace LCompilers::LFortran {
 
     
     void custom_interpreter::execute_request_impl(send_reply_callback cb,
-                                                  int execution_counter, // Typically the cell number
-                                                  const std::string& code, // Code to execute
-                                                  xeus::execute_request_config, //config
+                                                  int execution_counter,
+                                                  const std::string& code,
+                                                  xeus::execute_request_config config,
                                                   nl::json /*user_expressions*/)
     {
-        FortranEvaluator::EvalResult r;
+        class KernelEvents : public EvaluationEvents {
+            custom_interpreter &interpreter;
+            bool silent;
+        public:
+            KernelEvents(custom_interpreter &interpreter, bool silent)
+                : interpreter(interpreter), silent(silent) {}
+            void stream(const std::string &name, const std::string &text) override {
+                if (!silent) interpreter.publish_stream(name, text);
+            }
+            void display(const std::string &mime, const std::string &text) override {
+                if (!silent) interpreter.display_data(
+                    nl::json{{mime, text}}, nl::json::object(), nl::json::object());
+            }
+            void clear_output() override {
+                if (!silent) interpreter.clear_output(false);
+            }
+        } events(*this, config.silent);
+        EvaluationSettings settings;
+        // Browser/native stdio remains available on the legacy Xeus path.
+        // A disabled input channel must not accidentally read the host terminal.
+        if (!config.allow_stdin) {
+            settings.input = [](void *, const char **, size_t *) { return 1; };
+        }
+        EvaluationOutcome outcome;
         std::string std_out;
-        std::string code0;
-        CompilerOptions cu;
-        try {
-            if (startswith(code, "%%showast")) {
-                code0 = code.substr(code.find("\n")+1);
-                LocationManager lm;
-                // The evaluator names this cell and keeps its text.
-                diag::Diagnostics diagnostics;
-                Result<std::string>
-                    res = e.get_ast(code0, lm, diagnostics);
-                nl::json result;
-                if (res.ok) {
-                    publish_stream("stdout", res.result);
-                    result["status"] = "ok";
-                    result["payload"] = nl::json::array();
-                    result["user_expressions"] = nl::json::object();
-                } else {
-                    std::string msg = diagnostics.render(lm, cu);
-                    publish_stream("stderr", msg);
-                    result["status"] = "error";
-                    result["ename"] = "CompilerError";
-                    result["evalue"] = msg;
-                    result["traceback"] = nl::json::array();
-                }
-                cb(result);
-                return;
-            }
-            if (startswith(code, "%%showasr")) {
-                code0 = code.substr(code.find("\n")+1);
-                LocationManager lm;
-                // The evaluator names this cell and keeps its text.
-                diag::Diagnostics diagnostics;
-                Result<std::string>
-                res = e.get_asr(code0, lm, diagnostics);
-                nl::json result;
-                if (res.ok) {
-                    publish_stream("stdout", res.result);
-                    result["status"] = "ok";
-                    result["payload"] = nl::json::array();
-                    result["user_expressions"] = nl::json::object();
-                } else {
-                    std::string msg = diagnostics.render(lm, cu);
-                    publish_stream("stderr", msg);
-                    result["status"] = "error";
-                    result["ename"] = "CompilerError";
-                    result["evalue"] = msg;
-                    result["traceback"] = nl::json::array();
-                }
-                cb(result);
-                return;
-            }
-            if (startswith(code, "%%showllvm")) {
-                code0 = code.substr(code.find("\n")+1);
-                LocationManager lm;
-                // The evaluator names this cell and keeps its text.
-                LCompilers::PassManager lpm;
-                lpm.use_default_passes();
-                diag::Diagnostics diagnostics;
-                Result<std::string>
-                res = e.get_llvm(code0, lm, lpm, diagnostics);
-                nl::json result;
-                if (res.ok) {
-                    publish_stream("stdout", res.result);
-                    result["status"] = "ok";
-                    result["payload"] = nl::json::array();
-                    result["user_expressions"] = nl::json::object();
-                } else {
-                    std::string msg = diagnostics.render(lm, cu);
-                    publish_stream("stderr", msg);
-                    result["status"] = "error";
-                    result["ename"] = "CompilerError";
-                    result["evalue"] = msg;
-                    result["traceback"] = nl::json::array();
-                }
-                cb(result);
-                return;
-            }
-            if (startswith(code, "%%showasm")) {
-                code0 = code.substr(code.find("\n")+1);
-                LocationManager lm;
-                // The evaluator names this cell and keeps its text.
-                LCompilers::PassManager lpm;
-                lpm.use_default_passes();
-                diag::Diagnostics diagnostics;
-                Result<std::string>
-                res = e.get_asm(code0, lm, lpm, diagnostics);
-                nl::json result;
-                if (res.ok) {
-                    publish_stream("stdout", res.result);
-                    result["status"] = "ok";
-                    result["payload"] = nl::json::array();
-                    result["user_expressions"] = nl::json::object();
-                } else {
-                    std::string msg = diagnostics.render(lm, cu);
-                    publish_stream("stderr", msg);
-                    result["status"] = "error";
-                    result["ename"] = "CompilerError";
-                    result["evalue"] = msg;
-                    result["traceback"] = nl::json::array();
-                }
-                cb(result);
-                return;
-            }
-            if (startswith(code, "%%showcpp")) {
-                code0 = code.substr(code.find("\n")+1);
-                LocationManager lm;
-                // The evaluator names this cell and keeps its text.
-                diag::Diagnostics diagnostics;
-                Result<std::string>
-                res = e.get_cpp(code0, lm, diagnostics, 1);
-                nl::json result;
-                if (res.ok) {
-                    publish_stream("stdout", res.result);
-                    result["status"] = "ok";
-                    result["payload"] = nl::json::array();
-                    result["user_expressions"] = nl::json::object();
-                } else {
-                    std::string msg = diagnostics.render(lm, cu);
-                    publish_stream("stderr", msg);
-                    result["status"] = "error";
-                    result["ename"] = "CompilerError";
-                    result["evalue"] = msg;
-                    result["traceback"] = nl::json::array();
-                }
-                cb(result);
-                return;
-            }
-            if (startswith(code, "%%showfmt")) {
-                code0 = code.substr(code.find("\n")+1);
-                LocationManager lm;
-                // The evaluator names this cell and keeps its text.
-                diag::Diagnostics diagnostics;
-                Result<std::string>
-                res = e.get_fmt(code0, lm, diagnostics);
-                nl::json result;
-                if (res.ok) {
-                    publish_stream("stdout", res.result);
-                    result["status"] = "ok";
-                    result["payload"] = nl::json::array();
-                    result["user_expressions"] = nl::json::object();
-                } else {
-                    std::string msg = diagnostics.render(lm, cu);
-                    publish_stream("stderr", msg);
-                    result["status"] = "error";
-                    result["ename"] = "CompilerError";
-                    result["evalue"] = msg;
-                    result["traceback"] = nl::json::array();
-                }
-                cb(result);
-                return;
-            }
-
-            RedirectStdout s(std_out);
-            code0 = code;
-            LocationManager lm;
-            // The evaluator names this cell and keeps its text.
-            LCompilers::PassManager lpm;
-            lpm.use_default_passes();
-            diag::Diagnostics diagnostics;
-            Result<FortranEvaluator::EvalResult>
-            res = e.evaluate(code0, false, lm, lpm, diagnostics);
-            if (res.ok) {
-                r = res.result;
-            } else {
-                std::string msg = diagnostics.render(lm, cu);
-                publish_stream("stderr", msg);
-                nl::json result;
-                result["status"] = "error";
-                result["ename"] = "CompilerError";
-                result["evalue"] = msg;
-                result["traceback"] = nl::json::array();
-                cb(result);
-                return;
-            }
-        } catch (const LCompilersException &e) {
-            publish_stream("stderr", "LFortran Exception: " + e.msg());
-            nl::json result;
-            result["status"] = "error";
-            result["ename"] = "LCompilersException";
-            result["evalue"] = e.msg();
-            result["traceback"] = nl::json::array();
-            cb(result);
-            return;
+        {
+            RedirectStdout capture(std_out);
+            outcome = service.execute(code, events, settings);
         }
-
-        if (std_out.size() > 0) {
-            publish_stream("stdout", std_out);
-        }
-
-        switch (r.type) {
-            case (LCompilers::FortranEvaluator::EvalResult::integer4) : {
-                nl::json pub_data;
-                pub_data["text/plain"] = std::to_string(r.i32);
-                publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::integer8) : {
-                nl::json pub_data;
-                pub_data["text/plain"] = std::to_string(r.i64);
-                publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::real4) : {
-                nl::json pub_data;
-                pub_data["text/plain"] = std::to_string(r.f32);
-                publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::real8) : {
-                nl::json pub_data;
-                pub_data["text/plain"] = std::to_string(r.f64);
-                publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::complex4) : {
-                nl::json pub_data;
-                pub_data["text/plain"] = "(" + std::to_string(r.c32.re) + ", " + std::to_string(r.c32.im) + ")";
-                publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::complex8) : {
-                nl::json pub_data;
-                pub_data["text/plain"] = "(" + std::to_string(r.c64.re) + ", " + std::to_string(r.c64.im) + ")";
-                publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::character) : {
-                nl::json pub_data;
-                pub_data["text/plain"] = r.str;
-                publish_execution_result(execution_counter, std::move(pub_data), nl::json::object());
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::statement) : {
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::none) : {
-                break;
-            }
-            default : throw LCompilersException("Return type not supported");
-        }
-
+        if (!std_out.empty()) events.stream("stdout", std_out);
+        if (!outcome.diagnostics.empty()) events.stream("stderr", outcome.diagnostics);
+        if (!outcome.exception_report.empty()) events.stream("stderr", outcome.exception_report);
         nl::json result;
-        result["status"] = "ok";
-        result["payload"] = nl::json::array();
-        result["user_expressions"] = nl::json::object();
+        if (outcome.ok) {
+            if (outcome.has_value && !config.silent) {
+                publish_execution_result(execution_counter,
+                    nl::json{{"text/plain", outcome.text}}, nl::json::object());
+            }
+            result["status"] = "ok";
+            result["payload"] = nl::json::array();
+            result["user_expressions"] = nl::json::object();
+        } else {
+            result["status"] = "error";
+            result["ename"] = outcome.error_name;
+            result["evalue"] = outcome.error_value;
+            result["traceback"] = nl::json::array();
+        }
         cb(result);
-        return;
     }
-    
+
     void custom_interpreter::configure_impl()
     {
         xeus::register_interpreter(this);

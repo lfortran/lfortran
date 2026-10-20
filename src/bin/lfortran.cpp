@@ -28,6 +28,7 @@
 #include <libasr/codegen/asr_to_wasm.h>
 #include <lfortran/ast_to_src.h>
 #include <lfortran/fortran_evaluator.h>
+#include <lfortran/evaluation.h>
 #include <lfortran/pipeline.h>
 #include <libasr/codegen/evaluator.h>
 #include <libasr/pass/pass_manager.h>
@@ -434,9 +435,12 @@ int prompt(bool verbose, CompilerOptions &cu)
     std::cout << "    - Editing (Keys: Left, Right, Home, End, Backspace, Delete)" << std::endl;
     std::cout << "    - History (Keys: Up, Down)" << std::endl;
 
-    Allocator al(64*1024*1024);
-    cu.interactive = true;
-    LCompilers::FortranEvaluator e(cu);
+    LCompilers::LFortran::EvaluationService service(cu);
+    class PromptEvents : public LCompilers::LFortran::EvaluationEvents {
+        void stream(const std::string &name, const std::string &text) override {
+            (name == "stderr" ? std::cerr : std::cout) << text;
+        }
+    } events;
 
     std::vector<std::string> history;
     std::function<bool(std::string)> iscomplete = determine_completeness;
@@ -461,35 +465,16 @@ int prompt(bool verbose, CompilerOptions &cu)
             std::cout << input << std::endl;
         }
 
-        LCompilers::FortranEvaluator::EvalResult r;
-        LCompilers::diag::Diagnostics diagnostics;
-
-        try {
-            LCompilers::LocationManager lm;
-            LCompilers::PassManager lpm;
-            lpm.use_default_passes();
-            // The evaluator names this cell and keeps its text; nothing has
-            // to be written out for the error rendering to quote it.
-            LCompilers::Result<LCompilers::FortranEvaluator::EvalResult>
-            res = e.evaluate(input, verbose, lm, lpm, diagnostics);
-            if (res.ok) {
-                r = res.result;
-            } else {
-                LCOMPILERS_ASSERT(diagnostics.has_error())
-                std::cerr << diagnostics.render(lm, cu);
-                diagnostics.clear();
-                continue;
-            }
-        } catch (const LCompilers::LCompilersException &e) {
-            std::cerr << "Internal Compiler Error: Unhandled exception" << std::endl;
-            std::vector<LCompilers::StacktraceItem> d = e.stacktrace_addresses();
-            get_local_addresses(d);
-            get_local_info(d);
-            std::cerr << stacktrace2str(d, LCompilers::stacktrace_depth);
-            std::cerr << e.name() + ": " << e.msg() << std::endl;
+        LCompilers::LFortran::EvaluationSettings settings;
+        settings.verbose = verbose;
+        auto outcome = service.execute(input, events, settings);
+        if (!outcome.ok) {
+            std::cerr << (outcome.exception_report.empty()
+                ? outcome.diagnostics : outcome.exception_report);
             continue;
         }
 
+        auto &r = outcome.value;
         if (verbose) {
             section("AST:");
             std::cout << r.ast  << std::endl;
@@ -499,66 +484,12 @@ int prompt(bool verbose, CompilerOptions &cu)
             std::cout << r.llvm_ir << std::endl;
         }
 
-        switch (r.type) {
-            case (LCompilers::FortranEvaluator::EvalResult::integer4) : {
-                if (verbose) std::cout << "Return type: integer" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << r.i32 << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::integer8) : {
-                if (verbose) std::cout << "Return type: integer(8)" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << r.i64 << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::real4) : {
-                if (verbose) std::cout << "Return type: real" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << std::setprecision(8) << r.f32 << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::real8) : {
-                if (verbose) std::cout << "Return type: real(8)" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << std::setprecision(17) << r.f64 << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::complex4) : {
-                if (verbose) std::cout << "Return type: complex" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << std::setprecision(8) << "(" << r.c32.re << ", " << r.c32.im << ")" << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::complex8) : {
-                if (verbose) std::cout << "Return type: complex(8)" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << std::setprecision(17) << "(" << r.c64.re << ", " << r.c64.im << ")" << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::boolean) : {
-                if (verbose) std::cout << "Return type: logical" << std::endl;
-                if (verbose) section("Result:");
-                std::cout << (r.b ? "True" : "False") << std::endl;
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::statement) : {
-                if (verbose) {
-                    std::cout << "Return type: none" << std::endl;
-                    section("Result:");
-                    std::cout << "(statement)" << std::endl;
-                }
-                break;
-            }
-            case (LCompilers::FortranEvaluator::EvalResult::none) : {
-                if (verbose) {
-                    std::cout << "Return type: none" << std::endl;
-                    section("Result:");
-                    std::cout << "(nothing to execute)" << std::endl;
-                }
-                break;
-            }
-            default : throw LCompilers::LCompilersException("Return type not supported");
+        if (verbose) {
+            std::cout << "Return type: " << outcome.type_name << std::endl;
+            section("Result:");
+        }
+        if (outcome.has_value || verbose) {
+            std::cout << outcome.text << std::endl;
         }
     }
     return 0;
