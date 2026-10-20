@@ -4555,6 +4555,75 @@ class ReplaceExprWithTemporaryVisitor:
         xx.m_unit = saved;
     }
 
+    // Whether an input item is a designator with a vector subscript.
+    static bool has_vector_subscript(ASR::expr_t* e) {
+        while (true) {
+            if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                ASR::ArrayItem_t* ai = ASR::down_cast<ASR::ArrayItem_t>(e);
+                if (ASRUtils::is_array_indexed_with_array_indices(ai)) {
+                    return true;
+                }
+                e = ai->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                ASR::ArraySection_t* as = ASR::down_cast<ASR::ArraySection_t>(e);
+                if (ASRUtils::is_array_indexed_with_array_indices(as)) {
+                    return true;
+                }
+                e = as->m_v;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::StringItem_t>(*e)) {
+                e = ASR::down_cast<ASR::StringItem_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::StringSection_t>(*e)) {
+                e = ASR::down_cast<ASR::StringSection_t>(e)->m_arg;
+            } else {
+                return false;
+            }
+        }
+    }
+
+    void visit_FileRead(const ASR::FileRead_t& x) {
+        // A formatted READ whose input list has a nested implied-do loop is
+        // lowered by the backend as one data transfer into its items, which
+        // rejects a vector-subscripted item. Do not replace such an item by
+        // a copy of its elements: the READ would define only the copy, which
+        // is not copied back (#15410).
+        bool has_nested_implied_do = false;
+        for (size_t i = 0; i < x.n_values; i++) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*x.m_values[i])) {
+                ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(x.m_values[i]);
+                for (size_t j = 0; j < idl->n_values; j++) {
+                    has_nested_implied_do = has_nested_implied_do ||
+                        ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[j]);
+                }
+            }
+        }
+        if (x.m_fmt == nullptr || !has_nested_implied_do) {
+            ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_FileRead(x);
+            return;
+        }
+        ASR::FileRead_t& xx = const_cast<ASR::FileRead_t&>(x);
+        ASR::expr_t** values = xx.m_values;
+        size_t n_values = xx.n_values;
+        Vec<ASR::expr_t*> replaced_values;
+        replaced_values.reserve(al, n_values);
+        std::vector<size_t> replaced_index;
+        for (size_t i = 0; i < n_values; i++) {
+            if (!has_vector_subscript(values[i])) {
+                replaced_values.push_back(al, values[i]);
+                replaced_index.push_back(i);
+            }
+        }
+        xx.m_values = replaced_values.p;
+        xx.n_values = replaced_values.size();
+        ASR::CallReplacerOnExpressionsVisitor<ReplaceExprWithTemporaryVisitor>::visit_FileRead(x);
+        for (size_t i = 0; i < replaced_index.size(); i++) {
+            values[replaced_index[i]] = replaced_values[i];
+        }
+        xx.m_values = values;
+        xx.n_values = n_values;
+    }
+
 };
 
 bool check_if_ASR_owner_is_module(ASR::asr_t* &asr_owner) {

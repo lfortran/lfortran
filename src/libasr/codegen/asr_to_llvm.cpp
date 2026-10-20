@@ -22470,7 +22470,8 @@ public:
 
     // Collects the variable and components that an input item of a
     // formatted READ defines, and the subscripts its address uses. Returns
-    // false if the item is not a variable, element, section or component.
+    // false if the item is not a variable, element, section or component,
+    // or has a vector subscript (#15410).
     static bool collect_formatted_read_item(ASR::expr_t* e,
             std::vector<ASR::symbol_t*> &defined, std::vector<ASR::expr_t*> &uses) {
         while (true) {
@@ -22480,6 +22481,9 @@ public:
                 return true;
             } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
                 ASR::ArrayItem_t* ai = ASR::down_cast<ASR::ArrayItem_t>(e);
+                if (ASRUtils::is_array_indexed_with_array_indices(ai)) {
+                    return false;
+                }
                 for (size_t j = 0; j < ai->n_args; j++) {
                     uses.push_back(ai->m_args[j].m_left);
                     uses.push_back(ai->m_args[j].m_right);
@@ -22488,6 +22492,9 @@ public:
                 e = ai->m_v;
             } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
                 ASR::ArraySection_t* as = ASR::down_cast<ASR::ArraySection_t>(e);
+                if (ASRUtils::is_array_indexed_with_array_indices(as)) {
+                    return false;
+                }
                 for (size_t j = 0; j < as->n_args; j++) {
                     uses.push_back(as->m_args[j].m_left);
                     uses.push_back(as->m_args[j].m_right);
@@ -22635,6 +22642,22 @@ public:
             common_storage_may_overlap(d, u);
     }
 
+    // Whether an implied-do loop of a READ input list has a nested one.
+    static bool has_nested_formatted_read_idl(ASR::expr_t** values, size_t n_values) {
+        for (size_t i = 0; i < n_values; i++) {
+            if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
+                continue;
+            }
+            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]);
+            for (size_t j = 0; j < idl->n_values; j++) {
+                if (ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[j])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     // Whether a formatted READ whose input list has a nested implied-do
     // loop can be done as one data transfer, with the items of its
     // implied-do loops collected into run-time target lists first. The
@@ -22645,7 +22668,9 @@ public:
     // value is read, so no item may share storage with anything they use,
     // and they must not call a procedure, which could reference an item.
     bool can_collect_formatted_read_targets(ASR::expr_t** values, size_t n_values) {
-        bool has_nested_idl = false;
+        if (!has_nested_formatted_read_idl(values, n_values)) {
+            return false;
+        }
         std::vector<ASR::symbol_t*> defined;
         std::vector<ASR::expr_t*> uses;
         for (size_t i = 0; i < n_values; i++) {
@@ -22661,16 +22686,9 @@ public:
                 continue;
             }
             ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]);
-            for (size_t j = 0; j < idl->n_values; j++) {
-                has_nested_idl = has_nested_idl ||
-                    ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[j]);
-            }
             if (!collect_formatted_read_idl_items(idl, defined, uses)) {
                 return false;
             }
-        }
-        if (!has_nested_idl) {
-            return false;
         }
         ReferencedStorage used;
         for (ASR::expr_t* use : uses) {
@@ -22979,6 +22997,12 @@ public:
         if (has_implied_do) {
             if (can_collect_formatted_read_targets(values, n_values)) {
                 has_implied_do = false;
+            } else if (has_nested_formatted_read_idl(values, n_values)) {
+                // The per-item lowering cannot read a nested implied-do
+                // loop, nor a vector-subscripted item, which the
+                // array_struct_temporary pass keeps in such a READ. Stop
+                // before it lowers any item.
+                throw CodeGenError("Nested implied-do in formatted READ not yet supported");
             } else {
                 // The implied_do_loops pass reads the implied DO loops of an
                 // internal file as array sections where it can.
