@@ -194,9 +194,10 @@ bool may_be_pointer_target(ASR::expr_t *des) {
 
 // Whether a variable may change through another name of its storage,
 // which the analyses of a statement list do not see: a pointer, a variable
-// with the TARGET attribute or whose address is taken otherwise
-// (`address_taken`, as for EQUIVALENCE), a variable of a common block, or
-// a volatile one. Named constants never change.
+// with the TARGET attribute, a variable named where an address is taken or
+// a pointer associated, on either side (`address_taken`; EQUIVALENCE is
+// lowered so), a variable of a common block, or a volatile one. Named
+// constants never change.
 bool may_be_aliased(ASR::symbol_t *s,
         const std::set<ASR::symbol_t*> &address_taken) {
     s = ASRUtils::symbol_get_past_external(s);
@@ -211,7 +212,8 @@ class LoopFusion {
 public:
     Allocator &al;
     const PassOptions &po;
-    // The variables whose address the program takes (GetPointer).
+    // The variables involved in taking an address or associating a
+    // pointer anywhere in the program (see pass_gpu_loop_fusion).
     std::set<ASR::symbol_t*> address_taken;
 
     // Statements to put before and after a statement of the list being
@@ -1757,17 +1759,62 @@ void pass_gpu_loop_fusion(Allocator &al, ASR::TranslationUnit_t &unit,
     }
     LoopFusion f(al, pass_options);
     {
+        // Every variable named in a statement, or in the declaration of
+        // a variable (its initializer), that takes an address
+        // (`GetPointer`, `c_loc`) or associates a pointer, and the
+        // variable declared: on either side of such an association. That
+        // is how EQUIVALENCE is lowered, in a procedure as a pointer set
+        // from the address of the other variable, in a module as a
+        // variable whose initializer is that address.
         struct AddressTaken : public ASR::BaseWalkVisitor<AddressTaken> {
+            using Base = ASR::BaseWalkVisitor<AddressTaken>;
             std::set<ASR::symbol_t*> *syms;
-            void visit_GetPointer(const ASR::GetPointer_t &x) {
-                if (ASR::is_a<ASR::Var_t>(*x.m_arg)) {
-                    syms->insert(ASRUtils::symbol_get_past_external(
-                        ASR::down_cast<ASR::Var_t>(x.m_arg)->m_v));
-                } else {
-                    ASR::symbol_t *root = gpu_designator_base(x.m_arg).root;
-                    if (root) syms->insert(root);
+            struct Frame {
+                bool takes_address = false;
+                std::set<ASR::symbol_t*> vars;
+            };
+            // The statement or declaration being visited, innermost last.
+            std::vector<Frame> frames;
+            void framed(ASR::symbol_t *declared,
+                    const std::function<void()> &visit) {
+                frames.emplace_back();
+                if (declared) frames.back().vars.insert(declared);
+                visit();
+                Frame fr = std::move(frames.back());
+                frames.pop_back();
+                if (fr.takes_address) {
+                    syms->insert(fr.vars.begin(), fr.vars.end());
                 }
-                ASR::BaseWalkVisitor<AddressTaken>::visit_GetPointer(x);
+            }
+            void taken(ASR::expr_t *arg) {
+                if (!frames.empty()) frames.back().takes_address = true;
+                // Also outside a statement or declaration.
+                gpu_collect_symbols(arg, *syms);
+            }
+            void visit_stmt(const ASR::stmt_t &x) {
+                framed(nullptr, [&]() { Base::visit_stmt(x); });
+            }
+            void visit_Variable(const ASR::Variable_t &x) {
+                framed(const_cast<ASR::symbol_t*>(&x.base),
+                    [&]() { Base::visit_Variable(x); });
+            }
+            void visit_Var(const ASR::Var_t &x) {
+                if (!frames.empty()) {
+                    frames.back().vars.insert(
+                        ASRUtils::symbol_get_past_external(x.m_v));
+                }
+            }
+            void visit_GetPointer(const ASR::GetPointer_t &x) {
+                taken(x.m_arg);
+                Base::visit_GetPointer(x);
+            }
+            void visit_CLoc(const ASR::CLoc_t &x) {
+                taken(x.m_arg);
+                Base::visit_CLoc(x);
+            }
+            void visit_Associate(const ASR::Associate_t &x) {
+                taken(x.m_value);
+                Base::visit_Associate(x);
             }
         } t;
         t.syms = &f.address_taken;
