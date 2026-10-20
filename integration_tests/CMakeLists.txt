@@ -2401,6 +2401,7 @@ RUN(NAME forall_09 LABELS llvm EXTRA_ARGS --realloc-lhs-arrays) # GFortran assig
 RUN(NAME forall_10 LABELS llvm) # GFortran evaluates these vector subscripts one index at a time
 RUN(NAME forall_11 LABELS gfortran llvm)
 RUN(NAME forall_12 LABELS llvm EXTRA_ARGS --realloc-lhs-arrays) # GFortran does not reallocate these components in a FORALL
+RUN(NAME forall_14 LABELS gfortran llvm)
 
 RUN(NAME parsing_01 LABELS gfortran)
 RUN(NAME parsing_02 LABELS gfortran)
