@@ -96,27 +96,6 @@ bool gpu_loop_transforms_apply(const PassOptions &pass_options) {
     return gpu_device_selected(pass_options) == GpuDevice::Cuda;
 }
 
-namespace {
-
-std::set<ASR::stmt_t*> &rarely_run_loops() {
-    static std::set<ASR::stmt_t*> loops;
-    return loops;
-}
-
-} // namespace
-
-void gpu_rarely_run_clear() {
-    rarely_run_loops().clear();
-}
-
-void gpu_mark_rarely_run(ASR::stmt_t *loop) {
-    rarely_run_loops().insert(loop);
-}
-
-bool gpu_rarely_run(ASR::stmt_t *loop) {
-    return rarely_run_loops().count(loop) > 0;
-}
-
 ASR::expr_t *gpu_cache_bytes(Allocator &al, SymbolTable *unit_scope,
         const PassOptions &pass_options, const Location &loc) {
     ASRUtils::ASRBuilder b(al, loc);

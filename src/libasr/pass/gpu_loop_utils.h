@@ -45,10 +45,9 @@ bool gpu_loop_transforms_apply(const PassOptions &pass_options);
 // of the DO loops around them only): the transformations after it leave
 // them as written, so that the offload pipeline still recognizes, for
 // example, that they assign an array whole and need not copy it to the
-// device first. The fusion pass, which runs first, starts the list afresh.
-void gpu_rarely_run_clear();
-void gpu_mark_rarely_run(ASR::stmt_t *loop);
-bool gpu_rarely_run(ASR::stmt_t *loop);
+// device first. One run of the transformations (pass_gpu_loop_transforms)
+// owns the set and hands it from the fusion to the splitting.
+typedef std::set<ASR::stmt_t*> GpuRarelyRun;
 
 // The size in bytes of the device's last-level cache, as an integer(8)
 // expression: the --gpu-cache-bytes option, or a call of the runtime's

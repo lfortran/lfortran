@@ -9,8 +9,9 @@ does preserves the meaning of the program, and leaves the loops as they are
 when it cannot.
 
 They run for `--gpu=cuda` and `--gpu=cuda_cpu` (on by default), right after
-the dispatch has assigned the loops (`gpu_loop_fusion`, then
-`gpu_index_set_split`, before `gpu_offload`), so their output is
+the dispatch has assigned the loops (the pass `gpu_loop_transforms`, which
+runs `gpu_loop_fusion`, then `gpu_index_set_split`, before `gpu_offload`;
+each of the two can also be run on its own with `--pass`), so their output is
 ordinary `do concurrent` nests and host code that the rest of the offload
 pipeline lowers as it lowers any other; Metal keeps its loops as written.
 `--gpu-loop-transforms` selects them: `all` (the default), `none`, or a
@@ -141,7 +142,8 @@ Legality:
 
 The original loops, which run only in the last iteration, are left as
 written by the passes after this one (index-set splitting would split them
-too): the offload pipeline then still sees that the producer assigns its
+too; `gpu_loop_transforms` hands the list of them from the fusion to the
+splitting): the offload pipeline then still sees that the producer assigns its
 arrays whole, so they are not copied to the device before it runs (4 ms at
 2048², 17 MB per array).
 

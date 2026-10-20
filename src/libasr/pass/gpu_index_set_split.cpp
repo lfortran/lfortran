@@ -2,6 +2,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/pass/gpu_affine.h>
 #include <libasr/pass/gpu_index_set_split.h>
+#include <libasr/pass/gpu_loop_fusion.h>
 #include <libasr/pass/gpu_loop_utils.h>
 #include <libasr/pass/pass_utils.h>
 
@@ -65,10 +66,11 @@ public:
     bool jam_enabled;
     SymbolTable *unit_scope;
     const PassOptions &pass_options;
+    const GpuRarelyRun &rarely_run;
     Split(Allocator &al_, bool jam_enabled_, SymbolTable *unit_scope_,
-            const PassOptions &pass_options_)
+            const PassOptions &pass_options_, const GpuRarelyRun &rarely_run_)
         : al(al_), jam_enabled(jam_enabled_), unit_scope(unit_scope_),
-          pass_options(pass_options_) {}
+          pass_options(pass_options_), rarely_run(rarely_run_) {}
 
     // Walks a statement list in order, keeping the affine values of the
     // integer scalars assigned once, and calls `on_if` for every IF.
@@ -379,7 +381,7 @@ public:
 
     ASR::stmt_t *try_split(SymbolTable *scope, ASR::stmt_t *stmt) {
         GpuLoopNest nest;
-        if (gpu_rarely_run(stmt) || !gpu_loop_nest(stmt, nest)) {
+        if (rarely_run.count(stmt) || !gpu_loop_nest(stmt, nest)) {
             return nullptr;
         }
         size_t rank = nest.rank();
@@ -895,14 +897,14 @@ public:
 
 } // namespace
 
-void pass_gpu_index_set_split(Allocator &al, ASR::TranslationUnit_t &unit,
-        const PassOptions &pass_options) {
+void gpu_index_set_split(Allocator &al, ASR::TranslationUnit_t &unit,
+        const PassOptions &pass_options, const GpuRarelyRun &rarely_run) {
     if (!gpu_loop_transforms_apply(pass_options)
             || !gpu_loop_transform_enabled(pass_options, GpuLoopSplit)) {
         return;
     }
     Split s(al, gpu_loop_transform_enabled(pass_options, GpuLoopJam),
-        unit.m_symtab, pass_options);
+        unit.m_symtab, pass_options, rarely_run);
     std::function<void(SymbolTable*)> visit_scope = [&](SymbolTable *st) {
         for (auto &item : st->get_scope()) {
             ASR::symbol_t *sym = item.second;
@@ -925,6 +927,20 @@ void pass_gpu_index_set_split(Allocator &al, ASR::TranslationUnit_t &unit,
         PassUtils::UpdateDependenciesVisitor u(al);
         u.visit_TranslationUnit(unit);
     }
+}
+
+void pass_gpu_index_set_split(Allocator &al, ASR::TranslationUnit_t &unit,
+        const PassOptions &pass_options) {
+    gpu_index_set_split(al, unit, pass_options, GpuRarelyRun());
+}
+
+void pass_gpu_loop_transforms(Allocator &al, ASR::TranslationUnit_t &unit,
+        const PassOptions &pass_options) {
+    // The set lives for this run only: it holds statements of this unit,
+    // which no later compilation can see.
+    GpuRarelyRun rarely_run;
+    gpu_loop_fusion(al, unit, pass_options, rarely_run);
+    gpu_index_set_split(al, unit, pass_options, rarely_run);
 }
 
 } // namespace LCompilers

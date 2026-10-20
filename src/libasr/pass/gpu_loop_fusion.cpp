@@ -195,13 +195,16 @@ public:
     // The variables involved in taking an address or associating a
     // pointer anywhere in the program (see pass_gpu_loop_fusion).
     std::set<ASR::symbol_t*> address_taken;
+    GpuRarelyRun &rarely_run;
 
     // Statements to put before and after a statement of the list being
     // rebuilt: the allocation of a renamed array's copy goes before the
     // outermost DO loop the fusion relies on, its deallocation after it.
     std::map<ASR::stmt_t*, std::vector<ASR::stmt_t*>> before, after;
 
-    LoopFusion(Allocator &al_, const PassOptions &po_) : al(al_), po(po_) {}
+    LoopFusion(Allocator &al_, const PassOptions &po_,
+            GpuRarelyRun &rarely_run_)
+        : al(al_), po(po_), rarely_run(rarely_run_) {}
 
     struct Ancestor {
         ASR::stmt_t *stmt;          // a DoLoop, or another statement
@@ -1775,8 +1778,8 @@ public:
         for (ASR::expr_t *e : checks) {
             cond = b.And(cond, b.GtE(e, gpu_i32(al, loc, 0)));
         }
-        gpu_mark_rarely_run(body[i]);
-        gpu_mark_rarely_run(body[i + 1]);
+        rarely_run.insert(body[i]);
+        rarely_run.insert(body[i + 1]);
         ASR::stmt_t *result = b.If(cond, fused_stmts, original);
         if (!hoisted_before.empty()) {
             ASR::stmt_t *outer = loop_stmts.back();
@@ -1791,14 +1794,13 @@ public:
 
 } // namespace
 
-void pass_gpu_loop_fusion(Allocator &al, ASR::TranslationUnit_t &unit,
-        const PassOptions &pass_options) {
-    gpu_rarely_run_clear();
+void gpu_loop_fusion(Allocator &al, ASR::TranslationUnit_t &unit,
+        const PassOptions &pass_options, GpuRarelyRun &rarely_run) {
     if (!gpu_loop_transforms_apply(pass_options)
             || !gpu_loop_transform_enabled(pass_options, GpuLoopFuse)) {
         return;
     }
-    LoopFusion f(al, pass_options);
+    LoopFusion f(al, pass_options, rarely_run);
     {
         // Every variable named in a statement, or in the declaration of
         // a variable (its initializer), that takes an address
@@ -1880,6 +1882,12 @@ void pass_gpu_loop_fusion(Allocator &al, ASR::TranslationUnit_t &unit,
         }
     };
     visit_scope(unit.m_symtab);
+}
+
+void pass_gpu_loop_fusion(Allocator &al, ASR::TranslationUnit_t &unit,
+        const PassOptions &pass_options) {
+    GpuRarelyRun rarely_run;
+    gpu_loop_fusion(al, unit, pass_options, rarely_run);
 }
 
 } // namespace LCompilers
