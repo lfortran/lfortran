@@ -1,6 +1,6 @@
 #include <cuda_runtime.h>
 
-#include "gpu_cuda_scratch_order.h"
+#include "../src/tests/cuda_api_test_double/gpu_cuda_scratch_order.h"
 
 __global__ void write_sequence(int *output, int sequence,
     int *s0, int *s1, int *s2, int *s3, int *s4, int *s5,

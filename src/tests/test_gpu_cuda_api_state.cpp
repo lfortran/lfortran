@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "../libasr/runtime/lfortran_gpu_cuda.cu"
-#include "../../integration_tests/gpu_cuda_scratch_order.h"
+#include "cuda_api_test_double/gpu_cuda_scratch_order.h"
 
 // Compile the production runtime against a small, ordered host API double.
 // Copies and launches wait in stream 0 until a synchronous CUDA call drains

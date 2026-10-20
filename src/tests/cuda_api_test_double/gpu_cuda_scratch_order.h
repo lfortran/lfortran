@@ -2,7 +2,7 @@
 
 #include <initializer_list>
 
-#include "../src/libasr/runtime/lfortran_gpu_runtime.h"
+#include "../../libasr/runtime/lfortran_gpu_runtime.h"
 
 extern "C" void lfortran_gpu_register_kernel(const char *, void (*)(void));
 
