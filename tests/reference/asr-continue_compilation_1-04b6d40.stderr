@@ -1484,6 +1484,33 @@ semantic error: Kind 3 is not supported for Logical
 3390 |     logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
      |     ^^^^^^^^^ 
 
+semantic error: automatic object 'c' cannot have the save attribute
+    --> tests/errors/continue_compilation_1.f90:3460:22
+     |
+3460 |     integer, save :: c(n)  ! {Error} automatic object 'c' cannot have the save attribute
+     |                      ^^^^ an array bound of 'c' is not a constant expression
+     |
+3460 |     integer, save :: c(n)  ! {Error} automatic object 'c' cannot have the save attribute
+     |                      ~~~~ help: Fortran 2023 C814 forbids the save attribute here; remove it, or make 'c' allocatable with a deferred shape, to keep its value between calls
+
+semantic error: automatic object 'str' cannot have the save attribute
+    --> tests/errors/continue_compilation_1.f90:3468:25
+     |
+3468 |     character(len=n) :: str  ! {Error} automatic object 'str' cannot have the save attribute
+     |                         ^^^ the character length of 'str' is not a constant expression
+     |
+3468 |     character(len=n) :: str  ! {Error} automatic object 'str' cannot have the save attribute
+     |                         ~~~ help: Fortran 2023 C814 forbids the save attribute here; remove it, or make 'str' allocatable with a deferred length, character(len=:), to keep its value between calls
+
+semantic error: automatic object 'c' cannot have the save attribute
+    --> tests/errors/continue_compilation_1.f90:3484:26
+     |
+3484 |         integer, save :: c(n)  ! {Error} automatic object 'c' cannot have the save attribute
+     |                          ^^^^ an array bound of 'c' is not a constant expression
+     |
+3484 |         integer, save :: c(n)  ! {Error} automatic object 'c' cannot have the save attribute
+     |                          ~~~~ help: Fortran 2023 C814 forbids the save attribute here; remove it, or make 'c' allocatable with a deferred shape, to keep its value between calls
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
@@ -4297,3 +4324,12 @@ semantic error: Variable 'cc1_external_name_fn' is not declared
      |
 3452 |     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
      |              ^^^^^^^^^^^^^^^^^^^^ 'cc1_external_name_fn' is undeclared
+
+semantic error: automatic object 'e' cannot have the save attribute
+    --> tests/errors/continue_compilation_1.f90:3462:26
+     |
+3462 |         integer, save :: e(n:10)  ! {Error} automatic object 'e' cannot have the save attribute
+     |                          ^^^^^^^ an array bound of 'e' is not a constant expression
+     |
+3462 |         integer, save :: e(n:10)  ! {Error} automatic object 'e' cannot have the save attribute
+     |                          ~~~~~~~ help: Fortran 2023 C814 forbids the save attribute here; remove it, or make 'e' allocatable with a deferred shape, to keep its value between calls
