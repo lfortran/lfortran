@@ -7,6 +7,7 @@ program read_112
     integer(8) :: qa(2,2)
     real, target :: ra(2,2)
     character(len=3) :: c(2,2)
+    character(len=4) :: cs(2,2)
     complex :: z(2,2)
     character(len=40) :: s
 
@@ -36,11 +37,15 @@ program read_112
     if (any(kt(2,:) /= [2, 3, 0])) error stop 7
     if (any(kt(3,:) /= [4, 5, 0])) error stop 8
 
-    ! Character and complex items
+    ! Character, substring and complex items
     s = 'abcdefghijkl'
     read(s, '(4A3)') ((c(i,j), j=1,n), i=1,n)
     if (c(1,1) /= 'abc' .or. c(1,2) /= 'def') error stop 9
     if (c(2,1) /= 'ghi' .or. c(2,2) /= 'jkl') error stop 10
+    cs = '....'
+    read(s, '(4A2)') ((cs(i,j)(2:3), j=1,n), i=1,n)
+    if (cs(1,1) /= '.ab.' .or. cs(1,2) /= '.cd.') error stop 11
+    if (cs(2,1) /= '.ef.' .or. cs(2,2) /= '.gh.') error stop 12
     s = ' 1. 2. 3. 4. 5. 6. 7. 8.'
     read(s, '(8F3.0)') ((z(i,j), j=1,n), i=1,n)
     if (z(1,1) /= (1., 2.) .or. z(1,2) /= (3., 4.)) error stop 13

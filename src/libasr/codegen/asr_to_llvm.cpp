@@ -215,6 +215,33 @@ public:
     }
 };
 
+// The variables and components that expressions reference, and whether they
+// call a procedure that is not intrinsic, which may reference any variable
+// it can access.
+class ReferencedStorage : public ASR::BaseWalkVisitor<ReferencedStorage> {
+public:
+    std::vector<ASR::symbol_t*> symbols;
+    bool calls_procedure = false;
+
+    void visit_Var(const ASR::Var_t &x) {
+        symbols.push_back(ASRUtils::symbol_get_past_external(x.m_v));
+    }
+
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+        symbols.push_back(ASRUtils::symbol_get_past_external(x.m_m));
+        ASR::BaseWalkVisitor<ReferencedStorage>::visit_StructInstanceMember(x);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        ASR::symbol_t* fn = ASRUtils::symbol_get_past_external(x.m_name);
+        if (!ASR::is_a<ASR::Function_t>(*fn) || !ASRUtils::is_intrinsic_function2(
+                ASR::down_cast<ASR::Function_t>(fn))) {
+            calls_procedure = true;
+        }
+        ASR::BaseWalkVisitor<ReferencedStorage>::visit_FunctionCall(x);
+    }
+};
+
 // For each statement label of a procedure body, the BLOCK and ASSOCIATE
 // constructs that contain the labeled statement, outermost first.
 class GoToTargetScopes : public ASR::BaseWalkVisitor<GoToTargetScopes> {
@@ -22441,32 +22468,59 @@ public:
         builder->CreateCall(fn, single_args);
     }
 
-    // The variable that an input item defines, or nullptr for other items.
-    static ASR::symbol_t* formatted_read_item_symbol(ASR::expr_t* e) {
+    // Collects the variable and components that an input item of a
+    // formatted READ defines, and the subscripts its address uses. Returns
+    // false if the item is not a variable, element, section or component.
+    static bool collect_formatted_read_item(ASR::expr_t* e,
+            std::vector<ASR::symbol_t*> &defined, std::vector<ASR::expr_t*> &uses) {
         while (true) {
             if (ASR::is_a<ASR::Var_t>(*e)) {
-                return ASR::down_cast<ASR::Var_t>(e)->m_v;
+                defined.push_back(ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(e)->m_v));
+                return true;
             } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
-                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+                ASR::ArrayItem_t* ai = ASR::down_cast<ASR::ArrayItem_t>(e);
+                for (size_t j = 0; j < ai->n_args; j++) {
+                    uses.push_back(ai->m_args[j].m_left);
+                    uses.push_back(ai->m_args[j].m_right);
+                    uses.push_back(ai->m_args[j].m_step);
+                }
+                e = ai->m_v;
             } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
-                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+                ASR::ArraySection_t* as = ASR::down_cast<ASR::ArraySection_t>(e);
+                for (size_t j = 0; j < as->n_args; j++) {
+                    uses.push_back(as->m_args[j].m_left);
+                    uses.push_back(as->m_args[j].m_right);
+                    uses.push_back(as->m_args[j].m_step);
+                }
+                e = as->m_v;
             } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
-                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+                ASR::StructInstanceMember_t* m = ASR::down_cast<ASR::StructInstanceMember_t>(e);
+                defined.push_back(ASRUtils::symbol_get_past_external(m->m_m));
+                e = m->m_v;
             } else if (ASR::is_a<ASR::StringItem_t>(*e)) {
-                e = ASR::down_cast<ASR::StringItem_t>(e)->m_arg;
+                ASR::StringItem_t* si = ASR::down_cast<ASR::StringItem_t>(e);
+                uses.push_back(si->m_idx);
+                e = si->m_arg;
             } else if (ASR::is_a<ASR::StringSection_t>(*e)) {
-                e = ASR::down_cast<ASR::StringSection_t>(e)->m_arg;
+                ASR::StringSection_t* ss = ASR::down_cast<ASR::StringSection_t>(e);
+                uses.push_back(ss->m_start);
+                uses.push_back(ss->m_end);
+                uses.push_back(ss->m_step);
+                e = ss->m_arg;
             } else {
-                return nullptr;
+                return false;
             }
         }
     }
 
     // Collects the items of an implied-do loop of a formatted READ, at any
-    // depth, and the expressions their addresses and the loop bounds use.
-    // Returns false if an item is not a scalar variable or element.
+    // depth, and the expressions their addresses and the loops use.
+    // Returns false if an item is not a scalar variable, element, component
+    // or substring.
     static bool collect_formatted_read_idl_items(ASR::ImpliedDoLoop_t* idl,
-            std::vector<ASR::expr_t*> &items, std::vector<ASR::expr_t*> &uses) {
+            std::vector<ASR::symbol_t*> &defined, std::vector<ASR::expr_t*> &uses) {
+        uses.push_back(idl->m_var);
         uses.push_back(idl->m_start);
         uses.push_back(idl->m_end);
         uses.push_back(idl->m_increment);
@@ -22474,7 +22528,7 @@ public:
             ASR::expr_t* item = idl->m_values[i];
             if (ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
                 if (!collect_formatted_read_idl_items(
-                        ASR::down_cast<ASR::ImpliedDoLoop_t>(item), items, uses)) {
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(item), defined, uses)) {
                     return false;
                 }
                 continue;
@@ -22482,42 +22536,49 @@ public:
             ASR::ttype_t* type = ASRUtils::expr_type(item);
             if (!(ASR::is_a<ASR::String_t>(*type) || ASR::is_a<ASR::Logical_t>(*type) ||
                     ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type) ||
-                    ASR::is_a<ASR::Complex_t>(*type))) {
+                    ASR::is_a<ASR::Complex_t>(*type)) ||
+                    !collect_formatted_read_item(item, defined, uses)) {
                 return false;
             }
-            ASR::expr_t* e = item;
-            while (!ASR::is_a<ASR::Var_t>(*e)) {
-                if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
-                    ASR::ArrayItem_t* ai = ASR::down_cast<ASR::ArrayItem_t>(e);
-                    for (size_t j = 0; j < ai->n_args; j++) {
-                        uses.push_back(ai->m_args[j].m_left);
-                        uses.push_back(ai->m_args[j].m_right);
-                        uses.push_back(ai->m_args[j].m_step);
-                    }
-                    e = ai->m_v;
-                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
-                    e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
-                } else {
-                    return false;
-                }
-            }
-            items.push_back(item);
         }
         return true;
+    }
+
+    // Whether `defined`, a variable or component that a READ defines, may
+    // share storage with `used`, one that the READ references to evaluate
+    // a loop bound or an address: they are the same, either is a pointer
+    // (which includes an ASSOCIATE name and an EQUIVALENCE), both have
+    // TARGET, or both are in common blocks.
+    static bool formatted_read_may_alias(ASR::symbol_t* defined, ASR::symbol_t* used) {
+        if (defined == used) {
+            return true;
+        }
+        if (!ASR::is_a<ASR::Variable_t>(*defined) || !ASR::is_a<ASR::Variable_t>(*used)) {
+            return false;
+        }
+        ASR::Variable_t* d = ASR::down_cast<ASR::Variable_t>(defined);
+        ASR::Variable_t* u = ASR::down_cast<ASR::Variable_t>(used);
+        return ASR::is_a<ASR::Pointer_t>(*d->m_type) || ASR::is_a<ASR::Pointer_t>(*u->m_type) ||
+            (d->m_target_attr && u->m_target_attr) ||
+            (d->m_common_block != nullptr && u->m_common_block != nullptr);
     }
 
     // Whether a formatted READ whose input list has a nested implied-do
     // loop can be done as one data transfer, with the items of its
     // implied-do loops collected into run-time target lists first. The
-    // items must be scalars, and since their addresses and the loop bounds
-    // are evaluated before any value is read, they must not use a variable
-    // that the same READ defines.
+    // items of the loops must be scalars. All loop bounds and item addresses
+    // are evaluated before any value is read, so no item may share storage
+    // with anything they use, and they must not call a procedure, which
+    // could reference an item.
     bool can_collect_formatted_read_targets(ASR::expr_t** values, size_t n_values) {
         bool has_nested_idl = false;
-        std::vector<ASR::expr_t*> items, uses;
+        std::vector<ASR::symbol_t*> defined;
+        std::vector<ASR::expr_t*> uses;
         for (size_t i = 0; i < n_values; i++) {
             if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
-                items.push_back(values[i]);
+                if (!collect_formatted_read_item(values[i], defined, uses)) {
+                    return false;
+                }
                 continue;
             }
             ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]);
@@ -22525,20 +22586,25 @@ public:
                 has_nested_idl = has_nested_idl ||
                     ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[j]);
             }
-            if (!collect_formatted_read_idl_items(idl, items, uses)) {
+            if (!collect_formatted_read_idl_items(idl, defined, uses)) {
                 return false;
             }
         }
         if (!has_nested_idl) {
             return false;
         }
-        for (ASR::expr_t* item : items) {
-            ASR::symbol_t* sym = formatted_read_item_symbol(item);
-            if (sym == nullptr) {
-                return false;
+        ReferencedStorage used;
+        for (ASR::expr_t* use : uses) {
+            if (use) {
+                used.visit_expr(*use);
             }
-            for (ASR::expr_t* use : uses) {
-                if (ASRUtils::expr_references_symbol(use, sym)) {
+        }
+        if (used.calls_procedure) {
+            return false;
+        }
+        for (ASR::symbol_t* d : defined) {
+            for (ASR::symbol_t* u : used.symbols) {
+                if (formatted_read_may_alias(d, u)) {
                     return false;
                 }
             }
