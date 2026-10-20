@@ -596,8 +596,17 @@ int serve_local_endpoint(SessionEndpoint &session, const std::string &file,
         signal(SIGINT, terminate_server);
 #endif
         // C/runtime writes are records as well as C++ iostream writes.
-        setvbuf(stdout, nullptr, _IOLBF, 0);
-        setvbuf(stderr, nullptr, _IONBF, 0);
+#ifdef _WIN32
+        // MSVC treats _IOLBF as full buffering; live output must not wait for
+        // a full buffer, and a zero-sized buffered stream invokes its fatal
+        // invalid-parameter handler before the startup acknowledgment.
+        constexpr int output_buffering = _IONBF;
+#else
+        constexpr int output_buffering = _IOLBF;
+#endif
+        if (setvbuf(stdout, nullptr, output_buffering, BUFSIZ) ||
+                setvbuf(stderr, nullptr, _IONBF, 0))
+            throw std::runtime_error("cannot configure kernel output buffering");
         artifacts.directory = (fs::u8path(user_root()) /
             ("s-" + new_session_id().substr(0, 16))).u8string();
 #ifdef _WIN32
@@ -772,11 +781,24 @@ std::string launch_local_session(const std::vector<std::string> &arguments,
     STARTUPINFOEXW startup{};
     startup.StartupInfo.cb = sizeof(startup);
     startup.StartupInfo.dwFlags = STARTF_USESTDHANDLES;
-    HANDLE null = CreateFileW(L"NUL", GENERIC_READ | GENERIC_WRITE,
-        FILE_SHARE_READ | FILE_SHARE_WRITE, &attributes, OPEN_EXISTING, 0, nullptr);
-    startup.StartupInfo.hStdInput = null;
-    startup.StartupInfo.hStdOutput = null;
-    startup.StartupInfo.hStdError = null;
+    // Each CRT descriptor must own a separate handle: freopen(stdin) and
+    // capture's _dup2(stdout) must not close stderr's underlying NUL handle.
+    HANDLE streams[3];
+    bool streams_ready = true;
+    for (int i = 0; i < 3; ++i) {
+        streams[i] = CreateFileW(L"NUL", i ? GENERIC_WRITE : GENERIC_READ,
+            FILE_SHARE_READ | FILE_SHARE_WRITE, &attributes, OPEN_EXISTING, 0, nullptr);
+        streams_ready &= streams[i] != invalid;
+    }
+    if (!streams_ready) {
+        for (auto stream : streams) close_handle(stream);
+        CloseHandle(read_pipe);
+        CloseHandle(write_pipe);
+        throw std::runtime_error("cannot isolate managed kernel streams");
+    }
+    startup.StartupInfo.hStdInput = streams[0];
+    startup.StartupInfo.hStdOutput = streams[1];
+    startup.StartupInfo.hStdError = streams[2];
     SIZE_T attribute_size = 0;
     InitializeProcThreadAttributeList(nullptr, 1, 0, &attribute_size);
     std::vector<char> attribute_storage(attribute_size);
@@ -784,7 +806,7 @@ std::string launch_local_session(const std::vector<std::string> &arguments,
         attribute_storage.data());
     bool attribute_ready = InitializeProcThreadAttributeList(
         startup.lpAttributeList, 1, 0, &attribute_size);
-    HANDLE inherited[]{write_pipe, null};
+    HANDLE inherited[]{write_pipe, streams[0], streams[1], streams[2]};
     bool inherited_ready = attribute_ready && UpdateProcThreadAttribute(
         startup.lpAttributeList, 0, PROC_THREAD_ATTRIBUTE_HANDLE_LIST,
         inherited, sizeof(inherited), nullptr, nullptr);
@@ -796,7 +818,7 @@ std::string launch_local_session(const std::vector<std::string> &arguments,
         &startup.StartupInfo, &process);
     if (attribute_ready) DeleteProcThreadAttributeList(startup.lpAttributeList);
     CloseHandle(write_pipe);
-    CloseHandle(null);
+    for (auto stream : streams) CloseHandle(stream);
     if (!ok) { CloseHandle(read_pipe); throw std::runtime_error("cannot launch local kernel"); }
     CloseHandle(process.hThread);
 #else

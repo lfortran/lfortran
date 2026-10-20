@@ -743,10 +743,13 @@ def security_and_cli(executable, root):
     assert inferred.returncode == 0 and re.search(rb"(?m)^42\r?$", inferred.stdout), (
         inferred.stdout, inferred.stderr)
     separated = subprocess.run([executable, "--no-color"],
-        input=b"write(0,*) 'terminal-stderr'\r4 + 5\r\x04",
+        input=b"write(0,*) 'terminal-stderr'\rprint *, 'terminal-stdout'\r"
+              b"write(0,*) 'terminal-stderr-again'\r4 + 5\r\x04",
         capture_output=True, timeout=20, cwd=root)
     assert separated.returncode == 0 and b"terminal-stderr" in separated.stderr, (
         separated.stdout, separated.stderr)
+    assert b"terminal-stderr-again" in separated.stderr, separated.stderr
+    assert b"terminal-stdout" in separated.stdout, separated.stdout
     assert re.search(rb"(?m)^9\r?$", separated.stdout)
     # Managed terminal: actual shared state, another client remains after
     # initial terminal detaches, and the final peer triggers process exit.
