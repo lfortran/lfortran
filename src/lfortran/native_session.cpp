@@ -127,7 +127,7 @@ struct NativeSession::Impl {
         uint64_t peer;
         Value message;
         size_t bytes = 0;
-        std::shared_ptr<void> retention;
+        std::shared_ptr<void> retention = nullptr;
     };
     CompilerOptions options;
     const std::string session = new_session_id();

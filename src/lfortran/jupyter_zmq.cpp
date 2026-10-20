@@ -313,7 +313,7 @@ class Server final : public SessionAdapter {
     struct Peer {
         struct Output {
             Parts parts;
-            std::shared_ptr<void> retention;
+            std::shared_ptr<void> retention = nullptr;
         };
         uint64_t id;
         std::string session;

@@ -18,7 +18,7 @@ struct SessionDelivery {
     bool disconnect = false;
     // An origin's admission reservation follows its completion through every
     // transport queue, and is released only after sending (or real disconnect).
-    std::shared_ptr<void> retention;
+    std::shared_ptr<void> retention = nullptr;
     bool best_effort = false;
 };
 
