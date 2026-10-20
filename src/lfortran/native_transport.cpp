@@ -707,6 +707,10 @@ int serve_local_endpoint(SessionEndpoint &session, const std::string &file,
         if (adapter) adapter->stop();
         ready_write(ready, std::string("error: ") + error.what() + "\n");
         std::fprintf(stderr, "local session: %s\n", error.what());
+        artifacts.cleanup();
+        // A failed transport must also end heartbeat and a blocked/spinning
+        // evaluator. Joining that worker here could leave a live, mute kernel.
+        if (session.executing()) std::_Exit(1);
         return 1;
     }
 }

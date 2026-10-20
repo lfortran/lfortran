@@ -95,9 +95,12 @@ Malformed peers receive a best-effort `{"connection_error":"reason"}` frame
 and are disconnected. Framing errors can close the stream immediately.
 Limits include 64 peers, 128 queued executions, 32 MiB of queued request bytes,
 32 MiB/4096 events per peer in each output queue, and 4096 recent request IDs
-globally plus all outstanding IDs (including across reconnects). Oversized,
-flooded or slow peers are disconnected,
-not silently truncated and not allowed to stall evaluation/control for others.
+globally plus all outstanding IDs (including across reconnects). When the
+execution queue is full, a valid new execution receives a private
+`execute_reply(status="error", ename="QueueFull")` and parented busy/idle;
+that cell is not executed and the route remains available for accepted work.
+Oversized, malformed or slow local peers are disconnected, not silently
+truncated and not allowed to stall evaluation/control for others.
 Peers that send no complete hello have a bounded admission timeout.
 
 ## Logical messages
@@ -341,6 +344,16 @@ This is bounded replay protection, not indefinite replay persistence.
 Each ROUTER peer has separate bounded outbound queues, so a blocked client
 does not head-of-line block others. IOPub remains a live PUB subscription, not
 reliable historical replay or a slow-consumer archive.
+
+Queue-full execution rejection preserves the route and resolves the rejected
+request explicitly, as on the local binding. If a logical peer fails validation
+after wire decoding, or its bounded outbound queue overflows, the server
+terminates the native kernel and closes all channels, including heartbeat.
+libzmq cannot disconnect an individual route on a bound ROUTER socket; removing
+only its application entry would silently lose replies for accepted work on a
+still-live connection. This conservative failure boundary may affect all
+clients, with unknown outstanding execution outcomes, rather than advertise
+false liveness. Actual TCP disconnects still remove only the disconnected peer.
 
 Use a real `kernel_info` plus IOPub/status readiness handshake, such as
 `BlockingKernelClient.wait_for_ready()`. Heartbeat alone does not establish an

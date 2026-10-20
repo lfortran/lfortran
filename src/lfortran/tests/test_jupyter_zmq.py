@@ -78,6 +78,120 @@ def value(c, code, expected):
     return reply, events
 
 
+def overflow(a, b, path):
+    done(a, a.execute("integer :: overflow_gate, overflow_ios, overflow_count=0"))
+    gate = a.execute("read(*,*,iostat=overflow_ios) overflow_gate")
+    wait(a, "stdin", "input_request", gate)
+    submitted = [b.execute("overflow_count=overflow_count+1") for _ in range(129)]
+    requests = set(submitted)
+    barrier = b.kernel_info()
+    replies = {}
+    while True:
+        event = b.get_shell_msg(timeout=20)
+        parent = event["parent_header"].get("msg_id")
+        if event["msg_type"] == "execute_reply" and parent in requests:
+            replies[parent] = event
+        if event["msg_type"] == "kernel_info_reply" and parent == barrier:
+            break
+    # The same-route barrier is after all 129 submissions, while the worker
+    # still waits in READ. Exactly the overflow request must be rejected now.
+    assert len(replies) == 1, replies
+    rejected = next(iter(replies))
+    assert rejected == submitted[-1], rejected
+    assert replies[rejected]["content"]["status"] == "error", replies
+    assert replies[rejected]["content"]["ename"] == "QueueFull", replies
+    with contextlib.suppress(Empty):
+        leaked = a.get_shell_msg(timeout=.05)
+        raise AssertionError(("private overflow reply leaked", leaked))
+    heartbeat_echo(path)
+    a.input("1")
+    done(a, gate)
+    while len(replies) < len(requests):
+        event = b.get_shell_msg(timeout=25)
+        parent = event["parent_header"].get("msg_id")
+        if event["msg_type"] == "execute_reply" and parent in requests:
+            assert parent not in replies, event
+            replies[parent] = event
+    idle, executed = set(), set()
+    while idle != requests:
+        event = b.get_iopub_msg(timeout=25)
+        parent = event["parent_header"].get("msg_id")
+        if parent not in requests:
+            continue
+        if event["msg_type"] == "execute_input":
+            executed.add(parent)
+        if event["msg_type"] == "status" and event["content"]["execution_state"] == "idle":
+            assert parent not in idle, event
+            idle.add(parent)
+    assert executed == requests - {rejected}, executed
+    for parent in executed:
+        assert replies[parent]["content"]["status"] == "ok", replies[parent]
+        assert replies[parent]["parent_header"]["session"] == b.session.session
+    counts = [replies[parent]["content"]["execution_count"] for parent in submitted[:-1]]
+    assert counts == list(range(counts[0], counts[0] + 128)), counts
+    with contextlib.suppress(Empty):
+        leaked = a.get_shell_msg(timeout=.05)
+        raise AssertionError(("private accepted reply leaked", leaked))
+    value(b, "overflow_count", "128")
+    value(b, "overflow_count+1", "129")
+    print("queue limit: 128 accepted replies+idle, one explicit rejection, same route recovers PASS",
+        flush=True)
+
+
+def failed_native_peer(executable, root, slow=False):
+    path = connection(root, b"failed-route")
+    server = Native(executable, root, path)
+    a = b = None
+    slow_socket = context = None
+    try:
+        a, b = client(path), client(path)
+        done(a, a.execute("integer :: failed_gate, failed_ios, failed_count=0"))
+        if slow:
+            done(a, a.execute("!" + "history-padding-" * 2048))
+        gate = a.execute("read(*,*,iostat=failed_ios) failed_gate")
+        wait(a, "stdin", "input_request", gate)
+        b.execute("failed_count=failed_count+1")
+        wait(b, "shell", "kernel_info_reply", b.kernel_info())
+        # Unlike a real TCP disconnect, an application-only peer deletion is
+        # not observable to a standard client. Require actual kernel loss.
+        if slow:
+            config = json.loads(path.read_text())
+            context = zmq.Context()
+            slow_socket = context.socket(zmq.DEALER)
+            slow_socket.setsockopt(zmq.RCVHWM, 1)
+            slow_socket.setsockopt(zmq.SNDHWM, 2048)
+            slow_socket.connect("tcp://127.0.0.1:%d" % config["shell_port"])
+            session = Session(key=b"failed-route")
+            for _ in range(1024):
+                session.send(slow_socket, "history_request",
+                    {"hist_access_type": "tail", "n": 100, "output": False})
+        else:
+            b.shell_channel.send(b.session.msg("unsupported_request", {}))
+        assert server.process.wait(timeout=8) == 1
+        assert not server.local.exists()
+        heartbeat_context = zmq.Context()
+        heartbeat = heartbeat_context.socket(zmq.REQ)
+        try:
+            config = json.loads(path.read_text())
+            heartbeat.connect("tcp://127.0.0.1:%d" % config["hb_port"])
+            heartbeat.send(b"must-not-advertise-a-live-kernel")
+            assert not heartbeat.poll(500)
+        finally:
+            heartbeat.close(linger=0)
+            heartbeat_context.term()
+        print("%s peer with accepted work: observable kernel/heartbeat loss PASS" %
+            ("slow" if slow else "invalid logical"), flush=True)
+    finally:
+        for peer in (a, b):
+            if peer:
+                peer.stop_channels()
+        if slow_socket:
+            slow_socket.close(linger=0)
+        if context:
+            context.term()
+        server.close()
+
+
 def stop(process):
     if process and process.poll() is None:
         process.terminate()
@@ -148,14 +262,15 @@ def native(executable, root):
         a = b = local = None
         try:
             a, b = client(path), client(path)
+            overflow(a, b, path)
             local = Peer(server.descriptor)
             reply, _ = done(a, a.execute("integer :: n = 41, read_n, read_ios"))
-            assert reply["content"]["execution_count"] == 1
+            initial_count = reply["content"]["execution_count"]
             request = local.execute("n + 1")
             assert local.wait("execute_result", request)["content"]["data"]["text/plain"] == "42"
-            assert local.done(request)["content"]["execution_count"] == 2
+            assert local.done(request)["content"]["execution_count"] == initial_count + 1
             reply, events = value(b, "n + 2", "43")
-            assert reply["content"]["execution_count"] == 3
+            assert reply["content"]["execution_count"] == initial_count + 2
             request = a.execute("integer :: broken(")
             reply, events = done(a, request, "error")
             assert any(m["msg_type"] == "error" for m in events)
@@ -256,6 +371,8 @@ def native(executable, root):
             if local:
                 local.close()
             server.close()
+    failed_native_peer(executable, root)
+    failed_native_peer(executable, root, slow=True)
 
 
 def bridge_start(executable, path, root):

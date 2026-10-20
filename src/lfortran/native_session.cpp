@@ -496,8 +496,13 @@ struct NativeSession::Impl {
                             throw std::runtime_error("user_expressions values must be strings");
                 }
                 if (queue.size() >= max_requests ||
-                        queue_bytes + envelope.size() > max_output)
-                    throw std::runtime_error("execution queue is full");
+                        queue_bytes + envelope.size() > max_output) {
+                    immediate_reply(request, "execute_reply", Object{
+                        {"status", "error"}, {"ename", "QueueFull"},
+                        {"evalue", "execution queue is full; cell not executed"},
+                        {"traceback", Array{}}, {"execution_count", count}});
+                    return;
+                }
                 queue_bytes += envelope.size();
                 outstanding_ids.insert(id);
                 queue.push_back(std::move(request));

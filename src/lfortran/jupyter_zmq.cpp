@@ -426,7 +426,11 @@ public:
     bool deliver(const SessionDelivery &delivery) override {
         bool routed = delivery.peer >= first_adapter_peer;
         if (delivery.disconnect) {
-            if (routed) remove(delivery.peer);
+            // ROUTER cannot disconnect one bound TCP route. Erasing its
+            // logical peer would silently strand accepted requests while
+            // heartbeat still advertises a live kernel.
+            if (routed) throw std::runtime_error(
+                "Jupyter peer failed; terminating kernel with unknown execution outcomes");
             return routed;
         }
         auto value = parse(delivery.envelope);
@@ -455,8 +459,8 @@ public:
             size_t bytes = 0;
             for (const auto &part : parts) bytes += part.size();
             if (peer.bytes + bytes > max_output || peer.output[i].size() >= max_requests) {
-                remove(peer.id);
-                return routed;
+                throw std::runtime_error(
+                    "slow Jupyter peer; terminating kernel with unknown execution outcomes");
             }
             peer.bytes += bytes;
             peer.output[i].push_back(std::move(parts));
