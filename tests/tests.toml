@@ -4926,6 +4926,31 @@ filename = "../integration_tests/gpu_kernel_source_15.f90"
 gpu_cuda_kernel = true
 gpu_metal_kernel = true
 
+# The loop transformations of `--gpu=cuda` (gpu_loop_fusion.cpp) and their
+# selection by `--gpu-loop-transforms`.
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_20.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_21.f90"
+gpu_cuda_kernel = true
+options = "--gpu-loop-transforms=fuse"
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_22.f90"
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_metal_522.f90"
+gpu_cuda_kernel = true
+options = "--gpu-loop-transforms=none"
+
+[[test]]
+filename = "../integration_tests/gpu_metal_523.f90"
+gpu_cuda_kernel = true
+options = "--gpu-loop-transforms=swap"
+
 # An unknown name in `--gpu-loop-transforms` is an error.
 [[test]]
 filename = "errors/gpu_loop_transforms_01.f90"
