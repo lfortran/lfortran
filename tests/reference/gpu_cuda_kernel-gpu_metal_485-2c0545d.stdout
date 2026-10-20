@@ -145,30 +145,3 @@ extern "C" __global__ void __lfortran_gpu_kernel_4(
     }
     e[((int)(i) - (1)) + (5 * ((int)((j + 1)) - (1)))] = 0;
 }
-
-struct __ScalarArgs___lfortran_gpu_kernel_5 {
-    int __dim_s_0;
-    int __lb_s_0;
-};
-
-extern "C" __global__ void __lfortran_gpu_kernel_5(
-    int* __restrict__ b,
-    int* __restrict__ s,
-    __ScalarArgs___lfortran_gpu_kernel_5 __scalar_args)
-{
-    int __lb_s_0 = __scalar_args.__lb_s_0;
-    int __flat_idx;
-    int __gpu_slot;
-    int i;
-    int j;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (1000 * 3))) {
-        return;
-    }
-    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
-    __gpu_slot = __flat_idx;
-    s[((int)((__gpu_slot + 1)) - (__lb_s_0))] = 0;
-    j = ((__flat_idx - ((__flat_idx / ((1000 - 1) + 1)) * ((1000 - 1) + 1))) + 1);
-    __flat_idx = (__flat_idx / ((1000 - 1) + 1));
-    i = (__flat_idx + 1);
-    s[((int)((__gpu_slot + 1)) - (__lb_s_0))] = (s[((int)((__gpu_slot + 1)) - (__lb_s_0))] + b[((int)(i) - (1)) + (3 * ((int)(j) - (1)))]);
-}

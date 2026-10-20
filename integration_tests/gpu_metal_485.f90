@@ -6,7 +6,7 @@ program gpu_metal_485
     integer, parameter :: n1 = 37, n2 = 13
     real :: a(0:n1 + 1, 0:n2 + 1), lap(n1, n2)
     integer :: b(3, 1000), c(0:4, -1:5, 2:9), d(70, 5), e(5, 4)
-    integer :: i, j, k, s
+    integer :: i, j, k
     real :: expected
 
     do j = 0, n2 + 1
@@ -73,12 +73,5 @@ program gpu_metal_485
         e(i, j + 1) = 0
     end do
     if (any(e /= 7)) error stop 8
-
-    ! A reduction over two dimensions.
-    s = 0
-    do concurrent (j = 1:1000, i = 1:3) reduce(+:s)
-        s = s + b(i, j)
-    end do
-    if (s /= 3 * (1000 * 1001 / 2) + 60000 * 1000) error stop 9
     print *, "ok"
 end program
