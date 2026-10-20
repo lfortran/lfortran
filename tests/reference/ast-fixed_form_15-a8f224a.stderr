@@ -1,0 +1,5 @@
+tokenizer error: Expecting terminating symbol for subroutine
+ --> tests/errors/fixed_form_15.f:5:6
+  |
+5 |    10
+  |      ^ 

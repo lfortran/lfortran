@@ -7,6 +7,11 @@
 
 #include "libasr/utils.h"
 
+std::string cuda_device_compiler_command(
+    const std::string &device_compiler,
+    bool emulate_cpu,
+    const std::string &gpu_arch);
+
 bool resolve_linker_library(
     const std::string &library_name,
     const std::vector<std::string> &lib_dirs,

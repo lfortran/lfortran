@@ -3785,6 +3785,10 @@ filename = "errors/fixed_form_14.f"
 ast = true
 
 [[test]]
+filename = "errors/fixed_form_15.f"
+ast = true
+
+[[test]]
 filename = "errors/arithmetic_if1.f90"
 asr = true
 
@@ -4107,6 +4111,48 @@ asr = true
 filename = "special_chars_json.f90"
 ast_json = true
 asr_json = true
+
+[[test]]
+filename = "json_loc_continuation.f90"
+ast_json = true
+asr_json = true
+
+[[test]]
+filename = "json_loc_fixed_form.f"
+options = "--fixed-form"
+ast_json = true
+asr_json = true
+
+[[test]]
+filename = "json_loc_fixed_form_do.f"
+options = "--fixed-form"
+ast_json = true
+
+[[test]]
+filename = "json_loc_fixed_form_do_label.f"
+options = "--fixed-form"
+ast_json = true
+
+[[test]]
+filename = "json_loc_if.f90"
+ast_json = true
+
+[[test]]
+filename = "json_loc_where.f90"
+ast_json = true
+
+[[test]]
+filename = "json_loc_else_where.f90"
+ast_json = true
+
+[[test]]
+filename = "json_loc_if_where_asr.f90"
+asr_json = true
+
+[[test]]
+filename = "json_loc_if_where_fixed.f"
+options = "--fixed-form"
+ast_json = true
 
 [[test]]
 filename = "redeclaration1.f90"
@@ -4597,6 +4643,18 @@ filename = "../integration_tests/gpu_decline_16.f90"
 gpu_offload_cuda = true
 
 [[test]]
+filename = "../integration_tests/gpu_decline_17.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_18.f90"
+gpu_offload_cuda = true
+
+[[test]]
+filename = "../integration_tests/gpu_decline_19.f90"
+gpu_offload_cuda = true
+
+[[test]]
 filename = "gpu_decline_impure_condition.f90"
 gpu_offload_cuda = true
 
@@ -4847,6 +4905,21 @@ gpu_metal_kernel = true
 gpu_cuda_kernel = true
 
 [[test]]
+filename = "../integration_tests/gpu_kernel_source_14.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_16.f90"
+gpu_metal_kernel = true
+gpu_cuda_kernel = true
+
+[[test]]
+filename = "../integration_tests/gpu_kernel_source_15.f90"
+gpu_cuda_kernel = true
+gpu_metal_kernel = true
+
+[[test]]
 filename = "errors/array_bounds_check_01.f90"
 run = true
 
@@ -5075,6 +5148,11 @@ asr_implicit_typing = true
 [[test]]
 filename = "errors/implicit_typing6.f90"
 asr_implicit_typing = true
+
+[[test]]
+filename = "errors/implicit_typing7.f90"
+semantics_only_cc = true
+options = "--implicit-typing --implicit-interface"
 
 [[test]]
 filename = "external2.f90"
@@ -5417,6 +5495,11 @@ semantics_only_cc = true
 options = "--implicit-interface"
 
 [[test]]
+filename = "errors/implicit_interface_intrinsic_non_fortran.f90"
+semantics_only_cc = true
+options = "--implicit-interface"
+
+[[test]]
 filename = "optional_argument_subroutine_in_type.f90"
 asr = true
 
@@ -5685,6 +5768,19 @@ rename_symbol = true
 line = 9
 column = 13
 
+[[test]]
+filename = "collect_occurence5.f90"
+rename_symbol = true
+line = 2
+column = 12
+
+[[test]]
+filename = "collect_occurence6.f"
+rename_symbol = true
+line = 3
+column = 15
+options = "--fixed-form"
+
 
 [[test]]
 filename = "../integration_tests/multiple_objects_args.f90"
@@ -5832,6 +5928,15 @@ filename = "errors/show_errors1.f90"
 show_errors = true
 
 [[test]]
+filename = "errors/show_errors2.f90"
+show_errors = true
+
+[[test]]
+filename = "errors/show_errors3.f"
+show_errors = true
+options = "--fixed-form"
+
+[[test]]
 filename = "document_symbols1.f90"
 document_symbols = true
 extrafiles = "document_symbols1_module.f90"
@@ -5840,6 +5945,10 @@ extrafiles = "document_symbols1_module.f90"
 filename = "document_symbols_implicit_interface.f90"
 document_symbols = true
 options = "--implicit-interface"
+
+[[test]]
+filename = "document_symbols_continuation.f90"
+document_symbols = true
 
 [[test]]
 filename = "../integration_tests/loop_var_use_after_loop.f90"

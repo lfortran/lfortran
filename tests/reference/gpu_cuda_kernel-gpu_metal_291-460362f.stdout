@@ -10,7 +10,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* r,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
-    int __dim_r_0 = __scalar_args.__dim_r_0;
     int __lb_r_0 = __scalar_args.__lb_r_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;

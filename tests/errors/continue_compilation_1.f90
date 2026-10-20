@@ -3452,6 +3452,20 @@ subroutine cc1_external_name_user()
     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
 end subroutine cc1_external_name_user
 
+! Reading into the real or imaginary part of a complex variable is not
+! supported yet.
+module cc1_read_complex_part
+implicit none
+contains
+    subroutine cc1_rcp_use()
+        complex :: z, w(3)
+        character(len=20) :: s
+        s = '1 2 3'
+        read(s, *) z%re  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
+        read(s, *) w(1:3:2)%im  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
+    end subroutine cc1_rcp_use
+end module cc1_read_complex_part
+
 ! An ieee_arithmetic generic with no specific procedure for the argument is
 ! reported as such, not as a missing 'use, intrinsic :: ieee_arithmetic'.
 subroutine cc1_ieee_generic_no_specific()

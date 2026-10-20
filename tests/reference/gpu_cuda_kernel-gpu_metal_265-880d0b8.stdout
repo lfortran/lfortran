@@ -13,9 +13,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* b,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
-    int __dim_a_0 = __scalar_args.__dim_a_0;
     int __lb_a_0 = __scalar_args.__lb_a_0;
-    int __dim_b_0 = __scalar_args.__dim_b_0;
     int __lb_b_0 = __scalar_args.__lb_b_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
@@ -57,18 +55,15 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     float* __workspace_5,
     float* __workspace_6)
 {
-    int n = __scalar_args.n;
     int __dim_op_0 = __scalar_args.__dim_op_0;
     int __lb_op_0 = __scalar_args.__lb_op_0;
     int __dim_op_1 = __scalar_args.__dim_op_1;
     int __lb_op_1 = __scalar_args.__lb_op_1;
     int __dim_out_0 = __scalar_args.__dim_out_0;
     int __lb_out_0 = __scalar_args.__lb_out_0;
-    int __dim_out_1 = __scalar_args.__dim_out_1;
     int __lb_out_1 = __scalar_args.__lb_out_1;
     int __dim_v_0 = __scalar_args.__dim_v_0;
     int __lb_v_0 = __scalar_args.__lb_v_0;
-    int __dim_v_1 = __scalar_args.__dim_v_1;
     int __lb_v_1 = __scalar_args.__lb_v_1;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;
@@ -159,9 +154,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     float* __workspace_3)
 {
     int n = __scalar_args.n;
-    int __dim_a_0 = __scalar_args.__dim_a_0;
     int __lb_a_0 = __scalar_args.__lb_a_0;
-    int __dim_b_0 = __scalar_args.__dim_b_0;
     int __lb_b_0 = __scalar_args.__lb_b_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;

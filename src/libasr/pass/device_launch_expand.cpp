@@ -61,6 +61,10 @@ per-thread workspace of the kernel, which is never read back.
 The finalized Function.gpu layout fixes the buffer order, scalar fields and
 workspace bindings. This pass expands that contract without deciding whether
 the loop can be offloaded or deriving workspace extents again.
+
+The logical count is evaluated once and normalized before any launch setup.
+The entire sequence above, including its cleanup, runs only when the effective
+count (including lanes) is positive. The common runtime rejects empty geometry.
 */
 class DeviceLaunchExpandVisitor :
         public PassUtils::PassVisitor<DeviceLaunchExpandVisitor>
@@ -72,18 +76,34 @@ class DeviceLaunchExpandVisitor :
             PassVisitor(al_, nullptr), unit(unit_) {}
 
         void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
-            LCOMPILERS_ASSERT(ASR::down_cast<ASR::Function_t>(
-                x.m_kernel)->m_gpu != nullptr);
+            const auto *kernel = ASR::down_cast<ASR::Function_t>(x.m_kernel);
+            LCOMPILERS_ASSERT(kernel->m_gpu != nullptr);
+            const Location &loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::expr_t *threads = declare_local(loc, "gpu_threads", int64);
+            ASR::expr_t *started = threads;
+            if (kernel->m_gpu->m_lanes) {
+                started = declare_local(loc, "gpu_started", int64);
+            }
             Vec<ASR::stmt_t*> stmts;
             stmts.reserve(al, 8);
-            if (!expand_launch(x, stmts)) {
+            if (!expand_launch(x, threads, started, stmts)) {
                 remove_original_stmt = true;
                 return;
             }
-            pass_result.reserve(al, stmts.size());
-            for (size_t i = 0; i < stmts.size(); i++) {
-                pass_result.push_back(al, stmts[i]);
+            pass_result.reserve(al, 4);
+            pass_result.push_back(al, b.Assignment(threads,
+                b.i2i_t(x.m_thread_count, int64)));
+            pass_result.push_back(al, b.If(b.Lt(threads, b.i64(0)),
+                {b.Assignment(threads, b.i64(0))}, {}));
+            if (kernel->m_gpu->m_lanes) {
+                pass_result.push_back(al, b.Assignment(started,
+                    b.Mul(threads,
+                        b.i2i_t(x.m_args[x.n_args - 1].m_value, int64))));
             }
+            pass_result.push_back(al, ASRUtils::STMT(ASR::make_If_t(al,
+                loc, nullptr, b.Gt(started, b.i64(0)), stmts.p, stmts.n,
+                nullptr, 0)));
         }
 
         void visit_GpuSync(const ASR::GpuSync_t &x) {
@@ -837,6 +857,7 @@ class DeviceLaunchExpandVisitor :
         // stops the layout part way; the caller then drops the launch and
         // the reported error fails the build.
         bool expand_launch(const ASR::GpuKernelLaunch_t &x,
+                ASR::expr_t *threads, ASR::expr_t *started,
                 Vec<ASR::stmt_t*> &out) {
             const Location &loc = x.base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
@@ -1089,23 +1110,10 @@ class DeviceLaunchExpandVisitor :
             // The threads that run the body are numbered from zero, and
             // the runtime starts whole blocks of them, given as int[3]: the
             // kernel sends the threads past the last back before its body.
-            // A loop of no iterations has a count below one.
-            ASR::expr_t *threads = declare_local(loc, "gpu_threads", int64);
-            out.push_back(al, b.Assignment(threads,
-                b.i2i_t(x.m_thread_count, int64)));
-            out.push_back(al, b.If(b.Lt(threads, b.i64(0)),
-                {b.Assignment(threads, b.i64(0))}, {}));
             ASR::expr_t *block_size = b.i2i_t(x.m_block_size, int64);
             ASR::ttype_t *dim3 = b.Array({3}, int32);
             ASR::expr_t *grid = declare_local(loc, "gpu_grid", dim3);
             ASR::expr_t *block = declare_local(loc, "gpu_block", dim3);
-            // An iteration of a kernel with lanes runs on that many
-            // consecutive threads, its last argument (gpu_vector_lanes.cpp).
-            ASR::expr_t *started = threads;
-            if (layout.m_lanes) {
-                started = b.Mul(threads,
-                    b.i2i_t(x.m_args[x.n_args - 1].m_value, int64));
-            }
             fill_geometry(loc, out, grid, b.Div(b.Sub(b.Add(started,
                 block_size), b.i64(1)), block_size));
             fill_geometry(loc, out, block, x.m_block_size);
