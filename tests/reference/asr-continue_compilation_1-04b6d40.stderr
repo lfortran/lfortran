@@ -1484,6 +1484,18 @@ semantic error: Kind 3 is not supported for Logical
 3390 |     logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
      |     ^^^^^^^^^ 
 
+semantic error: external procedure 'cc1_proc_iface_external' needs an explicit interface to be named in procedure(cc1_proc_iface_external)
+    --> tests/errors/continue_compilation_1.f90:3464:5
+     |
+3464 |     procedure(cc1_proc_iface_external), pointer :: p => null()  ! {Error} external procedure 'cc1_proc_iface_external' needs an explicit interface to be named in procedure(cc1_proc_iface_external)
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ add an interface body for 'cc1_proc_iface_external', or define it in a module
+
+semantic error: Interface 'cc1_proc_iface_undefined' is referenced but not defined
+    --> tests/errors/continue_compilation_1.f90:3470:5
+     |
+3470 |     procedure(cc1_proc_iface_undefined), pointer :: p  ! {Error} Interface 'cc1_proc_iface_undefined' is referenced but not defined
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Referenced here
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

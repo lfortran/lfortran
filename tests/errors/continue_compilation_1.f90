@@ -3451,3 +3451,27 @@ subroutine cc1_external_name_user()
     cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
 end subroutine cc1_external_name_user
+
+! The interface named in procedure() must be explicit, and an external
+! procedure of another program unit has an implicit interface here.
+subroutine cc1_proc_iface_external(i)
+    integer, intent(out) :: i
+    i = 5
+end subroutine cc1_proc_iface_external
+
+module cc1_proc_iface_external_m
+implicit none
+    procedure(cc1_proc_iface_external), pointer :: p => null()  ! {Error} external procedure 'cc1_proc_iface_external' needs an explicit interface to be named in procedure(cc1_proc_iface_external)
+end module cc1_proc_iface_external_m
+
+! A name in procedure() that no unit defines is reported once, in the first
+! unit that names it, and not as an external procedure in the next one.
+subroutine cc1_proc_iface_undefined_a()
+    procedure(cc1_proc_iface_undefined), pointer :: p  ! {Error} Interface 'cc1_proc_iface_undefined' is referenced but not defined
+    p => null()
+end subroutine cc1_proc_iface_undefined_a
+
+subroutine cc1_proc_iface_undefined_b()
+    procedure(cc1_proc_iface_undefined), pointer :: q
+    q => null()
+end subroutine cc1_proc_iface_undefined_b
