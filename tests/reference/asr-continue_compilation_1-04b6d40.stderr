@@ -1496,6 +1496,18 @@ semantic error: type-bound procedure 'f' has the same name as a component of 'cc
 3462 |     procedure :: f => cc1_bnc_f  ! {Error} type-bound procedure 'f' has the same name as a component of 'cc1_bnc_t'; rename one of them
      |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: component 'f' of 'cc1_cnb_child' has the same name as a type-bound procedure inherited from 'cc1_cnb_base'; rename the component
+    --> tests/errors/continue_compilation_1.f90:3490:16
+     |
+3490 |     integer :: f = 0  ! {Error} component 'f' of 'cc1_cnb_child' has the same name as a type-bound procedure inherited from 'cc1_cnb_base'; rename the component
+     |                ^^^^^ 
+
+semantic error: component 'g' of 'cc1_cnb_child' has the same name as a type-bound procedure inherited from 'cc1_cnb_base'; rename the component
+    --> tests/errors/continue_compilation_1.f90:3491:16
+     |
+3491 |     integer :: g = 0  ! {Error} component 'g' of 'cc1_cnb_child' has the same name as a type-bound procedure inherited from 'cc1_cnb_base'; rename the component
+     |                ^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |

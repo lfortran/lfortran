@@ -3476,3 +3476,22 @@ subroutine cc1_bnc_g(self)
     class(cc1_bnc_child), intent(inout) :: self
 end subroutine
 end module cc1_binding_named_like_component
+
+! A component may not have the name of a type-bound procedure that its type
+! inherits (F2018 19.3.1).
+module cc1_component_named_like_binding
+implicit none
+type :: cc1_cnb_base
+contains
+    procedure :: f => cc1_cnb_f
+    generic :: g => f
+end type
+type, extends(cc1_cnb_base) :: cc1_cnb_child
+    integer :: f = 0  ! {Error} component 'f' of 'cc1_cnb_child' has the same name as a type-bound procedure inherited from 'cc1_cnb_base'; rename the component
+    integer :: g = 0  ! {Error} component 'g' of 'cc1_cnb_child' has the same name as a type-bound procedure inherited from 'cc1_cnb_base'; rename the component
+end type
+contains
+subroutine cc1_cnb_f(self)
+    class(cc1_cnb_base), intent(inout) :: self
+end subroutine
+end module cc1_component_named_like_binding
