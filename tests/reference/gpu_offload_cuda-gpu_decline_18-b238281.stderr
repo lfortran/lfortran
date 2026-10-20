@@ -1,0 +1,9 @@
+ASR pass error: parallel loop cannot be offloaded to the GPU yet: array 't' of local locality is named by an associate construct around the loop
+  --> tests/../integration_tests/gpu_decline_18.f90:16:5 - 20:10
+   |
+16 |        do concurrent (j = 1:n) local(t)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+20 |        end do
+   | ...^^^^^^^^^^ array 't' of local locality is named by an associate construct around the loop
