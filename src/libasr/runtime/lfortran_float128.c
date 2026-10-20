@@ -37,6 +37,7 @@
 #include <stdio.h>
 #include <stdlib.h>   /* atoi */
 #include <math.h>
+#include <float.h>   /* LDBL_MANT_DIG */
 #if defined(LFORTRAN_HAVE_CONFIG_H) || __has_include(<libasr/config.h>)
 #  include <libasr/config.h>
 #endif
@@ -2497,23 +2498,36 @@ lf_float128 lf_float128_from_str(const char *s) {
  * The conversions are pure memcpy, so no fp128 arithmetic is generated here
  * and these wrappers cannot recurse into themselves.
  *
- * On other targets (e.g. PowerPC, 32-bit x86, 32-bit ARM, RISC-V) the fp128
- * calling convention is not spelled out here, so these entry points are not
- * provided. The rest of the runtime still builds; real(16) arithmetic on
- * such targets relies on the system's compiler-rt/libgcc, if available.
+ * On other targets whose C compiler has a binary128 type, that type spells
+ * the fp128 calling convention: `long double` where it is binary128 (e.g.
+ * wasm32, RISC-V, MIPS64) and otherwise `__float128` (e.g. 32-bit x86, or
+ * PowerPC with -mfloat128). Clang passes both as plain fp128 values, the
+ * same way LLVM-emitted code passes them, so only the math entry points
+ * (lf_sqrtq, lf_expq, ...) are defined there; the compiler-rt routines come
+ * from the system's compiler-rt/libgcc (or section P2 on WASI). s390x is
+ * left out because it passes `long double` indirectly. ARM64 uses the shims
+ * of section Q. On targets without a binary128 C type, the math entry points
+ * are not provided.
  * ======================================================================== */
-#if (defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))) \
-    || (defined(_MSC_VER) && defined(_M_X64))
+#if !defined(__aarch64__) && ( \
+    (defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))) \
+    || (defined(_MSC_VER) && defined(_M_X64)) \
+    || (LDBL_MANT_DIG == 113 && !defined(__s390x__)) \
+    || defined(__SIZEOF_FLOAT128__) || defined(__FLOAT128__))
 
 #if defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))
 typedef double lf_f128_abi __attribute__((vector_size(16)));
-#else
+#elif defined(_MSC_VER) && defined(_M_X64)
 /* On Windows x64 LLVM passes fp128 arguments indirectly through a pointer to
  * a 16-byte aligned slot and returns fp128 in XMM0. MSVC gives __m128d
  * parameters and return values exactly that treatment, so it spells the same
  * ABI the vector typedef above does for the System V targets. */
 #include <emmintrin.h>
 typedef __m128d lf_f128_abi;
+#elif LDBL_MANT_DIG == 113 && !defined(__s390x__)
+typedef long double lf_f128_abi;
+#else
+typedef __float128 lf_f128_abi;
 #endif
 
 static lf_f128_abi lf_f128_to_abi(lf_float128 v) {
@@ -2528,6 +2542,8 @@ static lf_float128 lf_f128_from_abi(lf_f128_abi v) {
     return r;
 }
 
+#if (defined(__x86_64__) && (defined(__GNUC__) || defined(__clang__))) \
+    || (defined(_MSC_VER) && defined(_M_X64))
 lf_f128_abi __addtf3(lf_f128_abi a, lf_f128_abi b)  { return lf_f128_to_abi(__addtf3_lf_impl(lf_f128_from_abi(a), lf_f128_from_abi(b))); }
 lf_f128_abi __subtf3(lf_f128_abi a, lf_f128_abi b)  { return lf_f128_to_abi(__subtf3_lf_impl(lf_f128_from_abi(a), lf_f128_from_abi(b))); }
 lf_f128_abi __multf3(lf_f128_abi a, lf_f128_abi b)  { return lf_f128_to_abi(__multf3_lf_impl(lf_f128_from_abi(a), lf_f128_from_abi(b))); }
@@ -2550,6 +2566,7 @@ int __letf2   (lf_f128_abi a, lf_f128_abi b) { return __letf2_lf_impl   (lf_f128
 int __gttf2   (lf_f128_abi a, lf_f128_abi b) { return __gttf2_lf_impl   (lf_f128_from_abi(a), lf_f128_from_abi(b)); }
 int __getf2   (lf_f128_abi a, lf_f128_abi b) { return __getf2_lf_impl   (lf_f128_from_abi(a), lf_f128_from_abi(b)); }
 int __unordtf2(lf_f128_abi a, lf_f128_abi b) { return __unordtf2_lf_impl(lf_f128_from_abi(a), lf_f128_from_abi(b)); }
+#endif
 
 /* SIMD-ABI public entry points for the math functions called by
  * LLVM-emitted code such as `call fp128 @lf_sqrtq(fp128)`,
