@@ -1176,9 +1176,14 @@ static inline reduce_opType convert_id_to_reduce_type(
 #define TRUE(x, l) make_Logical_t(p.m_a, l, true, str2str_null(p.m_a, x))
 #define FALSE(x, l) make_Logical_t(p.m_a, l, false, str2str_null(p.m_a, x))
 
+// Parentheses around an operation only group it and are dropped. Around a
+// designator they make it an expression, `(x)` or `(a(i))`, whose value is
+// not the variable itself, so they are kept.
 ast_t* parenthesis(Allocator &al, Location &loc, expr_t *op) {
     switch (op->type) {
-        case LCompilers::LFortran::AST::exprType::Name: {
+        case LCompilers::LFortran::AST::exprType::Name:
+        case LCompilers::LFortran::AST::exprType::FuncCallOrArray:
+        case LCompilers::LFortran::AST::exprType::CoarrayRef: {
             return make_Parenthesis_t(al, loc, op); }
         default : { return (ast_t*)op; }
     }
