@@ -341,6 +341,7 @@ void lfortran_gpu_set_scalar_arg(lfortran_gpu_kernel* k, int idx,
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3])
 {
+    lfortran_gpu_validate_launch(grid, block);
     if (!ctx || !k) return;
 
     for (int i = 0; i < k->n_args; i++) {

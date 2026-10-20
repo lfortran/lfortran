@@ -2663,8 +2663,11 @@ public:
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
             check_io_item_not_function(expr);
-            if (_type == AST::decl_stmtType::Write && formatted) {
-                expr = cast_assumed_rank_output_item(expr, loc, "write");
+            if (_type == AST::decl_stmtType::Write) {
+                expr = cast_assumed_rank_io_item(expr, loc, "write");
+            } else if (_type == AST::decl_stmtType::Read) {
+                check_read_item_not_complex_part(expr);
+                expr = cast_assumed_rank_io_item(expr, loc, "read");
             }
             // For READ: expand implied-do loops to individual elements or array section
             if (_type == AST::decl_stmtType::Read && ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
@@ -9429,10 +9432,31 @@ public:
         throw SemanticAbort();
     }
 
-    // Inside a `rank (n)` block of `select rank`, an assumed-rank output
-    // item is the selector viewed as a rank n descriptor (a scalar for
-    // `rank (0)`).
-    ASR::expr_t* cast_assumed_rank_output_item(ASR::expr_t* expr,
+    // An input item that is the real or imaginary part of a complex
+    // variable cannot be read yet.
+    void check_read_item_not_complex_part(ASR::expr_t *expr) {
+        if (ASR::is_a<ASR::ImpliedDoLoop_t>(*expr)) {
+            ASR::ImpliedDoLoop_t *idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expr);
+            for (size_t i = 0; i < idl->n_values; i++) {
+                check_read_item_not_complex_part(idl->m_values[i]);
+            }
+            return;
+        }
+        if (!ASR::is_a<ASR::ComplexRe_t>(*expr) && !ASR::is_a<ASR::ComplexIm_t>(*expr)) {
+            return;
+        }
+        diag.add(Diagnostic("reading into the real or imaginary part of a "
+            "complex variable is not supported yet",
+            Level::Error, Stage::Semantic, {
+            Label("", {expr->base.loc})
+        }));
+        throw SemanticAbort();
+    }
+
+    // Inside a `rank (n)` block of `select rank`, an assumed-rank input or
+    // output item is the selector viewed as a rank n descriptor (a scalar
+    // for `rank (0)`).
+    ASR::expr_t* cast_assumed_rank_io_item(ASR::expr_t* expr,
             const Location& loc, const std::string& statement) {
         if (!ASRUtils::is_assumed_rank_array(ASRUtils::expr_type(expr))) {
             return expr;
@@ -9523,7 +9547,7 @@ public:
             this->visit_expr(*x.m_values[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
             check_io_item_not_function(expr);
-            expr = cast_assumed_rank_output_item(expr, x.base.base.loc, "print");
+            expr = cast_assumed_rank_io_item(expr, x.base.base.loc, "print");
             body.push_back(al, expr);
         }
         if (fmt && ASR::is_a<ASR::IntegerConstant_t>(*fmt)) {

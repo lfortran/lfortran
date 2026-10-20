@@ -133,8 +133,10 @@ std::string get_line(std::string str, int n)
     return line;
 }
 
-void populate_span(diag::Span &s, const LocationManager &lm,
-        bool skip_output_to_input = false) {
+// Converts the linear `loc` of the span to lines and columns in the original
+// code and returns the position of `loc.first` in the original code
+static uint32_t populate_span_linecol(diag::Span &s, const LocationManager &lm,
+        bool skip_output_to_input) {
     std::string first_filename, last_filename;
     uint32_t first_pos = skip_output_to_input
         ? s.loc.first : lm.output_to_input_pos(s.loc.first, false);
@@ -152,6 +154,19 @@ void populate_span(diag::Span &s, const LocationManager &lm,
         s.last_line = s.first_line;
         s.last_column = s.first_column;
     }
+    return first_pos;
+}
+
+// Diagnostics emitted by the C preprocessor itself carry input-buffer
+// offsets (not output-buffer offsets), so we must bypass the
+// output->input remapping that LocationManager normally applies.
+static bool has_input_offsets(const diag::Diagnostic &d) {
+    return d.stage == diag::Stage::CPreprocessor;
+}
+
+void populate_span(diag::Span &s, const LocationManager &lm,
+        bool skip_output_to_input = false) {
+    uint32_t first_pos = populate_span_linecol(s, lm, skip_output_to_input);
     std::string input;
     // An interactive cell is only ever in memory, so the text comes with the
     // location rather than from a file of that name.
@@ -172,13 +187,19 @@ void populate_span(diag::Span &s, const LocationManager &lm,
 
 // Loop over all labels and their spans, populate all of them
 void populate_spans(diag::Diagnostic &d, const LocationManager &lm) {
-    // Diagnostics emitted by the C preprocessor itself carry input-buffer
-    // offsets (not output-buffer offsets), so we must bypass the
-    // output->input remapping that LocationManager normally applies.
-    bool skip_output_to_input = (d.stage == diag::Stage::CPreprocessor);
+    bool skip = has_input_offsets(d);
     for (auto &l : d.labels) {
         for (auto &s : l.spans) {
-            populate_span(s, lm, skip_output_to_input);
+            populate_span(s, lm, skip);
+        }
+    }
+}
+
+void populate_spans_linecol(Diagnostic &d, const LocationManager &lm) {
+    bool skip = has_input_offsets(d);
+    for (auto &l : d.labels) {
+        for (auto &s : l.spans) {
+            populate_span_linecol(s, lm, skip);
         }
     }
 }

@@ -1,0 +1,13 @@
+{
+    "basename": "ast_json-json_loc_else_where-1ff65d6",
+    "cmd": "lfortran --show-ast --no-indent --json {infile} -o {outfile}",
+    "infile": "tests/json_loc_else_where.f90",
+    "infile_hash": "b4faeade3dbd0943096f285dc8710cd3034b2b612d5629c0450c2d03",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_json-json_loc_else_where-1ff65d6.stdout",
+    "stdout_hash": "5a23caf18a88c49823d8b17dcc160281b62f90cd6a29ef51b14269be",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

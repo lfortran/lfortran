@@ -18,7 +18,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __flat_idx;
     int __gpu_bc_i;
     int j;
-    const int n = 32;
     if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }

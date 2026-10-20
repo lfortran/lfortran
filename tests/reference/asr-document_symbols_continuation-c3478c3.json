@@ -1,0 +1,13 @@
+{
+    "basename": "asr-document_symbols_continuation-c3478c3",
+    "cmd": "lfortran --show-document-symbols --no-color {infile}",
+    "infile": "tests/document_symbols_continuation.f90",
+    "infile_hash": "8675ac9437853e693b19aa6214c3b7a2cd31bb3184dfb1770b15ad87",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-document_symbols_continuation-c3478c3.stdout",
+    "stdout_hash": "eb25e0064ff2af5b33ce2f88a26f16bee9ad89119cf38395a02112dd",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
