@@ -3451,3 +3451,47 @@ subroutine cc1_external_name_user()
     cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
 end subroutine cc1_external_name_user
+
+! The components and bindings of a type, inherited ones included, need
+! different names (F2018 19.3.1).
+module cc1_binding_named_like_component
+implicit none
+type :: cc1_bnc_t
+    integer :: f = 0
+contains
+    procedure :: f => cc1_bnc_f  ! {Error} type-bound procedure 'f' has the same name as a component of 'cc1_bnc_t'; rename one of them
+end type
+type :: cc1_bnc_base
+    integer :: g = 0
+end type
+type, extends(cc1_bnc_base) :: cc1_bnc_child
+contains
+    procedure :: g => cc1_bnc_g  ! {Error} type-bound procedure 'g' of 'cc1_bnc_child' has the same name as a component inherited from 'cc1_bnc_base'; rename the binding
+end type
+contains
+subroutine cc1_bnc_f(self)
+    class(cc1_bnc_t), intent(inout) :: self
+end subroutine
+subroutine cc1_bnc_g(self)
+    class(cc1_bnc_child), intent(inout) :: self
+end subroutine
+end module cc1_binding_named_like_component
+
+! A component may not have the name of a type-bound procedure that its type
+! inherits (F2018 19.3.1).
+module cc1_component_named_like_binding
+implicit none
+type :: cc1_cnb_base
+contains
+    procedure :: f => cc1_cnb_f
+    generic :: g => f
+end type
+type, extends(cc1_cnb_base) :: cc1_cnb_child
+    integer :: f = 0  ! {Error} component 'f' of 'cc1_cnb_child' has the same name as a type-bound procedure inherited from 'cc1_cnb_base'; rename the component
+    integer :: g = 0  ! {Error} component 'g' of 'cc1_cnb_child' has the same name as a type-bound procedure inherited from 'cc1_cnb_base'; rename the component
+end type
+contains
+subroutine cc1_cnb_f(self)
+    class(cc1_cnb_base), intent(inout) :: self
+end subroutine
+end module cc1_component_named_like_binding

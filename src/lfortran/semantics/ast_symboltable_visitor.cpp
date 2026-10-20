@@ -284,6 +284,8 @@ public:
     std::map<std::string, std::vector<GenericSpecific>> defined_op_procs;
     std::map<std::string, std::map<std::string, std::map<std::string, ClassProcInfo>>> class_procedures;
     std::map<std::string, std::map<std::string, std::map<std::string, Location>>> class_deferred_procedures;
+    // The extended types of the current program unit, checked at its end.
+    std::vector<ASR::Struct_t*> extended_types;
     std::vector<std::pair<std::string, Location>> assgn_proc_names_locations;
     std::vector<std::pair<std::string,Location>> simd_variables;
     std::map<std::string, std::vector<AST::arg_t>> entry_function_args;
@@ -628,6 +630,7 @@ public:
             }
             try {
                 visit_ast(*x.m_items[i]);
+                check_components_named_like_inherited_bindings();
                 if (t == AST::astType::program_unit) {
                     // An external procedure has no host to build its generic
                     // interfaces, or to define the procedures its procedure
@@ -646,6 +649,7 @@ public:
                 current_scope = global_scope;
                 pending_proc_placeholders.clear();
                 deferred_procedure_component_values.clear();
+                extended_types.clear();
             }
         }
         if (!global_declarations.empty()) {
@@ -3795,6 +3799,14 @@ public:
     void visit_DerivedType(const AST::DerivedType_t &x) {
         dt_name = to_lower(x.m_name);
         visit_DerivedTypeUtil(x);
+        ASR::symbol_t *sym = current_scope->get_symbol(dt_name);
+        if (sym == nullptr || !ASR::is_a<ASR::Struct_t>(*sym)) {
+            return;
+        }
+        ASR::Struct_t *clss = ASR::down_cast<ASR::Struct_t>(sym);
+        if (clss->m_parent != nullptr) {
+            extended_types.push_back(clss);
+        }
     }
 
     void visit_Union(const AST::Union_t&x) {
@@ -5824,6 +5836,61 @@ public:
         check_scope(clss->m_symtab->parent);
     }
 
+    // F2018 19.3.1: a binding may not have the name of a component.
+    bool binding_named_like_component(ASR::Struct_t *clss,
+            const std::string &name, const Location &loc) {
+        ASR::symbol_t *sym = resolve_type_bound_proc_in_parent_chain(clss, name);
+        if (sym == nullptr || !ASR::is_a<ASR::Variable_t>(*sym)) {
+            return false;
+        }
+        SymbolTable *owner = ASR::down_cast<ASR::Variable_t>(sym)->m_parent_symtab;
+        std::string owner_name = ASRUtils::symbol_name(
+            ASR::down_cast<ASR::symbol_t>(owner->asr_owner));
+        std::string msg = owner == clss->m_symtab
+            ? "type-bound procedure '" + name + "' has the same name as a "
+                "component of '" + owner_name + "'; rename one of them"
+            : "type-bound procedure '" + name + "' of '"
+                + std::string(clss->m_name) + "' has the same name as a "
+                "component inherited from '" + owner_name
+                + "'; rename the binding";
+        diag.add(diag::Diagnostic(msg, diag::Level::Error,
+            diag::Stage::Semantic, {diag::Label("", {loc})}));
+        return true;
+    }
+
+    // F2018 19.3.1: a component may not have the name of an inherited binding.
+    void check_components_named_like_inherited_bindings() {
+        std::vector<ASR::Struct_t*> types;
+        types.swap(extended_types);
+        bool found = false;
+        for (ASR::Struct_t *clss : types) {
+            ASR::Struct_t *parent = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(clss->m_parent));
+            for (size_t i = 0; i < clss->n_members; i++) {
+                std::string name = clss->m_members[i];
+                ASR::symbol_t *b = resolve_type_bound_proc_in_parent_chain(
+                    parent, name);
+                if (b == nullptr || !(ASR::is_a<ASR::StructMethodDeclaration_t>(*b)
+                        || ASR::is_a<ASR::GenericProcedure_t>(*b))) {
+                    continue;
+                }
+                std::string owner_name = ASRUtils::symbol_name(
+                    ASR::down_cast<ASR::symbol_t>(
+                        ASRUtils::symbol_parent_symtab(b)->asr_owner));
+                diag.add(diag::Diagnostic("component '" + name + "' of '"
+                    + std::string(clss->m_name) + "' has the same name as a "
+                    "type-bound procedure inherited from '" + owner_name
+                    + "'; rename the component",
+                    diag::Level::Error, diag::Stage::Semantic, {
+                        diag::Label("", {clss->m_symtab->get_symbol(name)->base.loc})}));
+                found = true;
+            }
+        }
+        if (found && !compiler_options.continue_compilation) {
+            throw SemanticAbort();
+        }
+    }
+
     void add_class_procedures() {
         for (auto &proc : class_procedures) {
             ASR::symbol_t* clss_sym = ASRUtils::symbol_get_past_external(
@@ -5832,6 +5899,12 @@ public:
             SymbolTable* proc_scope = ASRUtils::symbol_parent_symtab(clss_sym);
             for (auto &pname : proc.second) {
                 auto &loc = pname.second["procedure"].loc;
+                if (binding_named_like_component(clss, pname.first, loc)) {
+                    if (!compiler_options.continue_compilation) {
+                        throw SemanticAbort();
+                    }
+                    continue;
+                }
                 auto& cdf = class_deferred_procedures;
                 bool is_pass = pname.second.count("pass");
                 bool is_deferred = check_is_deferred(pname.first, clss);
