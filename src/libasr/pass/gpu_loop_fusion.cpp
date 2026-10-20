@@ -918,6 +918,21 @@ public:
         for (ASR::symbol_t *s : c.privates) {
             if (producer_syms.count(s)) return fail();
         }
+        // In the fused nest a variable the producer's expressions, tests
+        // or bounds name would be the consumer's index of that name (DO
+        // CONCURRENT indices are the variables of the scope), not the
+        // value it has outside the consumer. The producer's own indices
+        // are replaced by the consumer's subscripts.
+        {
+            std::set<ASR::symbol_t*> named = producer_syms;
+            for (size_t d = 0; d < p.rank(); d++) {
+                gpu_collect_symbols(p.starts[d], named);
+                gpu_collect_symbols(p.ends[d], named);
+            }
+            for (ASR::symbol_t *s : named) {
+                if (c.position(s) >= 0 && p.position(s) < 0) return fail();
+            }
+        }
         // Arrays the consumer writes and the producer reads: renamed.
         std::vector<std::string> renamed;
         for (auto &k : c_arrays) {
