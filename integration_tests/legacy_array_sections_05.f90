@@ -5,7 +5,9 @@ subroutine qrfac()
 
     a = 12.9
     print *, enorm(a(1, 1))
-    if ( abs(enorm(a(1,1)) - 832.049927 ) > 1e-8) error stop
+    ! A default real near 832 is only accurate to about 6e-5, and --fast may
+    ! sum the two inlined calls in different orders.
+    if ( abs(enorm(a(1,1)) - 832.049927 ) > 1e-3) error stop
 
     contains
         pure real function enorm(x)
