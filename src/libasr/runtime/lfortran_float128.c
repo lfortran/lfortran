@@ -817,7 +817,8 @@ double __trunctfdf2_lf_impl(lf_float128 a) {
     int round_bit = u128_bit(p.mant, rsh - 1);
     u128 sticky    = u128_and(p.mant, u128_sub(u128_shl(u128_one(), rsh - 1), u128_one()));
     if (round_bit && (!u128_is_zero(sticky) || (dmant & 1))) dmant++;
-    if (dmant >> 52) { dmant >>= 1; dexp++; }
+    /* A carry out of the 52 stored bits gives the next power of two. */
+    if (dmant >> 52) { dmant = 0; dexp++; }
     uint64_t bits = ((uint64_t)p.sign << 63) | ((uint64_t)dexp << 52) | dmant;
     double r; memcpy(&r, &bits, 8); return r;
 }
