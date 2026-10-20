@@ -1422,6 +1422,12 @@ static ASR::expr_t* eval_unary_array_const(Allocator& al, const Location& loc, A
                         ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(operand)));
                     value = ASRUtils::make_RealConstant_r10(al, x.base.base.loc,
                         -op_value, result_type);
+                } else if (ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(operand))
+                        && ASRUtils::extract_kind_from_ttype_t(result_type) == 16) {
+                    lf_float128 op_value = ASRUtils::real_constant_get_r16(
+                        ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(operand)));
+                    value = ASRUtils::make_RealConstant_r16(al, x.base.base.loc,
+                        lf_f128_neg(op_value), result_type);
                 } else if (ASR::is_a<ASR::RealConstant_t>(*ASRUtils::expr_value(operand))) {
                     double op_value = ASR::down_cast<ASR::RealConstant_t>(
                                             ASRUtils::expr_value(operand))->m_r;

@@ -6534,6 +6534,7 @@ RUN(NAME real128_intrinsic_real_01 LABELS gfortran llvm)
 RUN(NAME real128_literal_01 LABELS gfortran llvm)
 RUN(NAME real128_literal_02 LABELS gfortran llvm)
 RUN(NAME real128_module_01 LABELS gfortran llvm EXTRAFILES real128_module_01_mod.f90)
+RUN(NAME real128_unary_minus_01 LABELS gfortran llvm)
 # real(10) constants are built from the compiler's C long double, which is the
 # x87 80-bit type the generated code uses only on x86-64 Linux:
 # https://github.com/lfortran/lfortran/issues/13935
