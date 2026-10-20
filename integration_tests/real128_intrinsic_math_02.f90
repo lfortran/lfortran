@@ -1,14 +1,13 @@
 program real128_intrinsic_math_02
-    ! The pi variants of the trigonometric intrinsics and the exp2
-    ! extension of real(128) arguments known only at run time must be
-    ! computed in quad precision. Not labelled gfortran: GFortran accepts
-    ! sinpi etc. for real(128), but its libquadmath has no sinpiq, so the
-    ! program does not link, and exp2 is not a GFortran intrinsic.
+    ! The pi variants of the trigonometric intrinsics of real(128)
+    ! arguments known only at run time must be computed in quad precision.
+    ! Not labelled gfortran: GFortran accepts sinpi etc. for real(128), but
+    ! its libquadmath has no sinpiq, so the program does not link.
     use, intrinsic :: iso_fortran_env, only: real128, int64
     implicit none
     integer, parameter :: qp = real128
     real(qp) :: zero, one, two, half, x
-    integer :: i, n
+    integer :: n
 
     ! Zero known only at run time, so that nothing is constant-folded.
     n = command_argument_count()
@@ -37,15 +36,6 @@ program real128_intrinsic_math_02
     if (.not. (abs(sinpi(one)) <= 1e-33_qp)) error stop 16
     if (.not. (abs(cospi(half)) <= 1e-33_qp)) error stop 17
 
-    call check(exp2(half), sqrt(two), 20)
-    call check(exp2(zero + 10), 1024 + zero, 21)
-    call check(exp2(zero - 3), one / 8, 22)
-    call check(exp2(zero + 100.25_qp), pow2(100) * sqrt(sqrt(two)), 23)
-    call check(exp2(zero - 1000.75_qp), pow2(-1001) * sqrt(sqrt(two)), 24)
-    do i = -16, 16
-        call check(exp2(zero + i), pow2(i), 30)
-    end do
-
     ! (-1)**y is 1 for every even y, also for |y| > 2**16000. Raising a
     ! negative real to a real power is not standard Fortran (processor
     ! dependent); this checks the runtime's C99 pow semantics for |x| == 1.
@@ -55,21 +45,6 @@ program real128_intrinsic_math_02
     call check((zero - 1) ** huge(x), one, 42)
 
 contains
-
-    ! 2**n, computed exactly
-    function pow2(n) result(r)
-        integer, intent(in) :: n
-        real(qp) :: r
-        integer :: k
-        r = 1
-        do k = 1, abs(n)
-            if (n > 0) then
-                r = r * 2
-            else
-                r = r / 2
-            end if
-        end do
-    end function
 
     subroutine check(x, ref, code)
         real(qp), intent(in) :: x, ref

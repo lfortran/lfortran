@@ -6521,6 +6521,7 @@ RUN(NAME real128_int_to_real_01 LABELS gfortran llvm)
 RUN(NAME real128_intrinsic_inquiry_01 LABELS gfortran llvm)
 RUN(NAME real128_intrinsic_math_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME real128_intrinsic_math_02 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME real128_intrinsic_math_03 LABELS llvm llvm_wasm llvm_wasm_emcc NO_STD_F23) # exp2 is an LFortran extension, an external procedure with --std=f23
 RUN(NAME real128_intrinsic_real_01 LABELS gfortran llvm)
 RUN(NAME real128_intrinsic_real_02 LABELS gfortran llvm)
 RUN(NAME real128_intrinsic_sqrt_01 LABELS gfortran llvm)
