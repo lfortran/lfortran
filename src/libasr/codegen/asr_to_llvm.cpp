@@ -22514,10 +22514,57 @@ public:
         }
     }
 
+    // Whether the runtime stores a value of this type with the wrong size.
+    // It stores every integer and logical target as 4 bytes (8 for
+    // integer(8)) and every real one as a float or a double, so a target of
+    // another kind would get wrong values and overwrite its neighbours.
+    // #15523 adds the type codes for the other integer and logical kinds.
+    static bool has_unstorable_formatted_read_kind(ASR::ttype_t* type) {
+        switch (type->type) {
+            case ASR::ttypeType::Logical:
+                return ASR::down_cast<ASR::Logical_t>(type)->m_kind != 4;
+            case ASR::ttypeType::Integer: {
+                int kind = ASR::down_cast<ASR::Integer_t>(type)->m_kind;
+                return kind != 4 && kind != 8;
+            }
+            case ASR::ttypeType::Real: {
+                int kind = ASR::down_cast<ASR::Real_t>(type)->m_kind;
+                return kind != 4 && kind != 8;
+            }
+            case ASR::ttypeType::Complex: {
+                int kind = ASR::down_cast<ASR::Complex_t>(type)->m_kind;
+                return kind != 4 && kind != 8;
+            }
+            default:
+                return false;
+        }
+    }
+
+    // Whether the per-item lowering of a formatted READ fails to store an
+    // input item of this type: it does not store a value into an
+    // allocatable scalar that is not a character, and it crashes for some
+    // of them. Pointer items never take the target-list path, because a
+    // pointer may share storage with the loop variables.
+    static bool is_unstored_formatted_read_scalar(ASR::ttype_t* type) {
+        if (!ASR::is_a<ASR::Allocatable_t>(*type)) {
+            return false;
+        }
+        ASR::ttype_t* t = ASR::down_cast<ASR::Allocatable_t>(type)->m_type;
+        return !ASR::is_a<ASR::Array_t>(*t) && !ASR::is_a<ASR::String_t>(*t);
+    }
+
+    // Whether the runtime target list can store an item of this type.
+    static bool is_formatted_read_target_type(ASR::ttype_t* type) {
+        return (ASR::is_a<ASR::String_t>(*type) || ASR::is_a<ASR::Logical_t>(*type) ||
+                ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type) ||
+                ASR::is_a<ASR::Complex_t>(*type)) &&
+            !has_unstorable_formatted_read_kind(type);
+    }
+
     // Collects the items of an implied-do loop of a formatted READ, at any
     // depth, and the expressions their addresses and the loops use.
     // Returns false if an item is not a scalar variable, element, component
-    // or substring.
+    // or substring, or has a type the runtime cannot store.
     static bool collect_formatted_read_idl_items(ASR::ImpliedDoLoop_t* idl,
             std::vector<ASR::symbol_t*> &defined, std::vector<ASR::expr_t*> &uses) {
         uses.push_back(idl->m_var);
@@ -22533,10 +22580,7 @@ public:
                 }
                 continue;
             }
-            ASR::ttype_t* type = ASRUtils::expr_type(item);
-            if (!(ASR::is_a<ASR::String_t>(*type) || ASR::is_a<ASR::Logical_t>(*type) ||
-                    ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type) ||
-                    ASR::is_a<ASR::Complex_t>(*type)) ||
+            if (!is_formatted_read_target_type(ASRUtils::expr_type(item)) ||
                     !collect_formatted_read_item(item, defined, uses)) {
                 return false;
             }
@@ -22594,17 +22638,24 @@ public:
     // Whether a formatted READ whose input list has a nested implied-do
     // loop can be done as one data transfer, with the items of its
     // implied-do loops collected into run-time target lists first. The
-    // items of the loops must be scalars. All loop bounds and item addresses
-    // are evaluated before any value is read, so no item may share storage
-    // with anything they use, and they must not call a procedure, which
-    // could reference an item.
+    // items of the loops must be scalars, no item, in a loop or not, may
+    // have a kind the runtime stores with the wrong size, and no other item
+    // may be an allocatable scalar that the per-item lowering does not
+    // store. All loop bounds and item addresses are evaluated before any
+    // value is read, so no item may share storage with anything they use,
+    // and they must not call a procedure, which could reference an item.
     bool can_collect_formatted_read_targets(ASR::expr_t** values, size_t n_values) {
         bool has_nested_idl = false;
         std::vector<ASR::symbol_t*> defined;
         std::vector<ASR::expr_t*> uses;
         for (size_t i = 0; i < n_values; i++) {
             if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
-                if (!collect_formatted_read_item(values[i], defined, uses)) {
+                ASR::ttype_t* item_type = ASRUtils::expr_type(values[i]);
+                ASR::ttype_t* type = ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable_pointer(item_type));
+                if (has_unstorable_formatted_read_kind(type) ||
+                        is_unstored_formatted_read_scalar(item_type) ||
+                        !collect_formatted_read_item(values[i], defined, uses)) {
                     return false;
                 }
                 continue;
