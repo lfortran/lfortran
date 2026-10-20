@@ -16793,13 +16793,16 @@ public:
             if (type != nullptr && ASRUtils::is_array(type)) {
                 array_context_type = type;
             }
+            // Parentheses around a structure constructor do not change
+            // its value.
+            AST::expr_t* arg = skip_parentheses(x.m_args[i]);
             if (array_context_type != nullptr
                     && ASRUtils::is_array(array_context_type)
                     && ASR::is_a<ASR::StructType_t>(
                         *ASRUtils::type_get_past_array(array_context_type))
-                    && AST::is_a<AST::FuncCallOrArray_t>(*x.m_args[i])) {
+                    && AST::is_a<AST::FuncCallOrArray_t>(*arg)) {
                 AST::FuncCallOrArray_t* func_call =
-                    AST::down_cast<AST::FuncCallOrArray_t>(x.m_args[i]);
+                    AST::down_cast<AST::FuncCallOrArray_t>(arg);
                 if (func_call->m_func != nullptr) {
                     // Fortran is case insensitive and symbols are stored
                     // lowercased, so the name must be lowered before lookup

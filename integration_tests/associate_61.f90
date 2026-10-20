@@ -1,4 +1,14 @@
+module associate_61_mod
+    implicit none
+    type :: t_int
+        integer :: i = 0
+    end type
+    ! Parentheses around a structure constructor do not change its value
+    type(t_int), parameter :: mp(2) = [(t_int(3)), t_int(4)]
+end module
+
 program associate_61
+    use associate_61_mod, only: t_int, mp
     ! A parenthesized selector `(x)` is an expression, not a variable
     ! (F2018 11.1.3.3): the associate name holds the value the selector had
     ! when the ASSOCIATE statement executed, it does not alias `x`.
@@ -14,6 +24,10 @@ program associate_61
     type(t_type), parameter :: tp = (t_type([1., 2., 3., 4.]))
     type(t_type) :: tl = (t_type([5., 6., 7., 8.]))
     type(t_type) :: tarr(2) = [(t_type(0.)), (t_type(1.))]
+    type(t_type), parameter :: parr(2) = [(t_type(0.)), t_type(1.)]
+    type(t_int), parameter :: pa(2) = [(t_int(3)), (t_int(4))]
+    type(t_int), parameter :: pb(2) = [t_int(5), (t_int(6))]
+    type(t_int), parameter :: pq(2) = [t_int :: (t_int(8)), t_int(9)]
 
     ! Array section
     a = [(real(i), i = 1, 6)]
@@ -76,6 +90,11 @@ program associate_61
     if (any(tp%arr /= [1., 2., 3., 4.])) error stop 11
     if (any(tl%arr /= [5., 6., 7., 8.])) error stop 12
     if (any(tarr(2)%arr /= 1.)) error stop 13
+    if (any(parr(1)%arr /= 0.) .or. any(parr(2)%arr /= 1.)) error stop 14
+    if (pa(1)%i /= 3 .or. pa(2)%i /= 4) error stop 15
+    if (pb(1)%i /= 5 .or. pb(2)%i /= 6) error stop 16
+    if (pq(1)%i /= 8 .or. pq(2)%i /= 9) error stop 17
+    if (mp(1)%i /= 3 .or. mp(2)%i /= 4) error stop 18
 
     print *, "ok"
 end program
