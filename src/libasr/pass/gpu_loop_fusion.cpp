@@ -161,6 +161,23 @@ bool may_reallocate(ASR::stmt_t **body, size_t n) {
     return f.found;
 }
 
+// Whether a pointer may be associated with (part of) the array a
+// designator names: reads and writes through it are not seen. That is the
+// case for a variable, or a component of one, with the TARGET or POINTER
+// attribute.
+bool may_be_pointer_target(ASR::expr_t *des) {
+    while (ASR::is_a<ASR::StructInstanceMember_t>(*des)) {
+        if (ASRUtils::is_pointer(ASRUtils::expr_type(des))) return true;
+        des = ASR::down_cast<ASR::StructInstanceMember_t>(des)->m_v;
+    }
+    if (!ASR::is_a<ASR::Var_t>(*des)) return true;
+    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(des)->m_v);
+    if (!ASR::is_a<ASR::Variable_t>(*s)) return true;
+    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
+    return v->m_target_attr || ASRUtils::is_pointer(v->m_type);
+}
+
 class LoopFusion {
 public:
     Allocator &al;
@@ -308,7 +325,9 @@ public:
                 w.key = gpu_array_key(t->m_v);
                 if (w.key.empty() || t->n_args != p.rank()) return false;
                 ASR::ttype_t *at = ASRUtils::expr_type(t->m_v);
-                if (ASRUtils::is_pointer(at)) return false;
+                if (ASRUtils::is_pointer(at) || may_be_pointer_target(t->m_v)) {
+                    return false;
+                }
                 std::set<int> used;
                 for (size_t d = 0; d < t->n_args; d++) {
                     ASR::expr_t *ix = t->m_args[d].m_right;
@@ -1227,7 +1246,8 @@ public:
             ASR::expr_t *des = find_designator(cin->m_body, cin->n_body, k);
             if (des == nullptr) return fail();
             ASR::ttype_t *t = ASRUtils::expr_type(des);
-            if (!ASRUtils::is_allocatable(t) || ASRUtils::is_pointer(t)) {
+            if (!ASRUtils::is_allocatable(t) || ASRUtils::is_pointer(t)
+                    || may_be_pointer_target(des)) {
                 return fail();
             }
             designators[k] = des;
@@ -1256,22 +1276,8 @@ public:
                 }
             }
             for (auto &k : renamed) {
-                ASR::expr_t *base = designators[k];
-                while (ASR::is_a<ASR::StructInstanceMember_t>(*base)) {
-                    base = ASR::down_cast<ASR::StructInstanceMember_t>(
-                        base)->m_v;
-                }
-                bool target = true;
-                if (ASR::is_a<ASR::Var_t>(*base)) {
-                    ASR::symbol_t *bs = ASRUtils::symbol_get_past_external(
-                        ASR::down_cast<ASR::Var_t>(base)->m_v);
-                    if (ASR::is_a<ASR::Variable_t>(*bs)) {
-                        target = ASR::down_cast<ASR::Variable_t>(bs)
-                            ->m_target_attr;
-                    }
-                }
                 swap[k] = gpu_loop_transform_enabled(po, GpuLoopSwap)
-                    && bounds_fixed && !target && !other_unknown
+                    && bounds_fixed && !other_unknown
                     && !other_writes.count(k) && !other_reads.count(k);
             }
         }
