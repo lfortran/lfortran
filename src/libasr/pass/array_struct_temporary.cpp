@@ -4582,12 +4582,63 @@ class ReplaceExprWithTemporaryVisitor:
         }
     }
 
+    void visit_subscript(ASR::expr_t** subscript) {
+        if (*subscript == nullptr) {
+            return;
+        }
+        ASR::expr_t** current_expr_copy = current_expr;
+        current_expr = subscript;
+        call_replacer();
+        current_expr = current_expr_copy;
+        if (*subscript && visit_expr_after_replacement) {
+            visit_expr(**subscript);
+        }
+    }
+
+    // Process the subscripts of an input item designator, as for any other
+    // item, but do not replace the designator or any of its parts.
+    void visit_designator_subscripts(ASR::expr_t* e) {
+        while (true) {
+            if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                ASR::ArrayItem_t* ai = ASR::down_cast<ASR::ArrayItem_t>(e);
+                for (size_t i = 0; i < ai->n_args; i++) {
+                    visit_subscript(&ai->m_args[i].m_left);
+                    visit_subscript(&ai->m_args[i].m_right);
+                    visit_subscript(&ai->m_args[i].m_step);
+                }
+                e = ai->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                ASR::ArraySection_t* as = ASR::down_cast<ASR::ArraySection_t>(e);
+                for (size_t i = 0; i < as->n_args; i++) {
+                    visit_subscript(&as->m_args[i].m_left);
+                    visit_subscript(&as->m_args[i].m_right);
+                    visit_subscript(&as->m_args[i].m_step);
+                }
+                e = as->m_v;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::StringItem_t>(*e)) {
+                ASR::StringItem_t* si = ASR::down_cast<ASR::StringItem_t>(e);
+                visit_subscript(&si->m_idx);
+                e = si->m_arg;
+            } else if (ASR::is_a<ASR::StringSection_t>(*e)) {
+                ASR::StringSection_t* ss = ASR::down_cast<ASR::StringSection_t>(e);
+                visit_subscript(&ss->m_start);
+                visit_subscript(&ss->m_end);
+                visit_subscript(&ss->m_step);
+                e = ss->m_arg;
+            } else {
+                return;
+            }
+        }
+    }
+
     void visit_FileRead(const ASR::FileRead_t& x) {
         // A formatted READ whose input list has a nested implied-do loop is
         // lowered by the backend as one data transfer into its items, which
         // rejects a vector-subscripted item. Do not replace such an item by
         // a copy of its elements: the READ would define only the copy, which
-        // is not copied back (#15410).
+        // is not copied back (#15410). Its subscripts are still processed.
         bool has_nested_implied_do = false;
         for (size_t i = 0; i < x.n_values; i++) {
             if (ASR::is_a<ASR::ImpliedDoLoop_t>(*x.m_values[i])) {
@@ -4622,6 +4673,11 @@ class ReplaceExprWithTemporaryVisitor:
         }
         xx.m_values = values;
         xx.n_values = n_values;
+        for (size_t i = 0; i < n_values; i++) {
+            if (has_vector_subscript(values[i])) {
+                visit_designator_subscripts(values[i]);
+            }
+        }
     }
 
 };
