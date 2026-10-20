@@ -22426,6 +22426,197 @@ public:
         builder->CreateCall(fn, single_args);
     }
 
+    // The variable that an input item defines, or nullptr for other items.
+    static ASR::symbol_t* formatted_read_item_symbol(ASR::expr_t* e) {
+        while (true) {
+            if (ASR::is_a<ASR::Var_t>(*e)) {
+                return ASR::down_cast<ASR::Var_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                e = ASR::down_cast<ASR::ArrayItem_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::ArraySection_t>(*e)) {
+                e = ASR::down_cast<ASR::ArraySection_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+                e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+            } else if (ASR::is_a<ASR::StringItem_t>(*e)) {
+                e = ASR::down_cast<ASR::StringItem_t>(e)->m_arg;
+            } else if (ASR::is_a<ASR::StringSection_t>(*e)) {
+                e = ASR::down_cast<ASR::StringSection_t>(e)->m_arg;
+            } else {
+                return nullptr;
+            }
+        }
+    }
+
+    // Collects the items of an implied-do loop of a formatted READ, at any
+    // depth, and the expressions their addresses and the loop bounds use.
+    // Returns false if an item is not a scalar variable or element.
+    static bool collect_formatted_read_idl_items(ASR::ImpliedDoLoop_t* idl,
+            std::vector<ASR::expr_t*> &items, std::vector<ASR::expr_t*> &uses) {
+        uses.push_back(idl->m_start);
+        uses.push_back(idl->m_end);
+        uses.push_back(idl->m_increment);
+        for (size_t i = 0; i < idl->n_values; i++) {
+            ASR::expr_t* item = idl->m_values[i];
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
+                if (!collect_formatted_read_idl_items(
+                        ASR::down_cast<ASR::ImpliedDoLoop_t>(item), items, uses)) {
+                    return false;
+                }
+                continue;
+            }
+            ASR::ttype_t* type = ASRUtils::expr_type(item);
+            if (!(ASR::is_a<ASR::String_t>(*type) || ASR::is_a<ASR::Logical_t>(*type) ||
+                    ASR::is_a<ASR::Integer_t>(*type) || ASR::is_a<ASR::Real_t>(*type) ||
+                    ASR::is_a<ASR::Complex_t>(*type))) {
+                return false;
+            }
+            ASR::expr_t* e = item;
+            while (!ASR::is_a<ASR::Var_t>(*e)) {
+                if (ASR::is_a<ASR::ArrayItem_t>(*e)) {
+                    ASR::ArrayItem_t* ai = ASR::down_cast<ASR::ArrayItem_t>(e);
+                    for (size_t j = 0; j < ai->n_args; j++) {
+                        uses.push_back(ai->m_args[j].m_left);
+                        uses.push_back(ai->m_args[j].m_right);
+                        uses.push_back(ai->m_args[j].m_step);
+                    }
+                    e = ai->m_v;
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*e)) {
+                    e = ASR::down_cast<ASR::StructInstanceMember_t>(e)->m_v;
+                } else {
+                    return false;
+                }
+            }
+            items.push_back(item);
+        }
+        return true;
+    }
+
+    // Whether a formatted READ whose input list has a nested implied-do
+    // loop can be done as one data transfer, with the items of its
+    // implied-do loops collected into run-time target lists first. The
+    // items must be scalars, and since their addresses and the loop bounds
+    // are evaluated before any value is read, they must not use a variable
+    // that the same READ defines.
+    bool can_collect_formatted_read_targets(ASR::expr_t** values, size_t n_values) {
+        bool has_nested_idl = false;
+        std::vector<ASR::expr_t*> items, uses;
+        for (size_t i = 0; i < n_values; i++) {
+            if (!ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
+                items.push_back(values[i]);
+                continue;
+            }
+            ASR::ImpliedDoLoop_t* idl = ASR::down_cast<ASR::ImpliedDoLoop_t>(values[i]);
+            for (size_t j = 0; j < idl->n_values; j++) {
+                has_nested_idl = has_nested_idl ||
+                    ASR::is_a<ASR::ImpliedDoLoop_t>(*idl->m_values[j]);
+            }
+            if (!collect_formatted_read_idl_items(idl, items, uses)) {
+                return false;
+            }
+        }
+        if (!has_nested_idl) {
+            return false;
+        }
+        for (ASR::expr_t* item : items) {
+            ASR::symbol_t* sym = formatted_read_item_symbol(item);
+            if (sym == nullptr) {
+                return false;
+            }
+            for (ASR::expr_t* use : uses) {
+                if (ASRUtils::expr_references_symbol(use, sym)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    // Lowers an implied-do loop of a formatted READ to a loop nest that
+    // appends the address of each item to the run-time target list `list`.
+    // The loop variables are defined as by a DO loop.
+    void push_formatted_read_targets(ASR::ImpliedDoLoop_t* idl, llvm::Value* list) {
+        llvm::Type* var_type = llvm_utils->get_type_from_ttype_t_util(
+            idl->m_var, ASRUtils::expr_type(idl->m_var), module.get());
+        this->visit_expr_wrapper(idl->m_start, true);
+        llvm::Value* start = llvm_utils->convert_kind(tmp, var_type);
+        this->visit_expr_wrapper(idl->m_end, true);
+        llvm::Value* end = llvm_utils->convert_kind(tmp, var_type);
+        llvm::Value* step = llvm::ConstantInt::get(var_type, 1);
+        if (idl->m_increment) {
+            this->visit_expr_wrapper(idl->m_increment, true);
+            step = llvm_utils->convert_kind(tmp, var_type);
+        }
+        int64_t ptr_loads_copy = ptr_loads;
+        ptr_loads = 0;
+        this->visit_expr_wrapper(idl->m_var, false);
+        ptr_loads = ptr_loads_copy;
+        llvm::Value* var_ptr = tmp;
+        builder->CreateStore(start, var_ptr);
+
+        llvm::Function* fn = builder->GetInsertBlock()->getParent();
+        llvm::BasicBlock* cond_bb = llvm::BasicBlock::Create(context, "read_idl.cond", fn);
+        llvm::BasicBlock* body_bb = llvm::BasicBlock::Create(context, "read_idl.body", fn);
+        llvm::BasicBlock* end_bb = llvm::BasicBlock::Create(context, "read_idl.end", fn);
+        builder->CreateBr(cond_bb);
+        builder->SetInsertPoint(cond_bb);
+        llvm::Value* cur = llvm_utils->CreateLoad2(var_type, var_ptr);
+        llvm::Value* cond = builder->CreateSelect(
+            builder->CreateICmpSGT(step, llvm::ConstantInt::get(var_type, 0)),
+            builder->CreateICmpSLE(cur, end), builder->CreateICmpSGE(cur, end));
+        builder->CreateCondBr(cond, body_bb, end_bb);
+        builder->SetInsertPoint(body_bb);
+
+        llvm::Function* push_fn = LLVM::get_or_declare_function(*module,
+            "_lfortran_read_target_list_push", llvm_utils->void_type,
+            {character_type->getPointerTo(), llvm_utils->i32, character_type,
+             llvm_utils->i64, llvm_utils->i32});
+        for (size_t i = 0; i < idl->n_values; i++) {
+            ASR::expr_t* item = idl->m_values[i];
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*item)) {
+                push_formatted_read_targets(
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(item), list);
+                continue;
+            }
+            ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            bool is_assignment_target_copy = is_assignment_target;
+            is_assignment_target = true;
+            this->visit_expr(*item);
+            is_assignment_target = is_assignment_target_copy;
+            ptr_loads = ptr_loads_copy;
+            // Push the targets in the layout of the variadic scalar
+            // arguments: (0, type code, pointer[, length[, kind]]).
+            std::vector<llvm::Value*> item_args;
+            add_formatted_read_arg(item_args, ASRUtils::expr_type(item), tmp);
+            size_t k = 0;
+            while (k < item_args.size()) {
+                llvm::Value* type_code = item_args[k + 1];
+                llvm::Value* ptr = item_args[k + 2];
+                llvm::Value* len = llvm::ConstantInt::get(llvm_utils->i64, 0);
+                llvm::Value* kind = llvm::ConstantInt::get(llvm_utils->i32, 1);
+                k += 3;
+                int64_t code = llvm::cast<llvm::ConstantInt>(type_code)->getSExtValue();
+                if (code == 0 || code == 8) {
+                    // The scalar argument points to the data pointer of a
+                    // string, which may be a temporary: push the data itself
+                    ptr = llvm_utils->CreateLoad2(character_type, ptr);
+                    len = item_args[k++];
+                    if (code == 8) {
+                        kind = item_args[k++];
+                    }
+                } else {
+                    ptr = builder->CreateBitCast(ptr, character_type);
+                }
+                builder->CreateCall(push_fn, {list, type_code, ptr, len, kind});
+            }
+        }
+
+        cur = llvm_utils->CreateLoad2(var_type, var_ptr);
+        builder->CreateStore(builder->CreateAdd(cur, step), var_ptr);
+        builder->CreateBr(cond_bb);
+        builder->SetInsertPoint(end_bb);
+    }
+
     void emit_formatted_read_with_idl(const ASR::FileRead_t &x, ASR::expr_t** values,
             size_t n_values, llvm::Value *unit_val, llvm::Value *read_size,
             llvm::Value *pad_data, llvm::Value *pad_len, bool is_string,
@@ -22634,15 +22825,24 @@ public:
         }
 
         if (has_implied_do) {
-            // The implied_do_loops pass reads the implied DO loops of an
-            // internal file as array sections where it can.
-            emit_formatted_read_with_idl(x, values, n_values, unit_val,
-                read_size, pad_data, pad_len, is_string, fmt_expr);
-            return;
+            if (can_collect_formatted_read_targets(values, n_values)) {
+                has_implied_do = false;
+            } else {
+                // The implied_do_loops pass reads the implied DO loops of an
+                // internal file as array sections where it can.
+                emit_formatted_read_with_idl(x, values, n_values, unit_val,
+                    read_size, pad_data, pad_len, is_string, fmt_expr);
+                return;
+            }
         }
 
         size_t total_scalar_values = 0;
         for (size_t i = 0; i < n_values; i++) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) {
+                // one target list
+                total_scalar_values += 1;
+                continue;
+            }
             ASR::ttype_t* expr_type = ASRUtils::expr_type(values[i]);
             ASR::ttype_t* val_type = ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_allocatable_pointer(expr_type));
@@ -22689,8 +22889,20 @@ public:
         args.push_back(pad_data);
         args.push_back(pad_len);
 
+        std::vector<llvm::Value*> target_lists;
         for (size_t i = 0; i < n_values; i++) {
             ASR::expr_t* val_expr = values[i];
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*val_expr)) {
+                // A target list: (2, list)
+                llvm::Value* list = llvm_utils->CreateAlloca(character_type);
+                builder->CreateStore(llvm::Constant::getNullValue(character_type), list);
+                push_formatted_read_targets(
+                    ASR::down_cast<ASR::ImpliedDoLoop_t>(val_expr), list);
+                target_lists.push_back(list);
+                args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, 2)));
+                args.push_back(llvm_utils->CreateLoad2(character_type, list));
+                continue;
+            }
             ASR::ttype_t* expr_type_full = ASRUtils::expr_type(val_expr);
             ASR::ttype_t* val_type = ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_allocatable_pointer(expr_type_full));
@@ -22776,6 +22988,14 @@ public:
         }
 
         builder->CreateCall(fn, args);
+        if (!target_lists.empty()) {
+            llvm::Function* free_fn = LLVM::get_or_declare_function(*module,
+                "_lfortran_read_target_list_free", llvm_utils->void_type,
+                {character_type});
+            for (llvm::Value* list : target_lists) {
+                builder->CreateCall(free_fn, {llvm_utils->CreateLoad2(character_type, list)});
+            }
+        }
     }
 
     void visit_FileOpen(const ASR::FileOpen_t &x) {

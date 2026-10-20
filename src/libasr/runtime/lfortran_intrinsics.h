@@ -342,6 +342,8 @@ LFORTRAN_API void _lfortran_seek_record(int32_t unit_num, int32_t rec, int32_t *
 // Formatted READ: pad/pad_len specify PAD for this statement.
 // If pad is NULL/len==0, the unit's PAD mode is used.
 LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, fchar* advance, int64_t advance_length, fchar* fmt, int64_t fmt_len, int32_t no_of_args, char* pad, int64_t pad_len, ...);
+LFORTRAN_API void _lfortran_read_target_list_push(void** list, int32_t type_code, void* ptr, int64_t len, int32_t kind);
+LFORTRAN_API void _lfortran_read_target_list_free(void* list);
 LFORTRAN_API char* _lpython_read_alloc(lfortran_allocator_t* al, int64_t fd, int64_t n);
 LFORTRAN_API void _lfortran_read_int8(int8_t *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num, int32_t *iostat);

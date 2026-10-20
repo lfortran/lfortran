@@ -11992,9 +11992,59 @@ static bool read_field(InputSource *inputSource, int read_width, bool advance_no
     return true;
 }
 
+// One scalar target of a formatted READ, collected at run time from the
+// implied-do loops of the input list (type codes as in the variadic
+// protocol below; for type codes 0 and 8, `ptr` is the character data and
+// `len` its length).
+typedef struct {
+    int32_t type_code;
+    void* ptr;
+    int64_t len;
+    int32_t kind;
+} ReadTarget;
+
+typedef struct {
+    ReadTarget* items;
+    int64_t n;
+    int64_t capacity;
+} ReadTargetList;
+
+LFORTRAN_API void _lfortran_read_target_list_push(void** list,
+    int32_t type_code, void* ptr, int64_t len, int32_t kind)
+{
+    ReadTargetList* l = (ReadTargetList*)*list;
+    if (l == NULL) {
+        l = (ReadTargetList*)internal_malloc(sizeof(ReadTargetList));
+        l->items = NULL;
+        l->n = 0;
+        l->capacity = 0;
+        *list = l;
+    }
+    if (l->n == l->capacity) {
+        l->capacity = (l->capacity == 0) ? 16 : 2 * l->capacity;
+        l->items = (ReadTarget*)internal_realloc(l->items,
+            (size_t)l->capacity * sizeof(ReadTarget));
+    }
+    ReadTarget* t = &l->items[l->n++];
+    t->type_code = type_code;
+    t->ptr = ptr;
+    t->len = len;
+    t->kind = kind;
+}
+
+LFORTRAN_API void _lfortran_read_target_list_free(void* list)
+{
+    ReadTargetList* l = (ReadTargetList*)list;
+    if (l == NULL) return;
+    internal_free(l->items);
+    internal_free(l);
+}
+
 // Tracks pending array elements for one-element-per-format-item reading.
 // In Fortran, each array element consumes its own format edit descriptor,
 // so we read one element per handler call and return to the format processor.
+// The targets of a ReadTargetList are read through it one at a time as
+// one-element arrays.
 typedef struct {
     bool active;
     void* data_ptr;
@@ -12011,7 +12061,61 @@ typedef struct {
     bool is_char;
     int32_t char_kind;
     int64_t char_len;
+    ReadTargetList* list;  // pending targets of a target list, or NULL
+    int64_t list_pos;      // index of the next target in `list`
 } ArrayReadCont;
+
+// Make the next target of the pending target list the current one-element
+// array, or forget the list once all its targets are read.
+static void next_read_list_target(ArrayReadCont *arr_cont)
+{
+    if (arr_cont->active || arr_cont->list == NULL) return;
+    if (arr_cont->list_pos >= arr_cont->list->n) {
+        arr_cont->list = NULL;
+        return;
+    }
+    ReadTarget* t = &arr_cont->list->items[arr_cont->list_pos++];
+    int32_t tc = t->type_code;
+    arr_cont->elem_tc = tc;
+    arr_cont->n_elems = 1;
+    arr_cont->rank = 0;
+    arr_cont->extents = NULL;
+    arr_cont->strides = NULL;
+    arr_cont->current_idx = 0;
+    arr_cont->is_complex = false;
+    arr_cont->reading_imag = false;
+    arr_cont->is_char = (tc == 0 || tc == 8);
+    if (arr_cont->is_char) {
+        arr_cont->data_ptr = t->ptr;
+        arr_cont->char_len = t->len;
+        arr_cont->char_kind = (tc == 8) ? t->kind : 1;
+        arr_cont->elem_sz = (size_t)t->len * (size_t)arr_cont->char_kind;
+        arr_cont->component_sz = 0;
+    } else {
+        arr_cont->data_ptr = t->ptr;
+        arr_cont->component_sz = (tc == 3 || tc == 5) ? 8 : 4;
+        arr_cont->elem_sz = arr_cont->component_sz;
+    }
+    arr_cont->active = true;
+}
+
+// If the next variadic read target is a target list (is_descriptor_array ==
+// 2, followed by a ReadTargetList*), consume it and start reading its targets.
+static void start_read_target_list(va_list *args, int32_t no_of_args,
+        int *arg_idx, ArrayReadCont *arr_cont)
+{
+    if (arr_cont->active || *arg_idx >= no_of_args) return;
+    va_list probe;
+    va_copy(probe, *args);
+    int32_t is_descriptor_array = va_arg(probe, int32_t);
+    va_end(probe);
+    if (is_descriptor_array != 2) return;
+    (void)va_arg(*args, int32_t);
+    arr_cont->list = va_arg(*args, ReadTargetList*);
+    arr_cont->list_pos = 0;
+    (*arg_idx)++;
+    next_read_list_target(arr_cont);
+}
 
 static bool skip_empty_descriptor_read_target(va_list *args, int32_t no_of_args,
         int *arg_idx)
@@ -12026,6 +12130,17 @@ static bool skip_empty_descriptor_read_target(va_list *args, int32_t no_of_args,
     if (!is_descriptor_array) {
         va_end(probe);
         return false;
+    }
+    if (is_descriptor_array == 2) {
+        ReadTargetList* list = va_arg(probe, ReadTargetList*);
+        va_end(probe);
+        if (list != NULL && list->n > 0) {
+            return false;
+        }
+        (void)va_arg(*args, int32_t);
+        (void)va_arg(*args, ReadTargetList*);
+        (*arg_idx)++;
+        return true;
     }
 
     int32_t elem_tc = va_arg(probe, int32_t);
@@ -12877,6 +12992,10 @@ LFORTRAN_API void _lfortran_string_array_formatted_read(
 //     int32_t* strides        (rank stride multipliers in elements)
 //     int64_t elem_len        (character only)
 //     int32_t char_kind       (wide character only)
+//
+// Target list (is_descriptor_array == 2), the items of an implied-do loop:
+//     int32_t is_descriptor_array = 2
+//     ReadTargetList* list    (NULL if empty; see _lfortran_read_target_list_push)
 LFORTRAN_API void _lfortran_formatted_read(
     int32_t unit_num, int32_t* iostat, int32_t* chunk,
     fchar* advance, int64_t advance_length,
@@ -13090,6 +13209,7 @@ static void process_fmt_items_read(InputSource *inputSource,
                 while (!arr_cont->active && *arg_idx < no_of_args &&
                         skip_empty_descriptor_read_target(args, no_of_args, arg_idx)) {
                 }
+                start_read_target_list(args, no_of_args, arg_idx, arr_cont);
                 if (*arg_idx >= no_of_args && !arr_cont->active) {
                     return;
                 }
@@ -13183,6 +13303,7 @@ static void process_fmt_items_read(InputSource *inputSource,
                 break;
             }
 
+            next_read_list_target(arr_cont);
             if (iostat && *iostat != 0) break;
             if (*arg_idx >= no_of_args && !arr_cont->active) break;
         }
@@ -13254,6 +13375,7 @@ static void common_formatted_read(InputSource *inputSource,
         bool cont_before = arr_cont.active;
         int32_t cont_idx_before = arr_cont.current_idx;
         bool cont_imag_before = arr_cont.reading_imag;
+        int64_t list_pos_before = arr_cont.list_pos;
         fchar *cycle_fmt;
         int64_t cycle_len;
         if (first_cycle) {
@@ -13269,7 +13391,8 @@ static void common_formatted_read(InputSource *inputSource,
             &arr_cont);
         bool made_progress = (arg_idx > args_before) ||
             (cont_before && (arr_cont.current_idx != cont_idx_before ||
-                arr_cont.reading_imag != cont_imag_before || !arr_cont.active));
+                arr_cont.reading_imag != cont_imag_before || !arr_cont.active ||
+                arr_cont.list_pos != list_pos_before));
         if (made_progress && (arg_idx < no_of_args || arr_cont.active) && (!iostat || *iostat == 0)) {
             if (!consumed_newline) {
                 int c = 0;
