@@ -1,0 +1,35 @@
+semantic error: Symbol is already declared in the same scope
+ --> tests/errors/implicit_typing7.f90:8:16
+  |
+8 |     integer :: f
+  |                ^ redeclaration
+  |
+6 |     procedure() :: f
+  |                    ~ original declaration
+
+semantic error: Symbol is already declared in the same scope
+  --> tests/errors/implicit_typing7.f90:14:16
+   |
+14 |     integer :: f
+   |                ^ redeclaration
+   |
+12 |     real :: f
+   |             ~ original declaration
+
+semantic error: Symbol is already declared in the same scope
+  --> tests/errors/implicit_typing7.f90:20:16
+   |
+20 |     integer :: f
+   |                ^ redeclaration
+   |
+18 |     procedure() :: f
+   |                    ~ original declaration
+
+semantic error: Symbol is already declared in the same scope
+  --> tests/errors/implicit_typing7.f90:26:16
+   |
+26 |     integer :: f
+   |                ^ redeclaration
+   |
+24 |     real :: f
+   |             ~ original declaration

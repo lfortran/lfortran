@@ -46,22 +46,14 @@ namespace LCompilers::LLanguageServer {
             }
             h.message = d.message;
             h.severity = d.level;
-            for (auto label : d.labels) {
-                for (auto span : label.spans) {
-                    uint32_t first_line;
-                    uint32_t first_column;
-                    uint32_t last_line;
-                    uint32_t last_column;
-                    std::string filename;
-                    lm.pos_to_linecol(span.loc.first, first_line, first_column,
-                        filename);
-                    lm.pos_to_linecol(span.loc.last, last_line, last_column,
-                        filename);
-                    h.first_column = first_column;
-                    h.last_column = last_column;
-                    h.first_line = first_line;
-                    h.last_line = last_line;
-                    h.filename = filename;
+            LCompilers::diag::populate_spans_linecol(d, lm);
+            for (auto &label : d.labels) {
+                for (auto &span : label.spans) {
+                    h.first_column = span.first_column;
+                    h.last_column = span.last_column;
+                    h.first_line = span.first_line;
+                    h.last_line = span.last_line;
+                    h.filename = span.filename;
                     diag_lists.push_back(h);
                 }
             }

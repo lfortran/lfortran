@@ -223,6 +223,31 @@
                     (SymbolTable
                         2
                         {
+                            __gpu_iteration_count:
+                                (Variable
+                                    2
+                                    __gpu_iteration_count
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                    NotMethod
+                                    ()
+                                    []
+                                    ()
+                                ),
                             a:
                                 (Variable
                                     2
@@ -282,14 +307,33 @@
                         })
                     gpu_kernel_source_11
                     []
-                    [(GpuKernelLaunch
-                        1 __lfortran_gpu_kernel_0
+                    [(Assignment
+                        (Var 2 __gpu_iteration_count)
                         (IntegerConstant 4 (Integer 4) Decimal)
-                        (IntegerConstant 64 (Integer 4) Decimal)
-                        [((Var 2 a))]
                         ()
-                        []
+                        .false.
+                        .false.
+                        .false.
+                    )
+                    (If
                         ()
+                        (IntegerCompare
+                            (Var 2 __gpu_iteration_count)
+                            Gt
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(GpuKernelLaunch
+                            1 __lfortran_gpu_kernel_0
+                            (Var 2 __gpu_iteration_count)
+                            (IntegerConstant 64 (Integer 4) Decimal)
+                            [((Var 2 a))]
+                            ()
+                            []
+                            ()
+                            []
+                        )]
                         []
                     )
                     (DoLoop

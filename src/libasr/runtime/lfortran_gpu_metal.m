@@ -797,6 +797,7 @@ static void commit_open(lfortran_gpu_ctx *ctx) {
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3])
 {
+    lfortran_gpu_validate_launch(grid, block);
     if (!ctx || !k) return;
 
     // The command buffer, its encoder and the buffers it holds on to are

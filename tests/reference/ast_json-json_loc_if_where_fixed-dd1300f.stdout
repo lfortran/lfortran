@@ -1,0 +1,172 @@
+{
+    "node": "TranslationUnit",
+    "fields": {
+        "items": [
+            {
+                "node": "Program",
+                "fields": {
+                    "name": "p",
+                    "trivia": [],
+                    "items": [
+                        {
+                            "node": "If",
+                            "fields": {
+                                "label": 0,
+                                "stmt_name": [],
+                                "test": {
+                                    "node": "Name",
+                                    "fields": {
+                                        "id": "a",
+                                        "member": []
+                                    },
+                                    "loc": {
+                                        "first": 12,
+                                        "last": 12,
+                                        "first_filename": "tests/json_loc_if_where_fixed.f",
+                                        "first_line": 2,
+                                        "first_column": 11,
+                                        "last_filename": "tests/json_loc_if_where_fixed.f",
+                                        "last_line": 2,
+                                        "last_column": 11
+                                    }
+                                },
+                                "body": [
+                                    {
+                                        "node": "Continue",
+                                        "fields": {
+                                            "label": 0,
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 19,
+                                            "last": 26,
+                                            "first_filename": "tests/json_loc_if_where_fixed.f",
+                                            "first_line": 3,
+                                            "first_column": 9,
+                                            "last_filename": "tests/json_loc_if_where_fixed.f",
+                                            "last_line": 3,
+                                            "last_column": 16
+                                        }
+                                    }
+                                ],
+                                "orelse": [
+                                    {
+                                        "node": "If",
+                                        "fields": {
+                                            "label": 0,
+                                            "stmt_name": [],
+                                            "test": {
+                                                "node": "Name",
+                                                "fields": {
+                                                    "id": "b",
+                                                    "member": []
+                                                },
+                                                "loc": {
+                                                    "first": 35,
+                                                    "last": 35,
+                                                    "first_filename": "tests/json_loc_if_where_fixed.f",
+                                                    "first_line": 4,
+                                                    "first_column": 16,
+                                                    "last_filename": "tests/json_loc_if_where_fixed.f",
+                                                    "last_line": 4,
+                                                    "last_column": 16
+                                                }
+                                            },
+                                            "body": [
+                                                {
+                                                    "node": "Continue",
+                                                    "fields": {
+                                                        "label": 0,
+                                                        "trivia": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 42,
+                                                        "last": 49,
+                                                        "first_filename": "tests/json_loc_if_where_fixed.f",
+                                                        "first_line": 5,
+                                                        "first_column": 9,
+                                                        "last_filename": "tests/json_loc_if_where_fixed.f",
+                                                        "last_line": 5,
+                                                        "last_column": 16
+                                                    }
+                                                }
+                                            ],
+                                            "orelse": [
+                                                {
+                                                    "node": "Continue",
+                                                    "fields": {
+                                                        "label": 0,
+                                                        "trivia": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 56,
+                                                        "last": 63,
+                                                        "first_filename": "tests/json_loc_if_where_fixed.f",
+                                                        "first_line": 7,
+                                                        "first_column": 9,
+                                                        "last_filename": "tests/json_loc_if_where_fixed.f",
+                                                        "last_line": 7,
+                                                        "last_column": 16
+                                                    }
+                                                }
+                                            ],
+                                            "single": false,
+                                            "if_trivia": [],
+                                            "else_trivia": [],
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 28,
+                                            "last": 69,
+                                            "first_filename": "tests/json_loc_if_where_fixed.f",
+                                            "first_line": 4,
+                                            "first_column": 7,
+                                            "last_filename": "tests/json_loc_if_where_fixed.f",
+                                            "last_line": 8,
+                                            "last_column": 12
+                                        }
+                                    }
+                                ],
+                                "single": false,
+                                "if_trivia": [],
+                                "else_trivia": [],
+                                "trivia": []
+                            },
+                            "loc": {
+                                "first": 9,
+                                "last": 69,
+                                "first_filename": "tests/json_loc_if_where_fixed.f",
+                                "first_line": 2,
+                                "first_column": 7,
+                                "last_filename": "tests/json_loc_if_where_fixed.f",
+                                "last_line": 8,
+                                "last_column": 12
+                            }
+                        }
+                    ],
+                    "contains": []
+                },
+                "loc": {
+                    "first": 0,
+                    "last": 73,
+                    "first_filename": "tests/json_loc_if_where_fixed.f",
+                    "first_line": 1,
+                    "first_column": 7,
+                    "last_filename": "tests/json_loc_if_where_fixed.f",
+                    "last_line": 9,
+                    "last_column": 9
+                }
+            }
+        ]
+    },
+    "loc": {
+        "first": 0,
+        "last": 73,
+        "first_filename": "tests/json_loc_if_where_fixed.f",
+        "first_line": 1,
+        "first_column": 7,
+        "last_filename": "tests/json_loc_if_where_fixed.f",
+        "last_line": 9,
+        "last_column": 9
+    }
+}
