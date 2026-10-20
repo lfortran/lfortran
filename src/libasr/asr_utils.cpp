@@ -3329,7 +3329,8 @@ void process_overloaded_read_write_function(std::string &read_write, ASR::symbol
     ASR::ttype_t* arg_type, bool& found, Allocator& al, const Location& arg_loc,
     SymbolTable* curr_scope, SetChar& current_function_dependencies,
     SetChar& current_module_dependencies, ASR::asr_t*& asr, ASR::symbol_t* sym, const Location& loc, ASR::expr_t* expr_dt,
-    const std::function<void (const std::string &, const Location &)> err, char* pass_arg=nullptr) {
+    const std::function<void (const std::string &, const Location &)> err, char* pass_arg=nullptr,
+    ASR::symbol_t* binding=nullptr) {
     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(proc);
     std::string matched_subrout_name = "";
     ASR::ttype_t* func_arg_type = ASRUtils::expr_type(subrout->m_args[0]);
@@ -3365,10 +3366,7 @@ void process_overloaded_read_write_function(std::string &read_write, ASR::symbol
         }
         ASR::symbol_t *a_name = curr_scope->resolve_symbol(matched_subrout_name);
         if (expr_dt != nullptr) {
-            ASR::Struct_t* temp_struct = ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr_dt)));
-            a_name = ASRUtils::import_class_procedure(al, loc,
-                temp_struct->m_symtab->get_symbol(subrout_name), curr_scope);
+            a_name = ASRUtils::import_class_procedure(al, loc, binding, curr_scope);
         }
         if( a_name == nullptr ) {
             a_name = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
@@ -3427,7 +3425,7 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
                         process_overloaded_read_write_function(read_write, proc_func, args, arg_type,
                             found, al, args[0]->base.loc, curr_scope,
                             current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
-                            expr_dt, err, class_proc->m_self_argument);
+                            expr_dt, err, class_proc->m_self_argument, proc);
                         break;
                     }
                     default: {
