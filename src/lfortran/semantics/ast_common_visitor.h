@@ -26788,7 +26788,10 @@ public:
         return current_scope->resolve_symbol("null") == nullptr;
     }
 
+    // True if `e` is a reference to the intrinsic `NULL()`, possibly
+    // parenthesized, which is not allowed either.
     bool is_null_intrinsic_reference(AST::expr_t* e) {
+        e = skip_parentheses(e);
         if( !AST::is_a<AST::FuncCallOrArray_t>(*e) ) {
             return false;
         }
