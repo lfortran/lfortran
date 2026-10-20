@@ -9141,6 +9141,18 @@ public:
                 throw SemanticAbort();
             }
         }
+        if (original_sym && ASR::is_a<ASR::GenericProcedure_t>(
+                *ASRUtils::symbol_get_past_external(original_sym))) {
+            ASR::Function_t *specific = ASRUtils::get_function(final_sym);
+            if (specific && specific->m_return_var) {
+                diag.add(Diagnostic("the generic '" + sub_name + "' is called as a subroutine, "
+                    "but its specific procedure '" + std::string(specific->m_name)
+                    + "' is a function", Level::Error, Stage::Semantic,
+                    {Label("a function must be referenced in an expression, not called with CALL",
+                        {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+        }
         if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()
             && !ASR::is_a<ASR::Variable_t>(*final_sym)) {
             // check if asr owner is associate block.
