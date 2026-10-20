@@ -30,10 +30,10 @@ namespace LCompilers {
  *                                          ! b R - k sigma .. (b + 1) R
  *                                          ! - 1 - k sigma of its domain
  *
- * The windows of a launch partition the rows (the first band reaches down
- * to minus infinity and the last up to infinity), so every iteration of
- * every loop runs once, and the order of the iterations of one row is
- * kept. The launch k runs its point x, which accesses the row x + o of an
+ * The windows of a launch partition the rows (the first band starts at
+ * the loop's first row and the last ends at its last row; the windows are
+ * computed in integer(8)), so every iteration of every loop runs once, and
+ * the order of the iterations of one row is kept. The launch k runs its point x, which accesses the row x + o of an
  * array (o = 0 for a write), in band floor((x + k sigma) / R) (measured
  * from the first row, and clamped to the first and the last band). A point
  * x of the launch k that depends on a point x' of an earlier launch k' < k
@@ -77,7 +77,6 @@ namespace {
 const int64_t max_skew = 16;
 const int64_t max_stages = 32;
 const int64_t min_band_rows = 8;
-const int64_t far_rows = int64_t(1) << 30;
 const size_t max_dnf = 32;
 
 ASR::symbol_t *root_symbol(ASR::expr_t *e) {
@@ -756,18 +755,20 @@ public:
         Location loc = s->base.loc;
         ASRUtils::ASRBuilder bld(al, loc);
         ASRUtils::ExprStmtDuplicator ed(al);
-        ASR::ttype_t *it = ASRUtils::symbol_type(nm.band);
+        // The window variables are integer(8), whatever the kinds of the
+        // time loop's and of this loop's indices.
+        ASR::ttype_t *wt = ASRUtils::symbol_type(nm.band);
         ASR::ttype_t *vt = ASRUtils::symbol_type(nest.vars[0]);
         auto v = [&](ASR::symbol_t *x) { return bld.Var(x); };
         auto c = [&](int64_t x) {
             return ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, x,
-                ASRUtils::duplicate_type(al, it),
+                ASRUtils::duplicate_type(al, wt),
                 ASR::integerbozType::Decimal));
         };
-        auto cast = [&](ASR::expr_t *x) {
-            return ASRUtils::extract_kind_from_ttype_t(vt)
-                == ASRUtils::extract_kind_from_ttype_t(it) ? x
-                : bld.i2i_t(x, ASRUtils::duplicate_type(al, vt));
+        auto convert = [&](ASR::expr_t *x, ASR::ttype_t *t) {
+            return ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x))
+                == ASRUtils::extract_kind_from_ttype_t(t) ? x
+                : bld.i2i_t(x, ASRUtils::duplicate_type(al, t));
         };
         auto new_var = [&](const std::string &name) {
             return ASR::down_cast<ASR::Var_t>(bld.Variable(fn_scope,
@@ -779,25 +780,29 @@ public:
         ASR::symbol_t *hi = new_var("__gpu_skew_hi");
         ASR::expr_t *start = nest.starts[0], *end = nest.ends[0];
         // The rows of the window: band * rows - launch * sigma + base ..
-        // (band + 1) * rows - 1 - launch * sigma + base.
-        ASR::expr_t *shift = bld.Mul(v(nm.launch), c(nm.sigma));
+        // (band + 1) * rows - 1 - launch * sigma + base, but the first band
+        // starts at the domain's first row and the last band ends at its
+        // last row, in integer(8), so that they keep every row of the
+        // domain; the window lies in the domain, and its ends convert to
+        // the loop index's kind exactly.
+        auto shift = [&]() { return bld.Mul(v(nm.launch), c(nm.sigma)); };
+        auto band_lo = [&]() {
+            return bld.Sub(bld.Add(v(nm.base), bld.Mul(v(nm.band),
+                v(nm.rows))), shift());
+        };
+        auto band_hi = [&]() {
+            return bld.Sub(bld.Sub(bld.Add(v(nm.base), bld.Mul(bld.Add(
+                v(nm.band), c(1)), v(nm.rows))), c(1)), shift());
+        };
         std::vector<ASR::stmt_t*> out = {
-            bld.If(bld.Eq(v(nm.band), c(0)),
-                {bld.Assignment(v(nm.wlo), c(-far_rows))},
-                {bld.Assignment(v(nm.wlo), bld.Sub(bld.Add(v(nm.base),
-                    bld.Mul(v(nm.band), v(nm.rows))), shift))}),
-            bld.If(bld.Eq(v(nm.band), v(nm.bands)),
-                {bld.Assignment(v(nm.whi), c(far_rows))},
-                {bld.Assignment(v(nm.whi), bld.Sub(bld.Sub(bld.Add(
-                    v(nm.base), bld.Mul(bld.Add(v(nm.band), c(1)),
-                        v(nm.rows))), c(1)), bld.Mul(v(nm.launch),
-                            c(nm.sigma))))}),
-            bld.Assignment(v(lo), ed.duplicate_expr(start)),
-            bld.If(bld.Lt(v(lo), cast(v(nm.wlo))),
-                {bld.Assignment(v(lo), cast(v(nm.wlo)))}, {}),
-            bld.Assignment(v(hi), ed.duplicate_expr(end)),
-            bld.If(bld.Gt(v(hi), cast(v(nm.whi))),
-                {bld.Assignment(v(hi), cast(v(nm.whi)))}, {}),
+            bld.Assignment(v(nm.wlo), convert(ed.duplicate_expr(start), wt)),
+            bld.If(bld.Gt(v(nm.band), c(0)), {
+                bld.If(bld.Gt(band_lo(), v(nm.wlo)),
+                    {bld.Assignment(v(nm.wlo), band_lo())}, {})}, {}),
+            bld.Assignment(v(nm.whi), convert(ed.duplicate_expr(end), wt)),
+            bld.If(bld.Lt(v(nm.band), v(nm.bands)), {
+                bld.If(bld.Lt(band_hi(), v(nm.whi)),
+                    {bld.Assignment(v(nm.whi), band_hi())}, {})}, {}),
         };
         nest.loops[0]->m_head.m_start = v(lo);
         nest.loops[0]->m_head.m_end = v(hi);
@@ -806,7 +811,9 @@ public:
         w.end = end;
         windows[s] = w;
         if (rarely_run.count(orig)) rarely_run.insert(s);
-        out.push_back(bld.If(bld.LtE(v(lo), v(hi)), {s}, {}));
+        out.push_back(bld.If(bld.LtE(v(nm.wlo), v(nm.whi)), {
+            bld.Assignment(v(lo), convert(v(nm.wlo), vt)),
+            bld.Assignment(v(hi), convert(v(nm.whi), vt)), s}, {}));
         out.push_back(bld.Assignment(v(nm.launch), bld.Add(v(nm.launch),
             c(1))));
         return out;
@@ -928,7 +935,9 @@ public:
             return bld.Assignment(v(x), e);
         };
         auto to_it = [&](ASR::expr_t *e) {
-            return bld.i2i_t(e, ASRUtils::duplicate_type(al, it));
+            return ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(e))
+                == ASRUtils::extract_kind_from_ttype_t(it) ? e
+                : bld.i2i_t(e, ASRUtils::duplicate_type(al, it));
         };
         auto to_i64 = [&](ASR::expr_t *e) {
             return bld.i2i_t(e, ASRUtils::duplicate_type(al, i64));
@@ -957,7 +966,6 @@ public:
         ASR::symbol_t *per_row = new_var("__gpu_skew_row_bytes", i64);
         ASR::symbol_t *fixed = new_var("__gpu_skew_fixed_bytes", i64);
         ASR::symbol_t *rows64 = new_var("__gpu_skew_rows64", i64);
-        ASR::symbol_t *rows = new_var("__gpu_skew_rows", it);
         ASR::symbol_t *ext = new_var("__gpu_skew_extent", i64);
         // The bytes of an array, and of one of its rows (all of it for
         // an array without rows).
@@ -1001,9 +1009,6 @@ public:
                 set(rows64, bld.Div(bld.Sub(bld.Div(bld.Mul(v(cache),
                     bld.i64(3)), bld.i64(4)), v(fixed)), v(per_row))),
                 bld.If(bld.GtE(v(rows64), bld.i64(min_band_rows)), {
-                    bld.If(bld.Gt(v(rows64), bld.i64(far_rows)),
-                        {set(rows64, bld.i64(far_rows))}, {}),
-                    set(rows, to_it(v(rows64))),
                     pinned ? bld.If(pinned, {set(on, bld.bool_t(true, lt))},
                         {}) : set(on, bld.bool_t(true, lt))}, {})}, {}));
         pre.push_back(set(on, bld.bool_t(false, lt)));
@@ -1011,13 +1016,15 @@ public:
 
         // The skewed loop.
         Names nm;
-        nm.band = new_var("__gpu_skew_band", it);
-        nm.bands = new_var("__gpu_skew_bands", it);
-        nm.base = new_var("__gpu_skew_base", it);
-        nm.rows = rows;
-        nm.launch = new_var("__gpu_skew_launch", it);
-        nm.wlo = new_var("__gpu_skew_window_lo", it);
-        nm.whi = new_var("__gpu_skew_window_hi", it);
+        // The bands and windows in integer(8): the rows of a parallel loop
+        // may not fit in the kind of the time loop's index.
+        nm.band = new_var("__gpu_skew_band", i64);
+        nm.bands = new_var("__gpu_skew_bands", i64);
+        nm.base = new_var("__gpu_skew_base", i64);
+        nm.rows = rows64;
+        nm.launch = new_var("__gpu_skew_launch", i64);
+        nm.wlo = new_var("__gpu_skew_window_lo", i64);
+        nm.whi = new_var("__gpu_skew_window_hi", i64);
         nm.sigma = sigma;
         ASR::symbol_t *per = new_var("__gpu_skew_steps", it);
         ASR::symbol_t *t0 = new_var("__gpu_skew_t0", it);
@@ -1033,24 +1040,27 @@ public:
         }
         GpuLoopNest first_nest;
         gpu_loop_nest(dev[0], first_nest);
-        auto to_it_expr = [&](ASR::expr_t *e) {
+        auto to_i64_expr = [&](ASR::expr_t *e) {
             ASR::expr_t *x = ed.duplicate_expr(e);
             return ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x))
-                == ASRUtils::extract_kind_from_ttype_t(it) ? x : to_it(x);
+                == 8 ? x : to_i64(x);
         };
         std::vector<ASR::stmt_t*> skewed;
         // Launches per band: enough that a band's rows stay ahead of the
         // skew (2 sigma per launch), at most max_stages.
         int64_t s1 = std::max<int64_t>(sigma, 1);
-        skewed.push_back(set(per, bld.Div(v(rows), c(2 * s1))));
-        skewed.push_back(bld.If(bld.Gt(v(per), c(max_stages)),
-            {set(per, c(max_stages))}, {}));
-        skewed.push_back(bld.If(bld.Lt(v(per), c(2)), {set(per, c(2))}, {}));
-        skewed.push_back(set(nm.base, to_it_expr(first_nest.starts[0])));
+        skewed.push_back(set(ext, bld.Div(v(rows64), bld.i64(2 * s1))));
+        skewed.push_back(bld.If(bld.Gt(v(ext), bld.i64(max_stages)),
+            {set(ext, bld.i64(max_stages))}, {}));
+        skewed.push_back(bld.If(bld.Lt(v(ext), bld.i64(2)),
+            {set(ext, bld.i64(2))}, {}));
+        skewed.push_back(set(per, to_it(v(ext))));
+        skewed.push_back(set(nm.base, to_i64_expr(first_nest.starts[0])));
         skewed.push_back(set(nm.bands, bld.Div(bld.Add(bld.Sub(
-            to_it_expr(first_nest.ends[0]), v(nm.base)), v(rows)), v(rows))));
-        skewed.push_back(bld.If(bld.Lt(v(nm.bands), c(0)),
-            {set(nm.bands, c(0))}, {}));
+            to_i64_expr(first_nest.ends[0]), v(nm.base)), v(rows64)),
+            v(rows64))));
+        skewed.push_back(bld.If(bld.Lt(v(nm.bands), bld.i64(0)),
+            {set(nm.bands, bld.i64(0))}, {}));
         skewed.push_back(set(t0, c(0)));
         // The body, copied, with its parallel loops on windows.
         GpuDuplicator dup(al, scope);
@@ -1079,7 +1089,7 @@ public:
         for (size_t k = 0; k < saved_vars.size(); k++) {
             band_body.push_back(set(saved_vars[k], v(saves[k])));
         }
-        band_body.push_back(set(nm.launch, c(0)));
+        band_body.push_back(set(nm.launch, bld.i64(0)));
         band_body.push_back(bld.DoLoop(v(t), v(t0), bld.Sub(bld.Add(v(t0),
             v(kn)), c(1)), iteration));
         std::vector<ASR::stmt_t*> block_body = {
@@ -1088,7 +1098,7 @@ public:
         for (size_t k = 0; k < saved_vars.size(); k++) {
             block_body.push_back(set(saves[k], v(saved_vars[k])));
         }
-        block_body.push_back(bld.DoLoop(v(nm.band), c(0), v(nm.bands),
+        block_body.push_back(bld.DoLoop(v(nm.band), bld.i64(0), v(nm.bands),
             band_body));
         block_body.push_back(set(t0, bld.Add(v(t0), v(kn))));
         skewed.push_back(bld.While(bld.Lt(v(t0), v(n)), block_body));

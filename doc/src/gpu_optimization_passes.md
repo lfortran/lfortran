@@ -319,11 +319,14 @@ do while (t0 < n)                 ! s iterations of the nest at a time
     do t = t0, t0 + s - 1         ! the loop indices from t
       body, where the k-th parallel loop launched runs only its rows
       in [B + b R - k sigma, B + (b + 1) R - 1 - k sigma] (the first band
-      reaching down to minus infinity, the last up to infinity), k += 1
+      from the loop's first row, the last up to its last row), k += 1
   t0 = t0 + s
 ```
 
-For each launch the windows of the bands partition the rows, so every
+The window is computed in `integer(8)`, whatever the kinds of the loop
+indices, and is a part of the loop's rows, so its ends convert exactly to
+the kind of the loop's index. For each launch the windows of the bands
+partition the rows, so every
 iteration of every loop runs exactly once, and the rows of one launch keep
 their order. A point x of the k-th launch in a replay runs in band
 floor((x - B + k sigma) / R) and accesses row x + o of an array (o = 0 for
