@@ -31,7 +31,10 @@ def private_directory(path):
         from ctypes import wintypes as w
         advapi = ctypes.WinDLL("advapi32", use_last_error=True)
         kernel = ctypes.WinDLL("kernel32", use_last_error=True)
-        advapi.GetNamedSecurityInfoW.restype = w.DWORD
+        advapi.OpenProcessToken.argtypes = [
+            w.HANDLE, w.DWORD, ctypes.POINTER(w.HANDLE)]
+        advapi.GetTokenInformation.argtypes = [
+            w.HANDLE, w.DWORD, ctypes.c_void_p, w.DWORD, ctypes.POINTER(w.DWORD)]
         advapi.ConvertSidToStringSidW.argtypes = [
             ctypes.c_void_p, ctypes.POINTER(w.LPWSTR)]
         advapi.ConvertStringSecurityDescriptorToSecurityDescriptorW.argtypes = [
@@ -40,20 +43,31 @@ def private_directory(path):
         advapi.SetFileSecurityW.argtypes = [w.LPCWSTR, w.DWORD, ctypes.c_void_p]
         kernel.LocalFree.argtypes = [ctypes.c_void_p]
         kernel.LocalFree.restype = ctypes.c_void_p
-        owner, descriptor = ctypes.c_void_p(), ctypes.c_void_p()
-        advapi.GetNamedSecurityInfoW.argtypes = [w.LPWSTR, w.DWORD, w.DWORD,
-            ctypes.POINTER(ctypes.c_void_p), ctypes.c_void_p, ctypes.c_void_p,
-            ctypes.c_void_p, ctypes.POINTER(ctypes.c_void_p)]
-        assert advapi.GetNamedSecurityInfoW(str(path), 1, 1, ctypes.byref(owner),
-            None, None, None, ctypes.byref(descriptor)) == 0
-        sid = w.LPWSTR()
-        assert advapi.ConvertSidToStringSidW(owner, ctypes.byref(sid))
-        secure = ctypes.c_void_p()
-        assert advapi.ConvertStringSecurityDescriptorToSecurityDescriptorW(
-            "D:P(A;OICI;FA;;;%s)" % sid.value, 1, ctypes.byref(secure), None)
-        assert advapi.SetFileSecurityW(str(path), 4 | 0x80000000, secure)
-        for pointer in [secure, sid, descriptor]:
-            kernel.LocalFree(pointer)
+        kernel.GetCurrentProcess.restype = w.HANDLE
+        kernel.CloseHandle.argtypes = [w.HANDLE]
+        token, size = w.HANDLE(), w.DWORD()
+        assert advapi.OpenProcessToken(
+            kernel.GetCurrentProcess(), 0x0008, ctypes.byref(token))
+        sid, secure = w.LPWSTR(), ctypes.c_void_p()
+        try:
+            advapi.GetTokenInformation(token, 1, None, 0, ctypes.byref(size))
+            assert size.value
+            user = ctypes.create_string_buffer(size.value)
+            assert advapi.GetTokenInformation(
+                token, 1, user, size.value, ctypes.byref(size))
+            # An elevated process can create Administrators-owned directories.
+            # The transport requires the user SID, not the inherited owner SID.
+            assert advapi.ConvertSidToStringSidW(
+                ctypes.c_void_p.from_buffer(user), ctypes.byref(sid))
+            assert advapi.ConvertStringSecurityDescriptorToSecurityDescriptorW(
+                "O:%sD:P(A;OICI;FA;;;%s)" % (sid.value, sid.value),
+                1, ctypes.byref(secure), None)
+            assert advapi.SetFileSecurityW(str(path), 1 | 4 | 0x80000000, secure)
+        finally:
+            for pointer in [secure, sid]:
+                if pointer:
+                    kernel.LocalFree(pointer)
+            kernel.CloseHandle(token)
 
 
 def frame(value):
