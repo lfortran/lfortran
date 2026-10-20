@@ -189,6 +189,9 @@ program traits_runtime_numeric_04_oracle
    use traits_runtime_numeric_04_oracle_m, only: IAverager, SimpleSum, PairwiseSum, Averager
    implicit none
    integer :: checks
+   ! --fast may approximate the divisions by reciprocal estimates (LLVM 7/8
+   ! vectorized x86 code is one ulp off), so floating averages use a tolerance.
+   real, parameter :: tol = 1e-5
 
    checks = 0
    call run(1)
@@ -220,15 +223,15 @@ contains
       yc = [(1.0,-2.0), (3.0,4.0), (5.0,0.0), (7.0,2.0)]
 
       call check(av%average(xi) == 3)
-      call check(av%average(xr) == 3.0)
-      call check(av%average(xc) == (3.0,3.0))
+      call check(abs(av%average(xr) - 3.0) < tol)
+      call check(abs(av%average(xc) - (3.0,3.0)) < tol)
       call check(kind(av%average(xc)) == kind(xc))
-      call check(av%average(xc(5:1:-1)) == (3.0,3.0))
-      call check(av%average(xc(1:5:2)) == (3.0,3.0))
-      call check(av%average(xc(4:4)) == (4.0,4.0))
-      call check(av%average(yc) == (4.0,1.0))
-      call check(av%average(yc(4:1:-3)) == (4.0,0.0))
-      call check(av%average(yc(2:3)) == (4.0,2.0))
+      call check(abs(av%average(xc(5:1:-1)) - (3.0,3.0)) < tol)
+      call check(abs(av%average(xc(1:5:2)) - (3.0,3.0)) < tol)
+      call check(abs(av%average(xc(4:4)) - (4.0,4.0)) < tol)
+      call check(abs(av%average(yc) - (4.0,1.0)) < tol)
+      call check(abs(av%average(yc(4:1:-3)) - (4.0,0.0)) < tol)
+      call check(abs(av%average(yc(2:3)) - (4.0,2.0)) < tol)
       call check(av%average(xi(2:4)) == 3)
    end subroutine run
 
