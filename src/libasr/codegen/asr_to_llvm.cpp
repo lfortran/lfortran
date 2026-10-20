@@ -22213,39 +22213,40 @@ public:
         }
     }
 
-    void add_formatted_read_arg(std::vector<llvm::Value*>& args, ASR::ttype_t* val_type,
-            llvm::Value* elem_ptr) {
+    // One scalar target of a formatted READ in the runtime protocol (see
+    // _lfortran_formatted_read). For a character target, `ptr` is the
+    // address of its data pointer and `len` its length.
+    struct FormattedReadScalar {
+        int32_t type_code;
+        llvm::Value* ptr;
+        llvm::Value* len;
+        int64_t char_kind;
+    };
+
+    // The scalar targets of a formatted READ item of type `val_type` at
+    // `elem_ptr`: one, or two (real and imaginary part) for a complex item.
+    std::vector<FormattedReadScalar> get_formatted_read_scalars(
+            ASR::ttype_t* val_type, llvm::Value* elem_ptr) {
         constexpr int32_t kChar = 0;
         constexpr int32_t kFloat = 4;
         constexpr int32_t kDouble = 5;
         constexpr int32_t kWideChar = 8;
 
-        // Scalar arg: prepend is_descriptor_array=0 before type_code
-        llvm::Value* is_descriptor_array_false = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
         if (ASR::is_a<ASR::String_t>(*val_type)) {
             // A destination of character kind > 1 uses its own type code and
             // carries the kind, so the runtime knows the field has to be
             // decoded into code units.
             int64_t char_kind = ASR::down_cast<ASR::String_t>(val_type)->m_kind;
-            args.push_back(is_descriptor_array_false);
-            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32,
-                char_kind > 1 ? kWideChar : kChar)));
             auto [str_data, str_len] = llvm_utils->get_string_length_data(
                 ASRUtils::get_string_type(val_type), elem_ptr, true);
-            args.push_back(str_data);
-            args.push_back(str_len);
-            if (char_kind > 1) {
-                args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, char_kind)));
-            }
+            return {{char_kind > 1 ? kWideChar : kChar, str_data, str_len, char_kind}};
         } else if (ASR::is_a<ASR::Logical_t>(*val_type)
                 || ASR::is_a<ASR::Integer_t>(*val_type)
                 || ASR::is_a<ASR::Real_t>(*val_type)) {
             // The type code carries the kind, so that the runtime stores an
             // item of its own size.
-            args.push_back(is_descriptor_array_false);
-            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32,
-                LLVMArrUtils::get_formatted_read_type_code(val_type, nullptr))));
-            args.push_back(elem_ptr);
+            return {{LLVMArrUtils::get_formatted_read_type_code(val_type, nullptr),
+                elem_ptr, nullptr, 0}};
         } else if (ASR::is_a<ASR::Complex_t>(*val_type)) {
             ASR::Complex_t* complex_type = ASR::down_cast<ASR::Complex_t>(val_type);
             int32_t component_type_code = (complex_type->m_kind == 4) ? kFloat : kDouble;
@@ -22254,14 +22255,28 @@ public:
                 : static_cast<llvm::Type*>(complex_type_8);
             llvm::Value* re_ptr = builder->CreateStructGEP(llvm_complex_type, elem_ptr, 0);
             llvm::Value* im_ptr = builder->CreateStructGEP(llvm_complex_type, elem_ptr, 1);
-            args.push_back(is_descriptor_array_false);
-            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, component_type_code)));
-            args.push_back(re_ptr);
-            args.push_back(is_descriptor_array_false);
-            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, component_type_code)));
-            args.push_back(im_ptr);
+            return {{component_type_code, re_ptr, nullptr, 0},
+                    {component_type_code, im_ptr, nullptr, 0}};
         } else {
             throw CodeGenError("Unsupported type in formatted read");
+        }
+    }
+
+    // Appends the scalar variadic arguments of a formatted READ item:
+    // (0, type code, pointer[, length[, kind]]) per scalar target.
+    void add_formatted_read_arg(std::vector<llvm::Value*>& args, ASR::ttype_t* val_type,
+            llvm::Value* elem_ptr) {
+        llvm::Value* is_descriptor_array_false = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+        for (const FormattedReadScalar &t : get_formatted_read_scalars(val_type, elem_ptr)) {
+            args.push_back(is_descriptor_array_false);
+            args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, t.type_code)));
+            args.push_back(t.ptr);
+            if (t.len) {
+                args.push_back(t.len);
+                if (t.char_kind > 1) {
+                    args.push_back(llvm::ConstantInt::get(context, llvm::APInt(32, t.char_kind)));
+                }
+            }
         }
     }
 
@@ -22584,30 +22599,22 @@ public:
             this->visit_expr(*item);
             is_assignment_target = is_assignment_target_copy;
             ptr_loads = ptr_loads_copy;
-            // Push the targets in the layout of the variadic scalar
-            // arguments: (0, type code, pointer[, length[, kind]]).
-            std::vector<llvm::Value*> item_args;
-            add_formatted_read_arg(item_args, ASRUtils::expr_type(item), tmp);
-            size_t k = 0;
-            while (k < item_args.size()) {
-                llvm::Value* type_code = item_args[k + 1];
-                llvm::Value* ptr = item_args[k + 2];
+            for (const FormattedReadScalar &t :
+                    get_formatted_read_scalars(ASRUtils::expr_type(item), tmp)) {
+                llvm::Value* ptr;
                 llvm::Value* len = llvm::ConstantInt::get(llvm_utils->i64, 0);
                 llvm::Value* kind = llvm::ConstantInt::get(llvm_utils->i32, 1);
-                k += 3;
-                int64_t code = llvm::cast<llvm::ConstantInt>(type_code)->getSExtValue();
-                if (code == 0 || code == 8) {
-                    // The scalar argument points to the data pointer of a
-                    // string, which may be a temporary: push the data itself
-                    ptr = llvm_utils->CreateLoad2(character_type, ptr);
-                    len = item_args[k++];
-                    if (code == 8) {
-                        kind = item_args[k++];
-                    }
+                if (t.len) {
+                    // The data pointer of a string may be a temporary:
+                    // push the data itself
+                    ptr = llvm_utils->CreateLoad2(character_type, t.ptr);
+                    len = t.len;
+                    kind = llvm::ConstantInt::get(llvm_utils->i32, t.char_kind);
                 } else {
-                    ptr = builder->CreateBitCast(ptr, character_type);
+                    ptr = builder->CreateBitCast(t.ptr, character_type);
                 }
-                builder->CreateCall(push_fn, {list, type_code, ptr, len, kind});
+                builder->CreateCall(push_fn, {list,
+                    llvm::ConstantInt::get(llvm_utils->i32, t.type_code), ptr, len, kind});
             }
         }
 
