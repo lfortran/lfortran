@@ -4309,3 +4309,30 @@ semantic error: reading into the real or imaginary part of a complex variable is
      |
 3465 |         read(s, *) w(1:3:2)%im  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
      |                    ^^^^^^^^^^^ 
+
+semantic error: the argument of the `rank` intrinsic must be a data object
+    --> tests/errors/continue_compilation_1.f90:3480:23
+     |
+3480 |         print *, rank(a(1, :) + cc1_rdo_f())  ! {Error} the argument of the `rank` intrinsic must be a data object
+     |                       ^^^^^^^^^^^^^^^^^^^^^ this expression is not a variable or a constant
+     |
+3480 |         print *, rank(a(1, :) + cc1_rdo_f())  ! {Error} the argument of the `rank` intrinsic must be a data object
+     |                       ~~~~~~~~~~~~~~~~~~~~~ help: assign the value to a variable and pass the variable instead
+
+semantic error: the argument of the `rank` intrinsic must be a data object
+    --> tests/errors/continue_compilation_1.f90:3481:23
+     |
+3481 |         print *, rank(-(a * 2.0))  ! {Error} the argument of the `rank` intrinsic must be a data object
+     |                       ^^^^^^^^^^ this expression is not a variable or a constant
+     |
+3481 |         print *, rank(-(a * 2.0))  ! {Error} the argument of the `rank` intrinsic must be a data object
+     |                       ~~~~~~~~~~ help: assign the value to a variable and pass the variable instead
+
+semantic error: the argument of the `rank` intrinsic must be a data object
+    --> tests/errors/continue_compilation_1.f90:3482:23
+     |
+3482 |         print *, rank(merge(a, a, .true.))  ! {Error} the argument of the `rank` intrinsic must be a data object
+     |                       ^^^^^^^^^^^^^^^^^^^ this expression is not a variable or a constant
+     |
+3482 |         print *, rank(merge(a, a, .true.))  ! {Error} the argument of the `rank` intrinsic must be a data object
+     |                       ~~~~~~~~~~~~~~~~~~~ help: assign the value to a variable and pass the variable instead

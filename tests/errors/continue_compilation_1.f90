@@ -3465,3 +3465,20 @@ contains
         read(s, *) w(1:3:2)%im  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
     end subroutine cc1_rcp_use
 end module cc1_read_complex_part
+
+! The argument of RANK must be a data object, not an expression that reads a
+! variable.
+module cc1_rank_data_object
+implicit none
+contains
+    function cc1_rdo_f() result(r)
+        integer :: r(3)
+        r = 1
+    end function cc1_rdo_f
+    subroutine cc1_rdo_use()
+        integer :: a(2, 3)
+        print *, rank(a(1, :) + cc1_rdo_f())  ! {Error} the argument of the `rank` intrinsic must be a data object
+        print *, rank(-(a * 2.0))  ! {Error} the argument of the `rank` intrinsic must be a data object
+        print *, rank(merge(a, a, .true.))  ! {Error} the argument of the `rank` intrinsic must be a data object
+    end subroutine cc1_rdo_use
+end module cc1_rank_data_object
