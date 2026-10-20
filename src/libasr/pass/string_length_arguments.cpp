@@ -58,6 +58,8 @@ which every call passes all the same, as gfortran's do.
 The length of an actual whose length is not a constant is taken from the
 actual itself, so a call with a side effect in the actual (in a subscript, say)
 is moved to a temporary before the statement, to be evaluated only once.
+Shared result-length expressions materialize it at the first evaluated length
+use. Physical casts are normalized across all uses after the rewriting.
 
 The pass runs after the other lowering passes, so that every call is in place,
 and after the .mod files are written, so they keep the argument lists as
@@ -219,7 +221,7 @@ ASR::symbol_t* transformed_procedure(ASR::symbol_t *s,
 // component) and a FunctionPointerCast hold their own copy of their
 // interface's FunctionType, so they have to take its new signature. So does
 // the signature of a procedure with such a dummy.
-class UpdateProcedureTypes: public ASR::BaseWalkVisitor<UpdateProcedureTypes> {
+class UpdateProcedureTypes: public ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes> {
 public:
     Allocator &al;
     const TransformedProcedures &transformed;
@@ -230,7 +232,7 @@ public:
         al{al_}, transformed{transformed_} {}
 
     void visit_Variable(const ASR::Variable_t &x) {
-        ASR::BaseWalkVisitor<UpdateProcedureTypes>::visit_Variable(x);
+        ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes>::visit_Variable(x);
         ASR::symbol_t *decl = transformed_procedure(x.m_type_declaration,
             transformed);
         if (decl == nullptr || !is_a<ASR::FunctionType_t>(
@@ -250,8 +252,35 @@ public:
         retyped.insert(&xx.base);
     }
 
+    // A procedure component read from a .mod file holds its own copy of its
+    // interface's FunctionType rather than sharing it. The new signature can
+    // name symbols of the interface's scope, so it is imported into the
+    // scope of the reference.
+    void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+        ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes>::visit_StructInstanceMember(x);
+        ASR::symbol_t *m = ASRUtils::symbol_get_past_external(x.m_m);
+        if (!is_a<ASR::Variable_t>(*m)) return;
+        ASR::symbol_t *decl = transformed_procedure(
+            down_cast<ASR::Variable_t>(m)->m_type_declaration, transformed);
+        if (decl == nullptr || !is_a<ASR::FunctionType_t>(
+                *ASRUtils::type_get_past_pointer(x.m_type))) {
+            return;
+        }
+        ASR::StructInstanceMember_t &xx =
+            const_cast<ASR::StructInstanceMember_t&>(x);
+        ASR::ttype_t *signature = ASRUtils::import_procedure_type(al,
+            down_cast<ASR::Function_t>(decl)->m_function_signature,
+            current_scope);
+        if (ASRUtils::is_pointer(xx.m_type)) {
+            xx.m_type = ASRUtils::TYPE(ASR::make_Pointer_t(al,
+                xx.base.base.loc, signature));
+        } else {
+            xx.m_type = signature;
+        }
+    }
+
     void visit_FunctionPointerCast(const ASR::FunctionPointerCast_t &x) {
-        ASR::BaseWalkVisitor<UpdateProcedureTypes>::visit_FunctionPointerCast(x);
+        ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes>::visit_FunctionPointerCast(x);
         ASR::symbol_t *to = transformed_procedure(x.m_to, transformed);
         if (to == nullptr) return;
         const_cast<ASR::FunctionPointerCast_t&>(x).m_type =
@@ -259,7 +288,7 @@ public:
     }
 
     void visit_Function(const ASR::Function_t &x) {
-        ASR::BaseWalkVisitor<UpdateProcedureTypes>::visit_Function(x);
+        ASR::ASRPassBaseWalkVisitor<UpdateProcedureTypes>::visit_Function(x);
         ASR::FunctionType_t *ft = ASRUtils::get_FunctionType(x);
         if (ft->n_arg_types != x.n_args) return;
         for (size_t i = 0; i < x.n_args; i++) {
@@ -462,6 +491,26 @@ public:
         return s ? down_cast<ASR::Function_t>(s) : nullptr;
     }
 
+    void hoist_impure_calls(ASR::expr_t *&actual) {
+        if (before == nullptr) return;
+        FindImpureCall impure;
+        impure.visit_expr(*actual);
+        if (impure.found) {
+            HoistImpureCalls hoist(al, current_scope, *before);
+            hoist.current_expr = &actual;
+            hoist.replace_expr(actual);
+        }
+    }
+
+    void visit_StringLen(const ASR::StringLen_t &x) {
+        ASR::ASRPassBaseWalkVisitor<AddHiddenLengthActuals>::visit_StringLen(x);
+        ASR::String_t *str = ASRUtils::get_string_type(x.m_arg);
+        if (str->m_len && ASRUtils::is_value_constant(str->m_len)) return;
+        // A result allocation can use the same actual as the later call.
+        // Materialize it at this first evaluated length use, not at that call.
+        hoist_impure_calls(const_cast<ASR::StringLen_t&>(x).m_arg);
+    }
+
     // The length of the character actual `actual` (its element length if it
     // is an array) as an `integer(8)`. Absent is length 0.
     ASR::expr_t* actual_length(ASR::expr_t *&actual, const Location &loc) {
@@ -486,16 +535,10 @@ public:
         // The length is taken from the actual itself, which is then
         // evaluated twice: a call with a side effect in it is evaluated
         // once, before the statement.
-        FindImpureCall impure;
-        impure.visit_expr(*actual);
-        if (impure.found && before != nullptr) {
-            HoistImpureCalls hoist(al, current_scope, *before);
-            hoist.current_expr = &actual;
-            hoist.replace_expr(actual);
-            str_expr = actual;
-            while (is_a<ASR::ArrayPhysicalCast_t>(*str_expr)) {
-                str_expr = down_cast<ASR::ArrayPhysicalCast_t>(str_expr)->m_arg;
-            }
+        hoist_impure_calls(actual);
+        str_expr = actual;
+        while (is_a<ASR::ArrayPhysicalCast_t>(*str_expr)) {
+            str_expr = down_cast<ASR::ArrayPhysicalCast_t>(str_expr)->m_arg;
         }
         ASRUtils::ExprStmtDuplicator duplicator(al);
         duplicator.allow_procedure_calls = true;
@@ -545,28 +588,6 @@ public:
     }
 };
 
-// The verification after each pass does not know which passes have run, so
-// this pass checks the invariant it establishes itself, whenever the passes
-// are verified.
-void verify_hidden_string_lengths(const ASR::TranslationUnit_t &unit,
-        const LCompilers::PassOptions &pass_options) {
-    bool verify = pass_options.verify_all_passes;
-#if defined(WITH_LFORTRAN_ASSERT)
-    verify = true;
-#endif
-    if (!verify) return;
-    diag::Diagnostics local_diagnostics;
-    diag::Diagnostics &diagnostics = pass_options.diagnostics != nullptr
-        ? *pass_options.diagnostics : local_diagnostics;
-    ASRVerifyOptions verify_options;
-    verify_options.string_length_arguments = true;
-    if (!asr_verify(unit, verify_options, diagnostics)) {
-        std::cerr << diagnostics.render2();
-        throw LCompilersException("pass=string_length_arguments",
-            LFORTRAN_ASR_PASS_VERIFY_FAILED);
-    }
-}
-
 } // namespace
 
 void pass_string_length_arguments(Allocator &al, ASR::TranslationUnit_t &unit,
@@ -611,9 +632,13 @@ void pass_string_length_arguments(Allocator &al, ASR::TranslationUnit_t &unit,
     }
     AddHiddenLengthActuals a(al, transformed);
     a.visit_TranslationUnit(unit);
+    PassUtils::normalize_string_physical_casts(al, unit);
     PassUtils::UpdateDependenciesVisitor d(al);
     d.visit_TranslationUnit(unit);
-    verify_hidden_string_lengths(unit, pass_options);
+    ASRVerifyOptions verify_options;
+    verify_options.string_length_arguments = true;
+    PassUtils::verify_pass_invariant(unit, pass_options, verify_options,
+        "string_length_arguments");
 }
 
 } // namespace LCompilers

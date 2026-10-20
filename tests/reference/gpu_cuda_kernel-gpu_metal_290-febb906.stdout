@@ -14,7 +14,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* __workspace_2)
 {
     int nn = __scalar_args.nn;
-    int __dim_r_0 = __scalar_args.__dim_r_0;
     int __lb_r_0 = __scalar_args.__lb_r_0;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;
@@ -22,7 +21,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int i;
     int p;
     int q;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((__loop_end_0 - 1) + 1))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);

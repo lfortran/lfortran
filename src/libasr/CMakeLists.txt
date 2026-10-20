@@ -52,6 +52,7 @@ set(SRC
     pass/function_call_in_declaration.cpp
     pass/array_passed_in_function_call.cpp
     pass/string_length_arguments.cpp
+    pass/string_format_array_args.cpp
     pass/openmp.cpp
     pass/parallel_canonicalize.cpp
     pass/parallel_dispatch.cpp
@@ -103,6 +104,7 @@ set(SRC
     pass/gpu_offload_decide.cpp
     pass/gpu_offload_launch.cpp
     pass/gpu_offload_host_association.cpp
+    pass/gpu_offload_privatize.cpp
     pass/gpu_procedure_implementation.cpp
     pass/gpu_offload_stop.cpp
     pass/gpu_offload_component_fit.cpp
@@ -120,6 +122,10 @@ set(SRC
     pass/gpu_kernel_plan.cpp
     pass/gpu_data_layout.cpp
     pass/device_launch_expand.cpp
+    pass/gpu_launch_sync.cpp
+    pass/gpu_array_statements.cpp
+    pass/dead_array_store.cpp
+    pass/gpu_vector_lanes.cpp
     pass/gpu_memory_space.cpp
     pass/gpu_device_workspace.cpp
     pass/gpu_struct_component_args.cpp
@@ -229,8 +235,25 @@ set(LFORTRAN_GPU_RUNTIME_SOURCES
 
 # The driver compiles these sources when linking GPU programs. Keep the
 # build-tree and installed layouts consistent with its runtime lookup path.
-file(COPY ${LFORTRAN_GPU_RUNTIME_SOURCES}
-    DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/runtime)
+if (NOT CMAKE_CURRENT_SOURCE_DIR STREQUAL CMAKE_CURRENT_BINARY_DIR)
+    set(LFORTRAN_GPU_RUNTIME_COPIES)
+    foreach(source IN LISTS LFORTRAN_GPU_RUNTIME_SOURCES)
+        get_filename_component(name "${source}" NAME)
+        set(destination "${CMAKE_CURRENT_BINARY_DIR}/runtime/${name}")
+        add_custom_command(
+            OUTPUT "${destination}"
+            COMMAND ${CMAKE_COMMAND} -E make_directory
+                "${CMAKE_CURRENT_BINARY_DIR}/runtime"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${source}" "${destination}"
+            DEPENDS "${source}"
+            VERBATIM)
+        list(APPEND LFORTRAN_GPU_RUNTIME_COPIES "${destination}")
+    endforeach()
+    add_custom_target(asr_gpu_runtime_sources ALL
+        DEPENDS ${LFORTRAN_GPU_RUNTIME_COPIES})
+    add_dependencies(asr asr_gpu_runtime_sources)
+endif()
 
 get_filename_component(LFORTRAN_GPU_RUNTIME_INSTALL_PARENT
     "${CMAKE_INSTALL_LIBDIR}" DIRECTORY)

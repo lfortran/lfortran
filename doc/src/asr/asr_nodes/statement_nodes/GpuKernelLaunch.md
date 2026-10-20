@@ -7,8 +7,9 @@ Launches a GPU kernel.
 ### Syntax
 
 ```text
-GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size,
-    call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch)
+GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size,
+    call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch,
+    expr? stop_status, stmt* stop_replay)
 gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 ```
 
@@ -17,11 +18,13 @@ gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 | Argument | Description |
 |----------|-------------|
 | `kernel` | the [Function](../symbol_nodes/Function.md) to run. Its signature has `exec_space = Kernel`; see [exec_space](../enum_nodes/exec_space.md). |
-| `grid_size` | the number of blocks to launch. |
+| `thread_count` | the number of threads that run the kernel's body, one per iteration of the loop; a count below one runs none. |
 | `block_size` | the number of threads per block. |
 | `args` | the arguments passed to every thread. |
 | `component_fit` | the [Block](../symbol_nodes/Block.md) the host runs before the launch to give the allocatable array components of elements of an array argument the loop writes the storage the kernel writes into, or `nil` when the loop writes none. |
 | `scratch` | the arguments that are buffers only the device holds (below). |
+| `stop_status` | the host array passed as the status buffer of a kernel that can `stop`, or `nil`. |
+| `stop_replay` | the host statements that run the `stop` a thread of the launch recorded (below). |
 
 ### Return values
 
@@ -29,9 +32,14 @@ None.
 
 ## Description
 
-A launch is not a call: it starts `grid_size * block_size` threads and, unless
-the backend says otherwise, returns without waiting for them.
-[GpuSync](GpuSync.md) is what waits.
+A launch is not a call: it starts `thread_count` threads, rounded up to whole
+blocks of `block_size`, and returns without waiting for them. The threads are
+numbered from zero, block after block; the kernel sends every thread numbered
+`thread_count` or higher back before its body, so the host sizes what the
+launch holds per thread -- a workspace slice -- by `thread_count`, not by the
+threads it starts. [GpuSync](GpuSync.md) is what waits; the `gpu_launch_sync`
+pass places it where the host next needs what a kernel wrote (see
+[GPU offloading](../../../gpu_offloading.md)).
 
 The execution configuration is part of the node rather than of the kernel,
 because the same kernel is normally launched with different sizes.
@@ -71,12 +79,25 @@ present, the host allocates the actual with `read_back` elements after the
 launch, at most `size`, and copies the leading elements of the buffer into
 it; otherwise the actual stays unallocated.
 
+A kernel that can `stop` records the statement a thread reached in the
+status buffer `stop_status`. The statements of `stop_replay` read it and run
+that statement on the host. They run after the first GpuSync that follows
+the launch, which the `gpu_launch_sync` pass places, copies of them after
+each GpuSync the launch may still be pending at; that pass also clears the
+first element of `stop_status` once, on entry to the procedure.
+
+Private array storage is placed after shared lowering by `gpu_kernel_storage`,
+before address-space specialization. Fixed-size arrays that fit the device's
+stack budget have `Thread` memory space. Larger arrays have `Global` memory
+space and the kernel layout records their per-thread workspace slices. This
+placement never turns an iteration-private value into a shared value.
+
 ## Examples
 
 ```clojure
 (GpuKernelLaunch
   :kernel (SymbolRef 1 "zero")
-  :grid_size (IntegerConstant
+  :thread_count (IntegerConstant
     :n 1
     :type (Integer
       :kind 4
@@ -99,6 +120,8 @@ it; otherwise the actual stays unallocated.
   ]
   :component_fit nil
   :scratch []
+  :stop_status nil
+  :stop_replay []
 )
 ```
 
@@ -110,4 +133,4 @@ It comes from this complete ASR text document:
 
 ## See Also
 
-[Function](../symbol_nodes/Function.md), [exec_space](../enum_nodes/exec_space.md), [GpuSync](GpuSync.md), [GpuThreadIndex](../expression_nodes/GpuThreadIndex.md)
+[Function](../symbol_nodes/Function.md), [exec_space](../enum_nodes/exec_space.md), [GpuSync](GpuSync.md), [GpuDiscard](GpuDiscard.md), [GpuThreadIndex](../expression_nodes/GpuThreadIndex.md)

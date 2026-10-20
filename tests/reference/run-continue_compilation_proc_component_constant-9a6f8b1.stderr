@@ -1,0 +1,35 @@
+semantic error: a procedure pointer component of a named constant cannot be a pointer assignment target
+  --> tests/errors/continue_compilation_proc_component_constant.f90:50:10
+   |
+50 |     q => os(1)%f  ! {Error} pointer assignment target, array element parent
+   |          ^^^^^^^ `os` is a named constant, not a variable
+
+semantic error: Cannot assign to a constant variable
+  --> tests/errors/continue_compilation_proc_component_constant.f90:51:5
+   |
+51 |     os(1)%f => a  ! {Error} pointer assignment to an array element parent
+   |     ^^^^^^^^^^^^ assignment here
+   |
+29 |     type(pc), parameter :: os(2) = [pc(a, s, 1), pc(a, s, 2)]
+   |                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ declared as constant
+
+semantic error: a procedure pointer component of a named constant cannot be called
+  --> tests/errors/continue_compilation_proc_component_constant.f90:52:5
+   |
+52 |     call o%inner%sp(i)  ! {Error} call, nested component parent
+   |     ^^^^^^^^^^^^^^^^^^ `o` is a named constant, not a variable
+
+semantic error: a procedure pointer component of a named constant cannot be a pointer assignment target
+  --> tests/errors/continue_compilation_proc_component_constant.f90:54:20
+   |
+54 |         qs(i)%f => os(i)%f  ! {Error} pointer assignment target in FORALL
+   |                    ^^^^^^^ `os` is a named constant, not a variable
+
+semantic error: Cannot assign to a constant variable
+  --> tests/errors/continue_compilation_proc_component_constant.f90:57:9
+   |
+57 |         cs(i)%p => t  ! {Error} data pointer component of a constant in FORALL
+   |         ^^^^^^^^^^^^ assignment here
+   |
+30 |     type(dp), parameter :: cs(2) = [dp(null()), dp(null())]
+   |                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ declared as constant

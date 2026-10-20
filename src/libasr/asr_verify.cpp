@@ -115,6 +115,10 @@ private:
 public:
     // See ASRVerifyOptions::string_length_arguments.
     bool check_string_length_arguments = false;
+    // See ASRVerifyOptions::string_format_array_args.
+    bool check_string_format_array_args = false;
+    // The StringFormats whose arguments are the items of a READ statement.
+    std::set<const StringFormat_t*> input_formats;
 
     VerifyVisitor(bool check_external,
         diag::Diagnostics &diagnostics) : check_external{check_external},
@@ -808,6 +812,11 @@ public:
                 "asr.verify.assignment.realloc_lhs_requires_allocatable",
                 "Reallocation of non allocatable variable is not allowed");
         }
+        require_id(!x.m_new_target || (!x.m_move_allocation &&
+                x.m_overloaded == nullptr),
+            "asr.verify.assignment.new_target_is_copied",
+            "An assignment that defines a new target copies the value: it "
+            "is neither a move assignment nor a defined assignment");
         if (x.m_move_allocation) {
             require_id(ASRUtils::is_move_allocation_pair(x.m_target, x.m_value),
                 "asr.verify.assignment.move_allocatable_operands",
@@ -1606,7 +1615,11 @@ public:
                 is_struct = true;
             }
         }
-        if( symtab->parent != nullptr &&
+        // Classifying an initializer looks through ExternalSymbol, which is
+        // possible only once external symbols are resolved (a module file
+        // is verified with check_external=false before that), so the check
+        // runs then.
+        if( check_external && symtab->parent != nullptr &&
             !is_module && !is_struct) {
             // For now restrict this check only to variables which are present
             // inside symbols which have a body.
@@ -2206,7 +2219,18 @@ public:
                         ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_components[i]) ||
                         ASR::is_a<ASR::StructInstanceMember_t>(*x.m_components[i]) ||
                         ASR::is_a<ASR::BitCast_t>(*x.m_components[i]) ||
-                        ASR::is_a<ASR::ArrayConstant_t>(*x.m_components[i]), "DebugCheckArrayBounds::m_components element must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, or ArrayConstant");
+                        ASR::is_a<ASR::ArrayConstant_t>(*x.m_components[i]) ||
+                        ASR::is_a<ASR::ArrayConstructor_t>(*x.m_components[i]), "DebugCheckArrayBounds::m_components element must be Var, ArrayPhysicalCast, StructInstanceMember, BitCast, ArrayConstant, or ArrayConstructor");
+                if (ASR::is_a<ASR::ArrayConstructor_t>(*x.m_components[i])) {
+                    ASR::dimension_t* m_dims = nullptr;
+                    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
+                        ASRUtils::expr_type(x.m_components[i]), m_dims);
+                    require(n_dims == 1 && m_dims[0].m_length != nullptr &&
+                        ASRUtils::is_integer(*ASRUtils::expr_type(m_dims[0].m_length)) &&
+                        ASRUtils::extract_kind_from_ttype_t(
+                            ASRUtils::expr_type(m_dims[0].m_length)) == 4,
+                        "DebugCheckArrayBounds::m_components ArrayConstructor must have its integer(4) size in its type");
+                }
 
                 require(ASRUtils::is_array(ASRUtils::expr_type(x.m_components[i])), "DebugCheckArrayBounds::m_components element must have an Array type");
             }
@@ -2568,8 +2592,9 @@ public:
 
         // Verify self argument is explicit for method calls with PASS
         if (is_method && !nopass && func) {
-            require(x.n_args > 0 && x.m_args[0].m_value != nullptr,
-                "Method call with PASS must have self as args[0].");
+            size_t pass_idx = ASRUtils::get_pass_arg_index(x.m_name);
+            require(x.n_args > pass_idx && x.m_args[pass_idx].m_value != nullptr,
+                "Method call with PASS must supply its passed-object argument.");
         }
 
         if (func) {
@@ -2795,10 +2820,24 @@ public:
                 "the old physical type and new physical type must be different.");
         }
         if(check_external){
-            // For rank(0): AssumedRankArray → scalar, m_type is scalar so skip physical type check
+            // Corner case, the rank(0) view of an assumed-rank array. Inside
+            // a `rank (n)` block of `select rank`, uses of the selector are
+            // wrapped in a cast with old = AssumedRankArray and new =
+            // DescriptorArray, whose type is a rank n array. For `rank (0)`
+            // the selector is a scalar, so the type is the scalar element
+            // type, while new stays DescriptorArray: the scalar is read
+            // through the data pointer of the assumed-rank descriptor. A
+            // scalar has no physical type, so instead of comparing new with
+            // the type, new is required to be DescriptorArray in this case.
+            // It is recognized by old = AssumedRankArray and a type that is
+            // not an array (`ASRUtils::is_array`).
             bool is_rank0_scalar = (x.m_old == ASR::array_physical_typeType::AssumedRankArray
                                     && !ASRUtils::is_array(x.m_type));
-            if (!is_rank0_scalar) {
+            if (is_rank0_scalar) {
+                require(x.m_new == ASR::array_physical_typeType::DescriptorArray,
+                    "the rank(0) cast of an assumed-rank array must have "
+                    "DescriptorArray as its new physical type");
+            } else {
                 require(x.m_new == ASRUtils::extract_physical_type(x.m_type),
                     "Destination physical type conflicts with the physical type of target");
             }
@@ -3121,7 +3160,7 @@ public:
                 ASR::down_cast<ASR::Var_t>(kernel.m_args[i])->m_v);
         }
         std::set<ASR::symbol_t*> workspaces, extent_parameters;
-        int slot = (layout.m_packed ? 1 : layout.n_buffers) +
+        int64_t slot = (layout.m_packed ? 1 : layout.n_buffers) +
             (layout.n_scalars > 0);
         for (size_t i = 0; i < layout.n_workspaces; i++) {
             const auto &workspace = layout.m_workspaces[i];
@@ -3181,8 +3220,22 @@ public:
                 }
             }
         }
-        require_id(extent_parameters.size() + layout.m_source_argument_count ==
-                kernel.n_args,
+        // The parameter giving the lanes of an iteration, when there is
+        // one, follows the extent parameters: it is the last one.
+        if (layout.m_lanes) {
+            require_id(kernel.n_args > 0 && ASR::is_a<ASR::Var_t>(
+                    *kernel.m_args[kernel.n_args - 1]) &&
+                    ASR::down_cast<ASR::Var_t>(kernel.m_args[kernel.n_args - 1])
+                        ->m_v == layout.m_lanes &&
+                    bound.count(layout.m_lanes) &&
+                    ASRUtils::is_integer(*ASRUtils::symbol_type(
+                        layout.m_lanes)),
+                "asr.verify.gpu_layout.lanes",
+                "the lanes of a GPU kernel must be its last parameter, an "
+                "integer scalar");
+        }
+        require_id(extent_parameters.size() + layout.m_source_argument_count
+                + (layout.m_lanes ? 1 : 0) == kernel.n_args,
             "asr.verify.gpu_layout.complete_extent_parameters",
             "every generated GPU parameter must belong to a workspace dimension");
     }
@@ -3278,6 +3331,40 @@ public:
             "asr.verify.gpu_atomic_fetch_add.value",
             "GpuAtomicFetchAdd has no compile-time value");
         BaseWalkVisitor<VerifyVisitor>::visit_GpuAtomicFetchAdd(x);
+    }
+
+    // The lanes of an iteration exist only in a kernel laid out to run
+    // each iteration on several of them (gpu_vector_lanes.cpp).
+    bool in_kernel_with_lanes() {
+        const ASR::Function_t *fn = enclosing_function(current_symtab);
+        return fn != nullptr && fn->m_gpu != nullptr
+            && fn->m_gpu->m_lanes != nullptr;
+    }
+    void visit_GpuLaneBarrier(const GpuLaneBarrier_t &x) {
+        require_id(in_kernel_with_lanes(), "asr.verify.gpu_lanes.kernel",
+            "GpuLaneBarrier is only allowed in a GPU kernel with lanes");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuLaneBarrier(x);
+    }
+    void visit_GpuLaneIndex(const GpuLaneIndex_t &x) {
+        require_id(in_kernel_with_lanes(), "asr.verify.gpu_lanes.kernel",
+            "GpuLaneIndex is only allowed in a GPU kernel with lanes");
+        require_id(ASRUtils::is_integer(*x.m_type) && x.m_value == nullptr,
+            "asr.verify.gpu_lanes.index",
+            "GpuLaneIndex must be an integer without a compile-time value");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuLaneIndex(x);
+    }
+    void visit_GpuLaneBroadcast(const GpuLaneBroadcast_t &x) {
+        require_id(in_kernel_with_lanes(), "asr.verify.gpu_lanes.kernel",
+            "GpuLaneBroadcast is only allowed in a GPU kernel with lanes");
+        ASR::ttype_t *t = ASRUtils::expr_type(x.m_arg);
+        require_id(!ASRUtils::is_array(t) && (ASRUtils::is_integer(*t)
+                || ASRUtils::is_real(*t) || ASRUtils::is_logical(*t))
+                && ASRUtils::check_equal_type(t, x.m_type, nullptr, nullptr)
+                && x.m_value == nullptr,
+            "asr.verify.gpu_lanes.broadcast",
+            "GpuLaneBroadcast must broadcast an integer, real or logical "
+            "scalar of its own type");
+        BaseWalkVisitor<VerifyVisitor>::visit_GpuLaneBroadcast(x);
     }
 
     void visit_SubroutineCall(const SubroutineCall_t &x) {
@@ -3641,7 +3728,86 @@ public:
         require(x.m_kind != ASR::string_format_kindType::FormatFortranLeadingBlank
                 || x.m_fmt == nullptr,
             "StringFormat::m_fmt must be nil for FormatFortranLeadingBlank");
+        if (check_string_format_array_args) {
+            if (x.m_fmt) verify_string_format_array_arg(x.m_fmt);
+            for (size_t i = 0; i < x.n_args && !input_formats.count(&x); i++) {
+                verify_string_format_array_arg(x.m_args[i]);
+            }
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_StringFormat(x);
+    }
+
+    // After the string_format_array_args pass, the array items of an output
+    // statement, and an internal file that is an array, are contiguous data
+    // too. An array item of an input statement is defined in place: it is
+    // contiguous data, or it is transferred element by element through its
+    // descriptor when it is not contiguous by construction. An implied DO
+    // loop transfers its items one element at a time.
+    void verify_transfer_arrays(ASR::expr_t* unit, ASR::expr_t** values,
+            size_t n_values, bool input) {
+        if (unit) {
+            verify_contiguous_array_data(unit, "data_transfer.internal_file",
+                "an internal file that is an array");
+        }
+        for (size_t i = 0; i < n_values; i++) {
+            if (ASR::is_a<ASR::ImpliedDoLoop_t>(*values[i])) continue;
+            if (input && ASR::is_a<ASR::StringFormat_t>(*values[i])) {
+                ASR::StringFormat_t* sf = ASR::down_cast<ASR::StringFormat_t>(values[i]);
+                input_formats.insert(sf);
+                verify_transfer_arrays(nullptr, sf->m_args, sf->n_args, input);
+                continue;
+            }
+            ASR::ttype_t* type = ASRUtils::expr_type(values[i]);
+            if (input && ASRUtils::is_array(type) && !ASRUtils::is_allocatable(type)) {
+                ASR::array_physical_typeType phys = ASRUtils::extract_physical_type(type);
+                if (phys == ASR::array_physical_typeType::DescriptorArray ||
+                        phys == ASR::array_physical_typeType::AssumedRankArray) {
+                    continue;
+                }
+            }
+            verify_contiguous_array_data(values[i], "data_transfer.array_item",
+                "an array item of a data transfer statement");
+        }
+    }
+
+    void visit_FileWrite(const FileWrite_t& x) {
+        if (check_string_format_array_args && !x.m_overloaded && !x.m_nml) {
+            verify_transfer_arrays(x.m_unit, x.m_values, x.n_values, false);
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_FileWrite(x);
+    }
+
+    void visit_FileRead(const FileRead_t& x) {
+        if (check_string_format_array_args && !x.m_overloaded && !x.m_nml) {
+            verify_transfer_arrays(x.m_unit, x.m_values, x.n_values, true);
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_FileRead(x);
+    }
+
+    // After the string_format_array_args pass, an array that a StringFormat
+    // formats is its contiguous data, with all its dimensions.
+    void verify_string_format_array_arg(ASR::expr_t* arg) {
+        verify_contiguous_array_data(arg, "string_format.array_argument",
+            "an array argument of StringFormat");
+    }
+
+    void verify_contiguous_array_data(ASR::expr_t* arg, const std::string& id,
+            const std::string& what) {
+        ASR::ttype_t* type = ASRUtils::expr_type(arg);
+        if (!ASRUtils::is_array(type)) return;
+        require_with_loc_id(ASRUtils::extract_physical_type(type) ==
+                ASR::array_physical_typeType::PointerArray,
+            "asr.verify." + id + "_not_pointer_array",
+            what + " must be a PointerArray after the "
+            "string_format_array_args pass", arg->base.loc);
+        ASR::dimension_t* dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, dims);
+        for (size_t i = 0; i < n_dims; i++) {
+            require_with_loc_id(dims[i].m_start != nullptr && dims[i].m_length != nullptr,
+                "asr.verify." + id + "_dimension_missing",
+                what + " must have all its dimensions after the "
+                "string_format_array_args pass", arg->base.loc);
+        }
     }
 
     void visit_ArrayConstant(const ArrayConstant_t& x) {
@@ -4120,13 +4286,20 @@ public:
     }
 
     void visit_StructConstant(const StructConstant_t &x) {
-        for (size_t i = 0; i < x.n_args; i++) {
-            if (x.m_args[i].m_value == nullptr) continue;
-            require_with_loc_id(is_struct_constant_argument(x.m_args[i].m_value),
-                "asr.verify.struct_constant.argument_is_constant",
-                "StructConstant argument " + std::to_string(i + 1)
-                    + " is not a constant",
-                x.m_args[i].m_value->base.loc);
+        // Classifying an argument looks through ExternalSymbol, which is
+        // possible only once external symbols are resolved (a module file
+        // is verified with check_external=false before that), so the check
+        // runs then.
+        if (check_external) {
+            for (size_t i = 0; i < x.n_args; i++) {
+                if (x.m_args[i].m_value == nullptr) continue;
+                require_with_loc_id(
+                    is_struct_constant_argument(x.m_args[i].m_value),
+                    "asr.verify.struct_constant.argument_is_constant",
+                    "StructConstant argument " + std::to_string(i + 1)
+                        + " is not a constant",
+                    x.m_args[i].m_value->base.loc);
+            }
         }
         verify_struct_constructor_arguments("StructConstant",
             "asr.verify.struct_constant", x.m_dt_sym, x.m_args, x.n_args,
@@ -4183,6 +4356,12 @@ public:
         }
         require(x.n_dims != 0, "Array type cannot have 0 dimensions.")
         require(!ASR::is_a<ASR::Array_t>(*x.m_type), "Array type cannot be nested.")
+        // A "StringArraySinglePointer" array is a flat buffer of C characters,
+        // so it can only hold strings.
+        require(x.m_physical_type != ASR::StringArraySinglePointer ||
+            ASRUtils::is_character(*x.m_type),
+            "Array with physical type \"StringArraySinglePointer\" must have"
+            " a string element type")
         if(ASRUtils::is_character(*x.m_type)){
             require(x.m_physical_type != ASR::FixedSizeArray,
                 "Array of strings' physical type shouldn't be \"FixedSizeArray\"")
@@ -4291,6 +4470,13 @@ public:
         ASR::ttype_t* cast_type = ASRUtils::type_get_past_allocatable(x.m_type);
         require(ASR::is_a<ASR::String_t>(*cast_type), "StringPhysicalCast should be of string type");
         ASR::String_t* str = ASR::down_cast<ASR::String_t>(cast_type);
+        require(ASRUtils::is_string_only(ASRUtils::expr_type(x.m_arg)),
+            "StringPhysicalCast argument must be a string");
+        require(x.m_old == ASRUtils::get_string_type(
+                ASRUtils::expr_type(x.m_arg))->m_physical_type,
+            "StringPhysicalCast old physical type must match its argument");
+        require(x.m_new == str->m_physical_type,
+            "StringPhysicalCast new physical type must match its result");
         require(!str->m_len,
             "StringPhysicalCast return type shouldn't have length "
             "(Length should be implicit).")
@@ -4529,6 +4715,7 @@ bool asr_verify(const ASR::TranslationUnit_t &unit,
             diag::Diagnostics &diagnostics) {
     ASR::VerifyVisitor v(options.check_external, diagnostics);
     v.check_string_length_arguments = options.string_length_arguments;
+    v.check_string_format_array_args = options.string_format_array_args;
     try {
         v.visit_TranslationUnit(unit);
     } catch (const ASRUtils::VerifyAbort &) {

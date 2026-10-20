@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <iterator>
+#include <limits>
 #include <vector>
 #include <map>
 
@@ -35,15 +36,20 @@ int uncompress_gzip(
     // except that it enables gzip support in inflateInit2().
     int zlib_status;
     z_stream strm;
+    // zlib buffer lengths are uInt (32-bit)
+    if (in_size > std::numeric_limits<uInt>::max()
+            || *out_size > std::numeric_limits<uInt>::max()) {
+        return Z_BUF_ERROR;
+    }
     strm.zalloc = Z_NULL;
     strm.zfree = Z_NULL;
     strm.opaque = Z_NULL;
     strm.next_in = in;
-    strm.avail_in = in_size;
+    strm.avail_in = static_cast<uInt>(in_size);
     zlib_status = inflateInit2(&strm, 15 | 32);
     if (zlib_status < 0) return zlib_status;
     strm.next_out = out;
-    strm.avail_out = *out_size;
+    strm.avail_out = static_cast<uInt>(*out_size);
     zlib_status = inflate(&strm, Z_NO_FLUSH);
     inflateEnd(&strm);
     *out_size = *out_size - strm.avail_out;

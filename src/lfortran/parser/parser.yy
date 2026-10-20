@@ -14,8 +14,8 @@ see the documentation in that script for details and motivation.
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    197 // shift/reduce conflicts
-%expect-rr 185 // reduce/reduce conflicts
+%expect    189 // shift/reduce conflicts
+%expect-rr 189 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose
@@ -322,6 +322,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_OUT
 %token <string> KW_PARAMETER
 %token <string> KW_PASS
+%token <string> KW_PAUSE
 %token <string> KW_POINTER
 %token <string> KW_POST
 %token <string> KW_PRECISION
@@ -505,11 +506,9 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> endfile_statement
 %type <ast> if_statement
 %type <ast> if_statement_single
-%type <ast> if_block
 %type <ast> elseif_block
 %type <ast> where_statement
 %type <ast> where_statement_single
-%type <ast> where_block
 %type <ast> elsewhere_block
 %type <ast> select_statement
 %type <ast> select_type_statement
@@ -539,6 +538,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> cycle_statement
 %type <ast> continue_statement
 %type <ast> stop_statement
+%type <ast> pause_statement
 %type <ast> entry_statement
 %type <ast> error_stop_statement
 %type <ast> event_post_statement
@@ -1855,6 +1855,7 @@ single_line_statement
     | inquire_statement
     | nullify_statement
     | open_statement
+    | pause_statement
     | pragma_statement
     | print_statement
     | read_statement
@@ -2058,7 +2059,15 @@ end_file
     ;
 
 if_statement
-    : if_block endif {}
+    : KW_IF "(" expr ")" KW_THEN id_opt sep statements endif {
+            $$ = IF1($3, TRIVIA_AFTER($7, @$), $8, @$); }
+    | KW_IF "(" expr ")" KW_THEN id_opt sep statements
+        KW_ELSE id_opt sep statements endif {
+            $$ = IF2($3, TRIVIA($7, $11, @$), $8, $12, @$); }
+    | KW_IF "(" expr ")" KW_THEN id_opt sep statements KW_ELSE if_statement {
+            $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $10, @$); }
+    | KW_IF "(" expr ")" KW_THEN id_opt sep statements elseif_block {
+            $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $9, @$); }
     ;
 
 if_statement_single
@@ -2068,47 +2077,32 @@ if_statement_single
             $$ = IFARITHMETIC($3, INTEGER3($5), INTEGER3($7), INTEGER3($9), @$); }
     ;
 
-if_block
-    : KW_IF "(" expr ")" KW_THEN id_opt sep statements {
-            $$ = IF1($3, TRIVIA_AFTER($7, @$), $8, @$); }
-    | KW_IF "(" expr ")" KW_THEN id_opt sep statements
-        KW_ELSE id_opt sep statements {
-            $$ = IF2($3, TRIVIA($7, $11, @$), $8, $12, @$); }
-    | KW_IF "(" expr ")" KW_THEN id_opt sep statements KW_ELSE if_block {
-            $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $10, @$); }
-    | KW_IF "(" expr ")" KW_THEN id_opt sep statements elseif_block {
-            $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $9, @$); }
-    ;
-
 elseif_block
-    : KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements {
+    : KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements endif {
             $$ = IF1($3, TRIVIA_AFTER($7, @$), $8, @$); }
     | KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements
-        KW_ELSE id_opt sep statements {
+        KW_ELSE id_opt sep statements endif {
             $$ = IF2($3, TRIVIA($7, $11, @$), $8, $12, @$); }
-    | KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements KW_ELSE if_block {
+    | KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements KW_ELSE if_statement {
             $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $10, @$); }
     | KW_ELSEIF "(" expr ")" KW_THEN id_opt sep statements elseif_block {
             $$ = IF3($3, TRIVIA_AFTER($7, @$), $8, $9, @$); }
     ;
 
 where_statement
-    : where_block endwhere {}
+    : KW_WHERE "(" expr ")" sep statements elsewhere_block {
+            $$ = WHERE3($3, TRIVIA_AFTER($5, @$), $6, $7, @$); }
+    | KW_WHERE "(" expr ")" sep statements KW_ELSEWHERE sep statements endwhere {
+            $$ = WHERE2($3, TRIVIA($5, $8, @$), $6, $9, @$); }
+    | KW_WHERE "(" expr ")" sep statements KW_ELSE KW_WHERE sep statements
+        endwhere {
+            $$ = WHERE2($3, TRIVIA($5, $9, @$), $6, $10, @$); }
+    | KW_WHERE "(" expr ")" sep statements endwhere {
+            $$ = WHERE1($3, TRIVIA_AFTER($5, @$), $6, @$); }
     ;
 
 where_statement_single
     : KW_WHERE "(" expr ")" assignment_statement { $$ = WHERESINGLE($3, $5, @$); }
-    ;
-
-where_block
-    : KW_WHERE "(" expr ")" sep statements elsewhere_block {
-            $$ = WHERE3($3, TRIVIA_AFTER($5, @$), $6, $7, @$); }
-    | KW_WHERE "(" expr ")" sep statements KW_ELSEWHERE sep statements {
-            $$ = WHERE2($3, TRIVIA($5, $8, @$), $6, $9, @$); }
-    | KW_WHERE "(" expr ")" sep statements KW_ELSE KW_WHERE sep statements {
-            $$ = WHERE2($3, TRIVIA($5, $9, @$), $6, $10, @$); }
-    | KW_WHERE "(" expr ")" sep statements {
-            $$ = WHERE1($3, TRIVIA_AFTER($5, @$), $6, @$); }
     ;
 
 elsewhere_block
@@ -2116,17 +2110,21 @@ elsewhere_block
             $$ = WHERE3($3, TRIVIA_AFTER($5, @$), $6, $7, @$); }
     | KW_ELSE KW_WHERE "(" expr ")" sep statements elsewhere_block {
             $$ = WHERE3($4, TRIVIA_AFTER($6, @$), $7, $8, @$); }
-    | KW_ELSEWHERE "(" expr ")" sep statements KW_ELSEWHERE sep statements {
+    | KW_ELSEWHERE "(" expr ")" sep statements KW_ELSEWHERE sep statements
+        endwhere {
             $$ = WHERE2($3, TRIVIA($5, $8, @$), $6, $9, @$); }
-    | KW_ELSEWHERE "(" expr ")" sep statements KW_ELSE KW_WHERE sep statements {
+    | KW_ELSEWHERE "(" expr ")" sep statements KW_ELSE KW_WHERE sep statements
+        endwhere {
             $$ = WHERE2($3, TRIVIA($5, $9, @$), $6, $10, @$); }
-    | KW_ELSE KW_WHERE "(" expr ")" sep statements KW_ELSEWHERE sep statements {
+    | KW_ELSE KW_WHERE "(" expr ")" sep statements KW_ELSEWHERE sep statements
+        endwhere {
             $$ = WHERE2($4, TRIVIA($6, $9, @$), $7, $10, @$); }
-    | KW_ELSE KW_WHERE "(" expr ")" sep statements KW_ELSE KW_WHERE sep statements {
+    | KW_ELSE KW_WHERE "(" expr ")" sep statements KW_ELSE KW_WHERE sep
+        statements endwhere {
             $$ = WHERE2($4, TRIVIA($6, $10, @$), $7, $11, @$); }
-    | KW_ELSEWHERE "(" expr ")" sep statements {
+    | KW_ELSEWHERE "(" expr ")" sep statements endwhere {
             $$ = WHERE1($3, TRIVIA_AFTER($5, @$), $6, @$); }
-    | KW_ELSE KW_WHERE "(" expr ")" sep statements {
+    | KW_ELSE KW_WHERE "(" expr ")" sep statements endwhere {
             $$ = WHERE1($4, TRIVIA_AFTER($6, @$), $7, @$); }
     ;
 
@@ -2374,6 +2372,11 @@ stop_statement
     | KW_STOP expr { $$ = STOP1($2, @$); }
     | KW_STOP "," KW_QUIET "=" expr { $$ = STOP2($5, @$); }
     | KW_STOP expr "," KW_QUIET "=" expr { $$ = STOP3($2, $6, @$); }
+    ;
+
+pause_statement
+    : KW_PAUSE { $$ = make_Pause_t(p.m_a, @$, 0, nullptr, nullptr); }
+    | KW_PAUSE expr { $$ = make_Pause_t(p.m_a, @$, 0, EXPR($2), nullptr); }
     ;
 
 error_stop_statement
@@ -2820,6 +2823,7 @@ id
     | KW_OUT { $$ = SYMBOL($1, @$); }
     | KW_PARAMETER { $$ = SYMBOL($1, @$); }
     | KW_PASS { $$ = SYMBOL($1, @$); }
+    | KW_PAUSE { $$ = SYMBOL($1, @$); }
     | KW_POINTER { $$ = SYMBOL($1, @$); }
     | KW_POST { $$ = SYMBOL($1, @$); }
     | KW_PRECISION { $$ = SYMBOL($1, @$); }

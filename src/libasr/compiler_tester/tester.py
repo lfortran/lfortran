@@ -12,6 +12,7 @@ import pprint
 import shutil
 import subprocess
 import sys
+import threading
 try:
     import tomllib as tomli
 except ModuleNotFoundError:
@@ -38,6 +39,9 @@ REFERENCE_DIR = os.path.join(ROOT_DIR, "tests", "reference")
 OUTPUT_DIR = os.path.join("tests", "output")
 
 no_color = False
+# The reference files written by the current `-u` run
+written_references = set()
+written_references_lock = threading.Lock()
 
 class RunException(Exception):
     pass
@@ -423,11 +427,21 @@ def get_error_diff(reference_file, output_file, full_err_str, field="") -> str:
 def do_update_reference(jo, jr, do):
     os.makedirs(os.path.dirname(jr), exist_ok=True)
     shutil.copyfile(jo, jr)
+    written = [jr]
     for f in ["outfile", "stdout", "stderr"]:
         if do[f]:
             f_o = os.path.join(os.path.dirname(jo), do[f])
             f_r = os.path.join(os.path.dirname(jr), do[f])
             shutil.copyfile(f_o, f_r)
+            written.append(f_r)
+    with written_references_lock:
+        written_references.update(os.path.abspath(f) for f in written)
+
+def remove_unwritten_references():
+    for path in pathlib.Path(REFERENCE_DIR).iterdir():
+        if os.path.abspath(path) not in written_references:
+            log.debug(f"REMOVE: stale reference {path.name}")
+            path.unlink()
 
 def do_verify_reference_hash(jr, dr, s):
     for f in ["outfile", "stdout", "stderr"]:
@@ -674,13 +688,14 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
     if args.build_dir:
         use_build_dir(args.build_dir)
 
-    # While updating references, only wipe the whole reference directory if the
-    # user is updating the entire suite (no -t filters). For a targeted update
-    # (via -t), deleting everything is unexpected and breaks unrelated tests.
-    if update_reference and not specific_tests:
-        log.debug("REMOVE: old test references")
-        for path in pathlib.Path(REFERENCE_DIR).iterdir():
-            path.unlink()
+    # A full update keeps the old references until every test has passed and
+    # then removes the ones it did not write, so a failed update deletes
+    # nothing. An update narrowed by any option rewrites only the selected
+    # references and never removes the others.
+    remove_stale_references = update_reference and not (
+        specific_tests or specific_backends or excluded_tests
+        or excluded_backends or no_llvm or skip_run_with_dbg)
+    written_references.clear()
     with open(os.path.join(ROOT_DIR, "tests", "tests.toml"), "rb") as f:
          test_data = tomli.load(f)
     test_for_duplicates(test_data)
@@ -763,6 +778,8 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
             print(exc, file=sys.stderr)
         print("%d checks failed." % len(failures), file=sys.stderr)
         sys.exit(1)
+    if remove_stale_references:
+        remove_unwritten_references()
     if list_tests:
         return
 

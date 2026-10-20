@@ -56,7 +56,12 @@ stmt
     = Allocate(alloc_arg* args, expr? stat, expr? errmsg, expr? source)
     | ReAlloc(alloc_arg* args)
     | Assign(int label, identifier variable)
-    | Assignment(expr target, expr value, stmt? overloaded, bool realloc_lhs, bool move_allocation)
+    -- new_target is true when the target is a new object that the assignment
+    -- only defines, such as an element of an array allocated with SOURCE=
+    -- (F2018 9.7.1.2). The value is copied into it: unlike the variable of
+    -- an intrinsic assignment, it is not finalized first (F2018 7.5.6.3)
+    -- and its components are not assigned by defined assignment (10.2.1.3).
+    | Assignment(expr target, expr value, stmt? overloaded, bool realloc_lhs, bool move_allocation, bool new_target)
     | DebugCheckArrayBounds(expr target, expr* components, bool move_allocation)
     | Associate(expr target, expr value)
     | Cycle(identifier? stmt_name)
@@ -113,8 +118,10 @@ stmt
     | DictClear(expr a)
     | SetClear(expr a)
     | Expr(expr expression)
-    | GpuKernelLaunch(symbol kernel, expr grid_size, expr block_size, call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch)
+    | GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size, call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch, expr? stop_status, stmt* stop_replay)
     | GpuSync()
+    | GpuLaneBarrier()
+    | GpuDiscard(expr* vars)
 
 expr
     = IfExp(expr test, expr body, expr orelse, ttype type, expr? value)
@@ -238,6 +245,8 @@ expr
     | GpuBlockIndex(int dim, ttype type, expr? value)
     | GpuBlockSize(int dim, ttype type, expr? value)
     | GpuAtomicFetchAdd(expr target, expr increment, ttype type, expr? value)
+    | GpuLaneIndex(ttype type, expr? value)
+    | GpuLaneBroadcast(expr arg, ttype type, expr? value)
 
 ttype
     = Integer(int kind)
@@ -296,11 +305,11 @@ attribute = Attribute(identifier name, attribute_arg *args)
 attribute_arg = (identifier arg)
 call_arg = (expr? value)
 gpu_argument_kind = GpuArray | GpuStruct | GpuClass | GpuMemberData | GpuMemberOffsets | GpuMemberSizes | GpuScalar | GpuArrayExtent | GpuPackedOffset
-gpu_kernel_argument = (symbol variable, symbol? member, ttype type, gpu_argument_kind kind, int argument_index, int dimension)
+gpu_kernel_argument = (symbol variable, symbol? member, ttype type, gpu_argument_kind kind, int argument_index, int dimension, bool written)
 gpu_workspace_dimension = (expr extent, symbol? parameter)
 gpu_workspace = (symbol variable, gpu_workspace_dimension* dims, int buffer_index, int element_size)
 gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
-gpu_kernel_layout = (gpu_kernel_argument* buffers, gpu_kernel_argument* scalars, gpu_workspace* workspaces, bool packed, int source_argument_count, symbol* device_functions)
+gpu_kernel_layout = (gpu_kernel_argument* buffers, gpu_kernel_argument* scalars, gpu_workspace* workspaces, bool packed, int source_argument_count, symbol* device_functions, symbol? lanes)
 reduction_expr = (reduction_op op, expr arg)
 tbind = Bind(string lang, string name)
 array_index = (expr? left, expr? right, expr? step)
@@ -311,7 +320,7 @@ type_stmt = TypeStmtName(symbol sym, stmt* body) | ClassStmt(symbol sym, stmt* b
 rank_stmt = RankExpr(expr rank, stmt* body)
 enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonInteger
 require_instantiation = Require(identifier name, identifier* args)
-array_physical_type = DescriptorArray | PointerArray | UnboundedPointerArray | FixedSizeArray | StringArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray | AssumedRankArray
+array_physical_type = DescriptorArray | PointerArray | UnboundedPointerArray | FixedSizeArray | StringArraySinglePointer | SIMDArray | AssumedRankArray
 string_physical_type = DescriptorString | CChar
 string_length_kind = AssumedLength | DeferredLength | ExpressionLength | ImplicitLength
 binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift | LBitRShift

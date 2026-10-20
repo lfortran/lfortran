@@ -13,6 +13,20 @@ bool expr_has_function_call(ASR::expr_t *expr) {
     return checker.found;
 }
 
+bool gpu_is_array_function_result(ASR::expr_t *e) {
+    if (!e) return false;
+    e = ASRUtils::get_past_array_physical_cast(e);
+    if (!ASR::is_a<ASR::FunctionCall_t>(*e)) return false;
+    ASR::FunctionCall_t *fc = ASR::down_cast<ASR::FunctionCall_t>(e);
+    if (ASRUtils::is_elemental(fc->m_name)) return false;
+    if (!ASRUtils::is_array(fc->m_type)) return false;
+    ASR::ttype_t *elem = ASRUtils::extract_type(fc->m_type);
+    return ASR::is_a<ASR::Integer_t>(*elem) || ASR::is_a<ASR::Real_t>(*elem)
+        || ASR::is_a<ASR::Complex_t>(*elem)
+        || ASR::is_a<ASR::Logical_t>(*elem)
+        || ASR::is_a<ASR::StructType_t>(*elem);
+}
+
 void gpu_check_host_expr_index_free(ASR::expr_t *host_expr,
         const std::set<std::string> &index_names, const std::string &what) {
     if (!host_expr || index_names.empty()) return;

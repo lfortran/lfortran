@@ -160,8 +160,9 @@ void lfortran_gpu_read_scratch_arg(lfortran_gpu_kernel* k, int idx,
 }
 
 void lfortran_gpu_set_buffer_arg(lfortran_gpu_kernel* k, int idx,
-    void* ptr, size_t size)
+    void* ptr, size_t size, int access)
 {
+    (void)access;
     if (!k || idx >= MAX_ARGS) return;
     // Memory is unified, so there is nothing to allocate or copy.
     k->buffer_device_ptrs[idx] = ptr;
@@ -204,6 +205,7 @@ static void run_thread(lfortran_gpu_kernel* k, void **args,
 void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     int grid[3], int block[3])
 {
+    lfortran_gpu_validate_launch(grid, block);
     if (!ctx || !k) return;
 
     // Same argument array the CUDA runtime hands to cudaLaunchKernel: every
@@ -252,10 +254,33 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     }
 }
 
+// A launch runs the kernel to completion before it returns, on the host's
+// own memory, so there is never anything to wait for or to copy back.
 void lfortran_gpu_sync(lfortran_gpu_ctx* ctx) {
     (void)ctx;
 }
 
+void lfortran_gpu_discard(lfortran_gpu_ctx* ctx, void* ptr, size_t size) {
+    (void)ctx;
+    (void)ptr;
+    (void)size;
+}
+
 long long lfortran_gpu_heap_size(void) {
     return lfortran_gpu_parse_heap_size();
+}
+
+void lfortran_gpu_metal_telemetry_snapshot(lfortran_gpu_ctx* ctx,
+    lfortran_gpu_metal_telemetry *out)
+{
+    (void)ctx;
+    if (!out) return;
+    memset(out, 0, sizeof(*out));
+}
+
+void lfortran_gpu_metal_telemetry_snapshot_sync(lfortran_gpu_ctx* ctx,
+    lfortran_gpu_metal_telemetry *out)
+{
+    if (ctx) lfortran_gpu_sync(ctx);
+    lfortran_gpu_metal_telemetry_snapshot(ctx, out);
 }

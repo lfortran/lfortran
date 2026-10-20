@@ -243,7 +243,7 @@ public:
             LCOMPILERS_ASSERT(current_scope)
             ASR::Function_t* func = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
             ArgInfo info = {static_cast<int>(x.m_param_number), x.m_type, func->m_args[x.m_param_number], &const_cast<ASR::expr_t&>((x.base))};
-            if (!exists_in_arginfo(x.m_param_number, indices)) {
+            if (!exists_in_arginfo(checked_integer_cast<int>(x.m_param_number), indices)) {
                 indices.push_back(info);
             }
         }
@@ -401,7 +401,10 @@ public:
 
         Vec<ASR::stmt_t*> new_body; new_body.reserve(al, 1);
         std::string new_function_name = helper_parent->get_unique_name("__lcompilers_created_helper_function_", false);
-        ASR::ttype_t* integer_type = ASRUtils::duplicate_type(al, ASRUtils::expr_type(assignment_value));
+        // The helper returns the value of the expression, also when that is
+        // an allocatable function result.
+        ASR::ttype_t* integer_type = ASRUtils::duplicate_type(al,
+            ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(assignment_value)));
         ASR::expr_t* return_var = b.Variable(new_scope, new_scope->get_unique_name("__lcompilers_return_var_", false), integer_type, ASR::intentType::ReturnVar);
 
         helper_arguments.clear();
@@ -1082,6 +1085,12 @@ private:
         expr_contains_functionCall_with_Nonscalar_return() = default;
         bool found = false; // If any sub-expression is of non-scalar return
         bool is_non_scalar(ASR::ttype_t* type){
+            // A result returned through an argument, for example any
+            // allocatable or polymorphic result. The subroutine_from_function
+            // pass would assign it only after the declarations.
+            if (PassUtils::is_result_returned_through_argument(type)) {
+                return true;
+            }
             type = ASRUtils::type_get_past_allocatable_pointer(type);
             return ASRUtils::is_character(*type) || 
             ASRUtils::is_array(type)      ||

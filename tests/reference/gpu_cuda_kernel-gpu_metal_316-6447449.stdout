@@ -25,11 +25,10 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __lb_p_0 = __scalar_args.__lb_p_0;
     int __dim_p_1 = __scalar_args.__dim_p_1;
     int __lb_p_1 = __scalar_args.__lb_p_1;
-    int __dim_p_2 = __scalar_args.__dim_p_2;
     int __lb_p_2 = __scalar_args.__lb_p_2;
     int __flat_idx;
     int i;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((1 - 0) + 1))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 2)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
@@ -57,11 +56,10 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     int __lb_p_0 = __scalar_args.__lb_p_0;
     int __dim_p_1 = __scalar_args.__dim_p_1;
     int __lb_p_1 = __scalar_args.__lb_p_1;
-    int __dim_p_2 = __scalar_args.__dim_p_2;
     int __lb_p_2 = __scalar_args.__lb_p_2;
     int __flat_idx;
     int i;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((1 - 0) + 1))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= 2)) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);

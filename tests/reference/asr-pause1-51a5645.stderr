@@ -1,0 +1,17 @@
+warning: the `pause` statement is a deleted feature (deleted in Fortran 95)
+ --> tests/pause1.f90:5:1
+  |
+5 | pause
+  | ^^^^^ 
+
+warning: the `pause` statement is a deleted feature (deleted in Fortran 95)
+ --> tests/pause1.f90:6:1
+  |
+6 | pause 'resume'
+  | ^^^^^^^^^^^^^^ 
+
+warning: the `pause` statement is a deleted feature (deleted in Fortran 95)
+ --> tests/pause1.f90:7:1
+  |
+7 | pause code
+  | ^^^^^^^^^^ 

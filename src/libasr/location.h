@@ -2,6 +2,9 @@
 #define LFORTRAN_PARSER_LOCATION_H
 
 #include <cstdint>
+#include <limits>
+#include <stdexcept>
+#include <string>
 #include <vector>
 
 namespace LCompilers {
@@ -12,11 +15,20 @@ struct Location
   uint32_t last;
 };
 
+// Source positions, and therefore the sizes of the position tables, are 32-bit.
+static inline uint32_t location_size_to_uint32(size_t n) {
+    if (n > std::numeric_limits<uint32_t>::max()) {
+        throw std::length_error("source size exceeds the 32-bit location range");
+    }
+    return static_cast<uint32_t>(n);
+}
+
 static inline uint32_t bisection(const std::vector<uint32_t> &vec, uint32_t i) {
     if (vec.size() == 0) return 0;
     if (i < vec[0]) return 0;
-    if (i >= vec[vec.size()-1]) return vec.size();
-    uint32_t i1 = 0, i2 = vec.size()-1;
+    uint32_t n = location_size_to_uint32(vec.size());
+    if (i >= vec[n-1]) return n;
+    uint32_t i1 = 0, i2 = n-1;
     while (i1 < i2-1) {
         // Use i1 + (i2-i1)/2 to avoid overflow for large uint32_t values
         uint32_t imid = i1 + (i2 - i1) / 2;
@@ -273,6 +285,16 @@ struct LocationManager {
         }
     }
 
+    // Converts a position `out_pos` in the output code (such as
+    // `Location::first` or `Location::last` of an AST or ASR node) to a
+    // (line, col) tuple in the original code, see `output_to_input_pos` for
+    // `show_last`
+    void output_pos_to_linecol(uint32_t out_pos, bool show_last,
+            uint32_t &line, uint32_t &col, std::string &filename) const {
+        pos_to_linecol(output_to_input_pos(out_pos, show_last), line, col,
+            filename);
+    }
+
     void get_newlines(const std::string &s, std::vector<uint32_t> &newlines) {
         for (uint32_t pos=0; pos < s.size(); pos++) {
             if (s[pos] == '\n') newlines.push_back(pos);
@@ -290,7 +312,7 @@ struct LocationManager {
     }
 
     void init_simple(const std::string &input) {
-        uint32_t n = input.size();
+        uint32_t n = location_size_to_uint32(input.size());
         files.back().out_start = {0, n};
         files.back().in_start = {0, n};
         get_newlines(input, files.back().in_newlines);

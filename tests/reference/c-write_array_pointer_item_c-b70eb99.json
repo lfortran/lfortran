@@ -1,0 +1,13 @@
+{
+    "basename": "c-write_array_pointer_item_c-b70eb99",
+    "cmd": "lfortran --no-color --show-c {infile}",
+    "infile": "tests/errors/write_array_pointer_item_c.f90",
+    "infile_hash": "d6008c21e0bc678b859d58881eb2e2ce3afe61c5d428b311cde7f83b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "c-write_array_pointer_item_c-b70eb99.stderr",
+    "stderr_hash": "2dd52aea9a0ab32ffa2d83c21358b31298274757e1231f3c2d844833",
+    "returncode": 1
+}

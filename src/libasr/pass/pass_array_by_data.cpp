@@ -371,7 +371,7 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                     indices.end() ) {
                     ASR::Variable_t* arg = ASRUtils::EXPR2VAR(x->m_args[i]);
                     ASR::dimension_t* dims = nullptr;
-                    int n_dims = ASRUtils::extract_dimensions_from_ttype(arg->m_type, dims);
+                    int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(arg->m_type, dims));
 
                     // Check if this is an assumed-size array (UnboundedPointerArray)
                     // If so, don't add dimension variables - keep dimensions as-is
@@ -949,8 +949,18 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                                         Allocator& al_) {
             int index_kind = get_index_kind();
             ASR::ttype_t* array_type = ASRUtils::expr_type(array);
+            // A physical cast's type is a copy of its argument's declared
+            // type, which earlier passes do not update; for example, its
+            // extent can still be the specification expression `count(x > 0)`.
+            // Take the extents from the argument itself.
+            ASR::ttype_t* storage_type = ASRUtils::expr_type(
+                ASRUtils::get_past_array_physical_cast(array));
+            if( ASRUtils::extract_n_dims_from_ttype(storage_type) ==
+                    ASRUtils::extract_n_dims_from_ttype(array_type) ) {
+                array_type = storage_type;
+            }
             ASR::dimension_t* compile_time_dims = nullptr;
-            int n_dims = ASRUtils::extract_dimensions_from_ttype(array_type, compile_time_dims);
+            int n_dims = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(array_type, compile_time_dims));
             if( n_dims == 0 ) {
                 ASR::ttype_t* scalar_type = ASRUtils::type_get_past_allocatable_pointer(array_type);
                 if( scalar_type && ASR::is_a<ASR::String_t>(*scalar_type) ) {

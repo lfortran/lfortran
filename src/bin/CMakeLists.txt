@@ -26,13 +26,15 @@ endif()
 set(LFORTRAN_SRC
     lfortran_accessor.cpp
     lsp_cli.cpp
+    cuda_link_helpers.cpp
     ${LFORTRAN_SRC}
 )
 
 if (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM)
 
 add_executable(lfortran ${LFORTRAN_SRC})
-target_include_directories(lfortran PRIVATE "tpl")
+# tpl/ contains only vendored third-party code (cpp-terminal, whereami).
+target_include_directories(lfortran SYSTEM PRIVATE "tpl")
 target_link_libraries(lfortran ${LFORTRAN_LINK_LIBRARIES})
 if (LFORTRAN_STATIC_BIN)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"

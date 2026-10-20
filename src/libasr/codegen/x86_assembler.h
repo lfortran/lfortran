@@ -34,6 +34,7 @@ Old Link: https://www.systutorials.com/go/intel-x86-64-reference-manual/
 
 #include <libasr/alloc.h>
 #include <libasr/containers.h>
+#include <libasr/checked_cast.h>
 
 // Define to allow the Assembler print the asm instructions
 #define LFORTRAN_ASM_PRINT
@@ -263,7 +264,9 @@ static std::string i2s(uint8_t imm8) {
     return "0x" + s.substr(2,4);
 }
 
-static void push_back_uint64(Vec<uint8_t> &code, Allocator &al, uint32_t i64) {
+static void push_back_uint64(Vec<uint8_t> &code, Allocator &al, uint64_t imm64) {
+    // Preserves the existing encoding: only the low 32 bits are emitted.
+    uint32_t i64 = static_cast<uint32_t>(imm64);
     for (size_t i = 0u; i < 8u; i++) {
         code.push_back(al, i64 & 0xFF);
         i64 >>= 8;
@@ -547,7 +550,7 @@ data_phdr:
 
     void align_by_byte(uint64_t alignment) {
         uint64_t code_size = m_code.size() ;
-        uint64_t padding_size = (alignment * ceil(code_size / (double)alignment)) - code_size;
+        uint64_t padding_size = (alignment - code_size % alignment) % alignment;
         for (size_t i = 0; i < padding_size; i++) {
             m_code.push_back(m_al, 0);
         }
@@ -643,7 +646,7 @@ data_phdr:
 
     void add_var64(const std::string &var, const std::string &start, const std::string &end) {
         // TODO: Support 64-bit or 8 byte parameter val in define_symbol()
-        uint64_t val = get_defined_symbol(end).value - get_defined_symbol(start).value;
+        uint32_t val = get_defined_symbol(end).value - get_defined_symbol(start).value;
         define_symbol(var, val);
         EMIT_VAR(var, start, end);
     }
@@ -655,7 +658,7 @@ data_phdr:
     }
 
     uint32_t pos() {
-        return m_origin + m_code.size();
+        return m_origin + checked_integer_cast<uint32_t>(m_code.size());
     }
 
     uint32_t origin() {

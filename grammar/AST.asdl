@@ -136,6 +136,7 @@ decl_stmt
     | Inquire(int label, expr* args, keyword* kwargs, expr* values, trivia? trivia)
     | Nullify(int label, expr* args, keyword* kwargs, trivia? trivia)
     | Open(int label, expr* args, keyword* kwargs, trivia? trivia)
+    | Pause(int label, expr? code, trivia? trivia)
     | Return(int label, expr? value, trivia? trivia)
     | Pragma(int label, pragma_type type, bool end, string construct_name,
             expr* clauses, trivia? trivia)

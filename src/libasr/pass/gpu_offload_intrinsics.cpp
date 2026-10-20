@@ -34,7 +34,7 @@ bool gpu_is_whole_array_designator(ASR::expr_t *e) {
 // evaluate the expression element by element count each dimension from
 // one to its extent, so operands with different bounds -- `a(2:4) + b`,
 // with `b` counted from zero -- each pick their own element of the same
-// position (see elementize_mask_multi).
+// position (see elementize_array_expr).
 void GpuOffloadVisitor::find_array_section_all_bounds(ASR::expr_t *e,
         std::vector<std::pair<ASR::expr_t*, ASR::expr_t*>> &dim_bounds) {
     if (!dim_bounds.empty()) return;
@@ -48,14 +48,13 @@ void GpuOffloadVisitor::find_array_section_all_bounds(ASR::expr_t *e,
             }
         }
     } else if (gpu_is_whole_array_designator(e)) {
-        ASR::ttype_t *int_type = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, loc, 4));
-        size_t rank = ASRUtils::extract_n_dims_from_ttype(
-            ASRUtils::expr_type(e));
+        ASR::dimension_t *dims = nullptr;
+        size_t rank = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(e), dims);
         for (size_t d = 0; d < rank; d++) {
+            ASR::dimension_t dim = dim_or_runtime_extent(e, dims, d);
             dim_bounds.push_back({int32_const(loc, 1),
-                ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc, e,
-                    int32_const(loc, d + 1), int_type, nullptr))});
+                to_int32(loc, dim.m_length)});
         }
     } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
         ASR::RealCompare_t *rc = ASR::down_cast<ASR::RealCompare_t>(e);
@@ -93,9 +92,11 @@ void GpuOffloadVisitor::find_array_section_all_bounds(ASR::expr_t *e,
 // find_array_section_all_bounds): the counter-th element of a section
 // dimension, or the counter-th element of an array dimension from its
 // lower bound.
-ASR::expr_t* GpuOffloadVisitor::elementize_mask_multi(ASR::expr_t *e,
-        std::vector<ASR::expr_t*> &loop_vars,
-        ASR::ttype_t *logical_type, const Location &loc) {
+ASR::expr_t* GpuOffloadVisitor::elementize_array_expr(ASR::expr_t *e,
+        std::vector<ASR::expr_t*> &loop_vars, const Location &loc) {
+    if (!ASRUtils::is_array(ASRUtils::expr_type(e))) return e;
+    ASR::ttype_t *element_type = ASRUtils::extract_type(
+        ASRUtils::expr_type(e));
     if (ASR::is_a<ASR::ArraySection_t>(*e)) {
         ASR::ArraySection_t *as = ASR::down_cast<ASR::ArraySection_t>(e);
         Vec<ASR::array_index_t> new_args;
@@ -159,44 +160,93 @@ ASR::expr_t* GpuOffloadVisitor::elementize_mask_multi(ASR::expr_t *e,
         return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc,
             e, new_args.p, new_args.n,
             elem_type, ASR::arraystorageType::ColMajor, nullptr, false));
+    } else if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+        return elementize_array_expr(
+            ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg,
+            loop_vars, loc);
+    } else if (ASR::is_a<ASR::Cast_t>(*e)) {
+        ASR::Cast_t *cast = ASR::down_cast<ASR::Cast_t>(e);
+        return ASRUtils::EXPR(ASR::make_Cast_t(al, loc,
+            elementize_array_expr(cast->m_arg, loop_vars, loc),
+            cast->m_kind, element_type, nullptr, nullptr));
+    } else if (ASR::is_a<ASR::ArrayBroadcast_t>(*e)) {
+        return ASR::down_cast<ASR::ArrayBroadcast_t>(e)->m_array;
+    } else if (ASR::is_a<ASR::FunctionCall_t>(*e)) {
+        ASR::FunctionCall_t *call = ASR::down_cast<ASR::FunctionCall_t>(e);
+        if (!ASRUtils::is_elemental(call->m_name)) return e;
+        Vec<ASR::call_arg_t> args;
+        args.reserve(al, call->n_args);
+        for (size_t i = 0; i < call->n_args; i++) {
+            ASR::call_arg_t arg = call->m_args[i];
+            if (arg.m_value) {
+                arg.m_value = elementize_array_expr(arg.m_value,
+                    loop_vars, loc);
+            }
+            args.push_back(al, arg);
+        }
+        return ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
+            call->m_name, call->m_original_name, args.p, args.n,
+            element_type, nullptr, call->m_dt));
+    } else if (ASR::is_a<ASR::RealUnaryMinus_t>(*e)) {
+        return ASRUtils::EXPR(ASR::make_RealUnaryMinus_t(al, loc,
+            elementize_array_expr(
+                ASR::down_cast<ASR::RealUnaryMinus_t>(e)->m_arg,
+                loop_vars, loc), element_type, nullptr));
+    } else if (ASR::is_a<ASR::IntegerUnaryMinus_t>(*e)) {
+        return ASRUtils::EXPR(ASR::make_IntegerUnaryMinus_t(al, loc,
+            elementize_array_expr(
+                ASR::down_cast<ASR::IntegerUnaryMinus_t>(e)->m_arg,
+                loop_vars, loc), element_type, nullptr));
+    } else if (ASR::is_a<ASR::LogicalNot_t>(*e)) {
+        return ASRUtils::EXPR(ASR::make_LogicalNot_t(al, loc,
+            elementize_array_expr(
+                ASR::down_cast<ASR::LogicalNot_t>(e)->m_arg,
+                loop_vars, loc), element_type, nullptr));
+    } else if (ASR::is_a<ASR::LogicalCompare_t>(*e)) {
+        ASR::LogicalCompare_t *cmp = ASR::down_cast<ASR::LogicalCompare_t>(e);
+        return ASRUtils::EXPR(ASR::make_LogicalCompare_t(al, loc,
+            elementize_array_expr(cmp->m_left, loop_vars, loc),
+            cmp->m_op,
+            elementize_array_expr(cmp->m_right, loop_vars, loc),
+            element_type, nullptr));
     } else if (ASR::is_a<ASR::RealCompare_t>(*e)) {
         ASR::RealCompare_t *rc = ASR::down_cast<ASR::RealCompare_t>(e);
         return ASRUtils::EXPR(ASR::make_RealCompare_t(al, loc,
-            elementize_mask_multi(rc->m_left, loop_vars, logical_type, loc),
+            elementize_array_expr(rc->m_left, loop_vars, loc),
             rc->m_op,
-            elementize_mask_multi(rc->m_right, loop_vars, logical_type, loc),
-            logical_type, nullptr));
+            elementize_array_expr(rc->m_right, loop_vars, loc),
+            element_type, nullptr));
     } else if (ASR::is_a<ASR::IntegerCompare_t>(*e)) {
         ASR::IntegerCompare_t *ic = ASR::down_cast<ASR::IntegerCompare_t>(e);
         return ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc,
-            elementize_mask_multi(ic->m_left, loop_vars, logical_type, loc),
+            elementize_array_expr(ic->m_left, loop_vars, loc),
             ic->m_op,
-            elementize_mask_multi(ic->m_right, loop_vars, logical_type, loc),
-            logical_type, nullptr));
+            elementize_array_expr(ic->m_right, loop_vars, loc),
+            element_type, nullptr));
     } else if (ASR::is_a<ASR::LogicalBinOp_t>(*e)) {
         ASR::LogicalBinOp_t *lb = ASR::down_cast<ASR::LogicalBinOp_t>(e);
         return ASRUtils::EXPR(ASR::make_LogicalBinOp_t(al, loc,
-            elementize_mask_multi(lb->m_left, loop_vars, logical_type, loc),
+            elementize_array_expr(lb->m_left, loop_vars, loc),
             lb->m_op,
-            elementize_mask_multi(lb->m_right, loop_vars, logical_type, loc),
-            logical_type, nullptr));
+            elementize_array_expr(lb->m_right, loop_vars, loc),
+            element_type, nullptr));
     } else if (ASR::is_a<ASR::RealBinOp_t>(*e)) {
         ASR::RealBinOp_t *rb = ASR::down_cast<ASR::RealBinOp_t>(e);
         ASR::ttype_t *real_type = ASRUtils::extract_type(
             ASRUtils::expr_type(e));
         return ASRUtils::EXPR(ASR::make_RealBinOp_t(al, loc,
-            elementize_mask_multi(rb->m_left, loop_vars, logical_type, loc),
+            elementize_array_expr(rb->m_left, loop_vars, loc),
             rb->m_op,
-            elementize_mask_multi(rb->m_right, loop_vars, logical_type, loc),
+            elementize_array_expr(rb->m_right, loop_vars, loc),
             real_type, nullptr));
     } else if (ASR::is_a<ASR::IntegerBinOp_t>(*e)) {
         ASR::IntegerBinOp_t *ib = ASR::down_cast<ASR::IntegerBinOp_t>(e);
         ASR::ttype_t *int_elem_type = ASRUtils::extract_type(
             ASRUtils::expr_type(e));
         return ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
-            elementize_mask_multi(ib->m_left, loop_vars, logical_type, loc),
+            elementize_array_expr(ib->m_left, loop_vars, loc),
             ib->m_op,
-            elementize_mask_multi(ib->m_right, loop_vars, logical_type, loc),
+            elementize_array_expr(ib->m_right, loop_vars, loc),
             int_elem_type, nullptr));
     } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*e)) {
         ASR::IntrinsicElementalFunction_t *ief =
@@ -205,8 +255,7 @@ ASR::expr_t* GpuOffloadVisitor::elementize_mask_multi(ASR::expr_t *e,
         new_args.reserve(al, ief->n_args);
         for (size_t i = 0; i < ief->n_args; i++) {
             new_args.push_back(al, ief->m_args[i]
-                ? elementize_mask_multi(ief->m_args[i], loop_vars,
-                      logical_type, loc)
+                ? elementize_array_expr(ief->m_args[i], loop_vars, loc)
                 : nullptr);
         }
         ASR::ttype_t *elem_type = ASRUtils::extract_type(
@@ -216,7 +265,19 @@ ASR::expr_t* GpuOffloadVisitor::elementize_mask_multi(ASR::expr_t *e,
                 ief->m_intrinsic_id, new_args.p, new_args.n,
                 ief->m_overload_id, elem_type, nullptr));
     }
-    return e;
+    Vec<ASR::array_index_t> indices;
+    indices.reserve(al, loop_vars.size());
+    for (ASR::expr_t *counter : loop_vars) {
+        ASR::array_index_t index;
+        index.loc = loc;
+        index.m_left = nullptr;
+        index.m_right = counter;
+        index.m_step = nullptr;
+        indices.push_back(al, index);
+    }
+    return ASRUtils::EXPR(ASR::make_ArrayItem_t(al, loc, e,
+        indices.p, indices.n, element_type,
+        ASR::arraystorageType::ColMajor, nullptr, false));
 }
 
 // Inline a single IntrinsicArrayFunction All into preamble statements
@@ -269,10 +330,9 @@ ASR::expr_t* GpuOffloadVisitor::inline_single_all(
         ASR::make_Assignment_t(al, loc, res_var,
             ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc,
                 true, logical_type)),
-            nullptr, false, false)));
+            nullptr, false, false, false)));
 
-    ASR::expr_t *elem_mask = elementize_mask_multi(mask, loop_vars,
-        logical_type, loc);
+    ASR::expr_t *elem_mask = elementize_array_expr(mask, loop_vars, loc);
 
     // Build innermost body: if (.not. elem_mask) __gpu_all_res = .false.
     Vec<ASR::stmt_t*> if_body;
@@ -281,7 +341,7 @@ ASR::expr_t* GpuOffloadVisitor::inline_single_all(
         ASR::make_Assignment_t(al, loc, res_var,
             ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc,
                 false, logical_type)),
-            nullptr, false, false)));
+            nullptr, false, false, false)));
     Vec<ASR::stmt_t*> if_else;
     if_else.reserve(al, 0);
     ASR::expr_t *not_mask = ASRUtils::EXPR(
@@ -415,7 +475,7 @@ void GpuOffloadVisitor::inline_intrinsic_all(ParallelLoopNest &nest) {
             }
             new_body.push_back(al, ASRUtils::STMT(
                 ASR::make_Assignment_t(al, loc, asgn->m_target,
-                    new_value, nullptr, false, false)));
+                    new_value, nullptr, false, false, false)));
             // Track non-array scalar targets as reduction liveouts
             if (ASR::is_a<ASR::Var_t>(*asgn->m_target)) {
                 ASR::ttype_t *tgt_type =
@@ -553,11 +613,11 @@ void GpuOffloadVisitor::inline_matmul_stmts(
                 two.reserve(al, 2);
                 two.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
                     al, stmt->base.loc, tmp, asgn->m_value, nullptr,
-                    false, false)));
+                    false, false, false)));
                 two.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
                     al, stmt->base.loc, asgn->m_target,
                     matmul_temp_section(tmp, asgn->m_target), nullptr,
-                    false, false)));
+                    false, false, false)));
                 ASR::stmt_t **two_body = two.p;
                 size_t two_n = two.n;
                 inline_matmul_stmts(two_body, two_n);
@@ -616,8 +676,8 @@ void GpuOffloadVisitor::inline_matmul_stmts(
         ASR::ttype_t *type_a = ASRUtils::expr_type(arg_a);
         ASR::ttype_t *type_b = ASRUtils::expr_type(arg_b);
         ASR::dimension_t *dims_a = nullptr, *dims_b = nullptr;
-        int rank_a = ASRUtils::extract_dimensions_from_ttype(type_a, dims_a);
-        int rank_b = ASRUtils::extract_dimensions_from_ttype(type_b, dims_b);
+        int rank_a = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(type_a, dims_a));
+        int rank_b = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(type_b, dims_b));
 
         ASR::ttype_t *elem_type = ASRUtils::extract_type(
             ASRUtils::expr_type(asgn->m_target));
@@ -855,6 +915,48 @@ void GpuOffloadVisitor::inline_matmul_stmts(
                 0, elem_type, ASR::integerbozType::Decimal));
         }
 
+        // Each element of the product is accumulated in a scalar local,
+        // which the device keeps in a register, and stored into the
+        // target once: accumulating into the target itself would load
+        // and store device memory for every term of the sum.
+        auto make_accumulator = [&]() -> ASR::expr_t* {
+            std::string name = var_scope->get_unique_name("__gpu_mm_acc");
+            ASR::symbol_t *sym = gpu_new_variable(al, loc, var_scope, name,
+                ASRUtils::duplicate_type(al, elem_type));
+            return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+        };
+        auto assign = [&](ASR::expr_t *target,
+                ASR::expr_t *value) -> ASR::stmt_t* {
+            return ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target,
+                value, nullptr, false, false, false));
+        };
+        // acc = 0; do k ...: acc = acc + a*b; c = acc [OP other]
+        auto accumulate_element = [&](Vec<ASR::stmt_t*> &out,
+                ASR::expr_t *c_elem, ASR::expr_t *var_k,
+                ASR::expr_t *k_start, ASR::expr_t *k_end,
+                ASR::expr_t *a_elem, ASR::expr_t *b_elem,
+                ASR::expr_t *other_elem) {
+            ASR::expr_t *acc = make_accumulator();
+            Vec<ASR::stmt_t*> k_body;
+            k_body.reserve(al, 1);
+            ASR::expr_t *prod = ASRUtils::EXPR(
+                ASR::make_RealBinOp_t(al, loc, a_elem,
+                    ASR::binopType::Mul, b_elem, elem_type, nullptr));
+            k_body.push_back(al, assign(acc, ASRUtils::EXPR(
+                ASR::make_RealBinOp_t(al, loc, acc,
+                    ASR::binopType::Add, prod, elem_type, nullptr))));
+            out.push_back(al, assign(acc, zero));
+            out.push_back(al, make_do_loop(var_k, k_start, k_end, k_body));
+            ASR::expr_t *value = acc;
+            if (other_elem) {
+                ASR::expr_t *lhs = matmul_is_left ? acc : other_elem;
+                ASR::expr_t *rhs = matmul_is_left ? other_elem : acc;
+                value = ASRUtils::EXPR(ASR::make_RealBinOp_t(al, loc, lhs,
+                    binop_op, rhs, elem_type, nullptr));
+            }
+            out.push_back(al, assign(c_elem, value));
+        };
+
         int64_t overload_id = iaf->m_overload_id;
 
         if (overload_id == 2 && rank_a == 2 && rank_b == 1) {
@@ -877,40 +979,11 @@ void GpuOffloadVisitor::inline_matmul_stmts(
             ASR::expr_t *b_k = make_section_item(arg_b,
                 {rebase_index(arg_b, dims_b, 0, var_k, k_start)});
 
-            // k-loop body: c(i) = c(i) + a(i,k) * b(k)
-            Vec<ASR::stmt_t*> k_body;
-            k_body.reserve(al, 1);
-            ASR::expr_t *prod = ASRUtils::EXPR(
-                ASR::make_RealBinOp_t(al, loc, a_ik,
-                    ASR::binopType::Mul, b_k, elem_type, nullptr));
-            ASR::expr_t *sum = ASRUtils::EXPR(
-                ASR::make_RealBinOp_t(al, loc, c_i,
-                    ASR::binopType::Add, prod, elem_type, nullptr));
-            k_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, c_i, sum,
-                    nullptr, false, false)));
-
-            // i-loop body: c(i) = 0; do k ...; [c(i) = c(i) OP other(i)]
             Vec<ASR::stmt_t*> i_body;
-            i_body.reserve(al, binop_other ? 3 : 2);
-            i_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, c_i, zero,
-                    nullptr, false, false)));
-            i_body.push_back(al,
-                make_do_loop(var_k, k_start, k_end, k_body));
-
-            if (binop_other) {
-                ASR::expr_t *other_i = make_binop_other_item(
-                    binop_other, {var_i}, {i_start});
-                ASR::expr_t *lhs = matmul_is_left ? c_i : other_i;
-                ASR::expr_t *rhs = matmul_is_left ? other_i : c_i;
-                ASR::expr_t *combined = ASRUtils::EXPR(
-                    ASR::make_RealBinOp_t(al, loc, lhs, binop_op,
-                        rhs, elem_type, nullptr));
-                i_body.push_back(al, ASRUtils::STMT(
-                    ASR::make_Assignment_t(al, loc, c_i, combined,
-                        nullptr, false, false)));
-            }
+            i_body.reserve(al, 3);
+            accumulate_element(i_body, c_i, var_k, k_start, k_end, a_ik,
+                b_k, binop_other ? make_binop_other_item(binop_other,
+                    {var_i}, {i_start}) : nullptr);
 
             new_body.push_back(al,
                 make_do_loop(var_i, i_start, i_end, i_body));
@@ -934,38 +1007,11 @@ void GpuOffloadVisitor::inline_matmul_stmts(
                 ? make_section_item(arg_b, {var_j, var_k})
                 : make_section_item(arg_b, {var_k, var_j});
 
-            Vec<ASR::stmt_t*> k_body;
-            k_body.reserve(al, 1);
-            ASR::expr_t *prod = ASRUtils::EXPR(
-                ASR::make_RealBinOp_t(al, loc, a_k,
-                    ASR::binopType::Mul, b_kj, elem_type, nullptr));
-            ASR::expr_t *sum = ASRUtils::EXPR(
-                ASR::make_RealBinOp_t(al, loc, c_j,
-                    ASR::binopType::Add, prod, elem_type, nullptr));
-            k_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, c_j, sum,
-                    nullptr, false, false)));
-
             Vec<ASR::stmt_t*> j_body;
-            j_body.reserve(al, binop_other ? 3 : 2);
-            j_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, c_j, zero,
-                    nullptr, false, false)));
-            j_body.push_back(al,
-                make_do_loop(var_k, k_start, k_end, k_body));
-
-            if (binop_other) {
-                ASR::expr_t *other_j = make_binop_other_item(
-                    binop_other, {var_j}, {j_start});
-                ASR::expr_t *lhs = matmul_is_left ? c_j : other_j;
-                ASR::expr_t *rhs = matmul_is_left ? other_j : c_j;
-                ASR::expr_t *combined = ASRUtils::EXPR(
-                    ASR::make_RealBinOp_t(al, loc, lhs, binop_op,
-                        rhs, elem_type, nullptr));
-                j_body.push_back(al, ASRUtils::STMT(
-                    ASR::make_Assignment_t(al, loc, c_j, combined,
-                        nullptr, false, false)));
-            }
+            j_body.reserve(al, 3);
+            accumulate_element(j_body, c_j, var_k, k_start, k_end, a_k,
+                b_kj, binop_other ? make_binop_other_item(binop_other,
+                    {var_j}, {j_start}) : nullptr);
 
             new_body.push_back(al,
                 make_do_loop(var_j, j_start, j_end, j_body));
@@ -1000,38 +1046,11 @@ void GpuOffloadVisitor::inline_matmul_stmts(
                 ? make_section_item(arg_b, {var_j, var_k_b})
                 : make_section_item(arg_b, {var_k_b, var_j});
 
-            Vec<ASR::stmt_t*> k_body;
-            k_body.reserve(al, 1);
-            ASR::expr_t *prod = ASRUtils::EXPR(
-                ASR::make_RealBinOp_t(al, loc, a_ik,
-                    ASR::binopType::Mul, b_kj, elem_type, nullptr));
-            ASR::expr_t *sum = ASRUtils::EXPR(
-                ASR::make_RealBinOp_t(al, loc, c_ij,
-                    ASR::binopType::Add, prod, elem_type, nullptr));
-            k_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, c_ij, sum,
-                    nullptr, false, false)));
-
             Vec<ASR::stmt_t*> j_body;
-            j_body.reserve(al, binop_other ? 3 : 2);
-            j_body.push_back(al, ASRUtils::STMT(
-                ASR::make_Assignment_t(al, loc, c_ij, zero,
-                    nullptr, false, false)));
-            j_body.push_back(al,
-                make_do_loop(var_k, k_start, k_end, k_body));
-
-            if (binop_other) {
-                ASR::expr_t *other_ij = make_binop_other_item(
-                    binop_other, {var_i, var_j}, {i_start, j_start});
-                ASR::expr_t *lhs = matmul_is_left ? c_ij : other_ij;
-                ASR::expr_t *rhs = matmul_is_left ? other_ij : c_ij;
-                ASR::expr_t *combined = ASRUtils::EXPR(
-                    ASR::make_RealBinOp_t(al, loc, lhs, binop_op,
-                        rhs, elem_type, nullptr));
-                j_body.push_back(al, ASRUtils::STMT(
-                    ASR::make_Assignment_t(al, loc, c_ij, combined,
-                        nullptr, false, false)));
-            }
+            j_body.reserve(al, 3);
+            accumulate_element(j_body, c_ij, var_k, k_start, k_end, a_ik,
+                b_kj, binop_other ? make_binop_other_item(binop_other,
+                    {var_i, var_j}, {i_start, j_start}) : nullptr);
 
             Vec<ASR::stmt_t*> i_body;
             i_body.reserve(al, 1);
@@ -1163,7 +1182,7 @@ void GpuOffloadVisitor::hoist_matmuls_from_assignment(ASR::Assignment_t *asgn,
             var_scope, scope_has_workspaces);
         if (!tmp_var) break;
         ASR::stmt_t *tmp_asgn = ASRUtils::STMT(ASR::make_Assignment_t(
-            al, loc, tmp_var, (ASR::expr_t*)mm, nullptr, false, false));
+            al, loc, tmp_var, (ASR::expr_t*)mm, nullptr, false, false, false));
         if (!replace_array_intrinsic_in_expr(asgn->m_value, mm,
                 tmp_var)) {
             break;
@@ -1312,12 +1331,12 @@ bool GpuOffloadVisitor::intrinsic_array_result_dims(ASR::expr_t *e,
         b = ASR::down_cast<ASR::ArrayPhysicalCast_t>(b)->m_arg;
     if (!a || !b) return false;
     ASR::dimension_t *da = nullptr, *db = nullptr;
-    int ra = ASRUtils::extract_dimensions_from_ttype(
+    int ra = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(
         ASRUtils::type_get_past_allocatable_pointer(
-            ASRUtils::expr_type(a)), da);
-    int rb = ASRUtils::extract_dimensions_from_ttype(
+            ASRUtils::expr_type(a)), da));
+    int rb = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(
         ASRUtils::type_get_past_allocatable_pointer(
-            ASRUtils::expr_type(b)), db);
+            ASRUtils::expr_type(b)), db));
     dims.reserve(al, 2);
     if (ra == 2 && rb == 1) {
         dims.push_back(al, dim_or_runtime_extent(a, da, 0));
@@ -1687,7 +1706,7 @@ void GpuOffloadVisitor::extract_nested_sums(
         ASR::expr_t *sum_expr = (ASR::expr_t*)sum_node;
         expanded.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, tmp_var, sum_expr,
-                nullptr, false, false)));
+                nullptr, false, false, false)));
 
         // Replace sum node in original expression with tmp_var
         replace_array_intrinsic_in_expr(asgn->m_value, sum_node,
@@ -1838,7 +1857,7 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
         // __gpu_sum_res = 0
         new_body.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, res_var, zero,
-                nullptr, false, false)));
+                nullptr, false, false, false)));
 
         std::vector<ASR::expr_t*> loop_vars;
         std::vector<ASR::expr_t*> loop_starts;
@@ -1899,16 +1918,15 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
                     loop_ends.push_back(bounds.second);
                     loop_steps.push_back(nullptr);
                 }
-                arr_elem = elementize_mask_multi(arr_arg, loop_vars,
-                    elem_type, loc);
+                arr_elem = elementize_array_expr(arr_arg, loop_vars, loc);
             } else {
                 // Whole array: loop over all dimensions
                 ASR::ttype_t *arr_type =
                     ASRUtils::expr_type(arr_arg);
                 ASR::dimension_t *dims = nullptr;
                 int rank =
-                    ASRUtils::extract_dimensions_from_ttype(
-                        arr_type, dims);
+                    checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(
+                        arr_type, dims));
                 if (rank < 1) {
                     new_body.push_back(al, stmt);
                     continue;
@@ -2035,9 +2053,9 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
                                                 arr_arg));
                                 dims = nullptr;
                                 rank =
-                                    ASRUtils::
+                                    checked_integer_cast<int>(ASRUtils::
                                         extract_dimensions_from_ttype(
-                                            arr_type, dims);
+                                            arr_type, dims));
                                 break;
                             }
                         }
@@ -2167,8 +2185,8 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
                                             actual));
                                 ASR::dimension_t *adims = nullptr;
                                 int arank =
-                                    ASRUtils::extract_dimensions_from_ttype(
-                                        atype, adims);
+                                    checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(
+                                        atype, adims));
                                 if (arank < 1 ||
                                         (size_t)d >= (size_t)arank)
                                     continue;
@@ -2249,7 +2267,7 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
         }
         ASR::stmt_t *accum_stmt = ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, res_var, add_expr,
-                nullptr, false, false));
+                nullptr, false, false, false));
 
         // Build nested loops from innermost to outermost
         int n_loops = (int)loop_vars.size();
@@ -2283,7 +2301,7 @@ void GpuOffloadVisitor::inline_sum_in_stmts(
         // target = __gpu_sum_res
         new_body.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, asgn->m_target, res_var,
-                nullptr, false, false)));
+                nullptr, false, false, false)));
 
         changed = true;
     }
@@ -2351,7 +2369,7 @@ void GpuOffloadVisitor::inline_intrinsic_transpose(ParallelLoopNest &nest) {
 
         ASR::ttype_t *arr_type = ASRUtils::expr_type(arr_arg);
         ASR::dimension_t *dims = nullptr;
-        int rank = ASRUtils::extract_dimensions_from_ttype(arr_type, dims);
+        int rank = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(arr_type, dims));
         if (rank != 2) {
             new_body.push_back(al, stmt);
             continue;
@@ -2412,7 +2430,7 @@ void GpuOffloadVisitor::inline_intrinsic_transpose(ParallelLoopNest &nest) {
         inner_body.reserve(al, 1);
         inner_body.push_back(al, ASRUtils::STMT(
             ASR::make_Assignment_t(al, loc, b_ij, a_ji,
-                nullptr, false, false)));
+                nullptr, false, false, false)));
 
         // i loops over rows of b = columns of a (dim 1 of result)
         // j loops over columns of b = rows of a (dim 0 of result)

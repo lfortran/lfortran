@@ -1,0 +1,132 @@
+#include <stdint.h>
+
+struct __ScalarArgs___lfortran_gpu_kernel_0 {
+    int __loop_end_0;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_0(
+    float* y,
+    __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
+    float* __workspace_2)
+{
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __flat_idx;
+    int j;
+    int k;
+    const int m = 150000;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    j = (__flat_idx + 1);
+    {
+        int __do_loop_end;
+        float* t = __workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * 150000;
+        __do_loop_end = m;
+        k = (1 - 1);
+        while (((k + 1) <= __do_loop_end)) {
+            k = (k + 1);
+            t[((int)(k) - (1))] = ((float)(j + k));
+        }
+        y[((int)(j) - (1))] = (t[((int)(1) - (1))] + t[((int)(m) - (1))]);
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_1 {
+    int __gpu_private_shape;
+    int n;
+    int __dim_y_0;
+    int __loop_end_0;
+    int __workspace_extent;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_1(
+    float* y,
+    __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args,
+    float* __workspace_2)
+{
+    int __gpu_private_shape = __scalar_args.__gpu_private_shape;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __workspace_extent = __scalar_args.__workspace_extent;
+    int __flat_idx;
+    int __gpu_bc_i;
+    int j;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    j = (__flat_idx + 1);
+    {
+        int __do_loop_end;
+        int __do_loop_end1;
+        int __gpu_sum_k;
+        float __gpu_sum_res;
+        float* t = __workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
+        __do_loop_end = __gpu_private_shape;
+        __gpu_bc_i = (1 - 1);
+        while (((__gpu_bc_i + 1) <= __do_loop_end)) {
+            __gpu_bc_i = (__gpu_bc_i + 1);
+            t[((int)(__gpu_bc_i) - (1))] = ((float)j);
+        }
+        __gpu_sum_res =   0.00000000000000000e+00f;
+        __do_loop_end1 = __gpu_private_shape;
+        __gpu_sum_k = (1 - 1);
+        while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
+            __gpu_sum_k = (__gpu_sum_k + 1);
+            __gpu_sum_res = (__gpu_sum_res + t[((int)(__gpu_sum_k) - (1))]);
+        }
+        y[((int)(j) - (1))] = __gpu_sum_res;
+    }
+}
+
+struct __ScalarArgs___lfortran_gpu_kernel_2 {
+    int __gpu_private_shape;
+    int m;
+    int n;
+    int __dim_y_0;
+    int __loop_end_0;
+    int __workspace_extent;
+};
+
+extern "C" __global__ void __lfortran_gpu_kernel_2(
+    float* y,
+    __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args,
+    float* __workspace_2)
+{
+    int __gpu_private_shape = __scalar_args.__gpu_private_shape;
+    int m = __scalar_args.m;
+    int __loop_end_0 = __scalar_args.__loop_end_0;
+    int __workspace_extent = __scalar_args.__workspace_extent;
+    int __flat_idx;
+    int __gpu_bc_i;
+    int j;
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
+        return;
+    }
+    __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
+    j = (__flat_idx + 1);
+    {
+        int __do_loop_end;
+        int __do_loop_end1;
+        int __gpu_sum_k;
+        float __gpu_sum_res;
+        float __gpu_sum_tmp;
+        float* t = __workspace_2 + (blockIdx.x * blockDim.x + threadIdx.x) * __workspace_extent;
+        __do_loop_end = __gpu_private_shape;
+        __gpu_bc_i = (1 - 1);
+        while (((__gpu_bc_i + 1) <= __do_loop_end)) {
+            __gpu_bc_i = (__gpu_bc_i + 1);
+            t[((int)(__gpu_bc_i) - (1))] = ((float)j);
+        }
+        __gpu_sum_res =   0.00000000000000000e+00f;
+        __do_loop_end1 = __gpu_private_shape;
+        __gpu_sum_k = (1 - 1);
+        while (((__gpu_sum_k + 1) <= __do_loop_end1)) {
+            __gpu_sum_k = (__gpu_sum_k + 1);
+            __gpu_sum_res = (__gpu_sum_res + t[((int)(__gpu_sum_k) - (1))]);
+        }
+        __gpu_sum_tmp = __gpu_sum_res;
+        y[((int)(j) - (1))] = ((__gpu_sum_tmp + t[((int)(1) - (1))]) + t[((int)(m) - (1))]);
+    }
+}
+

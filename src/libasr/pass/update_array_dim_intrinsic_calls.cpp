@@ -70,7 +70,7 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
         ASR::Variable_t* v = ASRUtils::EXPR2VAR(x_m_v);
         ASR::ttype_t* array_type = ASRUtils::expr_type(x_m_v);
         ASR::dimension_t* dims = nullptr;
-        int n = ASRUtils::extract_dimensions_from_ttype(array_type, dims);
+        int n = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(array_type, dims));
         bool is_argument = v->m_intent == ASRUtils::intent_in || v->m_intent == ASRUtils::intent_out || v->m_intent == ASRUtils::intent_inout;
         if( !(n > 0 && is_argument &&
               !ASRUtils::is_dimension_empty(dims, n)) ) {
@@ -105,7 +105,7 @@ class ReplaceArrayDimIntrinsicCalls: public ASR::BaseExprReplacer<ReplaceArrayDi
         ASR::Variable_t* v = ASRUtils::EXPR2VAR(x->m_v);
         ASR::ttype_t* array_type = ASRUtils::expr_type(x->m_v);
         ASR::dimension_t* dims = nullptr;
-        int n = ASRUtils::extract_dimensions_from_ttype(array_type, dims);
+        int n = checked_integer_cast<int>(ASRUtils::extract_dimensions_from_ttype(array_type, dims));
         bool is_argument = ASRUtils::is_arg_dummy(v->m_intent);
         if( !(n > 0 && is_argument &&
               !ASRUtils::is_dimension_empty(dims, n)) ) {

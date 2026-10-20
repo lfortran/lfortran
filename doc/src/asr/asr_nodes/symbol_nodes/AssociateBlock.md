@@ -93,6 +93,7 @@ body, which binds the name to the target expression rather than copying it.
       :overloaded nil
       :realloc_lhs false
       :move_allocation false
+      :new_target false
     )
   ]
 )

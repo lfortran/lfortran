@@ -22,7 +22,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     float* __workspace_6,
     float* __workspace_7)
 {
-    int mbs = __scalar_args.mbs;
     int n = __scalar_args.n;
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __workspace_extent = __scalar_args.__workspace_extent;
@@ -31,7 +30,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
     int __gpu_elem_i;
     int __gpu_elem_i1;
     int i;
-    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= ((__loop_end_0 - 1) + 1))) {
+    if ((((blockIdx.x * blockDim.x) + threadIdx.x) >= (((__loop_end_0 >= 1)) ? (((__loop_end_0 - 1) + 1)) : (0)))) {
         return;
     }
     __flat_idx = ((blockIdx.x * blockDim.x) + threadIdx.x);
@@ -49,17 +48,17 @@ extern "C" __global__ void __lfortran_gpu_kernel_0(
             __gpu_elem_i = (1 - 1);
             while (((__gpu_elem_i + 1) <= __do_loop_end)) {
                 __gpu_elem_i = (__gpu_elem_i + 1);
-                v[((int)(__gpu_elem_i) - (1))] = __data_arr_values_[__offsets_arr_values_[((int)(i) - (1))] + ((int)(__gpu_elem_i) - (__sizes_arr_values_[(((int)(i) - (1))) * 2 + 1]))];
+                v[((int)((1 + (__gpu_elem_i - 1))) - (1))] = __data_arr_values_[__offsets_arr_values_[((int)(i) - (1))] + ((int)((__sizes_arr_values_[(((int)(i) - (1))) * 2 + 1] + (__gpu_elem_i - 1))) - (__sizes_arr_values_[(((int)(i) - (1))) * 2 + 1]))];
             }
             __do_loop_end1 = n;
             __gpu_elem_i1 = (1 - 1);
             while (((__gpu_elem_i1 + 1) <= __do_loop_end1)) {
                 __gpu_elem_i1 = (__gpu_elem_i1 + 1);
-                a[((int)(__gpu_elem_i1) - (1))] = v[((int)(__gpu_elem_i1) - (1))];
+                a[((int)(__gpu_elem_i1) - (1))] = v[((int)((1 + (__gpu_elem_i1 - 1))) - (1))];
             }
         }
         __gpu_sum_res =   0.00000000000000000e+00f;
-        __do_loop_end = __workspace_extent;
+        __do_loop_end = n;
         __gpu_sum_k = (1 - 1);
         while (((__gpu_sum_k + 1) <= __do_loop_end)) {
             __gpu_sum_k = (__gpu_sum_k + 1);

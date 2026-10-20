@@ -1,0 +1,13 @@
+{
+    "basename": "asr-allocatable_generic_bounds_01-480e969",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/allocatable_generic_bounds_01.f90",
+    "infile_hash": "eaf0a2c0208e67cede6945b7687014f0ede370b652e4f700dcf66e0e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-allocatable_generic_bounds_01-480e969.stderr",
+    "stderr_hash": "0033f1f77ca0ab52e9f9e96a524777323a5018c44882c45e7ae7263d",
+    "returncode": 2
+}

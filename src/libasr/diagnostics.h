@@ -238,6 +238,10 @@ std::string render_diagnostic_short(const Diagnostic &d);
 std::string render_diagnostic_human(Diagnostic &d, const LocationManager &lm,
     bool use_colors, bool show_stacktrace);
 std::string render_diagnostic_short(Diagnostic &d, const LocationManager &lm);
+
+// Converts the linear `loc` of every span of `d` to lines and columns in the
+// original code (`first_line`, ..., `filename`), without reading the source
+void populate_spans_linecol(Diagnostic &d, const LocationManager &lm);
 /**
  * @brief Convert diagnostic `Level` i.e. severity to string and color accordingly.
  *

@@ -1,5 +1,0 @@
-semantic error: DATA statement element count mismatch: 2 elements on left-hand side, 3 values on right-hand side
- --> tests/errors/data_section3.f90:4:5
-  |
-4 |     data x(1:2) /1, 2, 3/
-  |     ^^^^^^^^^^^^^^^^^^^^^ 

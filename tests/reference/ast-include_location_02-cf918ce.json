@@ -1,0 +1,13 @@
+{
+    "basename": "ast-include_location_02-cf918ce",
+    "cmd": "lfortran --fixed-form --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/include_location_02.f",
+    "infile_hash": "dd1ccf5f7e6f56148304c4b6536c2a5ae57f91c78d04153a1144ca96",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "ast-include_location_02-cf918ce.stderr",
+    "stderr_hash": "10652ffd5672d0b0553be190af344ecde20d484abd4b581101705543",
+    "returncode": 2
+}

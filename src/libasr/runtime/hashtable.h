@@ -21,12 +21,14 @@ static const int DELETED_BKT  = 2;
     typedef struct NAME { \
         _GV_CONCAT3(NAME, _, Entry) *buckets; \
         size_t num_buckets; \
-        size_t size; \
+        size_t size; /*Occupied buckets (live entries)*/ \
+        size_t used; /*Occupied or deleted buckets (non-empty)*/ \
     } NAME; \
     \
     static inline void _GV_CONCAT3(NAME, _, init)(NAME *ht, size_t initial_buckets) { \
         ht->num_buckets = initial_buckets; \
         ht->size = 0; \
+        ht->used = 0; \
         ht->buckets = (_GV_CONCAT3(NAME, _, Entry)*) malloc(sizeof(_GV_CONCAT3(NAME, _, Entry)) * initial_buckets); \
         for (size_t i = 0; i < initial_buckets; i++) { \
             ht->buckets[i].state = EMPTY_BKT; \
@@ -34,8 +36,14 @@ static const int DELETED_BKT  = 2;
     } \
     \
     static inline void _GV_CONCAT3(NAME, _, insert)(NAME *ht, KEY_TYPE key, VALUE_TYPE value) { \
-        if (ht->size >= 0.75 * ht->num_buckets) { \
-            size_t new_num_buckets = ht->num_buckets * 2; \
+        /*Rehash once 75% of the buckets are non-empty, so probe chains */ \
+        /*always end at an empty bucket. Grow only if live entries need */ \
+        /*the space; otherwise rebuild in place to drop deleted buckets.*/ \
+        if (4 * ht->used >= 3 * ht->num_buckets) { \
+            size_t new_num_buckets = ht->num_buckets; \
+            if (2 * ht->size >= ht->num_buckets) { \
+                new_num_buckets = ht->num_buckets * 2; \
+            } \
             _GV_CONCAT3(NAME, _, Entry) *new_buckets = (_GV_CONCAT3(NAME, _, Entry)*) malloc(sizeof(_GV_CONCAT3(NAME, _, Entry)) * new_num_buckets); \
             for (size_t i = 0; i < new_num_buckets; i++) { \
                 new_buckets[i].state = EMPTY_BKT; \
@@ -57,6 +65,7 @@ static const int DELETED_BKT  = 2;
             free(ht->buckets); /*Free old buckets*/ \
             ht->buckets = new_buckets; \
             ht->num_buckets = new_num_buckets; \
+            ht->used = ht->size; \
         } \
         /*Insert into table -- Track deleted bucket to insert into if key not found*/\
         size_t hash_value = _GV_CONCAT3(NAME, _, HASH)(key); \
@@ -78,6 +87,8 @@ static const int DELETED_BKT  = 2;
         } \
         if (first_deleted != (size_t)-1) { \
             index = first_deleted; \
+        } else { \
+            ht->used++; \
         } \
         ht->buckets[index].key = key; \
         ht->buckets[index].value = value; \
