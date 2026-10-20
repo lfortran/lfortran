@@ -6427,6 +6427,7 @@ RUN(NAME gpu_metal_479 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_480 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_481 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_488 LABELS gfortran llvm cuda cuda_cpu)
+# GFortran 13 in Quick does not support REDUCE.
 RUN(NAME gpu_metal_482 LABELS llvm metal cuda_cpu cuda)
 # GFortran 13 in Quick cannot compile these LOCAL locality fixtures.
 RUN(NAME gpu_metal_483 LABELS llvm metal cuda cuda_cpu)
