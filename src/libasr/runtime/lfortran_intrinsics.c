@@ -13418,6 +13418,12 @@ static void common_formatted_read(InputSource *inputSource,
             cycle_fmt, cycle_len, no_of_args, args,
             &arg_idx, &blank_mode, &scale_factor, &consumed_newline, pad_no, &decimal_mode,
             &arr_cont);
+        // Empty targets (a zero-size array or an empty implied-do list) are
+        // no items, so if only they remain, the input list is exhausted and
+        // the format must not revert to a new record.
+        while (!arr_cont.active && arr_cont.list == NULL && arg_idx < no_of_args &&
+                skip_empty_descriptor_read_target(args, no_of_args, &arg_idx)) {
+        }
         bool made_progress = (arg_idx > args_before) ||
             arr_cont.list != list_before || arr_cont.list_pos != list_pos_before ||
             (cont_before && (arr_cont.current_idx != cont_idx_before ||
