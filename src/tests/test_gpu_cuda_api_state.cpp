@@ -105,10 +105,27 @@ cudaError_t cudaMemcpy(void *dst, const void *src, size_t size,
     return cudaSuccess;
 }
 
-static void device_entry() {}
-static void alias_entry() {}
-static void alias_reverse_entry() {}
-static void alias_read_entry() {}
+// Distinct bodies prevent identical-code folding from merging entry addresses,
+// which cudaLaunchKernel uses to select the argument layout.
+static void device_entry()
+{
+    require(false, "unexpected host execution of device_entry");
+}
+
+static void alias_entry()
+{
+    require(false, "unexpected host execution of alias_entry");
+}
+
+static void alias_reverse_entry()
+{
+    require(false, "unexpected host execution of alias_reverse_entry");
+}
+
+static void alias_read_entry()
+{
+    require(false, "unexpected host execution of alias_read_entry");
+}
 
 cudaError_t cudaLaunchKernel(const void *entry, dim3 grid, dim3 block,
     void **args, size_t shared, cudaStream_t stream)
