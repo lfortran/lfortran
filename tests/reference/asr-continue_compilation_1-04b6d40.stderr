@@ -1484,6 +1484,18 @@ semantic error: Kind 3 is not supported for Logical
 3390 |     logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
      |     ^^^^^^^^^ 
 
+semantic error: type-bound procedure 'g' of 'cc1_bnc_child' has the same name as a component inherited from 'cc1_bnc_base'; rename the binding
+    --> tests/errors/continue_compilation_1.f90:3469:5
+     |
+3469 |     procedure :: g => cc1_bnc_g  ! {Error} type-bound procedure 'g' of 'cc1_bnc_child' has the same name as a component inherited from 'cc1_bnc_base'; rename the binding
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: type-bound procedure 'f' has the same name as a component of 'cc1_bnc_t'; rename one of them
+    --> tests/errors/continue_compilation_1.f90:3462:5
+     |
+3462 |     procedure :: f => cc1_bnc_f  ! {Error} type-bound procedure 'f' has the same name as a component of 'cc1_bnc_t'; rename one of them
+     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
      |
