@@ -6501,7 +6501,7 @@ RUN(NAME gpu_kernel_source_13 LABELS gfortran llvm metal cuda_cpu)
 # GFortran 13 in Quick cannot compile these LOCAL locality fixtures.
 RUN(NAME gpu_kernel_source_14 LABELS llvm metal cuda cuda_cpu)
 RUN(NAME gpu_kernel_source_16 LABELS gfortran llvm metal cuda cuda_cpu)
-RUN(NAME gpu_kernel_source_15 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_kernel_source_15 LABELS gfortran llvm metal cuda cuda_cpu)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)
