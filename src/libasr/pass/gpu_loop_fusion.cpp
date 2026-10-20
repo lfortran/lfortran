@@ -610,13 +610,14 @@ public:
     }
 
     // Whether every read of `key` in `body` is of the element the body
-    // writes (`subscripts`) and comes before every write, in the order
-    // the statements run: such a read sees the value from before the
-    // loop, which the array keeps when the writes go to a copy.
+    // writes (`subscripts`) and comes before every write on its path, in
+    // the order the statements run: such a read sees the value from before
+    // the loop, which the array keeps when the writes go to a copy. The
+    // branches of an IF or a SELECT CASE are alternatives.
     bool reads_before_writes(ASR::stmt_t **body, size_t n,
             const std::string &key,
             const std::vector<ASR::symbol_t*> &subscripts) {
-        bool written = false, ok = true;
+        bool ok = true;
         auto identity = [&](ASR::ArrayItem_t *x) {
             if (x->n_args != subscripts.size()) return false;
             for (size_t d = 0; d < x->n_args; d++) {
@@ -631,7 +632,7 @@ public:
             }
             return true;
         };
-        auto reads = [&](ASR::expr_t *e) {
+        auto reads = [&](ASR::expr_t *e, bool written) {
             if (e == nullptr) return;
             struct R : public ASR::BaseWalkVisitor<R> {
                 const std::string *key;
@@ -667,64 +668,69 @@ public:
                 if (written || !identity(x)) ok = false;
             }
         };
-        std::function<void(ASR::stmt_t**, size_t)> walk =
-                [&](ASR::stmt_t **b, size_t m) {
+        // Returns whether the array may have been written once the list
+        // has run, given whether it may have been before.
+        std::function<bool(ASR::stmt_t**, size_t, bool)> walk =
+                [&](ASR::stmt_t **b, size_t m, bool written) -> bool {
             for (size_t i = 0; i < m && ok; i++) {
                 ASR::stmt_t *s = b[i];
                 if (ASR::is_a<ASR::Assignment_t>(*s)) {
                     ASR::Assignment_t *a = ASR::down_cast<ASR::Assignment_t>(s);
-                    reads(a->m_value);
+                    reads(a->m_value, written);
                     if (ASR::is_a<ASR::ArrayItem_t>(*a->m_target)) {
                         ASR::ArrayItem_t *t = ASR::down_cast<ASR::ArrayItem_t>(
                             a->m_target);
                         for (size_t d = 0; d < t->n_args; d++) {
-                            reads(t->m_args[d].m_right);
+                            reads(t->m_args[d].m_right, written);
                         }
                         if (gpu_array_key(t->m_v) == key) written = true;
                     }
                 } else if (ASR::is_a<ASR::If_t>(*s)) {
                     ASR::If_t *x = ASR::down_cast<ASR::If_t>(s);
-                    reads(x->m_test);
-                    walk(x->m_body, x->n_body);
-                    walk(x->m_orelse, x->n_orelse);
+                    reads(x->m_test, written);
+                    bool w1 = walk(x->m_body, x->n_body, written);
+                    bool w2 = walk(x->m_orelse, x->n_orelse, written);
+                    written = w1 || w2;
                 } else if (ASR::is_a<ASR::Select_t>(*s)) {
                     ASR::Select_t *x = ASR::down_cast<ASR::Select_t>(s);
-                    reads(x->m_test);
+                    reads(x->m_test, written);
+                    bool out = walk(x->m_default, x->n_default, written);
                     for (size_t k = 0; k < x->n_body; k++) {
                         if (ASR::is_a<ASR::CaseStmt_t>(*x->m_body[k])) {
                             ASR::CaseStmt_t *c = ASR::down_cast<ASR::CaseStmt_t>(
                                 x->m_body[k]);
                             for (size_t t = 0; t < c->n_test; t++) {
-                                reads(c->m_test[t]);
+                                reads(c->m_test[t], written);
                             }
-                            walk(c->m_body, c->n_body);
+                            out = walk(c->m_body, c->n_body, written) || out;
                         } else {
                             ASR::CaseStmt_Range_t *c =
                                 ASR::down_cast<ASR::CaseStmt_Range_t>(
                                     x->m_body[k]);
-                            reads(c->m_start);
-                            reads(c->m_end);
-                            walk(c->m_body, c->n_body);
+                            reads(c->m_start, written);
+                            reads(c->m_end, written);
+                            out = walk(c->m_body, c->n_body, written) || out;
                         }
                     }
-                    walk(x->m_default, x->n_default);
+                    written = out;
                 } else if (ASR::is_a<ASR::BlockCall_t>(*s)) {
                     ASR::symbol_t *bs = ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::BlockCall_t>(s)->m_m);
                     if (!ASR::is_a<ASR::Block_t>(*bs)) {
                         ok = false;
-                        return;
+                        return written;
                     }
                     ASR::Block_t *blk = ASR::down_cast<ASR::Block_t>(bs);
-                    walk(blk->m_body, blk->n_body);
+                    written = walk(blk->m_body, blk->n_body, written);
                 } else {
                     std::set<std::string> r;
                     gpu_collect_array_reads(&s, 1, r);
                     if (r.count(key)) ok = false;
                 }
             }
+            return written;
         };
-        walk(body, n);
+        walk(body, n, false);
         return ok;
     }
 
