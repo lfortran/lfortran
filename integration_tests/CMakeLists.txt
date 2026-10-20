@@ -6480,12 +6480,12 @@ RUN(NAME gpu_metal_554 LABELS gfortran llvm metal cuda_cpu cuda)
 # Loop fusion legality: the fusion runs only for --gpu=cuda and cuda_cpu.
 RUN(NAME gpu_metal_560 LABELS gfortran llvm cuda_cpu cuda)
 RUN(NAME gpu_metal_561 LABELS gfortran llvm cuda_cpu cuda)
-RUN(NAME gpu_metal_511 LABELS gfortran llvm metal cuda_cpu cuda)
+RUN(NAME gpu_metal_511 LABELS llvm metal cuda_cpu cuda) # `local` locality is not accepted by every supported gfortran
 RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096)
 RUN(NAME gpu_metal_525 LABELS gfortran llvm metal cuda_cpu cuda)
 # No metal or cuda label: a GPU kernel does not copy a LOCAL_INIT scalar in
 # (#14792), and the device compiler folds tests on it as undefined.
-RUN(NAME gpu_metal_526 LABELS gfortran llvm cuda_cpu)
+RUN(NAME gpu_metal_526 LABELS llvm cuda_cpu) # `local_init` locality is not accepted by every supported gfortran
 # GFortran 13 cannot compile this LOCAL fixture. cuda_cpu uses GPU lowering
 # and belongs here; ordinary LLVM is excluded for its pre-existing LOCAL
 # preservation gap (#14622).
