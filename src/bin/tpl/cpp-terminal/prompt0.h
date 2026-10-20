@@ -4,6 +4,7 @@
 #include "terminal.h"
 
 #include <vector>
+#include <algorithm>
 
 using Term::Terminal;
 using Term::Key;
@@ -88,7 +89,9 @@ void render(Term::Window &scr, const Model &m, size_t cols) {
 
 std::string prompt0(const Terminal &term, const std::string &prompt_string,
         std::vector<std::string> &history, std::function<bool(std::string)>
-        &iscomplete) {
+        &iscomplete, std::function<std::string()> pump = {},
+        std::function<bool()> input_ready = {},
+        std::function<void()> paint_output = {}) {
     int row, col;
     bool term_attached = term.is_stdin_a_tty();
     if (term_attached) {
@@ -121,7 +124,32 @@ std::string prompt0(const Terminal &term, const std::string &prompt_string,
     std::cout << scr.render(1, row, term_attached) << std::flush;
     bool not_complete = true;
     while (not_complete) {
-        key = term.read_key();
+        if (pump) {
+            auto output = pump();
+            if (!output.empty()) {
+                if (term_attached) {
+                    for (size_t i = 0; i < m.lines.size(); ++i)
+                        std::cout << move_cursor(row+i, 1) << "\x1b[2K";
+                    std::cout << move_cursor(row, 1);
+                }
+                if (paint_output) paint_output();
+                else std::cout << output;
+                if (output.back() != '\n') std::cout << '\n';
+                if (term_attached) {
+                    auto lines = std::count(output.begin(), output.end(), '\n')
+                        + (output.back() == '\n' ? 0 : 1);
+                    row = std::max(1, std::min(rows-static_cast<int>(m.lines.size())+1,
+                        row + static_cast<int>(lines)));
+                }
+                render(scr, m, cols);
+                std::cout << scr.render(1, row, term_attached) << std::flush;
+            }
+            if (input_ready && !input_ready()) continue;
+            key = term.read_key0();
+            if (!key) continue;
+        } else {
+            key = term.read_key();
+        }
         if  (key >= 32 && key <= 126) {
             std::string before = m.lines[m.cursor_row-1].substr(0,
                     m.cursor_col-1);

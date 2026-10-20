@@ -15,6 +15,9 @@ cmake -E copy_directory doc/man $dest/doc/man
 # tarball has to carry it for `ctest` to be able to run that test.
 cmake -E copy_directory doc/src/asr $dest/doc/src/asr
 cmake -E copy_directory tests/asr $dest/tests/asr
+# The shared evaluator's file-isolation test reads this regression source.
+cmake -E make_directory $dest/integration_tests
+cmake -E copy integration_tests/runtime_input_records.f90 $dest/integration_tests
 
 # Copy Files:
 cmake -E copy CMakeLists.txt README.md LICENSE version $dest

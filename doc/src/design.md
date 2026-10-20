@@ -1,5 +1,8 @@
 # LFortran Design
 
+The native prompt and optional Xeus kernel share an
+[interactive evaluation and runtime input API](evaluation_service.md).
+
 ## High Level Overview
 
 LFortran is structured around two independent modules, AST and ASR, both of

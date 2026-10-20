@@ -14,6 +14,7 @@ set(SRC
     semantics/ast_to_asr.cpp
 
     fortran_evaluator.cpp
+    evaluation.cpp
     pipeline.cpp
 
     ast_serialization.cpp
@@ -108,6 +109,17 @@ if (WITH_EXECINFO)
     target_link_libraries(lfortran_lib p::execinfo)
 endif()
 if (WITH_LLVM)
+    if (NOT EMSCRIPTEN AND NOT LFORTRAN_BUILD_TO_WASM)
+        target_sources(lfortran_lib PRIVATE native_protocol.cpp native_session.cpp
+            native_capture.cpp native_transport.cpp)
+        if (WITH_JUPYTER_ZMQ)
+            target_sources(lfortran_lib PRIVATE jupyter_zmq.cpp)
+            target_link_libraries(lfortran_lib libzmq OpenSSL::Crypto)
+        endif()
+        if (WIN32)
+            target_link_libraries(lfortran_lib advapi32)
+        endif()
+    endif()
     if (WITH_MLIR)
         target_link_libraries(lfortran_lib p::mlir)
     endif()

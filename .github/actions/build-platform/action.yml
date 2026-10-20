@@ -12,6 +12,10 @@ inputs:
     description: Save the compiler cache on main. Quick and Exhaustive build the same compilers, so only Quick saves.
     required: false
     default: 'true'
+  jupyter-zmq:
+    description: Enable the optional native Jupyter transport and real interoperability CTests.
+    required: false
+    default: 'no'
 
 runs:
   using: composite
@@ -91,6 +95,7 @@ runs:
         echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> "$GITHUB_ENV"
         echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> "$GITHUB_ENV"
         echo "ENABLE_RUNTIME_STACKTRACE=yes" >> "$GITHUB_ENV"
+        echo "LFORTRAN_JUPYTER_ZMQ=${{ inputs.jupyter-zmq }}" >> "$GITHUB_ENV"
 
     - name: Build (Linux / macOS)
       shell: bash -e -l {0}

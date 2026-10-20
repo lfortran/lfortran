@@ -6,9 +6,35 @@ LFortran - modern interactive LLVM-based Fortran compiler
 
 lfortran [OPTIONS] [files...] [SUBCOMMAND]
 
+lfortran [OPTIONS] [--connection-file PATH]
+
+lfortran --serve --connection-file PATH
+
+lfortran --connect PATH
+
 # DESCRIPTION
 
 LFortran is a modern interactive Fortran compiler based on LLVM.
+
+With no source files, a native LLVM build launches an isolated managed kernel
+and a terminal client. Multiple clients share its variables and serialized
+execution queue. Ctrl-D at an empty prompt detaches; during a runtime READ it
+sends EOF. A managed kernel stops after its last client disconnects. An explicit
+server persists until protocol shutdown or termination.
+
+Connection files contain local execution capabilities. Use a new path in a
+user-private directory (0700 on POSIX, a user-only ACL on Windows); existing
+files are never replaced. Endpoints are private Unix sockets or Windows named
+pipes, not network listeners. No session artifacts are created in the current
+working directory. Fatal runtime exit or lost transport makes an active
+execution's outcome unknown; clients do not replay code automatically.
+
+With optional `WITH_JUPYTER_ZMQ` support, the native server can also expose a
+classic Jupyter TCP listener, and the terminal or a local bridge can connect to
+an external kernel. These operations report an unavailable-adapter diagnostic
+when that build option is disabled. See the
+[native-session protocol documentation](https://github.com/lfortran/lfortran/blob/main/doc/src/native-session.md)
+for connection formats, routing and limitations.
 
 # OPTIONS
 
@@ -17,6 +43,11 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `-c`: Compile and assemble, do not link
 - `-o TEXT`: Specify the file to place the compiler's output into
 - `-v`: Be more verbose
+- `--connection-file PATH`: Publish a new private native descriptor for a managed interactive session
+- `--serve`: Run a persistent native local server; requires `--connection-file PATH`
+- `--connect PATH`: Attach a terminal to a live native session, or a classic Jupyter kernel with `WITH_JUPYTER_ZMQ`, without creating another evaluator
+- `--jupyter-connection-file PATH`: Add a standard Jupyter listener to `--serve`; requires `WITH_JUPYTER_ZMQ`
+- `--bridge PATH`: Proxy an external Jupyter kernel through a new native `--connection-file`; requires `WITH_JUPYTER_ZMQ`
 - `-E`: Preprocess only; do not compile, assemble, or link
 - `-l TEXT ...`: Link library option
 - `-L TEXT ...`: Library path option

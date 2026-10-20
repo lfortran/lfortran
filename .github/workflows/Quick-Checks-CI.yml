@@ -53,6 +53,7 @@ jobs:
         with:
           os: ${{ matrix.os }}
           llvm-version: ${{ matrix.llvm-version }}
+          jupyter-zmq: ${{ matrix.os == 'ubuntu-latest' && matrix.llvm-version == '11' && 'yes' || 'no' }}
 
       # we need to run this only once for debugging purpose
       - name: Print github concurrent group name

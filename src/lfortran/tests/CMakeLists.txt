@@ -17,6 +17,9 @@ endmacro(ADDTESTC)
 if (NOT XEUS_LFORTRAN_WASM_BUILD)
     ADDTESTC(test_cwrapper lfortran_c)
     ADDTESTC(test_hashtable)
+    if (NOT EMSCRIPTEN)
+        ADDTESTC(test_runtime_input lfortran_runtime_static)
+    endif()
     if (NOT WIN32 AND NOT EMSCRIPTEN)
         ADDTESTC(test_system_clock lfortran_runtime_static)
     endif()
@@ -60,6 +63,12 @@ if (WITH_JSON)
     )
 endif()
 if (WITH_LLVM)
+    if (NOT EMSCRIPTEN)
+        ADDTEST(test_evaluation)
+        target_compile_definitions(test_evaluation PRIVATE
+            LFORTRAN_BUILD_RUNTIME_DIR="${CMAKE_BINARY_DIR}/src/runtime"
+            LFORTRAN_PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
+    endif()
     set(SRC ${SRC}
         test_llvm.cpp
     )
@@ -306,6 +315,32 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
                     ${CMAKE_SOURCE_DIR}/src/lfortran/tests/test_repl.py
                     --lfortran $<TARGET_FILE:lfortran>
             )
+            set_tests_properties(test_repl PROPERTIES TIMEOUT 180)
+        endif()
+        if (NOT EMSCRIPTEN AND NOT LFORTRAN_BUILD_TO_WASM)
+            add_test(NAME test_native_session
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_native_session.py
+                    --lfortran $<TARGET_FILE:lfortran>)
+            set_tests_properties(test_native_session PROPERTIES TIMEOUT 180)
+        endif()
+        if (WITH_XEUS)
+            add_test(
+                NAME test_kernel_evaluation
+                COMMAND ${LFORTRAN_TEST_PYTHON}
+                    ${CMAKE_CURRENT_SOURCE_DIR}/test_kernel_evaluation.py
+                    --lfortran $<TARGET_FILE:lfortran>
+            )
+            set_tests_properties(test_kernel_evaluation PROPERTIES TIMEOUT 180)
+        endif()
+        if (WITH_JUPYTER_ZMQ)
+            foreach(mode native foreign wire)
+                add_test(NAME test_jupyter_${mode}
+                    COMMAND ${LFORTRAN_TEST_PYTHON}
+                        ${CMAKE_CURRENT_SOURCE_DIR}/test_jupyter_zmq.py
+                        --lfortran $<TARGET_FILE:lfortran> --mode ${mode})
+                set_tests_properties(test_jupyter_${mode} PROPERTIES TIMEOUT 180)
+            endforeach()
         endif()
     endif()
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
@@ -313,6 +348,7 @@ if (WITH_LLVM AND (NOT EMSCRIPTEN OR LFORTRAN_BUILD_TO_WASM))
         OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
 
         target_link_options(test_lfortran PRIVATE "LINKER:--export-dynamic")
+        target_link_options(test_evaluation PRIVATE "LINKER:--export-dynamic")
     endif()
 endif()
 
