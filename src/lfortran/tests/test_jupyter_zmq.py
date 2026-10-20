@@ -20,6 +20,7 @@ import time
 import uuid
 
 import zmq
+from zmq.utils.monitor import recv_monitor_message
 from jupyter_client import BlockingKernelClient
 from jupyter_client.connect import write_connection_file
 from jupyter_client.session import Session
@@ -254,6 +255,149 @@ def isolated_native_peers(executable, root, key):
         server.close()
 
 
+def partial_native_channels(executable, root, key):
+    path = connection(root, key)
+    server = Native(executable, root, path)
+    a = b = None
+    try:
+        a, b = Peer(server.descriptor), client(path)
+        a.done(a.execute("integer :: channel_gate, channel_ios, channel_state=41"))
+
+        def control_barrier(c):
+            message = c.session.msg("kernel_info_request", {})
+            c.control_channel.send(message)
+            return wait(c, "control", "kernel_info_reply", message["header"]["msg_id"])
+
+        def advance_monitor():
+            for _ in range(8):
+                request = a.send("kernel_info_request", channel="control")
+                a.wait("kernel_info_reply", request)
+
+        def local_value(code, expected):
+            request = a.execute(code)
+            assert a.wait("execute_result", request)["content"]["data"]["text/plain"] == expected
+            a.done(request)
+
+        control_barrier(b)
+        gate = a.execute("read(*,*,iostat=channel_ios) channel_gate")
+        prompt = a.wait("input_request", gate)
+        queued = b.execute("channel_state=channel_state+1")
+        wait(b, "shell", "kernel_info_reply", b.kernel_info())
+        shell = b.shell_channel.socket
+        identity = shell.getsockopt(zmq.IDENTITY)
+        b.control_channel.stop()
+        advance_monitor()
+        a.input(prompt, "7")
+        a.done(gate)
+        reply, _ = done(b, queued)
+        assert reply["parent_header"]["session"] == b.session.session, reply
+        value(b, "channel_state", "42")
+        # Stdin and the same shell still work while control is absent.
+        reading = b.execute("read(*,*,iostat=channel_ios) channel_gate")
+        wait(b, "stdin", "input_request", reading)
+        b.input("8")
+        done(b, reading)
+        value(b, "channel_gate", "8")
+        reconnect_channel(b, path, "control")
+        control_barrier(b)
+        assert b.shell_channel.socket is shell
+        assert shell.getsockopt(zmq.IDENTITY) == identity
+        heartbeat_echo(path)
+
+        # This stdin source is now known from the preceding real input_reply.
+        reading = b.execute("read(*,*,iostat=channel_ios) channel_gate; channel_state=99")
+        wait(b, "stdin", "input_request", reading)
+        b.stdin_channel.stop()
+        advance_monitor()
+        reply, _ = done(b, reading)
+        assert reply["parent_header"]["session"] == b.session.session, reply
+        value(b, "channel_state", "99")
+        request = a.execute("channel_ios")
+        assert int(a.wait("execute_result", request)["content"]["data"]["text/plain"]) > 0
+        a.done(request)
+        # Further READs must fail promptly while this origin lacks stdin,
+        # without losing their shell replies or blocking healthy input.
+        done(b, b.execute("read(*,*,iostat=channel_ios) channel_gate; channel_state=100"))
+        local_value("channel_state", "100")
+        gate = a.execute("read(*,*,iostat=channel_ios) channel_gate")
+        prompt = a.wait("input_request", gate)
+        a.input(prompt, "9")
+        a.done(gate)
+        reconnect_channel(b, path, "stdin")
+        reading = b.execute("read(*,*,iostat=channel_ios) channel_gate")
+        wait(b, "stdin", "input_request", reading)
+        b.input("10")
+        done(b, reading)
+        value(b, "channel_gate", "10")
+        value(b, "channel_ios", "0")
+        assert b.shell_channel.socket is shell
+        heartbeat_echo(path)
+        assert server.process.poll() is None and server.local.exists()
+        print("signed=%s: independent control/stdin loss preserves accepted reply+idle, "
+            "same-shell mutation, healthy READ and input recovery PASS" % bool(key), flush=True)
+    finally:
+        if a:
+            a.close()
+        if b:
+            b.stop_channels()
+        server.close()
+
+
+def unavailable_native_stdin(executable, root, key):
+    path = connection(root, key)
+    server = Native(executable, root, path)
+    a = b = None
+    try:
+        a, b = Peer(server.descriptor), client(path)
+        a.done(a.execute("integer :: unavailable_gate, unavailable_ios, unavailable_state=41"))
+        # No stdin message has registered this socket's source FD. The first
+        # input_request must detect the unavailable route at delivery instead.
+        b.stdin_channel.stop()
+        for _ in range(8):
+            q = a.send("kernel_info_request", channel="control")
+            a.wait("kernel_info_reply", q)
+        reading = b.execute("read(*,*,iostat=unavailable_ios) unavailable_gate; "
+            "unavailable_state=unavailable_state+1")
+        done(b, reading)
+        value(b, "unavailable_state", "42")
+        request = a.execute("unavailable_ios")
+        assert int(a.wait("execute_result", request)["content"]["data"]["text/plain"]) > 0
+        a.done(request)
+        heartbeat_echo(path)
+        reconnect_channel(b, path, "stdin")
+        reading = b.execute("read(*,*,iostat=unavailable_ios) unavailable_gate")
+        wait(b, "stdin", "input_request", reading)
+        b.input("11")
+        done(b, reading)
+        value(b, "unavailable_gate", "11")
+        value(b, "unavailable_ios", "0")
+        print("signed=%s: failed stdin delivery preserves completion and recovers PASS"
+            % bool(key), flush=True)
+    finally:
+        if a:
+            a.close()
+        if b:
+            b.stop_channels()
+        server.close()
+
+
+def reconnect_channel(c, path, name):
+    config = json.loads(path.read_text())
+    socket = c.context.socket(zmq.DEALER)
+    socket.setsockopt(zmq.IDENTITY, c.session.bsession)
+    monitor = socket.get_monitor_socket(events=zmq.EVENT_HANDSHAKE_SUCCEEDED)
+    try:
+        socket.connect("tcp://127.0.0.1:%d" % config[name + "_port"])
+        assert monitor.poll(20000), ("reconnect handshake", name)
+        assert recv_monitor_message(monitor)["event"] == zmq.EVENT_HANDSHAKE_SUCCEEDED
+    finally:
+        socket.disable_monitor()
+        monitor.close(linger=0)
+    channel = getattr(c, name + "_channel")
+    channel.socket = socket
+    channel.start()
+
+
 def stop(process):
     if process and process.poll() is None:
         process.terminate()
@@ -435,6 +579,8 @@ def native(executable, root):
             server.close()
     for key in (b"isolated-signed-route", b""):
         isolated_native_peers(executable, root, key)
+        partial_native_channels(executable, root, key)
+        unavailable_native_stdin(executable, root, key)
 
 
 def bridge_start(executable, path, root):

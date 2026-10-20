@@ -631,6 +631,27 @@ void NativeSession::disconnect(uint64_t peer) {
     }
     impl->peers.erase(peer);
 }
+void NativeSession::input_unavailable(uint64_t peer) {
+    std::lock_guard<std::mutex> lock(impl->mutex);
+    auto p = impl->peers.find(peer);
+    if (p == impl->peers.end()) return;
+    auto &output = p->second.output;
+    for (auto i = output.begin(); i != output.end();) {
+        auto value = parse(i->envelope);
+        if (optional_string(object(value), "channel") != "stdin") {
+            ++i;
+            continue;
+        }
+        p->second.bytes -= i->envelope.size();
+        i = output.erase(i);
+    }
+    if (impl->input_waiting && !impl->input_ready &&
+            impl->input_peer == peer) {
+        impl->input_status = 1;
+        impl->input_ready = true;
+        impl->changed.notify_all();
+    }
+}
 std::vector<SessionDelivery> NativeSession::take_deliveries() {
     std::lock_guard<std::mutex> lock(impl->mutex);
     std::vector<SessionDelivery> result;

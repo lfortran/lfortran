@@ -28,6 +28,9 @@ public:
     virtual const std::string &id() const = 0;
     virtual void receive(uint64_t peer, const std::string &envelope) = 0;
     virtual void disconnect(uint64_t peer) = 0;
+    // Endpoints owning runtime input can lose a separate stdin channel without
+    // losing the origin's completion route. Foreign endpoints do not own stdin.
+    virtual void input_unavailable(uint64_t) {}
     virtual std::vector<SessionDelivery> take_deliveries() = 0;
     virtual bool shutdown_requested() const = 0;
     virtual bool executing() const = 0;
@@ -45,6 +48,7 @@ public:
     const std::string &id() const override;
     void receive(uint64_t peer, const std::string &envelope) override;
     void disconnect(uint64_t peer) override;
+    void input_unavailable(uint64_t peer) override;
     std::vector<SessionDelivery> take_deliveries() override;
     bool shutdown_requested() const override;
     // Called only after the worker is idle; blocked/fatal kernels are ended

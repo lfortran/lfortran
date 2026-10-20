@@ -121,9 +121,10 @@ truncation notice; full diagnostics remain live error output.
 Reservations stay attached to accepted cells and their completion/input
 messages through the local or ZeroMQ outbound queues. Taking a message from
 the evaluator queue does **not** free admission capacity. Capacity is released
-when the transport sends the retained messages, or on actual disconnect.
-Already accepted queued/running executions keep their private destinations
-and outcomes even if later traffic exhausts that origin's budget.
+when the transport sends the retained messages, or on actual loss of the
+origin's completion route. Already accepted queued/running executions keep
+their private destinations and outcomes even if later traffic exhausts that
+origin's budget.
 
 When a delivery budget is full, further traffic from that origin is
 **unadmitted**: no additional cell executes, and there is no guarantee of an
@@ -370,9 +371,20 @@ binary routing identity for each origin. All socket access is on its owning
 reactor thread, not the evaluation/capture worker. Actual runtime READ demand
 goes only to its transport origin. Standard clients may omit input_reply's
 parent: the authenticated route and its one pending prompt supply correlation.
-Other clients' code or input cannot answer that prompt. TCP disconnects are
-tracked through libzmq socket monitors/source descriptors; disconnect of the
-input origin releases the native runtime waiter.
+Other clients' code or input cannot answer that prompt. Independent channel
+lifetimes do not replace the shell origin: losing control leaves accepted
+shell work, its reservations and the other channels intact. A recorded stdin
+disconnect or failed mandatory stdin delivery releases only that origin's
+pending runtime input with an unavailable-input result. Its cell can handle
+IOSTAT and continue, retaining its original shell reply and idle. Later input
+demands check the actual stdin route again, so a reconnected standard client
+needs no special registration or automatic execution retry.
+
+TCP disconnects are tracked through libzmq socket monitors/source descriptors
+and mandatory ROUTER sends. Only losing the shell completion route retires
+an established execution origin and cancels its queued cells; other origins'
+READ and queued work continue. A lost control-only route with no shell work
+can also be retired. No libzmq-owned native descriptors are closed manually.
 
 The wire codec preserves full binary identity stacks, separate original JSON
 frames for signature verification, and separate raw buffers (including empty

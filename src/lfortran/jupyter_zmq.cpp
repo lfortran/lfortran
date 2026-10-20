@@ -315,12 +315,16 @@ class Server final : public SessionAdapter {
             Parts parts;
             std::shared_ptr<void> retention = nullptr;
         };
+        struct Channel {
+            int source = -1;
+            bool seen = false, available = true;
+            std::deque<Output> output;
+        };
         uint64_t id;
         std::string session;
         Parts route;
-        std::array<int, 3> sources{-1, -1, -1};
+        std::array<Channel, 3> links;
         std::string input;
-        std::array<std::deque<Output>, 3> output;
         size_t bytes = 0;
     };
     std::map<std::string, Peer> peers;
@@ -332,6 +336,24 @@ class Server final : public SessionAdapter {
         if (endpoint) endpoint->disconnect(peer);
         for (auto i = peers.begin(); i != peers.end(); ) {
             if (i->second.id == peer) i = peers.erase(i); else ++i;
+        }
+    }
+    void lose_channel(Peer &peer, size_t channel) {
+        // Only shell loss destroys an established execution destination.
+        // A control-only origin has no accepted shell work to preserve.
+        if (channel == 0 || (channel == 1 && !peer.links[0].seen)) {
+            remove(peer.id);
+            return;
+        }
+        auto &link = peer.links[channel];
+        link.source = -1;
+        link.available = false;
+        for (const auto &output : link.output)
+            for (const auto &frame : output.parts) peer.bytes -= frame.size();
+        link.output.clear();
+        if (channel == 2) {
+            peer.input.clear();
+            endpoint->input_unavailable(peer.id);
         }
     }
 public:
@@ -360,10 +382,11 @@ public:
         for (size_t i = 0; i < channels.size(); ++i) {
             auto &router = *routers[i];
             for (int fd : router.disconnected()) {
-                std::vector<uint64_t> gone;
-                for (const auto &p : peers)
-                    if (p.second.sources[i] == fd) gone.push_back(p.second.id);
-                for (auto peer : gone) remove(peer);
+                for (auto p = peers.begin(); p != peers.end();) {
+                    auto current = p++;
+                    if (current->second.links[i].source == fd)
+                        lose_channel(current->second, i);
+                }
             }
             for (size_t n = 0; n < 32 && router.socket.receive(parts); ++n) {
                 try {
@@ -377,7 +400,7 @@ public:
                     auto found = peers.find(key);
                     if (found == peers.end()) {
                         if (i == 2 || peers.size() >= max_peers) continue;
-                        Peer p{next_peer++, session_id, wire.route, {-1,-1,-1}, "", {}, 0};
+                        Peer p{next_peer++, session_id, wire.route, {}, "", 0};
                         found = peers.emplace(key, std::move(p)).first;
                         session.receive(found->second.id, encode(Object{
                             {"lfortran_local_protocol", 1}, {"client_session", session_id},
@@ -385,7 +408,9 @@ public:
                     }
                     auto &peer = found->second;
                     if (peer.session != session_id) continue;
-                    peer.sources[i] = router.socket.source;
+                    auto &link = peer.links[i];
+                    link.source = router.socket.source;
+                    link.seen = link.available = true;
                     if (auto subshell = h.get("subshell_id"))
                         if (!subshell->getAsNull())
                             throw std::runtime_error("Jupyter subshells are not supported");
@@ -410,22 +435,21 @@ public:
                     // without reflecting attacker data or killing other peers.
                 }
             }
-            std::vector<uint64_t> gone;
-            for (auto &entry : peers) {
-                auto &peer = entry.second;
-                auto &output = peer.output[i];
+            for (auto p = peers.begin(); p != peers.end();) {
+                auto &peer = (p++)->second;
+                auto &output = peer.links[i].output;
                 for (size_t n = 0; n < 32 && !output.empty(); ++n) {
                     auto result = router.socket.send(output.front().parts);
                     if (result == Socket::Sent::blocked) break;
                     if (result == Socket::Sent::disconnected) {
-                        gone.push_back(peer.id);
+                        lose_channel(peer, i);
                         break;
                     }
+                    peer.links[i].available = true;
                     for (const auto &frame : output.front().parts) peer.bytes -= frame.size();
                     output.pop_front();
                 }
             }
-            for (auto peer : gone) remove(peer);
         }
         iopub->flush();
     }
@@ -463,15 +487,19 @@ public:
                 [&](const auto &p) { return p.second.id == delivery.peer; });
             if (found == peers.end()) return true;
             size_t i = channel == "shell" ? 0 : channel == "control" ? 1 : 2;
-            if (channel == "stdin") found->second.input = encode(Object(member(m, "header")));
             auto &peer = found->second;
+            auto &link = peer.links[i];
+            // A new actual input demand also probes a reconnected stdin route:
+            // standard clients need not send a registration packet on stdin.
+            if (!link.available && i != 2) return true;
+            if (channel == "stdin") peer.input = encode(Object(member(m, "header")));
             auto parts = codec.encode_message(delivery.envelope, peer.route);
             size_t bytes = 0;
             for (const auto &part : parts) bytes += part.size();
             if (!delivery.retention && (peer.bytes + bytes > max_output ||
-                    peer.output[i].size() >= max_requests)) return true;
+                    link.output.size() >= max_requests)) return true;
             peer.bytes += bytes;
-            peer.output[i].push_back({std::move(parts), delivery.retention});
+            link.output.push_back({std::move(parts), delivery.retention});
         }
         return routed;
     }
