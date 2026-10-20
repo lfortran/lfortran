@@ -2577,6 +2577,13 @@ public:
     // global save variable
     bool is_global_save_enabled = false;
     std::set<std::string> explicit_save_symbols;
+    // SAVE statement names with no implicit type, waiting for their type declaration
+    struct SavedBeforeDeclaration {
+        SymbolTable *scope;
+        std::string name;
+        Location loc;
+    };
+    std::vector<SavedBeforeDeclaration> saved_before_declaration;
 
     // implied do loop nesting
     int idl_nesting_level = 0;
@@ -6931,6 +6938,31 @@ public:
         }
     }
 
+    // Whether a SAVE statement named `name` before its type declaration
+    bool take_saved_before_declaration(const std::string &name) {
+        auto end = std::remove_if(saved_before_declaration.begin(),
+            saved_before_declaration.end(),
+            [&](const SavedBeforeDeclaration &s) {
+                return s.scope == current_scope && s.name == name;
+            });
+        bool found = end != saved_before_declaration.end();
+        saved_before_declaration.erase(end, saved_before_declaration.end());
+        return found;
+    }
+
+    // A SAVE statement name that no type declaration declared has no type
+    void report_saved_without_declaration() {
+        for (const SavedBeforeDeclaration &s : saved_before_declaration) {
+            std::string msg = "Save `" + s.name + "` has no IMPLICIT Type";
+            if (!compiler_options.implicit_typing) {
+                msg += ", use `--implicit-typing`";
+            }
+            diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {
+                Label("", {s.loc})}));
+        }
+        saved_before_declaration.clear();
+    }
+
     // Turn the dummy procedure `sym`, declared by an interface body as
     // `func`, into an optional procedure variable. The interface body `func`
     // is moved to the parent scope under a unique name and becomes the
@@ -8689,28 +8721,15 @@ public:
                                     }
                                     ASR::symbol_t* sym_ = current_scope->get_symbol(sym);
                                     if (!sym_) {
-                                        if (compiler_options.implicit_typing) {
-                                            ASR::ttype_t* type = implicit_dictionary[std::string(1,sym[0])];
-                                            if (type) {
-                                                sym_ = declare_implicit_variable2(x.m_syms[i].loc, sym, ASR::intentType::Local, type);
-                                                ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
-                                                v->m_storage = ASR::storage_typeType::Save;
-                                            } else {
-                                                // there exists an `implicit none` statement
-                                                diag.add(Diagnostic(
-                                                    "Save `" + sym + "` has no IMPLICIT Type",
-                                                    Level::Error, Stage::Semantic, {
-                                                        Label("",{x.base.base.loc})
-                                                    }));
-                                                throw SemanticAbort();
-                                            }
+                                        ASR::ttype_t* type = compiler_options.implicit_typing
+                                            ? implicit_dictionary[std::string(1,sym[0])] : nullptr;
+                                        if (type) {
+                                            sym_ = declare_implicit_variable2(x.m_syms[i].loc, sym, ASR::intentType::Local, type);
+                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
+                                            v->m_storage = ASR::storage_typeType::Save;
                                         } else {
-                                            diag.add(Diagnostic(
-                                                "Save `" + sym + "` has no IMPLICIT Type, use `--implicit-typing`",
-                                                Level::Error, Stage::Semantic, {
-                                                    Label("",{x.base.base.loc})
-                                                }));
-                                            throw SemanticAbort();
+                                            saved_before_declaration.push_back(
+                                                {current_scope, sym, x.m_syms[i].loc});
                                         }
                                     } else {
                                         ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym_);
@@ -10032,7 +10051,9 @@ public:
             for (size_t i=0; i<x.n_syms; i++) {
                 AST::var_sym_t &s = x.m_syms[i];
                 std::string sym = to_lower(s.m_name);
-                bool is_save = (explicit_save_symbols.find(sym) != explicit_save_symbols.end());
+                bool saved_earlier = take_saved_before_declaration(sym);
+                bool is_save = saved_earlier
+                    || (explicit_save_symbols.find(sym) != explicit_save_symbols.end());
                 bool implicit_save = false;
                 bool is_compile_time = false;
                 bool is_implicitly_declared = false;

@@ -675,6 +675,7 @@ public:
         // followed by a module or a main program.
         add_overloaded_procedures();
         check_pending_instantiation_restrictions();
+        report_saved_without_declaration();
         global_scope = nullptr;
         tmp = tmp0;
         if (pre_declared_array_dims.size() > 0) {
@@ -7757,6 +7758,7 @@ void BlockInterfaceVisitor::finalize(Allocator &al, SetChar &module_dependencies
         std::vector<std::pair<ASR::symbol_t*, ASR::symbol_t*>> &construct_variable_pointers)
 {
     v->finalize_interfaces();
+    v->report_saved_without_declaration();
     for (size_t i = 0; i < v->current_module_dependencies.size(); i++) {
         module_dependencies.push_back(al, v->current_module_dependencies[i]);
     }
