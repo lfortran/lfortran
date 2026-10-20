@@ -409,8 +409,16 @@ ASR::array_index_t* GpuDuplicator::duplicate_indices(ASR::ArrayItem_t *x,
                 ok = false;
             } else if (map->shift[i]) {
                 ASRUtils::ExprStmtDuplicator d(al);
-                idx.m_right = gpu_int_add(al, idx.m_right,
-                    d.duplicate_expr(map->shift[i]));
+                ASR::expr_t *shift = d.duplicate_expr(map->shift[i]);
+                // In the kind of the subscript (integer(8) indices).
+                ASR::ttype_t *t = ASRUtils::expr_type(idx.m_right);
+                if (ASRUtils::extract_kind_from_ttype_t(t)
+                        != ASRUtils::extract_kind_from_ttype_t(
+                            ASRUtils::expr_type(shift))) {
+                    ASRUtils::ASRBuilder b(al, idx.loc);
+                    shift = b.i2i_t(shift, ASRUtils::duplicate_type(al, t));
+                }
+                idx.m_right = gpu_int_add(al, idx.m_right, shift);
             }
         }
         args.push_back(al, idx);

@@ -20,6 +20,30 @@ contains
         end do
     end subroutine
 
+    ! The same through a pure function of the whole array, inlined with
+    ! the subscripts shifted by the lower bound of the actual argument.
+    pure real function centred(a, i, m) result(r)
+        real, intent(in) :: a(:)
+        integer(8), intent(in) :: i, m
+        if (i == 1) then
+            r = a(2) - a(1)
+        else if (i == m) then
+            r = a(m) - a(m - 1)
+        else
+            r = 0.5 * (a(i + 1) - a(i - 1))
+        end if
+    end function
+
+    subroutine line_call(a, d, m)
+        integer(8), intent(in) :: m
+        real, intent(in) :: a(:)
+        real, intent(out) :: d(:)
+        integer(8) :: i
+        do concurrent (i = 1:m)
+            d(i) = centred(a, i, m)
+        end do
+    end subroutine
+
     ! Reads its input at two offsets along the outer dimension j: jammed.
     subroutine smooth(a, b, n, m)
         integer(8), intent(in) :: n, m
@@ -72,6 +96,13 @@ program gpu_metal_525
         if (abs(y(m) - (x(m) - x(m - 1))) > 1e-3) error stop 2
         do i = 2, m - 1
             if (abs(y(i) - 2 * i) > 1e-3) error stop 3
+        end do
+        y = 0
+        call line_call(x, y, m)
+        if (abs(y(1) - 3) > 1e-4) error stop 5
+        if (abs(y(m) - (x(m) - x(m - 1))) > 1e-3) error stop 6
+        do i = 2, m - 1
+            if (abs(y(i) - 2 * i) > 1e-3) error stop 7
         end do
         deallocate(x, y)
     end do
