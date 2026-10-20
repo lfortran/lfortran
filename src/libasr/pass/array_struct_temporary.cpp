@@ -3622,7 +3622,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                     type_args.push_back(al, arg);
                 }
                 ASRUtils::ReplaceFunctionParamWithArg replacer(
-                    al, type_args.p, type_args.size());
+                    al, type_args.p, type_args.size(), ASRUtils::get_function(x->m_name));
                 reinstantiate_result_type(return_type, declared_type, replacer);
                 class NormalizeMetadata:
                     public FunctionResultMetadataReplacer<NormalizeMetadata> {
