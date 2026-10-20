@@ -33,8 +33,8 @@ program real128_intrinsic_math_02
     call check(-atan2pi(-one, -one), 3 / (4 * one), 15)
     ! sin(pi) with pi rounded to binary128 is about 8.7e-35; a pi rounded
     ! to binary64 would give about 1.2e-16.
-    if (abs(sinpi(one)) > 1e-33_qp) error stop 16
-    if (abs(cospi(half)) > 1e-33_qp) error stop 17
+    if (.not. (abs(sinpi(one)) <= 1e-33_qp)) error stop 16
+    if (.not. (abs(cospi(half)) <= 1e-33_qp)) error stop 17
 
     call check(exp2(half), sqrt(two), 20)
     call check(exp2(zero + 10), 1024 + zero, 21)
@@ -65,7 +65,7 @@ contains
     subroutine check(x, ref, code)
         real(qp), intent(in) :: x, ref
         integer, intent(in) :: code
-        if (abs(x - ref) > 4 * epsilon(ref) * abs(ref)) then
+        if (.not. (abs(x - ref) <= 4 * epsilon(ref) * abs(ref))) then
             print *, code, x, ref
             error stop code
         end if

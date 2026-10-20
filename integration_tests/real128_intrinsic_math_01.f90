@@ -112,7 +112,7 @@ contains
     subroutine check(x, ref, code)
         real(qp), intent(in) :: x, ref
         integer, intent(in) :: code
-        if (abs(x - ref) > 4 * epsilon(ref) * abs(ref)) then
+        if (.not. (abs(x - ref) <= 4 * epsilon(ref) * abs(ref))) then
             print *, code, x, ref
             error stop code
         end if
