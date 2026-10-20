@@ -1165,7 +1165,6 @@ public:
         // The variables they assign, and those that designators they assign
         // start from (`x` for `x(k) = ...` or `x%c = ...`).
         std::set<ASR::symbol_t*> assigned_in_loops, based_in_loops;
-        bool other_unknown = false;
         {
             ASR::stmt_t *child_a = body[i], *child_b = body[i + 1];
             ASR::stmt_t **list = body;
@@ -1218,6 +1217,8 @@ public:
                             &ba_all);
                     }
                 }
+                // A statement with effects the collections do not see
+                // (unk) ends the chain, so that the levels kept have none.
                 bool touched = unk;
                 for (auto &k2 : xkeys) {
                     if (gpu_key_touched(wa, k2) || gpu_key_touched(ra, k2)) {
@@ -1290,7 +1291,6 @@ public:
                 // The consumer's bounds are fixed only when they do not
                 // read the loop's variable either.
                 assigned_in_loops.insert(lv);
-                other_unknown = other_unknown || unk;
                 loops.push_back(l);
                 loop_stmts.push_back(an.stmt);
                 // One level up the loop itself is the child.
@@ -1366,7 +1366,7 @@ public:
             }
             for (auto &k : renamed) {
                 swap[k] = gpu_loop_transform_enabled(po, GpuLoopSwap)
-                    && bounds_fixed && !other_unknown
+                    && bounds_fixed
                     && !gpu_key_touched(other_writes, k)
                     && !gpu_key_touched(other_reads, k);
             }
