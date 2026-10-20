@@ -1913,7 +1913,10 @@ ASR::symbol_t* get_associated_symbol(ASR::symbol_t* sym) {
             ASR::Associate_t* assoc = ASR::down_cast<ASR::Associate_t>(block->m_body[i]);
             if (ASR::is_a<ASR::Var_t>(*assoc->m_target) &&
                     ASR::down_cast<ASR::Var_t>(assoc->m_target)->m_v == sym) {
-                selector_sym = extract_symbol(assoc->m_value);
+                // A whole-array selector that is not a descriptor array is
+                // bound through an ArrayPhysicalCast.
+                selector_sym = extract_symbol(
+                    ASRUtils::get_past_array_physical_cast(assoc->m_value));
                 break;
             }
         }
