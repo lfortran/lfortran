@@ -1715,6 +1715,35 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
         }
     }
 
+    // The kernel's copies of procedures and every procedure they contain,
+    // contained ones first.
+    std::vector<ASR::Function_t*> kernel_funcs;
+    std::function<void(SymbolTable*)> collect_funcs =
+            [&](SymbolTable *scope) {
+        for (auto &item : scope->get_scope()) {
+            if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
+            ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(
+                item.second);
+            collect_funcs(f->m_symtab);
+            kernel_funcs.push_back(f);
+        }
+    };
+    collect_funcs(kernel_scope);
+
+    // A procedure of a module read from its module file is an external
+    // declaration on the host (ExternalUndefined), which the passes need
+    // not prepare for code generation: they drop the values of its
+    // variables, the named constants included. Its copy in the kernel,
+    // and every procedure the copy contains, is the definition the
+    // device code is generated from.
+    for (ASR::Function_t *f : kernel_funcs) {
+        ASR::FunctionType_t *ftype = ASRUtils::get_FunctionType(f);
+        if (ftype->m_abi == ASR::abiType::ExternalUndefined
+                && ftype->m_deftype == ASR::deftypeType::Implementation) {
+            ftype->m_abi = ASR::abiType::Source;
+        }
+    }
+
     // Fix dangling variable references in duplicated kernel functions.
     // When a contained function references variables from the original
     // enclosing scope (e.g., a program-scope Parameter used by a
@@ -1723,10 +1752,7 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
     // For Parameter variables, clone them into the function's scope.
     // For other variables, add them as extra kernel parameters.
     {
-        for (auto &item : kernel_scope->get_scope()) {
-            if (!ASR::is_a<ASR::Function_t>(*item.second)) continue;
-            ASR::Function_t *func = ASR::down_cast<ASR::Function_t>(
-                item.second);
+        for (ASR::Function_t *func : kernel_funcs) {
             DanglingVarCollector dvc(func->m_symtab);
             for (size_t bi = 0; bi < func->n_body; bi++) {
                 dvc.visit_stmt(*func->m_body[bi]);
@@ -1742,13 +1768,17 @@ void GpuOffloadVisitor::visit_OMPRegion(const ASR::OMPRegion_t &region) {
                     ASR::down_cast<ASR::Variable_t>(resolved_sym);
                 if (orig_var->m_storage ==
                         ASR::storage_typeType::Parameter) {
+                    // Its value, rather than the expression it was
+                    // declared with, which names other constants of the
+                    // original scope.
                     ASR::symbol_t *new_var =
                         ASR::down_cast<ASR::symbol_t>(
                             ASRUtils::make_Variable_t_util(al, loc,
                                 func->m_symtab, s2c(al, name),
                                 nullptr, 0,
                                 ASR::intentType::Local,
-                                orig_var->m_symbolic_value,
+                                orig_var->m_value ? orig_var->m_value
+                                    : orig_var->m_symbolic_value,
                                 orig_var->m_value,
                                 ASR::storage_typeType::Parameter,
                                 ASRUtils::duplicate_type(al,
