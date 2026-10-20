@@ -633,47 +633,34 @@ lf_float128 __divtf3_lf_impl(lf_float128 a, lf_float128 b) {
     if (pa.is_zero) return f128_make_zero(rsign);
     if (pb.is_inf)  return f128_make_zero(rsign);
 
-    /* Long division via Newton-Raphson reciprocal approximation:
-     * q = a/b = a * (1/b)
-     * Start from double-precision reciprocal, refine with 3 NR steps
-     * (each step doubles precision; 53 + 2*53 = 159 > 113 bits after 2 steps,
-     *  a third step gives ~200 bits sufficient for correct rounding).
-     *
-     * NR step: r_{n+1} = r_n * (2 - b * r_n)
-     */
-
-    /* Initial approximation: 1/b in double */
+    /* Normalise subnormal operands so that both significands lie in
+     * [2^112, 2^113). */
     int32_t exp_a = pa.exp, exp_b = pb.exp;
-    u128  mant_a  = pa.mant, mant_b = pb.mant;
+    u128 mant_a = pa.mant, mant_b = pb.mant;
+    int nsh = u128_clz(mant_a) - 15;
+    mant_a = u128_shl(mant_a, nsh);
+    exp_a -= nsh;
+    nsh = u128_clz(mant_b) - 15;
+    mant_b = u128_shl(mant_b, nsh);
+    exp_b -= nsh;
 
-    /* Scale both to a common exponent for the reciprocal computation.
-     * We compute (mant_a / mant_b) as a 113-bit fixed-point value,
-     * then adjust the exponent. */
+    /* Scale the dividend so that mant_b <= mant_a < 2*mant_b, which puts
+     * the quotient mant_a/mant_b in [1, 2) with its exponent rexp. */
+    if (u128_lt(mant_a, mant_b)) {
+        mant_a = u128_shl1(mant_a);
+        exp_a--;
+    }
+    int32_t rexp = exp_a - exp_b;
 
-    /* Use 256-bit shifted dividend for accuracy:
-     * Shift mant_a left by 112 bits into a 256-bit dividend.
-     * Divide by mant_b (113 bits) to get a 113-bit quotient + remainder. */
-
-    /* Represent dividend as (mant_a << 112) */
-    /* Long division: quotient = (div_hi:div_lo) / mant_b
-     * We need 113 bits of quotient. Use iterative bit-by-bit or
-     * restoring division with 128-bit intermediates. */
-
-    /* Simpler: use the compiler's 128-bit division where possible.
-     * div_hi < mant_b (since mant_a ~ mant_b in magnitude for normalised inputs),
-     * so we can use: quotient = (div_hi * 2^64 + div_hi_lo) / mant_b
-     * iteratively in 64-bit chunks.
-     *
-     * Actually, for our case mant_a and mant_b are both in [2^112, 2^113).
-     * So mant_a/mant_b ∈ [0.5, 2).
-     * After one shift: (mant_a << 112) / mant_b gives a 112-bit or 113-bit quotient.
-     */
-
-    /* Method: 113-step binary restoring division */
-    u128 remainder = mant_a;
-    u128 quotient  = u128_zero();
-    /* We want quotient = floor(mant_a * 2^113 / mant_b), giving 113 bits */
-    for (int i = 0; i < 113; i++) {
+    /* Restoring division producing the 113 significand bits followed by
+     * `guard` extra bits: quotient = floor(mant_a * 2^(112+guard) / mant_b),
+     * with its leading 1 in bit 112+guard. The leading quotient bit is 1 by
+     * the scaling above; afterwards the remainder stays below mant_b, so the
+     * shifted remainder stays below 2^114. */
+    const int guard = 2;
+    u128 remainder = u128_sub(mant_a, mant_b);
+    u128 quotient  = u128_one();
+    for (int i = 0; i < 112 + guard; i++) {
         remainder = u128_shl1(remainder);
         quotient  = u128_shl1(quotient);
         if (u128_gte(remainder, mant_b)) {
@@ -681,12 +668,37 @@ lf_float128 __divtf3_lf_impl(lf_float128 a, lf_float128 b) {
             quotient  = u128_or(quotient, u128_one());
         }
     }
-    /* Round: if remainder*2 >= mant_b, round up */
-    if (u128_gte(u128_shl1(remainder), mant_b)) quotient = u128_inc(quotient);
+    int sticky = !u128_is_zero(remainder);
 
-    int32_t rexp = exp_a - exp_b - 1;  /* -1 because quotient has an extra factor of 2 */
+    /* Number of low quotient bits to round off: the guard bits, plus the
+     * bits that fall below the least significant subnormal bit. Subnormal
+     * results are rounded here, in a single step, rather than by
+     * f128_pack_parts, which expects an already rounded significand. */
+    int32_t drop = guard;
+    if (rexp < -16382) drop += -16382 - rexp;
+    /* Dropping all 115 quotient bits and more leaves less than half of the
+     * smallest subnormal: round to zero. */
+    if (drop > 115) return f128_make_zero(rsign);
 
-    return f128_pack_parts(rsign, rexp, quotient);
+    /* Round to nearest, ties to even. */
+    u128 rest = u128_and(quotient, u128_sub(u128_shl(u128_one(), drop), u128_one()));
+    u128 half = u128_shl(u128_one(), drop - 1);
+    u128 mant = u128_shr(quotient, drop);
+    if (u128_gt(rest, half) ||
+        (u128_eq(rest, half) && (sticky || (u128_lo(mant) & 1)))) {
+        mant = u128_inc(mant);
+    }
+
+    if (rexp < -16382) {
+        /* Subnormal result: mant holds the stored significand bits. If
+         * rounding carried into bit 112, that bit becomes biased exponent 1,
+         * the smallest normal number. */
+        return f128_const(rsign, (int32_t)(u128_hi(mant) >> 48),
+                          u128_hi(mant), u128_lo(mant));
+    }
+    /* Normal result (mant is in [2^112, 2^113]); f128_pack_parts handles a
+     * rounding carry to 2^113 and overflow to infinity. */
+    return f128_pack_parts(rsign, rexp, mant);
 }
 
 /* ========================================================================
