@@ -24,14 +24,23 @@ namespace LCompilers {
  * finds the tests that compare one loop index with an expression that
  * differs from the loop's lower or upper bound by a small constant, and
  * picks, for each dimension, the smallest number of iterations at each end
- * outside of which all of them have one value. The nest becomes two:
+ * outside of which all of them have one value. The iterations become two
+ * sets, run by one nest:
  *
  * * the interior, over the iterations inside, where every test that the
  *   affine analysis (gpu_affine.h) proves to have one value there is
  *   replaced by the branch it takes: straight-line code;
  * * the frame, the iterations outside the interior, numbered by one index
- *   and mapped back to the original indices (bands along the first
+ *   and mapped back to indices of their own (bands along the first
  *   dimension, then strips along the second), which runs the original body.
+ *
+ * The frame's iterations are packed as extra rows in front of the
+ * interior's outer dimension. They are few, and each runs the long general
+ * body; in a launch of their own they would leave the device mostly idle
+ * for as long as one of them takes, while in front of the interior they
+ * start first and run alongside it. The nest keeps the original loop
+ * indices for the interior, so they still decide which index is
+ * contiguous in the threads of a launch.
  *
  * When the domain is too small to have an interior the original nest runs
  * instead. Nests of one and two dimensions are split; the tests that remain
@@ -385,11 +394,23 @@ public:
                     GpuAffine sw = rest.scaled(-coef);
                     GpuAffine from_lo = sw.plus(lo[dim], -1);
                     GpuAffine from_hi = hi[dim].plus(sw, -1);
-                    if (from_lo.is_constant() && from_lo.constant >= 0
-                            && from_lo.constant <= max_offset) {
+                    // The nearer end, when both are a constant away.
+                    bool near_lo = from_lo.is_constant()
+                        && from_lo.constant >= 0
+                        && from_lo.constant <= max_offset;
+                    bool near_hi = from_hi.is_constant()
+                        && from_hi.constant >= 0
+                        && from_hi.constant <= max_offset;
+                    if (near_lo && near_hi) {
+                        if (from_lo.constant <= from_hi.constant) {
+                            near_hi = false;
+                        } else {
+                            near_lo = false;
+                        }
+                    }
+                    if (near_lo) {
                         a[dim] = std::max(a[dim], from_lo.constant + 1);
-                    } else if (from_hi.is_constant() && from_hi.constant >= 0
-                            && from_hi.constant <= max_offset) {
+                    } else if (near_hi) {
                         b[dim] = std::max(b[dim], from_hi.constant + 1);
                     }
                 }
@@ -410,6 +431,9 @@ public:
         };
         auto count_folds = [&](const std::vector<int64_t> &aa,
                 const std::vector<int64_t> &bb) {
+            // An interior that is empty for every value of the bounds folds
+            // everything and is of no use.
+            if (gpu_affine_infeasible(interior_facts(aa, bb))) return 0;
             GpuAffineBuilder fb = base;
             ASR::stmt_t **p = bp;
             size_t pn = bn;
@@ -473,32 +497,35 @@ public:
         auto hi_e = [&](size_t d) { return ed.duplicate_expr(nest.ends[d]); };
         // extent(d) = hi - lo + 1
         auto extent = [&](size_t d) { return add(sub(hi_e(d), lo_e(d)), c(1)); };
+        // The interior: is(d) .. ie(d).
+        auto is = [&](size_t d) { return add(lo_e(d), c(a[d])); };
+        auto ie = [&](size_t d) { return sub(hi_e(d), c(b[d])); };
 
-        std::vector<ASR::expr_t*> is, ie;
-        for (size_t d = 0; d < rank; d++) {
-            is.push_back(add(lo_e(d), c(a[d])));
-            ie.push_back(sub(hi_e(d), c(b[d])));
-        }
-        Vec<ASR::stmt_t*> ibody;
-        ibody.reserve(al, bn);
-        for (size_t k = 0; k < bn; k++) ibody.push_back(al, bp[k]);
-        ASR::stmt_t *interior = gpu_loop_nest_with_body(al, nest, is, ie, ibody);
-
-        // The frame: one index t over the iterations outside the interior.
+        // The frame: one index t over the iterations outside the interior,
+        // mapped to indices of their own.
         SymbolTable *fn_scope = scope;
         while (fn_scope->asr_owner && ASR::is_a<ASR::symbol_t>(
                 *fn_scope->asr_owner) && ASR::is_a<ASR::Block_t>(
                     *ASR::down_cast<ASR::symbol_t>(fn_scope->asr_owner))) {
             fn_scope = fn_scope->parent;
         }
-        ASR::ttype_t *it = ASRUtils::expr_type(nest.starts[0]);
-        ASR::symbol_t *tsym = ASR::down_cast<ASR::Var_t>(bld.Variable(
-            fn_scope, fn_scope->get_unique_name("__gpu_frame", false),
-            ASRUtils::duplicate_type(al, it), ASR::intentType::Local))->m_v;
+        auto new_index = [&](const std::string &name, ASR::ttype_t *type) {
+            return ASR::down_cast<ASR::Var_t>(bld.Variable(fn_scope,
+                fn_scope->get_unique_name(name, false),
+                ASRUtils::duplicate_type(al, type),
+                ASR::intentType::Local))->m_v;
+        };
+        ASR::symbol_t *tsym = new_index("__gpu_frame",
+            ASRUtils::expr_type(nest.starts[0]));
         auto t = [&]() { return bld.Var(tsym); };
-        auto var = [&](size_t d) { return bld.Var(nest.vars[d]); };
+        std::vector<ASR::symbol_t*> fvars;
+        for (size_t d = 0; d < rank; d++) {
+            fvars.push_back(new_index(std::string("__gpu_frame_")
+                + ASRUtils::symbol_name(nest.vars[d]),
+                ASRUtils::symbol_type(nest.vars[d])));
+        }
         auto assign = [&](size_t d, ASR::expr_t *val) {
-            return bld.Assignment(var(d), val);
+            return bld.Assignment(bld.Var(fvars[d]), val);
         };
         std::vector<ASR::stmt_t*> decode;
         ASR::expr_t *count_e;
@@ -546,20 +573,53 @@ public:
                 {bld.If(bld.Lt(t(), ed.duplicate_expr(bands)),
                     bottom, strips)}));
         }
-        Vec<ASR::stmt_t*> fbody;
-        fbody.reserve(al, decode.size() + inner->n_body);
-        for (auto *s : decode) fbody.push_back(al, s);
+        // The frame runs the original body on its own indices.
+        std::vector<ASR::stmt_t*> run = decode;
         {
             GpuDuplicator d2(al, scope);
             d2.added = &added;
+            for (size_t d = 0; d < rank; d++) {
+                d2.symbol_map[nest.vars[d]] = fvars[d];
+            }
             Vec<ASR::stmt_t*> orig;
             d2.duplicate_body(inner->m_body, inner->n_body, orig);
             if (!d2.ok) return rollback();
-            for (size_t k = 0; k < orig.n; k++) fbody.push_back(al, orig[k]);
+            for (size_t k = 0; k < orig.n; k++) run.push_back(orig[k]);
         }
-        std::vector<ASR::symbol_t*> priv(nest.vars.begin(), nest.vars.end());
-        ASR::stmt_t *frame = gpu_frame_nest(al, nest, tsym, c(0),
-            sub(count_e, c(1)), fbody, priv);
+
+        // One launch: the frame's iterations come first, as extra rows of
+        // the interior's outer dimension (whole rows of its inner one), so
+        // that they start first and run alongside the interior instead of
+        // after it. The nest keeps the original indices, which are those of
+        // the interior: they decide how the iterations map to threads.
+        auto width = [&]() {
+            return rank == 1 ? c(1) : add(sub(ie(1), is(1)), c(1));
+        };
+        // The rows of frame iterations: ceil(count / width).
+        auto first_row = [&]() {
+            return sub(is(0), div(add(ed.duplicate_expr(count_e),
+                sub(width(), c(1))), width()));
+        };
+        std::vector<ASR::expr_t*> ms, me;
+        for (size_t d = 0; d < rank; d++) {
+            ms.push_back(d == 0 ? first_row() : is(d));
+            me.push_back(ie(d));
+        }
+        // t = (v0 - first row) * width + (v1 - interior start)
+        ASR::expr_t *tv = mul(sub(bld.Var(nest.vars[0]), first_row()),
+            width());
+        if (rank == 2) tv = add(tv, sub(bld.Var(nest.vars[1]), is(1)));
+        std::vector<ASR::stmt_t*> frame_part = {bld.Assignment(t(), tv),
+            bld.If(bld.Lt(t(), ed.duplicate_expr(count_e)), run, {})};
+        std::vector<ASR::stmt_t*> interior_part(bp, bp + bn);
+        Vec<ASR::stmt_t*> mbody;
+        mbody.reserve(al, 1);
+        mbody.push_back(al, bld.If(bld.Lt(bld.Var(nest.vars[0]), is(0)),
+            frame_part, interior_part));
+        std::vector<ASR::symbol_t*> privates(fvars.begin(), fvars.end());
+        privates.push_back(tsym);
+        ASR::stmt_t *merged = gpu_loop_nest_with_body(al, nest, ms, me,
+            mbody, privates);
 
         // Split only when the domain has an interior.
         ASR::expr_t *has_interior = nullptr;
@@ -568,43 +628,7 @@ public:
             has_interior = has_interior ? bld.And(has_interior, t1) : t1;
         }
         splits++;
-        return bld.If(has_interior, {interior, frame}, {stmt});
-    }
-
-    // A nest of one loop `t = start, end` with the clauses of `nest`, its
-    // loop variables private.
-    static ASR::stmt_t *gpu_frame_nest(Allocator &al, const GpuLoopNest &nest,
-            ASR::symbol_t *t, ASR::expr_t *start, ASR::expr_t *end,
-            Vec<ASR::stmt_t*> &body,
-            const std::vector<ASR::symbol_t*> &privates) {
-        Location loc = nest.region->base.base.loc;
-        ASR::do_loop_head_t head;
-        head.loc = loc;
-        head.m_v = ASRUtils::EXPR(ASR::make_Var_t(al, loc, t));
-        head.m_start = start;
-        head.m_end = end;
-        head.m_increment = nullptr;
-        Vec<ASR::stmt_t*> one;
-        one.reserve(al, 1);
-        one.push_back(al, ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr,
-            head, body.p, body.n, nullptr, 0)));
-        Vec<ASR::omp_clause_t*> clauses;
-        clauses.reserve(al, 2);
-        clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
-            ASR::make_OMPIndependent_t(al, loc)));
-        Vec<ASR::expr_t*> vars;
-        vars.reserve(al, privates.size() + nest.privates.size());
-        for (ASR::symbol_t *s : privates) {
-            vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, s)));
-        }
-        for (ASR::symbol_t *s : nest.privates) {
-            vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, s)));
-        }
-        clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
-            ASR::make_OMPPrivate_t(al, loc, vars.p, vars.n)));
-        return ASRUtils::STMT(ASR::make_OMPRegion_t(al, loc,
-            ASR::omp_region_typeType::ParallelDo, clauses.p, clauses.n,
-            one.p, one.n, ASR::exec_targetType::ExecDevice));
+        return bld.If(has_interior, {merged}, {stmt});
     }
 
     void visit_body(SymbolTable *scope, ASR::stmt_t **&body, size_t &n) {

@@ -187,7 +187,8 @@ bool gpu_loop_nest(ASR::stmt_t *s, GpuLoopNest &nest) {
 
 ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
         const std::vector<ASR::expr_t*> &starts,
-        const std::vector<ASR::expr_t*> &ends, Vec<ASR::stmt_t*> &body) {
+        const std::vector<ASR::expr_t*> &ends, Vec<ASR::stmt_t*> &body,
+        const std::vector<ASR::symbol_t*> &extra_privates) {
     ASR::stmt_t **cur_body = body.p;
     size_t cur_n = body.n;
     for (size_t k = nest.loops.size(); k-- > 0;) {
@@ -208,11 +209,39 @@ ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
         cur_n = 1;
     }
     Vec<ASR::omp_clause_t*> clauses;
-    clauses.reserve(al, nest.region->n_clauses);
+    clauses.reserve(al, nest.region->n_clauses + 1);
+    bool have_private = false;
     ASRUtils::ExprStmtDuplicator dup(al);
     for (size_t i = 0; i < nest.region->n_clauses; i++) {
-        clauses.push_back(al, dup.duplicate_omp_clause(
-            nest.region->m_clauses[i]));
+        ASR::omp_clause_t *c = nest.region->m_clauses[i];
+        if (ASR::is_a<ASR::OMPPrivate_t>(*c)) {
+            ASR::OMPPrivate_t *p = ASR::down_cast<ASR::OMPPrivate_t>(c);
+            Vec<ASR::expr_t*> vars;
+            vars.reserve(al, p->n_vars + extra_privates.size());
+            for (size_t k = 0; k < p->n_vars; k++) {
+                vars.push_back(al, dup.duplicate_expr(p->m_vars[k]));
+            }
+            for (ASR::symbol_t *s : extra_privates) {
+                vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al,
+                    c->base.loc, s)));
+            }
+            clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+                ASR::make_OMPPrivate_t(al, c->base.loc, vars.p, vars.n)));
+            have_private = true;
+        } else {
+            clauses.push_back(al, dup.duplicate_omp_clause(c));
+        }
+    }
+    if (!have_private && !extra_privates.empty()) {
+        Vec<ASR::expr_t*> vars;
+        vars.reserve(al, extra_privates.size());
+        for (ASR::symbol_t *s : extra_privates) {
+            vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al,
+                nest.region->base.base.loc, s)));
+        }
+        clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+            ASR::make_OMPPrivate_t(al, nest.region->base.base.loc, vars.p,
+                vars.n)));
     }
     return ASRUtils::STMT(ASR::make_OMPRegion_t(al,
         nest.region->base.base.loc, nest.region->m_region, clauses.p,

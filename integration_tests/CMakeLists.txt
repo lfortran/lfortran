@@ -6599,6 +6599,7 @@ RUN(NAME gpu_kernel_source_30 LABELS gfortran llvm cuda_cpu cuda)
 RUN(NAME gpu_kernel_source_20 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_kernel_source_21 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-loop-transforms=fuse)
 RUN(NAME gpu_kernel_source_22 LABELS gfortran llvm metal cuda_cpu cuda)
+RUN(NAME gpu_kernel_source_17 LABELS gfortran llvm metal cuda_cpu cuda)
 
 RUN(NAME real128_arith_01 LABELS gfortran llvm)
 RUN(NAME real128_arith_02 LABELS gfortran llvm)

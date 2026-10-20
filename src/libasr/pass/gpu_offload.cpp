@@ -73,7 +73,27 @@ public:
                 return;
             }
         }
+        // A subscript that names no loop index (one the body computes from
+        // them, such as the indices of the frame index-set splitting packs
+        // into the nest, gpu_index_set_split.cpp) says nothing about which
+        // index is contiguous.
+        if (index && !names_loop_variable(index)) return;
         has_unrecognized_store = true;
+    }
+
+    bool names_loop_variable(ASR::expr_t *e) {
+        struct Find : public ASR::BaseWalkVisitor<Find> {
+            const std::set<ASR::symbol_t*> *vars;
+            bool found = false;
+            void visit_Var(const ASR::Var_t &x) {
+                if (vars->count(ASRUtils::symbol_get_past_external(x.m_v))) {
+                    found = true;
+                }
+            }
+        } f;
+        f.vars = &loop_variables;
+        f.visit_expr(*e);
+        return f.found;
     }
 
     void note_call_args(ASR::symbol_t *name, ASR::call_arg_t *args,

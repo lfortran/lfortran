@@ -59,10 +59,11 @@ struct GpuLoopNest {
 bool gpu_loop_nest(ASR::stmt_t *s, GpuLoopNest &nest);
 
 // A new nest with the loop heads and clauses of `nest` and `body` as its
-// innermost body.
+// innermost body, with `extra_privates` added to its private variables.
 ASR::stmt_t *gpu_loop_nest_with_body(Allocator &al, const GpuLoopNest &nest,
     const std::vector<ASR::expr_t*> &starts,
-    const std::vector<ASR::expr_t*> &ends, Vec<ASR::stmt_t*> &body);
+    const std::vector<ASR::expr_t*> &ends, Vec<ASR::stmt_t*> &body,
+    const std::vector<ASR::symbol_t*> &extra_privates = {});
 
 // A parallel loop nest assigned to the device that copies every element of
 // the array `src` into the array `dest` of the same bounds, with index
