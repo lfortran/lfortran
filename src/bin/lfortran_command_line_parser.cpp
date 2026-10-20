@@ -354,7 +354,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_option("--gpu-arch", compiler_options.gpu_arch, "GPU architecture to compile device code for with --gpu=cuda (e.g. sm_120); defaults to the GPUs of the compiling machine")->group(group_backend_codegen_options);
         app.add_flag("--gpu-offload-omp-loops", compiler_options.po.gpu_offload_omp_loops, "Offload an `!$omp parallel do` loop onto the GPU as well")->group(group_backend_codegen_options);
         app.add_flag("--gpu-allow-cpu-fallback", compiler_options.po.gpu_allow_cpu_fallback, "Run a parallel loop that uses a construct the selected GPU does not support (real(8) on Metal, real(10) or real(16), or input/output) on the CPU with a warning instead of failing compilation")->group(group_backend_codegen_options);
-        app.add_option("--gpu-loop-transforms", compiler_options.po.gpu_loop_transforms, "Loop transformations applied to device loops before offloading: all, none, or a comma separated list of fuse, swap, split")->capture_default_str()->group(group_backend_codegen_options);
+        app.add_option("--gpu-loop-transforms", compiler_options.po.gpu_loop_transforms, "Loop transformations applied to device loops before offloading: all, none, or a comma separated list of fuse, swap, split, jam")->capture_default_str()->group(group_backend_codegen_options);
 
         // Symbol and lookup-related flags
         app.add_flag("--lookup-name", compiler_options.lookup_name, "Lookup a name specified by --line & --column in the ASR")->group(group_symbol_lookup_options);

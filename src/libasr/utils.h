@@ -92,8 +92,8 @@ struct PassOptions {
     bool gpu_kernel_source_only = false;
     // The loop transformations applied to parallel loops assigned to the
     // device before they are offloaded (gpu_loop_fusion.cpp and the passes
-    // after it): "all", "none", or a comma separated list of `fuse`, `swap`
-    // and `split`.
+    // after it): "all", "none", or a comma separated list of `fuse`, `swap`,
+    // `split` and `jam`.
     std::string gpu_loop_transforms = "all";
     bool time_report = false;
     bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;

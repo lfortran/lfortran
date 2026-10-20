@@ -66,6 +66,7 @@ struct GpuAffine {
     bool operator==(const GpuAffine &o) const {
         return constant == o.constant && terms == o.terms;
     }
+    std::string str() const;
 };
 
 // Each constraint is `e >= 0`.

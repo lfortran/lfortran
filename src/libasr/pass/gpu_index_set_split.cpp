@@ -61,7 +61,9 @@ class Split {
 public:
     Allocator &al;
     int splits = 0;
-    Split(Allocator &al_) : al(al_) {}
+    bool jam_enabled;
+    Split(Allocator &al_, bool jam_enabled_) : al(al_),
+        jam_enabled(jam_enabled_) {}
 
     // Walks a statement list in order, keeping the affine values of the
     // integer scalars assigned once, and calls `on_if` for every IF.
@@ -252,6 +254,45 @@ public:
             n = out.n;
         }
         return folded;
+    }
+
+    // How many iterations of the outer dimension of a nest of two
+    // dimensions one thread of the interior runs (unroll-and-jam): three
+    // when the body reads some array at two or more offsets along that
+    // dimension, so that neighbouring iterations read and compute the same
+    // values (the fluxes of a face between two cells), and one otherwise.
+    // Three rows share half of what they would each compute along that
+    // dimension with a fourth-order stencil while keeping the registers of
+    // the copies below spilling (measured: 2 and 4 rows are slower).
+    int64_t jam_factor(ASR::stmt_t **body, size_t n,
+            const GpuLoopNest &nest, GpuAffineBuilder &b) {
+        if (!jam_enabled) return 1;
+        std::string v0 = var_key(nest.vars[0]);
+        std::map<std::string, std::set<std::string>> offsets;
+        struct Reads : public ASRUtils::BlockBodyWalkVisitor<Reads> {
+            std::vector<ASR::ArrayItem_t*> items;
+            void visit_ArrayItem(const ASR::ArrayItem_t &x) {
+                items.push_back(const_cast<ASR::ArrayItem_t*>(&x));
+                ASRUtils::BlockBodyWalkVisitor<Reads>::visit_ArrayItem(x);
+            }
+        } r;
+        for (size_t i = 0; i < n; i++) r.visit_stmt(*body[i]);
+        for (ASR::ArrayItem_t *x : r.items) {
+            std::string k = gpu_array_key(x->m_v);
+            if (k.empty()) continue;
+            for (size_t d = 0; d < x->n_args; d++) {
+                GpuAffine e;
+                if (!x->m_args[d].m_right
+                        || !b.affine(x->m_args[d].m_right, e)
+                        || e.coefficient(v0) != 1) {
+                    continue;
+                }
+                e.terms.erase(v0);
+                offsets[k + "#" + std::to_string(d)].insert(e.str());
+            }
+        }
+        for (auto &o : offsets) if (o.second.size() >= 2) return 3;
+        return 1;
     }
 
     // Whether the body, or a function it calls, has an IF.
@@ -497,9 +538,27 @@ public:
         auto hi_e = [&](size_t d) { return ed.duplicate_expr(nest.ends[d]); };
         // extent(d) = hi - lo + 1
         auto extent = [&](size_t d) { return add(sub(hi_e(d), lo_e(d)), c(1)); };
+        // Iterations of the interior's outer dimension one thread runs one
+        // after the other (unroll-and-jam, below): the interior's rows are
+        // a multiple of it, and the rows left over join the frame.
+        int64_t jam = 1;
+        if (rank == 2) {
+            GpuAffineBuilder jb = base;
+            jam = jam_factor(bp, bn, nest, jb);
+        }
+        // The number of frame rows at the upper end of the outer
+        // dimension: b[0], plus the rows the jam leaves over.
+        auto b0 = [&]() -> ASR::expr_t* {
+            if (jam == 1) return c(b[0]);
+            // rows = extent - a - b; rows - (rows / jam) * jam
+            ASR::expr_t *rows = sub(extent(0), c(a[0] + b[0]));
+            return add(c(b[0]), sub(rows, mul(div(ed.duplicate_expr(rows),
+                c(jam)), c(jam))));
+        };
+        auto bd = [&](size_t d) { return d == 0 ? b0() : c(b[d]); };
         // The interior: is(d) .. ie(d).
         auto is = [&](size_t d) { return add(lo_e(d), c(a[d])); };
-        auto ie = [&](size_t d) { return sub(hi_e(d), c(b[d])); };
+        auto ie = [&](size_t d) { return sub(hi_e(d), bd(d)); };
 
         // The frame: one index t over the iterations outside the interior,
         // mapped to indices of their own.
@@ -539,9 +598,9 @@ public:
         } else {
             // Bands of whole rows of the inner dimension at both ends of
             // the outer one, then strips of the inner dimension.
-            ASR::expr_t *ni0 = sub(extent(0), c(a[0] + b[0]));
-            count_e = add(mul(c(a[0] + b[0]), extent(1)),
-                mul(sub(extent(0), c(a[0] + b[0])), c(a[1] + b[1])));
+            ASR::expr_t *ni0 = sub(sub(extent(0), c(a[0])), b0());
+            count_e = add(mul(add(c(a[0]), b0()), extent(1)),
+                mul(sub(sub(extent(0), c(a[0])), b0()), c(a[1] + b[1])));
             auto row_col = [&](ASR::expr_t *tt, ASR::expr_t *row0) {
                 // v0 = row0 + tt / w, v1 = lo1 + tt - (tt / w) * w
                 return std::vector<ASR::stmt_t*>{
@@ -551,11 +610,11 @@ public:
                             extent(1)))))};
             };
             ASR::expr_t *band0 = mul(c(a[0]), extent(1));
-            ASR::expr_t *bands = mul(c(a[0] + b[0]), extent(1));
+            ASR::expr_t *bands = mul(add(c(a[0]), b0()), extent(1));
             std::vector<ASR::stmt_t*> top = row_col(t(), lo_e(0));
             ASR::expr_t *t2 = sub(t(), mul(c(a[0]), extent(1)));
             std::vector<ASR::stmt_t*> bottom = row_col(t2,
-                add(sub(hi_e(0), c(b[0])), c(1)));
+                add(sub(hi_e(0), b0()), c(1)));
             // Strips: t3 = t - bands; v0 = lo0 + a0 + t3 mod ni0; the
             // column c = t3 / ni0 is one of the a1 + b1 strips.
             ASR::expr_t *t3 = sub(t(), ed.duplicate_expr(bands));
@@ -600,10 +659,17 @@ public:
             return sub(is(0), div(add(ed.duplicate_expr(count_e),
                 sub(width(), c(1))), width()));
         };
+        // With a jam, an interior iteration of the outer dimension stands
+        // for `jam` rows: the last one is is + rows / jam - 1.
         std::vector<ASR::expr_t*> ms, me;
         for (size_t d = 0; d < rank; d++) {
             ms.push_back(d == 0 ? first_row() : is(d));
-            me.push_back(ie(d));
+            if (d == 0 && jam > 1) {
+                me.push_back(sub(add(is(0), div(add(sub(ie(0), is(0)), c(1)),
+                    c(jam))), c(1)));
+            } else {
+                me.push_back(ie(d));
+            }
         }
         // t = (v0 - first row) * width + (v1 - interior start)
         ASR::expr_t *tv = mul(sub(bld.Var(nest.vars[0]), first_row()),
@@ -611,7 +677,27 @@ public:
         if (rank == 2) tv = add(tv, sub(bld.Var(nest.vars[1]), is(1)));
         std::vector<ASR::stmt_t*> frame_part = {bld.Assignment(t(), tv),
             bld.If(bld.Lt(t(), ed.duplicate_expr(count_e)), run, {})};
-        std::vector<ASR::stmt_t*> interior_part(bp, bp + bn);
+        std::vector<ASR::stmt_t*> interior_part;
+        if (jam == 1) {
+            interior_part.insert(interior_part.end(), bp, bp + bn);
+        } else {
+            // Copy r runs row is + (v0 - is) * jam + r. The rows are
+            // independent iterations of the parallel loop, so one thread
+            // may run them in any order; run one after the other, what
+            // they read in common (the rows between them) is loaded and
+            // computed once.
+            for (int64_t r = 0; r < jam; r++) {
+                GpuDuplicator dr(al, scope);
+                dr.added = &added;
+                dr.value_map[nest.vars[0]] = add(add(is(0), mul(sub(
+                    bld.Var(nest.vars[0]), is(0)), c(jam))), c(r));
+                Vec<ASR::stmt_t*> copy;
+                dr.duplicate_body(bp, bn, copy);
+                if (!dr.ok) return rollback();
+                interior_part.insert(interior_part.end(), copy.p,
+                    copy.p + copy.n);
+            }
+        }
         Vec<ASR::stmt_t*> mbody;
         mbody.reserve(al, 1);
         mbody.push_back(al, bld.If(bld.Lt(bld.Var(nest.vars[0]), is(0)),
@@ -624,7 +710,8 @@ public:
         // Split only when the domain has an interior.
         ASR::expr_t *has_interior = nullptr;
         for (size_t d = 0; d < rank; d++) {
-            ASR::expr_t *t1 = bld.Gt(extent(d), c(a[d] + b[d]));
+            ASR::expr_t *t1 = bld.Gt(extent(d), c(a[d] + b[d]
+                + (d == 0 ? jam - 1 : 0)));
             has_interior = has_interior ? bld.And(has_interior, t1) : t1;
         }
         splits++;
@@ -697,7 +784,7 @@ void pass_gpu_index_set_split(Allocator &al, ASR::TranslationUnit_t &unit,
             || !gpu_loop_transform_enabled(pass_options, GpuLoopSplit)) {
         return;
     }
-    Split s(al);
+    Split s(al, gpu_loop_transform_enabled(pass_options, GpuLoopJam));
     std::function<void(SymbolTable*)> visit_scope = [&](SymbolTable *st) {
         for (auto &item : st->get_scope()) {
             ASR::symbol_t *sym = item.second;

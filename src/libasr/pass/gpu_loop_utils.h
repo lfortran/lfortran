@@ -26,6 +26,7 @@ enum GpuLoopTransform {
     GpuLoopFuse = 1,
     GpuLoopSwap = 2,
     GpuLoopSplit = 4,
+    GpuLoopJam = 8,
 };
 bool gpu_loop_transform_enabled(const PassOptions &pass_options,
     GpuLoopTransform t);
