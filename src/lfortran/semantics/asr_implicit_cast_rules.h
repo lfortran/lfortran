@@ -239,7 +239,8 @@ public:
                         value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
                                                                     rval, dest_type2);
                     } else {
-                        value = nullptr;
+                        value = ASRUtils::make_RealConstant_r16(al, a_loc,
+                            lf_f128_from_int64(i->m_n), dest_type2);
                     }
                 } else {
                     LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
