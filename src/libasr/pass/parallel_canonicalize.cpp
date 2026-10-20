@@ -549,6 +549,10 @@ public:
             false, build_loop_nest(x), ASR::exec_targetType::ExecAuto));
     }
 
+    // A FORALL is lowered later, by the forall pass, so its body is left as it is.
+    void visit_ForAllSingle(const ASR::ForAllSingle_t &/*x*/) {
+    }
+
     // Leaves a region the pass could not canonicalize exactly as it was, so
     // the OpenMP pass still sees the construct the user wrote, and looks
     // inside it for the loops that can be.
