@@ -11,6 +11,11 @@ program read_112
     character(len=4) :: cs(2,2)
     complex :: z(2,2)
     character(len=40) :: s
+    real :: ca(3,3), cb(2,2)
+    integer :: cm, cn, ck
+    common /read_112_a/ ca, cm, cn
+    common /read_112_b/ cb
+    common /read_112_n/ ck
 
     m = 3
     n = 2
@@ -78,5 +83,16 @@ program read_112
     if (k /= 5 .or. k2 /= 6) error stop 19
     if (any(kv /= -1)) error stop 20
     close(u, status='delete')
+
+    ! An array and its dimensions in COMMON
+    cm = 2
+    cn = 2
+    ck = 2
+    ca = 0
+    cb = 0
+    s = '  1.  2.  3.  4.  5.  6.  7.  8.'
+    read(s, '(8F4.0)') ((ca(i,j), j=1,cn), i=1,cm), ((cb(i,j), i=1,ck), j=1,ck)
+    if (any(ca(1,1:2) /= [1., 2.]) .or. any(ca(2,1:2) /= [3., 4.])) error stop 21
+    if (any(cb(:,1) /= [5., 6.]) .or. any(cb(:,2) /= [7., 8.])) error stop 22
     print *, "ok"
 end program read_112

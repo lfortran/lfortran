@@ -22544,11 +22544,39 @@ public:
         return true;
     }
 
+    static bool is_common_block_member(ASR::CommonBlock_t* block, ASR::symbol_t* v) {
+        for (size_t i = 0; i < block->n_members; i++) {
+            if (block->m_members[i] == v) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    // Whether the variables `d` and `u` may live in overlapping storage of
+    // one common block. Blocks with different link names are distinct
+    // storage, which EQUIVALENCE cannot join. The members of one view of a
+    // block are laid out one after another, so they are disjoint, but a
+    // variable that EQUIVALENCE places in the block may overlap any of them,
+    // and the views of the same block in different scopes (a host and its
+    // internal procedure) may lay it out differently.
+    static bool common_storage_may_overlap(ASR::Variable_t* d, ASR::Variable_t* u) {
+        ASR::CommonBlock_t* dc = ASRUtils::get_common_block(d);
+        ASR::CommonBlock_t* uc = ASRUtils::get_common_block(u);
+        if (dc == nullptr || uc == nullptr ||
+                std::string(dc->m_link_name) != std::string(uc->m_link_name)) {
+            return false;
+        }
+        return dc != uc ||
+            !is_common_block_member(dc, (ASR::symbol_t*)d) ||
+            !is_common_block_member(uc, (ASR::symbol_t*)u);
+    }
+
     // Whether `defined`, a variable or component that a READ defines, may
     // share storage with `used`, one that the READ references to evaluate
     // a loop bound or an address: they are the same, either is a pointer
-    // (which includes an ASSOCIATE name and an EQUIVALENCE), both have
-    // TARGET, or both are in common blocks.
+    // (which includes an ASSOCIATE name and an EQUIVALENCE outside common
+    // blocks), both have TARGET, or their common block storage may overlap.
     static bool formatted_read_may_alias(ASR::symbol_t* defined, ASR::symbol_t* used) {
         if (defined == used) {
             return true;
@@ -22560,7 +22588,7 @@ public:
         ASR::Variable_t* u = ASR::down_cast<ASR::Variable_t>(used);
         return ASR::is_a<ASR::Pointer_t>(*d->m_type) || ASR::is_a<ASR::Pointer_t>(*u->m_type) ||
             (d->m_target_attr && u->m_target_attr) ||
-            (d->m_common_block != nullptr && u->m_common_block != nullptr);
+            common_storage_may_overlap(d, u);
     }
 
     // Whether a formatted READ whose input list has a nested implied-do
