@@ -10,8 +10,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* __gpu_next_q,
-    float* q,
+    float* __restrict__ __gpu_next_q,
+    float* __restrict__ q,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
     int __lb___gpu_next_q_0 = __scalar_args.__lb___gpu_next_q_0;
@@ -37,8 +37,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
-    float* __gpu_next_q,
-    float* q,
+    float* __restrict__ __gpu_next_q,
+    float* __restrict__ q,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
 {
     int __lb___gpu_next_q_0 = __scalar_args.__lb___gpu_next_q_0;
@@ -64,8 +64,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_2 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_2(
-    float* f,
-    float* q,
+    float* __restrict__ f,
+    float* __restrict__ q,
     __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
 {
     int __lb_f_0 = __scalar_args.__lb_f_0;
@@ -91,8 +91,8 @@ struct __ScalarArgs___lfortran_gpu_kernel_3 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_3(
-    float* f,
-    float* q,
+    float* __restrict__ f,
+    float* __restrict__ q,
     __ScalarArgs___lfortran_gpu_kernel_3 __scalar_args)
 {
     int __lb_f_0 = __scalar_args.__lb_f_0;
