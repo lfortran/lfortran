@@ -1,0 +1,486 @@
+{
+    "node": "TranslationUnit",
+    "fields": {
+        "items": [
+            {
+                "node": "Program",
+                "fields": {
+                    "name": "p",
+                    "trivia": [],
+                    "items": [
+                        {
+                            "node": "Where",
+                            "fields": {
+                                "label": 0,
+                                "stmt_name": [],
+                                "test": {
+                                    "node": "Name",
+                                    "fields": {
+                                        "id": "m",
+                                        "member": []
+                                    },
+                                    "loc": {
+                                        "first": 17,
+                                        "last": 17,
+                                        "first_filename": "tests/json_loc_else_where.f90",
+                                        "first_line": 2,
+                                        "first_column": 8,
+                                        "last_filename": "tests/json_loc_else_where.f90",
+                                        "last_line": 2,
+                                        "last_column": 8
+                                    }
+                                },
+                                "body": [
+                                    {
+                                        "node": "Continue",
+                                        "fields": {
+                                            "label": 0,
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 22,
+                                            "last": 29,
+                                            "first_filename": "tests/json_loc_else_where.f90",
+                                            "first_line": 3,
+                                            "first_column": 3,
+                                            "last_filename": "tests/json_loc_else_where.f90",
+                                            "last_line": 3,
+                                            "last_column": 10
+                                        }
+                                    }
+                                ],
+                                "orelse": [
+                                    {
+                                        "node": "Continue",
+                                        "fields": {
+                                            "label": 0,
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 44,
+                                            "last": 51,
+                                            "first_filename": "tests/json_loc_else_where.f90",
+                                            "first_line": 5,
+                                            "first_column": 3,
+                                            "last_filename": "tests/json_loc_else_where.f90",
+                                            "last_line": 5,
+                                            "last_column": 10
+                                        }
+                                    }
+                                ],
+                                "t_inside": [],
+                                "trivia": []
+                            },
+                            "loc": {
+                                "first": 10,
+                                "last": 61,
+                                "first_filename": "tests/json_loc_else_where.f90",
+                                "first_line": 2,
+                                "first_column": 1,
+                                "last_filename": "tests/json_loc_else_where.f90",
+                                "last_line": 6,
+                                "last_column": 9
+                            }
+                        },
+                        {
+                            "node": "Where",
+                            "fields": {
+                                "label": 0,
+                                "stmt_name": [],
+                                "test": {
+                                    "node": "Name",
+                                    "fields": {
+                                        "id": "m",
+                                        "member": []
+                                    },
+                                    "loc": {
+                                        "first": 70,
+                                        "last": 70,
+                                        "first_filename": "tests/json_loc_else_where.f90",
+                                        "first_line": 7,
+                                        "first_column": 8,
+                                        "last_filename": "tests/json_loc_else_where.f90",
+                                        "last_line": 7,
+                                        "last_column": 8
+                                    }
+                                },
+                                "body": [
+                                    {
+                                        "node": "Continue",
+                                        "fields": {
+                                            "label": 0,
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 75,
+                                            "last": 82,
+                                            "first_filename": "tests/json_loc_else_where.f90",
+                                            "first_line": 8,
+                                            "first_column": 3,
+                                            "last_filename": "tests/json_loc_else_where.f90",
+                                            "last_line": 8,
+                                            "last_column": 10
+                                        }
+                                    }
+                                ],
+                                "orelse": [
+                                    {
+                                        "node": "Where",
+                                        "fields": {
+                                            "label": 0,
+                                            "stmt_name": [],
+                                            "test": {
+                                                "node": "Name",
+                                                "fields": {
+                                                    "id": "n",
+                                                    "member": []
+                                                },
+                                                "loc": {
+                                                    "first": 96,
+                                                    "last": 96,
+                                                    "first_filename": "tests/json_loc_else_where.f90",
+                                                    "first_line": 9,
+                                                    "first_column": 13,
+                                                    "last_filename": "tests/json_loc_else_where.f90",
+                                                    "last_line": 9,
+                                                    "last_column": 13
+                                                }
+                                            },
+                                            "body": [
+                                                {
+                                                    "node": "Continue",
+                                                    "fields": {
+                                                        "label": 0,
+                                                        "trivia": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 101,
+                                                        "last": 108,
+                                                        "first_filename": "tests/json_loc_else_where.f90",
+                                                        "first_line": 10,
+                                                        "first_column": 3,
+                                                        "last_filename": "tests/json_loc_else_where.f90",
+                                                        "last_line": 10,
+                                                        "last_column": 10
+                                                    }
+                                                }
+                                            ],
+                                            "orelse": [
+                                                {
+                                                    "node": "Continue",
+                                                    "fields": {
+                                                        "label": 0,
+                                                        "trivia": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 122,
+                                                        "last": 129,
+                                                        "first_filename": "tests/json_loc_else_where.f90",
+                                                        "first_line": 12,
+                                                        "first_column": 3,
+                                                        "last_filename": "tests/json_loc_else_where.f90",
+                                                        "last_line": 12,
+                                                        "last_column": 10
+                                                    }
+                                                }
+                                            ],
+                                            "t_inside": [],
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 84,
+                                            "last": 139,
+                                            "first_filename": "tests/json_loc_else_where.f90",
+                                            "first_line": 9,
+                                            "first_column": 1,
+                                            "last_filename": "tests/json_loc_else_where.f90",
+                                            "last_line": 13,
+                                            "last_column": 9
+                                        }
+                                    }
+                                ],
+                                "t_inside": [],
+                                "trivia": []
+                            },
+                            "loc": {
+                                "first": 63,
+                                "last": 139,
+                                "first_filename": "tests/json_loc_else_where.f90",
+                                "first_line": 7,
+                                "first_column": 1,
+                                "last_filename": "tests/json_loc_else_where.f90",
+                                "last_line": 13,
+                                "last_column": 9
+                            }
+                        },
+                        {
+                            "node": "Where",
+                            "fields": {
+                                "label": 0,
+                                "stmt_name": [],
+                                "test": {
+                                    "node": "Name",
+                                    "fields": {
+                                        "id": "m",
+                                        "member": []
+                                    },
+                                    "loc": {
+                                        "first": 148,
+                                        "last": 148,
+                                        "first_filename": "tests/json_loc_else_where.f90",
+                                        "first_line": 14,
+                                        "first_column": 8,
+                                        "last_filename": "tests/json_loc_else_where.f90",
+                                        "last_line": 14,
+                                        "last_column": 8
+                                    }
+                                },
+                                "body": [
+                                    {
+                                        "node": "Continue",
+                                        "fields": {
+                                            "label": 0,
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 153,
+                                            "last": 160,
+                                            "first_filename": "tests/json_loc_else_where.f90",
+                                            "first_line": 15,
+                                            "first_column": 3,
+                                            "last_filename": "tests/json_loc_else_where.f90",
+                                            "last_line": 15,
+                                            "last_column": 10
+                                        }
+                                    }
+                                ],
+                                "orelse": [
+                                    {
+                                        "node": "Where",
+                                        "fields": {
+                                            "label": 0,
+                                            "stmt_name": [],
+                                            "test": {
+                                                "node": "Name",
+                                                "fields": {
+                                                    "id": "n",
+                                                    "member": []
+                                                },
+                                                "loc": {
+                                                    "first": 174,
+                                                    "last": 174,
+                                                    "first_filename": "tests/json_loc_else_where.f90",
+                                                    "first_line": 16,
+                                                    "first_column": 13,
+                                                    "last_filename": "tests/json_loc_else_where.f90",
+                                                    "last_line": 16,
+                                                    "last_column": 13
+                                                }
+                                            },
+                                            "body": [
+                                                {
+                                                    "node": "Continue",
+                                                    "fields": {
+                                                        "label": 0,
+                                                        "trivia": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 179,
+                                                        "last": 186,
+                                                        "first_filename": "tests/json_loc_else_where.f90",
+                                                        "first_line": 17,
+                                                        "first_column": 3,
+                                                        "last_filename": "tests/json_loc_else_where.f90",
+                                                        "last_line": 17,
+                                                        "last_column": 10
+                                                    }
+                                                }
+                                            ],
+                                            "orelse": [
+                                                {
+                                                    "node": "Continue",
+                                                    "fields": {
+                                                        "label": 0,
+                                                        "trivia": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 201,
+                                                        "last": 208,
+                                                        "first_filename": "tests/json_loc_else_where.f90",
+                                                        "first_line": 19,
+                                                        "first_column": 3,
+                                                        "last_filename": "tests/json_loc_else_where.f90",
+                                                        "last_line": 19,
+                                                        "last_column": 10
+                                                    }
+                                                }
+                                            ],
+                                            "t_inside": [],
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 162,
+                                            "last": 218,
+                                            "first_filename": "tests/json_loc_else_where.f90",
+                                            "first_line": 16,
+                                            "first_column": 1,
+                                            "last_filename": "tests/json_loc_else_where.f90",
+                                            "last_line": 20,
+                                            "last_column": 9
+                                        }
+                                    }
+                                ],
+                                "t_inside": [],
+                                "trivia": []
+                            },
+                            "loc": {
+                                "first": 141,
+                                "last": 218,
+                                "first_filename": "tests/json_loc_else_where.f90",
+                                "first_line": 14,
+                                "first_column": 1,
+                                "last_filename": "tests/json_loc_else_where.f90",
+                                "last_line": 20,
+                                "last_column": 9
+                            }
+                        },
+                        {
+                            "node": "Where",
+                            "fields": {
+                                "label": 0,
+                                "stmt_name": [],
+                                "test": {
+                                    "node": "Name",
+                                    "fields": {
+                                        "id": "m",
+                                        "member": []
+                                    },
+                                    "loc": {
+                                        "first": 227,
+                                        "last": 227,
+                                        "first_filename": "tests/json_loc_else_where.f90",
+                                        "first_line": 21,
+                                        "first_column": 8,
+                                        "last_filename": "tests/json_loc_else_where.f90",
+                                        "last_line": 21,
+                                        "last_column": 8
+                                    }
+                                },
+                                "body": [
+                                    {
+                                        "node": "Continue",
+                                        "fields": {
+                                            "label": 0,
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 232,
+                                            "last": 239,
+                                            "first_filename": "tests/json_loc_else_where.f90",
+                                            "first_line": 22,
+                                            "first_column": 3,
+                                            "last_filename": "tests/json_loc_else_where.f90",
+                                            "last_line": 22,
+                                            "last_column": 10
+                                        }
+                                    }
+                                ],
+                                "orelse": [
+                                    {
+                                        "node": "Where",
+                                        "fields": {
+                                            "label": 0,
+                                            "stmt_name": [],
+                                            "test": {
+                                                "node": "Name",
+                                                "fields": {
+                                                    "id": "n",
+                                                    "member": []
+                                                },
+                                                "loc": {
+                                                    "first": 253,
+                                                    "last": 253,
+                                                    "first_filename": "tests/json_loc_else_where.f90",
+                                                    "first_line": 23,
+                                                    "first_column": 13,
+                                                    "last_filename": "tests/json_loc_else_where.f90",
+                                                    "last_line": 23,
+                                                    "last_column": 13
+                                                }
+                                            },
+                                            "body": [
+                                                {
+                                                    "node": "Continue",
+                                                    "fields": {
+                                                        "label": 0,
+                                                        "trivia": []
+                                                    },
+                                                    "loc": {
+                                                        "first": 258,
+                                                        "last": 265,
+                                                        "first_filename": "tests/json_loc_else_where.f90",
+                                                        "first_line": 24,
+                                                        "first_column": 3,
+                                                        "last_filename": "tests/json_loc_else_where.f90",
+                                                        "last_line": 24,
+                                                        "last_column": 10
+                                                    }
+                                                }
+                                            ],
+                                            "orelse": [],
+                                            "t_inside": [],
+                                            "trivia": []
+                                        },
+                                        "loc": {
+                                            "first": 241,
+                                            "last": 275,
+                                            "first_filename": "tests/json_loc_else_where.f90",
+                                            "first_line": 23,
+                                            "first_column": 1,
+                                            "last_filename": "tests/json_loc_else_where.f90",
+                                            "last_line": 25,
+                                            "last_column": 9
+                                        }
+                                    }
+                                ],
+                                "t_inside": [],
+                                "trivia": []
+                            },
+                            "loc": {
+                                "first": 220,
+                                "last": 275,
+                                "first_filename": "tests/json_loc_else_where.f90",
+                                "first_line": 21,
+                                "first_column": 1,
+                                "last_filename": "tests/json_loc_else_where.f90",
+                                "last_line": 25,
+                                "last_column": 9
+                            }
+                        }
+                    ],
+                    "contains": []
+                },
+                "loc": {
+                    "first": 0,
+                    "last": 287,
+                    "first_filename": "tests/json_loc_else_where.f90",
+                    "first_line": 1,
+                    "first_column": 1,
+                    "last_filename": "tests/json_loc_else_where.f90",
+                    "last_line": 26,
+                    "last_column": 11
+                }
+            }
+        ]
+    },
+    "loc": {
+        "first": 0,
+        "last": 287,
+        "first_filename": "tests/json_loc_else_where.f90",
+        "first_line": 1,
+        "first_column": 1,
+        "last_filename": "tests/json_loc_else_where.f90",
+        "last_line": 26,
+        "last_column": 11
+    }
+}

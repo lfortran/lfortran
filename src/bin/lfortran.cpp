@@ -2281,7 +2281,11 @@ int link_executable(const std::vector<std::string> &infiles,
                 bool emulate_cpu = compiler_options.gpu_cpu_emulation;
                 std::string runtime_include = " -I" + runtime_library_dir
                     + "/../libasr/runtime";
-                std::string device_cc = compiler_options.device_compiler;
+                // Every fragment, the runtime and the native link share this
+                // architecture; the CPU-emulation driver must not receive it.
+                std::string device_cc = cuda_device_compiler_command(
+                    compiler_options.device_compiler, emulate_cpu,
+                    compiler_options.gpu_arch);
                 std::vector<std::string> cuda_kernel_objs;
                 std::set<std::string> seen_cuda_fragments;
                 size_t cuda_kernel_index = 0;

@@ -1,0 +1,13 @@
+{
+    "basename": "asr-show_errors3-94d35dc",
+    "cmd": "lfortran --show-errors --continue-compilation --no-color {infile}",
+    "infile": "tests/errors/show_errors3.f",
+    "infile_hash": "dfb02f4379a618ba7f117b7597c8080c2b44c1437a29d1b560eb5007",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-show_errors3-94d35dc.stdout",
+    "stdout_hash": "4c625ddf8c6791ff9276e6416183ae5f5ca63cf7862c0e4e71839158",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

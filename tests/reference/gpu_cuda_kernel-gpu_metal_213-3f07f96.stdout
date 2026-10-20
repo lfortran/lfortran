@@ -37,7 +37,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_1(
     double* d,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
 {
-    int __dim_d_0 = __scalar_args.__dim_d_0;
     int __lb_d_0 = __scalar_args.__lb_d_0;
     int __flat_idx;
     int i;
@@ -61,9 +60,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_2(
     double* y,
     __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args)
 {
-    int __dim_x_0 = __scalar_args.__dim_x_0;
     int __lb_x_0 = __scalar_args.__lb_x_0;
-    int __dim_y_0 = __scalar_args.__dim_y_0;
     int __lb_y_0 = __scalar_args.__lb_y_0;
     int __flat_idx;
     int i;
@@ -88,7 +85,6 @@ extern "C" __global__ void __lfortran_gpu_kernel_3(
 {
     int __dim_m_0 = __scalar_args.__dim_m_0;
     int __lb_m_0 = __scalar_args.__lb_m_0;
-    int __dim_m_1 = __scalar_args.__dim_m_1;
     int __lb_m_1 = __scalar_args.__lb_m_1;
     int __flat_idx;
     int i;
@@ -117,9 +113,7 @@ extern "C" __global__ void __lfortran_gpu_kernel_4(
     long* k,
     __ScalarArgs___lfortran_gpu_kernel_4 __scalar_args)
 {
-    int __dim_d_0 = __scalar_args.__dim_d_0;
     int __lb_d_0 = __scalar_args.__lb_d_0;
-    int __dim_k_0 = __scalar_args.__dim_k_0;
     int __lb_k_0 = __scalar_args.__lb_k_0;
     int __flat_idx;
     int i;

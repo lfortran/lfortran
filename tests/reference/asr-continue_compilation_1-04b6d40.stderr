@@ -4319,3 +4319,15 @@ semantic error: Variable 'cc1_external_name_fn' is not declared
      |
 3461 |     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
      |              ^^^^^^^^^^^^^^^^^^^^ 'cc1_external_name_fn' is undeclared
+
+semantic error: reading into the real or imaginary part of a complex variable is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3473:20
+     |
+3473 |         read(s, *) z%re  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
+     |                    ^^^^ 
+
+semantic error: reading into the real or imaginary part of a complex variable is not supported yet
+    --> tests/errors/continue_compilation_1.f90:3474:20
+     |
+3474 |         read(s, *) w(1:3:2)%im  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
+     |                    ^^^^^^^^^^^ 

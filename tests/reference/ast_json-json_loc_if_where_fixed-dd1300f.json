@@ -1,0 +1,13 @@
+{
+    "basename": "ast_json-json_loc_if_where_fixed-dd1300f",
+    "cmd": "lfortran --show-ast --no-indent --json {infile} -o {outfile}",
+    "infile": "tests/json_loc_if_where_fixed.f",
+    "infile_hash": "0447dcd8cdc2fc56ec94e5c00a014c13c9afd456c8a39aa7ed06ea18",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast_json-json_loc_if_where_fixed-dd1300f.stdout",
+    "stdout_hash": "f58a299eded66e432bd125ca59e90f14659172e132849337a16dcdb4",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

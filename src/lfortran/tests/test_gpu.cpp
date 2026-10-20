@@ -298,3 +298,181 @@ end subroutine
     CHECK(std::string(ASRUtils::get_FunctionType(device)->m_bindc_name) == "abs");
     CHECK(asr_verify(unit, true, diagnostics));
 }
+
+namespace {
+
+class GuardedGpuWork : public ASR::BaseWalkVisitor<GuardedGpuWork> {
+public:
+    std::vector<ASR::expr_t*> guards;
+    std::vector<ASR::GpuKernelLaunch_t*> launches;
+    std::map<ASR::symbol_t*, ASR::expr_t*> assignments;
+    std::map<ASR::symbol_t*, size_t> assignment_counts;
+    size_t guarded_allocations = 0, source_allocations = 0;
+    size_t runtime_launches = 0, runtime_releases = 0;
+    size_t empty_lane_guards = 0;
+
+    void visit_Assignment(const ASR::Assignment_t &x) {
+        if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+            auto *symbol = ASR::down_cast<ASR::Var_t>(x.m_target)->m_v;
+            assignments[symbol] = x.m_value;
+            assignment_counts[symbol]++;
+        }
+    }
+
+    void visit_If(const ASR::If_t &x) {
+        ASR::expr_t *count = nullptr;
+        if (ASR::is_a<ASR::IntegerCompare_t>(*x.m_test)) {
+            auto &test = *ASR::down_cast<ASR::IntegerCompare_t>(x.m_test);
+            int64_t zero = -1;
+            if (test.m_op == ASR::cmpopType::Gt
+                    && ASRUtils::extract_value(
+                        ASRUtils::expr_value(test.m_right), zero)
+                    && zero == 0) {
+                count = test.m_left;
+            }
+        }
+        if (count && ASR::is_a<ASR::Var_t>(*count)) {
+            auto found = assignments.find(ASR::down_cast<ASR::Var_t>(count)->m_v);
+            if (found != assignments.end()
+                    && ASR::is_a<ASR::IntegerBinOp_t>(*found->second)) {
+                auto &value = *ASR::down_cast<ASR::IntegerBinOp_t>(found->second);
+                int64_t lanes = -1;
+                if (value.m_op == ASR::binopType::Mul
+                        && ASRUtils::extract_value(
+                            ASRUtils::expr_value(value.m_right), lanes)
+                        && lanes == 0) {
+                    empty_lane_guards++;
+                }
+            }
+        }
+        if (count) guards.push_back(count);
+        for (size_t i = 0; i < x.n_body; i++) visit_stmt(*x.m_body[i]);
+        if (count) guards.pop_back();
+        for (size_t i = 0; i < x.n_orelse; i++) visit_stmt(*x.m_orelse[i]);
+    }
+
+    void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+        REQUIRE(ASR::is_a<ASR::Var_t>(*x.m_thread_count));
+        CHECK(assignment_counts[
+            ASR::down_cast<ASR::Var_t>(x.m_thread_count)->m_v] == 1);
+        bool guarded = false;
+        for (ASR::expr_t *count : guards) {
+            guarded |= ASR::is_a<ASR::Var_t>(*count)
+                && ASR::down_cast<ASR::Var_t>(count)->m_v
+                    == ASR::down_cast<ASR::Var_t>(x.m_thread_count)->m_v;
+        }
+        CHECK(guarded);
+        launches.push_back(const_cast<ASR::GpuKernelLaunch_t*>(&x));
+    }
+
+    void visit_Allocate(const ASR::Allocate_t &) {
+        if (guards.empty()) source_allocations++;
+        else guarded_allocations++;
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        std::string name = ASRUtils::symbol_name(
+            ASRUtils::symbol_get_past_external(x.m_name));
+        if (name == "lfortran_gpu_launch") runtime_launches++;
+        if (name == "lfortran_gpu_release_kernel") runtime_releases++;
+        if (name == "lfortran_gpu_launch"
+                || name == "lfortran_gpu_release_kernel"
+                || name == "lfortran_gpu_set_buffer_arg"
+                || name == "lfortran_gpu_set_scalar_arg"
+                || name == "lfortran_gpu_set_scratch_arg"
+                || name == "lfortran_gpu_read_scratch_arg") {
+            // The logical iteration guard encloses all offload lowering;
+            // expansion also guards the effective thread count with lanes.
+            CHECK(guards.size() >= 2);
+        }
+    }
+};
+
+} // namespace
+
+TEST_CASE("GPU zero work guards setup and effective launch geometry") {
+    const std::string source = R"(
+program p
+    implicit none
+    real :: a(32,4), s
+    real, allocatable :: outside(:)
+    integer :: lo, hi, i
+    lo = 1
+    hi = 3
+    allocate(outside(0))
+    a = 0
+    do concurrent (i = lo:hi)
+        a(:,i) = a(:,i) + 1
+    end do
+    lo = 3
+    hi = 1
+    s = 5
+    do concurrent (i = lo:hi) reduce(+:s)
+        s = s + a(1,i)
+    end do
+end program
+)";
+    for (bool metal : {false, true}) {
+        CompilerOptions options;
+        options.gpu_backend = metal ? "metal" : "cuda";
+        options.po.gpu_offload_metal = metal;
+        options.po.gpu_offload_cuda = !metal;
+        options.po.runtime_library_dir = LFORTRAN_BUILD_RUNTIME_DIR;
+        FortranEvaluator evaluator(options);
+        LocationManager lm;
+        LocationManager::FileLocations file;
+        file.in_filename = "gpu_zero_work.f90";
+        lm.files.push_back(file);
+        lm.file_ends.push_back(LFortran::source_offset(source.size()));
+        diag::Diagnostics diagnostics;
+        auto parsed = evaluator.get_asr2(source, lm, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE(parsed.ok);
+        ASR::TranslationUnit_t &unit = *parsed.result;
+        Allocator allocator(32 * 1024 * 1024);
+        PassManager passes;
+        std::string pass = "gpu_vector_lanes", skip;
+        passes.parse_pass_arg(pass, skip);
+        options.po.pass_cumulative = true;
+        passes.apply_passes(allocator, &unit, options.po, diagnostics);
+        INFO(diagnostics.render2());
+        REQUIRE_FALSE(diagnostics.has_error());
+        auto *program = ASR::down_cast<ASR::Program_t>(
+            unit.m_symtab->get_symbol("p"));
+        GuardedGpuWork work;
+        for (size_t i = 0; i < program->n_body; i++) {
+            work.visit_stmt(*program->m_body[i]);
+        }
+        REQUIRE(work.launches.size() == 2);
+        CHECK(work.source_allocations == 1);
+        CHECK(work.guarded_allocations >= 1);
+        bool has_lanes = false;
+        for (auto *launch : work.launches) {
+            auto *kernel = ASR::down_cast<ASR::Function_t>(launch->m_kernel);
+            if (kernel->m_gpu->m_lanes) {
+                has_lanes = true;
+                // Exercise the expansion contract independently of today's
+                // lane selector, which chooses either one or 32 lanes.
+                launch->m_args[launch->n_args - 1].m_value =
+                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(allocator,
+                        launch->base.base.loc, 0,
+                        ASRUtils::expr_type(
+                            launch->m_args[launch->n_args - 1].m_value),
+                        ASR::integerbozType::Decimal));
+            }
+        }
+        CHECK(has_lanes == metal);
+        pass_gpu_launch_sync(allocator, unit, options.po);
+        pass_device_launch_expand(allocator, unit, options.po);
+        REQUIRE(asr_verify(unit, true, diagnostics));
+        GuardedGpuWork expanded;
+        for (size_t i = 0; i < program->n_body; i++) {
+            expanded.visit_stmt(*program->m_body[i]);
+        }
+        CHECK(expanded.launches.empty());
+        CHECK(expanded.runtime_launches == 2);
+        CHECK(expanded.runtime_releases == 2);
+        CHECK(expanded.source_allocations == 1);
+        CHECK(expanded.empty_lane_guards == (metal ? 1 : 0));
+    }
+}

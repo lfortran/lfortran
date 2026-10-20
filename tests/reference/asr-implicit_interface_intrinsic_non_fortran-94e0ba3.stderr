@@ -1,0 +1,17 @@
+semantic error: 'fma' is not an intrinsic procedure
+ --> tests/errors/implicit_interface_intrinsic_non_fortran.f90:2:18
+  |
+2 |     intrinsic :: fma
+  |                  ^^^ 
+
+semantic error: 'trunc' is not an intrinsic procedure
+ --> tests/errors/implicit_interface_intrinsic_non_fortran.f90:7:15
+  |
+7 |     intrinsic trunc, sin
+  |               ^^^^^ 
+
+semantic error: 'exp2' is not an intrinsic procedure
+ --> tests/errors/implicit_interface_intrinsic_non_fortran.f90:8:24
+  |
+8 |     real, intrinsic :: exp2
+  |                        ^^^^ 
