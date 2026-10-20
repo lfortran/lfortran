@@ -33,14 +33,14 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    data_t* arr,
-    float* __data_arr_v,
-    int* __offsets_arr_v,
-    int* __sizes_arr_v,
-    float* out,
-    float* z,
+    data_t* __restrict__ arr,
+    float* __restrict__ __data_arr_v,
+    int* __restrict__ __offsets_arr_v,
+    int* __restrict__ __sizes_arr_v,
+    float* __restrict__ out,
+    float* __restrict__ z,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
-    float* __workspace_7)
+    float* __restrict__ __workspace_7)
 {
     int n = __scalar_args.n;
     int __lb_arr_0 = __scalar_args.__lb_arr_0;

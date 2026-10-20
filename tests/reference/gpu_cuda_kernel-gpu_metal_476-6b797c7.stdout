@@ -5,9 +5,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* y,
+    float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args,
-    float* __workspace_2)
+    float* __restrict__ __workspace_2)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;
     int __flat_idx;
@@ -41,9 +41,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
-    float* y,
+    float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args,
-    float* __workspace_2)
+    float* __restrict__ __workspace_2)
 {
     int __gpu_private_shape = __scalar_args.__gpu_private_shape;
     int __loop_end_0 = __scalar_args.__loop_end_0;
@@ -89,9 +89,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_2 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_2(
-    float* y,
+    float* __restrict__ y,
     __ScalarArgs___lfortran_gpu_kernel_2 __scalar_args,
-    float* __workspace_2)
+    float* __restrict__ __workspace_2)
 {
     int __gpu_private_shape = __scalar_args.__gpu_private_shape;
     int m = __scalar_args.m;

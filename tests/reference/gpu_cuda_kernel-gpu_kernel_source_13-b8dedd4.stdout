@@ -1,8 +1,8 @@
 #include <stdint.h>
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    int* a,
-    int* b)
+    int* __restrict__ a,
+    int* __restrict__ b)
 {
     int __flat_idx;
     int i;
@@ -23,8 +23,8 @@ __device__ inline void put_element_gpu_13(int& destination, int value) {
 }
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
-    int* a,
-    int* b)
+    int* __restrict__ a,
+    int* __restrict__ b)
 {
     int __flat_idx;
     int __gpu_scalar_argument;
@@ -48,8 +48,8 @@ __device__ inline void put_array_gpu_18(int* destination, int __1destination, in
 }
 
 extern "C" __global__ void __lfortran_gpu_kernel_2(
-    int* a,
-    int* b)
+    int* __restrict__ a,
+    int* __restrict__ b)
 {
     int __flat_idx;
     int i;
@@ -76,9 +76,9 @@ __device__ inline int read_element_gpu_24(int* source, int __1source, int __2sou
 }
 
 extern "C" __global__ void __lfortran_gpu_kernel_3(
-    int* a,
-    int* b,
-    int* c)
+    int* __restrict__ a,
+    int* __restrict__ b,
+    int* __restrict__ c)
 {
     int __flat_idx;
     int __gpu_scalar_argument;
@@ -102,7 +102,7 @@ __device__ inline void put_element_gpu_29(int& destination, int value) {
 }
 
 extern "C" __global__ void __lfortran_gpu_kernel_4(
-    int* a)
+    int* __restrict__ a)
 {
     int __flat_idx;
     int __gpu_scalar_argument;

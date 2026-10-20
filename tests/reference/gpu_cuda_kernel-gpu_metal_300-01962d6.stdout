@@ -5,7 +5,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_0 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    int* a,
+    int* __restrict__ a,
     __ScalarArgs___lfortran_gpu_kernel_0 __scalar_args)
 {
     int flag = __scalar_args.flag;
@@ -32,7 +32,7 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
-    int* b,
+    int* __restrict__ b,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
 {
     int flag = __scalar_args.flag;

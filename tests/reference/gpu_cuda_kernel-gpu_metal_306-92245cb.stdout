@@ -5,7 +5,7 @@ struct t {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    t* c)
+    t* __restrict__ c)
 {
     int __flat_idx;
     int i;
