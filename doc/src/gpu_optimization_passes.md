@@ -351,6 +351,8 @@ therefore requires:
   behind, is sigma. A
   lower bound of an array that the subscript of an inlined dummy is shifted
   by is assumed to be 1 and checked by the host before it skews;
+* every function a loop calls is inlined: a call that cannot be inlined
+  may read arrays (of a module, for example) the analysis does not see;
 * no array is aliased by a pointer, no loop assigns a host scalar (only
   private ones), and a body contains no loop of its own.
 

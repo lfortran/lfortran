@@ -6510,6 +6510,7 @@ RUN(NAME gpu_metal_526 LABELS llvm)
 # (#14792), and the device compiler folds tests on it as undefined.
 RUN(NAME gpu_metal_513 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=32768)
 RUN(NAME gpu_metal_530 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096)
+RUN(NAME gpu_metal_531 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096)
 # GFortran 13 cannot compile this LOCAL fixture. cuda_cpu uses GPU lowering
 # and belongs here; ordinary LLVM is excluded for its pre-existing LOCAL
 # preservation gap (#14622).

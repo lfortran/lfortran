@@ -55,9 +55,11 @@ namespace LCompilers {
  *   (one subscript) that is the outermost index of the loop, and every
  *   read of such an array to be at most a constant number of rows ahead
  *   of that index and at most a constant number of rows behind it, proved
- *   with the affine analysis (gpu_affine.h) on the
- *   body with the pure functions it calls inlined, under the conditions of
- *   the branches around the read; sigma is the largest such distance (a
+ *   with the affine analysis (gpu_affine.h) on the body with the pure
+ *   functions it calls inlined (a body that calls a function that cannot
+ *   be inlined is not skewed, since the function may read arrays the
+ *   analysis does not see), under the conditions of the branches around
+ *   the read; sigma is the largest such distance (a
  *   lower bound of an array that a subscript is shifted by is assumed to
  *   be 1, which the host checks before skewing);
  * * computes, before the loop, the bytes of the arrays the parallel loops
@@ -155,7 +157,8 @@ struct Access {
 };
 
 // Walks the body of a parallel loop (with the functions it calls inlined)
-// in order, collecting its array accesses.
+// in order, collecting its array accesses; a call that was not inlined
+// clears `ok`.
 class AccessWalk {
 public:
     GpuAffineBuilder &b;
@@ -203,6 +206,11 @@ public:
             }
             void visit_ArrayBound(const ASR::ArrayBound_t &x) {
                 if (x.m_dim) visit_expr(*x.m_dim);
+            }
+            // A call left after inlining may read arrays by host or use
+            // association, which the walk does not see.
+            void visit_FunctionCall(const ASR::FunctionCall_t &) {
+                w->ok = false;
             }
             void visit_Var(const ASR::Var_t &x) {
                 ASR::expr_t *e = const_cast<ASR::expr_t*>(&x.base);
