@@ -1531,6 +1531,9 @@ lf_float128 lf_f128_pow(lf_float128 base, lf_float128 exp_v) {
     if (pa.sign && ikind == 0) return f128_make_nan();  /* (-x)^y */
     int rsign = pa.sign && odd;
     lf_float128 ax = lf_f128_abs(base);
+    /* (-1)^y = +-1, also for the huge (even) y the large path below
+     * would otherwise overflow. */
+    if (f128_cmp_internal(ax, one) == 0) return f_sign(one, rsign);
 
     /* Small integer exponents: repeated multiplication. */
     if (ikind && pb.exp <= 2) {
