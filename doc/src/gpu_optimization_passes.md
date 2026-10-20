@@ -325,12 +325,18 @@ do while (t0 < n)                 ! s iterations of the nest at a time
 
 For each launch the windows of the bands partition the rows, so every
 iteration of every loop runs exactly once, and the rows of one launch keep
-their order. A point of the k-th launch in a replay, at row r, runs in
-band floor((r - B + k sigma) / R). If it reads (or overwrites) row r + o of
-an array that the k'-th launch, k' < k, writes (or reads), that point of
-the earlier launch runs in band floor((r + o - B + k' sigma) / R), which is
-not later when o <= (k - k') sigma; o <= sigma suffices. Outputs of two
-launches to the same row keep their order for the same reason. The pass
+their order. A point x of the k-th launch in a replay runs in band
+floor((x - B + k sigma) / R) and accesses row x + o of an array (o = 0 for
+a write). Let it access the same row r as a point x' of the k'-th launch,
+k' < k, which accesses row x' + o', one of the two writing it. The earlier
+point runs in band floor((x' - B + k' sigma) / R), which is not later when
+x' + k' sigma <= x + k sigma, that is o - o' <= (k - k') sigma;
+o - o' <= sigma suffices, and within a band the launches keep their order.
+A read after a write (o' = 0) needs o <= sigma: the read is at most sigma
+rows ahead of its loop's row. A write after a read (o = 0) needs
+-o' <= sigma: the read is at most sigma rows behind, or a later launch
+overwrites the row before the earlier one has read it. Outputs of two
+launches to the same row (o = o' = 0) keep their order. The pass
 therefore requires:
 
 * every array a launched loop writes (other than a BLOCK's private ones)
@@ -338,10 +344,11 @@ therefore requires:
   index;
 * every read of such an array, in any of the loops, has a row subscript at
   most a constant number of rows ahead of the reading loop's outermost
-  index, proved with the affine analysis on a copy of the body with its
+  index and at most a constant number of rows behind it, proved with the affine analysis on a copy of the body with its
   pure functions inlined, under the conditions of the branches around the
   read and the bounds of the loop (a boundary formula `q(i, 1)` under
-  `j - 1 == 1` is 0 rows ahead). The largest such distance is sigma. A
+  `j - 1 == 1` is 0 rows ahead). The largest such distance, ahead or
+  behind, is sigma. A
   lower bound of an array that the subscript of an inlined dummy is shifted
   by is assumed to be 1 and checked by the host before it skews;
 * no array is aliased by a pointer, no loop assigns a host scalar (only

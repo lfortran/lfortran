@@ -33,12 +33,18 @@ namespace LCompilers {
  * The windows of a launch partition the rows (the first band reaches down
  * to minus infinity and the last up to infinity), so every iteration of
  * every loop runs once, and the order of the iterations of one row is
- * kept. A point of a later loop runs after those of the earlier loops it
- * depends on when they are at most sigma rows ahead of it: a loop
- * launched k-th that reads (or overwrites) a row r + o of an array that
- * an earlier loop, launched k' < k, writes (or reads) runs it in band
- * floor((r + k sigma) / R), not before band floor((r + o + k' sigma) / R)
- * when o <= sigma. So the pass:
+ * kept. The launch k runs its point x, which accesses the row x + o of an
+ * array (o = 0 for a write), in band floor((x + k sigma) / R) (measured
+ * from the first row, and clamped to the first and the last band). A point
+ * x of the launch k that depends on a point x' of an earlier launch k' < k
+ * (the two access the same row r, and one of them writes it) runs in a band
+ * not before that of x' when x' + k' sigma <= x + k sigma, that is when
+ * o - o' <= (k - k') sigma, which holds when o - o' <= sigma; within a
+ * band the launches run in their order. A write after a read (o = 0, o'
+ * the read's offset) needs -o' <= sigma, a read after a write (o' = 0)
+ * needs o <= sigma: sigma bounds the distance of every read of an array
+ * the loops write from the row of the loop, behind as well as ahead. So the
+ * pass:
  *
  * * takes a DO loop (or a perfect nest of DO loops of rectangular bounds)
  *   whose body, run on the host, only assigns scalars, tests them (IF,
@@ -48,7 +54,8 @@ namespace LCompilers {
  * * requires every array a parallel loop writes to be written at a row
  *   (one subscript) that is the outermost index of the loop, and every
  *   read of such an array to be at most a constant number of rows ahead
- *   of that index, proved with the affine analysis (gpu_affine.h) on the
+ *   of that index and at most a constant number of rows behind it, proved
+ *   with the affine analysis (gpu_affine.h) on the
  *   body with the pure functions it calls inlined, under the conditions of
  *   the branches around the read; sigma is the largest such distance (a
  *   lower bound of an array that a subscript is shifted by is assumed to
@@ -519,8 +526,8 @@ public:
     }
 
     // The analysis: the arrays the loops touch and sigma, the most rows a
-    // read of an array the loops write is ahead of the row the loop
-    // writes; false when the dependences are not of that form.
+    // read of an array the loops write is ahead of, or behind, the row of
+    // its loop; false when the dependences are not of that form.
     bool analyse(SymbolTable *scope, const std::vector<ASR::stmt_t*> &loops,
             std::map<std::string, ArrayInfo> &arrays, int64_t &sigma,
             std::map<std::string, ASR::expr_t*> &pins) {
@@ -629,10 +636,13 @@ public:
                 const GpuAffine &e = a.subs[info.row];
                 GpuAffine off = e.plus(v0, -1);
                 if (off.is_constant()) {
-                    sigma = std::max(sigma, off.constant);
+                    sigma = std::max(sigma, std::max(off.constant,
+                        -off.constant));
                     continue;
                 }
-                // Within the facts of the read: v0 + s - e >= 0.
+                // Within the facts of the read: v0 + s - e >= 0 (a read
+                // at most s rows ahead) and e - v0 + s >= 0 (at most s
+                // rows behind).
                 GpuConstraints base = la.bounds;
                 for (auto &t : e.terms) {
                     ASR::expr_t *lb = lower_bound_atom(la.atoms, t.first);
@@ -648,16 +658,19 @@ public:
                     f.insert(f.end(), c.begin(), c.end());
                     facts.push_back(f);
                 }
-                bool found = false;
-                for (int64_t s = -max_skew; s <= max_skew; s++) {
-                    GpuAffine goal = v0.plus(e, -1).plus(GpuAffine(s));
-                    if (gpu_affine_proves(facts, goal)) {
-                        sigma = std::max(sigma, s);
-                        found = true;
-                        break;
+                for (int dir = 1; dir >= -1; dir -= 2) {
+                    bool found = false;
+                    for (int64_t s = -max_skew; s <= max_skew; s++) {
+                        GpuAffine goal = v0.plus(e, -1).scaled(dir).plus(
+                            GpuAffine(s));
+                        if (gpu_affine_proves(facts, goal)) {
+                            sigma = std::max(sigma, s);
+                            found = true;
+                            break;
+                        }
                     }
+                    if (!found) return false;
                 }
-                if (!found) return false;
             }
         }
         bool any = false;
