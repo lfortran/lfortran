@@ -6431,6 +6431,7 @@ RUN(NAME gpu_metal_489 LABELS gfortran llvm metal cuda cuda_cpu EXTRAFILES gpu_m
 # GFortran 13 in Quick cannot compile the LOCAL locality of gpu_metal_505.
 RUN(NAME gpu_metal_505 LABELS llvm metal cuda_cpu cuda)
 RUN(NAME gpu_metal_506 LABELS gfortran llvm metal cuda_cpu cuda)
+RUN(NAME gpu_metal_507 LABELS gfortran llvm metal cuda_cpu cuda)
 # GFortran 13 in Quick does not support REDUCE.
 RUN(NAME gpu_metal_482 LABELS llvm metal cuda_cpu cuda)
 # GFortran 13 in Quick cannot compile these LOCAL locality fixtures.
@@ -6447,10 +6448,15 @@ if (LFORTRAN_BACKEND STREQUAL "cuda")
     set_target_properties(gpu_cuda_scratch_order PROPERTIES
         CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON)
     add_test(NAME gpu_cuda_scratch_order COMMAND gpu_cuda_scratch_order)
+    add_custom_target(gpu_cuda_scratch_order_discard DEPENDS gpu_cuda_scratch_order)
+    add_test(NAME gpu_cuda_scratch_order_discard
+        COMMAND gpu_cuda_scratch_order discard)
     add_custom_target(gpu_cuda_scratch_order_alias DEPENDS gpu_cuda_scratch_order)
     add_test(NAME gpu_cuda_scratch_order_alias
         COMMAND gpu_cuda_scratch_order aliases)
     set_tests_properties(gpu_cuda_scratch_order PROPERTIES LABELS cuda)
+    set_tests_properties(gpu_cuda_scratch_order_discard PROPERTIES
+        LABELS cuda TIMEOUT 30)
     set_tests_properties(gpu_cuda_scratch_order_alias PROPERTIES
         LABELS cuda TIMEOUT 30)
 endif()

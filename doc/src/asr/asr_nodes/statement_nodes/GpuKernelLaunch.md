@@ -117,6 +117,12 @@ the top of the iteration or inside IFs that compare loop variables with
 values the loop cannot change. The condition is that those loops, narrowed
 by the IFs, run over exactly the bounds of `a`.
 
+This proof does not imply that the buffer is unaliased. If any other buffer
+argument of the launch overlaps it, the runtime treats the discard as an
+ordinary write so that the other argument can still read its previous
+contents. The kernel layout's `gpu_kernel_argument.noalias` is a separate
+shared-ASR proof; it is not inferred from `overwritten`.
+
 Private array storage is placed after shared lowering by `gpu_kernel_storage`,
 before address-space specialization. Fixed-size arrays that fit the device's
 stack budget have `Thread` memory space. Larger arrays have `Global` memory

@@ -673,6 +673,11 @@ an `intent(in)` dummy -- and *written* otherwise.
   host (the entry is not *dirty*), the host bytes are copied in; after the
   launch the entry is dirty. A later launch handed the same range -- to read
   or to write -- uses the same device buffer, without copying anything.
+* A written buffer whose launch records a whole-array overwrite before read
+  can use `LFORTRAN_GPU_WRITE_DISCARD` when its host coverage condition holds.
+  CUDA and Metal skip copying it in unless another buffer argument overlaps
+  it, in which case it remains an ordinary write. This does not establish
+  `gpu_kernel_argument.noalias`; that proof is independent.
 * `lfortran_gpu_sync` waits for every launch, copies every dirty entry back
   to the host, and marks it clean.
 * `lfortran_gpu_discard` forgets the dirty entries of a host range that is
@@ -687,14 +692,19 @@ an `intent(in)` dummy -- and *written* otherwise.
 
 On the CPU emulation (`--gpu=cuda_cpu`) a launch runs the kernel on the
 host's memory before it returns, so there is never anything to copy or wait
-for. The CUDA runtime keeps the same table and orders copies and launches
+for. It poison-fills unaliased discard buffers before dispatch so that a wrong
+overwrite proof cannot rely on their previous contents.
+The CUDA runtime keeps the same table and orders copies and launches
 on one stream. It keeps scratch and read-only upload buffers per kernel and
 argument slot, reusing their capacity and deferring replaced allocations until
 a synchronization. Preparing arguments can itself synchronize when the deferred
 queue or residency table fills. After such a synchronization, CUDA prepares all
 bindings again before dispatch: writable residents must still be present and
 dirty for the new launch, and reads must use their current bindings. This does
-not add a synchronization to each launch.
+not add a synchronization to each launch. Discard buffers participate in this
+same retry and writable-residency preparation. Same-address writable aliases,
+including discards downgraded by overlap, use one covering extent so that
+preparation cannot alternate between their different byte counts.
 
 The Metal runtime encodes the launches one after another into one compute
 encoder and commits its command buffer every 64 launches and at every wait:
@@ -881,6 +891,9 @@ The `test_gpu_cuda_api_state*` unit tests compile the production CUDA runtime
 against a small host CUDA API test double. They exercise deferred-queue saturation
 for scratch and read-only buffers, and residency-table eviction. Copies and
 launches are queued in order, and the tests check readback and allocation lifetime.
+Discard variants exercise both flush paths without uploading the output.
+Alias cases also check that a discard shares the covering writable resident,
+falls back to one upload, and preserves values read before an overlapping write.
 These are API-state tests, not CUDA_CPU emulation, native GPU execution, or
 performance evidence:
 
@@ -897,6 +910,13 @@ be 201. Run it on native CUDA even when the host API-state tests pass:
 ```bash
 pixi run -e llvm11 integration_tests -b cuda -t '^gpu_cuda_scratch_order$' -j6 > cuda-scratch-order.log 2>&1
 ```
+
+`gpu_cuda_scratch_order_discard` repeats that sequence with a discarded output;
+`gpu_cuda_scratch_order_alias` includes the mixed write/discard alias cases.
+`gpu_metal_507` checks a full overwrite through a target array that reads its
+old elements through a pointer alias, on the ordinary, CPU-emulated, Metal and
+native CUDA paths. The CUDA API-state double does not replace any of these
+backend tests.
 
 ## Open questions
 
