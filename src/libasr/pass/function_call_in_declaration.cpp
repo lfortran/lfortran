@@ -1085,8 +1085,9 @@ private:
         expr_contains_functionCall_with_Nonscalar_return() = default;
         bool found = false; // If any sub-expression is of non-scalar return
         bool is_non_scalar(ASR::ttype_t* type){
-            // A result returned through an argument, which includes an
-            // allocatable scalar result of an intrinsic type.
+            // A result returned through an argument, for example any
+            // allocatable or polymorphic result. The subroutine_from_function
+            // pass would assign it only after the declarations.
             if (PassUtils::is_result_returned_through_argument(type)) {
                 return true;
             }
