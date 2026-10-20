@@ -11,7 +11,9 @@ program real128_intrinsic_math_03
     integer :: i
 
     ! Zero known only at run time, so that nothing is constant-folded.
-    zero = command_argument_count()
+    ! max(..., 0): on wasm32-wasi, LFortran's entry point passes argc = 0,
+    ! so command_argument_count() returns -1 there.
+    zero = max(command_argument_count(), 0)
     one = 1 + zero
     two = 2 + zero
     half = one / 2

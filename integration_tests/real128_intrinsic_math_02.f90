@@ -10,7 +10,9 @@ program real128_intrinsic_math_02
     integer :: n
 
     ! Zero known only at run time, so that nothing is constant-folded.
-    n = command_argument_count()
+    ! max(..., 0): on wasm32-wasi, LFortran's entry point passes argc = 0,
+    ! so command_argument_count() returns -1 there.
+    n = max(command_argument_count(), 0)
     zero = n
     one = 1 + zero
     two = 2 + zero
