@@ -1,3 +1,5 @@
+#include <limits>
+
 #include <libasr/asr.h>
 #include <libasr/asr_builder.h>
 #include <libasr/asr_utils.h>
@@ -139,6 +141,7 @@ public:
     // The limits of each loop, narrowed by the guards of the assignment.
     struct Limits {
         std::vector<ASR::expr_t*> start, end;
+        std::vector<ASR::expr_t*> nonempty;
     };
 
     enum Result { NotFound, Found, Fails };
@@ -298,6 +301,11 @@ public:
         ASR::expr_t *e = b.i2i_t(dup(bound), wide);
         ASR::expr_t *&start = limits.start[d];
         ASR::expr_t *&end = limits.end[d];
+        bool wide_bound = ASRUtils::extract_kind_from_ttype_t(
+            ASRUtils::expr_type(bound)) == 8;
+        // Strict endpoints of smaller kinds fit after widening. For kind 8,
+        // clamp before +/- 1 and separately exclude the empty range: the
+        // conjunction in the coverage condition need not short-circuit.
         switch (op) {
             case ASR::cmpopType::Eq:
                 start = max(start, e);
@@ -307,12 +315,22 @@ public:
                 end = min(end, e);
                 return true;
             case ASR::cmpopType::Lt:
+                if (wide_bound) {
+                    constexpr int64_t lowest = std::numeric_limits<int64_t>::min();
+                    limits.nonempty.push_back(b.Gt(dup(e), b.i64(lowest)));
+                    e = max(e, b.i64(lowest + 1));
+                }
                 end = min(end, b.Sub(e, b.i64(1)));
                 return true;
             case ASR::cmpopType::GtE:
                 start = max(start, e);
                 return true;
             case ASR::cmpopType::Gt:
+                if (wide_bound) {
+                    constexpr int64_t highest = std::numeric_limits<int64_t>::max();
+                    limits.nonempty.push_back(b.Lt(dup(e), b.i64(highest)));
+                    e = min(e, b.i64(highest - 1));
+                }
                 start = max(start, b.Add(e, b.i64(1)));
                 return true;
             default:
@@ -490,6 +508,9 @@ ASR::expr_t* gpu_overwrite_condition(Allocator &al, const Location &loc,
             b.Eq(search.found.end[d],
                 b.ArrayUBound(search.dup(array), k + 1, 8)));
         condition = condition ? b.And(condition, dim) : dim;
+    }
+    for (ASR::expr_t *nonempty : search.found.nonempty) {
+        condition = b.And(condition, nonempty);
     }
     return condition;
 }

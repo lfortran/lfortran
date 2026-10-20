@@ -678,6 +678,10 @@ an `intent(in)` dummy -- and *written* otherwise.
   CUDA and Metal skip copying it in unless another buffer argument overlaps
   it, in which case it remains an ordinary write. This does not establish
   `gpu_kernel_argument.noalias`; that proof is independent.
+  Strict integer guards are narrowed without overflowing their endpoints,
+  including dynamic `integer(8)` bounds. A strict guard requiring a value
+  below the smallest integer or above the largest cannot establish an
+  overwrite and retains ordinary write access.
 * `lfortran_gpu_sync` waits for every launch, copies every dirty entry back
   to the host, and marks it clean.
 * `lfortran_gpu_discard` forgets the dirty entries of a host range that is
@@ -917,6 +921,12 @@ pixi run -e llvm11 integration_tests -b cuda -t '^gpu_cuda_scratch_order$' -j6 >
 old elements through a pointer alias, on the ordinary, CPU-emulated, Metal and
 native CUDA paths. The CUDA API-state double does not replace any of these
 backend tests.
+
+`gpu_discard_guard_extremes` checks strict and inclusive guards at both
+`integer(8)` extrema, constant and dynamic bounds, reversed comparisons,
+conjoined guards, and narrower `integer(4)` bounds. Its CUDA_CPU checks reject
+poisoned NaNs as well as finite wrong values; it also runs with LLVM,
+GFortran, and native CUDA.
 
 ## Open questions
 
