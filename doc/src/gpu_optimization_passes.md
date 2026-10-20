@@ -91,19 +91,42 @@ Legality:
 * The intermediate arrays keep the values the producer gave them, which the
   program may read later. The two loops must be the body of `do` loops (time
   steps, stages), taken from the innermost outwards while each has a unit
-  step and bounds without function calls, is not left early (`exit`,
-  `cycle`, `return`, `go to`), and its other statements neither read nor
-  write the intermediate arrays, call nothing whose effects are unknown (a
-  subroutine, an impure function or a function that is not
-  self-contained), and assign neither the loop's variable or end nor what
-  the producer's bounds and tests read. The producer's bounds and tests must
-  not read the loop's variable, and the bounds of the `do` loops nested in
-  it must read neither its variable nor anything assigned in it, so that
-  they run the same iterations in each of its iterations (in particular, at
-  least one in its last iteration whenever they do in any). Then only the
-  last iteration's values can be read later: the original loops run in that
-  iteration and the fused loop in all others. Without such loops nothing is
-  fused.
+  step and bounds without function calls, and is not left early (`exit`,
+  `cycle`, `return`, `go to`). Its other statements, including those nested
+  in `block`, `if`, `select case` and `do` constructs, must neither read nor
+  write the intermediate arrays and must call only self-contained
+  procedures. Their effects must be ones the pass models; any other
+  statement or expression ends the chain. What they may define is computed
+  by one walker that classifies every statement and expression by its kind:
+  * assignments, `do` variables and internal files written define what they
+    name;
+  * a call of a pure procedure, or of a self-contained function without
+    input/output (impure ones included), defines each actual argument whose
+    dummy is not `intent(in)` or `value`; a pointer dummy, a type-bound or
+    procedure-pointer call and a call of any other procedure (an impure
+    subroutine, for example) are unknown;
+  * `print` and `write` without specifiers that define something define
+    nothing; `iostat=`, `iomsg=`, `id=`, a namelist, user-defined output,
+    asynchronous output and an implied `do` in an output list are unknown;
+  * every other kind (input, `allocate`, pointer association, `associate`,
+    intrinsic subroutines, ...) is unknown.
+
+  They must assign neither the loop's variable nor what the producer's
+  bounds and tests read. The producer's bounds and tests must not read the
+  loop's variable, nor a variable that may change through another name:
+  a pointer, a `target`, a variable in a common block, a `volatile` one, or
+  one named where the program takes an address or associates a pointer, on
+  either side (this covers `equivalence`, in a procedure or a module). The
+  bounds of the `do` loops nested in it must read neither its variable nor
+  anything assigned in it nor such a variable, so that they run the same
+  iterations in each of its iterations (in particular, at least one in its
+  last iteration whenever they do in any). Then only the last iteration's
+  values can be read later: the original loops run in that iteration and
+  the fused loop in all others. The last iteration is recognized by
+  comparing the loop's variable with the loop's end, which is copied into a
+  variable right before the loop, as the loop itself evaluates it once when
+  it starts; the statements of the loop may therefore change what the end
+  reads, and assign it. Without such loops nothing is fused.
 
 Cost model: an element is computed by every iteration that reads it. The
 fusion is made when that extra arithmetic, the producer's expression with
@@ -128,7 +151,8 @@ on every element the consumer does not write, and nothing looks at the array
 between two fused executions: no other statement in those loops reads or
 writes the array, and the consumer writes the same elements in every
 execution (its bounds read neither the variables of those loops nor
-anything assigned in them). The
+anything assigned in them nor a variable that may change through another
+name). The
 original loops, run in the last iteration, first copy back what the latest
 execution left in the copy, if it is there. Exchanging the allocations with
 `move_alloc` would do the same, but the host statements around a move make
