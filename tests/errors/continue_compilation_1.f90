@@ -3451,3 +3451,43 @@ subroutine cc1_external_name_user()
     cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
 end subroutine cc1_external_name_user
+
+! An automatic object cannot have the save attribute (Fortran 2023 C814),
+! whether it is given by an attribute or by a save statement. A save
+! statement without a list does not save an automatic object.
+subroutine cc1_saved_automatic_sub(n)
+    integer, intent(in) :: n
+    integer, save :: c(n)  ! {Error} automatic object 'c' cannot have the save attribute
+    block
+        integer, save :: e(n:10)  ! {Error} automatic object 'e' cannot have the save attribute
+    end block
+end subroutine cc1_saved_automatic_sub
+
+integer function cc1_saved_automatic_fn(n)
+    integer, intent(in) :: n
+    character(len=n) :: str  ! {Error} automatic object 'str' cannot have the save attribute
+    save :: str
+    cc1_saved_automatic_fn = len(str)
+end function cc1_saved_automatic_fn
+
+module cc1_saved_automatic_mod
+    interface
+        module subroutine cc1_saved_automatic_sep(n)
+            integer, intent(in) :: n
+        end subroutine cc1_saved_automatic_sep
+    end interface
+end module cc1_saved_automatic_mod
+
+submodule (cc1_saved_automatic_mod) cc1_saved_automatic_smod
+contains
+    module procedure cc1_saved_automatic_sep
+        integer, save :: c(n)  ! {Error} automatic object 'c' cannot have the save attribute
+    end procedure cc1_saved_automatic_sep
+end submodule cc1_saved_automatic_smod
+
+subroutine cc1_bare_save_automatic(n)
+    integer, intent(in) :: n
+    integer :: c(n)
+    save
+    c = 1
+end subroutine cc1_bare_save_automatic
