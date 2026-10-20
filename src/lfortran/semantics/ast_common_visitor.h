@@ -21812,22 +21812,47 @@ public:
         return ASR::make_PointerToCPtr_t(al, x.base.base.loc, v_Var, type, nullptr);
     }
 
-    ASR::asr_t* create_CSizeOf(const AST::FuncCallOrArray_t& x) {
-        Vec<ASR::expr_t*> args;
-        std::vector<std::string> kwarg_names = {"X"};
-        handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_sizeof"));
-        ASR::expr_t *arg = args[0];
+    // An array whose size is not known at compile time gets size(arg) * element size.
+    ASR::asr_t* make_byte_size(ASR::expr_t* arg, const Location& loc,
+            const std::string& name) {
+        ASR::ttype_t *size_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
-        ASR::ttype_t *size_type = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, x.base.base.loc, 8));
+        ASR::expr_t *n_elem = nullptr;
+        if (ASRUtils::is_array(arg_type) &&
+                ASRUtils::get_fixed_size_of_array(arg_type) <= 0) {
+            if (ASRUtils::extract_physical_type(arg_type) ==
+                    ASR::array_physical_typeType::UnboundedPointerArray) {
+                diag.semantic_error_label(
+                    "the argument of `" + name + "` cannot be an assumed-size array",
+                    {arg->base.loc},
+                    "an assumed-size array has no known size; give the dummy explicit bounds, for example `a(n)`");
+                throw SemanticAbort();
+            }
+            n_elem = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
+                al, loc, arg, nullptr, size_type, nullptr, false));
+            arg_type = ASRUtils::type_get_past_array(
+                ASRUtils::type_get_past_allocatable_pointer(arg_type));
+        }
         ASR::expr_t *value = nullptr;
         int64_t type_size = ASRUtils::get_type_byte_size(arg_type);
         if (type_size > 0) {
             value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                al, x.base.base.loc, type_size, size_type));
+                al, loc, type_size, size_type));
         }
-        return ASR::make_SizeOfType_t(al, x.base.base.loc, arg_type,
+        ASR::asr_t *size = ASR::make_SizeOfType_t(al, loc, arg_type,
             size_type, value);
+        if (n_elem == nullptr) {
+            return size;
+        }
+        return ASR::make_IntegerBinOp_t(al, loc, n_elem, ASR::binopType::Mul,
+            ASRUtils::EXPR(size), size_type, nullptr);
+    }
+
+    ASR::asr_t* create_CSizeOf(const AST::FuncCallOrArray_t& x) {
+        Vec<ASR::expr_t*> args;
+        std::vector<std::string> kwarg_names = {"X"};
+        handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("c_sizeof"));
+        return make_byte_size(args[0], x.base.base.loc, "c_sizeof");
     }
 
     void warn_getcwd_extension(const Location& loc) {
@@ -21845,18 +21870,7 @@ public:
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"X"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 1, std::string("sizeof"));
-        ASR::expr_t *arg = args[0];
-        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
-        ASR::ttype_t *size_type = ASRUtils::TYPE(
-            ASR::make_Integer_t(al, x.base.base.loc, 8));
-        ASR::expr_t *value = nullptr;
-        int64_t type_size = ASRUtils::get_type_byte_size(arg_type);
-        if (type_size > 0) {
-            value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                al, x.base.base.loc, type_size, size_type));
-        }
-        return ASR::make_SizeOfType_t(al, x.base.base.loc, arg_type,
-            size_type, value);
+        return make_byte_size(args[0], x.base.base.loc, "sizeof");
     }
     
     ASR::asr_t* handle_intrinsic_float_dfloat(Allocator &al, Vec<ASR::call_arg_t> args,
