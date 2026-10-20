@@ -1148,6 +1148,18 @@ public:
             }
         }
         bool assume = true, pin = shifted;
+        if (pin) {
+            // Pins that contradict the assumed bounds (a test of the
+            // producer starts its writes after its first index) would
+            // prove anything and leave a fused loop that never runs.
+            GpuConstraints all;
+            for (auto *cs : {&box, &pins}) {
+                for (auto &bk : *cs) {
+                    all.insert(all.end(), bk.second.begin(), bk.second.end());
+                }
+            }
+            if (gpu_affine_infeasible(all)) pin = false;
+        }
         if (!(pin && prove_reads(true, true))) {
             pin = false;
             if (prove_reads(false, false)) {
