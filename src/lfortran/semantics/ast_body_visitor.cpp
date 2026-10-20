@@ -496,6 +496,7 @@ public:
                 }
             }
         }
+        report_saved_without_declaration();
         if (block_interfaces) {
             std::unique_ptr<BlockInterfaceVisitor> interfaces
                 = std::move(block_interfaces);
