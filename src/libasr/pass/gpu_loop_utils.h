@@ -139,7 +139,6 @@ private:
     Allocator &al;
     std::function<bool(ASR::FunctionCall_t*)> select;
     int depth = 0;
-    bool failed = false;
     bool inline_stmts(SymbolTable *scope, ASR::stmt_t **&body,
         size_t &n_body);
     bool inline_stmt(SymbolTable *scope, ASR::stmt_t *&s);
