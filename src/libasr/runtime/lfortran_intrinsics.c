@@ -12183,6 +12183,25 @@ static bool is_character_read_target(const ReadTarget *t)
     return t->type_code == 0 || t->type_code == 8;
 }
 
+// A scalar target whose type its edit descriptor cannot read: a character
+// item for a numeric or logical descriptor, or a non-character item for A.
+// This is an error condition: it sets IOSTAT, or else ends the program.
+static bool read_target_type_mismatch(int32_t *iostat, const ReadTarget *t)
+{
+    if (iostat) {
+        *iostat = 5010;
+        return false;
+    }
+    if (is_character_read_target(t)) {
+        fprintf(stderr, "Runtime Error: formatted READ of a character item "
+            "with a numeric or logical edit descriptor\n");
+    } else {
+        fprintf(stderr, "Runtime Error: formatted READ of a non-character item "
+            "with an A edit descriptor\n");
+    }
+    exit(1);
+}
+
 static int64_t get_array_read_offset(const ArrayReadCont *arr_cont, int32_t idx)
 {
     int64_t offset = 0;
@@ -12344,8 +12363,7 @@ static bool handle_read_A(InputSource *inputSource, va_list *args, int width, bo
     }
 
     if (!is_character_read_target(&t)) {
-        if (iostat) *iostat = 5010;
-        return false;
+        return read_target_type_mismatch(iostat, &t);
     }
     return read_character_target(inputSource, width, advance_no, iostat, chunk,
         consumed_newline, pad_no, (char*)t.ptr, t.len, t.kind);
@@ -12407,8 +12425,7 @@ static bool handle_read_L(InputSource *inputSource, va_list *args, int width, bo
             iostat, chunk, consumed_newline, pad_no, arr_cont);
     }
     if (is_character_read_target(&t)) {
-        if (iostat) *iostat = 5010;
-        return false;
+        return read_target_type_mismatch(iostat, &t);
     }
     int32_t type_code = t.type_code;
     void* log_ptr = t.ptr;
@@ -12484,8 +12501,7 @@ static bool handle_read_I(InputSource *inputSource, va_list *args, int width, bo
             iostat, chunk, consumed_newline, pad_no, blank_mode, arr_cont);
     }
     if (is_character_read_target(&t)) {
-        if (iostat) *iostat = 5010;
-        return false;
+        return read_target_type_mismatch(iostat, &t);
     }
     int32_t type_code = t.type_code;
     void* int_ptr = t.ptr;
@@ -12565,8 +12581,7 @@ static bool handle_read_BOZ(InputSource *inputSource, va_list *args, int width, 
             chunk, consumed_newline, pad_no, blank_mode, base, arr_cont);
     }
     if (is_character_read_target(&t)) {
-        if (iostat) *iostat = 5010;
-        return false;
+        return read_target_type_mismatch(iostat, &t);
     }
     int32_t type_code = t.type_code;
     void* int_ptr = t.ptr;
@@ -12701,8 +12716,7 @@ static bool handle_read_real(InputSource *inputSource, va_list *args, int width,
 
     // Scalar path
     if (is_character_read_target(&t)) {
-        if (iostat) *iostat = 5010;
-        return false;
+        return read_target_type_mismatch(iostat, &t);
     }
     int32_t type_code = t.type_code;
     void* real_ptr = t.ptr;
