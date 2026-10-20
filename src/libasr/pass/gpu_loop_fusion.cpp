@@ -1150,6 +1150,10 @@ public:
                         touched = true;
                     }
                 }
+                // The loop's own variable changes from one iteration to
+                // the next: the producer's bounds and tests must not read
+                // it.
+                if (bound_syms.count(lv)) touched = true;
                 // The DO loops nested in it run the same iterations in
                 // each of its iterations, so that its last iteration runs
                 // theirs: their bounds read neither its variable nor
@@ -1168,6 +1172,9 @@ public:
                 if (touched) break;
                 other_writes.insert(wa.begin(), wa.end());
                 assigned_in_loops.insert(sc_all.begin(), sc_all.end());
+                // The consumer's bounds are fixed only when they do not
+                // read the loop's variable either.
+                assigned_in_loops.insert(lv);
                 other_unknown = other_unknown || unk;
                 loops.push_back(l);
                 loop_stmts.push_back(an.stmt);
