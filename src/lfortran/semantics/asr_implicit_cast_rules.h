@@ -306,6 +306,19 @@ public:
                             value = ASRUtils::make_RealConstant_util(al, a_loc,
                                 rval, dest_type2);
                         }
+                    } else if (src_kind == 16 || dest_kind == 16) {
+                        // kind=16 m_r is a pointer to the binary128 bytes
+                        if (src_kind == dest_kind) {
+                            value = ASRUtils::make_RealConstant_r16(al, a_loc,
+                                ASRUtils::real_constant_get_r16(r), dest_type2);
+                        } else if (dest_kind == 16) {
+                            value = ASRUtils::make_RealConstant_r16(al, a_loc,
+                                lf_f128_from_double(r->m_r), dest_type2);
+                        } else {
+                            value = ASRUtils::make_RealConstant_util(al, a_loc,
+                                lf_f128_to_double(ASRUtils::real_constant_get_r16(r)),
+                                dest_type2);
+                        }
                     } else {
                         double rval = r->m_r;
                         value = (ASR::expr_t *)ASR::make_RealConstant_t(al, a_loc,
