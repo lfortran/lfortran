@@ -6185,6 +6185,9 @@ public:
         if (v.m_common_block != nullptr) {
             reject("variable '" + name + "' is already in a common block");
         }
+        if (v.m_intent == ASRUtils::intent_return_var) {
+            reject("function result '" + name + "' cannot be in a common block");
+        }
         if (v.m_intent != ASR::intentType::Local) {
             reject("dummy argument '" + name + "' cannot be in a common block");
         }
@@ -6324,8 +6327,9 @@ public:
     }
 
     // Fortran 2023 C8124: a function result is not a common block object.
-    // A COMMON statement of a function can name its result before the
-    // variable is known to be the result, so this is diagnosed once it is.
+    // In a function visited in one go (see `signature_statements()`), a
+    // COMMON statement can name its result before the variable is known to
+    // be the result, so this is diagnosed once it is.
     // The view of the block is removed, with what it placed, so that the
     // variables keep storage of their own.
     void reject_common_block_function_result(ASR::Variable_t &result) {

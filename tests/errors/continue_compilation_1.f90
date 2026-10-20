@@ -3451,3 +3451,20 @@ subroutine cc1_external_name_user()
     cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
 end subroutine cc1_external_name_user
+
+! A specification expression cannot call the function it belongs to, not even
+! through another function.
+module cc1_spec_function_loop
+implicit none
+contains
+    pure integer function cc1_sfl_f1(n, x)
+        integer, intent(in) :: n
+        integer, intent(in) :: x(cc1_sfl_f2(n, [1]))  ! {Error} a specification expression calls the function it belongs to: 'cc1_sfl_f2' calls 'cc1_sfl_f1', 'cc1_sfl_f1' calls 'cc1_sfl_f2'
+        cc1_sfl_f1 = sum(x)
+    end function cc1_sfl_f1
+    pure integer function cc1_sfl_f2(n, y)
+        integer, intent(in) :: n
+        integer, intent(in) :: y(cc1_sfl_f1(n, [1, 2]))
+        cc1_sfl_f2 = n + sum(y)
+    end function cc1_sfl_f2
+end module cc1_spec_function_loop

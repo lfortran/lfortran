@@ -1041,10 +1041,10 @@ semantic error: a pointer or an allocatable variable cannot be an equivalence ob
      |                  ^ not allowed in EQUIVALENCE
 
 semantic error: function result 'r' cannot be in a common block
-    --> tests/errors/continue_compilation_1.f90:2307:16
+    --> tests/errors/continue_compilation_1.f90:2308:29
      |
-2307 |     integer :: r
-     |                ^ 
+2308 |     common /cc1_result_blk/ r  ! {Error} function result 'r' cannot be in a common block
+     |                             ^ 
 
 semantic error: 'cc1_eu_cnt' is use-associated and cannot appear in an EQUIVALENCE statement
     --> tests/errors/continue_compilation_1.f90:2326:18
@@ -1483,6 +1483,12 @@ semantic error: Kind 3 is not supported for Logical
      |
 3390 |     logical*3 :: cc1_cs_l3  ! {Error} Kind 3 is not supported for Logical
      |     ^^^^^^^^^ 
+
+semantic error: a specification expression calls the function it belongs to: 'cc1_sfl_f2' calls 'cc1_sfl_f1', 'cc1_sfl_f1' calls 'cc1_sfl_f2'
+    --> tests/errors/continue_compilation_1.f90:3462:34
+     |
+3462 |         integer, intent(in) :: x(cc1_sfl_f2(n, [1]))  ! {Error} a specification expression calls the function it belongs to: 'cc1_sfl_f2' calls 'cc1_sfl_f1', 'cc1_sfl_f1' calls 'cc1_sfl_f2'
+     |                                  ^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Restriction type mismatch with provided function argument
     --> tests/errors/continue_compilation_1.f90:1832:33
