@@ -1,4 +1,5 @@
 #include <libasr/exception.h>
+#include <libasr/pass/gpu_loop_utils.h>
 #include <libasr/string_utils.h>
 
 #include <algorithm>
@@ -530,6 +531,13 @@ namespace LCompilers::CommandLineInterface {
                 "The GPU backend `" + compiler_options.gpu_backend
                 + "` is not supported; supported values: metal, cuda, cuda_cpu"
             );
+        }
+        {
+            std::string message;
+            if (!lc::gpu_loop_transforms_valid(
+                    compiler_options.po.gpu_loop_transforms, message)) {
+                throw lc::LCompilersException(message);
+            }
         }
 
         for (auto &f_flag : opts.f_flags) {

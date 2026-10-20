@@ -9,20 +9,84 @@
 
 namespace LCompilers {
 
-bool gpu_loop_transform_enabled(const PassOptions &pass_options,
-        GpuLoopTransform t) {
-    const std::string &s = pass_options.gpu_loop_transforms;
-    if (s == "all") return true;
-    if (s == "none" || s.empty()) return false;
+namespace {
+
+struct GpuLoopTransformName {
+    const char *name;
+    GpuLoopTransform transform;
+};
+
+// The names `--gpu-loop-transforms` lists.
+const GpuLoopTransformName gpu_loop_transform_names[] = {
+    {"fuse", GpuLoopFuse},
+    {"swap", GpuLoopSwap},
+};
+
+// The transformations a value of `--gpu-loop-transforms` selects, or
+// false with the first name it does not know in `unknown`.
+bool parse_gpu_loop_transforms(const std::string &s, int &mask,
+        std::string &unknown) {
+    mask = 0;
+    if (s == "all") {
+        for (auto &n : gpu_loop_transform_names) mask |= n.transform;
+        return true;
+    }
+    if (s == "none") return true;
     std::stringstream ss(s);
     std::string item;
+    bool any = false;
     while (std::getline(ss, item, ',')) {
-        if ((item == "fuse" && t == GpuLoopFuse)
-                || (item == "swap" && t == GpuLoopSwap)) {
-            return true;
+        any = true;
+        bool known = false;
+        for (auto &n : gpu_loop_transform_names) {
+            if (item == n.name) {
+                mask |= n.transform;
+                known = true;
+            }
+        }
+        if (!known) {
+            unknown = item;
+            return false;
         }
     }
+    // An empty value, or one that ends with a comma.
+    if (!any || s.back() == ',') {
+        unknown = "";
+        return false;
+    }
+    return true;
+}
+
+} // namespace
+
+bool gpu_loop_transforms_valid(const std::string &value,
+        std::string &message) {
+    int mask = 0;
+    std::string unknown;
+    if (parse_gpu_loop_transforms(value, mask, unknown)) return true;
+    std::string names;
+    for (auto &n : gpu_loop_transform_names) {
+        names += std::string(names.empty() ? "" : ", ") + n.name;
+    }
+    message = "the value `" + value + "` of `--gpu-loop-transforms` is not "
+        "supported";
+    if (!unknown.empty()) {
+        message += ": unknown transformation `" + unknown + "`";
+    }
+    message += "; supported values: all, none, or a comma separated list of "
+        + names;
     return false;
+}
+
+bool gpu_loop_transform_enabled(const PassOptions &pass_options,
+        GpuLoopTransform t) {
+    int mask = 0;
+    std::string unknown;
+    if (!parse_gpu_loop_transforms(pass_options.gpu_loop_transforms, mask,
+            unknown)) {
+        return false;
+    }
+    return (mask & t) != 0;
 }
 
 bool gpu_loop_transforms_apply(const PassOptions &pass_options) {

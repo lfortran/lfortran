@@ -28,6 +28,11 @@ enum GpuLoopTransform {
 };
 bool gpu_loop_transform_enabled(const PassOptions &pass_options,
     GpuLoopTransform t);
+// Whether `value` is a valid value of `--gpu-loop-transforms`: `all`,
+// `none`, or a comma separated list of the names of the transformations.
+// Otherwise `message` says why not.
+bool gpu_loop_transforms_valid(const std::string &value,
+    std::string &message);
 // Whether the loop transformations run at all: for CUDA (and its CPU
 // emulation), where they have been measured; other devices keep their
 // loops as written.
