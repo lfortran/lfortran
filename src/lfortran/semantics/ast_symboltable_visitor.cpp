@@ -310,20 +310,20 @@ public:
         SymbolTable *scope;
         AST::program_unit_t **procedures;
         size_t n_procedures;
-        // Whether these are the module procedures of a module or submodule,
-        // and then its specification part.
+        // Whether these are the module procedures of a module or submodule.
         bool is_module;
-        AST::decl_stmt_t **module_items;
-        size_t n_module_items;
+        // The specification part of the scoping unit that contains them.
+        AST::decl_stmt_t **items;
+        size_t n_items;
 
         ContainedProcedureScope(SymbolTableVisitor &v_,
                 AST::program_unit_t **procedures_, size_t n_procedures_,
-                bool is_module_=false, AST::decl_stmt_t **module_items_=nullptr,
-                size_t n_module_items_=0)
+                bool is_module_=false, AST::decl_stmt_t **items_=nullptr,
+                size_t n_items_=0)
             : v(v_), enclosing(v_.contained_procedure_scope),
               scope(v_.current_scope), procedures(procedures_),
               n_procedures(n_procedures_), is_module(is_module_),
-              module_items(module_items_), n_module_items(n_module_items_) {
+              items(items_), n_items(n_items_) {
             v.contained_procedure_scope = this;
         }
 
@@ -347,10 +347,10 @@ public:
             return nullptr;
         }
 
-        // Whether an interface body of the module's specification part
-        // declares the procedure `name`.
+        // Whether an interface body of the specification part declares the
+        // procedure `name`.
         bool has_interface_body(const std::string &name) {
-            return interface_body_declares(module_items, 0, n_module_items, name);
+            return interface_body_declares(items, 0, n_items, name);
         }
 
     };
@@ -1288,7 +1288,8 @@ public:
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
         record_procedure_references(current_scope, x.m_items, x.n_items);
-        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
+        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains,
+            false, x.m_items, x.n_items);
         ClassProcedureScope class_procedure_scope(*this);
         std::vector<std::string> saved_explicit_intrinsic_procedures = explicit_intrinsic_procedures;
         explicit_intrinsic_procedures.clear();
@@ -2230,7 +2231,8 @@ public:
         }
 
         record_procedure_references(current_scope, x.m_items, x.n_items);
-        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
+        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains,
+            false, x.m_items, x.n_items);
         bool subroutine_has_alternate_returns = false;
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
@@ -2879,7 +2881,8 @@ public:
         }
 
         record_procedure_references(current_scope, x.m_items, x.n_items);
-        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
+        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains,
+            false, x.m_items, x.n_items);
         for (size_t i=0; i<x.n_args; i++) {
             char *arg=x.m_args[i].m_arg;
             current_procedure_args.push_back(to_lower(arg));
@@ -6619,7 +6622,8 @@ public:
         SymbolTable *parent_scope = current_scope;
         TemplateLocalStateScope template_state(*this);
         is_template = true;
-        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains);
+        ContainedProcedureScope contained_procedures(*this, x.m_contains, x.n_contains,
+            false, x.m_items, x.n_items);
         // The type-bound procedures and generic bindings of the derived types
         // declared in the template are added in the template's scope; those
         // of the host's types are added once the host is complete.
