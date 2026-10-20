@@ -15,6 +15,13 @@ from statements and empty cells. Real/complex output preserves the prompt's
 frontends. The existing `%%showast`, `%%showasr`, `%%showllvm`, `%%showasm`,
 `%%showcpp` and `%%showfmt` inspection cells use the same service.
 
+The JIT invocation boundary preserves the ASR result kind even when its LLVM
+signature is not distinctive. On Windows, complex(4) returns two float bit
+patterns in an integer register; complex(8) writes two doubles through an
+output pointer. `FortranEvaluator` calls those primitive signatures explicitly
+rather than relying on the C++ `std::complex` return convention. This does not
+change compiled Fortran's ABI or the service's typed-result contract.
+
 `EvaluationEvents` receives inspection streams, display data and clear-output
 notifications synchronously on the execution thread. The existing
 `lfortran_display_data(const char *, const char *)` and
@@ -82,5 +89,9 @@ transport, asynchronous capture, a terminal client, or interrupt recovery.
 
 Focused CTest targets are `test_evaluation`, `test_runtime_input` and the
 existing native `test_repl` (including its compiled READ PTY case).
+The registered `test_lfortran` complex-result cases exercise the JIT-only
+invocation boundary, including Windows lowering on native JIT hosts and the
+native Windows caller in Windows CI; a compiled Fortran program cannot test
+this C++ invocation boundary.
 `integration_tests/runtime_input_records.f90` checks ordinary named/internal
 file behavior with both LFortran and GFortran.
