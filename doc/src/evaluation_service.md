@@ -67,9 +67,13 @@ stdin handling. This is not libc interposition and does not intercept foreign
 C libraries reading stdin. Provider state, runtime units and display bindings
 are process-local: do not execute evaluators concurrently or nest executions.
 
-## Compatibility and staged implementation
+## Compatibility and frontends
 
-The native prompt remains an intermediate in-process frontend. Xeus still owns
+The native prompt is a protocol-only terminal connected to a separate native
+kernel process. The kernel's serialized worker owns this evaluation service;
+session transport and output capture live outside it. See
+[Native sessions](native-session.md) for the terminal, local binding and optional
+`WITH_JUPYTER_ZMQ` wire adapter/bridge. Xeus still owns
 its protocol envelope, execution counter and optional `lfortran kernel -f`
 entry point; WASM retains xeus-lite/browser stdio when no provider is supplied.
 Legacy Xeus stream capture is adapter code, not part of the evaluation API.
