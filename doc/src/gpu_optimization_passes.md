@@ -339,9 +339,10 @@ overwrites the row before the earlier one has read it. Outputs of two
 launches to the same row (o = o' = 0) keep their order. The pass
 therefore requires:
 
-* every array a launched loop writes (other than a BLOCK's private ones)
-  is written at one subscript, the row, equal to the loop's outermost
-  index;
+* every array a launched loop writes (including one declared in a BLOCK
+  around the time loop; the BLOCKs inside a loop body only declare
+  scalars) is written at one subscript, the row, equal to the loop's
+  outermost index;
 * every read of such an array, in any of the loops, has a row subscript at
   most a constant number of rows ahead of the reading loop's outermost
   index and at most a constant number of rows behind it, proved with the affine analysis on a copy of the body with its

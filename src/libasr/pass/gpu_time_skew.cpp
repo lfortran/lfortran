@@ -94,11 +94,11 @@ ASR::symbol_t *root_symbol(ASR::expr_t *e) {
     }
 }
 
-bool block_local(ASR::symbol_t *s) {
+// Whether `s` is a variable of one of the BLOCKs `blocks`.
+bool block_local(ASR::symbol_t *s, const std::set<ASR::symbol_t*> &blocks) {
     SymbolTable *t = ASRUtils::symbol_parent_symtab(s);
     return t && t->asr_owner && ASR::is_a<ASR::symbol_t>(*t->asr_owner)
-        && ASR::is_a<ASR::Block_t>(*ASR::down_cast<ASR::symbol_t>(
-            t->asr_owner));
+        && blocks.count(ASR::down_cast<ASR::symbol_t>(t->asr_owner)) > 0;
 }
 
 // Whether the host can evaluate an expression in every band of the replay
@@ -480,11 +480,13 @@ public:
         gpu_collect_effects(bp, bn, effects);
         if (effects.unknown) return false;
         const std::set<ASR::symbol_t*> &assigned = effects.scalars;
-        // The scalars the body assigns: private to an iteration (a
-        // BLOCK's, or listed as private), so that replaying a launch
-        // changes no host value.
+        // The scalars the body assigns: private to an iteration (of a
+        // BLOCK the body runs, or listed as private), so that replaying a
+        // launch changes no host value.
+        std::set<ASR::symbol_t*> blocks;
+        gpu_collect_blocks(bp, bn, blocks);
         for (ASR::symbol_t *s : assigned) {
-            if (nest.position(s) >= 0 || block_local(s)) continue;
+            if (nest.position(s) >= 0 || block_local(s, blocks)) continue;
             bool priv = false;
             for (ASR::symbol_t *p : nest.privates) if (p == s) priv = true;
             if (!priv) return false;
@@ -585,8 +587,6 @@ public:
             GpuAffine v0 = GpuAffine::atom(var_key(la.nest.vars[0]));
             for (auto &a : la.accesses) {
                 if (!a.write) continue;
-                ASR::symbol_t *root = root_symbol(a.item->m_v);
-                if (root && block_local(root)) continue;
                 std::string key;
                 if (!note_array(arrays, a.item->m_v, la.hot, key)) {
                     return false;
@@ -612,15 +612,11 @@ public:
             std::string v0k = var_key(la.nest.vars[0]);
             GpuAffine v0 = GpuAffine::atom(v0k);
             for (ASR::expr_t *e : la.wholes) {
-                ASR::symbol_t *root = root_symbol(e);
-                if (root && block_local(root)) continue;
                 std::string key;
                 if (!note_array(arrays, e, la.hot, key)) return false;
                 if (arrays[key].written) return false;
             }
             for (auto &a : la.accesses) {
-                ASR::symbol_t *root = root_symbol(a.item->m_v);
-                if (root && block_local(root)) continue;
                 std::string key;
                 if (!note_array(arrays, a.item->m_v, la.hot, key)) {
                     return false;
