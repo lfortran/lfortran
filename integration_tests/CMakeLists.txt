@@ -2613,6 +2613,7 @@ RUN(NAME generic_interface_dummy_procedure_07 LABELS gfortran llvm)
 RUN(NAME generic_interface_dummy_procedure_08 LABELS gfortran llvm EXTRA_ARGS --implicit-interface)
 RUN(NAME generic_interface_external_procedure_01 LABELS gfortran llvm)
 RUN(NAME generic_interface_external_procedure_02 LABELS gfortran llvm)
+RUN(NAME generic_intrinsic_name_01 LABELS gfortran llvm)
 RUN(NAME operator_interface_dummy_procedure_01 LABELS gfortran llvm)
 RUN(NAME operator_interface_scope_01 LABELS gfortran llvm)
 

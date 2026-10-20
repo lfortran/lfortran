@@ -3451,3 +3451,61 @@ subroutine cc1_external_name_user()
     cc1_external_name_sub = 1.0  ! {Error} Variable 'cc1_external_name_sub' is not declared
     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
 end subroutine cc1_external_name_user
+
+! A function reference to a generic cannot resolve to a specific subroutine.
+module cc1_generic_subroutine_m
+implicit none
+interface cc1_gen_sub
+    module procedure cc1_gen_sub_spec
+end interface
+contains
+    subroutine cc1_gen_sub_spec(i)
+        integer, intent(in) :: i
+    end subroutine cc1_gen_sub_spec
+    subroutine cc1_gen_sub_local()
+        integer :: b
+        b = cc1_gen_sub(1)  ! {Error} the generic 'cc1_gen_sub' is referenced as a function, but its specific procedure 'cc1_gen_sub_spec' is a subroutine
+    end subroutine cc1_gen_sub_local
+end module cc1_generic_subroutine_m
+
+subroutine cc1_gen_sub_use()
+    use cc1_generic_subroutine_m, only: cc1_gen_sub
+    integer :: b
+    b = cc1_gen_sub(1)  ! {Error} the generic 'cc1_gen_sub' is referenced as a function, but its specific procedure 'cc1_gen_sub_spec' is a subroutine
+end subroutine cc1_gen_sub_use
+
+! A type-bound generic with the name of an intrinsic never falls back to the intrinsic.
+module cc1_generic_binding_m
+implicit none
+type :: cc1_gen_binding_t
+contains
+    procedure :: cc1_gen_binding_spec
+    generic :: sin => cc1_gen_binding_spec
+end type cc1_gen_binding_t
+contains
+    subroutine cc1_gen_binding_spec(self, x)
+        class(cc1_gen_binding_t), intent(in) :: self
+        real, intent(in) :: x
+    end subroutine cc1_gen_binding_spec
+    subroutine cc1_gen_binding_use()
+        type(cc1_gen_binding_t) :: t
+        real :: y
+        y = t%sin(1.0)  ! {Error} the generic 'sin' is referenced as a function, but its specific procedure 'cc1_gen_binding_spec' is a subroutine
+    end subroutine cc1_gen_binding_use
+end module cc1_generic_binding_m
+
+! A CALL of a generic cannot resolve to a specific function.
+module cc1_generic_function_m
+implicit none
+interface cc1_gen_fn
+    module procedure cc1_gen_fn_spec
+end interface
+contains
+    integer function cc1_gen_fn_spec(i)
+        integer, intent(in) :: i
+        cc1_gen_fn_spec = i
+    end function cc1_gen_fn_spec
+    subroutine cc1_gen_fn_call()
+        call cc1_gen_fn(1)  ! {Error} the generic 'cc1_gen_fn' is called as a subroutine, but its specific procedure 'cc1_gen_fn_spec' is a function
+    end subroutine cc1_gen_fn_call
+end module cc1_generic_function_m

@@ -4297,3 +4297,27 @@ semantic error: Variable 'cc1_external_name_fn' is not declared
      |
 3452 |     print *, cc1_external_name_fn  ! {Error} Variable 'cc1_external_name_fn' is not declared
      |              ^^^^^^^^^^^^^^^^^^^^ 'cc1_external_name_fn' is undeclared
+
+semantic error: the generic 'cc1_gen_sub' is referenced as a function, but its specific procedure 'cc1_gen_sub_spec' is a subroutine
+    --> tests/errors/continue_compilation_1.f90:3467:13
+     |
+3467 |         b = cc1_gen_sub(1)  ! {Error} the generic 'cc1_gen_sub' is referenced as a function, but its specific procedure 'cc1_gen_sub_spec' is a subroutine
+     |             ^^^^^^^^^^^^^^ a subroutine must be called with a CALL statement
+
+semantic error: the generic 'cc1_gen_sub' is referenced as a function, but its specific procedure 'cc1_gen_sub_spec' is a subroutine
+    --> tests/errors/continue_compilation_1.f90:3474:9
+     |
+3474 |     b = cc1_gen_sub(1)  ! {Error} the generic 'cc1_gen_sub' is referenced as a function, but its specific procedure 'cc1_gen_sub_spec' is a subroutine
+     |         ^^^^^^^^^^^^^^ a subroutine must be called with a CALL statement
+
+semantic error: the generic 'sin' is referenced as a function, but its specific procedure 'cc1_gen_binding_spec' is a subroutine
+    --> tests/errors/continue_compilation_1.f90:3493:13
+     |
+3493 |         y = t%sin(1.0)  ! {Error} the generic 'sin' is referenced as a function, but its specific procedure 'cc1_gen_binding_spec' is a subroutine
+     |             ^^^^^^^^^^ a subroutine must be called with a CALL statement
+
+semantic error: the generic 'cc1_gen_fn' is called as a subroutine, but its specific procedure 'cc1_gen_fn_spec' is a function
+    --> tests/errors/continue_compilation_1.f90:3509:9
+     |
+3509 |         call cc1_gen_fn(1)  ! {Error} the generic 'cc1_gen_fn' is called as a subroutine, but its specific procedure 'cc1_gen_fn_spec' is a function
+     |         ^^^^^^^^^^^^^^^^^^ a function must be referenced in an expression, not called with CALL
