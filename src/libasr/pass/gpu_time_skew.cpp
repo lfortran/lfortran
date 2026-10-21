@@ -575,15 +575,44 @@ public:
         return ok;
     }
 
+    // Whether the host can tell that an array has bounds: an array the
+    // key names, with no pointer link and an argument that is present, so
+    // that checking its allocatable links is enough.
+    static bool checkable_array(ASR::expr_t *a) {
+        if (gpu_array_key(a).empty()) return false;
+        ASR::expr_t *x = a;
+        while (true) {
+            if (ASRUtils::is_pointer(ASRUtils::expr_type(x))) return false;
+            if (!ASR::is_a<ASR::StructInstanceMember_t>(*x)) break;
+            x = ASR::down_cast<ASR::StructInstanceMember_t>(x)->m_v;
+        }
+        if (!ASR::is_a<ASR::Var_t>(*x)) return false;
+        ASR::symbol_t *v = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Var_t>(x)->m_v);
+        return ASR::is_a<ASR::Variable_t>(*v) && ASR::down_cast<
+            ASR::Variable_t>(v)->m_presence != ASR::presenceType::Optional;
+    }
+
     // Whether evaluating `e` cannot fail: integer arithmetic without
-    // division on constants, scalars, and the sizes and bounds of arrays,
-    // which are added to `arrays`.
+    // division on constants, scalars that always have a value, and the
+    // sizes and bounds of arrays whose allocation the host checks, which
+    // are added to `arrays`.
     static bool safe_bound(ASR::expr_t *e, std::vector<ASR::expr_t*> &arrays) {
         switch (e->type) {
             case ASR::exprType::IntegerConstant:
                 return true;
-            case ASR::exprType::Var:
-                return !ASRUtils::is_array(ASRUtils::expr_type(e));
+            case ASR::exprType::Var: {
+                // A variable that always has a value: not allocatable, a
+                // pointer or an optional argument.
+                ASR::symbol_t *v = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::Var_t>(e)->m_v);
+                if (!ASR::is_a<ASR::Variable_t>(*v)) return false;
+                ASR::Variable_t *x = ASR::down_cast<ASR::Variable_t>(v);
+                return !ASRUtils::is_array(x->m_type)
+                    && !ASRUtils::is_allocatable(x->m_type)
+                    && !ASRUtils::is_pointer(x->m_type)
+                    && x->m_presence != ASR::presenceType::Optional;
+            }
             case ASR::exprType::IntegerBinOp: {
                 ASR::IntegerBinOp_t *x = ASR::down_cast<ASR::IntegerBinOp_t>(e);
                 return (x->m_op == ASR::binopType::Add
@@ -602,7 +631,7 @@ public:
             }
             case ASR::exprType::ArraySize: {
                 ASR::ArraySize_t *x = ASR::down_cast<ASR::ArraySize_t>(e);
-                if (!gpu_array_key(x->m_v).size()
+                if (!checkable_array(x->m_v)
                         || (x->m_dim && !ASR::is_a<ASR::IntegerConstant_t>(
                             *x->m_dim))) {
                     return false;
@@ -612,7 +641,7 @@ public:
             }
             case ASR::exprType::ArrayBound: {
                 ASR::ArrayBound_t *x = ASR::down_cast<ASR::ArrayBound_t>(e);
-                if (!gpu_array_key(x->m_v).size() || !x->m_dim
+                if (!checkable_array(x->m_v) || !x->m_dim
                         || !ASR::is_a<ASR::IntegerConstant_t>(*x->m_dim)) {
                     return false;
                 }

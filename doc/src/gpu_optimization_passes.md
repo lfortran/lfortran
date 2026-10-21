@@ -377,7 +377,9 @@ the sizes and pinned bounds of arrays after checking that each allocatable
 link of them is allocated, the bounds of an inner time loop only when the
 loops around it run, and the bounds where the bands start (those of the
 first parallel loop) only when that loop runs in every iteration or its
-bounds are arithmetic that cannot fail.
+bounds are arithmetic that cannot fail: without division, on constants,
+scalars that are not allocatable, pointers or optional arguments, and sizes
+and bounds of arrays reached through no pointer, whose allocation it checks.
 
 The cost model runs on the host before the loop: the bytes of the arrays
 that the loops of most iterations touch (the original loops a fusion keeps
