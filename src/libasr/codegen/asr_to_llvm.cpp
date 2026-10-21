@@ -22471,9 +22471,13 @@ public:
     // Collects the variable and components that an input item of a
     // formatted READ defines, and the subscripts its address uses. Returns
     // false if the item is not a variable, element, section or component,
-    // or has a vector subscript (#15410).
+    // or has a vector subscript (#15410). An array item that the
+    // string_format_array_args pass casts to PointerArray is its operand.
     static bool collect_formatted_read_item(ASR::expr_t* e,
             std::vector<ASR::symbol_t*> &defined, std::vector<ASR::expr_t*> &uses) {
+        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*e)) {
+            e = ASR::down_cast<ASR::ArrayPhysicalCast_t>(e)->m_arg;
+        }
         while (true) {
             if (ASR::is_a<ASR::Var_t>(*e)) {
                 defined.push_back(ASRUtils::symbol_get_past_external(
