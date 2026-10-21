@@ -6480,13 +6480,15 @@ RUN(NAME gpu_metal_554 LABELS gfortran llvm metal cuda_cpu cuda)
 # Loop fusion legality: the fusion runs only for --gpu=cuda and cuda_cpu.
 RUN(NAME gpu_metal_560 LABELS gfortran llvm cuda_cpu cuda)
 RUN(NAME gpu_metal_561 LABELS gfortran llvm cuda_cpu cuda)
-RUN(NAME gpu_metal_511 LABELS llvm metal cuda_cpu cuda) # `local` locality is not accepted by every supported gfortran
-RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096)
-RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda_cpu cuda) # metal declines integer(8) loop indices
+RUN(NAME gpu_metal_511 LABELS llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-split-min-iterations=0) # `local` locality is not accepted by every supported gfortran
+RUN(NAME gpu_metal_514 LABELS gfortran llvm metal cuda_cpu cuda EXTRA_ARGS --gpu-cache-bytes=4096 --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_525 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-split-min-iterations=0) # metal declines integer(8) loop indices
 # Index-set splitting runs only for --gpu=cuda and cuda_cpu: the split nests
 # keep the write-discard of the arrays the loops overwrite, and only those.
-RUN(NAME gpu_metal_527 LABELS gfortran llvm cuda_cpu cuda)
-RUN(NAME gpu_metal_528 LABELS gfortran llvm cuda_cpu cuda)
+# The split tests run small domains, which only
+# --gpu-split-min-iterations=0 splits.
+RUN(NAME gpu_metal_527 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-split-min-iterations=0)
+RUN(NAME gpu_metal_528 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-split-min-iterations=0)
 RUN(NAME gpu_metal_529 LABELS gfortran llvm cuda_cpu cuda)
 RUN(NAME gpu_metal_524 LABELS gfortran llvm cuda_cpu cuda EXTRA_ARGS --gpu-allow-cpu-fallback)
 # gpu_metal_526 reads a LOCAL_INIT scalar, which the GPU kernels leave

@@ -212,9 +212,16 @@ intrinsic scalar types (assignments of scalars and array elements, `if`,
 `select case`, `do`, `block`, calls of pure functions with scalar results);
 the offload pipeline analyses other constructs on the loop as written. Tests
 that the analysis cannot decide stay in the interior as they are.
-A parallel loop in a procedure that a device loop calls runs on one thread
-of the kernel, one iteration after the other, so such procedures are not
-split.
+A parallel loop in a procedure that a parallel loop calls runs on one
+thread, one iteration after the other, so such procedures are not split.
+
+A small domain runs the original nest too. Its launch takes as long as its
+slowest thread, which in the frame first computes its indices and then runs
+the original body, so the split nest only takes longer: on an NVIDIA RTX PRO
+6000 the split stencil kernel of a 256² domain takes 1.15 µs instead of
+0.99 µs, and that of a 512² one 1.15 µs instead of 1.44 µs. The host splits
+only a nest of at least 131072 iterations (`--gpu-split-min-iterations=N`; 0
+splits every nest that has an interior).
 
 Effect (2048², after fusion): 0.454 s to 0.219 s with the frame in a launch
 of its own, and from 0.170 s to 0.149 s (after the ping-pong buffers below)

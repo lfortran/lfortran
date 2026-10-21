@@ -810,12 +810,31 @@ public:
                 privates);
         };
         // Split only when the domain has an interior.
+        // The iterations of the nest, in integer(8).
+        auto iterations = [&]() {
+            ASR::expr_t *n = nullptr;
+            for (size_t d = 0; d < rank; d++) {
+                ASR::expr_t *x = extent(d);
+                if (index_kind != 8) x = bld.i2i_t(x, bld.int_type(8));
+                n = n ? bld.Mul(n, x) : x;
+            }
+            return n;
+        };
+        // Split only when the domain has an interior, and is large enough:
+        // on a small one the launch takes as long as its slowest thread,
+        // which in the frame computes its indices before it runs the
+        // original body, so the split nest only takes longer
+        // (--gpu-split-min-iterations).
         auto has_interior = [&](int64_t jm) {
             ASR::expr_t *cond = nullptr;
             for (size_t d = 0; d < rank; d++) {
                 ASR::expr_t *t1 = bld.Gt(extent(d), c(a[d] + b[d]
                     + (d == 0 ? jm - 1 : 0)));
                 cond = cond ? bld.And(cond, t1) : t1;
+            }
+            if (pass_options.gpu_split_min_iterations > 0) {
+                cond = bld.And(cond, bld.GtE(iterations(),
+                    bld.i64(pass_options.gpu_split_min_iterations)));
             }
             return cond;
         };
@@ -857,13 +876,8 @@ public:
             ASR::stmt_t *jammed = build(jam);
             if (jammed == nullptr) return rollback();
             record_overwrites(jammed);
-            ASR::expr_t *bytes = c(0);
-            for (size_t d = 0; d < rank; d++) {
-                ASR::expr_t *x = extent(d);
-                if (index_kind != 8) x = bld.i2i_t(x, bld.int_type(8));
-                bytes = d == 0 ? x : bld.Mul(bytes, x);
-            }
-            bytes = bld.Mul(bytes, bld.i64(bytes_per_iteration(bp, bn)));
+            ASR::expr_t *bytes = bld.Mul(iterations(),
+                bld.i64(bytes_per_iteration(bp, bn)));
             ASR::expr_t *cache = gpu_cache_bytes(al, unit_scope,
                 pass_options, loc);
             split_nest = bld.If(bld.And(has_interior(jam),
