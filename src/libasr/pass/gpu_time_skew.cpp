@@ -575,6 +575,55 @@ public:
         return ok;
     }
 
+    // Whether evaluating `e` cannot fail: integer arithmetic without
+    // division on constants, scalars, and the sizes and bounds of arrays,
+    // which are added to `arrays`.
+    static bool safe_bound(ASR::expr_t *e, std::vector<ASR::expr_t*> &arrays) {
+        switch (e->type) {
+            case ASR::exprType::IntegerConstant:
+                return true;
+            case ASR::exprType::Var:
+                return !ASRUtils::is_array(ASRUtils::expr_type(e));
+            case ASR::exprType::IntegerBinOp: {
+                ASR::IntegerBinOp_t *x = ASR::down_cast<ASR::IntegerBinOp_t>(e);
+                return (x->m_op == ASR::binopType::Add
+                        || x->m_op == ASR::binopType::Sub
+                        || x->m_op == ASR::binopType::Mul)
+                    && safe_bound(x->m_left, arrays)
+                    && safe_bound(x->m_right, arrays);
+            }
+            case ASR::exprType::IntegerUnaryMinus:
+                return safe_bound(ASR::down_cast<ASR::IntegerUnaryMinus_t>(
+                    e)->m_arg, arrays);
+            case ASR::exprType::Cast: {
+                ASR::Cast_t *x = ASR::down_cast<ASR::Cast_t>(e);
+                return x->m_kind == ASR::cast_kindType::IntegerToInteger
+                    && safe_bound(x->m_arg, arrays);
+            }
+            case ASR::exprType::ArraySize: {
+                ASR::ArraySize_t *x = ASR::down_cast<ASR::ArraySize_t>(e);
+                if (!gpu_array_key(x->m_v).size()
+                        || (x->m_dim && !ASR::is_a<ASR::IntegerConstant_t>(
+                            *x->m_dim))) {
+                    return false;
+                }
+                arrays.push_back(x->m_v);
+                return true;
+            }
+            case ASR::exprType::ArrayBound: {
+                ASR::ArrayBound_t *x = ASR::down_cast<ASR::ArrayBound_t>(e);
+                if (!gpu_array_key(x->m_v).size() || !x->m_dim
+                        || !ASR::is_a<ASR::IntegerConstant_t>(*x->m_dim)) {
+                    return false;
+                }
+                arrays.push_back(x->m_v);
+                return true;
+            }
+            default:
+                return false;
+        }
+    }
+
     bool note_array(std::map<std::string, ArrayInfo> &arrays,
             ASR::expr_t *designator, bool hot, std::string &key) {
         key = gpu_array_key(designator);
@@ -969,6 +1018,26 @@ public:
         std::map<std::string, ASR::expr_t*> pins;
         int64_t sigma = 0;
         if (!analyse(scope, dev, arrays, sigma, pins)) return false;
+        // The rows of the bands start at the bounds of the first parallel
+        // loop, which the host evaluates before the loop. Unless every
+        // iteration runs that loop (it is not under a test), the original
+        // program may never evaluate them, so they must be arithmetic that
+        // cannot fail, on sizes and bounds of arrays the host checks are
+        // allocated (below).
+        GpuLoopNest first_nest;
+        gpu_loop_nest(dev[0], first_nest);
+        std::vector<ASR::expr_t*> first_arrays;
+        {
+            bool every = false;
+            for (size_t k = 0; k < inner->n_body; k++) {
+                if (inner->m_body[k] == dev[0]) every = true;
+            }
+            if (!safe_bound(first_nest.starts[0], first_arrays)
+                    || !safe_bound(first_nest.ends[0], first_arrays)) {
+                if (!every) return false;
+                first_arrays.clear();
+            }
+        }
 
         SymbolTable *fn_scope = scope;
         while (fn_scope->asr_owner && ASR::is_a<ASR::symbol_t>(
@@ -1007,18 +1076,26 @@ public:
         size_t m = loops.size();
         std::vector<ASR::symbol_t*> first(m), trips(m);
         ASR::symbol_t *n = new_var("__gpu_skew_n", it);
+        // The bounds of an inner loop are evaluated, as the original nest
+        // does, only when the loops around it run.
         for (size_t d = 0; d < m; d++) {
             first[d] = new_var("__gpu_skew_first", it);
             trips[d] = new_var("__gpu_skew_trips", it);
-            pre.push_back(set(first[d],
-                ed.duplicate_expr(loops[d]->m_head.m_start)));
-            pre.push_back(set(trips[d], bld.Add(bld.Sub(
-                ed.duplicate_expr(loops[d]->m_head.m_end),
-                ed.duplicate_expr(loops[d]->m_head.m_start)), c(1))));
-            pre.push_back(bld.If(bld.Lt(v(trips[d]), c(0)),
-                {set(trips[d], c(0))}, {}));
-            pre.push_back(set(n, d == 0 ? v(trips[d])
-                : bld.Mul(v(n), v(trips[d]))));
+            std::vector<ASR::stmt_t*> bounds = {
+                set(first[d], ed.duplicate_expr(loops[d]->m_head.m_start)),
+                set(trips[d], bld.Add(bld.Sub(
+                    ed.duplicate_expr(loops[d]->m_head.m_end),
+                    ed.duplicate_expr(loops[d]->m_head.m_start)), c(1))),
+                bld.If(bld.Lt(v(trips[d]), c(0)), {set(trips[d], c(0))}, {})};
+            if (d == 0) {
+                pre.insert(pre.end(), bounds.begin(), bounds.end());
+                pre.push_back(set(n, v(trips[d])));
+            } else {
+                pre.push_back(set(first[d], c(0)));
+                pre.push_back(set(trips[d], c(0)));
+                pre.push_back(bld.If(bld.Gt(v(n), c(0)), bounds, {}));
+                pre.push_back(set(n, bld.Mul(v(n), v(trips[d]))));
+            }
         }
 
         // The cost model, on the host before the loop.
@@ -1086,6 +1163,8 @@ public:
                 designators.push_back(
                     ASR::down_cast<ASR::ArrayBound_t>(p.second)->m_v);
             }
+            designators.insert(designators.end(), first_arrays.begin(),
+                first_arrays.end());
             std::set<std::string> seen;
             for (ASR::expr_t *d : designators) {
                 std::vector<ASR::expr_t*> links;
@@ -1149,8 +1228,6 @@ public:
             saves.push_back(new_var(std::string("__gpu_skew_saved_")
                 + ASRUtils::symbol_name(s), ASRUtils::symbol_type(s)));
         }
-        GpuLoopNest first_nest;
-        gpu_loop_nest(dev[0], first_nest);
         auto to_i64_expr = [&](ASR::expr_t *e) {
             ASR::expr_t *x = ed.duplicate_expr(e);
             return ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x))
