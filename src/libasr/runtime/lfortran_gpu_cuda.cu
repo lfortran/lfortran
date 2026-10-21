@@ -23,7 +23,8 @@ default stream ordering every copy and launch:
 
 * A buffer argument the kernel may write (LFORTRAN_GPU_WRITE) is resident: it
   has an entry in a table of host ranges, which owns device memory. The host
-  bytes are copied in when the entry is not dirty; after the launch the
+  bytes are copied in when the entry is not dirty, unless the kernel writes
+  all of them first (LFORTRAN_GPU_WRITE_DISCARD); after the launch the
   entry is dirty, a later launch handed the same range uses the same memory
   without a copy, and lfortran_gpu_sync copies every dirty entry back.
 * A buffer the kernel only reads is copied in, before the launch on the
@@ -183,7 +184,9 @@ static int overlaps_dirty(void *host, size_t size) {
     return 0;
 }
 
-static void* resident_for_write(void *host, size_t size) {
+// `discard`: the kernel writes all of the range before it reads it, so the
+// host bytes are not copied in.
+static void* resident_for_write(void *host, size_t size, int discard) {
     int i = find_entry(host);
     if (i >= 0 && entries[i].size != size) {
         if (entries[i].dirty) sync_all();
@@ -212,8 +215,10 @@ static void* resident_for_write(void *host, size_t size) {
         e->device = device_alloc(size);
         e->capacity = size;
     }
-    check(cudaMemcpyAsync(e->device, host, size, cudaMemcpyHostToDevice, 0),
-        "cudaMemcpyAsync H2D");
+    if (!discard) {
+        check(cudaMemcpyAsync(e->device, host, size, cudaMemcpyHostToDevice,
+            0), "cudaMemcpyAsync H2D");
+    }
     e->dirty = 1;
     return e->device;
 }
@@ -367,6 +372,10 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
     lfortran_gpu_validate_launch(grid, block);
     if (!ctx || !k) return;
 
+    int is_buffer[MAX_ARGS];
+    for (int i = 0; i < k->n_args; i++) {
+        is_buffer[i] = k->kind[i] == ARG_BUFFER;
+    }
     // Same-address writable aliases need one covering size for this launch,
     // not alternating sizes of the same dirty resident. Nonempty reads within
     // that range must use its shared binding too. Keep the original byte counts.
@@ -375,7 +384,7 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         if (k->kind[i] != ARG_BUFFER || k->buffer_sizes[i] == 0) continue;
         resident_sizes[i] = k->buffer_sizes[i];
         for (int j = 0; j < k->n_args; j++) {
-            if (k->kind[j] == ARG_BUFFER && k->access[j] == LFORTRAN_GPU_WRITE
+            if (k->kind[j] == ARG_BUFFER && k->access[j] != LFORTRAN_GPU_READ
                     && k->buffer_host_ptrs[j] == k->buffer_host_ptrs[i]
                     && k->buffer_sizes[j] > resident_sizes[i]) {
                 resident_sizes[i] = k->buffer_sizes[j];
@@ -398,13 +407,17 @@ void lfortran_gpu_launch(lfortran_gpu_ctx* ctx, lfortran_gpu_kernel* k,
         syncs = n_syncs;
         // Writable ranges first, so a read of the same range uses their memory.
         for (int i = 0; i < k->n_args; i++) {
-            if (k->kind[i] != ARG_BUFFER || k->access[i] != LFORTRAN_GPU_WRITE)
+            if (k->kind[i] != ARG_BUFFER || k->access[i] == LFORTRAN_GPU_READ)
                 continue;
+            int discard = k->access[i] == LFORTRAN_GPU_WRITE_DISCARD
+                && lfortran_gpu_discard_allowed(i, k->buffer_host_ptrs,
+                    k->buffer_sizes, is_buffer, k->n_args);
             k->buffer_device_ptrs[i] = k->buffer_sizes[i] == 0 ? NULL
-                : resident_for_write(k->buffer_host_ptrs[i], resident_sizes[i]);
+                : resident_for_write(k->buffer_host_ptrs[i], resident_sizes[i],
+                    discard);
         }
         for (int i = 0; i < k->n_args; i++) {
-            if (k->kind[i] != ARG_BUFFER || k->access[i] == LFORTRAN_GPU_WRITE)
+            if (k->kind[i] != ARG_BUFFER || k->access[i] != LFORTRAN_GPU_READ)
                 continue;
             size_t size = k->buffer_sizes[i];
             void *host = k->buffer_host_ptrs[i];

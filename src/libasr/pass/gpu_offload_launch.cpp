@@ -7,6 +7,7 @@
 #include <libasr/asr_utils.h>
 #include <libasr/containers.h>
 #include <libasr/pass/gpu_offload_collect.h>
+#include <libasr/pass/gpu_offload_overwrite.h>
 #include <libasr/pass/gpu_offload_preflight.h>
 #include <libasr/pass/gpu_offload_visitor.h>
 #include <libasr/pass/parallel_canonicalize.h>
@@ -307,6 +308,11 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
     // The launch names the block that does it, which the device heap
     // later reads and changes.
     ASR::symbol_t *component_fit = nullptr;
+    // The arrays the kernel assigns whole before it reads them, and when it
+    // does: what the host holds in them then need not reach the device.
+    Vec<ASR::expr_t*> overwritten, overwritten_if;
+    overwritten.reserve(al, 0);
+    overwritten_if.reserve(al, 0);
     {
         ParallelLoopNest source;
         if (parallel_loop_nest(region, source)) {
@@ -314,6 +320,17 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             if (component_fit != nullptr) {
                 launch_stmts.push_back(al, ASRUtils::STMT(
                     ASR::make_BlockCall_t(al, loc, -1, component_fit)));
+            }
+            for (size_t i = 0; i < plan.call_args.n; i++) {
+                ASR::expr_t *arg = plan.call_args.p[i].m_value;
+                if (arg == nullptr) continue;
+                ASR::expr_t *condition = gpu_overwrite_condition(al, loc,
+                    source, starts, ends, arg);
+                if (condition == nullptr) continue;
+                ASRUtils::ExprStmtDuplicator dup(al);
+                dup.success = true;
+                overwritten.push_back(al, dup.duplicate_expr(arg));
+                overwritten_if.push_back(al, condition);
             }
         }
     }
@@ -391,7 +408,8 @@ void GpuOffloadVisitor::build_kernel_launch(const ASR::OMPRegion_t &region,
             ASR::down_cast<ASR::symbol_t>(plan.kernel_func),
             thread_count, block_size_const,
             plan.call_args.p, plan.call_args.n, component_fit, nullptr,
-            0, nullptr, nullptr, 0)));
+            0, nullptr, nullptr, 0, overwritten.p, overwritten.n,
+            overwritten_if.p, overwritten_if.n)));
 
     // The launch does not wait for the kernel. What follows reads what the
     // kernel wrote, so the `gpu_launch_sync` pass puts the GpuSync that

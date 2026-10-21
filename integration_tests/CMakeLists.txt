@@ -6428,6 +6428,11 @@ RUN(NAME gpu_metal_480 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_481 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_metal_488 LABELS gfortran llvm cuda cuda_cpu)
 RUN(NAME gpu_metal_489 LABELS gfortran llvm metal cuda cuda_cpu EXTRAFILES gpu_metal_489_mod.f90 EXTRA_ARGS --separate-compilation)
+# GFortran 13 in Quick cannot compile the LOCAL locality of gpu_metal_505.
+RUN(NAME gpu_metal_505 LABELS llvm metal cuda_cpu cuda)
+RUN(NAME gpu_metal_506 LABELS gfortran llvm metal cuda_cpu cuda)
+RUN(NAME gpu_metal_507 LABELS gfortran llvm metal cuda_cpu cuda)
+RUN(NAME gpu_discard_guard_extremes LABELS gfortran llvm cuda_cpu cuda)
 # GFortran 13 in Quick does not support REDUCE.
 RUN(NAME gpu_metal_482 LABELS llvm metal cuda_cpu cuda)
 # GFortran 13 in Quick cannot compile these LOCAL locality fixtures.
@@ -6444,10 +6449,15 @@ if (LFORTRAN_BACKEND STREQUAL "cuda")
     set_target_properties(gpu_cuda_scratch_order PROPERTIES
         CUDA_STANDARD 17 CUDA_STANDARD_REQUIRED ON)
     add_test(NAME gpu_cuda_scratch_order COMMAND gpu_cuda_scratch_order)
+    add_custom_target(gpu_cuda_scratch_order_discard DEPENDS gpu_cuda_scratch_order)
+    add_test(NAME gpu_cuda_scratch_order_discard
+        COMMAND gpu_cuda_scratch_order discard)
     add_custom_target(gpu_cuda_scratch_order_alias DEPENDS gpu_cuda_scratch_order)
     add_test(NAME gpu_cuda_scratch_order_alias
         COMMAND gpu_cuda_scratch_order aliases)
     set_tests_properties(gpu_cuda_scratch_order PROPERTIES LABELS cuda)
+    set_tests_properties(gpu_cuda_scratch_order_discard PROPERTIES
+        LABELS cuda TIMEOUT 30)
     set_tests_properties(gpu_cuda_scratch_order_alias PROPERTIES
         LABELS cuda TIMEOUT 30)
 endif()
@@ -6536,6 +6546,7 @@ RUN(NAME gpu_kernel_source_10 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_kernel_source_11 LABELS gfortran llvm metal cuda_cpu)
 RUN(NAME gpu_kernel_source_12 LABELS gfortran llvm metal cuda_cpu cuda)
 RUN(NAME gpu_kernel_source_13 LABELS gfortran llvm metal cuda_cpu)
+RUN(NAME gpu_kernel_source_35 LABELS gfortran llvm metal cuda_cpu cuda)
 # GFortran 13 in Quick cannot compile these LOCAL locality fixtures.
 RUN(NAME gpu_kernel_source_14 LABELS llvm metal cuda cuda_cpu)
 RUN(NAME gpu_kernel_source_16 LABELS gfortran llvm metal cuda cuda_cpu)

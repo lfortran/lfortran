@@ -9,7 +9,8 @@ Launches a GPU kernel.
 ```text
 GpuKernelLaunch(symbol kernel, expr thread_count, expr block_size,
     call_arg* args, symbol? component_fit, gpu_scratch_buffer* scratch,
-    expr? stop_status, stmt* stop_replay)
+    expr? stop_status, stmt* stop_replay, expr* overwritten,
+    expr* overwritten_if)
 gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 ```
 
@@ -25,6 +26,8 @@ gpu_scratch_buffer = (int argument_index, expr size, expr? read_back)
 | `scratch` | the arguments that are buffers only the device holds (below). |
 | `stop_status` | the host array passed as the status buffer of a kernel that can `stop`, or `nil`. |
 | `stop_replay` | the host statements that run the `stop` a thread of the launch recorded (below). |
+| `overwritten` | array arguments the kernel may assign whole before it reads them (below). |
+| `overwritten_if` | for each of `overwritten`, the host condition under which it does. |
 
 ### Return values
 
@@ -101,6 +104,25 @@ the launch, which the `gpu_launch_sync` pass places, copies of them after
 each GpuSync the launch may still be pending at; that pass also clears the
 first element of `stop_status` once, on entry to the procedure.
 
+When `overwritten_if[i]`, a scalar logical the host evaluates at the launch,
+is true, the kernel assigns every element of the array `overwritten[i]`, an
+actual argument of the launch, before it reads any of them. What the host
+holds there then does not reach the kernel, so `device_launch_expand` hands
+the buffer to the runtime as `LFORTRAN_GPU_WRITE_DISCARD`, and a runtime
+with memory of its own only makes room for it instead of copying it in.
+`gpu_offload` finds such arrays in the loop as the source wrote it: an
+assignment `a(i, j, ...) = value` subscripted by the loop variables, one per
+loop, that each iteration reaches before anything else of it names `a`, at
+the top of the iteration or inside IFs that compare loop variables with
+values the loop cannot change. The condition is that those loops, narrowed
+by the IFs, run over exactly the bounds of `a`.
+
+This proof does not imply that the buffer is unaliased. If any other buffer
+argument of the launch overlaps it, the runtime treats the discard as an
+ordinary write so that the other argument can still read its previous
+contents. The kernel layout's `gpu_kernel_argument.noalias` is a separate
+shared-ASR proof; it is not inferred from `overwritten`.
+
 Private array storage is placed after shared lowering by `gpu_kernel_storage`,
 before address-space specialization. Fixed-size arrays that fit the device's
 stack budget have `Thread` memory space. Larger arrays have `Global` memory
@@ -137,6 +159,8 @@ placement never turns an iteration-private value into a shared value.
   :scratch []
   :stop_status nil
   :stop_replay []
+  :overwritten []
+  :overwritten_if []
 )
 ```
 
