@@ -10796,12 +10796,34 @@ static inline ASR::Variable_t* rightmost_part_variable(ASR::expr_t* x) {
     return ASR::down_cast<ASR::Variable_t>(sym);
 }
 
+// Whether `x` is a whole array variable or array component that is
+// contiguous by its declaration: one with the CONTIGUOUS attribute, or one
+// that is not a pointer, assumed-shape or assumed-rank. Unlike
+// `is_simply_contiguous`, this does not depend on how subscripts are
+// spelled, so it holds after any pass as well.
+static inline bool is_contiguous_array_designator(ASR::expr_t* x) {
+    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x)) {
+        return is_contiguous_array_designator(
+            ASR::down_cast<ASR::ArrayPhysicalCast_t>(x)->m_arg);
+    }
+    ASR::Variable_t* v = rightmost_part_variable(x);
+    return v != nullptr && is_array(v->m_type) && !is_possibly_discontiguous_part(v);
+}
+
 // Whether the array variable `x` is simply contiguous (F2018 9.5.4): an
 // array designator that is contiguous by its form, or a reference to a
-// function that returns a pointer with the CONTIGUOUS attribute. A section
-// subscript `:` is represented by the LBOUND and UBOUND of the array, which
-// can be replaced by their constant values, and an absent stride by 1, so
-// these spellings are accepted as well.
+// function that returns a pointer with the CONTIGUOUS attribute.
+//
+// This inspects the subscripts of a section as the frontend builds them, and
+// is meant for that ASR only: passes rewrite how a subscript `:` is spelled.
+// A decision based on it must be recorded in the ASR, for example by
+// associating the data target with a CONTIGUOUS pointer.
+//
+// A subscript `:` is represented by the LBOUND and UBOUND of the array, an
+// absent stride by 1. As an extension to 9.5.4, a triplet whose bounds are
+// the constant declared bounds of an explicit-shape array, such as
+// `b(1:4, 2:3)` for `b(4, 5)`, counts as `:`, and an explicit stride 1 as
+// none. Such a section is contiguous as well.
 static inline bool is_simply_contiguous(ASR::expr_t* x) {
     switch (x->type) {
         case ASR::exprType::ArrayPhysicalCast:
@@ -10820,11 +10842,8 @@ static inline bool is_simply_contiguous(ASR::expr_t* x) {
                     ASR::down_cast<ASR::Var_t>(result)->m_v))->m_contiguous_attr;
         }
         case ASR::exprType::Var:
-        case ASR::exprType::StructInstanceMember: {
-            ASR::Variable_t* v = rightmost_part_variable(x);
-            return v != nullptr && is_array(v->m_type) &&
-                !is_possibly_discontiguous_part(v);
-        }
+        case ASR::exprType::StructInstanceMember:
+            return is_contiguous_array_designator(x);
         case ASR::exprType::ArraySection: {
             ASR::ArraySection_t* section = ASR::down_cast<ASR::ArraySection_t>(x);
             ASR::Variable_t* v = rightmost_part_variable(section->m_v);

@@ -3602,7 +3602,12 @@ public:
                         Label("", {value->base.loc})}));
                 throw SemanticAbort();
             }
-            if (ASR::is_a<ASR::FunctionCall_t>(*value)) {
+            // Whether the data target is simply contiguous is decided here,
+            // on its form, and recorded: unless it is a whole contiguous
+            // array, it is associated with a CONTIGUOUS temporary pointer.
+            if (ASR::is_a<ASR::FunctionCall_t>(*value) ||
+                    (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(value)) != 1 &&
+                        !ASRUtils::is_contiguous_array_designator(value))) {
                 value = bind_pointer_target_temporary(x.base.base.loc, value);
             }
             return ASR::pointer_bounds_formType::PointerBoundsRemapping;
