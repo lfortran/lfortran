@@ -431,6 +431,12 @@ public:
                     ASR::symbol_t *v = ASRUtils::symbol_get_past_external(
                         ASR::down_cast<ASR::Var_t>(a->m_target)->m_v);
                     if (!ASR::is_a<ASR::Variable_t>(*v)) return false;
+                    // The host saves and restores what the loop assigns,
+                    // which an absent optional argument does not allow.
+                    if (ASR::down_cast<ASR::Variable_t>(v)->m_presence
+                            == ASR::presenceType::Optional) {
+                        return false;
+                    }
                     ASR::ttype_t *t = ASR::down_cast<ASR::Variable_t>(
                         v)->m_type;
                     if (!(ASR::is_a<ASR::Integer_t>(*t)
@@ -575,8 +581,12 @@ public:
         ASR::symbol_t *root = root_symbol(designator);
         if (key.empty() || root == nullptr) return false;
         ASR::ttype_t *t = ASRUtils::expr_type(designator);
+        // An array reached through another name of its storage (a pointer,
+        // a TARGET, EQUIVALENCE, a common block, ...) may be read or
+        // written where the analysis does not see it.
         if (ASRUtils::is_pointer(t) || ASRUtils::is_pointer(
-                ASRUtils::symbol_type(root))) {
+                ASRUtils::symbol_type(root))
+                || gpu_may_be_aliased(root, address_taken)) {
             return false;
         }
         ArrayInfo &info = arrays[key];
