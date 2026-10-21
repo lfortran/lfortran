@@ -4345,3 +4345,15 @@ semantic error: Non-variable expression in variable definition context (actual a
      |
 3501 |         call cc1_ncs_chr(cc1_ncs_c(1)(1:2))  ! {Error} Non-variable expression in variable definition context
      |                          ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Operator `+` undefined for the types in the expression `cc1_pg_t + cc1_pg_t`
+    --> tests/errors/continue_compilation_1.f90:3537:13
+     |
+3537 |         b = cc1_pg_t(1) + cc1_pg_t(2)  ! {Error}
+     |             ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Function 'cc1_pg_g' not found (not user defined nor intrinsic)
+    --> tests/errors/continue_compilation_1.f90:3538:13
+     |
+3538 |         n = cc1_pg_g(3)  ! {Error}
+     |             ^^^^^^^^^^^ 

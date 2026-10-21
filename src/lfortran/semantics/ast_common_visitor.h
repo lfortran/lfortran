@@ -28268,12 +28268,18 @@ public:
             } else if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
                 ASR::GenericProcedure_t *gp = ASR::down_cast<
                     ASR::GenericProcedure_t>(item.second);
+                if ((!to_submodule) && gp->m_access == ASR::accessType::Private) {
+                    continue;
+                }
                 std::string sym = to_lower(gp->m_name);
                 import_or_merge_generic<ASR::GenericProcedure_t>(
                     m, gp, sym, &ASR::make_GenericProcedure_t);
             }  else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
                 ASR::CustomOperator_t *gp = ASR::down_cast<
                     ASR::CustomOperator_t>(item.second);
+                if ((!to_submodule) && gp->m_access == ASR::accessType::Private) {
+                    continue;
+                }
                 std::string sym = gp->m_name;
                 import_or_merge_generic<ASR::CustomOperator_t>(
                     m, gp, sym, &ASR::make_CustomOperator_t);

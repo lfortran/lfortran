@@ -3501,3 +3501,40 @@ contains
         call cc1_ncs_chr(cc1_ncs_c(1)(1:2))  ! {Error} Non-variable expression in variable definition context
     end subroutine cc1_ncs_use
 end module cc1_named_constant_subobject
+
+module cc1_private_generic_m
+    implicit none
+    private
+    public :: cc1_pg_t
+    type :: cc1_pg_t
+        integer :: x
+    end type
+    interface operator(+)
+        module procedure cc1_pg_add
+    end interface
+    interface cc1_pg_g
+        module procedure cc1_pg_g_i
+    end interface
+contains
+    function cc1_pg_add(a, b) result(c)
+        type(cc1_pg_t), intent(in) :: a, b
+        type(cc1_pg_t) :: c
+        c%x = a%x + b%x
+    end function
+    integer function cc1_pg_g_i(i)
+        integer, intent(in) :: i
+        cc1_pg_g_i = 2*i
+    end function
+end module cc1_private_generic_m
+
+module cc1_private_generic_use
+    use cc1_private_generic_m
+    implicit none
+contains
+    subroutine cc1_pg_use()
+        type(cc1_pg_t) :: b
+        integer :: n
+        b = cc1_pg_t(1) + cc1_pg_t(2)  ! {Error}
+        n = cc1_pg_g(3)  ! {Error}
+    end subroutine cc1_pg_use
+end module cc1_private_generic_use

@@ -17,16 +17,6 @@
                                     add_t
                                     Public
                                 ),
-                            func_arg_real:
-                                (ExternalSymbol
-                                    13
-                                    func_arg_real
-                                    2 func_arg_real
-                                    template_add_02_m
-                                    []
-                                    func_arg_real
-                                    Public
-                                ),
                             r:
                                 (ExternalSymbol
                                     13
@@ -45,16 +35,6 @@
                                     template_add_02_m
                                     []
                                     test_template
-                                    Public
-                                ),
-                            ~add:
-                                (ExternalSymbol
-                                    13
-                                    ~add
-                                    2 ~add
-                                    template_add_02_m
-                                    []
-                                    ~add
                                     Public
                                 )
                         })
@@ -1229,7 +1209,7 @@
                                     2
                                     ~add
                                     [2 func_arg_real]
-                                    Public
+                                    Private
                                 )
                         })
                     template_add_02_m

@@ -1082,6 +1082,27 @@ public:
         current_module_sym = nullptr;
         add_generic_procedures();
         add_overloaded_procedures();
+        // Generic interfaces and operators are created above with Public
+        // access, after the private/public statements were processed.
+        for (auto &item : current_scope->get_scope()) {
+            ASR::accessType *acc = nullptr;
+            if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
+                acc = &ASR::down_cast<ASR::GenericProcedure_t>(item.second)->m_access;
+            } else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
+                acc = &ASR::down_cast<ASR::CustomOperator_t>(item.second)->m_access;
+            } else {
+                continue;
+            }
+            if (assgnd_access.count(item.first)) {
+                *acc = assgnd_access[item.first];
+            } else if (item.first.size() > 1 && item.first[0] == '~'
+                       && item.first[1] != '~'
+                       && assgnd_access.count(item.first.substr(1))) {
+                *acc = assgnd_access[item.first.substr(1)];
+            } else if (*acc != ASR::accessType::Private) {
+                *acc = dflt_access;
+            }
+        }
         add_class_procedures();
         add_later_module_procedure_bindings();
         add_generic_class_procedures();
