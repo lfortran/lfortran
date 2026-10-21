@@ -726,9 +726,15 @@ TEST_CASE("GPU tiled launch tests run tiled nests") {
     check_launch_geometry(cuda_launch_geometry(
         read_project_file("integration_tests/gpu_metal_490.f90"),
         "gpu_metal_490.f90", "gpu_metal_490"), expected);
+    // Index-set splitting splits the first two nests, whose bodies test
+    // a loop index against its lower bound: each becomes the split nest
+    // and the original nest, which runs when the domain has no interior.
+    // Both must tile.
     expected = {
         {1, 64 * 64},           // high lower bound along the tile width
+        {1, 64 * 64},           // the same nest, unsplit
         {1, 64 * 64},           // high lower bound along the tile height
+        {1, 64 * 64},           // the same nest, unsplit
         {1, 64 * 32},           // negative lower bounds, partial tiles
         {0, 33 * 31},           // high lower bound, flat fallback
     };
