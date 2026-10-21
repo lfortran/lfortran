@@ -1891,6 +1891,7 @@ public:
         { AST::boolopType::Or, "~or" },
         { AST::boolopType::Xor, "~xor" },
         { AST::boolopType::Eqv, "~eqv" },
+        { AST::boolopType::NEqv, "~neqv" },
     };
 
     std::map<AST::cmpopType, std::string> cmpop2str = {
@@ -2261,6 +2262,35 @@ public:
     std::set<std::string> assgnd_pointer;
     std::set<std::string> assgnd_allocatable;
     std::set<std::string> assgnd_target;
+    // A PARAMETER, POINTER, ALLOCATABLE or TARGET statement that names an
+    // entity not declared yet is recorded above and applied to the entity
+    // when it is declared. Such a statement applies only to the scoping unit
+    // or BLOCK construct in which it appears (8.6), so this guard gives the
+    // unit empty records and restores the host's when it ends, also when a
+    // diagnostic aborts the visit. Otherwise `parameter (m = 10)` in one
+    // subroutine would make a later `integer m` in another one a constant.
+    struct PendingAttributeScope {
+        CommonVisitor &v;
+        std::map<std::string, std::pair<ASR::storage_typeType, AST::expr_t*>> storage;
+        std::set<std::string> pointer;
+        std::set<std::string> allocatable;
+        std::set<std::string> target;
+
+        PendingAttributeScope(CommonVisitor &v_) : v{v_} {
+            storage.swap(v.assgnd_storage);
+            pointer.swap(v.assgnd_pointer);
+            allocatable.swap(v.assgnd_allocatable);
+            target.swap(v.assgnd_target);
+        }
+        ~PendingAttributeScope() {
+            v.assgnd_storage.swap(storage);
+            v.assgnd_pointer.swap(pointer);
+            v.assgnd_allocatable.swap(allocatable);
+            v.assgnd_target.swap(target);
+        }
+        PendingAttributeScope(const PendingAttributeScope &) = delete;
+        PendingAttributeScope &operator=(const PendingAttributeScope &) = delete;
+    };
     // Tracks (scope, module name) pairs for which the module's symbols were
     // brought into `scope` via a wildcard/all import (`use mod` or
     // `use mod, x => y`), as opposed to an explicit `use mod, only: name`.
