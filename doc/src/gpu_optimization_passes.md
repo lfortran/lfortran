@@ -212,6 +212,9 @@ intrinsic scalar types (assignments of scalars and array elements, `if`,
 `select case`, `do`, `block`, calls of pure functions with scalar results);
 the offload pipeline analyses other constructs on the loop as written. Tests
 that the analysis cannot decide stay in the interior as they are.
+A parallel loop in a procedure that a device loop calls runs on one thread
+of the kernel, one iteration after the other, so such procedures are not
+split.
 
 Effect (2048², after fusion): 0.454 s to 0.219 s with the frame in a launch
 of its own, and from 0.170 s to 0.149 s (after the ping-pong buffers below)
