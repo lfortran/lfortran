@@ -61,9 +61,12 @@ Legality:
   iteration, possibly under `if` tests (without `else`); its expressions
   read neither its own arrays nor what the consumer assigns (except arrays
   that are renamed, below), nor its private variables.
-* The intermediate and renamed arrays are not pointers, nor variables (or
-  components of variables) with the `target` or `pointer` attribute, since
-  reads through a pointer would not be seen.
+* The intermediate and renamed arrays are not pointers, nor components
+  reached through a pointer, nor variables that may be read or written
+  under another name (a `target`, a variable in a common block, a
+  `volatile` one, or one named where the program takes an address or
+  associates a pointer, which covers `equivalence`), since such reads
+  would not be seen.
 * Every function the producer calls is pure and *self-contained*: it names
   no variable but its own dummy arguments and locals (named constants
   aside), and calls only functions that are self-contained too, so it reads

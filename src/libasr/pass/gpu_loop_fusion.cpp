@@ -41,8 +41,9 @@ namespace LCompilers {
  *   these arrays nor anything the consumer assigns, except arrays that are
  *   renamed (below), nor its private variables.
  * * Neither an intermediate array nor a renamed one is a pointer, nor a
- *   variable (or a component of one) with the TARGET or POINTER attribute:
- *   reads through a pointer would not be seen.
+ *   component reached through a pointer, nor a variable that may be read
+ *   or written through another name (may_be_aliased: TARGET, POINTER,
+ *   EQUIVALENCE, a common block, ...): such reads would not be seen.
  * * Every function the producer's expressions and tests call is pure and
  *   self-contained: it names no variable but its own dummies and locals
  *   (gpu_function_self_contained), so its reads are those of its actual
@@ -153,23 +154,6 @@ bool has_early_exit(ASR::stmt_t **body, size_t n) {
     return f.found;
 }
 
-// Whether a pointer may be associated with (part of) the array a
-// designator names: reads and writes through it are not seen. That is the
-// case for a variable, or a component of one, with the TARGET or POINTER
-// attribute.
-bool may_be_pointer_target(ASR::expr_t *des) {
-    while (ASR::is_a<ASR::StructInstanceMember_t>(*des)) {
-        if (ASRUtils::is_pointer(ASRUtils::expr_type(des))) return true;
-        des = ASR::down_cast<ASR::StructInstanceMember_t>(des)->m_v;
-    }
-    if (!ASR::is_a<ASR::Var_t>(*des)) return true;
-    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
-        ASR::down_cast<ASR::Var_t>(des)->m_v);
-    if (!ASR::is_a<ASR::Variable_t>(*s)) return true;
-    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
-    return v->m_target_attr || ASRUtils::is_pointer(v->m_type);
-}
-
 // Whether a variable may change through another name of its storage,
 // which the analyses of a statement list do not see: a pointer, a variable
 // with the TARGET attribute, a variable named where an address is taken or
@@ -184,6 +168,24 @@ bool may_be_aliased(ASR::symbol_t *s,
     if (v->m_storage == ASR::storage_typeType::Parameter) return false;
     return v->m_target_attr || ASRUtils::is_pointer(v->m_type)
         || v->m_common_block || v->m_is_volatile || address_taken.count(s);
+}
+
+// Whether the array a designator names (a variable, or a component of one)
+// may be read or written through another name, which the analyses do not
+// see: a pointer component on the way, or a variable that may_be_aliased
+// (a pointer, a TARGET, EQUIVALENCE, a common block, ...). A designator of
+// another form (an element on the way, ...) is not analyzed and may be.
+bool designator_may_be_aliased(ASR::expr_t *des,
+        const std::set<ASR::symbol_t*> &address_taken) {
+    while (ASR::is_a<ASR::StructInstanceMember_t>(*des)) {
+        if (ASRUtils::is_pointer(ASRUtils::expr_type(des))) return true;
+        des = ASR::down_cast<ASR::StructInstanceMember_t>(des)->m_v;
+    }
+    if (!ASR::is_a<ASR::Var_t>(*des)) return true;
+    ASR::symbol_t *s = ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(des)->m_v);
+    if (!ASR::is_a<ASR::Variable_t>(*s)) return true;
+    return may_be_aliased(s, address_taken);
 }
 
 class LoopFusion {
@@ -335,7 +337,8 @@ public:
                 w.key = gpu_array_key(t->m_v);
                 if (w.key.empty() || t->n_args != p.rank()) return false;
                 ASR::ttype_t *at = ASRUtils::expr_type(t->m_v);
-                if (ASRUtils::is_pointer(at) || may_be_pointer_target(t->m_v)) {
+                if (ASRUtils::is_pointer(at)
+                        || designator_may_be_aliased(t->m_v, address_taken)) {
                     return false;
                 }
                 std::set<int> used;
@@ -1310,7 +1313,7 @@ public:
             if (des == nullptr) return fail();
             ASR::ttype_t *t = ASRUtils::expr_type(des);
             if (!ASRUtils::is_allocatable(t) || ASRUtils::is_pointer(t)
-                    || may_be_pointer_target(des)) {
+                    || designator_may_be_aliased(des, address_taken)) {
                 return fail();
             }
             // Its copy is allocated once, before the outermost of these
