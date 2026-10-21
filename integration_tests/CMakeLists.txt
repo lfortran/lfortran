@@ -3536,6 +3536,7 @@ RUN(NAME nested_vars_22 LABELS gfortran llvm)
 RUN(NAME nested_vars_24 LABELS gfortran llvm)
 RUN(NAME nested_vars_25 LABELS gfortran llvm)
 RUN(NAME nested_vars_26 LABELS gfortran llvm)
+RUN(NAME nested_vars_30 LABELS gfortran llvm)
 
 RUN(NAME nbody LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
