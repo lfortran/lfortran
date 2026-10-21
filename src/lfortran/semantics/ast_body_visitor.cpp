@@ -3410,6 +3410,99 @@ public:
         tmp = ASR::make_Flush_t(al, x.base.base.loc, x.m_label, unit, err, iomsg, iostat);
     }
 
+    /*
+        A pointer assignment `p(lb:) => a` (bounds-spec) or `p(lb:ub) => a`
+        (bounds-remapping-list) gives the pointer the bounds in `target`.
+        Every lower bound is required, and either all or none of the upper
+        bounds. With a bounds-spec, the extents of the pointer are those of
+        the data target, so the upper bound of dimension `i` is set to
+        `lb + size(a, i) - 1`; `target` would otherwise refer to the upper
+        bound of the pointer that is being assigned. A data target that is a
+        function reference is evaluated once, into a temporary pointer.
+        Returns the data target to associate the pointer with.
+    */
+    ASR::expr_t* set_pointer_assignment_bounds(const AST::Associate_t& x,
+            ASR::ArraySection_t* target, ASR::expr_t* value) {
+        LCOMPILERS_ASSERT(AST::is_a<AST::FuncCallOrArray_t>(*x.m_target));
+        AST::FuncCallOrArray_t* ast_target =
+            AST::down_cast<AST::FuncCallOrArray_t>(x.m_target);
+        LCOMPILERS_ASSERT(ast_target->n_args == target->n_args);
+        size_t n_upper_bounds = 0;
+        for (size_t i = 0; i < ast_target->n_args; i++) {
+            if (ast_target->m_args[i].m_start == nullptr) {
+                diag.add(Diagnostic(
+                    "every lower bound must be present in a pointer bounds "
+                    "specification or remapping list",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {x.m_target->base.loc})}));
+                throw SemanticAbort();
+            }
+            if (ast_target->m_args[i].m_end != nullptr) {
+                n_upper_bounds++;
+            }
+        }
+        if (n_upper_bounds == target->n_args) {
+            return value;
+        }
+        if (n_upper_bounds != 0) {
+            diag.add(Diagnostic(
+                "either all or none of the upper bounds must be present in a "
+                "pointer bounds remapping list",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.m_target->base.loc})}));
+            throw SemanticAbort();
+        }
+        if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(value)) !=
+                target->n_args) {
+            diag.add(Diagnostic(
+                "the rank of the pointer and of the data target must agree "
+                "in a pointer bounds specification",
+                Level::Error, Stage::Semantic, {
+                    Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        if (ASR::is_a<ASR::FunctionCall_t>(*value) &&
+                ASRUtils::is_pointer(ASRUtils::expr_type(value))) {
+            ASR::ttype_t* value_type = ASRUtils::expr_type(value);
+            std::string tmp_name = current_scope->get_unique_name(
+                "__lfortran_pointer_target_tmp");
+            SetChar variable_dependencies_vec;
+            variable_dependencies_vec.reserve(al, 1);
+            ASRUtils::collect_variable_dependencies(
+                al, variable_dependencies_vec, value_type);
+            ASR::symbol_t* type_decl = ASRUtils::get_struct_sym_from_struct_expr(value);
+            if (type_decl != nullptr) {
+                type_decl = ASRUtils::import_struct_type(al, type_decl, current_scope);
+            }
+            ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, value->base.loc,
+                    current_scope, s2c(al, tmp_name),
+                    variable_dependencies_vec.p, variable_dependencies_vec.size(),
+                    ASR::intentType::Local, nullptr, nullptr,
+                    ASR::storage_typeType::Default, value_type, type_decl,
+                    current_procedure_abi_type, ASR::Public,
+                    ASR::presenceType::Required, false));
+            current_scope->add_symbol(tmp_name, tmp_sym);
+            ASR::expr_t* tmp_var = ASRUtils::EXPR(ASR::make_Var_t(al,
+                value->base.loc, tmp_sym));
+            current_body->push_back(al, ASRUtils::STMT(
+                ASRUtils::make_Associate_t_util(al, x.base.base.loc, tmp_var, value)));
+            value = tmp_var;
+        }
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        for (size_t i = 0; i < target->n_args; i++) {
+            ASR::expr_t* lb = target->m_args[i].m_left;
+            const Location& loc = lb->base.loc;
+            ASR::ttype_t* int_type = ASRUtils::expr_type(lb);
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::expr_t* extent = ASRUtils::EXPR(ASR::make_ArraySize_t(al, loc,
+                duplicator.duplicate_expr(value), b.i32(i + 1), int_type, nullptr));
+            target->m_args[i].m_right = b.Sub(
+                b.Add(duplicator.duplicate_expr(lb), extent), b.i_t(1, int_type));
+        }
+        return value;
+    }
+
     void visit_Associate(const AST::Associate_t& x) {
         this->visit_expr(*(x.m_target));
         ASR::expr_t* target = ASRUtils::EXPR(tmp);
@@ -3456,6 +3549,11 @@ public:
         // With --continue-compilation, drop the reported statement.
         if (is_invalid) {
             throw SemanticAbort();
+        }
+        if (ASR::is_a<ASR::ArraySection_t>(*target) && ASRUtils::is_pointer(
+                ASRUtils::expr_type(ASR::down_cast<ASR::ArraySection_t>(target)->m_v))) {
+            value = set_pointer_assignment_bounds(x,
+                ASR::down_cast<ASR::ArraySection_t>(target), value);
         }
         tmp = nullptr;
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);

@@ -724,6 +724,22 @@ public:
         ASR::ttype_t *target = typed_expr_type(x.m_target);
         ASR::ttype_t *value = typed_expr_type(x.m_value);
         if (target == nullptr || value == nullptr) return;
+        // A pointer assignment with a bounds-spec or a bounds-remapping-list
+        // gives every dimension of the pointer both of its bounds.
+        if (ASR::is_a<ASR::ArraySection_t>(*x.m_target)) {
+            ASR::ArraySection_t *section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
+            ASR::ttype_t *pointer_type = typed_expr_type(section->m_v);
+            if (pointer_type != nullptr && ASRUtils::is_pointer(pointer_type)) {
+                for (size_t i = 0; i < section->n_args; i++) {
+                    require_with_loc_id(section->m_args[i].m_left != nullptr &&
+                            section->m_args[i].m_right != nullptr,
+                        "asr.verify.associate.pointer_bounds_present",
+                        "Associate::m_target: a pointer bounds specification "
+                        "must give the lower and the upper bound of every "
+                        "dimension", x.base.base.loc);
+                }
+            }
+        }
         verify_procedure_interface(value, target,
             "Procedure pointer association", x.base.base.loc);
     }

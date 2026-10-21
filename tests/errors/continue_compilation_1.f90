@@ -3528,3 +3528,14 @@ subroutine cc1_paren_equivalence_name()
     real :: a(3), b
     equivalence (b, (a))  ! {Error} an equivalence object must be a variable, an array element or a substring
 end subroutine cc1_paren_equivalence_name
+
+module cc1_pointer_bounds
+contains
+    subroutine cc1_pointer_bounds_use()
+        integer, target :: a(6), b(2, 3)
+        integer, pointer :: p(:), q(:, :)
+        p(:) => a  ! {Error} every lower bound must be present in a pointer bounds specification or remapping list
+        q(1:, 1:2) => b  ! {Error} either all or none of the upper bounds must be present in a pointer bounds remapping list
+        q(1:, 1:) => a  ! {Error} the rank of the pointer and of the data target must agree in a pointer bounds specification
+    end subroutine cc1_pointer_bounds_use
+end module cc1_pointer_bounds
