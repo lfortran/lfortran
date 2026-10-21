@@ -4,6 +4,7 @@
 #include <libasr/pass/gpu_index_set_split.h>
 #include <libasr/pass/gpu_loop_fusion.h>
 #include <libasr/pass/gpu_loop_utils.h>
+#include <libasr/pass/gpu_offload_collect.h>
 #include <libasr/pass/gpu_offload_overwrite.h>
 #include <libasr/pass/pass_utils.h>
 
@@ -960,12 +961,33 @@ void gpu_index_set_split(Allocator &al, ASR::TranslationUnit_t &unit,
     }
     Split s(al, gpu_loop_transform_enabled(pass_options, GpuLoopJam),
         unit.m_symtab, pass_options, rarely_run);
+    // A parallel loop in a procedure that device code calls runs there on
+    // one thread, one iteration after the other: splitting it gains
+    // nothing, so the procedures the device loops reach are left as they
+    // are.
+    std::set<ASR::Function_t*> device_routines;
+    {
+        GpuParallelRegionCollector regions;
+        regions.visit_TranslationUnit(unit);
+        GpuProcedureImplementations implementations(al, unit, pass_options);
+        for (ASR::OMPRegion_t *r : regions.loops) {
+            if (r->m_exec_target != ASR::exec_targetType::ExecDevice) {
+                continue;
+            }
+            for (ASR::Function_t *fn : reachable_routines(r->m_body,
+                    r->n_body, implementations)) {
+                device_routines.insert(fn);
+            }
+        }
+    }
     std::function<void(SymbolTable*)> visit_scope = [&](SymbolTable *st) {
         for (auto &item : st->get_scope()) {
             ASR::symbol_t *sym = item.second;
             if (ASR::is_a<ASR::Function_t>(*sym)) {
                 ASR::Function_t *fn = ASR::down_cast<ASR::Function_t>(sym);
-                s.visit_body(fn->m_symtab, fn->m_body, fn->n_body);
+                if (!device_routines.count(fn)) {
+                    s.visit_body(fn->m_symtab, fn->m_body, fn->n_body);
+                }
                 visit_scope(fn->m_symtab);
             } else if (ASR::is_a<ASR::Program_t>(*sym)) {
                 ASR::Program_t *pr = ASR::down_cast<ASR::Program_t>(sym);
