@@ -4371,151 +4371,163 @@ semantic error: Non-variable expression in variable definition context (actual a
      |                          ^^^^^^^^^^^^^^^^^ 
 
 semantic error: every lower bound must be present in a pointer bounds specification or remapping list
-    --> tests/errors/continue_compilation_1.f90:3509:9
+    --> tests/errors/continue_compilation_1.f90:3537:9
      |
-3509 |         p(:) => a  ! {Error} every lower bound must be present in a pointer bounds specification or remapping list
+3537 |         p(:) => a  ! {Error} every lower bound must be present in a pointer bounds specification or remapping list
      |         ^^^^ 
 
 semantic error: either all or none of the upper bounds must be present in a pointer bounds remapping list
-    --> tests/errors/continue_compilation_1.f90:3510:9
+    --> tests/errors/continue_compilation_1.f90:3538:9
      |
-3510 |         q(1:, 1:2) => b  ! {Error} either all or none of the upper bounds must be present in a pointer bounds remapping list
+3538 |         q(1:, 1:2) => b  ! {Error} either all or none of the upper bounds must be present in a pointer bounds remapping list
      |         ^^^^^^^^^^ 
 
 semantic error: the rank of the pointer and of the data target must agree in a pointer bounds specification
-    --> tests/errors/continue_compilation_1.f90:3511:9
+    --> tests/errors/continue_compilation_1.f90:3539:9
      |
-3511 |         q(1:, 1:) => a  ! {Error} the rank of the pointer and of the data target must agree in a pointer bounds specification
+3539 |         q(1:, 1:) => a  ! {Error} the rank of the pointer and of the data target must agree in a pointer bounds specification
      |         ^^^^^^^^^^^^^^ 
 
 semantic error: the data target of a pointer bounds remapping list cannot be null()
-    --> tests/errors/continue_compilation_1.f90:3518:21
+    --> tests/errors/continue_compilation_1.f90:3546:21
      |
-3518 |         arr(1:2) => null()  ! {Error} the data target of a pointer bounds remapping list cannot be null()
+3546 |         arr(1:2) => null()  ! {Error} the data target of a pointer bounds remapping list cannot be null()
      |                     ^^^^^^ 
 
 semantic error: the data target of a pointer bounds remapping list must have rank one or be simply contiguous
-    --> tests/errors/continue_compilation_1.f90:3527:24
+    --> tests/errors/continue_compilation_1.f90:3555:24
      |
-3527 |         q(1:2, 1:3) => a(1:4:2, 1:3)  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+3555 |         q(1:2, 1:3) => a(1:4:2, 1:3)  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
      |                        ^^^^^^^^^^^^^ 
 
 semantic error: the data target of a pointer bounds remapping list must have rank one or be simply contiguous
-    --> tests/errors/continue_compilation_1.f90:3528:19
+    --> tests/errors/continue_compilation_1.f90:3556:19
      |
-3528 |         p(1:3) => s  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+3556 |         p(1:3) => s  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
      |                   ^ 
 
 semantic error: the data target of a pointer bounds remapping list must have rank one or be simply contiguous
-    --> tests/errors/continue_compilation_1.f90:3529:19
+    --> tests/errors/continue_compilation_1.f90:3557:19
      |
-3529 |         p(1:4) => x  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+3557 |         p(1:4) => x  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
      |                   ^ 
 
 semantic error: a stride cannot appear in a pointer bounds specification or remapping list
-    --> tests/errors/continue_compilation_1.f90:3537:9
+    --> tests/errors/continue_compilation_1.f90:3565:9
      |
-3537 |         p(1:5:2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
+3565 |         p(1:5:2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
      |         ^^^^^^^^ 
 
 semantic error: a stride cannot appear in a pointer bounds specification or remapping list
-    --> tests/errors/continue_compilation_1.f90:3538:9
+    --> tests/errors/continue_compilation_1.f90:3566:9
      |
-3538 |         p(1::2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
+3566 |         p(1::2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
      |         ^^^^^^^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
-    --> tests/errors/continue_compilation_1.f90:3551:11
+    --> tests/errors/continue_compilation_1.f90:3579:11
      |
-3551 |         p(1.5:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+3579 |         p(1.5:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
      |           ^^^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
-    --> tests/errors/continue_compilation_1.f90:3552:11
+    --> tests/errors/continue_compilation_1.f90:3580:11
      |
-3552 |         p(r:4) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+3580 |         p(r:4) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
      |           ^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
-    --> tests/errors/continue_compilation_1.f90:3553:13
+    --> tests/errors/continue_compilation_1.f90:3581:13
      |
-3553 |         p(1:r) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+3581 |         p(1:r) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
      |             ^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be scalar
-    --> tests/errors/continue_compilation_1.f90:3554:11
+    --> tests/errors/continue_compilation_1.f90:3582:11
      |
-3554 |         p(v:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+3582 |         p(v:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
      |           ^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be of type integer, found string
-    --> tests/errors/continue_compilation_1.f90:3555:11
+    --> tests/errors/continue_compilation_1.f90:3583:11
      |
-3555 |         p(ch:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found string
+3583 |         p(ch:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found string
      |           ^^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be scalar
-    --> tests/errors/continue_compilation_1.f90:3556:11
+    --> tests/errors/continue_compilation_1.f90:3584:11
      |
-3556 |         p(v2:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+3584 |         p(v2:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
      |           ^^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
-    --> tests/errors/continue_compilation_1.f90:3557:11
+    --> tests/errors/continue_compilation_1.f90:3585:11
      |
-3557 |         p(r:5_8) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
+3585 |         p(r:5_8) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found real(4)
      |           ^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be scalar
-    --> tests/errors/continue_compilation_1.f90:3558:11
+    --> tests/errors/continue_compilation_1.f90:3586:11
      |
-3558 |         p(v:5_8) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
+3586 |         p(v:5_8) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be scalar
      |           ^ 
 
 semantic error: a bound in a pointer bounds specification or remapping list must be of type integer, found logical(1)
-    --> tests/errors/continue_compilation_1.f90:3559:11
+    --> tests/errors/continue_compilation_1.f90:3587:11
      |
-3559 |         p(l1:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found logical(1)
+3587 |         p(l1:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found logical(1)
      |           ^^ 
 
 semantic error: an array subscript must be of type integer, found string
-    --> tests/errors/continue_compilation_1.f90:3569:20
+    --> tests/errors/continue_compilation_1.f90:3597:20
      |
-3569 |         print *, a(ch:)  ! {Error} an array subscript must be of type integer, found string
+3597 |         print *, a(ch:)  ! {Error} an array subscript must be of type integer, found string
      |                    ^^ 
 
 semantic error: an array subscript must be of type integer, found string
-    --> tests/errors/continue_compilation_1.f90:3570:20
+    --> tests/errors/continue_compilation_1.f90:3598:20
      |
-3570 |         print *, a(ch)  ! {Error} an array subscript must be of type integer, found string
+3598 |         print *, a(ch)  ! {Error} an array subscript must be of type integer, found string
      |                    ^^ 
 
 semantic error: an array subscript must be of type integer, found real(4)
-    --> tests/errors/continue_compilation_1.f90:3571:20
+    --> tests/errors/continue_compilation_1.f90:3599:20
      |
-3571 |         print *, a(r:)  ! {Error} an array subscript must be of type integer, found real(4)
+3599 |         print *, a(r:)  ! {Error} an array subscript must be of type integer, found real(4)
      |                    ^ 
 
 semantic error: an array subscript must be of type integer, found real(4)
-    --> tests/errors/continue_compilation_1.f90:3572:24
+    --> tests/errors/continue_compilation_1.f90:3600:24
      |
-3572 |         print *, a(1:4:r)  ! {Error} an array subscript must be of type integer, found real(4)
+3600 |         print *, a(1:4:r)  ! {Error} an array subscript must be of type integer, found real(4)
      |                        ^ 
 
 semantic error: an array subscript must be of type integer, found logical(4)
-    --> tests/errors/continue_compilation_1.f90:3573:23
+    --> tests/errors/continue_compilation_1.f90:3601:23
      |
-3573 |         print *, b(1, l:3)  ! {Error} an array subscript must be of type integer, found logical(4)
+3601 |         print *, b(1, l:3)  ! {Error} an array subscript must be of type integer, found logical(4)
      |                       ^ 
 
 semantic error: a bound or stride of a subscript triplet must be scalar
-    --> tests/errors/continue_compilation_1.f90:3574:20
+    --> tests/errors/continue_compilation_1.f90:3602:20
      |
-3574 |         print *, a(v:)  ! {Error} a bound or stride of a subscript triplet must be scalar
+3602 |         print *, a(v:)  ! {Error} a bound or stride of a subscript triplet must be scalar
      |                    ^ 
 
 semantic error: a substring index must be of type integer, found real(4)
-    --> tests/errors/continue_compilation_1.f90:3575:21
+    --> tests/errors/continue_compilation_1.f90:3603:21
      |
-3575 |         print *, ch(r:1)  ! {Error} a substring index must be of type integer, found real(4)
+3603 |         print *, ch(r:1)  ! {Error} a substring index must be of type integer, found real(4)
      |                     ^ 
+
+semantic error: a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
+    --> tests/errors/continue_compilation_1.f90:3611:11
+     |
+3611 |         p(z'3':) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
+     |           ^^^^ 
+
+semantic error: a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
+    --> tests/errors/continue_compilation_1.f90:3612:11
+     |
+3612 |         q(z'2':, 1:) => b  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
+     |           ^^^^ 

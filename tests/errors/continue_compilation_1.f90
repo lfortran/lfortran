@@ -3603,3 +3603,12 @@ contains
         print *, ch(r:1)  ! {Error} a substring index must be of type integer, found real(4)
     end subroutine cc1_subscript_type_use
 end module cc1_subscript_type
+module cc1_pointer_bounds_boz
+contains
+    subroutine cc1_pointer_bounds_boz_use()
+        integer, target :: a(6), b(2, 3)
+        integer, pointer :: p(:), q(:, :)
+        p(z'3':) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
+        q(z'2':, 1:) => b  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found a BOZ literal constant
+    end subroutine cc1_pointer_bounds_boz_use
+end module cc1_pointer_bounds_boz

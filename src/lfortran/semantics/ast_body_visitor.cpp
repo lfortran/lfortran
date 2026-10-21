@@ -3431,6 +3431,16 @@ public:
                     Label("", {bound->base.loc})}));
             throw SemanticAbort();
         }
+        // F2018 C7109: a BOZ literal constant is typeless and can appear
+        // only in a DATA statement or as an intrinsic argument.
+        if (is_boz_constant(bound)) {
+            diag.add(Diagnostic(
+                "a bound in a pointer bounds specification or remapping list "
+                "must be of type integer, found a BOZ literal constant",
+                Level::Error, Stage::Semantic, {
+                    Label("", {bound->base.loc})}));
+            throw SemanticAbort();
+        }
     }
 
     /*
