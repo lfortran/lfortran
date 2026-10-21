@@ -54,10 +54,8 @@ lfortran_compile_runtime(lfortran_intrinsic_iso_c_binding pure)
 lfortran_compile_runtime(omp_lib openmp)
 add_dependencies(omp_lib lfortran_intrinsic_iso_c_binding)
 
-if(WITH_XEUS)
-  lfortran_compile_runtime(lfortran_display impure)
-  add_dependencies(lfortran_display lfortran_intrinsic_iso_c_binding)
-endif()
+lfortran_compile_runtime(lfortran_display impure)
+add_dependencies(lfortran_display lfortran_intrinsic_iso_c_binding)
 
 # Ideally this should be a target based install, not file based:
 # install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/ DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -70,12 +68,8 @@ set(LFORTRAN_RUNTIME_MOD_FILES
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_ieee_arithmetic.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_c_binding.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/omp_lib.mod
+  ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_display.mod
   )
-
-if(WITH_XEUS)
-  list(APPEND LFORTRAN_RUNTIME_MOD_FILES
-    ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_display.mod)
-endif()
 
 install(
   FILES ${LFORTRAN_RUNTIME_MOD_FILES}
