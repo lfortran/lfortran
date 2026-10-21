@@ -638,6 +638,13 @@ public:
                 || gpu_may_be_aliased(root, address_taken)) {
             return false;
         }
+        // The host asks for the size of an array before the loop, which
+        // an absent optional argument does not have.
+        if (ASR::is_a<ASR::Variable_t>(*root) && ASR::down_cast<
+                ASR::Variable_t>(root)->m_presence
+                    == ASR::presenceType::Optional) {
+            return false;
+        }
         ArrayInfo &info = arrays[key];
         if (hot) info.hot = true;
         if (info.designator == nullptr) {
@@ -989,27 +996,13 @@ public:
         }
         // The bounds of every loop of a parallel nest, which the host
         // evaluates at each launch: a replay must find them as the
-        // original launch did, so they read no element of an array, which
-        // a launch may write.
-        auto reads_no_element = [&](ASR::expr_t *e) {
-            std::set<ASR::symbol_t*> syms;
-            gpu_collect_value_symbols(e, syms);
-            for (ASR::symbol_t *s : syms) {
-                s = ASRUtils::symbol_get_past_external(s);
-                if (ASR::is_a<ASR::Variable_t>(*s) && ASRUtils::is_array(
-                        ASR::down_cast<ASR::Variable_t>(s)->m_type)) {
-                    return false;
-                }
-            }
-            return true;
-        };
+        // original launch did (`invariant` also excludes reading an
+        // element of an array, which a launch may write).
         for (ASR::stmt_t *s : dev) {
             GpuLoopNest nest;
             gpu_loop_nest(s, nest);
             for (size_t d = 0; d < nest.rank(); d++) {
-                if (!invariant(nest.starts[d]) || !invariant(nest.ends[d])
-                        || !reads_no_element(nest.starts[d])
-                        || !reads_no_element(nest.ends[d])) {
+                if (!invariant(nest.starts[d]) || !invariant(nest.ends[d])) {
                     return false;
                 }
             }

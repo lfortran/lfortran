@@ -362,8 +362,22 @@ therefore requires:
   by is assumed to be 1 and checked by the host before it skews;
 * every function a loop calls is inlined: a call that cannot be inlined
   may read arrays (of a module, for example) the analysis does not see;
-* no array is aliased by a pointer, no loop assigns a host scalar (only
-  private ones), and a body contains no loop of its own.
+* no array may be reached through another name of its storage (a
+  pointer, a TARGET, EQUIVALENCE, a common block, ...) or is an optional
+  argument, no loop assigns a host scalar (only private ones), and a body
+  contains no loop of its own;
+* the bounds of every loop of the launched nests stay the same while the
+  time loop runs and read no array element, and the time loop assigns no
+  optional argument (the host saves and restores what it assigns);
+* the time loop is not in a procedure that a parallel loop calls: there
+  its parallel loops run serially inside the caller's kernel.
+
+The host evaluates before the loop only what the original program would:
+the sizes and pinned bounds of arrays after checking that each allocatable
+link of them is allocated, the bounds of an inner time loop only when the
+loops around it run, and the bounds where the bands start (those of the
+first parallel loop) only when that loop runs in every iteration or its
+bounds are arithmetic that cannot fail.
 
 The cost model runs on the host before the loop: the bytes of the arrays
 that the loops of most iterations touch (the original loops a fusion keeps
