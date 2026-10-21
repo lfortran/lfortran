@@ -4084,11 +4084,16 @@ public:
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, tmp_type, nullptr, nullptr, name);
             ASR::symbol_t* struct_sym = ASRUtils::import_struct_sym_as_external(al, x.base.base.loc, tmp_expr, current_scope);
+            // An associate name for a simply contiguous array is a pointer
+            // that is associated with all of it, so it is contiguous too
+            // (F2018 9.5.4).
+            bool contiguous = create_associate_stmt && ASRUtils::is_array(tmp_type) &&
+                ASRUtils::is_simply_contiguous(tmp_expr);
             ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, x.base.base.loc, new_scope,
                                                  name_c, variable_dependencies_vec.p, variable_dependencies_vec.size(),
                                                  ASR::intentType::Local, nullptr, nullptr, tmp_storage, tmp_type, struct_sym,
                                                  ASR::abiType::Source, ASR::accessType::Private, ASR::presenceType::Required,
-                                                 false);
+                                                 false, false, contiguous);
             new_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(v));
             ASR::symbol_t* associate_sym = ASR::down_cast<ASR::symbol_t>(v);
             if (selector_is_constant) {

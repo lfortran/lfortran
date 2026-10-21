@@ -32,7 +32,8 @@ end module pointer_section_10_mod
 program pointer_section_10
     ! Pointer bounds-remapping onto simply contiguous data targets: a
     ! reference to a function with a CONTIGUOUS pointer result through a
-    ! binding, a dummy procedure and a procedure pointer
+    ! binding, a dummy procedure and a procedure pointer, and associate
+    ! names for simply contiguous selectors
     use pointer_section_10_mod
     implicit none
     type(t) :: s
@@ -48,5 +49,16 @@ program pointer_section_10
     p(1:6) => fp()
     if (p(3) /= 30 .or. p(5) /= 50) error stop 3
     call remap_dummy_procedure(get)
+
+    associate (y => buf)
+        p(1:6) => y
+        if (p(1) /= 10 .or. p(6) /= 60) error stop 4
+    end associate
+    associate (z => buf(:, 2:3))
+        p(1:4) => z
+        if (size(p) /= 4) error stop 5
+        if (p(1) /= 30 .or. p(4) /= 60) error stop 6
+    end associate
+
     print *, "passed"
 end program pointer_section_10
