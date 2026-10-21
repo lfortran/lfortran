@@ -2,8 +2,8 @@
 ! whose indices the body computes, which hides from the offload that the
 ! iterations assign every element of `d` and `e`. The splitting records it
 ! from the loops as written, so the launches still say when the arrays need
-! not reach the device (see the ASR reference). The values the host put in
-! them before must then not show in the results.
+! not reach the device (checked in src/lfortran/tests/test_gpu.cpp). The
+! values the host put in them before must then not show in the results.
 module gpu_metal_527_m
 implicit none
 contains

@@ -582,11 +582,11 @@ end program
 
 namespace {
 
-// The (tiled, thread count) pair of every CUDA launch of the program
-// `name` in `source`, from the host's launch prelude.
-std::vector<std::pair<int64_t, int64_t>> cuda_launch_geometry(
-        const std::string &source, const std::string &filename,
-        const std::string &name) {
+// Runs the CUDA pipeline on the program `name` in `source` and hands
+// `visit` each statement of its body.
+template <class Visit>
+void visit_cuda_program(const std::string &source,
+        const std::string &filename, const std::string &name, Visit visit) {
     CompilerOptions options;
     options.gpu_backend = "cuda";
     options.po.gpu_offload_cuda = true;
@@ -612,11 +612,35 @@ std::vector<std::pair<int64_t, int64_t>> cuda_launch_geometry(
     REQUIRE_FALSE(diagnostics.has_error());
     auto *program = ASR::down_cast<ASR::Program_t>(
         unit.m_symtab->get_symbol(name));
-    GpuLaunchGeometry geometry;
     for (size_t i = 0; i < program->n_body; i++) {
-        geometry.visit_stmt(*program->m_body[i]);
+        visit(*program->m_body[i]);
     }
+}
+
+// The (tiled, thread count) pair of every CUDA launch of the program
+// `name` in `source`, from the host's launch prelude.
+std::vector<std::pair<int64_t, int64_t>> cuda_launch_geometry(
+        const std::string &source, const std::string &filename,
+        const std::string &name) {
+    GpuLaunchGeometry geometry;
+    visit_cuda_program(source, filename, name,
+        [&](ASR::stmt_t &s) { geometry.visit_stmt(s); });
     return geometry.launches;
+}
+
+// How many arrays every CUDA launch of the program `name` in `source` says
+// the kernel overwrites (write-discard).
+std::vector<size_t> cuda_launch_overwrites(const std::string &source,
+        const std::string &filename, const std::string &name) {
+    struct Overwrites : public ASR::BaseWalkVisitor<Overwrites> {
+        std::vector<size_t> launches;
+        void visit_GpuKernelLaunch(const ASR::GpuKernelLaunch_t &x) {
+            launches.push_back(x.n_overwritten);
+        }
+    } overwrites;
+    visit_cuda_program(source, filename, name,
+        [&](ASR::stmt_t &s) { overwrites.visit_stmt(s); });
+    return overwrites.launches;
 }
 
 void check_launch_geometry(
@@ -743,6 +767,22 @@ TEST_CASE("GPU tiled launch tests run tiled nests") {
         check_launch_geometry(cuda_launch_geometry(
             read_project_file("integration_tests/" + name + ".f90"),
             name + ".f90", name), expected);
+    }
+}
+
+TEST_CASE("GPU split nests keep the write-discard of the loops they split") {
+    // gpu_metal_527 splits a 1-D stencil (the split nest, then the original
+    // nest for a domain without an interior) and a 2-D one (the jammed
+    // nest, the plain split nest, the original nest). Each overwrites one
+    // array, which every launch must say.
+    std::vector<size_t> expected = {1, 1, 1, 1, 1};
+    std::vector<size_t> launches = cuda_launch_overwrites(
+        read_project_file("integration_tests/gpu_metal_527.f90"),
+        "gpu_metal_527.f90", "gpu_metal_527");
+    REQUIRE(launches.size() == expected.size());
+    for (size_t i = 0; i < launches.size(); i++) {
+        INFO("launch " << i);
+        CHECK(launches[i] == expected[i]);
     }
 }
 #endif
