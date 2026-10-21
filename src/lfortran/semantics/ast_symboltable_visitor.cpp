@@ -4920,10 +4920,13 @@ public:
         std::string local_name = ASRUtils::symbol_name(proc_sym);
         ASR::symbol_t *local_sym = clss->m_symtab->get_symbol(local_name);
         if (local_sym == nullptr) {
+            ASR::symbol_t *proc = ASRUtils::import_symbol(al, parent_decl->m_proc,
+                clss->m_symtab->parent, ASR::accessType::Private, "1_");
+            ASRUtils::insert_module_dependency(proc, al, current_module_dependencies);
             local_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
                 al, proc_sym->base.loc, clss->m_symtab,
                 parent_decl->m_name, parent_decl->m_self_argument,
-                parent_decl->m_proc_name, parent_decl->m_proc,
+                parent_decl->m_proc_name, proc,
                 parent_decl->m_abi, parent_decl->m_is_deferred,
                 parent_decl->m_is_nopass));
             clss->m_symtab->add_symbol(local_name, local_sym);
