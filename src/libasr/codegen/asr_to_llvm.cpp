@@ -4238,9 +4238,24 @@ public:
         tmp = list_api->index(plist, item, start, end, asr_el_type, module.get());
     }
 
+    // Call the binary128 runtime function `name` (e.g. `lf_expq`) on an fp128
+    // value. Don't use llvm.exp.f128 and its relatives for fp128: LLVM lowers
+    // them to the `long double` libm functions (`expl`, ...), which are not
+    // binary128 on most targets (64-bit on Apple ARM64, 80-bit on x86-64).
+    llvm::Value* call_fp128_runtime(const std::string &name, llvm::Value *x) {
+        llvm::Type *type = x->getType();
+        llvm::Function *fn = LLVM::get_or_declare_function(*module, name,
+            type, {type});
+        return builder->CreateCall(fn, {x});
+    }
+
     void generate_Exp(ASR::expr_t* m_arg) {
         this->visit_expr_wrapper(m_arg, true);
         llvm::Value *item = tmp;
+        if (item->getType()->isFP128Ty()) {
+            tmp = call_fp128_runtime("lf_expq", item);
+            return;
+        }
 #if LLVM_VERSION_MAJOR >= 12
         tmp = builder->CreateUnaryIntrinsic(llvm::Intrinsic::exp, item);
 #elif LLVM_VERSION_MAJOR >= 8
@@ -4255,6 +4270,10 @@ public:
     void generate_Exp2(ASR::expr_t* m_arg) {
         this->visit_expr_wrapper(m_arg, true);
         llvm::Value *item = tmp;
+        if (item->getType()->isFP128Ty()) {
+            tmp = call_fp128_runtime("lf_exp2q", item);
+            return;
+        }
 #if LLVM_VERSION_MAJOR >= 12
         tmp = builder->CreateUnaryIntrinsic(llvm::Intrinsic::exp2, item);
 #elif LLVM_VERSION_MAJOR >= 8
@@ -4269,6 +4288,10 @@ public:
     void generate_Expm1(ASR::expr_t* m_arg) {
         this->visit_expr_wrapper(m_arg, true);
         llvm::Value *item = tmp;
+        if (item->getType()->isFP128Ty()) {
+            tmp = call_fp128_runtime("lf_expm1q", item);
+            return;
+        }
 #if LLVM_VERSION_MAJOR >= 12
         llvm::Value* exp = builder->CreateUnaryIntrinsic(llvm::Intrinsic::exp, item);
 #elif LLVM_VERSION_MAJOR >= 8
