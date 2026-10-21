@@ -22526,18 +22526,12 @@ public:
     }
 
     // Whether the runtime stores a value of this type with the wrong size.
-    // It stores every integer and logical target as 4 bytes (8 for
-    // integer(8)) and every real one as a float or a double, so a target of
-    // another kind would get wrong values and overwrite its neighbours.
-    // #15523 adds the type codes for the other integer and logical kinds.
+    // The type code of an integer or logical target carries its kind, but
+    // the runtime stores every real one as a float or a double, so a real
+    // or complex target of another kind would get wrong values and
+    // overwrite its neighbours.
     static bool has_unstorable_formatted_read_kind(ASR::ttype_t* type) {
         switch (type->type) {
-            case ASR::ttypeType::Logical:
-                return ASR::down_cast<ASR::Logical_t>(type)->m_kind != 4;
-            case ASR::ttypeType::Integer: {
-                int kind = ASR::down_cast<ASR::Integer_t>(type)->m_kind;
-                return kind != 4 && kind != 8;
-            }
             case ASR::ttypeType::Real: {
                 int kind = ASR::down_cast<ASR::Real_t>(type)->m_kind;
                 return kind != 4 && kind != 8;
