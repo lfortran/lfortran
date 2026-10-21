@@ -1,9 +1,9 @@
 #include <stdint.h>
 
 extern "C" __global__ void __lfortran_gpu_kernel_0(
-    float* g,
-    float* t,
-    float* x)
+    float* __restrict__ g,
+    float* __restrict__ t,
+    float* __restrict__ x)
 {
     int __flat_idx;
     int __gpu_bc_i;
@@ -26,9 +26,9 @@ struct __ScalarArgs___lfortran_gpu_kernel_1 {
 };
 
 extern "C" __global__ void __lfortran_gpu_kernel_1(
-    float* g,
-    float* u,
-    float* x,
+    float* __restrict__ g,
+    float* __restrict__ u,
+    float* __restrict__ x,
     __ScalarArgs___lfortran_gpu_kernel_1 __scalar_args)
 {
     int __loop_end_0 = __scalar_args.__loop_end_0;

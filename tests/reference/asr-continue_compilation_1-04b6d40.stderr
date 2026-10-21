@@ -4331,3 +4331,39 @@ semantic error: reading into the real or imaginary part of a complex variable is
      |
 3474 |         read(s, *) w(1:3:2)%im  ! {Error} reading into the real or imaginary part of a complex variable is not supported yet
      |                    ^^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+    --> tests/errors/continue_compilation_1.f90:3505:26
+     |
+3505 |         call cc1_ncs_int(cc1_ncs_s%k)  ! {Error} Non-variable expression in variable definition context
+     |                          ^^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+    --> tests/errors/continue_compilation_1.f90:3506:26
+     |
+3506 |         call cc1_ncs_int(cc1_ncs_p(1)%a(2))  ! {Error} Non-variable expression in variable definition context
+     |                          ^^^^^^^^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+    --> tests/errors/continue_compilation_1.f90:3507:26
+     |
+3507 |         call cc1_ncs_int(cc1_ncs_p(i)%k)  ! {Error} Non-variable expression in variable definition context
+     |                          ^^^^^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+    --> tests/errors/continue_compilation_1.f90:3508:26
+     |
+3508 |         call cc1_ncs_arr(cc1_ncs_s%a)  ! {Error} Non-variable expression in variable definition context
+     |                          ^^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+    --> tests/errors/continue_compilation_1.f90:3509:26
+     |
+3509 |         call cc1_ncs_arr(cc1_ncs_p(1)%a(1:2))  ! {Error} Non-variable expression in variable definition context
+     |                          ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Non-variable expression in variable definition context (actual argument to INTENT = OUT/INOUT)
+    --> tests/errors/continue_compilation_1.f90:3510:26
+     |
+3510 |         call cc1_ncs_chr(cc1_ncs_c(1)(1:2))  ! {Error} Non-variable expression in variable definition context
+     |                          ^^^^^^^^^^^^^^^^^ 
