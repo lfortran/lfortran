@@ -784,6 +784,14 @@ public:
                     "Associate::m_value: the data target of a pointer "
                     "bounds-remapping-list must be an array", x.base.base.loc);
             }
+            // The data target is an array with the physical type of the
+            // section of the pointer (see make_Associate_t_util), so the
+            // backend reads its address and shape from its descriptor.
+            require_with_loc_id(ASRUtils::extract_physical_type(value) ==
+                    ASR::array_physical_typeType::DescriptorArray,
+                "asr.verify.associate.pointer_bounds_descriptor_target",
+                "Associate::m_value: the data target of a pointer with "
+                "bounds must be a descriptor array", x.base.base.loc);
         }
         verify_procedure_interface(value, target,
             "Procedure pointer association", x.base.base.loc);

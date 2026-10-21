@@ -12227,8 +12227,8 @@ public:
         of every dimension of the pointer, and with a bounds-remapping-list
         also the upper bound; with a bounds-spec the extents are those of the
         value. The value and every bound are evaluated once. The value is a
-        descriptor, or the data of a contiguous array without one; an array
-        section gets a descriptor here, like in `p => a(...)`.
+        descriptor array (checked by the verifier); an array section gets a
+        descriptor here, like in `p => a(...)`.
     */
     void handle_pointer_section_target(const ASR::Associate_t& x) {
         ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(x.m_target);
@@ -12244,39 +12244,26 @@ public:
         llvm::Value* target_desc = tmp;
         ptr_loads = ptr_loads_copy;
 
-        llvm::Value* value_desc = nullptr;
-        llvm::Type* value_desc_type = nullptr;
-        llvm::Value* value_data = nullptr;
+        LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(value_type) ==
+            ASR::array_physical_typeType::DescriptorArray);
         llvm::Type* value_el_type = llvm_utils->get_el_type(x.m_value,
             ASRUtils::extract_type(value_type), module.get());
-        ASR::array_physical_typeType value_physical_type = ASRUtils::extract_physical_type(value_type);
+        ASR::ttype_t* value_desc_ttype = ASRUtils::type_get_past_allocatable_pointer(value_type);
+        llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
+            value_desc_ttype, module.get());
+        llvm::Value* value_desc = nullptr;
         if (ASR::is_a<ASR::ArraySection_t>(*x.m_value)) {
-            ASR::ttype_t* section_desc_type = ASRUtils::type_get_past_allocatable_pointer(value_type);
-            LCOMPILERS_ASSERT(value_physical_type == ASR::array_physical_typeType::DescriptorArray);
-            value_desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
-                section_desc_type, module.get());
             value_desc = arr_descr->create_descriptor_alloca(value_desc_type,
                 "pointer_target_section_descriptor");
             fill_array_section_descriptor(x.m_value, value_desc, value_desc_type,
-                section_desc_type);
+                value_desc_ttype);
         } else {
             ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_type);
             visit_expr(*x.m_value);
             ptr_loads = ptr_loads_copy;
-            if (value_physical_type == ASR::array_physical_typeType::DescriptorArray) {
-                value_desc_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
-                    ASRUtils::type_get_past_allocatable_pointer(value_type), module.get());
-                value_desc = tmp;
-                if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value)) {
-                    value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
-                }
-            } else if (value_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-                       value_physical_type == ASR::array_physical_typeType::PointerArray) {
-                llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
-                    ASRUtils::type_get_past_allocatable_pointer(value_type), module.get());
-                value_data = llvm_utils->create_gep2(val_type, tmp, 0);
-            } else {
-                value_data = tmp;
+            value_desc = tmp;
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value)) {
+                value_desc = llvm_utils->CreateLoad2(value_desc_type->getPointerTo(), value_desc);
             }
         }
 
@@ -12295,8 +12282,8 @@ public:
         Vec<llvm::Value*> lbs; lbs.reserve(al, target_rank);
         Vec<llvm::Value*> sizes; sizes.reserve(al, target_rank);
         bool bounds_spec = x.m_form == ASR::pointer_bounds_formType::PointerBoundsSpec;
-        ASR::dimension_t* value_dims = nullptr;
-        ASRUtils::extract_dimensions_from_ttype(value_type, value_dims);
+        llvm::Value* value_dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
+            value_desc_type, value_desc);
         for (int i = 0; i < target_rank; i++) {
             ASR::array_index_t& idx = target_section->m_args[i];
             LCOMPILERS_ASSERT(idx.m_left != nullptr && (idx.m_right == nullptr) == bounds_spec);
@@ -12306,17 +12293,9 @@ public:
             if (bounds_spec) {
                 // The pointer has the extents of the value, so its upper
                 // bound is lb + extent - 1.
-                llvm::Value* extent = nullptr;
-                if (value_desc != nullptr) {
-                    llvm::Value* value_dim_des = arr_descr->get_pointer_to_dimension_descriptor(
-                        arr_descr->get_pointer_to_dimension_descriptor_array(
-                            value_desc_type, value_desc),
-                        llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i)));
-                    extent = arr_descr->get_dimension_size(value_dim_des, true);
-                } else {
-                    load_array_size_deep_copy(value_dims[i].m_length);
-                    extent = tmp;
-                }
+                llvm::Value* extent = arr_descr->get_dimension_size(
+                    arr_descr->get_pointer_to_dimension_descriptor(value_dim_des_arr,
+                        llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i))), true);
                 sizes.push_back(al, builder->CreateSExtOrTrunc(extent, idx_type));
                 continue;
             }
@@ -12384,15 +12363,9 @@ public:
 
         // The element at the lower bounds of the pointer is the first
         // element of the value, at its data pointer plus its offset.
-        llvm::Value* value_offset = llvm::ConstantInt::get(idx_type, 0);
-        llvm::Value* value_dim_des_arr = nullptr;
-        if (value_desc != nullptr) {
-            value_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(),
-                arr_descr->get_pointer_to_data(value_desc_type, value_desc));
-            value_offset = arr_descr->get_offset(value_desc_type, value_desc, true);
-            value_dim_des_arr = arr_descr->get_pointer_to_dimension_descriptor_array(
-                value_desc_type, value_desc);
-        }
+        llvm::Value* value_data = llvm_utils->CreateLoad2(value_el_type->getPointerTo(),
+            arr_descr->get_pointer_to_data(value_desc_type, value_desc));
+        llvm::Value* value_offset = arr_descr->get_offset(value_desc_type, value_desc, true);
 
         // Store data pointer in descriptor. If the target is a polymorphic
         // array, the descriptor's data field is a pointer to the class
@@ -12423,19 +12396,15 @@ public:
         // the value in array element order: the value has rank one or is
         // simply contiguous, so the stride of each dimension is the first
         // stride of the value times the extents of the dimensions before it.
-        // A value without a descriptor is contiguous.
-        llvm::Value* current_stride = llvm::ConstantInt::get(idx_type, 1);
-        if (value_desc != nullptr) {
-            current_stride = arr_descr->get_stride(
-                arr_descr->get_pointer_to_dimension_descriptor(value_dim_des_arr,
-                    llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0))), true);
-        }
+        llvm::Value* current_stride = arr_descr->get_stride(
+            arr_descr->get_pointer_to_dimension_descriptor(value_dim_des_arr,
+                llvm::ConstantInt::get(context, llvm::APInt(idx_bits, 0))), true);
         // Set dimension descriptors with the target bounds
         for (int i = 0; i < target_rank; i++) {
             llvm::Value* dim_idx = llvm::ConstantInt::get(context, llvm::APInt(idx_bits, i));
             llvm::Value* dim_des = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_idx);
             llvm::Value* stride = current_stride;
-            if (bounds_spec && value_desc != nullptr) {
+            if (bounds_spec) {
                 stride = arr_descr->get_stride(arr_descr->get_pointer_to_dimension_descriptor(
                     value_dim_des_arr, dim_idx), true);
             }
