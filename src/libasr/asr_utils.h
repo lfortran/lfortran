@@ -10829,17 +10829,27 @@ static inline bool is_simply_contiguous(ASR::expr_t* x) {
         case ASR::exprType::ArrayPhysicalCast:
             return is_simply_contiguous(ASR::down_cast<ASR::ArrayPhysicalCast_t>(x)->m_arg);
         case ASR::exprType::FunctionCall: {
+            // A function, a type-bound procedure, a dummy procedure or a
+            // procedure pointer
             ASR::symbol_t* fn = symbol_get_past_external(
                 ASR::down_cast<ASR::FunctionCall_t>(x)->m_name);
-            if (!ASR::is_a<ASR::Function_t>(*fn)) {
+            if (!ASR::is_a<ASR::Function_t>(*fn) &&
+                    !ASR::is_a<ASR::StructMethodDeclaration_t>(*fn) &&
+                    !(ASR::is_a<ASR::Variable_t>(*fn) &&
+                        ASR::down_cast<ASR::Variable_t>(fn)->m_type_declaration != nullptr &&
+                        ASR::is_a<ASR::Function_t>(*symbol_get_past_external(
+                            ASR::down_cast<ASR::Variable_t>(fn)->m_type_declaration)))) {
                 return false;
             }
-            ASR::expr_t* result = ASR::down_cast<ASR::Function_t>(fn)->m_return_var;
-            return result != nullptr && ASR::is_a<ASR::Var_t>(*result) &&
-                ASR::is_a<ASR::Variable_t>(*symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(result)->m_v)) &&
-                ASR::down_cast<ASR::Variable_t>(symbol_get_past_external(
-                    ASR::down_cast<ASR::Var_t>(result)->m_v))->m_contiguous_attr;
+            ASR::Function_t* function = get_function(fn);
+            ASR::expr_t* result = function != nullptr ? function->m_return_var : nullptr;
+            if (result == nullptr || !ASR::is_a<ASR::Var_t>(*result)) {
+                return false;
+            }
+            ASR::symbol_t* result_sym = symbol_get_past_external(
+                ASR::down_cast<ASR::Var_t>(result)->m_v);
+            return ASR::is_a<ASR::Variable_t>(*result_sym) &&
+                ASR::down_cast<ASR::Variable_t>(result_sym)->m_contiguous_attr;
         }
         case ASR::exprType::Var:
         case ASR::exprType::StructInstanceMember:
