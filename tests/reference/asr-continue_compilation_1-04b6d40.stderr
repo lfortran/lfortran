@@ -4477,3 +4477,45 @@ semantic error: a bound in a pointer bounds specification or remapping list must
      |
 3559 |         p(l1:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found logical(1)
      |           ^^ 
+
+semantic error: an array subscript must be of type integer, found string
+    --> tests/errors/continue_compilation_1.f90:3569:20
+     |
+3569 |         print *, a(ch:)  ! {Error} an array subscript must be of type integer, found string
+     |                    ^^ 
+
+semantic error: an array subscript must be of type integer, found string
+    --> tests/errors/continue_compilation_1.f90:3570:20
+     |
+3570 |         print *, a(ch)  ! {Error} an array subscript must be of type integer, found string
+     |                    ^^ 
+
+semantic error: an array subscript must be of type integer, found real(4)
+    --> tests/errors/continue_compilation_1.f90:3571:20
+     |
+3571 |         print *, a(r:)  ! {Error} an array subscript must be of type integer, found real(4)
+     |                    ^ 
+
+semantic error: an array subscript must be of type integer, found real(4)
+    --> tests/errors/continue_compilation_1.f90:3572:24
+     |
+3572 |         print *, a(1:4:r)  ! {Error} an array subscript must be of type integer, found real(4)
+     |                        ^ 
+
+semantic error: an array subscript must be of type integer, found logical(4)
+    --> tests/errors/continue_compilation_1.f90:3573:23
+     |
+3573 |         print *, b(1, l:3)  ! {Error} an array subscript must be of type integer, found logical(4)
+     |                       ^ 
+
+semantic error: a bound or stride of a subscript triplet must be scalar
+    --> tests/errors/continue_compilation_1.f90:3574:20
+     |
+3574 |         print *, a(v:)  ! {Error} a bound or stride of a subscript triplet must be scalar
+     |                    ^ 
+
+semantic error: a substring index must be of type integer, found real(4)
+    --> tests/errors/continue_compilation_1.f90:3575:21
+     |
+3575 |         print *, ch(r:1)  ! {Error} a substring index must be of type integer, found real(4)
+     |                     ^ 

@@ -3587,3 +3587,19 @@ contains
         p(l1:) => a  ! {Error} a bound in a pointer bounds specification or remapping list must be of type integer, found logical(1)
     end subroutine cc1_pointer_bounds_type_use
 end module cc1_pointer_bounds_type
+module cc1_subscript_type
+contains
+    subroutine cc1_subscript_type_use()
+        integer :: a(5), b(2, 3), v(1)
+        real :: r
+        character(len=1) :: ch
+        logical :: l
+        print *, a(ch:)  ! {Error} an array subscript must be of type integer, found string
+        print *, a(ch)  ! {Error} an array subscript must be of type integer, found string
+        print *, a(r:)  ! {Error} an array subscript must be of type integer, found real(4)
+        print *, a(1:4:r)  ! {Error} an array subscript must be of type integer, found real(4)
+        print *, b(1, l:3)  ! {Error} an array subscript must be of type integer, found logical(4)
+        print *, a(v:)  ! {Error} a bound or stride of a subscript triplet must be scalar
+        print *, ch(r:1)  ! {Error} a substring index must be of type integer, found real(4)
+    end subroutine cc1_subscript_type_use
+end module cc1_subscript_type

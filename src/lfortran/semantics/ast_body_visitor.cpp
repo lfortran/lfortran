@@ -3535,7 +3535,12 @@ public:
     }
 
     void visit_Associate(const AST::Associate_t& x) {
+        if (AST::is_a<AST::FuncCallOrArray_t>(*x.m_target)) {
+            pointer_bounds_args =
+                AST::down_cast<AST::FuncCallOrArray_t>(x.m_target)->m_args;
+        }
         this->visit_expr(*(x.m_target));
+        pointer_bounds_args = nullptr;
         ASR::expr_t* target = ASRUtils::EXPR(tmp);
         bool is_invalid = check_assignment_to_constant_variable(
             extract_assignment_base_symbol(target), x.base.base.loc);
