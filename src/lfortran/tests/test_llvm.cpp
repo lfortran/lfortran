@@ -1225,6 +1225,32 @@ TEST_CASE("FortranEvaluator logical 1") {
     CHECK(r.result.b);
 }
 
+TEST_CASE("FortranEvaluator character comparison") {
+    CompilerOptions cu;
+    cu.interactive = true;
+    cu.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
+    FortranEvaluator e(cu);
+    // Comparing character dummy arguments calls the runtime's str_compare,
+    // which the JIT must resolve from the runtime library on every platform.
+    LCompilers::Result<FortranEvaluator::EvalResult> r = e.evaluate2(
+        "module str_order\n"
+        "contains\n"
+        "logical function before(x, y)\n"
+        "character(len=*), intent(in) :: x, y\n"
+        "before = x < y\n"
+        "end function\n"
+        "end module\n");
+    REQUIRE(r.ok);
+    r = e.evaluate2("use str_order\nbefore('abc', 'abd')");
+    REQUIRE(r.ok);
+    REQUIRE(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(r.result.b);
+    r = e.evaluate2("before('abd', 'abc')");
+    REQUIRE(r.ok);
+    REQUIRE(r.result.type == FortranEvaluator::EvalResult::boolean);
+    CHECK(!r.result.b);
+}
+
 TEST_CASE("FortranEvaluator logical 2") {
     CompilerOptions cu;
     cu.interactive = true;
