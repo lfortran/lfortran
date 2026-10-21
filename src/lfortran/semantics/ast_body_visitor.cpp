@@ -3529,19 +3529,23 @@ public:
         A pointer assignment `p(lb:) => a` (bounds-spec) or `p(lb:ub) => a`
         (bounds-remapping-list) gives the pointer the bounds in `target`.
         Every lower bound is required, and either all or none of the upper
-        bounds; the data target cannot be `null()`. The data target of a
-        bounds-remapping-list has rank one or is simply contiguous. With a bounds-spec, the extents of the pointer are those of
-        the data target, so the upper bound of dimension `i` is set to
-        `lb + size(a, i) - 1`; `target` would otherwise refer to the upper
-        bound of the pointer that is being assigned. The data target is
-        then referenced by the bounds as well, so unless re-evaluating it has
-        no effect (see `is_reevaluable_designator`), it is evaluated once,
-        into a temporary pointer. `value` is replaced by the data target to
-        associate the pointer with; returns the form of the bounds.
+        bounds. The data target of a bounds-remapping-list is not `null()`
+        and has rank one or is simply contiguous. A bounds-spec with the
+        data target `null()` disassociates the pointer, so `target` is
+        replaced by the pointer itself. With a bounds-spec, the extents of
+        the pointer are those of the data target, so the upper bound of
+        dimension `i` is set to `lb + size(a, i) - 1`; `target` would
+        otherwise refer to the upper bound of the pointer that is being
+        assigned. The data target is then referenced by the bounds as well,
+        so unless re-evaluating it has no effect (see
+        `is_reevaluable_designator`), it is evaluated once, into a temporary
+        pointer. `value` is replaced by the data target to associate the
+        pointer with; returns the form of the bounds.
     */
     ASR::pointer_bounds_formType set_pointer_assignment_bounds(
-            const AST::Associate_t& x, ASR::ArraySection_t* target,
+            const AST::Associate_t& x, ASR::expr_t*& target_expr,
             ASR::expr_t*& value) {
+        ASR::ArraySection_t* target = ASR::down_cast<ASR::ArraySection_t>(target_expr);
         LCOMPILERS_ASSERT(AST::is_a<AST::FuncCallOrArray_t>(*x.m_target));
         AST::FuncCallOrArray_t* ast_target =
             AST::down_cast<AST::FuncCallOrArray_t>(x.m_target);
@@ -3573,12 +3577,19 @@ public:
             }
         }
         if (ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
-            diag.add(Diagnostic(
-                "the data target of a pointer with a bounds specification or "
-                "remapping list cannot be null()",
-                Level::Error, Stage::Semantic, {
-                    Label("", {value->base.loc})}));
-            throw SemanticAbort();
+            // F2018 10.2.2.3, paragraphs 2 and 9
+            if (n_upper_bounds == target->n_args) {
+                diag.add(Diagnostic(
+                    "the data target of a pointer bounds remapping list "
+                    "cannot be null()",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {value->base.loc})}));
+                throw SemanticAbort();
+            }
+            if (n_upper_bounds == 0) {
+                target_expr = target->m_v;
+                return ASR::pointer_bounds_formType::NoPointerBounds;
+            }
         }
         if (n_upper_bounds == target->n_args) {
             // F2018 10.2.2.3, paragraph 9
@@ -3681,8 +3692,8 @@ public:
             ASR::pointer_bounds_formType::NoPointerBounds;
         if (ASR::is_a<ASR::ArraySection_t>(*target) && ASRUtils::is_pointer(
                 ASRUtils::expr_type(ASR::down_cast<ASR::ArraySection_t>(target)->m_v))) {
-            bounds_form = set_pointer_assignment_bounds(x,
-                ASR::down_cast<ASR::ArraySection_t>(target), value);
+            bounds_form = set_pointer_assignment_bounds(x, target, value);
+            target_type = ASRUtils::expr_type(target);
         }
         tmp = nullptr;
         ASR::ttype_t* value_type = ASRUtils::expr_type(value);

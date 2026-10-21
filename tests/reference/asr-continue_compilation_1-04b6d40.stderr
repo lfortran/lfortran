@@ -4388,44 +4388,38 @@ semantic error: the rank of the pointer and of the data target must agree in a p
 3511 |         q(1:, 1:) => a  ! {Error} the rank of the pointer and of the data target must agree in a pointer bounds specification
      |         ^^^^^^^^^^^^^^ 
 
-semantic error: the data target of a pointer with a bounds specification or remapping list cannot be null()
+semantic error: the data target of a pointer bounds remapping list cannot be null()
     --> tests/errors/continue_compilation_1.f90:3518:21
      |
-3518 |         arr(1:2) => null()  ! {Error} the data target of a pointer with a bounds specification or remapping list cannot be null()
+3518 |         arr(1:2) => null()  ! {Error} the data target of a pointer bounds remapping list cannot be null()
      |                     ^^^^^^ 
 
-semantic error: the data target of a pointer with a bounds specification or remapping list cannot be null()
-    --> tests/errors/continue_compilation_1.f90:3519:20
+semantic error: the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+    --> tests/errors/continue_compilation_1.f90:3527:24
      |
-3519 |         arr(1:) => null()  ! {Error} the data target of a pointer with a bounds specification or remapping list cannot be null()
-     |                    ^^^^^^ 
+3527 |         q(1:2, 1:3) => a(1:4:2, 1:3)  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+     |                        ^^^^^^^^^^^^^ 
 
 semantic error: the data target of a pointer bounds remapping list must have rank one or be simply contiguous
-    --> tests/errors/continue_compilation_1.f90:3528:24
+    --> tests/errors/continue_compilation_1.f90:3528:19
      |
-3528 |         q(1:2, 1:3) => a(1:4:2, 1:3)  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
-     |                        ^^^^^^^^^^^^^ 
+3528 |         p(1:3) => s  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+     |                   ^ 
 
 semantic error: the data target of a pointer bounds remapping list must have rank one or be simply contiguous
     --> tests/errors/continue_compilation_1.f90:3529:19
      |
-3529 |         p(1:3) => s  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
+3529 |         p(1:4) => x  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
      |                   ^ 
 
-semantic error: the data target of a pointer bounds remapping list must have rank one or be simply contiguous
-    --> tests/errors/continue_compilation_1.f90:3530:19
+semantic error: a stride cannot appear in a pointer bounds specification or remapping list
+    --> tests/errors/continue_compilation_1.f90:3537:9
      |
-3530 |         p(1:4) => x  ! {Error} the data target of a pointer bounds remapping list must have rank one or be simply contiguous
-     |                   ^ 
+3537 |         p(1:5:2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
+     |         ^^^^^^^^ 
 
 semantic error: a stride cannot appear in a pointer bounds specification or remapping list
     --> tests/errors/continue_compilation_1.f90:3538:9
      |
-3538 |         p(1:5:2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
-     |         ^^^^^^^^ 
-
-semantic error: a stride cannot appear in a pointer bounds specification or remapping list
-    --> tests/errors/continue_compilation_1.f90:3539:9
-     |
-3539 |         p(1::2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
+3538 |         p(1::2) => a  ! {Error} a stride cannot appear in a pointer bounds specification or remapping list
      |         ^^^^^^^ 

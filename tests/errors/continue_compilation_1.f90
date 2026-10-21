@@ -3543,8 +3543,7 @@ module cc1_pointer_bounds_null
 contains
     subroutine cc1_pointer_bounds_null_use()
         real, pointer :: arr(:)
-        arr(1:2) => null()  ! {Error} the data target of a pointer with a bounds specification or remapping list cannot be null()
-        arr(1:) => null()  ! {Error} the data target of a pointer with a bounds specification or remapping list cannot be null()
+        arr(1:2) => null()  ! {Error} the data target of a pointer bounds remapping list cannot be null()
     end subroutine cc1_pointer_bounds_null_use
 end module cc1_pointer_bounds_null
 module cc1_pointer_remapping_target
